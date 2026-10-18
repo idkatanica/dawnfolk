@@ -13,7 +13,7 @@ export type ChronicleCategory =
   | "warning"
   | "weather";
 
-export interface ChronicleRecord {
+interface ChronicleRecord {
   category: ChronicleCategory;
   text: string;
   tribeId: number | null;

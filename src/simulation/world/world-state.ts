@@ -15,14 +15,14 @@ import { NO_WATER, type WaterFeatures } from "../../world/water.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
 
 export const NO_BUILDING = -1;
-export const MAXIMUM_TERRAIN_HEIGHT = 3200;
 export const SNOW_CAPACITY = 1.2;
 
+const MAXIMUM_TERRAIN_HEIGHT = 3200;
 const TERRAIN_LAPSE_RATE = 6.5 / 1000;
 const LOWEST_EDIT_BELOW_ORIGINAL = 60;
 const WALKABLE_SLOPE = 1.15;
 
-export interface SurfaceFields {
+interface SurfaceFields {
   crop: Float32Array;
   fire: Float32Array;
   fuel: Float32Array;
@@ -63,7 +63,6 @@ export class WorldState {
   readonly surfaceChanges: RowChangeTracker;
   readonly terrain: TerrainData;
   readonly vegetation: VegetationStore;
-  groundVersion = 0;
   heightVersion = 0;
   water: WaterFeatures;
   waterVersion = 0;
@@ -119,6 +118,7 @@ export class WorldState {
 
   slope(cell: number): number {
     const { cellsPerSide, cellSize } = this.grid;
+
     const column = this.grid.columnOf(cell);
     const row = this.grid.rowOf(cell);
     const heights = this.terrain.height;
@@ -163,7 +163,6 @@ export class WorldState {
     this.terrain.ground[cell] = ground;
     this.fields.fuel[cell] = groundDefinition(ground).fuel;
     this.groundChanges.markRow(this.grid.rowOf(cell));
-    this.groundVersion += 1;
   }
 
   setCrop(cell: number, growth: number): void {

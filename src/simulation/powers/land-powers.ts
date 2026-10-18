@@ -123,7 +123,6 @@ function canPlantIn(world: WorldState, cell: number): boolean {
 
 function plantTree(cell: number, species: PlantSpeciesIndex, services: PowerServices): void {
   const { environment, random, world } = services;
-
   const { grid } = world;
 
   world.plant({
@@ -149,14 +148,15 @@ function plantTree(cell: number, species: PlantSpeciesIndex, services: PowerServ
 export const forestPower: PowerHandler<"forest"> = {
   apply: (target, parameters, services) => {
     const { random, world } = services;
+
     const density = percent(parameters.density) / DEFAULT_DENSITY;
 
     for (const { cell, distance } of cellsInArea(world, { ...target, radius: parameters.radius })) {
-      const chance = target.seconds * PLANTING_PER_SECOND * brushFalloff(distance, parameters.radius) * density;
-
       if (!canPlantIn(world, cell)) {
         continue;
       }
+
+      const chance = target.seconds * PLANTING_PER_SECOND * brushFalloff(distance, parameters.radius) * density;
 
       if (random.chance(chance)) {
         plantTree(cell, speciesFor(parameters.species, world.terrain.baseTemperature[cell], random), services);

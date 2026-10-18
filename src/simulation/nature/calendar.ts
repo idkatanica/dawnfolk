@@ -1,17 +1,17 @@
 import { SEASON_COUNT, seasonName, seasonTemperatureOffset } from "../../content/seasons.ts";
-import { fractionalPart } from "../../shared/math.ts";
+import { FULL_TURN, fractionalPart } from "../../shared/math.ts";
 
 export const DEFAULT_DAY_SECONDS = 240;
-export const DEFAULT_DAYS_PER_SEASON = 3;
 export const MINIMUM_DAY_SECONDS = 60;
 export const MAXIMUM_DAY_SECONDS = 1800;
 
+const DEFAULT_DAYS_PER_SEASON = 3;
 const START_TIME_OF_DAY = 0.36;
 const HOURS_PER_DAY = 24;
 const WARMEST_HOUR = 15;
 const DIURNAL_AMPLITUDE = 4.5;
 
-export interface CalendarState {
+interface CalendarState {
   day: number;
   daySeconds: number;
   daysPerSeason: number;
@@ -92,6 +92,7 @@ export class Calendar {
 
   setSeason(season: number): void {
     const { timeOfDay } = this;
+
     const yearStart = this.day - (this.day % this.yearLength);
 
     this.day = Math.floor(yearStart + season * this.daysPerSeason + 0.001) + timeOfDay;
@@ -99,6 +100,7 @@ export class Calendar {
 
   setDaysPerSeason(daysPerSeason: number): void {
     const { season, timeOfDay } = this;
+
     const completedYears = Math.floor(this.day / this.yearLength);
 
     this.daysPerSeason = daysPerSeason;
@@ -106,7 +108,7 @@ export class Calendar {
   }
 
   diurnalTemperatureOffset(): number {
-    return DIURNAL_AMPLITUDE * Math.cos((2 * Math.PI * (this.hours - WARMEST_HOUR)) / HOURS_PER_DAY);
+    return DIURNAL_AMPLITUDE * Math.cos((FULL_TURN * (this.hours - WARMEST_HOUR)) / HOURS_PER_DAY);
   }
 
   seasonalTemperatureOffset(): number {

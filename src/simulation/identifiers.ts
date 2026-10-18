@@ -1,9 +1,5 @@
 export class IdentifierSource {
-  #next: number;
-
-  constructor(first = 1) {
-    this.#next = first;
-  }
+  #next = 1;
 
   next(): number {
     const identifier = this.#next;
@@ -11,9 +7,5 @@ export class IdentifierSource {
     this.#next += 1;
 
     return identifier;
-  }
-
-  saveState(): number {
-    return this.#next;
   }
 }

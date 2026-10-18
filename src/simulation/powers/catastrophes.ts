@@ -22,7 +22,7 @@ const HIGH_GROUND = 700;
 const TALL_FOREST = 1;
 const ISLAND_MARGIN = 60;
 
-export interface Strike {
+interface Strike {
   ignitionChance: number;
   isNatural: boolean;
   x: number;
@@ -112,7 +112,7 @@ function isStrikeSite(cell: number, acceptsAnyLand: boolean, services: PowerServ
   return acceptsAnyLand || world.terrain.height[cell] > HIGH_GROUND || world.canopyFuel[cell] > TALL_FOREST;
 }
 
-export interface Blast {
+interface Blast {
   burnsDebris: boolean;
   power: number;
   radius: number;
@@ -122,6 +122,7 @@ export interface Blast {
 
 export function explode(blast: Blast, services: PowerServices): void {
   const { buildings, fauna, hazards, society, world } = services;
+
   const reach = blast.radius * BLAST_REACH;
 
   const isInWater = world.isWaterAt(blast.x, blast.z);
@@ -162,6 +163,7 @@ function scatterDebris(blast: Blast, isInWater: boolean, services: PowerServices
 function showerWithDebris(cell: number, relativeDistance: number, canIgnite: boolean, services: PowerServices): void {
   const { fire } = services;
   const { fields } = services.world;
+
   const falloff = DEBRIS_REACH - relativeDistance;
 
   if (relativeDistance < DEBRIS_CLEARING) {
@@ -195,7 +197,7 @@ function vaporize(cell: number, services: PowerServices): void {
   services.world.clearPlants(cell, true);
 }
 
-export interface Quake {
+interface Quake {
   magnitude: number;
   radius: number;
   x: number;

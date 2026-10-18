@@ -17,10 +17,6 @@ export class SleepJob implements Job {
     headTo(tick.person, sleepingSpot(tick.person, tick.tribe, buildings, random), tick.context);
   }
 
-  get isAsleep(): boolean {
-    return this.#phase === "asleep";
-  }
-
   update(tick: PersonTick): Job | null {
     if (this.#phase === "travel") {
       this.#travel(tick);

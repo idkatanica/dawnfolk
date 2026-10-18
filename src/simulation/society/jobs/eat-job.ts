@@ -30,16 +30,14 @@ export class EatJob implements Job {
   }
 }
 
-export function eatMeal(person: Person, tribe: Tribe, isCooked: boolean): boolean {
+function eatMeal(person: Person, tribe: Tribe, isCooked: boolean): void {
   if (!takeFoodPortion(person, tribe)) {
-    return false;
+    return;
   }
 
   const relief = MEAL_HUNGER_RELIEF + (isCooked ? COOKED_MEAL_BONUS : 0);
 
   person.hunger = Math.max(0, person.hunger - relief);
-
-  return true;
 }
 
 function takeFoodPortion(person: Person, tribe: Tribe): boolean {

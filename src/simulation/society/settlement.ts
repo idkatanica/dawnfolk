@@ -268,7 +268,7 @@ export function considerMoving(
   }
 }
 
-export function moveCamp(
+function moveCamp(
   tribe: Tribe,
   members: readonly Person[],
   site: Waypoint,

@@ -7,7 +7,7 @@ import type { Tribe } from "./tribe.ts";
 
 const GOLDEN_ANGLE = 2.399;
 
-export function campPoint(tribe: Tribe): Waypoint {
+function campPoint(tribe: Tribe): Waypoint {
   return { x: tribe.campX, z: tribe.campZ };
 }
 
@@ -59,9 +59,9 @@ export function sleepingSpot(person: Person, tribe: Tribe, buildings: BuildingSy
 }
 
 function fireOrCamp(tribe: Tribe, buildings: BuildingSystem): Waypoint {
-  const campfire = campfireOf(tribe, buildings);
+  const campfire = litCampfireOf(tribe, buildings);
 
-  if (campfire === null || !isCampfireLit(campfire)) {
+  if (campfire === null) {
     return campPoint(tribe);
   }
 

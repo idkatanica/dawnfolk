@@ -1,8 +1,7 @@
 import { clamp } from "../../shared/math.ts";
-import { isCampfireLit } from "./buildings.ts";
 import { type DeathCause, isChild, NEED_SECONDS, type Person, YEARS_PER_DAY } from "./person.ts";
 import type { PersonTick } from "./society-context.ts";
-import { campfireOf, completedBuilding } from "./tribe-places.ts";
+import { completedBuilding, litCampfireOf } from "./tribe-places.ts";
 
 const CHILD_HUNGER_RATE = 0.75;
 const ADULT_HUNGER_RATE = 0.95;
@@ -83,9 +82,9 @@ function temperatureAround(tick: PersonTick): number {
 }
 
 function isNearCampfire(tick: PersonTick): boolean {
-  const campfire = campfireOf(tick.tribe, tick.context.buildings);
+  const campfire = litCampfireOf(tick.tribe, tick.context.buildings);
 
-  if (campfire === null || !isCampfireLit(campfire)) {
+  if (campfire === null) {
     return false;
   }
 

@@ -27,6 +27,7 @@ function growFor(world: WorldState, period: Partial<GrowthPeriod>): void {
     season: SUMMER,
     ...period,
   };
+
   const growth = new VegetationGrowthSystem(world);
   const random = createRandom(6);
   const step = 0.01;

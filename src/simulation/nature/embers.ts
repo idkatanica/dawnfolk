@@ -15,7 +15,7 @@ export interface Ember {
   toZ: number;
 }
 
-export interface EmberWind {
+interface EmberWind {
   strength: number;
   x: number;
   z: number;
@@ -35,6 +35,7 @@ export class EmberSystem {
 
   launch(cell: number, wind: EmberWind, random: RandomSource): Ember {
     const { grid } = this.#world;
+
     const durationSeconds = random.between(2, 5);
     const speed = random.between(14, 40) * (0.4 + wind.strength);
     const scatter = random.signed() * LATERAL_SCATTER;

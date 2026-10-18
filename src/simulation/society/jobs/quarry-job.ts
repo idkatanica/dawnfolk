@@ -52,7 +52,7 @@ function previousUses(quarryUses: ReadonlyMap<number, number>, boulder: number):
   return uses;
 }
 
-export class BoulderJob implements Job {
+class BoulderJob implements Job {
   readonly claimedPlant: number;
   readonly kind = "quarry";
   readonly #errand = new Errand(QUARRYING_SECONDS, "dig");
@@ -89,7 +89,7 @@ export class BoulderJob implements Job {
   }
 }
 
-export class QuarryJob implements Job {
+class QuarryJob implements Job {
   readonly kind = "quarry";
   readonly #errand = new Errand(QUARRYING_SECONDS, "dig");
 

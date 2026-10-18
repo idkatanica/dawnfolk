@@ -41,7 +41,7 @@ function deliveryPoint(tick: PersonTick): Waypoint {
   return { x: storehouse.x + random.signed() * 3, z: storehouse.z + random.signed() * 3 };
 }
 
-export function storeCarrying(tick: PersonTick): void {
+function storeCarrying(tick: PersonTick): void {
   addToStock(tick.tribe, tick.person.carrying);
   dropCarrying(tick.person);
 }

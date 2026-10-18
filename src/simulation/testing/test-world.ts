@@ -17,7 +17,7 @@ export interface TestWorldOptions {
   heightAt: (x: number, z: number) => number;
 }
 
-export const DEFAULT_TEST_WORLD: TestWorldOptions = {
+const DEFAULT_TEST_WORLD: TestWorldOptions = {
   baseTemperature: 15,
   biome: Biome.Meadow,
   dimensions: { cellSize: 10, cellsPerSide: 64 },
@@ -25,7 +25,7 @@ export const DEFAULT_TEST_WORLD: TestWorldOptions = {
   heightAt: () => 100,
 };
 
-export function createTestGeneratedWorld(overrides: Partial<TestWorldOptions> = {}): GeneratedWorld {
+function createTestGeneratedWorld(overrides: Partial<TestWorldOptions> = {}): GeneratedWorld {
   const options: TestWorldOptions = { ...DEFAULT_TEST_WORLD, ...overrides };
 
   const grid = new WorldGrid(options.dimensions);

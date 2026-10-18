@@ -53,7 +53,7 @@ export interface Job {
   update: (tick: PersonTick) => Job | null;
 }
 
-export function travelPose(person: Person, speed: number): PersonPose {
+function travelPose(person: Person, speed: number): PersonPose {
   if (speed > RUNNING_SPEED) {
     return "run";
   }
@@ -111,12 +111,8 @@ export class Errand {
     this.#workPose = workPose;
   }
 
-  get isWorking(): boolean {
-    return this.#phase === "work";
-  }
-
-  update(tick: PersonTick, travelSpeedFactor = 1): ErrandProgress {
-    if (!this.#isAtWorkplace(tick, travelSpeedFactor)) {
+  update(tick: PersonTick): ErrandProgress {
+    if (!this.#isAtWorkplace(tick)) {
       return "travelling";
     }
 
@@ -134,12 +130,12 @@ export class Errand {
     this.#elapsedWork = 0;
   }
 
-  #isAtWorkplace(tick: PersonTick, travelSpeedFactor: number): boolean {
+  #isAtWorkplace(tick: PersonTick): boolean {
     if (this.#phase === "work") {
       return true;
     }
 
-    if (!walk(tick, walkSpeed(tick.person) * travelSpeedFactor)) {
+    if (!walk(tick, walkSpeed(tick.person))) {
       return false;
     }
 

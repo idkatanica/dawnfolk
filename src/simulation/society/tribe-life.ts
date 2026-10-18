@@ -6,7 +6,7 @@ import { assignHomes, housingCapacity, planConstruction } from "./construction.t
 import { createPerson, isChild, isElder, type Person } from "./person.ts";
 import { considerMoving, considerSplit, type SettlementServices, updateMigration } from "./settlement.ts";
 import type { SocietyContext } from "./society-context.ts";
-import { type Tribe, upcomingTechnology } from "./tribe.ts";
+import { knows, learn, type Tribe, upcomingTechnology } from "./tribe.ts";
 import { completedBuilding } from "./tribe-places.ts";
 
 const BASE_LEARNING_PER_DAY = 8;
@@ -65,10 +65,10 @@ function learnAndDiscover(tick: TribeTick): void {
   const learning =
     BASE_LEARNING_PER_DAY + adults * ADULT_LEARNING + elders * ELDER_LEARNING + tribe.faith * FAITH_LEARNING;
 
-  tribe.knowledge += tick.days * learning * context.rules.life.learningSpeed;
+  learn(tribe, tick.days * learning, context.rules);
   discoverUpcoming(tribe, context);
 
-  if (!tribe.technologies.has("fire") && context.hazards.isFireAround(tribe.campX, tribe.campZ)) {
+  if (!knows(tribe, "fire") && context.hazards.isFireAround(tribe.campX, tribe.campZ)) {
     discover(tribe, "fire", `${tribe.name} saw a wildfire and kept the flame`, context);
   }
 }
@@ -85,7 +85,7 @@ function discoverUpcoming(tribe: Tribe, context: SocietyContext): void {
 }
 
 export function discover(tribe: Tribe, technology: TechnologyId, message: string, context: SocietyContext): void {
-  if (tribe.technologies.has(technology)) {
+  if (knows(tribe, technology)) {
     return;
   }
 
@@ -105,7 +105,7 @@ function spoilFood(tick: TribeTick): void {
 
 function growFields(tick: TribeTick): void {
   const { context, tribe } = tick;
-  const { season } = tick.context.environment;
+  const { season } = context.environment;
 
   abandonFloodedFields(tribe, context);
   tribe.timers.cropDays += tick.days;
@@ -184,7 +184,7 @@ function considerBirths(tick: TribeTick): void {
 
 function chooseMother(tick: TribeTick, elapsedDays: number): Person | null {
   const { context, members, tribe } = tick;
-  const { day } = tick.context.environment;
+  const { day } = context.environment;
 
   const mothers = members.filter((person) => {
     const isOfAge = person.age > MOTHER_YOUNGEST && person.age < MOTHER_OLDEST;
@@ -217,7 +217,7 @@ function chooseMother(tick: TribeTick, elapsedDays: number): Person | null {
 
 function giveBirth(tick: TribeTick, mother: Person): void {
   const { context, tribe } = tick;
-  const { random } = tick.context;
+  const { random } = context;
 
   const isFemale = random.chance(0.5);
   const besideMother = { x: mother.mover.x + 1, z: mother.mover.z + 1 };

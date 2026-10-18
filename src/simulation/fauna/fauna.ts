@@ -1,7 +1,7 @@
 import { ANIMALS, type AnimalKind } from "../../content/animals.ts";
 import { Biome } from "../../content/biomes.ts";
 import type { WorldRules } from "../../content/world-rules.ts";
-import { clamp, FULL_TURN } from "../../shared/math.ts";
+import { clamp, distanceSquared, FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import type { AnimalPose } from "../../world/agent-poses.ts";
 import { createMover, hasArrived, type Mover, moveAlong, setDestination, stopMoving } from "../agents/movement.ts";
@@ -24,7 +24,7 @@ const SPRING_BIRTHS_PER_DAY = 0.6;
 const YOUTH_DECAY_PER_DAY = 0.5;
 const COLD_BIOMES: ReadonlySet<number> = new Set([Biome.Alpine, Biome.Glacier, Biome.Taiga, Biome.Tundra]);
 
-export type AnimalDeathCause = "blast" | "fire" | "hunt" | "lightning";
+type AnimalDeathCause = "blast" | "fire" | "hunt" | "lightning";
 
 export interface Animal {
   appearanceSeed: number;
@@ -49,7 +49,7 @@ export interface Animal {
   youth: number;
 }
 
-export interface Herd {
+interface Herd {
   goalX: number;
   goalZ: number;
   id: number;
@@ -150,11 +150,11 @@ export class FaunaSystem {
     let nearestDistance = maximumDistance * maximumDistance;
 
     for (const animal of this.#animals) {
-      const distanceSquared = (animal.mover.x - x) ** 2 + (animal.mover.z - z) ** 2;
+      const squaredDistance = distanceSquared(animal.mover.x, animal.mover.z, x, z);
 
-      if (animal.isAlive && distanceSquared < nearestDistance && accepts(animal)) {
+      if (animal.isAlive && squaredDistance < nearestDistance && accepts(animal)) {
         nearest = animal;
-        nearestDistance = distanceSquared;
+        nearestDistance = squaredDistance;
       }
     }
 

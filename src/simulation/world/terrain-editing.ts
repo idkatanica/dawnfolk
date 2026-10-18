@@ -10,20 +10,20 @@ const CRATER_RIM_REACH = 1.35;
 const CRATER_RIM_HEIGHT = 0.28;
 const CRATER_RIM_WIDTH = 0.24;
 
-export interface CircleArea {
+interface CircleArea {
   radius: number;
   x: number;
   z: number;
 }
 
-export interface AreaCell {
+interface AreaCell {
   cell: number;
   column: number;
   distance: number;
   row: number;
 }
 
-export function areaRegion(world: WorldState, area: CircleArea): CellRegion {
+function areaRegion(world: WorldState, area: CircleArea): CellRegion {
   const { grid } = world;
 
   const lastIndex = grid.cellsPerSide - 1;
@@ -38,6 +38,7 @@ export function areaRegion(world: WorldState, area: CircleArea): CellRegion {
 
 export function cellsInArea(world: WorldState, area: CircleArea): AreaCell[] {
   const { grid } = world;
+
   const region = areaRegion(world, area);
   const cells: AreaCell[] = [];
 
