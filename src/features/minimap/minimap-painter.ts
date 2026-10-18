@@ -1,5 +1,7 @@
 import type { EngineHandle } from "../../game/engine-handle.ts";
+import { MarkerShape, type MarkerShapeCode } from "../../rendering/agents/marker-look.ts";
 import { paintMinimapTerrain } from "../../rendering/minimap-image.ts";
+import { herdMarks, personMarks } from "../../rendering/minimap-marks.ts";
 
 export const MAP_PIXELS = 176;
 
@@ -10,6 +12,45 @@ const FIRE_COLOR = "rgb(230 82 40)";
 const VIEW_FILL = "rgb(255 255 255 / 0.32)";
 const VIEW_OUTLINE = "rgb(255 255 255 / 0.9)";
 const FOOTPRINT_REACH_IN_WORLDS = 2;
+const MARK_OUTLINE = "rgb(255 255 255 / 0.9)";
+const TRIANGLE_HALF_WIDTH = Math.sqrt(3) / 2;
+
+const MARK_RADII: Readonly<Record<MarkerShapeCode, number>> = {
+  [MarkerShape.Circle]: 1.6,
+  [MarkerShape.Diamond]: 2.6,
+  [MarkerShape.Triangle]: 2.6,
+};
+
+function traceMark(
+  context: CanvasRenderingContext2D,
+  shape: MarkerShapeCode,
+  x: number,
+  y: number,
+  radius: number
+): void {
+  context.beginPath();
+
+  if (shape === MarkerShape.Circle) {
+    context.arc(x, y, radius, 0, Math.PI * 2);
+
+    return;
+  }
+
+  if (shape === MarkerShape.Diamond) {
+    context.moveTo(x, y - radius);
+    context.lineTo(x + radius, y);
+    context.lineTo(x, y + radius);
+    context.lineTo(x - radius, y);
+    context.closePath();
+
+    return;
+  }
+
+  context.moveTo(x, y - radius);
+  context.lineTo(x + radius * TRIANGLE_HALF_WIDTH, y + radius / 2);
+  context.lineTo(x - radius * TRIANGLE_HALF_WIDTH, y + radius / 2);
+  context.closePath();
+}
 
 export class MinimapPainter {
   readonly #canvas: HTMLCanvasElement;
@@ -63,6 +104,7 @@ export class MinimapPainter {
     context.clearRect(0, 0, size, size);
     context.drawImage(this.#terrain, 0, 0);
     this.#drawFires(context, size);
+    this.#drawAgents(context, size);
     this.#drawTribes(context, size);
     this.#drawView(context, size);
   }
@@ -116,6 +158,24 @@ export class MinimapPainter {
       const [x, y] = this.#toMap(grid.cellCenterX(cell), grid.cellCenterZ(cell), size);
 
       context.fillRect(x - pixel / 2, y - pixel / 2, pixel, pixel);
+    }
+  }
+
+  #drawAgents(context: CanvasRenderingContext2D, size: number): void {
+    const { frame } = this.#engine.session;
+
+    const scale = size / MAP_PIXELS;
+
+    context.lineWidth = scale;
+    context.strokeStyle = MARK_OUTLINE;
+
+    for (const mark of [...herdMarks(frame), ...personMarks(frame)]) {
+      const [x, y] = this.#toMap(mark.x, mark.z, size);
+
+      traceMark(context, mark.shape, x, y, MARK_RADII[mark.shape] * mark.scale * scale);
+      context.fillStyle = mark.color;
+      context.fill();
+      context.stroke();
     }
   }
 

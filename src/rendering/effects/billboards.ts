@@ -14,7 +14,7 @@ import { InterleavedInstances } from "../instancing.ts";
 const FLOATS_PER_BILLBOARD = 8;
 const CORNER_ATTRIBUTE = "billboardCorner";
 
-const BILLBOARD_FIELDS = [
+export const BILLBOARD_FIELDS = [
   { name: "billboardPlacement", size: 4 },
   { name: "billboardLook", size: 4 },
 ] as const;
@@ -53,7 +53,7 @@ export function distanceFromBillboardCenter(corner: Node<"vec2">): Node<"float">
   return length(vec2(corner.x, corner.y.sub(0.5)));
 }
 
-function createQuadGeometry(): InstancedBufferGeometry {
+export function createQuadGeometry(): InstancedBufferGeometry {
   const geometry = new InstancedBufferGeometry();
 
   geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(12), 3));

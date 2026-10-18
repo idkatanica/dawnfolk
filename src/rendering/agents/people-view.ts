@@ -11,6 +11,7 @@ import { SkeletonPoser } from "../../models/rig/skeleton-poser.ts";
 import { parseHexColor } from "../../shared/color.ts";
 import { smoothstep } from "../../shared/math.ts";
 import type { TribeSummary } from "../../simulation/frame.ts";
+import type { Inspection } from "../../simulation/inspection.ts";
 import { PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
 import { CARRIED_ITEMS, type CarriedItem, PERSON_POSES } from "../../world/agent-poses.ts";
 import { AgentMotion } from "./agent-motion.ts";
@@ -18,11 +19,14 @@ import { AgentPalette } from "./agent-palette.ts";
 import {
   type AgentViewInput,
   detailLevel,
+  farthestFigure,
   HIDDEN_LEVEL,
   type LevelDistances,
+  NO_SELECTION,
   standingHeight,
 } from "./agent-view-input.ts";
 import { HumanStrides } from "./human-strides.ts";
+import { type MarkerStyle, personMarker } from "./marker-look.ts";
 import { colorTexel, type PaletteLayout, paletteWidth, rootTexel } from "./palette-layout.ts";
 import { PartBatches } from "./part-batches.ts";
 import { createSkinnedMaterial } from "./skinned-material.ts";
@@ -36,6 +40,7 @@ const LEVEL_DISTANCES: LevelDistances = { high: 70, low: 420 };
 const BOUNDING_RADIUS = 1.4;
 const WADING_DEPTH = 1.1;
 const DEFAULT_TRIBE: TribeLook = { accent: 0xc4_55_3a, fur: 0x6b_4a_33, id: -1 };
+const MARKER_LIFT = 1;
 
 interface PersonVisual {
   readonly appearance: PersonAppearance;
@@ -62,11 +67,21 @@ function colorsOf(appearance: PersonAppearance): Color[] {
   return [colors.skin, colors.hair, colors.fur, colors.hide, colors.accent].map((hex) => new Color(hex));
 }
 
+function selectedPersonId(inspection: Inspection | null): number {
+  if (inspection?.kind !== "person") {
+    return NO_SELECTION;
+  }
+
+  return inspection.id;
+}
+
 export class PeopleView {
   readonly #activityParts = activityTable();
   readonly #batches: PartBatches;
   readonly #blendedPose = new Pose(HUMAN_BONE_COUNT);
   readonly #bounds = new Sphere(new Vector3(), BOUNDING_RADIUS);
+  readonly #markerAnchor = new Vector3();
+  readonly #markerStyles = new Map<number, MarkerStyle>();
   readonly #palette = new AgentPalette(paletteWidth(PERSON_LAYOUT));
   readonly #pose = new Pose(HUMAN_BONE_COUNT);
   readonly #poser = new SkeletonPoser(HUMAN_SKELETON);
@@ -76,6 +91,7 @@ export class PeopleView {
   readonly #tribes = new Map<number, TribeLook>();
   readonly #visuals = new Map<number, PersonVisual>();
   #figureCount = 0;
+  #selectedId = NO_SELECTION;
   #uploadedRows = 0;
 
   constructor() {
@@ -102,6 +118,7 @@ export class PeopleView {
     const { frame } = input.mirror;
 
     this.#seen.clear();
+    this.#selectedId = selectedPersonId(frame.inspection);
     this.#rememberTribes(frame.tribes);
     this.#batches.begin();
 
@@ -147,13 +164,9 @@ export class PeopleView {
 
     const level = detailLevel(distance, LEVEL_DISTANCES, input.detail);
 
-    if (!input.frustum.intersectsSphere(this.#bounds)) {
-      return false;
-    }
+    this.#mark(input, offset, this.#markerAnchor.set(x, y + MARKER_LIFT, z));
 
-    if (level === HIDDEN_LEVEL) {
-      input.dots.add(x, y, z, distance, this.#tribeLook(people[offset + PersonField.TribeId]).accent);
-
+    if (level === HIDDEN_LEVEL || !input.frustum.intersectsSphere(this.#bounds)) {
       return false;
     }
 
@@ -176,6 +189,19 @@ export class PeopleView {
     }
 
     return true;
+  }
+
+  #mark(input: AgentViewInput, offset: number, anchor: Vector3): void {
+    const { people } = input.mirror.frame;
+
+    if (PERSON_POSES[people[offset + PersonField.Pose]] === "dead") {
+      return;
+    }
+
+    const style = this.#markerStyle(people[offset + PersonField.TribeId]);
+    const isSelected = people[offset + PersonField.Id] === this.#selectedId;
+
+    input.markers.add(anchor, style, farthestFigure(LEVEL_DISTANCES, input.detail), isSelected);
   }
 
   #animate(input: AgentViewInput, visual: PersonVisual, people: Float32Array, offset: number): void {
@@ -283,6 +309,22 @@ export class PeopleView {
       people[offset + PersonField.Phase],
       people[offset + PersonField.Heading]
     );
+  }
+
+  #markerStyle(tribeId: number): MarkerStyle {
+    const { accent } = this.#tribeLook(tribeId);
+
+    const known = this.#markerStyles.get(accent);
+
+    if (known !== undefined) {
+      return known;
+    }
+
+    const style = personMarker(accent);
+
+    this.#markerStyles.set(accent, style);
+
+    return style;
   }
 
   #tribeLook(tribeId: number): TribeLook {

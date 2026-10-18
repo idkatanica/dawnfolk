@@ -10,6 +10,7 @@ import { Pose } from "../../models/rig/pose.ts";
 import { SkeletonPoser } from "../../models/rig/skeleton-poser.ts";
 import { measureStride } from "../../models/rig/stride.ts";
 import { smoothstep } from "../../shared/math.ts";
+import type { Inspection } from "../../simulation/inspection.ts";
 import { ANIMAL_STRIDE, AnimalField } from "../../world/agent-buffers.ts";
 import { ANIMAL_POSES, type AnimalPose } from "../../world/agent-poses.ts";
 import { AgentMotion } from "./agent-motion.ts";
@@ -17,10 +18,13 @@ import { AgentPalette } from "./agent-palette.ts";
 import {
   type AgentViewInput,
   detailLevel,
+  farthestFigure,
   HIDDEN_LEVEL,
   type LevelDistances,
+  NO_SELECTION,
   standingHeight,
 } from "./agent-view-input.ts";
+import { ANIMAL_MARKERS } from "./marker-look.ts";
 import { colorTexel, type PaletteLayout, paletteWidth, rootTexel } from "./palette-layout.ts";
 import { PartBatches } from "./part-batches.ts";
 import { createSkinnedMaterial } from "./skinned-material.ts";
@@ -30,19 +34,13 @@ const ANIMAL_LAYOUT: PaletteLayout = {
   colorSlots: [MaterialSlot.Coat, MaterialSlot.CoatLight],
 };
 
-const DOT_COLORS: Readonly<Record<AnimalKind, number>> = {
-  deer: 0xb0_84_52,
-  ibex: 0x9c_8a_70,
-  mammoth: 0x5c_44_32,
-  wolf: 0x7c_7a_78,
-};
-
 const LEVEL_DISTANCES: LevelDistances = { high: 90, low: 650 };
 const BOUNDING_RADIUS = 3.5;
 const WADING_DEPTH = 1.2;
 const SHORTEST_STRIDE = 0.5;
 const REFERENCE_SEED = 0.5;
 const YOUTH_STEPS = 8;
+const MARKER_LIFT = 1.2;
 
 interface AnimalVisual {
   readonly ageKey: number;
@@ -92,16 +90,26 @@ function visiblePartIndices(kind: AnimalKind, appearance: AnimalAppearance): num
   return ANIMAL_SPECIES[kind].parts.map((_, index) => index).filter((index) => hasPart(mask, index));
 }
 
+function selectedAnimalId(inspection: Inspection | null): number {
+  if (inspection?.kind !== "animal") {
+    return NO_SELECTION;
+  }
+
+  return inspection.id;
+}
+
 export class AnimalView {
   readonly group = new Group();
   readonly #blendedPose = new Pose(MAMMOTH_BONE_COUNT);
   readonly #bounds = new Sphere(new Vector3(), BOUNDING_RADIUS);
   readonly #kinds: Readonly<Record<AnimalKind, AnimalKindView>>;
+  readonly #markerAnchor = new Vector3();
   readonly #palette = new AgentPalette(paletteWidth(ANIMAL_LAYOUT));
   readonly #pose = new Pose(MAMMOTH_BONE_COUNT);
   readonly #previousPose = new Pose(MAMMOTH_BONE_COUNT);
   readonly #seen = new Set<number>();
   readonly #visuals = new Map<number, AnimalVisual>();
+  #selectedId = NO_SELECTION;
   #uploadedRows = 0;
 
   constructor() {
@@ -119,6 +127,7 @@ export class AnimalView {
     const { frame } = input.mirror;
 
     this.#seen.clear();
+    this.#selectedId = selectedAnimalId(frame.inspection);
 
     for (const kind of ANIMAL_KINDS) {
       this.#kinds[kind].batches.begin();
@@ -189,13 +198,9 @@ export class AnimalView {
 
     const level = detailLevel(distance, LEVEL_DISTANCES, input.detail);
 
-    if (!input.frustum.intersectsSphere(this.#bounds)) {
-      return false;
-    }
+    this.#mark(input, offset, this.#markerAnchor.set(x, y + MARKER_LIFT, z));
 
-    if (level === HIDDEN_LEVEL) {
-      input.dots.add(x, y, z, distance, DOT_COLORS[ANIMAL_KINDS[animals[offset + AnimalField.Kind]]]);
-
+    if (level === HIDDEN_LEVEL || !input.frustum.intersectsSphere(this.#bounds)) {
       return false;
     }
 
@@ -213,6 +218,21 @@ export class AnimalView {
     }
 
     return true;
+  }
+
+  #mark(input: AgentViewInput, offset: number, anchor: Vector3): void {
+    const { animals } = input.mirror.frame;
+
+    if (ANIMAL_POSES[animals[offset + AnimalField.Pose]] === "dead") {
+      return;
+    }
+
+    const style = ANIMAL_MARKERS[ANIMAL_KINDS[animals[offset + AnimalField.Kind]]];
+    const isSelected = animals[offset + AnimalField.Id] === this.#selectedId;
+
+    const handover = farthestFigure(LEVEL_DISTANCES, input.detail);
+
+    input.markers.add(anchor, style, handover, isSelected, animals[offset + AnimalField.HerdId]);
   }
 
   #animate(input: AgentViewInput, visual: AnimalVisual, kindView: AnimalKindView, offset: number): void {
