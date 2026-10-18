@@ -3,11 +3,11 @@ import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefini
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
-import { describePiece, detachedPieces, meshPieces } from "../testing/mesh-connectivity.ts";
+import { describePiece, detachedPieces, type MeshPiece, meshPieces } from "../testing/mesh-connectivity.ts";
 import { windBentMesh } from "../testing/moved-mesh.ts";
+import { BERRY_RADIUS, isBerryPart } from "./berries.ts";
 import { CACTUS_FORMS, cactusForm } from "./cacti.ts";
 import {
-  BERRY_PART,
   buildPlantVariants,
   canonicalHeight,
   footprintRadius,
@@ -153,6 +153,28 @@ describe.each(SPECIES)("plant species %i", (species) => {
   });
 });
 
+function berryPieces(bush: MeshData): MeshPiece[] {
+  return meshPieces(bush).filter((piece) => isBerryPart(bush.channels.part[piece.vertices[0]]));
+}
+
+function widestSpan(mesh: MeshData, piece: MeshPiece): number {
+  let widest = 0;
+
+  for (const first of piece.vertices) {
+    for (const second of piece.vertices) {
+      const between = Math.hypot(
+        mesh.positions[first * 3] - mesh.positions[second * 3],
+        mesh.positions[first * 3 + 1] - mesh.positions[second * 3 + 1],
+        mesh.positions[first * 3 + 2] - mesh.positions[second * 3 + 2]
+      );
+
+      widest = Math.max(widest, between);
+    }
+  }
+
+  return widest;
+}
+
 function highestVertex(mesh: MeshData, vertices: readonly number[]): number {
   return vertices.reduce((highest, vertex) =>
     mesh.positions[vertex * 3 + 1] > mesh.positions[highest * 3 + 1] ? vertex : highest
@@ -200,19 +222,36 @@ describe("tree details", () => {
     }
   });
 
-  it("moves berries with the leaves they grow on", () => {
+  it("moves each berry as one piece with the leaves it grows on", () => {
     for (const level of ["high", "medium"] as const) {
       for (const bush of buildPlantVariants(PlantSpecies.Bush, level)) {
-        const vertices = Array.from({ length: vertexCount(bush) }, (_, vertex) => vertex);
-        const berries = vertices.filter((vertex) => bush.channels.part[vertex] === BERRY_PART);
+        const berries = berryPieces(bush);
 
         expect(berries.length).toBeGreaterThan(0);
 
-        for (const vertex of berries) {
-          const crownSway = plantSway(bush.positions[vertex * 3 + 1], canonicalHeight(PlantSpecies.Bush));
+        for (const piece of berries) {
+          const sways = [...new Set(piece.vertices.map((vertex) => bush.channels.sway[vertex]))];
+          const middle = (piece.minimum[1] + piece.maximum[1]) / 2;
 
-          expect(bush.channels.sway[vertex]).toBeCloseTo(crownSway, 5);
-          expect(bush.channels.flutter[vertex]).toBe(FOLIAGE_FLUTTER);
+          expect(sways).toHaveLength(1);
+          expect(sways[0]).toBeCloseTo(plantSway(middle, canonicalHeight(PlantSpecies.Bush)), 5);
+          expect(piece.vertices.every((vertex) => bush.channels.flutter[vertex] === FOLIAGE_FLUTTER)).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("keeps every berry small and whole through a storm", () => {
+    for (const level of ["high", "medium"] as const) {
+      for (const bush of buildPlantVariants(PlantSpecies.Bush, level)) {
+        const bent = windBentMesh(bush, STORM_PUSH);
+
+        for (const piece of berryPieces(bush)) {
+          const ripening = new Set(piece.vertices.map((vertex) => bush.channels.part[vertex]));
+
+          expect(ripening.size).toBe(1);
+          expect(widestSpan(bush, piece)).toBeLessThan(BERRY_RADIUS * 2.5);
+          expect(widestSpan(bent, piece)).toBeCloseTo(widestSpan(bush, piece), 5);
         }
       }
     }
@@ -245,7 +284,7 @@ describe("tree details", () => {
 
     expect(birch.channels.slot).toContain(MaterialSlot.BirchBark);
     expect(birch.channels.slot).toContain(MaterialSlot.Bark);
-    expect(nearBush.channels.part).toContain(BERRY_PART);
-    expect(farBush.channels.part).not.toContain(BERRY_PART);
+    expect([...nearBush.channels.part].some(isBerryPart)).toBe(true);
+    expect([...farBush.channels.part].some(isBerryPart)).toBe(false);
   });
 });

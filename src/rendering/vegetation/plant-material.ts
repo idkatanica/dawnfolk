@@ -5,9 +5,7 @@ import {
   equal,
   Fn,
   float,
-  floor,
   fract,
-  hash,
   If,
   int,
   ivec2,
@@ -32,7 +30,7 @@ import {
 } from "three/tsl";
 import { Color, MeshStandardNodeMaterial, type Node, Vector2 } from "three/webgpu";
 import { MaterialSlot } from "../../models/materials.ts";
-import { BERRY_PART } from "../../models/plants/plant-models.ts";
+import { BERRY_PART } from "../../models/plants/berries.ts";
 import { clamp as clampNumber } from "../../shared/math.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
@@ -154,7 +152,6 @@ export function createPlantMaterial({
   const flutter = attribute("flutter", "float");
   const shade = attribute("shade", "float");
   const part = attribute("part", "float");
-  const berryChance = hash(floor(positionLocal.mul(9)).dot(vec3(1, 57, 113)));
 
   const scale = appearance.x;
   const tint = appearance.y;
@@ -165,11 +162,12 @@ export function createPlantMaterial({
 
   const isFoliage = isSlot(slot, MaterialSlot.Leaf).or(isSlot(slot, MaterialSlot.Needle));
   const isBlossom = isSlot(slot, MaterialSlot.Blossom);
-  const isBerry = equal(int(part.add(0.5)), int(BERRY_PART));
+  const isBerry = part.greaterThanEqual(BERRY_PART);
   const treeThreshold = fract(tint.mul(13.7)).mul(0.9).add(0.05);
+  const ripening = fract(part.add(tint));
 
   const hasFoliage = look.foliageCoverage.greaterThan(treeThreshold).and(isDead.not());
-  const hasBerry = fruit.greaterThan(berryChance).and(hasFoliage);
+  const hasBerry = fruit.greaterThan(ripening).and(hasFoliage);
 
   const keep = select(isFoliage, hasFoliage, select(isBerry, hasBerry, isBlossom.not().or(isDead.not())));
   const kept = positionLocal.mul(scale).mul(select(keep, float(1), float(0)));

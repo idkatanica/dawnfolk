@@ -1,20 +1,13 @@
-import { Vector3 } from "three";
 import { PIECE_FORMS } from "../../content/monuments.ts";
 import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
-import { FULL_TURN } from "../../shared/math.ts";
-import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot } from "../materials.ts";
-import { MeshBuilder } from "../mesh/mesh-builder.ts";
 import { type MeshData, mergeMeshes, vertexCount } from "../mesh/mesh-data.ts";
-import { sphere } from "../mesh/shapes.ts";
-import { outermostHit } from "../mesh/surface-probe.ts";
-import { transformOf } from "../mesh/transforms.ts";
 import { isMonumentModel, MONUMENT_HEIGHTS, meshMonument } from "../structures/monuments.ts";
+import { berryClusters } from "./berries.ts";
 import { CACTUS_FORMS, cactusForm, meshCactus } from "./cacti.ts";
 import { isRockModel, meshRock, ROCK_HEIGHTS, ROCK_VARIANT_COUNTS } from "./rocks.ts";
-import { FOLIAGE_FLUTTER, meshTree, type PlantDetailLevel, plantSway, type TreeLook } from "./tree-mesher.ts";
+import { meshTree, type PlantDetailLevel, type TreeLook } from "./tree-mesher.ts";
 import { DESERT_SHRUB_FORM_COUNT, TREE_GENERATORS, TREE_HEIGHTS } from "./tree-species.ts";
-import type { TreeStructure } from "./tree-structure.ts";
 
 const VARIANT_COUNTS: Readonly<Record<PlantSpeciesIndex, number>> = {
   ...ROCK_VARIANT_COUNTS,
@@ -55,10 +48,6 @@ const FORM_PER_VARIANT: ReadonlySet<PlantSpeciesIndex> = new Set([
 
 export const PLANT_DETAIL_LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low"];
 
-export const BERRY_PART = 1;
-
-const BERRY_RADIUS = 0.07;
-
 const FOOTPRINT_HEIGHT = 0.3;
 
 const BROADLEAF: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
@@ -84,43 +73,6 @@ const TREE_LOOKS: Readonly<Partial<Record<PlantSpeciesIndex, TreeLook>>> = {
 
 function variantSeed(species: PlantSpeciesIndex, variant: number): number {
   return species * 1000 + variant * 77 + 13;
-}
-
-function berries(
-  tree: MeshData,
-  structure: TreeStructure,
-  look: TreeLook,
-  seed: number,
-  level: PlantDetailLevel
-): MeshData {
-  const random = createRandom(seed);
-  const builder = new MeshBuilder({ flutter: FOLIAGE_FLUTTER, part: BERRY_PART, slot: MaterialSlot.Berry });
-  const blobs = structure.foliage.filter((foliage) => foliage.kind === "blob");
-  const count = level === "high" ? 26 : 12;
-
-  function isFoliage(triangle: number): boolean {
-    return tree.channels.slot[tree.indices[triangle * 3]] === look.foliage;
-  }
-
-  for (let berry = 0; berry < count; berry += 1) {
-    const host = random.pick(blobs);
-    const angle = random.next() * FULL_TURN;
-    const height = random.between(-0.2, 0.9);
-    const horizontal = Math.sqrt(1 - height * height);
-    const outward = new Vector3(Math.cos(angle) * horizontal, height * host.squash, Math.sin(angle) * horizontal);
-    const hit = outermostHit(tree, new Vector3(...host.center), outward, isFoliage);
-
-    if (hit === null) {
-      continue;
-    }
-
-    builder.add(sphere(BERRY_RADIUS, 5, 3), {
-      style: { sway: (point) => plantSway(point.position.y, structure.height) },
-      transform: transformOf({ position: hit.point.toArray() }),
-    });
-  }
-
-  return builder.build();
 }
 
 function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDetailLevel): MeshData {
@@ -152,7 +104,7 @@ function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDe
     return tree;
   }
 
-  return mergeMeshes([tree, berries(tree, structure, look, seed + 1, level)]);
+  return mergeMeshes([tree, berryClusters(tree, structure, look, seed + 1, level)]);
 }
 
 export function plantVariantCount(species: PlantSpeciesIndex): number {
