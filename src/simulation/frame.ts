@@ -56,7 +56,7 @@ export interface BuildingView {
   z: number;
 }
 
-export interface StockView {
+interface StockView {
   food: number;
   stone: number;
   wood: number;

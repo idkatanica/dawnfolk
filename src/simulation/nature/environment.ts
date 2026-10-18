@@ -1,6 +1,6 @@
 import { isSnowfallWeather } from "../../content/weather.ts";
 import { sunDirection } from "../../shared/astronomy.ts";
-import { clamp } from "../../shared/math.ts";
+import { clamp, FULL_TURN } from "../../shared/math.ts";
 import type { Calendar } from "./calendar.ts";
 import type { WeatherSystem } from "./weather.ts";
 
@@ -24,7 +24,7 @@ export interface Environment {
 }
 
 export function droughtLevel(season: number, precipitation: number, isHeatwave: boolean): number {
-  const summer = Math.max(0, Math.cos((2 * Math.PI * (season - SUMMER_PEAK_SEASON)) / 4));
+  const summer = Math.max(0, Math.cos((FULL_TURN * (season - SUMMER_PEAK_SEASON)) / 4));
   const heat = isHeatwave ? HEATWAVE_DROUGHT : 0;
 
   return clamp(0.42 + 0.35 * summer - 0.7 * precipitation + heat, 0, 1);
@@ -33,8 +33,9 @@ export function droughtLevel(season: number, precipitation: number, isHeatwave: 
 export function describeEnvironment(calendar: Calendar, weather: WeatherSystem): Environment {
   const { season } = calendar;
   const { state } = weather;
+
   const wind = weather.windVector();
-  const sun = sunDirection(calendar.hours, calendar.season);
+  const sun = sunDirection(calendar.hours, season);
 
   const airTemperatureOffset =
     calendar.seasonalTemperatureOffset() + calendar.diurnalTemperatureOffset() + weather.airTemperatureOffset;

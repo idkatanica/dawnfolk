@@ -1,6 +1,7 @@
 import { distanceToPolyline, gaussian, lerp, smoothstep } from "../shared/math.ts";
 import { createNoiseSampler, type NoiseSampler } from "../shared/noise.ts";
 import { createRandom } from "../shared/random.ts";
+import type { WorldGrid } from "../world/world-grid.ts";
 
 type Polyline = readonly (readonly [number, number])[];
 
@@ -24,7 +25,11 @@ export interface IslandPoint {
   z: number;
 }
 
-export interface Relief {
+export function islandPointAt(grid: WorldGrid, column: number, row: number): IslandPoint {
+  return { x: grid.centerX(column) / grid.halfSize, z: grid.centerZ(row) / grid.halfSize };
+}
+
+interface Relief {
   desertAt: (point: IslandPoint) => number;
   heightAt: (point: IslandPoint) => number;
 }
@@ -53,9 +58,7 @@ function mountainMask(warped: IslandPoint): number {
   const northern = smoothstep(0.5, 0.03, distanceToPolyline(warped.x, warped.z, NORTHERN_RANGE));
   const eastern = smoothstep(0.34, 0.03, distanceToPolyline(warped.x, warped.z, EASTERN_RANGE));
 
-  const mask = Math.max(northern, 0.72 * eastern);
-
-  return mask * mask * (3 - 2 * mask);
+  return smoothstep(0, 1, Math.max(northern, 0.72 * eastern));
 }
 
 function desertPlateau(noise: ReliefNoise, point: IslandPoint): number {

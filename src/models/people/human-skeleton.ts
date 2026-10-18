@@ -21,7 +21,7 @@ export const HumanBone = {
   UpperArmRight: 8,
 } as const;
 
-export type HumanBoneIndex = (typeof HumanBone)[keyof typeof HumanBone];
+type HumanBoneIndex = (typeof HumanBone)[keyof typeof HumanBone];
 
 export const HUMAN_BONE_COUNT = 17;
 
@@ -39,8 +39,6 @@ export const HumanJoint = {
   Wrist: [0.215, 0.885, 0.01],
 } as const satisfies Readonly<Record<string, Triple>>;
 
-export const HUMAN_HEIGHT = 1.75;
-
 export type Side = -1 | 1;
 
 export const SIDES: readonly Side[] = [1, -1];
@@ -53,7 +51,7 @@ export function onSide(point: Triple, side: Side): Triple {
   return [point[0] * side, point[1], point[2]];
 }
 
-export interface SideBones {
+interface SideBones {
   readonly foot: HumanBoneIndex;
   readonly forearm: HumanBoneIndex;
   readonly hand: HumanBoneIndex;

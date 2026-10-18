@@ -6,7 +6,7 @@ export interface LabelPlacement {
   readonly top: number;
 }
 
-export interface LabelGround {
+interface LabelGround {
   readonly heightAt: HeightField;
   readonly surfaceAt: HeightField;
 }

@@ -55,22 +55,20 @@ function useSettingsDialog() {
   const tab = useInterfaceStore((state) => state.settingsTab);
   const setTab = useInterfaceStore((state) => state.setSettingsTab);
 
-  const changeOpen = (open: boolean) => setOpen(open);
-
-  const changeTab = (value: unknown) => {
+  function changeTab(value: unknown): void {
     if (isSettingsTab(value)) {
       setTab(value);
     }
-  };
+  }
 
-  return { changeOpen, changeTab, isOpen, tab };
+  return { changeTab, isOpen, setOpen, tab };
 }
 
 export function SettingsDialog() {
-  const { changeOpen, changeTab, isOpen, tab } = useSettingsDialog();
+  const { changeTab, isOpen, setOpen, tab } = useSettingsDialog();
 
   return (
-    <Dialog.Root onOpenChange={changeOpen} open={isOpen}>
+    <Dialog.Root onOpenChange={setOpen} open={isOpen}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-40 bg-ink/18 transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0" />
 

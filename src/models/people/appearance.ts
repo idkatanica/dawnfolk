@@ -5,11 +5,11 @@ import { createRandom, type RandomSource } from "../../shared/random.ts";
 
 export type HairStyle = "bald" | "braids" | "bun" | "fringe" | "long" | "ponytail" | "short" | "wild";
 
-export type BeardStyle = "full" | "none" | "short";
+type BeardStyle = "full" | "none" | "short";
 
 export type Outfit = "dress" | "loincloth" | "tunic" | "wrap";
 
-export type Accessory = "armband" | "feather" | "headband" | "necklace" | "paint";
+type Accessory = "armband" | "feather" | "headband" | "necklace" | "paint";
 
 export interface BodyShape {
   readonly build: number;
@@ -20,7 +20,7 @@ export interface BodyShape {
   readonly shoulderWidth: number;
 }
 
-export interface AppearanceColors {
+interface AppearanceColors {
   readonly accent: number;
   readonly fur: number;
   readonly hair: number;
@@ -243,15 +243,14 @@ function accessories(random: RandomSource, ageGroup: AgeGroup): Set<Accessory> {
   const chosen = new Set<Accessory>();
   const adultFactor = ageGroup === "child" ? 0.4 : 1;
   const wearsFeather = random.chance(0.4);
-
   const wearsHeadband = random.chance(0.36 * adultFactor);
 
   if (wearsHeadband) {
     chosen.add("headband");
-  }
 
-  if (wearsHeadband && wearsFeather) {
-    chosen.add("feather");
+    if (wearsFeather) {
+      chosen.add("feather");
+    }
   }
 
   if (random.chance(0.42 * adultFactor)) {

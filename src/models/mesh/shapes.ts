@@ -65,6 +65,12 @@ function connectRings(writer: ShapeWriter, lower: Ring, upper: Ring): void {
   }
 }
 
+function connectRingChain(writer: ShapeWriter, rings: readonly Ring[]): void {
+  for (let index = 1; index < rings.length; index += 1) {
+    connectRings(writer, rings[index - 1], rings[index]);
+  }
+}
+
 function capRing(writer: ShapeWriter, center: number, ring: Ring, isFacingForward: boolean): void {
   for (let segment = 0; segment < ring.length; segment += 1) {
     const next = (segment + 1) % ring.length;
@@ -79,7 +85,7 @@ function capRing(writer: ShapeWriter, center: number, ring: Ring, isFacingForwar
   }
 }
 
-export interface ProfilePoint {
+interface ProfilePoint {
   readonly radius: number;
   readonly y: number;
 }
@@ -105,8 +111,10 @@ function profileNormal(profile: readonly ProfilePoint[], index: number): Profile
   return { radial: tangentVertical / length, vertical: -tangentRadial / length };
 }
 
-function longest(lengths: readonly number[]): number {
-  return lengths.reduce((maximum, length) => Math.max(maximum, length), 0);
+function totalLengthOf(lengths: readonly number[]): number {
+  const longest = lengths.reduce((maximum, length) => Math.max(maximum, length), 0);
+
+  return Math.max(longest, POLE_RADIUS);
 }
 
 function profileLengths(profile: readonly ProfilePoint[]): number[] {
@@ -130,7 +138,7 @@ export function lathe(profile: readonly ProfilePoint[], segments: number): Shape
   const lengths = profileLengths(profile);
   const rings: Ring[] = [];
 
-  const totalLength = Math.max(longest(lengths), POLE_RADIUS);
+  const totalLength = totalLengthOf(lengths);
 
   for (const [index, point] of profile.entries()) {
     const normal = profileNormal(profile, index);
@@ -139,9 +147,7 @@ export function lathe(profile: readonly ProfilePoint[], segments: number): Shape
     rings.push(latheRing(writer, point, normal, along, segments));
   }
 
-  for (let index = 1; index < rings.length; index += 1) {
-    connectRings(writer, rings[index - 1], rings[index]);
-  }
+  connectRingChain(writer, rings);
 
   return writer.finish();
 }
@@ -252,22 +258,20 @@ export function loft(sections: readonly LoftSection[], segments: number): Shape 
   const lengths = sectionLengths(sections);
   const rings: Ring[] = [];
 
-  const totalLength = Math.max(longest(lengths), POLE_RADIUS);
+  const totalLength = totalLengthOf(lengths);
 
   for (const [index, section] of sections.entries()) {
     rings.push(loftRing(writer, section, lengths[index] / totalLength, segments));
   }
 
-  for (let index = 1; index < rings.length; index += 1) {
-    connectRings(writer, rings[index - 1], rings[index]);
-  }
+  connectRingChain(writer, rings);
 
   const shape = writer.finish();
 
   return { ...shape, normals: computeSmoothNormals(shape.positions, shape.indices) };
 }
 
-export interface PanelOptions {
+interface PanelOptions {
   readonly angularSegments: number;
   readonly endAngle: number;
   readonly sections: readonly LoftSection[];
@@ -315,7 +319,7 @@ export function panel(options: PanelOptions): Shape {
   const writer = new ShapeWriter();
   const lengths = sectionLengths(sections);
 
-  const totalLength = Math.max(longest(lengths), POLE_RADIUS);
+  const totalLength = totalLengthOf(lengths);
 
   const outer = sections.map((section, index) =>
     panelRow(writer, section, options, lengths[index] / totalLength, thickness / 2)
@@ -354,7 +358,7 @@ export function panel(options: PanelOptions): Shape {
   return { ...shape, normals: computeSmoothNormals(shape.positions, shape.indices) };
 }
 
-export interface CylinderOptions {
+interface CylinderOptions {
   readonly hasBottomCap?: boolean;
   readonly hasTopCap?: boolean;
   readonly height: number;
@@ -380,9 +384,7 @@ export function cylinder(options: CylinderOptions): Shape {
     rings.push(latheRing(writer, point, { radial: slope.x, vertical: slope.y }, amount, radialSegments));
   }
 
-  for (let level = 1; level < rings.length; level += 1) {
-    connectRings(writer, rings[level - 1], rings[level]);
-  }
+  connectRingChain(writer, rings);
 
   if (hasBottomCap && radiusBottom > POLE_RADIUS) {
     addFlatCap(writer, radiusBottom, 0, radialSegments, false);
@@ -575,7 +577,7 @@ export interface TubePoint {
   readonly z: number;
 }
 
-export interface TubeOptions {
+interface TubeOptions {
   readonly hasEndCap?: boolean;
   readonly hasStartCap?: boolean;
   readonly radialSegments?: number;
@@ -633,6 +635,13 @@ function endDirection(frame: TubeFrame, isEnd: boolean): Vector3 {
   return frame.tangent.clone().negate();
 }
 
+function radialDirection(frame: TubeFrame, angle: number): Vector3 {
+  return frame.normal
+    .clone()
+    .multiplyScalar(Math.cos(angle))
+    .add(frame.binormal.clone().multiplyScalar(Math.sin(angle)));
+}
+
 function transportFrames(tangents: readonly Vector3[]): TubeFrame[] {
   const frames: TubeFrame[] = [];
 
@@ -672,7 +681,7 @@ export function tube(points: readonly TubePoint[], options: TubeOptions = {}): S
   const frames = transportFrames(tubeTangents(centers));
   const lengths = arcLengths(centers);
 
-  const totalLength = Math.max(longest(lengths), POLE_RADIUS);
+  const totalLength = totalLengthOf(lengths);
 
   for (const [index, point] of points.entries()) {
     const radiusSlope = tubeRadiusSlope(points, lengths, index);
@@ -690,9 +699,7 @@ export function tube(points: readonly TubePoint[], options: TubeOptions = {}): S
     );
   }
 
-  for (let index = 1; index < rings.length; index += 1) {
-    connectRings(writer, rings[index - 1], rings[index]);
-  }
+  connectRingChain(writer, rings);
 
   const lastIndex = points.length - 1;
 
@@ -738,10 +745,7 @@ function tubeRing(
   for (let segment = 0; segment < segments; segment += 1) {
     const angle = (segment / segments) * FULL_TURN;
 
-    const radial = frame.normal
-      .clone()
-      .multiplyScalar(Math.cos(angle))
-      .add(frame.binormal.clone().multiplyScalar(Math.sin(angle)));
+    const radial = radialDirection(frame, angle);
 
     const position = center.clone().add(radial.clone().multiplyScalar(radius));
     const normal = radial.clone().sub(frame.tangent.clone().multiplyScalar(radiusSlope)).normalize();
@@ -769,10 +773,7 @@ function addTubeCap(
   for (let segment = 0; segment < segments; segment += 1) {
     const angle = (segment / segments) * FULL_TURN;
 
-    const radial = frame.normal
-      .clone()
-      .multiplyScalar(Math.cos(angle))
-      .add(frame.binormal.clone().multiplyScalar(Math.sin(angle)));
+    const radial = radialDirection(frame, angle);
 
     ring.push(writer.vertex(center.clone().add(radial.multiplyScalar(radius)), normal, along, segment / segments));
   }
@@ -869,7 +870,7 @@ export function disc(radius: number, segments = 12): Shape {
   return writer.finish();
 }
 
-export interface BlobOptions {
+interface BlobOptions {
   readonly detail?: number;
   readonly frequency?: number;
   readonly noise: VolumeNoise;
@@ -883,10 +884,8 @@ export function blob(options: BlobOptions): Shape {
   const { detail = 1, frequency = 1.4, normalSoftness = 0.45, offset = [0, 0, 0], roughness = 0.22 } = options;
   const { noise, radius } = options;
 
-  const sphereShape = icosphere(radius, detail);
-
   return displaceShape(
-    sphereShape,
+    icosphere(radius, detail),
     (vertex) => {
       const sampleX = (vertex.x / radius) * frequency + offset[0];
       const sampleY = (vertex.y / radius) * frequency + offset[1];

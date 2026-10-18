@@ -17,7 +17,7 @@ const LIT_FUEL = 0.02;
 function Badge({ children, tone }: { readonly children: string; readonly tone: "ember" | "meadow" | "muted" }) {
   return (
     <span
-      className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2.5 font-medium text-xs", {
+      className={cn("inline-flex h-6 items-center rounded-full px-2.5 font-medium text-xs", {
         "bg-ember-soft text-ember": tone === "ember",
         "bg-ink/8 text-ink-soft": tone === "muted",
         "bg-meadow-soft text-meadow": tone === "meadow",
@@ -145,10 +145,6 @@ export function CellDetails({ cell }: { readonly cell: CellInspection }) {
   );
 }
 
-function TechnologyChip({ name }: { readonly name: string }) {
-  return <Badge tone="muted">{name}</Badge>;
-}
-
 function NextDiscovery({ tribe }: { readonly tribe: TribeInspection }) {
   const { knowledge, nextTechnology } = tribe.summary;
 
@@ -190,7 +186,9 @@ export function TribeDetails({ tribe }: { readonly tribe: TribeInspection }) {
 
       <div className="flex flex-wrap gap-1.5">
         {summary.technologies.map((name) => (
-          <TechnologyChip key={name} name={name} />
+          <Badge key={name} tone="muted">
+            {name}
+          </Badge>
         ))}
       </div>
     </div>

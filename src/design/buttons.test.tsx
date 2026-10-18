@@ -22,6 +22,7 @@ describe("icon button", () => {
     const screen = await render(
       <>
         <IconButton icon={PLUS_ICON} isPressed={true} label="Map" />
+
         <IconButton icon={PLUS_ICON} isPressed={false} label="Journal" />
       </>
     );

@@ -1,20 +1,24 @@
+import { clamp } from "../../shared/math.ts";
 import { MinHeap } from "../../shared/min-heap.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { WorldState } from "../world/world-state.ts";
 
-export const NODE_SIZE = 40;
-
+const NODE_SIZE = 40;
 const LINE_SAMPLE_SPACING = 7;
 const STEEP_SLOPE = 0.9;
 const MODERATE_SLOPE = 0.55;
 const IMPASSABLE_WATER_SHARE = 0.45;
 const IMPASSABLE_STEEP_SHARE = 0.7;
-const DEFAULT_SEARCH_LIMIT = 6000;
+const SEARCH_LIMIT = 6000;
 const DIAGONAL_HEURISTIC = Math.SQRT2 - 1;
 
 export interface Waypoint {
   x: number;
   z: number;
+}
+
+export function aroundPoint(center: Waypoint, distance: number, angle: number): Waypoint {
+  return { x: center.x + Math.cos(angle) * distance, z: center.z + Math.sin(angle) * distance };
 }
 
 export class NavigationGrid {
@@ -43,10 +47,6 @@ export class NavigationGrid {
     this.#closedInSearch = new Int32Array(nodeCount);
     this.#heap = new MinHeap(nodeCount);
     this.rebuild();
-  }
-
-  get nodesPerSide(): number {
-    return this.#nodesPerSide;
   }
 
   rebuild(): void {
@@ -90,7 +90,7 @@ export class NavigationGrid {
     return true;
   }
 
-  findPath(from: Waypoint, to: Waypoint, searchLimit = DEFAULT_SEARCH_LIMIT): Waypoint[] | null {
+  findPath(from: Waypoint, to: Waypoint): Waypoint[] | null {
     if (this.hasClearLine(from.x, from.z, to.x, to.z)) {
       return [{ x: to.x, z: to.z }];
     }
@@ -102,7 +102,7 @@ export class NavigationGrid {
       return null;
     }
 
-    if (!this.#runSearch(start, goal, searchLimit)) {
+    if (!this.#runSearch(start, goal)) {
       return null;
     }
 
@@ -115,7 +115,7 @@ export class NavigationGrid {
 
   #measureNodeCost(node: number): number {
     const world = this.#world;
-    const cellsPerNode = Math.max(1, Math.round(NODE_SIZE / this.#world.grid.cellSize));
+    const cellsPerNode = Math.max(1, Math.round(NODE_SIZE / world.grid.cellSize));
 
     const firstColumn = (node % this.#nodesPerSide) * cellsPerNode;
     const firstRow = Math.floor(node / this.#nodesPerSide) * cellsPerNode;
@@ -144,10 +144,11 @@ export class NavigationGrid {
 
   #nodeAt(x: number, z: number): number {
     const { halfSize } = this.#world.grid;
+
     const lastNode = this.#nodesPerSide - 1;
 
-    const column = Math.min(lastNode, Math.max(0, Math.floor((x + halfSize) / NODE_SIZE)));
-    const row = Math.min(lastNode, Math.max(0, Math.floor((z + halfSize) / NODE_SIZE)));
+    const column = clamp(Math.floor((x + halfSize) / NODE_SIZE), 0, lastNode);
+    const row = clamp(Math.floor((z + halfSize) / NODE_SIZE), 0, lastNode);
 
     return row * this.#nodesPerSide + column;
   }
@@ -168,7 +169,7 @@ export class NavigationGrid {
     return Math.max(columnDistance, rowDistance) + DIAGONAL_HEURISTIC * Math.min(columnDistance, rowDistance);
   }
 
-  #runSearch(start: number, goal: number, searchLimit: number): boolean {
+  #runSearch(start: number, goal: number): boolean {
     this.#searchNumber += 1;
 
     const search = this.#searchNumber;
@@ -179,7 +180,7 @@ export class NavigationGrid {
     this.#cameFrom[start] = -1;
     this.#heap.push(start, this.#heuristic(start, goal));
 
-    for (let expanded = 0; this.#heap.size > 0 && expanded < searchLimit; expanded += 1) {
+    for (let expanded = 0; this.#heap.size > 0 && expanded < SEARCH_LIMIT; expanded += 1) {
       const node = this.#heap.pop();
 
       if (node === goal) {

@@ -36,10 +36,9 @@ export function readStoredParameters(value: unknown): StoredParameters {
     return {};
   }
 
-  const entries = Object.entries(result.data.parameters);
   const parameters: Partial<Record<PowerId, ParameterValueMap>> = {};
 
-  for (const [powerId, values] of entries) {
+  for (const [powerId, values] of Object.entries(result.data.parameters)) {
     if (isPowerId(powerId)) {
       parameters[powerId] = readPowerParameters(powerId, values);
     }
@@ -88,7 +87,7 @@ export const usePowerStore = create<PowerStore>()(
         }),
     }),
     {
-      merge: (persisted, current) => mergeStored(persisted, current),
+      merge: mergeStored,
       name: STORAGE_KEY,
       partialize: (state) => ({ parameters: state.parameters }),
       storage: createJSONStorage(() => localStorage),

@@ -1,6 +1,5 @@
 import { type PointerEvent, type RefObject, useEffect, useRef } from "react";
 import { useEngine } from "../../app/use-engine.ts";
-import { cn } from "../../design/cn.ts";
 import { Island } from "../../design/island.tsx";
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
@@ -30,7 +29,7 @@ function useMinimapPainter(canvasReference: RefObject<HTMLCanvasElement | null>,
 }
 
 function useMinimapNavigation(engine: EngineHandle) {
-  const focusAt = (event: PointerEvent<HTMLCanvasElement>) => {
+  function focusAt(event: PointerEvent<HTMLCanvasElement>): void {
     const bounds = event.currentTarget.getBoundingClientRect();
     const { grid } = engine.session.mirror;
     const x = ((event.clientX - bounds.left) / bounds.width) * grid.worldSize - grid.halfSize;
@@ -38,18 +37,18 @@ function useMinimapNavigation(engine: EngineHandle) {
 
     engine.stopFollowing();
     engine.focusOn(x, z);
-  };
+  }
 
-  const handlePointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
+  function handlePointerDown(event: PointerEvent<HTMLCanvasElement>): void {
     event.currentTarget.setPointerCapture(event.pointerId);
     focusAt(event);
-  };
+  }
 
-  const handlePointerMove = (event: PointerEvent<HTMLCanvasElement>) => {
+  function handlePointerMove(event: PointerEvent<HTMLCanvasElement>): void {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       focusAt(event);
     }
-  };
+  }
 
   return { handlePointerDown, handlePointerMove };
 }
@@ -81,7 +80,7 @@ export function MinimapIsland({ className }: { readonly className?: string | und
   }
 
   return (
-    <Island className={cn(className)}>
+    <Island className={className}>
       <div className="p-1.5">
         <MinimapCanvas engine={engine} />
       </div>

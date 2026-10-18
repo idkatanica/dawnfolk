@@ -5,7 +5,7 @@ import { formatParameterValue } from "../../design/format.ts";
 import { RangeField } from "../../design/range-field.tsx";
 import { ToggleField } from "../../design/toggle-field.tsx";
 
-export interface ParameterControlProps {
+interface ParameterControlProps {
   readonly field: ParameterField;
   readonly onChange: (key: string, value: ParameterValue) => void;
   readonly value: ParameterValue | undefined;

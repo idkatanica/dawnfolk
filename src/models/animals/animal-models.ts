@@ -18,9 +18,9 @@ import {
 import { type AnimalClipContext, applyAnimalClip, type ExtraMotion, type GaitStyle } from "./quadruped-clips.ts";
 import { createQuadrupedSkeleton, LEG_ENDS, LEG_SIDES, legBones, QuadrupedBone } from "./quadruped-skeleton.ts";
 
-export type AnimalDetailLevel = "high" | "low";
+type AnimalDetailLevel = "high" | "low";
 
-export const ANIMAL_SEGMENTS: Readonly<Record<AnimalDetailLevel, number>> = { high: 10, low: 6 };
+const ANIMAL_SEGMENTS: Readonly<Record<AnimalDetailLevel, number>> = { high: 10, low: 6 };
 
 type PartBuilder = (builder: MeshBuilder, segments: number) => void;
 
@@ -29,7 +29,7 @@ interface PartDefinition {
   readonly name: string;
 }
 
-export interface AnimalSpecies {
+interface AnimalSpecies {
   readonly boneScales: (appearance: AnimalAppearance) => Float32Array;
   readonly extraMotion: ExtraMotion | null;
   readonly gait: GaitStyle;
@@ -142,8 +142,4 @@ export function poseAnimal(
   const species = ANIMAL_SPECIES[kind];
 
   applyAnimalClip(pose, clip, phase, { ...context, gait: species.gait }, species.extraMotion);
-}
-
-export function animalSkeleton(kind: AnimalKind): Skeleton {
-  return ANIMAL_SPECIES[kind].skeleton;
 }

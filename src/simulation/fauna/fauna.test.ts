@@ -115,6 +115,7 @@ describe("animals", () => {
 
   it("are born in spring", () => {
     const { fauna } = createFauna();
+
     const tick = tickOf({ days: 0.01, season: SPRING });
 
     fauna.spawnHerd("deer", 0, 0, 3, createRandom(1));

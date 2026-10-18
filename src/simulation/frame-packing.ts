@@ -1,7 +1,7 @@
 import { ANIMAL_KINDS } from "../content/animals.ts";
 import { BUILDINGS } from "../content/buildings.ts";
 import { technologyDefinition } from "../content/technologies.ts";
-import { WEATHER } from "../content/weather.ts";
+import { saturate } from "../shared/math.ts";
 import {
   ANIMAL_STRIDE,
   AnimalField,
@@ -35,7 +35,7 @@ import { SNOW_CAPACITY, type WorldState } from "./world/world-state.ts";
 const BYTE = 255;
 
 function toByte(value: number): number {
-  return Math.round(Math.min(1, Math.max(0, value)) * BYTE);
+  return Math.round(saturate(value) * BYTE);
 }
 
 export function packSurfaceRows(world: WorldState, runs: readonly RowRun[]): PackedRows[] {
@@ -187,8 +187,9 @@ export function packPeople(people: readonly Person[]): Float32Array {
   const buffer = new Float32Array(people.length * PERSON_STRIDE);
 
   for (const [index, person] of people.entries()) {
-    const offset = index * PERSON_STRIDE;
     const { mover } = person;
+
+    const offset = index * PERSON_STRIDE;
 
     buffer[offset + PersonField.Id] = person.id;
     buffer[offset + PersonField.X] = mover.x;
@@ -213,8 +214,9 @@ export function packAnimals(animals: readonly Animal[]): Float32Array {
   const buffer = new Float32Array(animals.length * ANIMAL_STRIDE);
 
   for (const [index, animal] of animals.entries()) {
-    const offset = index * ANIMAL_STRIDE;
     const { mover } = animal;
+
+    const offset = index * ANIMAL_STRIDE;
 
     buffer[offset + AnimalField.Id] = animal.id;
     buffer[offset + AnimalField.X] = mover.x;
@@ -290,7 +292,7 @@ export function describeWeather(weather: WeatherSystem, environment: Environment
     fog: state.fog,
     isAutomatic: state.isAutomatic,
     kind: state.kind,
-    name: WEATHER[state.kind].name,
+    name: weather.name,
     precipitation: state.precipitation,
     storm: state.storm,
     userTemperatureOffset: state.userTemperatureOffset,

@@ -1,18 +1,9 @@
 import { describe, expect, it } from "vitest";
-import {
-  colorChannels,
-  colorFromPalette,
-  mixColors,
-  packColor,
-  parseHexColor,
-  scaleColor,
-  toHexString,
-} from "./color.ts";
+import { colorChannels, colorFromPalette, mixColors, packColor, parseHexColor, scaleColor } from "./color.ts";
 
 describe("colors", () => {
-  it("reads and writes #rrggbb text", () => {
+  it("reads #rrggbb text", () => {
     expect(parseHexColor("#c8553d")).toBe(0xc8_55_3d);
-    expect(toHexString(0x0a_0b_0c)).toBe("#0a0b0c");
     expect(() => parseHexColor("red")).toThrow(RangeError);
   });
 

@@ -64,6 +64,7 @@ export const lightningPower: PowerHandler<"lightning"> = {
 export const rainPower: PowerHandler<"rain"> = {
   apply: (target, parameters, services) => {
     const { fire, rules, world } = services;
+
     const intensity = percent(parameters.intensity) / RAIN_DEFAULT_INTENSITY;
 
     const soaking = target.seconds * RAIN_PER_SECOND * intensity * rules.water.rainStrength;
@@ -85,20 +86,23 @@ export const rainPower: PowerHandler<"rain"> = {
 export const snowPower: PowerHandler<"snow"> = {
   apply: (target, parameters, services) => {
     const { fire, rules, world } = services;
+
     const intensity = percent(parameters.intensity) / SNOW_DEFAULT_INTENSITY;
 
     const snowfall = target.seconds * SNOW_PER_SECOND * intensity * rules.water.snowfall;
 
     for (const { cell, distance } of cellsInArea(world, { ...target, radius: parameters.radius })) {
+      if (world.isWater(cell)) {
+        continue;
+      }
+
       const relativeDistance = distance / parameters.radius;
 
       const falloff = 1 - relativeDistance * relativeDistance;
 
-      if (!world.isWater(cell)) {
-        world.fields.snow[cell] = Math.min(SNOW_CAPACITY, world.fields.snow[cell] + snowfall * falloff);
-        fire.douse(cell, snowfall * 3);
-        world.markSurfaceCell(cell);
-      }
+      world.fields.snow[cell] = Math.min(SNOW_CAPACITY, world.fields.snow[cell] + snowfall * falloff);
+      fire.douse(cell, snowfall * 3);
+      world.markSurfaceCell(cell);
     }
 
     return APPLIED;
@@ -125,6 +129,7 @@ export const explosionPower: PowerHandler<"explosion"> = {
 export const meteorPower: PowerHandler<"meteor"> = {
   apply: (target, parameters, services) => {
     const { environment, random, world } = services;
+
     const fromWindward = Math.atan2(environment.windZ, environment.windX) + Math.PI + random.signed() * 0.45;
     const ground = world.surfaceAt(target.x, target.z);
 

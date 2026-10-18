@@ -51,24 +51,17 @@ export function keyframes(phase: number, keys: readonly Keyframe[]): number {
 
   const nextIndex = keys.findIndex(([keyTime]) => keyTime > time);
 
-  if (nextIndex === -1) {
-    const [firstTime, firstValue] = keys[0];
+  if (nextIndex > 0) {
+    const [previousTime, previousValue] = keys[nextIndex - 1];
+    const [nextTime, nextValue] = keys[nextIndex];
 
-    const span = 1 - lastKey[0] + firstTime;
-
-    return lastKey[1] + (firstValue - lastKey[1]) * smoothBlend((time - lastKey[0]) / span);
+    return previousValue + (nextValue - previousValue) * smoothBlend((time - previousTime) / (nextTime - previousTime));
   }
 
-  if (nextIndex === 0) {
-    const [nextTime, nextValue] = keys[0];
+  const [firstTime, firstValue] = keys[0];
 
-    const span = 1 - lastKey[0] + nextTime;
+  const span = 1 - lastKey[0] + firstTime;
+  const elapsed = nextIndex === 0 ? time + 1 - lastKey[0] : time - lastKey[0];
 
-    return lastKey[1] + (nextValue - lastKey[1]) * smoothBlend((time + 1 - lastKey[0]) / span);
-  }
-
-  const [previousTime, previousValue] = keys[nextIndex - 1];
-  const [nextTime, nextValue] = keys[nextIndex];
-
-  return previousValue + (nextValue - previousValue) * smoothBlend((time - previousTime) / (nextTime - previousTime));
+  return lastKey[1] + (firstValue - lastKey[1]) * smoothBlend(elapsed / span);
 }

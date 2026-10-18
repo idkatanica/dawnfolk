@@ -38,8 +38,9 @@ describe("person appearance", () => {
     const elders = seeds(60).map((seed) => appearanceFor({ age: 70, seed }));
     const adults = seeds(60).map((seed) => appearanceFor({ age: 30, seed }));
 
-    const averagePosture = (people: typeof elders): number =>
-      people.reduce((sum, person) => sum + person.motion.posture, 0) / people.length;
+    function averagePosture(people: typeof elders): number {
+      return people.reduce((sum, person) => sum + person.motion.posture, 0) / people.length;
+    }
 
     expect(averagePosture(elders)).toBeGreaterThan(averagePosture(adults) * 3);
     expect(elders.filter((person) => person.colors.hair > 0x80_80_80).length).toBeGreaterThan(30);

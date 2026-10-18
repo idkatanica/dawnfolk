@@ -1,5 +1,6 @@
 import { Vector3 } from "three";
 import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
+import { FULL_TURN } from "../../shared/math.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot } from "../materials.ts";
 import { MeshBuilder } from "../mesh/mesh-builder.ts";
@@ -34,7 +35,7 @@ const TREE_LOOKS: Readonly<Partial<Record<PlantSpeciesIndex, TreeLook>>> = {
   [PlantSpecies.Willow]: BROADLEAF,
 };
 
-export function variantSeed(species: PlantSpeciesIndex, variant: number): number {
+function variantSeed(species: PlantSpeciesIndex, variant: number): number {
   return species * 1000 + variant * 77 + 13;
 }
 
@@ -50,11 +51,13 @@ function berries(
   const blobs = structure.foliage.filter((foliage): foliage is FoliageBlob => foliage.kind === "blob");
   const count = level === "high" ? 26 : 12;
 
-  const isFoliage = (triangle: number): boolean => tree.channels.slot[tree.indices[triangle * 3]] === look.foliage;
+  function isFoliage(triangle: number): boolean {
+    return tree.channels.slot[tree.indices[triangle * 3]] === look.foliage;
+  }
 
   for (let berry = 0; berry < count; berry += 1) {
     const host = random.pick(blobs);
-    const angle = random.next() * Math.PI * 2;
+    const angle = random.next() * FULL_TURN;
     const height = random.between(-0.2, 0.9);
 
     const horizontal = Math.sqrt(1 - height * height);

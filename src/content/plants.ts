@@ -14,16 +14,15 @@ export const PlantSpecies = {
 
 export type PlantSpeciesIndex = (typeof PlantSpecies)[keyof typeof PlantSpecies];
 
-export type PlantForm = "broadleaf" | "conifer" | "shrub" | "succulent" | "stone";
+type PlantForm = "broadleaf" | "conifer" | "shrub" | "succulent" | "stone";
 
-export interface PlantSpeciesDefinition {
+interface PlantSpeciesDefinition {
   canopyFuel: number;
   form: PlantForm;
   givesBerries: boolean;
   heightRange: readonly [number, number];
   index: PlantSpeciesIndex;
   name: string;
-  stone: number;
   wood: number;
 }
 
@@ -35,7 +34,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [16, 32],
     index: PlantSpecies.Spruce,
     name: "Spruce",
-    stone: 0,
     wood: 3,
   },
   {
@@ -45,7 +43,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [18, 30],
     index: PlantSpecies.Pine,
     name: "Pine",
-    stone: 0,
     wood: 3,
   },
   {
@@ -55,7 +52,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [12, 21],
     index: PlantSpecies.Oak,
     name: "Oak",
-    stone: 0,
     wood: 4,
   },
   {
@@ -65,7 +61,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [14, 24],
     index: PlantSpecies.Birch,
     name: "Birch",
-    stone: 0,
     wood: 2,
   },
   {
@@ -75,7 +70,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [9, 15],
     index: PlantSpecies.Willow,
     name: "Willow",
-    stone: 0,
     wood: 2,
   },
   {
@@ -85,7 +79,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [12, 20],
     index: PlantSpecies.Maple,
     name: "Maple",
-    stone: 0,
     wood: 3,
   },
   {
@@ -95,7 +88,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [1.6, 2.8],
     index: PlantSpecies.Bush,
     name: "Berry bush",
-    stone: 0,
     wood: 0,
   },
   {
@@ -105,7 +97,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [2.5, 5.5],
     index: PlantSpecies.Cactus,
     name: "Cactus",
-    stone: 0,
     wood: 0,
   },
   {
@@ -115,7 +106,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [1.2, 4],
     index: PlantSpecies.Boulder,
     name: "Boulder",
-    stone: 4,
     wood: 0,
   },
 ];
@@ -136,7 +126,7 @@ export function isTreeSpecies(index: number): boolean {
   return form === "broadleaf" || form === "conifer";
 }
 
-export interface PlantingRule {
+interface PlantingRule {
   chancePerCell: number;
   heightScale: number;
   species: PlantSpeciesIndex;

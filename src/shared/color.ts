@@ -1,11 +1,11 @@
-import { clamp } from "./math.ts";
+import { lerp, saturate } from "./math.ts";
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 const CHANNEL_MAXIMUM = 255;
 const RED_FACTOR = 65_536;
 const GREEN_FACTOR = 256;
 
-export type ColorChannels = readonly [red: number, green: number, blue: number];
+type ColorChannels = readonly [red: number, green: number, blue: number];
 
 export function parseHexColor(text: string): number {
   if (!HEX_COLOR.test(text)) {
@@ -13,10 +13,6 @@ export function parseHexColor(text: string): number {
   }
 
   return Number.parseInt(text.slice(1), 16);
-}
-
-export function toHexString(color: number): string {
-  return `#${Math.round(color).toString(16).padStart(6, "0")}`;
 }
 
 export function colorChannels(color: number): ColorChannels {
@@ -28,7 +24,7 @@ export function colorChannels(color: number): ColorChannels {
 }
 
 function toByte(value: number): number {
-  return Math.round(clamp(value, 0, 1) * CHANNEL_MAXIMUM);
+  return Math.round(saturate(value) * CHANNEL_MAXIMUM);
 }
 
 export function packColor(red: number, green: number, blue: number): number {
@@ -39,11 +35,7 @@ export function mixColors(from: number, to: number, amount: number): number {
   const [fromRed, fromGreen, fromBlue] = colorChannels(from);
   const [toRed, toGreen, toBlue] = colorChannels(to);
 
-  return packColor(
-    fromRed + (toRed - fromRed) * amount,
-    fromGreen + (toGreen - fromGreen) * amount,
-    fromBlue + (toBlue - fromBlue) * amount
-  );
+  return packColor(lerp(fromRed, toRed, amount), lerp(fromGreen, toGreen, amount), lerp(fromBlue, toBlue, amount));
 }
 
 export function scaleColor(color: number, factor: number): number {
@@ -53,7 +45,7 @@ export function scaleColor(color: number, factor: number): number {
 }
 
 export function colorFromPalette(palette: readonly number[], position: number): number {
-  const scaled = clamp(position, 0, 1) * (palette.length - 1);
+  const scaled = saturate(position) * (palette.length - 1);
 
   const lower = Math.floor(scaled);
 

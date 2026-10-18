@@ -11,6 +11,8 @@ const BYTE = 255;
 const GLOW_COLOR = vec3(1, 0.42, 0.12);
 const GLOW_STRENGTH = 2.6;
 
+export type BurningCells = Pick<SimulationFrame, "burningCells" | "burningIntensity">;
+
 function blurRows(source: Float32Array, target: Float32Array): void {
   for (let row = 0; row < GLOW_RESOLUTION; row += 1) {
     for (let column = 0; column < GLOW_RESOLUTION; column += 1) {
@@ -50,8 +52,6 @@ function blurColumns(source: Float32Array, target: Float32Array): void {
     }
   }
 }
-
-export type BurningCells = Pick<SimulationFrame, "burningCells" | "burningIntensity">;
 
 export class FireGlow {
   readonly texture: DataTexture;

@@ -19,10 +19,6 @@ export class Pose {
     this.angles = new Float32Array(boneCount * ANGLES_PER_BONE);
   }
 
-  get boneCount(): number {
-    return this.angles.length / ANGLES_PER_BONE;
-  }
-
   reset(): void {
     this.angles.fill(0);
     this.forward = 0;
@@ -37,26 +33,6 @@ export class Pose {
     this.angles[offset + RotationAxis.Pitch] += pitch;
     this.angles[offset + RotationAxis.Roll] += roll;
     this.angles[offset + RotationAxis.Yaw] += yaw;
-  }
-
-  pitch(bone: number): number {
-    return this.angles[bone * ANGLES_PER_BONE + RotationAxis.Pitch];
-  }
-
-  roll(bone: number): number {
-    return this.angles[bone * ANGLES_PER_BONE + RotationAxis.Roll];
-  }
-
-  yaw(bone: number): number {
-    return this.angles[bone * ANGLES_PER_BONE + RotationAxis.Yaw];
-  }
-
-  copyFrom(source: Pose): void {
-    this.angles.set(source.angles);
-    this.forward = source.forward;
-    this.grounding = source.grounding;
-    this.height = source.height;
-    this.side = source.side;
   }
 
   blendBetween(from: Pose, to: Pose, amount: number): void {

@@ -16,7 +16,7 @@ import { createPatchGeometry, PATCH_CELLS, PATCH_STEPS, type PatchEdges, type Pa
 
 const NO_LEVEL = -1;
 
-export interface PatchGridOptions {
+interface PatchGridOptions {
   readonly castsShadow: boolean;
   readonly edges: PatchEdges;
   readonly levelDistances: readonly number[];
@@ -48,7 +48,7 @@ interface PatchLevel {
   readonly origins: InstancedBufferAttribute;
 }
 
-export type PatchMeasure = (corner: PatchCorner) => HeightRange | null;
+type PatchMeasure = (corner: PatchCorner) => HeightRange | null;
 
 function overlaps(region: CellRegion, corner: PatchCorner): boolean {
   return (
@@ -92,16 +92,16 @@ export class PatchGrid {
     }
   }
 
+  get chosenLevels(): Readonly<Int8Array> {
+    return this.#chosenLevels;
+  }
+
   remeasure(region: CellRegion | null): void {
     for (const patch of this.#patches) {
       if (region === null || overlaps(region, patch.corner)) {
         this.#measurePatch(patch);
       }
     }
-  }
-
-  get chosenLevels(): Readonly<Int8Array> {
-    return this.#chosenLevels;
   }
 
   update(camera: PerspectiveCamera, detail: number, sharedLevels?: Readonly<Int8Array>): void {
@@ -117,7 +117,7 @@ export class PatchGrid {
         continue;
       }
 
-      const shared = sharedLevels?.[index] ?? NO_LEVEL;
+      const shared = sharedLevels === undefined ? NO_LEVEL : sharedLevels[index];
       const level =
         shared === NO_LEVEL ? this.#levelFor(patch.bounds.distanceToPoint(camera.position), detail) : shared;
 

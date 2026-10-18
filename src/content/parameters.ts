@@ -10,7 +10,7 @@ export type ParameterUnit =
   | "percent"
   | "seconds";
 
-export interface RangeParameterSpecification {
+interface RangeParameterSpecification {
   defaultValue: number;
   description: string;
   label: string;
@@ -20,7 +20,7 @@ export interface RangeParameterSpecification {
   unit: ParameterUnit;
 }
 
-export interface ToggleParameterSpecification {
+interface ToggleParameterSpecification {
   defaultValue: boolean;
   description: string;
   label: string;
@@ -31,22 +31,22 @@ export interface ChoiceOption {
   value: string;
 }
 
-export interface ChoiceParameterSpecification<Value extends string> {
+interface ChoiceParameterSpecification<Value extends string> {
   defaultValue: Value;
   description: string;
   label: string;
   options: readonly [{ label: string; value: Value }, ...{ label: string; value: Value }[]];
 }
 
-export interface RangeParameterMetadata extends RangeParameterSpecification {
+interface RangeParameterMetadata extends RangeParameterSpecification {
   kind: "range";
 }
 
-export interface ToggleParameterMetadata extends ToggleParameterSpecification {
+interface ToggleParameterMetadata extends ToggleParameterSpecification {
   kind: "toggle";
 }
 
-export interface ChoiceParameterMetadata {
+interface ChoiceParameterMetadata {
   defaultValue: string;
   description: string;
   kind: "choice";
@@ -54,9 +54,9 @@ export interface ChoiceParameterMetadata {
   options: readonly ChoiceOption[];
 }
 
-export type ParameterMetadata = ChoiceParameterMetadata | RangeParameterMetadata | ToggleParameterMetadata;
+type ParameterMetadata = ChoiceParameterMetadata | RangeParameterMetadata | ToggleParameterMetadata;
 
-export interface ParameterGroupMetadata {
+interface ParameterGroupMetadata {
   description: string;
   label: string;
 }

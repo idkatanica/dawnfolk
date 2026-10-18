@@ -87,7 +87,7 @@ function isWorthIt(tick: PersonTick, resource: ScarceResource, patience: number)
   return isWorthLookingFor(tick.tribe, resource, tick.context.environment.day, patience);
 }
 
-export function neediestField(tribe: Tribe, season: number): Field | null {
+function neediestField(tribe: Tribe, season: number): Field | null {
   let neediest: Field | null = null;
   let neediestScore = Number.POSITIVE_INFINITY;
 

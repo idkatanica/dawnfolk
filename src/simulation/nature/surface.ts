@@ -34,6 +34,7 @@ export class SurfaceSystem {
 
   update(seconds: number, days: number, conditions: SurfaceConditions, rules: WorldRules): void {
     const { cellsPerSide } = this.#world.grid;
+
     const firstRow = this.#nextRow;
 
     const lastRow = Math.min(cellsPerSide, firstRow + ROWS_PER_TICK) - 1;
@@ -138,6 +139,7 @@ export class SurfaceSystem {
     }
 
     const { fuel } = groundDefinition(terrain.ground[cell]);
+
     const growthRate = temperature > WARM_GROUND_TEMPERATURE ? 1 : 0.2;
 
     if (fields.fuel[cell] < fuel) {

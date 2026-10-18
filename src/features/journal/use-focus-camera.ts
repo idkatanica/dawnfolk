@@ -9,7 +9,7 @@ export function useFocusCamera() {
   const engine = useEngine();
   const setFollowing = useInspectorStore((state) => state.setFollowing);
 
-  const focus = (x: number, z: number, selection: Selection | null = null) => {
+  function focus(x: number, z: number, selection: Selection | null = null): void {
     if (engine === null) {
       return;
     }
@@ -21,7 +21,7 @@ export function useFocusCamera() {
     if (selection !== null) {
       engine.session.send({ selection, type: "setSelection" });
     }
-  };
+  }
 
   return focus;
 }

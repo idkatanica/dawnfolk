@@ -14,15 +14,15 @@ const LONGEST_QUIET_SECONDS = 1;
 
 export type SessionStatus = { kind: "closed" } | { error: Error; kind: "failed" } | { kind: "running" };
 
-export type FrameListener = (frame: SimulationFrame) => void;
+type FrameListener = (frame: SimulationFrame) => void;
 
-export type StatusListener = (status: SessionStatus) => void;
+type StatusListener = (status: SessionStatus) => void;
 
-export interface SessionClock {
+interface SessionClock {
   now: () => number;
 }
 
-export interface SessionOptions {
+interface SessionOptions {
   clock?: SessionClock;
   onProgress?: (progress: GenerationProgress) => void;
 }

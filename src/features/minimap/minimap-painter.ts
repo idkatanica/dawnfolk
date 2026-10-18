@@ -28,16 +28,16 @@ export class MinimapPainter {
   }
 
   start(): void {
-    const loop = (time: number) => {
-      this.#draw(time);
-      this.#frameRequest = requestAnimationFrame(loop);
-    };
-
-    this.#frameRequest = requestAnimationFrame(loop);
+    this.#frameRequest = requestAnimationFrame((time) => this.#loop(time));
   }
 
   stop(): void {
     cancelAnimationFrame(this.#frameRequest);
+  }
+
+  #loop(time: number): void {
+    this.#draw(time);
+    this.#frameRequest = requestAnimationFrame((next) => this.#loop(next));
   }
 
   #draw(time: number): void {

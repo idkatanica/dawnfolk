@@ -41,7 +41,7 @@ export interface TreeStructure {
   readonly height: number;
 }
 
-export interface BranchGrowth {
+interface BranchGrowth {
   readonly bend: number;
   readonly direction: Vector3;
   readonly gravity: number;
@@ -148,8 +148,4 @@ export function jitter(random: RandomSource, amount: number): number {
 
 export function toVector(point: TubePoint): Vector3 {
   return new Vector3(point.x, point.y, point.z);
-}
-
-export function toTriple(vector: Vector3): Triple {
-  return [vector.x, vector.y, vector.z];
 }

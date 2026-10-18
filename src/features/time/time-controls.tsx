@@ -25,9 +25,11 @@ function useTimeControls() {
   const speed = useWorldStore((state) => state.snapshot?.speed);
   const send = useSendCommand();
 
-  const togglePause = () => send({ isPaused: !isPaused, type: "setPaused" });
+  function togglePause(): void {
+    send({ isPaused: !isPaused, type: "setPaused" });
+  }
 
-  const changeSpeed = (values: string[]) => {
+  function changeSpeed(values: string[]): void {
     const [selected] = values;
 
     if (selected === undefined) {
@@ -39,7 +41,7 @@ function useTimeControls() {
     if (isPaused) {
       send({ isPaused: false, type: "setPaused" });
     }
-  };
+  }
 
   return { changeSpeed, isPaused, speed, togglePause };
 }

@@ -28,6 +28,7 @@ import { MeshStandardNodeMaterial, type Node } from "three/webgpu";
 import { NO_WATER } from "../../world/water.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
+import { unitNoise } from "../node-helpers.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
 const SKIRT_DROP_PER_STEP = 25;
@@ -37,12 +38,7 @@ const ASH = vec3(0.13, 0.12, 0.11);
 const EMBER_DEEP = vec3(1.2, 0.24, 0.03);
 const EMBER_BRIGHT = vec3(1.3, 0.42, 0.06);
 const GROUND_FIRE_LIGHT = 0.6;
-
 const EMBER_THRESHOLD = 0.004;
-
-function unitNoise(point: Node<"vec2">): Node<"float"> {
-  return mx_noise_float(vec3(point, 0)).mul(0.5).add(0.5);
-}
 
 function emberGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"float">): Node<"vec3"> {
   return Fn(() => {
@@ -77,8 +73,11 @@ function terrainPosition(textures: TerrainTextures, grid: WorldGrid, plinth: num
   const localCell = attribute("cell", "vec2");
   const skirt = attribute("skirt", "float");
 
-  const heightAt = (column: number, row: number, base: Node<"vec2">) =>
-    textureLoad(textures.height, ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(lastCell, lastCell)))).x;
+  function heightAt(column: number, row: number, base: Node<"vec2">) {
+    const cell = ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(lastCell, lastCell)));
+
+    return textureLoad(textures.height, cell).x;
+  }
 
   return Fn(() => {
     const cell = clamp(origin.add(localCell), vec2(0, 0), vec2(lastCell, lastCell)).toVar();

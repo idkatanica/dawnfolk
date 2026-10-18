@@ -108,6 +108,7 @@ describe("graphics section", () => {
     await expect.element(seed).toHaveValue(expect.stringMatching(WHOLE_NUMBER));
     await expect.element(create).toBeEnabled();
   });
+
   it("rebuilds the island with the chosen quality and closes the settings", async () => {
     useInterfaceStore.setState({ isSettingsOpen: true });
 

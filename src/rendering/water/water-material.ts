@@ -80,8 +80,9 @@ export function createWaterMaterial(
 
   const cell = clamp(attribute("origin", "vec2").add(attribute("cell", "vec2")), vec2(0, 0), vec2(last, last));
 
-  const levelAt = (offsetX: number, offsetZ: number) =>
-    textureLoad(textures.water, ivec2(clamp(cell.add(vec2(offsetX, offsetZ)), vec2(0, 0), vec2(last, last)))).x;
+  function levelAt(offsetX: number, offsetZ: number) {
+    return textureLoad(textures.water, ivec2(clamp(cell.add(vec2(offsetX, offsetZ)), vec2(0, 0), vec2(last, last)))).x;
+  }
 
   const own = levelAt(0, 0);
   const east = levelAt(1, 0);
@@ -109,7 +110,10 @@ export function createWaterMaterial(
   ).div(cellSize.mul(2));
 
   const step = attribute("patchStep", "float");
-  const pooledAt = (index: number) => textureLoad(textures.pooledWater[index], ivec2(cell)).x;
+
+  function pooledAt(index: number) {
+    return textureLoad(textures.pooledWater[index], ivec2(cell)).x;
+  }
 
   const pooled = select(step.greaterThan(6), pooledAt(2), select(step.greaterThan(3), pooledAt(1), pooledAt(0)));
 
@@ -206,8 +210,9 @@ function isWetAround(textures: TerrainTextures, grid: WorldGrid, point: Node<"ve
   const last = grid.cellsPerSide - 1;
   const base = floor(point.add(grid.halfSize).div(grid.cellSize).sub(0.5));
 
-  const levelAt = (column: number, row: number) =>
-    textureLoad(textures.water, ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(last, last)))).x;
+  function levelAt(column: number, row: number) {
+    return textureLoad(textures.water, ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(last, last)))).x;
+  }
 
   const highest = max(max(levelAt(0, 0), levelAt(1, 0)), max(levelAt(0, 1), levelAt(1, 1)));
 

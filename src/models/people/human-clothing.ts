@@ -1,7 +1,7 @@
 import { fractionalPart } from "../../shared/math.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
-import type { MeshBuilder, SurfacePoint, VertexStyle } from "../mesh/mesh-builder.ts";
-import { deformShape, type Shape } from "../mesh/shape.ts";
+import { type MeshBuilder, resolveChannel, type SurfacePoint, type VertexStyle } from "../mesh/mesh-builder.ts";
+import { deformShape, type Shape, type ShapeVertex } from "../mesh/shape.ts";
 import { type LoftSection, loft, panel, sphere, torus, tube } from "../mesh/shapes.ts";
 import { combine, transformOf } from "../mesh/transforms.ts";
 import { FOOT_SECTIONS, footTransform, forEachSide } from "./human-anatomy.ts";
@@ -14,9 +14,9 @@ function triangleWave(value: number): number {
   return 1 - Math.abs(fractionalPart(value) * 2 - 1);
 }
 
-export function jaggedHem(shape: Shape, belowY: number, teeth: number, depth: number): Shape {
+function jaggedEdge(shape: Shape, isEdge: (vertex: ShapeVertex) => boolean, teeth: number, depth: number): Shape {
   return deformShape(shape, (vertex) => {
-    if (vertex.y > belowY) {
+    if (!isEdge(vertex)) {
       return [0, 0, 0];
     }
 
@@ -24,14 +24,12 @@ export function jaggedHem(shape: Shape, belowY: number, teeth: number, depth: nu
   });
 }
 
-export function jaggedTop(shape: Shape, aboveY: number, teeth: number, depth: number): Shape {
-  return deformShape(shape, (vertex) => {
-    if (vertex.y < aboveY) {
-      return [0, 0, 0];
-    }
+function jaggedHem(shape: Shape, belowY: number, teeth: number, depth: number): Shape {
+  return jaggedEdge(shape, (vertex) => vertex.y <= belowY, teeth, depth);
+}
 
-    return [0, -depth * triangleWave(vertex.around * teeth), 0];
-  });
+function jaggedTop(shape: Shape, aboveY: number, teeth: number, depth: number): Shape {
+  return jaggedEdge(shape, (vertex) => vertex.y >= aboveY, teeth, depth);
 }
 
 function pick(
@@ -40,20 +38,12 @@ function pick(
   lower: VertexStyle,
   channel: "boneA" | "boneB" | "boneWeight"
 ): number {
-  const value = point.position.y >= WAIST_LINE ? upper[channel] : lower[channel];
+  const style = point.position.y >= WAIST_LINE ? upper : lower;
 
-  if (value === undefined) {
-    return 0;
-  }
-
-  if (typeof value === "number") {
-    return value;
-  }
-
-  return value(point);
+  return resolveChannel(style[channel], 0, point);
 }
 
-export function garmentStyle(followsLegs: number, hemLine = 0.55): VertexStyle {
+function garmentStyle(followsLegs: number, hemLine = 0.55): VertexStyle {
   const lower = skirtStyle(followsLegs, 0.92, hemLine);
 
   return {

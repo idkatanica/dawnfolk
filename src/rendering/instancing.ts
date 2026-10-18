@@ -14,6 +14,11 @@ import type { MeshData, VertexChannel } from "../models/mesh/mesh-data.ts";
 
 const GROWTH_FACTOR = 1.5;
 
+interface InterleavedField {
+  readonly name: string;
+  readonly size: number;
+}
+
 export function toInstancedGeometry(source: BufferGeometry): InstancedBufferGeometry {
   const geometry = new InstancedBufferGeometry();
 
@@ -108,11 +113,6 @@ export class InstanceAttribute {
   }
 }
 
-export interface InterleavedField {
-  readonly name: string;
-  readonly size: number;
-}
-
 export class InterleavedInstances {
   readonly stride: number;
   readonly #fields: readonly InterleavedField[];
@@ -145,7 +145,7 @@ export class InterleavedInstances {
       return;
     }
 
-    this.#buffer = this.#create(Math.ceil(count * GROWTH_FACTOR));
+    this.#create(Math.ceil(count * GROWTH_FACTOR));
   }
 
   markUpdated(count: number): void {

@@ -29,7 +29,9 @@ function useMenuActions() {
   const toggleMap = useInterfaceStore((state) => state.toggleMap);
   const openSettings = useInterfaceStore((state) => state.openSettings);
 
-  const showSettings = () => openSettings("world");
+  function showSettings(): void {
+    openSettings("world");
+  }
 
   return { isJournalOpen, isMapOpen, showSettings, toggleJournal, toggleMap };
 }

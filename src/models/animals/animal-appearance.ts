@@ -15,7 +15,7 @@ export interface AnimalAppearance {
   readonly tuskLength: number;
 }
 
-export interface AnimalAppearanceInput {
+interface AnimalAppearanceInput {
   readonly kind: AnimalKind;
   readonly seed: number;
   readonly youth: number;

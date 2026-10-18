@@ -1,4 +1,4 @@
-export type BlessingStyle = "abundance" | "healing" | "inspiration";
+type BlessingStyle = "abundance" | "healing" | "inspiration";
 
 export interface BlessingEffect {
   kind: "blessing";

@@ -3,7 +3,7 @@ import type { SurfacePoint, VertexStyle } from "../mesh/mesh-builder.ts";
 import { type BoneBlend, chainBlend, chainStyle, createChain, type WeightChain } from "../rig/skin-weights.ts";
 import { HumanBone, HumanJoint, onSide, type Side, sideBones } from "./human-skeleton.ts";
 
-export const TORSO_CHAIN = createChain(
+const TORSO_CHAIN = createChain(
   [HumanBone.Pelvis, HumanBone.Spine, HumanBone.Chest, HumanBone.Neck, HumanBone.Head],
   [
     { axis: [0, 1, 0], blend: 0.05, position: HumanJoint.Spine },
@@ -63,8 +63,8 @@ interface TorsoInfluence {
 
 function limbInfluence(point: SurfacePoint): TorsoInfluence {
   const { x, y } = point.position;
-  const side = sideOf(point);
 
+  const side = sideOf(point);
   const bones = sideBones(side);
 
   const shoulderWeight = 0.35 * smoothstep(0.13, 0.2, Math.abs(x)) * smoothstep(1.3, 1.41, y);
@@ -79,8 +79,8 @@ function limbInfluence(point: SurfacePoint): TorsoInfluence {
 
 function torsoBlend(point: SurfacePoint): BoneBlend {
   const { x, y, z } = point.position;
-  const influence = limbInfluence(point);
 
+  const influence = limbInfluence(point);
   const chain = chainBlend(TORSO_CHAIN, x, y, z);
 
   if (chain.weight > 0.02 || influence.weight < 0.02) {
@@ -96,13 +96,11 @@ export const FLEXIBLE_TORSO_STYLE: VertexStyle = {
   boneWeight: (point) => torsoBlend(point).weight,
 };
 
-export function skirtStyle(followsLegs: number, hipLine = 0.92, hemLine = 0.55): VertexStyle {
-  const weight = (point: SurfacePoint): number => followsLegs * smoothstep(hipLine, hemLine, point.position.y);
-
+export function skirtStyle(followsLegs: number, hipLine: number, hemLine: number): VertexStyle {
   return {
     boneA: HumanBone.Pelvis,
     boneB: (point) => sideBones(sideOf(point)).thigh,
-    boneWeight: weight,
+    boneWeight: (point) => followsLegs * smoothstep(hipLine, hemLine, point.position.y),
   };
 }
 

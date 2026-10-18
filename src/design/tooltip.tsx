@@ -1,9 +1,9 @@
 import { Tooltip } from "@base-ui/react/tooltip";
 import type { ReactElement, ReactNode } from "react";
 
-export type TooltipSide = "bottom" | "left" | "right" | "top";
+type TooltipSide = "bottom" | "left" | "right" | "top";
 
-export interface WithTooltipProps {
+interface WithTooltipProps {
   readonly children: ReactElement;
   readonly content: ReactNode;
   readonly side?: TooltipSide;

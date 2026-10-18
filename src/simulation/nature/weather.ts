@@ -9,7 +9,7 @@ const SETTLED_DIFFERENCE = 0.002;
 const MAXIMUM_WIND_SPEED = 90;
 const STORM_LIGHTNING_THRESHOLD = 0.5;
 
-export interface WeatherState {
+interface WeatherState {
   cloudCover: number;
   fog: number;
   gust: number;
@@ -43,7 +43,7 @@ export const DEFAULT_WEATHER: WeatherState = {
   windSpeed: 14,
 };
 
-export interface WindVector {
+interface WindVector {
   x: number;
   z: number;
 }
@@ -55,7 +55,7 @@ export interface WeatherTick {
   season: number;
 }
 
-export interface WeatherUpdate {
+interface WeatherUpdate {
   changedTo: WeatherKind | null;
   lightningStrikes: number;
 }
@@ -151,8 +151,9 @@ export class WeatherSystem {
   }
 
   #easeTowardsKind(tick: WeatherTick, rules: WorldRules): void {
-    const target = WEATHER[this.state.kind];
     const { state } = this;
+
+    const target = WEATHER[state.kind];
     const easing = 1 - Math.exp(-tick.elapsedSeconds * EASING_PER_SECOND);
 
     const precipitationEasing = easing * precipitationEasingFactor(state.precipitation, target.precipitation);
@@ -169,6 +170,7 @@ export class WeatherSystem {
 
   #countLightning(gameSeconds: number, rules: WorldRules, random: RandomSource): number {
     const { state } = this;
+
     const frequency = rules.storms.lightningFrequency;
 
     if (state.storm <= STORM_LIGHTNING_THRESHOLD || frequency <= 0) {

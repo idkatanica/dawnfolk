@@ -42,16 +42,18 @@ function useQualityChoice() {
 
   const [quality, setQuality] = useState<QualityLevel>(active);
 
-  const changeQuality = (value: string) => {
+  function changeQuality(value: string): void {
     if (!isQualityLevel(value)) {
       return;
     }
 
     setQuality(value);
     storeQuality(value);
-  };
+  }
 
-  const applyQuality = () => relaunch({ quality });
+  function applyQuality(): void {
+    relaunch({ quality });
+  }
 
   return { applyQuality, changeQuality, hasChanged: quality !== active, quality };
 }
@@ -74,14 +76,19 @@ function useNewWorld() {
 
   const seed = readSeed(seedText);
 
-  const changeSeed = (event: ChangeEvent<HTMLInputElement>) => setSeedText(event.target.value);
-  const rollSeed = () => setSeedText(String(randomSeed()));
+  function changeSeed(event: ChangeEvent<HTMLInputElement>): void {
+    setSeedText(event.target.value);
+  }
 
-  const createWorld = () => {
+  function rollSeed(): void {
+    setSeedText(String(randomSeed()));
+  }
+
+  function createWorld(): void {
     if (seed !== null) {
       relaunch({ seed });
     }
-  };
+  }
 
   return { changeSeed, createWorld, isValid: seed !== null, rollSeed, seedText };
 }

@@ -1,6 +1,6 @@
 import { fractionalPart, wrapAngle } from "../../shared/math.ts";
 
-export interface MotionStep {
+interface MotionStep {
   readonly clip: number;
   readonly gameSeconds: number;
   readonly heading: number;

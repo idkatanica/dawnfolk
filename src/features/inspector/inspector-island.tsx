@@ -82,7 +82,7 @@ function useInspectorActions() {
   const isFollowing = useInspectorStore((state) => state.isFollowing);
   const setFollowing = useInspectorStore((state) => state.setFollowing);
 
-  const toggleFollowing = () => {
+  function toggleFollowing(): void {
     if (engine === null) {
       return;
     }
@@ -94,15 +94,15 @@ function useInspectorActions() {
     }
 
     setFollowing(!isFollowing);
-  };
+  }
 
-  const close = () => {
+  function close(): void {
     if (engine !== null) {
       engine.clearSelection();
     }
 
     setFollowing(false);
-  };
+  }
 
   return { close, isFollowing, toggleFollowing };
 }
@@ -126,6 +126,7 @@ function FollowButton({ inspection }: { readonly inspection: Inspection }) {
 
 function InspectorContent({ inspection }: { readonly inspection: Inspection }) {
   const { close } = useInspectorActions();
+
   const Icon = KIND_ICONS[inspection.kind];
 
   return (

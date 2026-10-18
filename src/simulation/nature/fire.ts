@@ -6,8 +6,7 @@ import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import { CellSet } from "../world/cell-set.ts";
 import type { WorldState } from "../world/world-state.ts";
 
-export const IGNITION_INTENSITY = 0.14;
-
+const IGNITION_INTENSITY = 0.14;
 const EXTINGUISHED_INTENSITY = 0.02;
 const BURNT_OUT_FUEL = 0.01;
 const HEAT_FLOOR = 0.002;
@@ -26,7 +25,7 @@ const CANOPY_IGNITION_BONUS = -0.2;
 const GROUND_FUEL_BURN_RATE = 0.085;
 const CANOPY_FUEL_BURN_RATE = 0.08;
 
-export interface FireConditions {
+interface FireConditions {
   airTemperatureOffset: number;
   day: number;
   drought: number;
@@ -42,7 +41,7 @@ interface FireTick {
   seconds: number;
 }
 
-export function windStrengthFor(windSpeed: number): number {
+function windStrengthFor(windSpeed: number): number {
   return Math.min(MAXIMUM_WIND_STRENGTH, windSpeed / FULL_WIND_SPEED);
 }
 
@@ -134,6 +133,7 @@ export class FireSystem {
 
   douse(cell: number, amount: number): void {
     const { fire, heat } = this.#world.fields;
+
     const remaining = Math.max(0, 1 - amount);
 
     heat[cell] *= remaining;
@@ -220,6 +220,7 @@ export class FireSystem {
 
   #consumeFuel(cell: number, intensity: number, tick: FireTick): void {
     const { canopyFuel, fields, initialCanopyFuel, vegetation } = this.#world;
+
     const consumption = tick.burnMultiplier * Math.max(intensity, 0.15) * tick.seconds;
 
     const canopyBefore = canopyFuel[cell];
@@ -265,6 +266,7 @@ export class FireSystem {
 
   #spreadHeat(cell: number, intensity: number, tick: FireTick): void {
     const { canopyFuel, fields, grid, terrain } = this.#world;
+
     const slopeInfluence = 1.5 * tick.rules.fire.slopeInfluence;
 
     const column = grid.columnOf(cell);
@@ -354,6 +356,7 @@ export class FireSystem {
 
   #ignitionThreshold(cell: number, tick: FireTick): number {
     const { canopyFuel, fields, terrain } = this.#world;
+
     const temperature = this.#world.temperature(cell, tick.conditions.airTemperatureOffset);
 
     const ground = groundDefinition(terrain.ground[cell]);

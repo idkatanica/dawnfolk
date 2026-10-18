@@ -4,10 +4,6 @@ export class GrowableFloatArray {
   #values = new Float32Array(INITIAL_CAPACITY);
   #length = 0;
 
-  get length(): number {
-    return this.#length;
-  }
-
   push(value: number): void {
     this.#reserve(this.#length + 1);
     this.#values[this.#length] = value;
@@ -20,10 +16,6 @@ export class GrowableFloatArray {
     this.#values[this.#length + 1] = second;
     this.#values[this.#length + 2] = third;
     this.#length += 3;
-  }
-
-  at(index: number): number {
-    return this.#values[index];
   }
 
   toArray(): Float32Array {
@@ -45,10 +37,6 @@ export class GrowableFloatArray {
 export class GrowableIndexArray {
   #values = new Uint32Array(INITIAL_CAPACITY);
   #length = 0;
-
-  get length(): number {
-    return this.#length;
-  }
 
   pushTriangle(first: number, second: number, third: number): void {
     this.#reserve(this.#length + 3);

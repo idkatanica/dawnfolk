@@ -23,7 +23,6 @@ const launchOptions = createLaunchOptions();
 export default defineConfig({
   expect: { timeout: 20_000 },
   forbidOnly: isContinuousIntegration,
-  fullyParallel: false,
   projects: [
     { name: "desktop", testIgnore: "phone.spec.ts", use: { ...devices["Desktop Chrome"], launchOptions } },
     { name: "phone", testIgnore: "desktop.spec.ts", use: { ...devices["Pixel 7"], launchOptions } },

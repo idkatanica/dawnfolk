@@ -4,7 +4,7 @@ import { geometryFromMeshData, InstanceAttribute } from "../instancing.ts";
 
 const SKINNED_CHANNELS = ["boneA", "boneB", "boneWeight", "shade", "slot"] as const;
 
-export interface PartLevel {
+interface PartLevel {
   readonly castsShadow: boolean;
   readonly parts: readonly MeshData[];
 }

@@ -10,10 +10,10 @@ const AXIS_Z = new Vector3(0, 0, 1);
 const UNIT_SCALE = new Vector3(1, 1, 1);
 
 export class SkeletonPoser {
+  readonly #isLimb: readonly boolean[];
   readonly #offsets: readonly Vector3[];
   readonly #pitch = new Quaternion();
   readonly #point = new Vector3();
-  readonly #isLimb: readonly boolean[];
   readonly #restJoints: readonly Vector3[];
   readonly #roll = new Quaternion();
   readonly #rotation = new Quaternion();
@@ -34,10 +34,6 @@ export class SkeletonPoser {
     this.#skin = skeleton.bones.map(() => new Matrix4());
   }
 
-  get boneCount(): number {
-    return this.#skeleton.bones.length;
-  }
-
   pose(pose: Pose, scales: Float32Array): void {
     for (const [index, bone] of this.#skeleton.bones.entries()) {
       this.#poseBone(index, bone.parent, pose, scales);
@@ -49,6 +45,7 @@ export class SkeletonPoser {
   writePalette(target: Float32Array, offset: number): void {
     for (const [index, skin] of this.#skin.entries()) {
       const { elements } = skin;
+
       const start = offset + index * PALETTE_FLOATS_PER_BONE;
 
       target[start] = elements[0];
@@ -86,6 +83,7 @@ export class SkeletonPoser {
 
   #poseBone(index: number, parent: number, pose: Pose, scales: Float32Array): void {
     const angleOffset = index * ANGLES_PER_BONE;
+    const joint = this.#restJoints[index];
 
     this.#pitch.setFromAxisAngle(AXIS_X, pose.angles[angleOffset + RotationAxis.Pitch]);
     this.#roll.setFromAxisAngle(AXIS_Z, pose.angles[angleOffset + RotationAxis.Roll]);
@@ -104,8 +102,6 @@ export class SkeletonPoser {
     if (parent !== NO_PARENT) {
       world.premultiply(this.#world[parent]);
     }
-
-    const joint = this.#restJoints[index];
 
     this.#scaleMatrix.makeScale(scales[index * 3], scales[index * 3 + 1], scales[index * 3 + 2]);
     this.#toJoint.makeTranslation(-joint.x, -joint.y, -joint.z);

@@ -1,6 +1,6 @@
-import { float, length, mx_noise_float, smoothstep, time, varying, vec2, vec3 } from "three/tsl";
+import { float, mx_noise_float, smoothstep, time, varying, vec3 } from "three/tsl";
 import { AdditiveBlending, MeshBasicNodeMaterial } from "three/webgpu";
-import { billboardNodes, type CameraAxes, facingBillboard } from "./billboards.ts";
+import { billboardNodes, type CameraAxes, distanceFromBillboardCenter, facingBillboard } from "./billboards.ts";
 
 export function createGlowMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
   const material = new MeshBasicNodeMaterial({ blending: AdditiveBlending, depthWrite: false, transparent: true });
@@ -10,7 +10,7 @@ export function createGlowMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
 
   const shape = varying(corner, "glowCorner");
 
-  const radius = length(vec2(shape.x, shape.y.sub(0.5))).mul(2);
+  const radius = distanceFromBillboardCenter(shape).mul(2);
 
   const halo = smoothstep(1, 0, radius);
 
@@ -29,7 +29,7 @@ export function createDustMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
 
   const shape = varying(corner, "dustCorner");
 
-  const radius = length(vec2(shape.x, shape.y.sub(0.5))).mul(2);
+  const radius = distanceFromBillboardCenter(shape).mul(2);
   const billow = mx_noise_float(vec3(shape.mul(2.6), time.mul(0.3)))
     .mul(0.3)
     .add(0.8);

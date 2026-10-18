@@ -1,13 +1,13 @@
 import { FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
-import type { Waypoint } from "../agents/navigation.ts";
+import { aroundPoint, type Waypoint } from "../agents/navigation.ts";
 import { type Building, type BuildingSystem, isCampfireLit, isComplete } from "./buildings.ts";
 import type { Person } from "./person.ts";
 import type { Tribe } from "./tribe.ts";
 
 const GOLDEN_ANGLE = 2.399;
 
-export function campPoint(tribe: Tribe): Waypoint {
+function campPoint(tribe: Tribe): Waypoint {
   return { x: tribe.campX, z: tribe.campZ };
 }
 
@@ -55,13 +55,13 @@ export function sleepingSpot(person: Person, tribe: Tribe, buildings: BuildingSy
 
   const center = fireOrCamp(tribe, buildings);
 
-  return { x: center.x + Math.cos(angle) * distance, z: center.z + Math.sin(angle) * distance };
+  return aroundPoint(center, distance, angle);
 }
 
 function fireOrCamp(tribe: Tribe, buildings: BuildingSystem): Waypoint {
-  const campfire = campfireOf(tribe, buildings);
+  const campfire = litCampfireOf(tribe, buildings);
 
-  if (campfire === null || !isCampfireLit(campfire)) {
+  if (campfire === null) {
     return campPoint(tribe);
   }
 

@@ -46,11 +46,11 @@ function useJournalTab() {
   const journalTab = useInterfaceStore((state) => state.journalTab);
   const setJournalTab = useInterfaceStore((state) => state.setJournalTab);
 
-  const changeTab = (value: unknown) => {
+  function changeTab(value: unknown): void {
     if (isJournalTab(value)) {
       setJournalTab(value);
     }
-  };
+  }
 
   return { changeTab, journalTab };
 }

@@ -17,7 +17,7 @@ import { findLandmarks, type Landmark } from "./landmarks.ts";
 import { type SimulationConnection, WorkerSimulationConnection } from "./simulation-connection.ts";
 import { type PowerSelection, PowerTool } from "./tools/power-tool.ts";
 
-export interface EngineOptions {
+interface EngineOptions {
   readonly camera?: Partial<CameraState>;
   readonly canvas: HTMLCanvasElement;
   readonly connection?: SimulationConnection;
@@ -46,11 +46,11 @@ const FOLLOW_DISTANCE = 45;
 async function createSessionOrRelease(
   renderer: WebGPURenderer,
   connection: SimulationConnection,
-  options: EngineOptions,
+  request: WorldRequest,
   onProgress: (progress: GenerationProgress) => void
 ): Promise<GameSession> {
   try {
-    return await GameSession.create(connection, options.request, { onProgress });
+    return await GameSession.create(connection, request, { onProgress });
   } catch (error) {
     renderer.dispose();
     connection.dispose();
@@ -88,7 +88,9 @@ export class GameEngine implements EngineHandle {
     const { mirror } = parts.session;
     const perspective = new PerspectiveCamera(FIELD_OF_VIEW, 1, NEAR_PLANE, FAR_PLANE);
 
-    const heightAt = (x: number, z: number) => mirror.heightAt(x, z);
+    function heightAt(x: number, z: number): number {
+      return mirror.heightAt(x, z);
+    }
 
     this.camera = new GodCamera(perspective, heightAt, mirror.grid.halfSize);
     this.#world = new WorldRenderer({
@@ -134,7 +136,7 @@ export class GameEngine implements EngineHandle {
 
     const created = await createRenderer(options.canvas, RENDER_QUALITY[options.quality]);
 
-    const session = await createSessionOrRelease(created.renderer, connection, options, onProgress);
+    const session = await createSessionOrRelease(created.renderer, connection, options.request, onProgress);
 
     const engine = new GameEngine({ ...created, canvas: options.canvas, quality: options.quality, session });
 

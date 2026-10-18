@@ -10,7 +10,7 @@ export type EngineStatus =
   | { readonly kind: "failed"; readonly message: string }
   | { readonly kind: "loading"; readonly progress: GenerationProgress | null };
 
-export type EngineStatusListener = (status: EngineStatus) => void;
+type EngineStatusListener = (status: EngineStatus) => void;
 
 function describeFailure(error: unknown): string {
   if (error instanceof Error) {

@@ -5,7 +5,7 @@ import type { LabelPlacement } from "./label-projector.ts";
 import type { Landmark } from "./landmarks.ts";
 import type { PowerSelection } from "./tools/power-tool.ts";
 
-export interface EngineCamera {
+interface EngineCamera {
   readonly state: CameraState;
 }
 

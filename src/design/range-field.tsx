@@ -3,7 +3,7 @@ import { useId } from "react";
 import { cn } from "./cn.ts";
 import { useHeldDraft } from "./use-held-draft.ts";
 
-export interface RangeFieldProps {
+interface RangeFieldProps {
   readonly className?: string | undefined;
   readonly description?: string | undefined;
   readonly label: string;
@@ -18,10 +18,10 @@ export interface RangeFieldProps {
 function useHeldRange(value: number, onChange: (value: number) => void) {
   const [shown, hold] = useHeldDraft(value);
 
-  const change = (next: number) => {
+  function change(next: number): void {
     hold(next);
     onChange(next);
-  };
+  }
 
   return { change, shown };
 }

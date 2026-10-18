@@ -4,9 +4,9 @@ import { cn } from "./cn.ts";
 
 const FOCUS_RING = "outline-none focus-visible:ring-2 focus-visible:ring-dawn focus-visible:ring-offset-1";
 
-export type IconButtonTone = "accent" | "plain";
+type IconButtonTone = "accent" | "plain";
 
-export interface IconButtonProps extends Omit<ComponentProps<typeof BaseButton>, "aria-label" | "children"> {
+interface IconButtonProps extends Omit<ComponentProps<typeof BaseButton>, "aria-label" | "children"> {
   readonly icon: ReactNode;
   readonly isPressed?: boolean | undefined;
   readonly label: string;
@@ -35,9 +35,9 @@ export function IconButton({ className, icon, isPressed, label, tone = "plain", 
   );
 }
 
-export type ButtonTone = "accent" | "plain" | "quiet";
+type ButtonTone = "accent" | "plain" | "quiet";
 
-export interface TextButtonProps extends ComponentProps<typeof BaseButton> {
+interface TextButtonProps extends ComponentProps<typeof BaseButton> {
   readonly tone?: ButtonTone;
 }
 

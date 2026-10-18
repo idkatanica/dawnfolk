@@ -1,6 +1,6 @@
 import { Vector3 } from "three";
 import { PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
-import { lerp } from "../../shared/math.ts";
+import { FULL_TURN, lerp } from "../../shared/math.ts";
 import { createVolumeNoise, type VolumeNoise } from "../../shared/noise.ts";
 import { createRandom, type RandomSource } from "../../shared/random.ts";
 import type { TubePoint } from "../mesh/shapes.ts";
@@ -59,7 +59,7 @@ interface TrunkOptions {
 function addTrunk(growth: Growth, options: TrunkOptions, start = new Vector3()): TubePoint[] {
   const { random } = growth;
 
-  const leanAngle = random.next() * Math.PI * 2;
+  const leanAngle = random.next() * FULL_TURN;
 
   const direction = new Vector3(Math.cos(leanAngle) * options.lean, 1, Math.sin(leanAngle) * options.lean);
 
@@ -124,7 +124,7 @@ function addLimb(
 
 function addBlob(growth: Growth, center: Vector3, radius: number, squash: number): void {
   growth.foliage.push({
-    center: [center.x, center.y, center.z],
+    center: center.toArray(),
     kind: "blob",
     radius,
     squash,
@@ -163,7 +163,7 @@ function oak(seed: number): TreeStructure {
     });
 
     for (let twig = 0; twig < 2; twig += 1) {
-      const sub = addLimb(growth, main, random.between(0.45, 0.85), random.next() * Math.PI * 2, {
+      const sub = addLimb(growth, main, random.between(0.45, 0.85), random.next() * FULL_TURN, {
         bend: 0.06,
         depth: 2,
         gravity: 0.05,
@@ -264,7 +264,7 @@ function maple(seed: number): TreeStructure {
   const limbCount = random.integer(2, 4);
 
   for (let limb = 0; limb < limbCount; limb += 1) {
-    const main = addLimb(growth, trunk, 1, (limb / limbCount) * Math.PI * 2 + jitter(random, 0.5), {
+    const main = addLimb(growth, trunk, 1, (limb / limbCount) * FULL_TURN + jitter(random, 0.5), {
       bend: 0.05,
       depth: 1,
       gravity: 0.02,
@@ -276,7 +276,7 @@ function maple(seed: number): TreeStructure {
     });
 
     for (let twig = 0; twig < 3; twig += 1) {
-      const sub = addLimb(growth, main, random.between(0.4, 0.9), random.next() * Math.PI * 2, {
+      const sub = addLimb(growth, main, random.between(0.4, 0.9), random.next() * FULL_TURN, {
         bend: 0.05,
         depth: 2,
         gravity: 0.03,
@@ -330,7 +330,7 @@ function willow(seed: number): TreeStructure {
     addBlob(growth, tip, crownRadius, 0.8);
 
     for (let strand = 0; strand < 3; strand += 1) {
-      const angle = random.next() * Math.PI * 2;
+      const angle = random.next() * FULL_TURN;
       const reach = random.between(0.35, 0.8) * crownRadius;
 
       const top = tip.clone().add(new Vector3(Math.cos(angle) * reach, -0.4, Math.sin(angle) * reach));
@@ -442,7 +442,7 @@ function bush(seed: number): TreeStructure {
   const stems = random.integer(3, 6);
 
   for (let stem = 0; stem < stems; stem += 1) {
-    const angle = (stem / stems) * Math.PI * 2 + jitter(random, 0.4);
+    const angle = (stem / stems) * FULL_TURN + jitter(random, 0.4);
     const tilt = random.between(0.2, 0.6);
 
     const points = growBranch({
@@ -467,7 +467,7 @@ function bush(seed: number): TreeStructure {
   return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Bush]);
 }
 
-export type TreeGenerator = (seed: number) => TreeStructure;
+type TreeGenerator = (seed: number) => TreeStructure;
 
 export const TREE_GENERATORS: Readonly<Partial<Record<PlantSpeciesIndex, TreeGenerator>>> = {
   [PlantSpecies.Birch]: birch,

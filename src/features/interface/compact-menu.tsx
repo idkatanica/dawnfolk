@@ -32,8 +32,13 @@ function useCompactMenu() {
   const openSettings = useInterfaceStore((state) => state.openSettings);
   const isMapOpen = useInterfaceStore((state) => state.isMapOpen);
 
-  const showJournal = () => openJournal("tribes");
-  const showSettings = () => openSettings("world");
+  function showJournal(): void {
+    openJournal("tribes");
+  }
+
+  function showSettings(): void {
+    openSettings("world");
+  }
 
   return { isMapOpen, showJournal, showSettings, toggleMap };
 }

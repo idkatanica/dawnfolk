@@ -9,11 +9,11 @@ import { combine, sideMirror, transformOf } from "../mesh/transforms.ts";
 import { degrees, wave } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
 import { chainStyle, createChain, rigidStyle } from "../rig/skin-weights.ts";
-import type { AnimalClipContext, GaitStyle } from "./quadruped-clips.ts";
+import type { GaitStyle } from "./quadruped-clips.ts";
 import { bodyStyle, legStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
 import { LEG_SIDES, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
-export const MammothBone = {
+const MammothBone = {
   TrunkBase: 18,
   TrunkMiddle: 19,
   TrunkTip: 20,
@@ -115,6 +115,7 @@ function addLegs(builder: MeshBuilder, segments: number): void {
 
     for (const end of ["front", "hind"] as const) {
       const style: VertexStyle = { ...legStyle(MAMMOTH_FRAME, end, side, BLEND), slot: MaterialSlot.Coat };
+
       for (const points of LEG_PIECES[end]) {
         builder.add(tube(points, { radialSegments: segments }), { style, transform: mirror });
       }
@@ -272,7 +273,7 @@ export function addMammothBody(builder: MeshBuilder, segments: number): void {
   });
 }
 
-export function mammothTrunkMotion(pose: Pose, clip: AnimalPose, phase: number, _context: AnimalClipContext): void {
+export function mammothTrunkMotion(pose: Pose, clip: AnimalPose, phase: number): void {
   if (clip === "graze") {
     pose.rotate(MammothBone.TrunkBase, degrees(8), 0, 0);
     pose.rotate(MammothBone.TrunkMiddle, degrees(22) + degrees(10) * wave(phase * 3), 0, 0);

@@ -1,6 +1,12 @@
-import { float, length, smoothstep, varying, vec2 } from "three/tsl";
+import { float, smoothstep, varying } from "three/tsl";
 import { Color, type Mesh, MeshBasicNodeMaterial } from "three/webgpu";
-import { BillboardBatch, billboardNodes, type CameraAxes, facingBillboard } from "../effects/billboards.ts";
+import {
+  BillboardBatch,
+  billboardNodes,
+  type CameraAxes,
+  distanceFromBillboardCenter,
+  facingBillboard,
+} from "../effects/billboards.ts";
 
 const SMALLEST_DOT = 1.6;
 const DOT_SIZE_PER_METER = 0.0045;
@@ -15,7 +21,7 @@ function createDotMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
 
   const shape = varying(corner, "dotCorner");
 
-  const radius = length(vec2(shape.x, shape.y.sub(0.5))).mul(2);
+  const radius = distanceFromBillboardCenter(shape).mul(2);
 
   const disc = float(1).sub(smoothstep(0.75, 1, radius));
   const rim = smoothstep(0.45, 0.8, radius);

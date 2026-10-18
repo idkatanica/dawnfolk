@@ -3,7 +3,7 @@ import { isPowerId, type PowerId } from "../content/powers.ts";
 import { WEATHER_KINDS } from "../content/weather.ts";
 import { MAXIMUM_DAY_SECONDS, MINIMUM_DAY_SECONDS } from "./nature/calendar.ts";
 
-export const MAXIMUM_SPEED = 16;
+const MAXIMUM_SPEED = 16;
 
 const coordinate = z.number();
 
@@ -13,10 +13,11 @@ const powerIdSchema = z.custom<PowerId>((value) => typeof value === "string" && 
 
 const parametersSchema = z.record(z.string(), z.unknown());
 
-const entitySelection = (kind: "animal" | "building" | "person" | "tribe") =>
-  z.object({ id: z.number().int(), kind: z.literal(kind) });
+function entitySelection(kind: "animal" | "building" | "person" | "tribe") {
+  return z.object({ id: z.number().int(), kind: z.literal(kind) });
+}
 
-export const selectionSchema = z.discriminatedUnion("kind", [
+const selectionSchema = z.discriminatedUnion("kind", [
   entitySelection("animal"),
   entitySelection("building"),
   entitySelection("person"),
@@ -26,7 +27,7 @@ export const selectionSchema = z.discriminatedUnion("kind", [
 
 export type Selection = z.output<typeof selectionSchema>;
 
-export const commandSchema = z.discriminatedUnion("type", [
+const commandSchema = z.discriminatedUnion("type", [
   z.object({
     parameters: parametersSchema,
     powerId: powerIdSchema,

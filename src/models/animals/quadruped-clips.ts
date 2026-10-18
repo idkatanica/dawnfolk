@@ -3,7 +3,7 @@ import { cosineWave, degrees, keyframes, pulse, wave } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
 import { LEG_ENDS, LEG_SIDES, type LegEnd, type LegSide, legBones, QuadrupedBone } from "./quadruped-skeleton.ts";
 
-export type RunKind = "amble" | "gallop";
+type RunKind = "amble" | "gallop";
 
 export interface GaitStyle {
   readonly grazeReach: number;
@@ -20,13 +20,11 @@ export interface AnimalClipContext {
   readonly variation: number;
 }
 
-export type AnimalClipTiming =
-  | { readonly cycleSeconds: number; readonly kind: "seconds" }
-  | { readonly kind: "stride" };
+type AnimalClipTiming = { readonly cycleSeconds: number; readonly kind: "seconds" } | { readonly kind: "stride" };
 
 export type ExtraMotion = (pose: Pose, clip: AnimalPose, phase: number, context: AnimalClipContext) => void;
 
-export interface AnimalClip {
+interface AnimalClip {
   readonly apply: (pose: Pose, phase: number, context: AnimalClipContext) => void;
   readonly timing: AnimalClipTiming;
 }
@@ -92,7 +90,7 @@ function stepLegs(pose: Pose, phase: number, swing: number, fold: number, offset
 }
 
 function swishTail(pose: Pose, phase: number, amount: number): void {
-  bendTrunkBone(pose, QuadrupedBone.Tail, degrees(10), amount * wave(phase * 2), 0);
+  bendTrunkBone(pose, QuadrupedBone.Tail, degrees(10), amount * wave(phase * 2));
 }
 
 function walk(pose: Pose, phase: number, context: AnimalClipContext): void {
@@ -113,7 +111,7 @@ function gallop(pose: Pose, phase: number, context: AnimalClipContext): void {
   bendTrunkBone(pose, QuadrupedBone.Spine, -degrees(8) * wave(phase));
   bendTrunkBone(pose, QuadrupedBone.Chest, degrees(5) * wave(phase, 0.2));
   bendTrunkBone(pose, QuadrupedBone.Neck, degrees(10) + degrees(8) * wave(phase, 0.3));
-  bendTrunkBone(pose, QuadrupedBone.Tail, -degrees(30), 0, 0);
+  bendTrunkBone(pose, QuadrupedBone.Tail, -degrees(30));
   pose.height = 0.16 * Math.max(0, wave(phase, -0.62));
 }
 
@@ -170,9 +168,9 @@ function graze(pose: Pose, phase: number, context: AnimalClipContext): void {
 
 function dead(pose: Pose): void {
   pose.grounding = "body";
-  bendTrunkBone(pose, QuadrupedBone.Pelvis, 0, degrees(88), 0);
-  bendTrunkBone(pose, QuadrupedBone.Neck, degrees(30), degrees(10), 0);
-  bendTrunkBone(pose, QuadrupedBone.Head, degrees(15), 0, 0);
+  bendTrunkBone(pose, QuadrupedBone.Pelvis, 0, degrees(88));
+  bendTrunkBone(pose, QuadrupedBone.Neck, degrees(30), degrees(10));
+  bendTrunkBone(pose, QuadrupedBone.Head, degrees(15));
 
   for (const end of LEG_ENDS) {
     for (const side of LEG_SIDES) {

@@ -27,7 +27,7 @@ export class FrameBuilder {
 
   build(): SimulationFrame {
     const simulation = this.#simulation;
-    const { buildings, fauna, fire, society, world } = this.#simulation;
+    const { buildings, fauna, fire, society, world } = simulation;
 
     const burningCells = Int32Array.from(fire.burningCells());
 
@@ -75,7 +75,7 @@ export class FrameBuilder {
 
   initialWorld(): InitialWorld {
     const { world } = this.#simulation;
-    const { terrain } = this.#simulation.world;
+    const { terrain } = world;
 
     world.surfaceChanges.takeRuns();
     world.groundChanges.takeRuns();
@@ -122,7 +122,7 @@ export class FrameBuilder {
 
   #inspection(): Inspection | null {
     const simulation = this.#simulation;
-    const { selection } = this.#simulation;
+    const { selection } = simulation;
 
     if (selection === null) {
       return null;

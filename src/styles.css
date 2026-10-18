@@ -3,7 +3,6 @@
 
 @theme {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
 
   --color-sky: #dbe7f1;
   --color-ink: #1d2733;
@@ -20,11 +19,7 @@
   --color-ember: #cf4436;
   --color-ember-soft: rgb(207 68 54 / 0.14);
   --color-lake: #3577b8;
-  --color-lake-soft: rgb(53 119 184 / 0.14);
   --color-gold: #c9952c;
-
-  --radius-island: 22px;
-  --radius-control: 12px;
 
   --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
 }

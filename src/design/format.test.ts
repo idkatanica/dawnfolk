@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decimalsOf, formatClock, formatParameterValue, formatPercent, formatTemperature } from "./format.ts";
+import { decimalsOf, formatClock, formatParameterValue, formatPercent } from "./format.ts";
 
 describe("formatting", () => {
   it("counts the decimals a step needs", () => {
@@ -31,8 +31,7 @@ describe("formatting", () => {
     expect(formatClock(23.999)).toBe("23:59");
   });
 
-  it("rounds temperatures and shares", () => {
-    expect(formatTemperature(13.6)).toBe("14°");
+  it("rounds shares to whole percents", () => {
     expect(formatPercent(0.456)).toBe("46%");
   });
 });

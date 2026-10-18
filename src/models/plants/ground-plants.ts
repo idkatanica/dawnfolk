@@ -1,5 +1,5 @@
 import { Vector3 } from "three";
-import { clamp, fractionalPart, smoothstep } from "../../shared/math.ts";
+import { clamp, FULL_TURN, fractionalPart, smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot } from "../materials.ts";
@@ -43,7 +43,7 @@ export function meshCactus(seed: number, level: PlantDetailLevel): MeshData {
   const arms = random.integer(1, 4);
 
   for (let arm = 0; arm < arms; arm += 1) {
-    const angle = (arm / arms) * Math.PI * 2 + random.signed() * 0.5;
+    const angle = (arm / arms) * FULL_TURN + random.signed() * 0.5;
     const start = random.between(1.1, 2.2);
     const reach = random.between(0.5, 0.75);
     const rise = random.between(0.7, 1.4);
@@ -70,7 +70,7 @@ export function meshCactus(seed: number, level: PlantDetailLevel): MeshData {
 
   if (level !== "low") {
     for (let flower = 0; flower < 3; flower += 1) {
-      const angle = random.next() * Math.PI * 2;
+      const angle = random.next() * FULL_TURN;
 
       builder.add(sphere(0.07, 6, 4), {
         style: { slot: MaterialSlot.Blossom },
@@ -94,7 +94,7 @@ export function meshBoulder(seed: number, level: PlantDetailLevel): MeshData {
   for (let stone = 0; stone < stones; stone += 1) {
     const radius = stone === 0 ? 1.3 : random.between(0.5, 0.8);
     const offset = stone === 0 ? 0 : random.between(1, 1.5);
-    const angle = random.next() * Math.PI * 2;
+    const angle = random.next() * FULL_TURN;
     const flatness = random.between(0.55, 0.9);
 
     const shape = facetShape(
@@ -116,7 +116,7 @@ export function meshBoulder(seed: number, level: PlantDetailLevel): MeshData {
       },
       transform: transformOf({
         position: [Math.cos(angle) * offset, radius * flatness * 0.75, Math.sin(angle) * offset],
-        rotation: [random.signed() * 0.3, random.next() * Math.PI * 2, random.signed() * 0.3],
+        rotation: [random.signed() * 0.3, random.next() * FULL_TURN, random.signed() * 0.3],
         scale: [1, flatness, random.between(0.8, 1.15)],
       }),
     });

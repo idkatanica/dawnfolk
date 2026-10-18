@@ -11,8 +11,8 @@ function setScale(scales: Float32Array, bone: number, x: number, y: number, z: n
 
 export function humanBoneScales(body: BodyShape): Float32Array {
   const { build, headSize, height, hipWidth, legLength, shoulderWidth } = body;
-  const scales = new Float32Array(HUMAN_BONE_COUNT * 3);
 
+  const scales = new Float32Array(HUMAN_BONE_COUNT * 3);
   const girth = build ** 0.6;
   const limbGirth = build ** 0.5;
   const head = height * headSize * STYLIZED_HEAD;

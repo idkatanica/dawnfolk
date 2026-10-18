@@ -25,6 +25,14 @@ interface RingVertex {
   readonly depth: number;
 }
 
+interface VertexPlacement {
+  readonly grid: WorldGrid;
+  readonly noise: VolumeNoise;
+  readonly plinth: number;
+  readonly point: PerimeterPoint;
+  readonly ring: RingVertex;
+}
+
 function perimeter(size: number): PerimeterPoint[] {
   const points: PerimeterPoint[] = [];
   const last = size - 1;
@@ -95,14 +103,6 @@ function roundedRadius(x: number, z: number, depth: number, halfSize: number): n
   const circleRadius = halfSize * 1.08;
 
   return squareRadius + (circleRadius - squareRadius) * smoothstep(0, 0.45, depth);
-}
-
-interface VertexPlacement {
-  readonly grid: WorldGrid;
-  readonly noise: VolumeNoise;
-  readonly plinth: number;
-  readonly point: PerimeterPoint;
-  readonly ring: RingVertex;
 }
 
 function placeVertex({ grid, noise, plinth, point, ring }: VertexPlacement): readonly [number, number, number] {

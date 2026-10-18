@@ -2,14 +2,14 @@ import { abs, cameraPosition, exp, float, length, max, positionWorld, select, un
 import type { Node } from "three/webgpu";
 import { lerp, smoothstep } from "../../shared/math.ts";
 
-export interface FogConditions {
+interface FogConditions {
   readonly mist: number;
   readonly precipitation: number;
   readonly snowfall: number;
   readonly sunHeight: number;
 }
 
-export interface FogShape {
+interface FogShape {
   readonly density: number;
   readonly falloff: number;
   readonly veil: number;

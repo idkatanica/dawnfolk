@@ -3,7 +3,7 @@ import { SEASON_COUNT } from "../../content/seasons.ts";
 import { mixColors } from "../../shared/color.ts";
 import { lerp } from "../../shared/math.ts";
 
-export interface FoliageLook {
+interface FoliageLook {
   readonly color: number;
   readonly coverage: number;
 }

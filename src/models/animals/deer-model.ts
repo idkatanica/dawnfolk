@@ -236,7 +236,9 @@ function addAntlers(builder: MeshBuilder, segments: number, scale: number): void
 }
 
 function antlerTines(scale: number): (readonly [Triple, Triple])[] {
-  const point = (x: number, rise: number, z: number): Triple => [x, 1.74 + rise * scale, z];
+  function point(x: number, rise: number, z: number): Triple {
+    return [x, 1.74 + rise * scale, z];
+  }
 
   return [
     [point(0.08, 0.06, 0.79), point(0.1, 0.11, 0.93)],

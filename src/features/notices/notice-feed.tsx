@@ -15,13 +15,13 @@ function useDismissLater(id: number): void {
 }
 
 function NoticeIcon({ notice }: { readonly notice: WorldNotice }) {
-  if (notice.category === "notice") {
-    return <Info aria-hidden="true" className="shrink-0 text-ink-soft" size={16} />;
-  }
+  const Icon = notice.category === "notice" ? Info : CHRONICLE_ICONS[notice.category];
 
-  const Icon = CHRONICLE_ICONS[notice.category];
-
-  return <Icon aria-hidden="true" className="shrink-0 text-ink-soft" size={16} />;
+  return (
+    <span className="flex shrink-0 text-ink-soft">
+      <Icon aria-hidden="true" size={16} />
+    </span>
+  );
 }
 
 function NoticeItem({ notice }: { readonly notice: WorldNotice }) {

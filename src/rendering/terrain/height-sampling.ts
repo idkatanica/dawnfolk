@@ -10,8 +10,9 @@ export function sampleHeightNode(heights: DataTexture, grid: WorldGrid, point: N
 
   const fraction = cellCoordinate.sub(base);
 
-  const heightAt = (column: number, row: number) =>
-    textureLoad(heights, ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(last, last)))).x;
+  function heightAt(column: number, row: number) {
+    return textureLoad(heights, ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(last, last)))).x;
+  }
 
   const near = mix(heightAt(0, 0), heightAt(1, 0), fraction.x);
   const far = mix(heightAt(0, 1), heightAt(1, 1), fraction.x);

@@ -1,5 +1,5 @@
 import { ANIMALS } from "../content/animals.ts";
-import { biomeDefinition } from "../content/biomes.ts";
+import { Biome, biomeDefinition } from "../content/biomes.ts";
 import { BUILDINGS } from "../content/buildings.ts";
 import { groundDefinition } from "../content/grounds.ts";
 import { plantSpeciesDefinition } from "../content/plants.ts";
@@ -86,7 +86,7 @@ export interface TribeInspection {
 
 export type Inspection = AnimalInspection | BuildingInspection | CellInspection | PersonInspection | TribeInspection;
 
-export interface InspectionSources {
+interface InspectionSources {
   buildings: BuildingSystem;
   environment: Environment;
   fauna: FaunaSystem;
@@ -204,6 +204,7 @@ function inspectBuilding(id: number, sources: InspectionSources): BuildingInspec
 
 function plantsIn(world: WorldState, cell: number): PlantDescription[] {
   const { vegetation } = world;
+
   const plants: PlantDescription[] = [];
 
   for (let plant = vegetation.firstPlantInCell(cell); plant !== NO_PLANT; plant = vegetation.nextPlantInCell(plant)) {
@@ -228,7 +229,7 @@ function inspectCell(x: number, z: number, sources: InspectionSources): CellInsp
   const isWater = world.isWater(cell);
 
   return {
-    biomeName: biomeDefinition(isWater ? 0 : world.terrain.biome[cell]).name,
+    biomeName: biomeDefinition(isWater ? Biome.Water : world.terrain.biome[cell]).name,
     fire: world.fields.fire[cell],
     groundName: groundDefinition(world.terrain.ground[cell]).name,
     height: world.terrain.height[cell],

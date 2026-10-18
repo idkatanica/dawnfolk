@@ -19,15 +19,9 @@ export interface SimulationWorkerApi {
   createWorld: (request: WorldRequest, onProgress: (progress: GenerationProgress) => void) => InitialWorld;
 }
 
-export type SimulationFactory = (
-  request: WorldRequest,
-  onProgress: (progress: GenerationProgress) => void
-) => Simulation;
+type SimulationFactory = (request: WorldRequest, onProgress: (progress: GenerationProgress) => void) => Simulation;
 
-export function generateSimulation(
-  request: WorldRequest,
-  onProgress: (progress: GenerationProgress) => void
-): Simulation {
+function generateSimulation(request: WorldRequest, onProgress: (progress: GenerationProgress) => void): Simulation {
   const simulation = Simulation.generate(request.seed, request.options, onProgress);
 
   simulation.populate();
