@@ -5,7 +5,7 @@ import { DEFAULT_WORLD_RULES } from "../../content/world-rules.ts";
 import { createRandom } from "../../shared/random.ts";
 import { NavigationGrid, type Waypoint } from "../agents/navigation.ts";
 import { IdentifierSource } from "../identifiers.ts";
-import { createTestWorld } from "../testing/test-world.ts";
+import { createTestWorld, floodCells } from "../testing/test-world.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { FaunaSystem, type FaunaThreats, type FaunaTick } from "./fauna.ts";
 
@@ -14,7 +14,9 @@ const SUMMER = 1.6;
 const SPRING = 0.5;
 
 function createFauna(world: WorldState = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 96 } })) {
-  return { fauna: new FaunaSystem(world, new NavigationGrid(world), new IdentifierSource()), world };
+  const navigation = new NavigationGrid(world);
+
+  return { fauna: new FaunaSystem(world, navigation, new IdentifierSource()), navigation, world };
 }
 
 function tickOf(overrides: Partial<FaunaTick> = {}): FaunaTick {
@@ -102,6 +104,21 @@ describe("animals", () => {
 
     expect(fauna.animals).toHaveLength(0);
     expect(fauna.herds).toHaveLength(0);
+  });
+
+  it("swim ashore when the water rises around them as they graze", () => {
+    const { fauna, navigation, world } = createFauna();
+
+    fauna.spawnHerd("deer", 0, 0, 4, createRandom(1));
+    runFor(fauna, 1);
+    floodCells(world, world.grid.cellsInRadius(0, 0, 50), 1.6);
+    navigation.rebuild();
+
+    expect(fauna.animals.every((animal) => world.isWaterAt(animal.mover.x, animal.mover.z))).toBe(true);
+
+    runFor(fauna, 60);
+
+    expect(fauna.animals.filter((animal) => world.isWaterAt(animal.mover.x, animal.mover.z))).toEqual([]);
   });
 
   it("burn when standing in flames", () => {

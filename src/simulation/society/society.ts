@@ -1,7 +1,7 @@
 import { personName, tribeIdentity } from "../../content/names.ts";
 import type { TechnologyId } from "../../content/technologies.ts";
 import type { RandomSource } from "../../shared/random.ts";
-import { stopMoving } from "../agents/movement.ts";
+import { isStranded, stopMoving } from "../agents/movement.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import { nearestWalkableSpot } from "../agents/walkable-ground.ts";
 import type { Chronicle } from "../chronicle.ts";
@@ -9,8 +9,9 @@ import type { IdentifierSource } from "../identifiers.ts";
 import type { BuildingSystem } from "./buildings.ts";
 import { handleBuildingLoss } from "./construction.ts";
 import { dropJob, updateMind } from "./decisions.ts";
+import { walk } from "./jobs/job.ts";
 import { updateNeeds } from "./needs.ts";
-import { createPerson, type DeathCause, type Person } from "./person.ts";
+import { createPerson, type DeathCause, type Person, walkSpeed } from "./person.ts";
 import { findCampSite } from "./settlement.ts";
 import type { PeopleDirectory, PersonTick, SocietyContext } from "./society-context.ts";
 import { createTribe, type Tribe } from "./tribe.ts";
@@ -376,7 +377,13 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     }
 
     updateMind(tick);
-    this.#act(tick);
+
+    if (isStranded(person.mover, context.world)) {
+      walk(tick, walkSpeed(person));
+    } else {
+      this.#act(tick);
+    }
+
     person.phase += seconds * person.speed * POSE_PHASE_RATE;
   }
 

@@ -2,7 +2,6 @@ import { groundDefinition } from "../../content/grounds.ts";
 import { wrapAngle } from "../../shared/math.ts";
 import type { WorldState } from "../world/world-state.ts";
 import type { NavigationGrid, Waypoint } from "./navigation.ts";
-import { nearestWalkableSpot } from "./walkable-ground.ts";
 
 const SHORT_TRIP = 90;
 const FINAL_ARRIVAL_DISTANCE = 1.2;
@@ -16,7 +15,6 @@ const GIVE_UP_SECONDS = 2.5;
 const TURN_RATE = 8;
 const UPHILL_DRAG = 1.6;
 const DEFLECTION_FRUSTRATION = 0.3;
-const SHORE_SEARCH_RADIUS = 40;
 const REPLAN_PROGRESS = 2;
 const MAXIMUM_FUTILE_REPLANS = 3;
 
@@ -69,10 +67,12 @@ export function setDestination(
 ): void {
   const { arrivalDistance = FINAL_ARRIVAL_DISTANCE, mayPlanRoute = true } = options;
 
+  const landing = navigation.landingSpot(destination, mover.canWade ? WADING_DEPTH : 0);
+
   mover.arrivalDistance = arrivalDistance;
-  mover.goalX = destination.x;
-  mover.goalZ = destination.z;
-  mover.path = planRoute(mover, destination, navigation, mayPlanRoute);
+  mover.goalX = landing.x;
+  mover.goalZ = landing.z;
+  mover.path = planRoute(mover, landing, navigation, mayPlanRoute);
   mover.pathIndex = 0;
   forgetReplans(mover);
   mover.stuckSeconds = 0;
@@ -107,6 +107,20 @@ export function faceTowards(mover: Mover, x: number, z: number): void {
   mover.heading = Math.atan2(x - mover.x, z - mover.z);
 }
 
+export function isStranded(mover: Mover, world: WorldState): boolean {
+  const cell = world.grid.cellAt(mover.x, mover.z);
+
+  return cell >= 0 && isOutOfDepth(mover, cell, world);
+}
+
+function isOutOfDepth(mover: Mover, cell: number, world: WorldState): boolean {
+  if (!world.isWater(cell)) {
+    return false;
+  }
+
+  return !mover.canWade || world.waterDepth(cell) >= WADING_DEPTH;
+}
+
 export function moveAlong(
   mover: Mover,
   seconds: number,
@@ -114,6 +128,17 @@ export function moveAlong(
   world: WorldState,
   navigation: NavigationGrid
 ): boolean {
+  if (isStranded(mover, world)) {
+    wadeAshore(
+      mover,
+      { isEscapingWater: true, isLeavingWater: true, seconds, step: speed * SWIMMING_SPEED * seconds },
+      world,
+      navigation
+    );
+
+    return false;
+  }
+
   if (hasArrived(mover)) {
     stopMoving(mover);
 
@@ -137,7 +162,9 @@ export function moveAlong(
   const step = Math.min(distanceLeft, speed * terrainSpeedFactor(mover, world) * seconds);
   const desiredHeading = Math.atan2(waypoint.x - mover.x, waypoint.z - mover.z);
 
-  if (!tryStep(mover, desiredHeading, step, seconds, world)) {
+  if (
+    !tryStep(mover, desiredHeading, { isEscapingWater: false, isLeavingWater: false, seconds, step }, world, navigation)
+  ) {
     stopMoving(mover);
     mover.stuckSeconds += seconds;
   }
@@ -165,32 +192,70 @@ function terrainSpeedFactor(mover: Mover, world: WorldState): number {
 
 interface StepAttempt {
   isEscapingWater: boolean;
+  isLeavingWater: boolean;
   seconds: number;
   step: number;
 }
 
-function tryStep(mover: Mover, desiredHeading: number, step: number, seconds: number, world: WorldState): boolean {
-  if (stepTowards(mover, desiredHeading, { isEscapingWater: false, seconds, step }, world)) {
+function tryStep(
+  mover: Mover,
+  desiredHeading: number,
+  attempt: StepAttempt,
+  world: WorldState,
+  navigation: NavigationGrid
+): boolean {
+  if (stepTowards(mover, desiredHeading, attempt, world)) {
     return true;
   }
 
-  if (waterDepthIn(world.grid.cellAt(mover.x, mover.z), world) === 0) {
+  const shore = navigation.stepAshore(mover.x, mover.z);
+
+  if (shore === null) {
     return false;
   }
 
-  const shoreHeading = headingToShore(mover, desiredHeading, world);
+  const shoreHeading = Math.atan2(shore.x - mover.x, shore.z - mover.z);
 
-  return stepTowards(mover, shoreHeading, { isEscapingWater: true, seconds, step }, world);
+  return stepTowards(mover, shoreHeading, { ...attempt, isEscapingWater: true }, world);
 }
 
-function headingToShore(mover: Mover, desiredHeading: number, world: WorldState): number {
-  const shore = nearestWalkableSpot(world, { x: mover.x, z: mover.z }, SHORE_SEARCH_RADIUS);
-
-  if (shore.x === mover.x && shore.z === mover.z) {
-    return desiredHeading;
+function wadeAshore(mover: Mover, attempt: StepAttempt, world: WorldState, navigation: NavigationGrid): void {
+  if (stepTowardsWaypoint(mover, attempt, world)) {
+    return;
   }
 
-  return Math.atan2(shore.x - mover.x, shore.z - mover.z);
+  const shore = navigation.stepAshore(mover.x, mover.z);
+
+  if (shore === null) {
+    stopMoving(mover);
+
+    return;
+  }
+
+  const distance = Math.min(attempt.step, Math.hypot(shore.x - mover.x, shore.z - mover.z));
+
+  advance(mover, Math.atan2(shore.x - mover.x, shore.z - mover.z), distance, attempt.seconds);
+}
+
+function stepTowardsWaypoint(mover: Mover, attempt: StepAttempt, world: WorldState): boolean {
+  if (hasArrived(mover)) {
+    return false;
+  }
+
+  const waypoint = mover.path[mover.pathIndex];
+
+  return stepTowards(mover, Math.atan2(waypoint.x - mover.x, waypoint.z - mover.z), attempt, world);
+}
+
+function advance(mover: Mover, heading: number, distance: number, seconds: number): void {
+  const directionX = Math.sin(heading);
+  const directionZ = Math.cos(heading);
+
+  mover.velocityX = (directionX * distance) / seconds;
+  mover.velocityZ = (directionZ * distance) / seconds;
+  mover.x += directionX * distance;
+  mover.z += directionZ * distance;
+  mover.heading += wrapAngle(heading - mover.heading) * Math.min(1, seconds * TURN_RATE);
 }
 
 function stepTowards(mover: Mover, desiredHeading: number, attempt: StepAttempt, world: WorldState): boolean {
@@ -207,19 +272,13 @@ function stepTowards(mover: Mover, desiredHeading: number, attempt: StepAttempt,
     const probeX = mover.x + directionX * probe;
     const probeZ = mover.z + directionZ * probe;
 
-    if (!canEnter(mover, probeX, probeZ, attempt.isEscapingWater, world)) {
+    if (!mayStepTo(mover, probeX, probeZ, attempt, world)) {
       continue;
     }
 
     const rise = world.heightAt(probeX, probeZ) - world.heightAt(mover.x, mover.z);
 
-    const distance = step * uphillSlowdown(rise, probe);
-
-    mover.velocityX = (directionX * distance) / seconds;
-    mover.velocityZ = (directionZ * distance) / seconds;
-    mover.x += directionX * distance;
-    mover.z += directionZ * distance;
-    mover.heading += wrapAngle(heading - mover.heading) * Math.min(1, seconds * TURN_RATE);
+    advance(mover, heading, step * uphillSlowdown(rise, probe), seconds);
 
     if (deflection !== 0) {
       mover.stuckSeconds += seconds * DEFLECTION_FRUSTRATION;
@@ -237,6 +296,16 @@ function uphillSlowdown(rise: number, run: number): number {
   }
 
   return 1 / (1 + (rise / run) * UPHILL_DRAG);
+}
+
+function mayStepTo(mover: Mover, x: number, z: number, attempt: StepAttempt, world: WorldState): boolean {
+  if (!attempt.isLeavingWater) {
+    return canEnter(mover, x, z, attempt.isEscapingWater, world);
+  }
+
+  const target = world.grid.cellAt(x, z);
+
+  return world.isOnIsland(target) && world.slope(target) <= CLIMBABLE_SLOPE && !isOutOfDepth(mover, target, world);
 }
 
 function canEnter(mover: Mover, x: number, z: number, isEscapingWater: boolean, world: WorldState): boolean {

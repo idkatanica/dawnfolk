@@ -2,6 +2,7 @@ import { clamp } from "../../shared/math.ts";
 import { MinHeap } from "../../shared/min-heap.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { WorldState } from "../world/world-state.ts";
+import { nearestWalkableSpot } from "./walkable-ground.ts";
 
 const NODE_SIZE = 40;
 const LINE_SAMPLE_SPACING = 7;
@@ -11,6 +12,9 @@ const IMPASSABLE_WATER_SHARE = 0.45;
 const IMPASSABLE_STEEP_SHARE = 0.7;
 const SEARCH_LIMIT = 6000;
 const DIAGONAL_HEURISTIC = Math.SQRT2 - 1;
+const LANDING_SEARCH_RADIUS = 120;
+const NO_SHORE = 65_535;
+const SHORE_INSET = 0.5;
 
 export interface Waypoint {
   x: number;
@@ -29,6 +33,9 @@ export class NavigationGrid {
   readonly #nodesPerSide: number;
   readonly #pathCost: Float32Array;
   readonly #seenInSearch: Int32Array;
+  readonly #shoreQueue: Int32Array;
+  readonly #shoreSteps: Uint16Array;
+  readonly #leadsToSteepShore: Uint8Array;
   readonly #world: WorldState;
   #builtHeightVersion = -1;
   #builtWaterVersion = -1;
@@ -46,6 +53,9 @@ export class NavigationGrid {
     this.#seenInSearch = new Int32Array(nodeCount);
     this.#closedInSearch = new Int32Array(nodeCount);
     this.#heap = new MinHeap(nodeCount);
+    this.#shoreQueue = new Int32Array(world.grid.cellCount);
+    this.#shoreSteps = new Uint16Array(world.grid.cellCount);
+    this.#leadsToSteepShore = new Uint8Array(world.grid.cellCount);
     this.rebuild();
   }
 
@@ -53,6 +63,8 @@ export class NavigationGrid {
     for (let node = 0; node < this.#nodeCost.length; node += 1) {
       this.#nodeCost[node] = this.#measureNodeCost(node);
     }
+
+    this.#measureShores();
 
     this.#builtHeightVersion = this.#world.heightVersion;
     this.#builtWaterVersion = this.#world.waterVersion;
@@ -72,6 +84,41 @@ export class NavigationGrid {
 
   isPassable(x: number, z: number): boolean {
     return this.#world.isWalkableAt(x, z);
+  }
+
+  landingSpot(point: Waypoint, wadingDepth: number): Waypoint {
+    const world = this.#world;
+
+    const cell = world.grid.cellAt(point.x, point.z);
+
+    if (cell < 0 || !world.isWater(cell) || world.waterDepth(cell) < wadingDepth) {
+      return point;
+    }
+
+    return nearestWalkableSpot(world, point, LANDING_SEARCH_RADIUS);
+  }
+
+  stepAshore(x: number, z: number): Waypoint | null {
+    const world = this.#world;
+    const { grid } = world;
+
+    const cell = grid.cellAt(x, z);
+
+    if (cell < 0 || !world.isWater(cell)) {
+      return null;
+    }
+
+    const steps = this.#shoreSteps[cell];
+
+    if (steps === 0) {
+      return this.#nearestDryLand(x, z);
+    }
+
+    if (steps === NO_SHORE) {
+      return null;
+    }
+
+    return this.#nearestStepAshore(cell, x, z);
   }
 
   hasClearLine(fromX: number, fromZ: number, toX: number, toZ: number): boolean {
@@ -140,6 +187,117 @@ export class NavigationGrid {
     }
 
     return costFromShares(waterSamples / Math.max(1, samples), steepness / Math.max(1, samples));
+  }
+
+  #measureShores(): void {
+    const world = this.#world;
+
+    for (let cell = 0; cell < world.grid.cellCount; cell += 1) {
+      this.#shoreSteps[cell] = world.isWater(cell) ? NO_SHORE : 0;
+      this.#leadsToSteepShore[cell] = 0;
+    }
+
+    this.#spreadFromShore((cell) => world.isWalkable(cell), 0);
+    this.#spreadFromShore((cell) => isDryLand(world, cell), 1);
+  }
+
+  #spreadFromShore(isShore: (cell: number) => boolean, leadsToSteepShore: number): void {
+    const { grid } = this.#world;
+    const steps = this.#shoreSteps;
+    const queue = this.#shoreQueue;
+
+    let length = 0;
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      if (steps[cell] === NO_SHORE && this.#bordersOn(cell, isShore)) {
+        steps[cell] = 1;
+        this.#leadsToSteepShore[cell] = leadsToSteepShore;
+        queue[length] = cell;
+        length += 1;
+      }
+    }
+
+    for (let next = 0; next < length; next += 1) {
+      const cell = queue[next];
+
+      for (const neighbor of this.#neighborsOf(cell)) {
+        if (steps[neighbor] === NO_SHORE) {
+          steps[neighbor] = steps[cell] + 1;
+          this.#leadsToSteepShore[neighbor] = leadsToSteepShore;
+          queue[length] = neighbor;
+          length += 1;
+        }
+      }
+    }
+  }
+
+  #bordersOn(cell: number, isShore: (cell: number) => boolean): boolean {
+    return this.#neighborsOf(cell).some((neighbor) => isShore(neighbor));
+  }
+
+  #neighborsOf(cell: number): number[] {
+    const { grid } = this.#world;
+
+    const column = grid.columnOf(cell);
+    const row = grid.rowOf(cell);
+    const neighbors: number[] = [];
+
+    for (const offset of NEIGHBOR_OFFSETS) {
+      if (grid.contains(column + offset.column, row + offset.row)) {
+        neighbors.push(grid.index(column + offset.column, row + offset.row));
+      }
+    }
+
+    return neighbors;
+  }
+
+  #nearestStepAshore(cell: number, x: number, z: number): Waypoint | null {
+    const world = this.#world;
+    const closer = this.#shoreSteps[cell] - 1;
+
+    let nearest: Waypoint | null = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    for (const neighbor of this.#neighborsOf(cell)) {
+      if (!this.#isStepAshore(neighbor, closer, this.#leadsToSteepShore[cell] === 1)) {
+        continue;
+      }
+
+      const spot = pointInside(world, neighbor, x, z);
+
+      const distance = Math.hypot(spot.x - x, spot.z - z);
+
+      if (distance < nearestDistance) {
+        nearest = spot;
+        nearestDistance = distance;
+      }
+    }
+
+    return nearest;
+  }
+
+  #isStepAshore(cell: number, steps: number, isSteepShore: boolean): boolean {
+    const world = this.#world;
+
+    if (steps > 0) {
+      return world.isWater(cell) && this.#shoreSteps[cell] === steps;
+    }
+
+    if (isSteepShore) {
+      return isDryLand(world, cell);
+    }
+
+    return world.isWalkable(cell);
+  }
+
+  #nearestDryLand(x: number, z: number): Waypoint | null {
+    const landing = nearestWalkableSpot(this.#world, { x, z }, LANDING_SEARCH_RADIUS);
+
+    if (landing.x === x && landing.z === z) {
+      return null;
+    }
+
+    return landing;
   }
 
   #nodeAt(x: number, z: number): number {
@@ -235,14 +393,18 @@ export class NavigationGrid {
     const route: Waypoint[] = [];
 
     for (let node = goal; node !== -1 && node !== start; node = this.#cameFrom[node]) {
-      route.push(this.#nodeCenter(node));
+      route.push(this.#dryNodeCenter(node));
     }
 
     if (route.length === 0) {
-      route.push(this.#nodeCenter(goal));
+      route.push(this.#dryNodeCenter(goal));
     }
 
     return route.reverse();
+  }
+
+  #dryNodeCenter(node: number): Waypoint {
+    return nearestWalkableSpot(this.#world, this.#nodeCenter(node), NODE_SIZE / 2);
   }
 
   #straighten(from: Waypoint, route: readonly Waypoint[]): Waypoint[] {
@@ -271,6 +433,20 @@ export class NavigationGrid {
 
     return first;
   }
+}
+
+function isDryLand(world: WorldState, cell: number): boolean {
+  return world.isOnIsland(cell) && !world.isWater(cell);
+}
+
+function pointInside(world: WorldState, cell: number, x: number, z: number): Waypoint {
+  const { grid } = world;
+
+  const reach = grid.cellSize / 2 - SHORE_INSET;
+  const centerX = grid.cellCenterX(cell);
+  const centerZ = grid.cellCenterZ(cell);
+
+  return { x: clamp(x, centerX - reach, centerX + reach), z: clamp(z, centerZ - reach, centerZ + reach) };
 }
 
 function slopePenalty(slope: number): number {
