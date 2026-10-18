@@ -83,6 +83,7 @@ export class WorldRenderer {
   readonly #output: RenderOutput;
   readonly #people = new PeopleView();
   readonly #quality: RenderQuality;
+  readonly #renderer: WebGPURenderer;
   readonly #selectionRing: GroundRing;
   readonly #splashes: RainSplashes;
   readonly #terrain: TerrainView;
@@ -95,6 +96,7 @@ export class WorldRenderer {
   constructor({ camera, mirror, onShake, quality, renderer }: WorldRendererOptions) {
     this.#mirror = mirror;
     this.#quality = quality;
+    this.#renderer = renderer;
     this.#changes = new WorldChangeReader(mirror);
     this.#textures = new TerrainTextures(mirror);
     this.#fireGlow = new FireGlow(mirror.grid);
@@ -156,7 +158,7 @@ export class WorldRenderer {
     const { frame } = this.#mirror;
     const changes = this.#changes.take();
 
-    this.#textures.update(frame.calendar.season, changes);
+    this.#textures.update(this.#renderer, frame.calendar.season, changes);
     this.#fireGlow.update(frame);
 
     if (changes.heightRegion !== null) {
