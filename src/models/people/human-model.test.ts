@@ -171,6 +171,34 @@ describe("attached parts", () => {
   });
 });
 
+describe("resting poses", () => {
+  it.each(["sit", "eat"] as const)("seats a person on the ground, not in the air, to %s", (clip) => {
+    const tribe = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
+    const poser = new SkeletonPoser(HUMAN_SKELETON);
+    const pose = new Pose(HUMAN_SKELETON.bones.length);
+
+    for (const age of [9, 30, 70]) {
+      const appearance = personAppearance({ age, isFemale: age > 20, seed: 0.42, tribe });
+
+      applyHumanClip(pose, clip, 0.3, { ageGroup: appearance.ageGroup, carried: "nothing", motion: appearance.motion });
+      poser.pose(pose, humanBoneScales(appearance.body));
+
+      const body = appearanceParts(appearance).filter((part) => part === "body" || part.startsWith("torso"));
+
+      const mesh = posedMesh(mergeMeshes(body.map((name) => highParts[humanPartIndex(name)])), poser);
+
+      const seat = Array.from({ length: mesh.positions.length / 3 }, (_, vertex) => vertex).filter(
+        (vertex) => mesh.channels.boneA[vertex] === HumanBone.Pelvis && mesh.channels.boneWeight[vertex] === 0
+      );
+
+      const lowestSeat = Math.min(...seat.map((vertex) => mesh.positions[vertex * 3 + 1]));
+
+      expect(lowestSeat, `${appearance.ageGroup}`).toBeLessThan(0.08);
+      expect(lowestSeat, `${appearance.ageGroup}`).toBeGreaterThan(-0.08);
+    }
+  });
+});
+
 describe("visible parts", () => {
   const tribe = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
 
