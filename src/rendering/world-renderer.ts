@@ -116,7 +116,7 @@ export class WorldRenderer {
     this.#fire = new FireView({ axes: this.#axes, chunks: this.#vegetation.chunks });
     this.#dots = new AgentDots(this.#axes);
     this.#weather = new WeatherParticles(this.#axes, this.#textures, mirror.grid);
-    this.#splashes = new RainSplashes(this.#textures, mirror.grid);
+    this.#splashes = new RainSplashes(this.#axes, this.#textures, mirror.grid);
 
     this.#effects = new EffectView({
       axes: this.#axes,
@@ -266,6 +266,7 @@ export class WorldRenderer {
       camera: view.camera,
       focusX: view.focus.x,
       focusZ: view.focus.z,
+      realSeconds: view.realSeconds,
       viewDistance: view.viewDistance,
     });
     this.#weather.update(
