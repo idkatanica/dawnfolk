@@ -78,6 +78,40 @@ describe("navigation grid", () => {
     expect(navigation.findPath({ x: -150, z: -100 }, { x: 150, z: -100 })).toBeNull();
   });
 
+  it("lands a destination in deep water on the nearest dry ground and leaves shallows to waders", () => {
+    const world = createTestWorld(RIVER_WORLD);
+
+    floodCells(world, world.grid.cellsInRadius(0, 0, 30), 3);
+    floodCells(world, world.grid.cellsInRadius(200, 0, 20), 0.6);
+
+    const navigation = new NavigationGrid(world);
+
+    const landing = navigation.landingSpot({ x: 0, z: 0 }, 1.1);
+
+    expect(world.isWalkableAt(landing.x, landing.z)).toBe(true);
+    expect(Math.hypot(landing.x, landing.z)).toBeLessThan(40);
+    expect(navigation.landingSpot({ x: 200, z: 0 }, 1.1)).toEqual({ x: 200, z: 0 });
+  });
+
+  it("leads out of water one cell at a time toward the nearest bank", () => {
+    const world = createTestWorld(RIVER_WORLD);
+
+    floodCells(world, world.grid.cellsInRadius(0, 0, 45), 1.6);
+
+    const navigation = new NavigationGrid(world);
+
+    const steps: Waypoint[] = [];
+
+    for (let next = navigation.stepAshore(2, 1); next !== null; next = navigation.stepAshore(next.x, next.z)) {
+      steps.push(next);
+    }
+
+    expect(steps.length).toBeGreaterThan(2);
+    expect(steps.length).toBeLessThan(8);
+    expect(steps.filter((step) => world.isWalkableAt(step.x, step.z))).toEqual([steps.at(-1)]);
+    expect(navigation.stepAshore(-300, 0)).toBeNull();
+  });
+
   it("rebuilds only after the land or water changed", () => {
     const world = createTestWorld(RIVER_WORLD);
 

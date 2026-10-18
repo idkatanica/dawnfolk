@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SocietyHarness } from "../testing/test-society.ts";
+import { floodCells } from "../testing/test-world.ts";
 import { assignJob } from "./decisions.ts";
 import { FleeJob } from "./jobs/flee-job.ts";
 import { WanderJob } from "./jobs/wander-job.ts";
@@ -140,6 +141,23 @@ describe("staying dry", () => {
 
     expect(person.job).toBeNull();
     expect(person.mover.canWade).toBe(false);
+  });
+
+  it("walks people out of water that rose around them", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+
+    const tribe = settle(harness, 4);
+
+    const [person] = harness.society.membersOf(tribe);
+
+    floodCells(harness.world, harness.world.grid.cellsInRadius(person.mover.x, person.mover.z, 40), 1.6);
+    harness.navigation.rebuild();
+
+    expect(harness.world.isWaterAt(person.mover.x, person.mover.z)).toBe(true);
+
+    harness.run(60);
+
+    expect(harness.world.isWaterAt(person.mover.x, person.mover.z)).toBe(false);
   });
 
   it("gives up fields that the water has taken", () => {

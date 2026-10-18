@@ -1,58 +1,127 @@
 import { describe, expect, it } from "vitest";
 import { landEverywhere } from "../world/coast.ts";
 import { hasWater } from "../world/water.ts";
-import { WorldGrid } from "../world/world-grid.ts";
+import { NEIGHBOR_OFFSETS, WorldGrid } from "../world/world-grid.ts";
 import { computeHydrology, DEFAULT_HYDROLOGY } from "./hydrology.ts";
 
 const VALLEY_FLOOR_HALF_WIDTH = 10;
+const GENTLE_WALLS = 0.6;
+const STEEP_WALLS = 2;
+const BANK_FREEBOARD = 0.2;
+const DEEPEST_BANK_LOWERING = 10;
+const UNTOUCHED_DISTANCE = 120;
 
-function createSteepValley(grid: WorldGrid): Float32Array {
-  const heights = new Float32Array(grid.cellCount);
+function carveValley(wallSlope: number) {
+  const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 64 });
 
-  for (let cell = 0; cell < grid.cellCount; cell += 1) {
+  const uncarved = Float32Array.from({ length: grid.cellCount }, (_, cell) => {
     const x = grid.cellCenterX(cell);
     const z = grid.cellCenterZ(cell);
 
-    heights[cell] = 100 + Math.abs(x) * 2 + (z + grid.halfSize) * 0.05;
+    return 100 + Math.abs(x) * wallSlope + (z + grid.halfSize) * 0.05;
+  });
+
+  const carved = Float32Array.from(uncarved);
+  const options = { ...DEFAULT_HYDROLOGY, riverCatchmentArea: 30_000 };
+
+  const result = computeHydrology(
+    carved,
+    grid,
+    new Float32Array(grid.cellCount),
+    landEverywhere(grid.cellCount),
+    options
+  );
+
+  return { carved, grid, result, uncarved };
+}
+
+function waterLevelBeside(grid: WorldGrid, cell: number, carved: Float32Array, waterSurface: Float32Array): number {
+  let total = 0;
+  let count = 0;
+
+  for (const offset of NEIGHBOR_OFFSETS) {
+    const column = grid.columnOf(cell) + offset.column;
+    const row = grid.rowOf(cell) + offset.row;
+
+    if (!grid.contains(column, row)) {
+      continue;
+    }
+
+    const neighbor = grid.index(column, row);
+
+    if (hasWater(waterSurface[neighbor], carved[neighbor])) {
+      total += waterSurface[neighbor];
+      count += 1;
+    }
   }
 
-  return heights;
+  return count > 0 ? total / count : Number.NaN;
 }
 
 describe("river carving", () => {
-  it("cuts a channel without notching the valley walls", () => {
-    const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 64 });
+  it("cuts a channel and lowers the banks beside it to just above the water level there", () => {
+    const { carved, grid, result } = carveValley(GENTLE_WALLS);
+    const rises: number[] = [];
 
-    const uncarved = createSteepValley(grid);
-
-    const carved = Float32Array.from(uncarved);
-    const options = { ...DEFAULT_HYDROLOGY, riverCatchmentArea: 30_000 };
-
-    const result = computeHydrology(
-      carved,
-      grid,
-      new Float32Array(grid.cellCount),
-      landEverywhere(grid.cellCount),
-      options
-    );
-
-    let deepestWallCut = 0;
     let wetFloorCells = 0;
 
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
-      const isWall = Math.abs(grid.cellCenterX(cell)) > VALLEY_FLOOR_HALF_WIDTH;
+      if (hasWater(result.waterSurface[cell], carved[cell])) {
+        wetFloorCells += Math.abs(grid.cellCenterX(cell)) < VALLEY_FLOOR_HALF_WIDTH ? 1 : 0;
 
-      if (isWall) {
-        deepestWallCut = Math.max(deepestWallCut, uncarved[cell] - carved[cell]);
+        continue;
       }
 
-      if (!isWall && hasWater(result.waterSurface[cell], carved[cell])) {
-        wetFloorCells += 1;
+      const water = waterLevelBeside(grid, cell, carved, result.waterSurface);
+
+      if (Number.isFinite(water)) {
+        rises.push(carved[cell] - water);
       }
     }
 
     expect(result.features.rivers.length).toBeGreaterThan(0);
     expect(wetFloorCells).toBeGreaterThan(10);
-    expect(deepestWallCut).toBeLessThan(4);
+    expect(rises.length).toBeGreaterThan(20);
+    expect(Math.max(...rises)).toBeLessThan(BANK_FREEBOARD + 0.01);
+  });
+
+  it("rises steadily from the river to the untouched valley walls", () => {
+    const { carved, grid, uncarved } = carveValley(GENTLE_WALLS);
+    const row = grid.rowAt(-150);
+
+    const profile = Array.from({ length: 12 }, (_, step) => carved[grid.index(grid.columnAt(5 + step * 10), row)]);
+
+    for (let step = 1; step < profile.length; step += 1) {
+      expect(profile[step]).toBeGreaterThanOrEqual(profile[step - 1]);
+    }
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      if (Math.abs(grid.cellCenterX(cell)) > UNTOUCHED_DISTANCE) {
+        expect(carved[cell]).toBe(uncarved[cell]);
+      }
+    }
+  });
+
+  it("lowers steep valley walls by at most ten metres and never notches them", () => {
+    const { carved, grid, uncarved } = carveValley(STEEP_WALLS);
+
+    let deepestWallCut = 0;
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      if (Math.abs(grid.cellCenterX(cell)) > VALLEY_FLOOR_HALF_WIDTH) {
+        deepestWallCut = Math.max(deepestWallCut, uncarved[cell] - carved[cell]);
+      }
+    }
+
+    const row = grid.rowAt(-150);
+    const profile = Array.from({ length: 12 }, (_, step) => carved[grid.index(grid.columnAt(15 + step * 10), row)]);
+
+    expect(deepestWallCut).toBeGreaterThan(5);
+    expect(deepestWallCut).toBeLessThanOrEqual(DEEPEST_BANK_LOWERING + 0.01);
+
+    for (let step = 1; step < profile.length; step += 1) {
+      expect(profile[step] - profile[step - 1]).toBeGreaterThan(0);
+      expect(profile[step] - profile[step - 1]).toBeLessThan(STEEP_WALLS * 10 + 5);
+    }
   });
 });

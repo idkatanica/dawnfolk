@@ -7,7 +7,7 @@ import type { IslandShapeKind } from "../world/island-shape.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { sampleHeight } from "../world/terrain-sampling.ts";
 import { hasWater, NO_WATER } from "../world/water.ts";
-import { WorldGrid } from "../world/world-grid.ts";
+import { NEIGHBOR_OFFSETS, WorldGrid } from "../world/world-grid.ts";
 import {
   DEFAULT_GENERATION_OPTIONS,
   type GeneratedWorld,
@@ -99,9 +99,60 @@ function cellsAround(grid: WorldGrid, cell: number, innerRadius: number, outerRa
 }
 
 function median(values: readonly number[]): number {
+  return quantile(values, 0.5);
+}
+
+function quantile(values: readonly number[], share: number): number {
   const sorted = [...values].sort((first, second) => first - second);
 
-  return sorted[Math.floor(sorted.length / 2)];
+  return sorted[Math.floor(sorted.length * share)];
+}
+
+function waterLevelBesideRiver(terrain: TerrainData, grid: WorldGrid, cell: number): number {
+  let total = 0;
+  let count = 0;
+  let isBesideRiver = false;
+
+  for (const offset of NEIGHBOR_OFFSETS) {
+    const column = grid.columnOf(cell) + offset.column;
+    const row = grid.rowOf(cell) + offset.row;
+
+    if (!grid.contains(column, row)) {
+      continue;
+    }
+
+    const neighbor = grid.index(column, row);
+
+    if (!hasWater(terrain.waterSurface[neighbor], terrain.height[neighbor])) {
+      continue;
+    }
+
+    total += terrain.waterSurface[neighbor];
+    count += 1;
+
+    if (isRiverWater(terrain, neighbor)) {
+      isBesideRiver = true;
+    }
+  }
+
+  return isBesideRiver ? total / count : Number.NaN;
+}
+
+function bankRises(terrain: TerrainData, grid: WorldGrid): number[] {
+  const rises: number[] = [];
+
+  for (let cell = 0; cell < grid.cellCount; cell += 1) {
+    const isDryLand =
+      isOnIsland(terrain.coastDistance, cell) && !hasWater(terrain.waterSurface[cell], terrain.height[cell]);
+
+    const water = isDryLand ? waterLevelBesideRiver(terrain, grid, cell) : Number.NaN;
+
+    if (Number.isFinite(water)) {
+      rises.push(terrain.height[cell] - water);
+    }
+  }
+
+  return rises;
 }
 
 beforeAll(() => {
@@ -366,6 +417,16 @@ describe("full-size island rim", () => {
 
     expect(Math.min(...shore)).toBeGreaterThan(100);
     expect(Math.max(...shore)).toBeLessThan(300);
+  });
+
+  it("lowers the banks of rivers to just above the water beside them on both shapes", () => {
+    for (const generated of [fullSize, fullSquare]) {
+      const rises = bankRises(generated.terrain, new WorldGrid(generated.dimensions));
+
+      expect(rises.length).toBeGreaterThan(2000);
+      expect(median(rises)).toBeLessThan(0.3);
+      expect(quantile(rises, 0.9)).toBeLessThan(0.5);
+    }
   });
 
   it("has few slopes steeper than 45 degrees and almost none steeper than 55", () => {

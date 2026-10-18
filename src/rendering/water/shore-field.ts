@@ -76,6 +76,18 @@ function wetDepth(source: ShoreSource, column: number, row: number): number {
   return Math.max(0, levels[cell] - heights[cell]);
 }
 
+function deepestBeside(source: ShoreSource, column: number, row: number): number {
+  let deepest = 0;
+
+  for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
+    for (let columnOffset = -1; columnOffset <= 1; columnOffset += 1) {
+      deepest = Math.max(deepest, wetDepth(source, column + columnOffset, row + rowOffset));
+    }
+  }
+
+  return deepest;
+}
+
 function cornerDepth(source: ShoreSource, column: number, row: number): number {
   const west = wetDepth(source, column - 1, row);
   const east = wetDepth(source, column + 1, row);
@@ -123,7 +135,7 @@ function writeShore(source: ShoreSource, column: number, row: number, target: Fl
   }
 
   const bank = bankLevel(source, column, row);
-  const bankDepth = isWet(bank) ? Math.min(bank, ground - BANK_SINK) - ground : DRY_DEPTH;
+  const bankDepth = isWet(bank) ? Math.min(bank - ground, -BANK_SINK, -deepestBeside(source, column, row)) : DRY_DEPTH;
   const corner = cornerDepth(source, column, row);
 
   target[offset + ShoreChannel.Depth] = corner > 0 ? Math.max(bankDepth, -CORNER_BRIDGE * corner) : bankDepth;

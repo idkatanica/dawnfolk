@@ -84,6 +84,9 @@ const FILL_EPSILON = 1e-3;
 const FLOODED_DEPTH = 0.25;
 const BANK_HEIGHT = 1.6;
 const DEEPEST_BANK_CUT = 2;
+const BANK_FREEBOARD = 0.2;
+const DEEPEST_BANK_LOWERING = 10;
+const BANK_LOWERING_FADE = 0.2;
 
 function touchesOffIsland(cell: number, grid: WorldGrid, coastDistance: Float32Array): boolean {
   const column = grid.columnOf(cell);
@@ -636,6 +639,143 @@ function findWaterfalls(rivers: readonly River[], grid: WorldGrid): Waterfall[] 
   return waterfalls;
 }
 
+interface BankLowering {
+  readonly cuts: Float32Array;
+  readonly floors: Float32Array;
+  readonly heap: MinHeap;
+  readonly isBesideWater: Uint8Array;
+}
+
+function isDryLand(cell: number, targets: ChannelTargets): boolean {
+  return isOnIsland(targets.coastDistance, cell) && !hasWater(targets.waterSurface[cell], targets.heights[cell]);
+}
+
+function waterLevelBeside(cell: number, targets: ChannelTargets): number {
+  const { grid, heights, riverStrength, waterSurface } = targets;
+  const column = grid.columnOf(cell);
+  const row = grid.rowOf(cell);
+
+  let total = 0;
+  let count = 0;
+  let isBesideRiver = false;
+
+  for (const offset of NEIGHBOR_OFFSETS) {
+    const neighborColumn = column + offset.column;
+    const neighborRow = row + offset.row;
+
+    if (!grid.contains(neighborColumn, neighborRow)) {
+      continue;
+    }
+
+    const neighbor = grid.index(neighborColumn, neighborRow);
+
+    if (!hasWater(waterSurface[neighbor], heights[neighbor])) {
+      continue;
+    }
+
+    total += waterSurface[neighbor];
+    count += 1;
+
+    if (riverStrength[neighbor] > 0) {
+      isBesideRiver = true;
+    }
+  }
+
+  return isBesideRiver ? total / count : NO_WATER;
+}
+
+function startBankLowering(targets: ChannelTargets): BankLowering {
+  const { grid, uncarvedHeights } = targets;
+  const lowering: BankLowering = {
+    cuts: new Float32Array(grid.cellCount),
+    floors: new Float32Array(grid.cellCount).fill(Number.NEGATIVE_INFINITY),
+    heap: new MinHeap(grid.cellsPerSide * 16),
+    isBesideWater: new Uint8Array(grid.cellCount),
+  };
+
+  for (let cell = 0; cell < grid.cellCount; cell += 1) {
+    if (!isDryLand(cell, targets)) {
+      continue;
+    }
+
+    const water = waterLevelBeside(cell, targets);
+
+    if (water === NO_WATER) {
+      continue;
+    }
+
+    const floor = water + BANK_FREEBOARD;
+
+    const cut = clamp(uncarvedHeights[cell] - floor, 0, DEEPEST_BANK_LOWERING);
+
+    lowering.floors[cell] = floor;
+    lowering.isBesideWater[cell] = 1;
+
+    if (cut > 0) {
+      lowering.cuts[cell] = cut;
+      lowering.heap.push(cell, -cut);
+    }
+  }
+
+  return lowering;
+}
+
+function spreadBankLowering(lowering: BankLowering, targets: ChannelTargets): void {
+  const { cuts, floors, heap, isBesideWater } = lowering;
+  const { grid } = targets;
+  const settled = new Uint8Array(grid.cellCount);
+
+  while (heap.size > 0) {
+    const cell = heap.pop();
+
+    if (settled[cell] === 1) {
+      continue;
+    }
+
+    settled[cell] = 1;
+
+    const column = grid.columnOf(cell);
+    const row = grid.rowOf(cell);
+
+    for (const offset of NEIGHBOR_OFFSETS) {
+      const neighborColumn = column + offset.column;
+      const neighborRow = row + offset.row;
+
+      if (!grid.contains(neighborColumn, neighborRow)) {
+        continue;
+      }
+
+      const neighbor = grid.index(neighborColumn, neighborRow);
+
+      const cut = cuts[cell] - BANK_LOWERING_FADE * offset.distance * grid.cellSize;
+
+      if (cut <= cuts[neighbor] || settled[neighbor] === 1 || !isDryLand(neighbor, targets)) {
+        continue;
+      }
+
+      cuts[neighbor] = cut;
+      heap.push(neighbor, -cut);
+
+      if (isBesideWater[neighbor] === 0) {
+        floors[neighbor] = Math.max(floors[neighbor], floors[cell]);
+      }
+    }
+  }
+}
+
+function lowerBanks(targets: ChannelTargets): void {
+  const { heights, uncarvedHeights } = targets;
+  const lowering = startBankLowering(targets);
+
+  spreadBankLowering(lowering, targets);
+
+  for (const [cell, cut] of lowering.cuts.entries()) {
+    if (cut > 0) {
+      heights[cell] = Math.min(heights[cell], Math.max(uncarvedHeights[cell] - cut, lowering.floors[cell]));
+    }
+  }
+}
+
 function dropShallowWater(heights: Float32Array, waterSurface: Float32Array, riverStrength: Uint8Array): void {
   for (let cell = 0; cell < waterSurface.length; cell += 1) {
     if (waterSurface[cell] !== NO_WATER && !hasWater(waterSurface[cell], heights[cell])) {
@@ -676,19 +816,20 @@ export function computeHydrology(
   const chains = traceRiverChains(network, lakeIds, thresholds);
 
   const rivers = buildRivers(chains, heights, network, grid, lakes, lakeIds, thresholds.riverThreshold);
-  const uncarvedHeights = Float32Array.from(heights);
-
-  carveRivers(rivers, {
+  const targets: ChannelTargets = {
     coastDistance,
     grid,
     heights,
     lakeIds,
     riverStrength,
     threshold: thresholds.riverThreshold,
-    uncarvedHeights,
+    uncarvedHeights: Float32Array.from(heights),
     waterSurface,
-  });
+  };
+
+  carveRivers(rivers, targets);
   dropShallowWater(heights, waterSurface, riverStrength);
+  lowerBanks(targets);
 
   return {
     features: { lakes, rivers, waterfalls: findWaterfalls(rivers, grid) },

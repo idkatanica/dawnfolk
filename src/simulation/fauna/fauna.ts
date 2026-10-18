@@ -3,7 +3,15 @@ import type { WorldRules } from "../../content/world-rules.ts";
 import { clamp, distanceSquared, FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import type { AnimalPose } from "../../world/agent-poses.ts";
-import { createMover, hasArrived, type Mover, moveAlong, setDestination, stopMoving } from "../agents/movement.ts";
+import {
+  createMover,
+  hasArrived,
+  isStranded,
+  type Mover,
+  moveAlong,
+  setDestination,
+  stopMoving,
+} from "../agents/movement.ts";
 import { aroundPoint, type NavigationGrid, type Waypoint } from "../agents/navigation.ts";
 import type { IdentifierSource } from "../identifiers.ts";
 import type { WorldState } from "../world/world-state.ts";
@@ -386,7 +394,9 @@ export class FaunaSystem {
 
     this.#lookForThreats(animal, tick);
 
-    if (animal.fear > CALM_FEAR) {
+    if (isStranded(animal.mover, this.#world)) {
+      this.#swimAshore(animal, tick);
+    } else if (animal.fear > CALM_FEAR) {
       this.#flee(animal, tick);
     } else {
       this.#graze(animal, tick);
@@ -437,6 +447,16 @@ export class FaunaSystem {
     if (hunter !== null) {
       startleAnimal(animal, hunter.x, hunter.z, 0.8);
     }
+  }
+
+  #swimAshore(animal: Animal, tick: FaunaTick): void {
+    const { runSpeed, walkSpeed } = ANIMALS[animal.kind];
+
+    const isAfraid = animal.fear > CALM_FEAR;
+
+    animal.pose = isAfraid ? "run" : "walk";
+    animal.speed = isAfraid ? runSpeed : walkSpeed;
+    moveAlong(animal.mover, tick.seconds, animal.speed, this.#world, this.#navigation);
   }
 
   #flee(animal: Animal, tick: FaunaTick): void {

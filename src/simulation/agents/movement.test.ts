@@ -6,6 +6,9 @@ import { createMover, hasArrived, type Mover, moveAlong, setDestination } from "
 import { NavigationGrid } from "./navigation.ts";
 
 const STEP_SECONDS = 0.1;
+const GORGE_DIMENSIONS = { cellSize: 10, cellsPerSide: 64 };
+const GORGE_HALF_WIDTH = 10;
+const GORGE_WATER_LEVEL = 102;
 
 function walk(mover: Mover, world: WorldState, seconds: number, speed = 3): boolean {
   const navigation = new NavigationGrid(world);
@@ -171,5 +174,102 @@ describe("leaving water", () => {
 
     expect(walk(mover, world, 60)).toBe(true);
     expect(depthAt(world, mover)).toBe(0);
+  });
+
+  function createGorge(): WorldState {
+    const world = createTestWorld({
+      dimensions: GORGE_DIMENSIONS,
+      heightAt: (x, z) => {
+        const sideways = Math.max(0, Math.abs(x) - GORGE_HALF_WIDTH);
+
+        return 100 + sideways * (z > 0 ? 0.2 : 5);
+      },
+    });
+
+    for (const cell of world.grid.cellsInRadius(0, 0, world.grid.worldSize)) {
+      if (Math.abs(world.grid.cellCenterX(cell)) < GORGE_HALF_WIDTH) {
+        world.terrain.waterSurface[cell] = GORGE_WATER_LEVEL;
+      }
+    }
+
+    return world;
+  }
+
+  function secondsToLand(mover: Mover, world: WorldState, limit: number): number {
+    const navigation = new NavigationGrid(world);
+
+    let elapsed = 0;
+
+    while (elapsed < limit && depthAt(world, mover) > 0) {
+      moveAlong(mover, STEP_SECONDS, 3, world, navigation);
+      elapsed += STEP_SECONDS;
+    }
+
+    return elapsed;
+  }
+
+  it("climbs out of a river between banks too steep to climb at the nearest gentle bank", () => {
+    const world = createGorge();
+
+    const mover = createMover(-5, -45, 0);
+
+    setDestination(mover, { x: 60, z: -45 }, new NavigationGrid(world), { mayPlanRoute: false });
+
+    expect(world.slope(world.grid.cellAt(mover.x, mover.z))).toBeGreaterThan(1.2);
+    expect(secondsToLand(mover, world, 90)).toBeLessThan(60);
+    expect(mover.z).toBeGreaterThan(0);
+  });
+
+  it("swims out of a flat-bottomed pond that rose around it after it stopped", () => {
+    const world = createTestWorld();
+
+    const mover = createMover(3, -2, 0);
+
+    setDestination(mover, { x: 3, z: -2 }, new NavigationGrid(world));
+    floodCells(world, world.grid.cellsInRadius(0, 0, 45), 1.6);
+
+    expect(hasArrived(mover)).toBe(false);
+    expect(walk(mover, world, 1)).toBe(false);
+    expect(secondsToLand(mover, world, 90)).toBeLessThan(60);
+  });
+});
+
+describe("routes", () => {
+  function createLake(depth: number): WorldState {
+    const world = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 96 } });
+
+    floodCells(world, world.grid.cellsInRadius(0, 0, 60), depth);
+
+    return world;
+  }
+
+  it("never end in water the mover cannot stand in", () => {
+    const world = createLake(3);
+    const navigation = new NavigationGrid(world);
+
+    for (const destination of [
+      { x: 0, z: 0 },
+      { x: 45, z: -20 },
+      { x: -30, z: 30 },
+    ]) {
+      const mover = createMover(-300, 10, 0);
+
+      mover.canWade = true;
+      setDestination(mover, destination, navigation);
+
+      expect(mover.path.every((waypoint) => world.isWalkableAt(waypoint.x, waypoint.z))).toBe(true);
+      expect(world.isWalkableAt(mover.goalX, mover.goalZ)).toBe(true);
+    }
+  });
+
+  it("may end in shallows that the mover can wade", () => {
+    const world = createLake(0.6);
+
+    const mover = createMover(-120, 0, 0);
+
+    mover.canWade = true;
+    setDestination(mover, { x: 10, z: 5 }, new NavigationGrid(world));
+
+    expect(mover.path.at(-1)).toEqual({ x: 10, z: 5 });
   });
 });
