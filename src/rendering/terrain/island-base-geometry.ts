@@ -5,13 +5,14 @@ import { createVolumeNoise, type VolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import { sampleHeight } from "../../world/terrain-sampling.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
-import { coastAngle, type IslandOutline } from "./island-outline.ts";
+import type { CoastPoint, IslandOutline } from "./island-outline.ts";
 
 const CLIFF_DROP = 60;
 const CLIFF_RINGS = 6;
 const UNDERSIDE_DEPTH = 1650;
 const UNDERSIDE_RINGS = 14;
-const UNDERSIDE_STRIDE = 4;
+const UNDERSIDE_COLUMNS = 512;
+const NARROWEST_UNDERSIDE_STRIDE = 4;
 const CLIFF_BULGE = 9;
 const SQUARE_RIM_OFFSET = 0.4;
 const COAST_RIM_OFFSET = -0.4;
@@ -72,9 +73,8 @@ function squarePerimeter(grid: WorldGrid): PerimeterPoint[] {
   return points;
 }
 
-function coastPerimeter(coastRadii: Float32Array): PerimeterPoint[] {
-  return Array.from(coastRadii, (radius, index) => {
-    const angle = coastAngle(index);
+function coastPerimeter(coast: readonly CoastPoint[]): PerimeterPoint[] {
+  return coast.map(({ angle, radius }) => {
     const outwardX = Math.cos(angle);
     const outwardZ = Math.sin(angle);
 
@@ -83,11 +83,11 @@ function coastPerimeter(coastRadii: Float32Array): PerimeterPoint[] {
 }
 
 function islandPerimeter(mirror: WorldMirror, outline: IslandOutline): PerimeterPoint[] {
-  if (outline.coastRadii === null) {
+  if (outline.coast === null) {
     return squarePerimeter(mirror.grid);
   }
 
-  return coastPerimeter(outline.coastRadii);
+  return coastPerimeter(outline.coast);
 }
 
 function cliffRings(): RingVertex[] {
@@ -212,24 +212,29 @@ function buildCliff(outline: BaseOutline): BufferGeometry {
   return geometry;
 }
 
-function pushStitch(indices: number[], rimCount: number, coarseCount: number, ringCount: number): void {
+function pushStitch(indices: number[], rimCount: number, stride: number, ringCount: number): void {
+  const coarseCount = Math.ceil(rimCount / stride);
+
   for (let coarse = 0; coarse < coarseCount; coarse += 1) {
     const below = rimCount + coarse * ringCount;
     const nextBelow = rimCount + ((coarse + 1) % coarseCount) * ringCount;
-    const firstRim = coarse * UNDERSIDE_STRIDE;
+    const firstRim = coarse * stride;
 
-    for (let step = 0; step < UNDERSIDE_STRIDE; step += 1) {
-      indices.push(firstRim + step, (firstRim + step + 1) % rimCount, below);
+    const lastRim = Math.min(firstRim + stride, rimCount);
+
+    for (let rim = firstRim; rim < lastRim; rim += 1) {
+      indices.push(rim, (rim + 1) % rimCount, below);
     }
 
-    indices.push((firstRim + UNDERSIDE_STRIDE) % rimCount, nextBelow, below);
+    indices.push(lastRim % rimCount, nextBelow, below);
   }
 }
 
 function buildUnderside(outline: BaseOutline): BufferGeometry {
   const rimRing: RingVertex = { cliffAmount: 0, depth: 0 };
   const rings = undersideRings();
-  const coarsePoints = outline.points.filter((_, index) => index % UNDERSIDE_STRIDE === 0);
+  const stride = Math.max(NARROWEST_UNDERSIDE_STRIDE, Math.round(outline.points.length / UNDERSIDE_COLUMNS));
+  const coarsePoints = outline.points.filter((_, index) => index % stride === 0);
 
   const positions: number[] = [];
   const indices: number[] = [];
@@ -248,7 +253,7 @@ function buildUnderside(outline: BaseOutline): BufferGeometry {
 
   positions.push(0, outline.plinth - UNDERSIDE_DEPTH * 1.12, 0);
 
-  pushStitch(indices, outline.points.length, coarsePoints.length, rings.length);
+  pushStitch(indices, outline.points.length, stride, rings.length);
   pushStrips(indices, coarsePoints.length, rings.length, outline.points.length);
 
   for (let point = 0; point < coarsePoints.length; point += 1) {
@@ -267,7 +272,7 @@ function buildUnderside(outline: BaseOutline): BufferGeometry {
 
 export function buildIslandBaseGeometry(mirror: WorldMirror, outline: IslandOutline): IslandBaseGeometry {
   const points = islandPerimeter(mirror, outline);
-  const isSquare = outline.coastRadii === null;
+  const isSquare = outline.coast === null;
 
   const base: BaseOutline = {
     grid: mirror.grid,

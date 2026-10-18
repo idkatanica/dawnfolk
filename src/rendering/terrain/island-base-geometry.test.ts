@@ -4,10 +4,11 @@ import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
 import { sampleHeight } from "../../world/terrain-sampling.ts";
 import { buildIslandBaseGeometry } from "./island-base-geometry.ts";
-import { IslandOutline } from "./island-outline.ts";
+import { type CoastPoint, IslandOutline } from "./island-outline.ts";
 
 const CELLS_PER_SIDE = 32;
-const COAST_TOLERANCE = 0.01;
+const COAST_TOLERANCE = 1.5;
+const NUDGE = 0.01;
 
 function rimPoints(mirror: WorldMirror): (readonly [number, number])[] {
   const { cliff } = buildIslandBaseGeometry(mirror, new IslandOutline(mirror));
@@ -23,6 +24,33 @@ function rimPoints(mirror: WorldMirror): (readonly [number, number])[] {
   }
 
   return rim;
+}
+
+function latticeLines(
+  mirror: WorldMirror,
+  from: readonly [number, number],
+  towards: readonly [number, number]
+): number[] {
+  const { cellSize, halfSize } = mirror.grid;
+
+  const length = Math.hypot(towards[0] - from[0], towards[1] - from[1]);
+  const share = NUDGE / length;
+
+  const x = from[0] + (towards[0] - from[0]) * share;
+  const z = from[1] + (towards[1] - from[1]) * share;
+
+  const column = (x + halfSize) / cellSize - 0.5;
+  const row = (z + halfSize) / cellSize - 0.5;
+
+  return [Math.floor(column), Math.floor(row), Math.floor(column + row)];
+}
+
+function coastOf(outline: IslandOutline): readonly CoastPoint[] {
+  if (outline.coast === null) {
+    throw new Error("A round island has a coast outline");
+  }
+
+  return outline.coast;
 }
 
 function squareMirror(): WorldMirror {
@@ -63,15 +91,35 @@ describe("island base geometry", () => {
     expect(new Set(rim)).toEqual(edges);
   });
 
-  it("tops the round cliff on the coast all the way around", () => {
+  it("tops the round cliff along the outline the terrain is cut by", () => {
+    const mirror = roundMirror();
+    const outline = new IslandOutline(mirror);
+
+    const rim = rimPoints(mirror);
+    const coast = coastOf(outline);
+
+    expect(rim).toHaveLength(coast.length);
+
+    for (const [index, [x, z]] of rim.entries()) {
+      const { angle, radius } = coast[index];
+
+      expect(x).toBeCloseTo(Math.cos(angle) * radius, 3);
+      expect(z).toBeCloseTo(Math.sin(angle) * radius, 3);
+      expect(Math.abs(sampleHeight(mirror.terrain.coastDistance, mirror.grid, x, z))).toBeLessThan(COAST_TOLERANCE);
+    }
+  });
+
+  it("breaks the cliff top at every line of the terrain mesh it crosses", () => {
     const mirror = roundMirror();
 
     const rim = rimPoints(mirror);
 
-    expect(rim.length).toBeGreaterThan(500);
+    const segments = rim
+      .map((start, index) => [start, rim[(index + 1) % rim.length]] as const)
+      .filter(([start, end]) => Math.hypot(end[0] - start[0], end[1] - start[1]) > NUDGE * 2);
 
-    for (const [x, z] of rim) {
-      expect(Math.abs(sampleHeight(mirror.terrain.coastDistance, mirror.grid, x, z))).toBeLessThan(COAST_TOLERANCE);
+    for (const [start, end] of segments) {
+      expect(latticeLines(mirror, end, start)).toEqual(latticeLines(mirror, start, end));
     }
   });
 });
