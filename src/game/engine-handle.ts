@@ -1,4 +1,4 @@
-import type { CameraState } from "../rendering/camera/god-camera.ts";
+import type { CameraState, GroundPoint } from "../rendering/camera/god-camera.ts";
 import type { QualityLevel } from "../rendering/render-quality.ts";
 import type { GameSession } from "./game-session.ts";
 import type { LabelPlacement } from "./label-projector.ts";
@@ -6,6 +6,7 @@ import type { Landmark } from "./landmarks.ts";
 import type { PowerSelection } from "./tools/power-tool.ts";
 
 interface EngineCamera {
+  readonly groundFootprint: (reach: number) => readonly GroundPoint[];
   readonly state: CameraState;
 }
 

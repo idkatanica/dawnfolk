@@ -9,6 +9,11 @@ export interface CameraState {
   readonly yaw: number;
 }
 
+export interface GroundPoint {
+  readonly x: number;
+  readonly z: number;
+}
+
 interface FollowTarget {
   readonly x: number;
   readonly z: number;
@@ -22,6 +27,21 @@ const MINIMUM_DISTANCE = 4;
 const MINIMUM_PITCH = 0.08;
 const SMOOTHING_RATE = 9;
 const CLEARANCE = 1.2;
+const SCREEN_CORNERS = [
+  [-1, -1],
+  [1, -1],
+  [1, 1],
+  [-1, 1],
+] as const;
+
+function groundPointAlong(origin: Vector3, direction: Vector3, level: number, reach: number): GroundPoint {
+  const horizontal = Math.max(1e-6, Math.hypot(direction.x, direction.z));
+
+  const travel = direction.y < 0 ? (level - origin.y) / direction.y : Number.POSITIVE_INFINITY;
+  const distance = travel > 0 ? Math.min(reach, travel * horizontal) : reach;
+
+  return { x: origin.x + (direction.x / horizontal) * distance, z: origin.z + (direction.z / horizontal) * distance };
+}
 
 interface MutableCameraState {
   distance: number;
@@ -38,6 +58,7 @@ export class GodCamera {
   readonly #heightAt: HeightProbe;
   readonly #offset = new Vector3();
   readonly #position = new Vector3();
+  readonly #ray = new Vector3();
   readonly #target = new Vector3();
   readonly #targetCopy = new Vector3();
   readonly #worldHalfSize: number;
@@ -56,6 +77,18 @@ export class GodCamera {
 
   get state(): CameraState {
     return { ...this.#current };
+  }
+
+  groundFootprint(reach: number): GroundPoint[] {
+    const { camera } = this;
+
+    camera.updateMatrixWorld();
+
+    return SCREEN_CORNERS.map(([column, row]) => {
+      const direction = this.#ray.set(column, row, 0.5).unproject(camera).sub(camera.position).normalize();
+
+      return groundPointAlong(camera.position, direction, this.#targetHeight, reach);
+    });
   }
 
   get target(): Vector3 {

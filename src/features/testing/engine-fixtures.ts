@@ -66,7 +66,7 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
   }
 
   const engine: EngineHandle = {
-    camera: { state: { ...TEST_CAMERA, distance: cameraDistance } },
+    camera: { groundFootprint: () => [], state: { ...TEST_CAMERA, distance: cameraDistance } },
     clearSelection,
     focusOn,
     followSelection,
