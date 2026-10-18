@@ -1,14 +1,29 @@
 import { Box3, Vector3 } from "three/webgpu";
 import { PLANT_SPECIES, type PlantSpeciesIndex } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import { canonicalHeight, footprintRadius, PLANT_VARIANT_COUNT } from "../../models/plants/plant-models.ts";
+import { canonicalHeight, farVariantOf, footprintRadius, plantVariantCount } from "../../models/plants/plant-models.ts";
+import type { PlantDetailLevel } from "../../models/plants/tree-mesher.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 
 export const CHUNK_CELLS = 16;
 export const FLOATS_PER_PLANT = 8;
-export const BUCKET_COUNT = PLANT_SPECIES.length * PLANT_VARIANT_COUNT;
 export const PLANT_SINKING = 0.15;
+
+interface PlantBucket {
+  readonly species: PlantSpeciesIndex;
+  readonly variant: number;
+}
+
+export const PLANT_BUCKETS: readonly PlantBucket[] = PLANT_SPECIES.flatMap((definition) =>
+  Array.from({ length: plantVariantCount(definition.index) }, (_, variant) => ({ species: definition.index, variant }))
+);
+
+export const BUCKET_COUNT = PLANT_BUCKETS.length;
+
+const FIRST_BUCKETS: readonly number[] = PLANT_SPECIES.map((definition) =>
+  PLANT_BUCKETS.findIndex((bucket) => bucket.species === definition.index)
+);
 
 const NO_CHUNK = -1;
 const EMPTY_BUCKET = new Float32Array(0);
@@ -23,18 +38,34 @@ export interface VegetationChunk {
   readonly plants: Set<number>;
 }
 
-function bucketOf(species: number, variant: number): number {
-  return species * PLANT_VARIANT_COUNT + variant;
+function bucketOf(species: number, seed: number): number {
+  const count = plantVariantCount(PLANT_SPECIES[species].index);
+
+  return FIRST_BUCKETS[species] + Math.min(count - 1, Math.floor(seed * count));
 }
 
-export function speciesOfBucket(bucket: number): PlantSpeciesIndex {
-  const { index } = PLANT_SPECIES[Math.floor(bucket / PLANT_VARIANT_COUNT)];
+export function bucketGroups(level: PlantDetailLevel): number[][] {
+  if (level !== "low") {
+    return PLANT_BUCKETS.map((_bucket, index) => [index]);
+  }
 
-  return index;
-}
+  const groups = new Map<string, number[]>();
 
-export function variantOfBucket(bucket: number): number {
-  return bucket % PLANT_VARIANT_COUNT;
+  for (const [index, { species, variant }] of PLANT_BUCKETS.entries()) {
+    const key = `${species}:${farVariantOf(species, variant)}`;
+
+    const group = groups.get(key);
+
+    if (group === undefined) {
+      groups.set(key, [index]);
+
+      continue;
+    }
+
+    group.push(index);
+  }
+
+  return [...groups.values()];
 }
 
 function allocateBucket(count: number): Float32Array {
@@ -43,10 +74,6 @@ function allocateBucket(count: number): Float32Array {
   }
 
   return new Float32Array(count * FLOATS_PER_PLANT);
-}
-
-function variantOf(seed: number): number {
-  return Math.min(PLANT_VARIANT_COUNT - 1, Math.floor(seed * PLANT_VARIANT_COUNT));
 }
 
 export class VegetationChunks {
@@ -166,7 +193,7 @@ export class VegetationChunks {
     const counts = new Array<number>(BUCKET_COUNT).fill(0);
 
     for (const plant of chunk.plants) {
-      counts[bucketOf(vegetation.species[plant], variantOf(vegetation.seed[plant]))] += 1;
+      counts[bucketOf(vegetation.species[plant], vegetation.seed[plant])] += 1;
     }
 
     const buckets = counts.map((count) => allocateBucket(count));
@@ -175,7 +202,7 @@ export class VegetationChunks {
     chunk.bounds.makeEmpty();
 
     for (const plant of chunk.plants) {
-      const bucket = bucketOf(vegetation.species[plant], variantOf(vegetation.seed[plant]));
+      const bucket = bucketOf(vegetation.species[plant], vegetation.seed[plant]);
 
       const offset = filled[bucket] * FLOATS_PER_PLANT;
 

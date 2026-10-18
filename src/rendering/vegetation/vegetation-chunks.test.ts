@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
+import { PlantSpecies } from "../../content/plants.ts";
 import { WorldMirror } from "../../game/world-mirror.ts";
 import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld, type TestWorldOptions } from "../../simulation/testing/test-world.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
-import { BUCKET_COUNT, FLOATS_PER_PLANT, PLANT_SINKING, VegetationChunks } from "./vegetation-chunks.ts";
+import {
+  BUCKET_COUNT,
+  bucketGroups,
+  FLOATS_PER_PLANT,
+  PLANT_BUCKETS,
+  PLANT_SINKING,
+  VegetationChunks,
+} from "./vegetation-chunks.ts";
 
 const SLOPE = 0.6;
 
@@ -107,5 +115,27 @@ describe("vegetation chunks", () => {
         expect(y).toBeLessThan(mirror.heightAt(x, z) - PLANT_SINKING - 0.05);
       }
     }
+  });
+
+  it.each(["high", "medium", "low"] as const)("draws every bucket in exactly one %s batch", (level) => {
+    const drawn = bucketGroups(level).flat();
+
+    expect([...drawn].sort((first, second) => first - second)).toEqual(
+      Array.from({ length: BUCKET_COUNT }, (_, bucket) => bucket)
+    );
+  });
+
+  it("shares one far batch between the variants of a tree but keeps every cactus form apart", () => {
+    const farGroups = bucketGroups("low");
+
+    function groupsOf(species: number): number {
+      return farGroups.filter((group) => PLANT_BUCKETS[group[0]].species === species).length;
+    }
+
+    expect(farGroups.length).toBeLessThan(BUCKET_COUNT / 2);
+    expect(groupsOf(PlantSpecies.Oak)).toBe(1);
+    expect(groupsOf(PlantSpecies.Cactus)).toBe(
+      PLANT_BUCKETS.filter((bucket) => bucket.species === PlantSpecies.Cactus).length
+    );
   });
 });

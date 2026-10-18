@@ -11,7 +11,7 @@ import {
   buildPlantVariants,
   canonicalHeight,
   PLANT_DETAIL_LEVELS,
-  PLANT_VARIANT_COUNT,
+  plantVariantCount,
 } from "./plant-models.ts";
 import { FOLIAGE_FLUTTER, plantSway } from "./tree-mesher.ts";
 
@@ -44,7 +44,7 @@ describe.each(SPECIES)("plant species %i", (species) => {
     for (const level of PLANT_DETAIL_LEVELS) {
       const variants = buildPlantVariants(species, level);
 
-      expect(variants).toHaveLength(PLANT_VARIANT_COUNT);
+      expect(variants).toHaveLength(plantVariantCount(species));
 
       for (const mesh of variants) {
         expect(meshProblems(mesh)).toEqual([]);

@@ -8,13 +8,30 @@ import { type MeshData, mergeMeshes, vertexCount } from "../mesh/mesh-data.ts";
 import { sphere } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { transformOf } from "../mesh/transforms.ts";
-import { cactusForm, meshCactus } from "./cacti.ts";
+import { CACTUS_FORMS, cactusForm, meshCactus } from "./cacti.ts";
 import { meshBoulder } from "./ground-plants.ts";
 import { FOLIAGE_FLUTTER, meshTree, type PlantDetailLevel, plantSway, type TreeLook } from "./tree-mesher.ts";
-import { CANONICAL_HEIGHTS, TREE_GENERATORS } from "./tree-species.ts";
+import { CANONICAL_HEIGHTS, DESERT_SHRUB_FORM_COUNT, TREE_GENERATORS } from "./tree-species.ts";
 import type { FoliageBlob, TreeStructure } from "./tree-structure.ts";
 
-export const PLANT_VARIANT_COUNT = 4;
+const VARIANT_COUNTS: Readonly<Record<PlantSpeciesIndex, number>> = {
+  [PlantSpecies.Acacia]: 3,
+  [PlantSpecies.Birch]: 4,
+  [PlantSpecies.Boulder]: 4,
+  [PlantSpecies.Bush]: 4,
+  [PlantSpecies.Cactus]: CACTUS_FORMS.length,
+  [PlantSpecies.DeadTree]: 3,
+  [PlantSpecies.DesertShrub]: DESERT_SHRUB_FORM_COUNT,
+  [PlantSpecies.Maple]: 4,
+  [PlantSpecies.Oak]: 4,
+  [PlantSpecies.Palm]: 2,
+  [PlantSpecies.Pine]: 4,
+  [PlantSpecies.Poplar]: 2,
+  [PlantSpecies.Spruce]: 4,
+  [PlantSpecies.Willow]: 4,
+};
+
+const FORM_PER_VARIANT: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DesertShrub]);
 
 export const PLANT_DETAIL_LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low"];
 
@@ -118,8 +135,16 @@ function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDe
   return mergeMeshes([tree, berries(tree, structure, look, seed + 1, level)]);
 }
 
+export function plantVariantCount(species: PlantSpeciesIndex): number {
+  return VARIANT_COUNTS[species];
+}
+
+export function farVariantOf(species: PlantSpeciesIndex, variant: number): number {
+  return FORM_PER_VARIANT.has(species) ? variant : 0;
+}
+
 export function buildPlantVariants(species: PlantSpeciesIndex, level: PlantDetailLevel): MeshData[] {
-  return Array.from({ length: PLANT_VARIANT_COUNT }, (_, variant) => meshVariant(species, variant, level));
+  return Array.from({ length: plantVariantCount(species) }, (_, variant) => meshVariant(species, variant, level));
 }
 
 export function canonicalHeight(species: PlantSpeciesIndex): number {

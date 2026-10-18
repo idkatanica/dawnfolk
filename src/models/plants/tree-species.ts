@@ -804,7 +804,9 @@ function grassTuft(growth: Growth): void {
   }
 }
 
-const DESERT_SHRUB_FORMS: readonly ((growth: Growth) => void)[] = [sagebrush, sagebrush, rosette, grassTuft];
+const DESERT_SHRUB_FORMS: readonly ((growth: Growth) => void)[] = [sagebrush, rosette, grassTuft];
+
+export const DESERT_SHRUB_FORM_COUNT = DESERT_SHRUB_FORMS.length;
 
 function desertShrub(seed: number, variant: number): TreeStructure {
   const growth = createGrowth(seed);
