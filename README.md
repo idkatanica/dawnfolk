@@ -28,7 +28,7 @@
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
-![The island from above: mountains, lakes, rivers and two tribes](.github/screenshots/island.jpg)
+![The island from above: mountains, lakes, rivers and two tribes](.github/screenshots/island.webp)
 
 Shape the land, call rain, fire and lightning, and watch small tribes gather, build, learn and survive on a
 procedurally generated island rendered with WebGPU.
