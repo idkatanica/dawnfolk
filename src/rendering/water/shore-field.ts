@@ -113,45 +113,48 @@ function writeShore(source: ShoreSource, column: number, row: number, target: Fl
     return;
   }
 
+  target[offset + ShoreChannel.FlowX] = 0;
+  target[offset + ShoreChannel.FlowZ] = 0;
+
+  if (target[offset + ShoreChannel.Reach] > 1) {
+    target[offset + ShoreChannel.Depth] = DRY_DEPTH;
+
+    return;
+  }
+
   const bank = bankLevel(source, column, row);
   const bankDepth = isWet(bank) ? Math.min(bank, ground - BANK_SINK) - ground : DRY_DEPTH;
   const corner = cornerDepth(source, column, row);
 
   target[offset + ShoreChannel.Depth] = corner > 0 ? Math.max(bankDepth, -CORNER_BRIDGE * corner) : bankDepth;
-  target[offset + ShoreChannel.FlowX] = 0;
-  target[offset + ShoreChannel.FlowZ] = 0;
+}
+
+function reachThrough(target: Float32Array, size: number, column: number, row: number): number {
+  if (column < 0 || row < 0 || column >= size || row >= size) {
+    return MAXIMUM_REACH;
+  }
+
+  return target[(row * size + column) * SHORE_CHANNELS + ShoreChannel.Reach] + 1;
 }
 
 function sweepReach(target: Float32Array, size: number, direction: 1 | -1): void {
   const first = direction === 1 ? 0 : size - 1;
-  const neighbors = [
-    [-direction, 0],
-    [-direction, -direction],
-    [0, -direction],
-    [direction, -direction],
-  ] as const;
 
   for (let row = first; row >= 0 && row < size; row += direction) {
+    const previousRow = row - direction;
+
     for (let column = first; column >= 0 && column < size; column += direction) {
       const offset = (row * size + column) * SHORE_CHANNELS + ShoreChannel.Reach;
+      const previousColumn = column - direction;
+      const nextColumn = column + direction;
 
-      let reach = target[offset];
-
-      for (const [columnOffset, rowOffset] of neighbors) {
-        const neighborColumn = column + columnOffset;
-        const neighborRow = row + rowOffset;
-
-        if (neighborColumn < 0 || neighborColumn >= size || neighborRow < 0 || neighborRow >= size) {
-          continue;
-        }
-
-        reach = Math.min(
-          reach,
-          target[(neighborRow * size + neighborColumn) * SHORE_CHANNELS + ShoreChannel.Reach] + 1
-        );
-      }
-
-      target[offset] = reach;
+      target[offset] = Math.min(
+        target[offset],
+        reachThrough(target, size, previousColumn, row),
+        reachThrough(target, size, previousColumn, previousRow),
+        reachThrough(target, size, column, previousRow),
+        reachThrough(target, size, nextColumn, previousRow)
+      );
     }
   }
 }
@@ -167,14 +170,13 @@ function writeShores(source: ShoreSource, region: CellRegion, target: Float32Arr
 export function buildShoreField(source: ShoreSource, target: Float32Array): void {
   const { levels, size } = source;
 
-  writeShores(source, { firstColumn: 0, firstRow: 0, lastColumn: size - 1, lastRow: size - 1 }, target);
-
   for (let cell = 0; cell < size * size; cell += 1) {
     target[cell * SHORE_CHANNELS + ShoreChannel.Reach] = isWet(levels[cell]) ? 0 : MAXIMUM_REACH;
   }
 
   sweepReach(target, size, 1);
   sweepReach(target, size, -1);
+  writeShores(source, { firstColumn: 0, firstRow: 0, lastColumn: size - 1, lastRow: size - 1 }, target);
 }
 
 export function updateShoreDepths(source: ShoreSource, region: CellRegion, target: Float32Array): void {
