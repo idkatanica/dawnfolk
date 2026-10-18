@@ -1,6 +1,5 @@
 import {
   attribute,
-  bool,
   clamp,
   dot,
   equal,
@@ -126,16 +125,15 @@ export function createPlantMaterial({
   const isBurnt = equal(int(appearance.z.add(0.5)), int(PlantState.Burnt));
   const fruit = appearance.w;
 
-  const isFoliage = isSlot(slot, MaterialSlot.Leaf)
-    .or(isSlot(slot, MaterialSlot.Needle))
-    .or(isSlot(slot, MaterialSlot.Blossom));
+  const isFoliage = isSlot(slot, MaterialSlot.Leaf).or(isSlot(slot, MaterialSlot.Needle));
+  const isBlossom = isSlot(slot, MaterialSlot.Blossom);
   const isBerry = equal(int(part.add(0.5)), int(BERRY_PART));
   const treeThreshold = fract(tint.mul(13.7)).mul(0.9).add(0.05);
 
   const hasFoliage = look.foliageCoverage.greaterThan(treeThreshold).and(isBurnt.not());
   const hasBerry = fruit.greaterThan(berryChance).and(isBurnt.not());
 
-  const keep = select(isFoliage, hasFoliage, select(isBerry, hasBerry, bool(true)));
+  const keep = select(isFoliage, hasFoliage, select(isBerry, hasBerry, isBlossom.not().or(isBurnt.not())));
 
   const local = positionLocal.mul(scale).mul(select(keep, float(1), float(0)));
 
