@@ -5,9 +5,11 @@ import {
   clamp,
   distance,
   dot,
+  Fn,
   float,
   fract,
   fwidth,
+  If,
   ivec2,
   length,
   max,
@@ -34,19 +36,24 @@ import { sampleCellsNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { rainDimples } from "./rain-dimples.ts";
 import { BANK_SINK, PRESENT_LEVEL } from "./shore-field.ts";
+import { perlinWithSteps } from "./wave-noise.ts";
 
 const HIDDEN_DEPTH = 40;
 const SHORE_FADE = 0.2;
 const SHORE_WOBBLE = 0.32;
 const FINE_WOBBLE_NEAR = 500;
 const FINE_WOBBLE_FAR = 1500;
+const STILL_DEPTH = 9;
+const STILL_DEPTH_PER_SLOPE = 3;
 const WAVE_SAMPLE_STEP = 0.35;
 const COARSE_LIFT = 0.4;
 const COARSE_REACH_MARGIN = 2;
 const FOAM_FAR = 900;
 const FOAM_NEAR = 250;
+const SHORE_FOAM_DEPTH = 0.45;
 const SHORE_FOAM_FAR = 1300;
 const SHORE_FOAM_NEAR = 500;
+const RAPIDS_START = 0.1;
 const ICE_COLOR = vec3(0.78, 0.86, 0.9);
 const THIN_ICE = 0.15;
 const SOLID_ICE = 0.5;
@@ -63,19 +70,52 @@ export class WaterLook {
   readonly zenithColor = uniform(new Color(0x4c_8c_d6));
 }
 
-function waveHeight(point: Node<"vec2">): Node<"float"> {
-  const broad = mx_noise_float(vec3(point.mul(0.16), time.mul(0.32)));
-  const fine = mx_noise_float(vec3(point.mul(0.53), time.mul(0.61)));
+function shoreWobble(depth: Node<"float">, viewDistance: Node<"float">): Node<"float"> {
+  const point = positionWorld.xz;
+  const fineWobble = smoothstep(FINE_WOBBLE_FAR, FINE_WOBBLE_NEAR, viewDistance).mul(0.35);
 
-  return broad.add(fine.mul(0.42));
+  const isStill = depth.greaterThan(fwidth(depth).mul(STILL_DEPTH_PER_SLOPE).add(STILL_DEPTH));
+
+  return Fn(() => {
+    const wobble = float(0).toVar();
+
+    If(isStill.not(), () => {
+      wobble.assign(mx_noise_float(vec3(point.mul(0.09), 3.7)));
+
+      If(fineWobble.greaterThan(0), () => {
+        wobble.addAssign(mx_noise_float(vec3(point.mul(0.37), 8.1)).mul(fineWobble));
+      });
+    });
+
+    return wobble.mul(SHORE_WOBBLE);
+  })();
+}
+
+function steadyFoamAt(hasFoam: Node<"bool">, detail: Node<"float">): Node<"float"> {
+  return Fn(() => {
+    const foam = float(0.5).toVar();
+
+    If(hasFoam, () => {
+      const noise = mx_noise_float(vec3(positionWorld.xz.mul(0.7), time.mul(0.4)))
+        .mul(0.5)
+        .add(0.5);
+
+      foam.assign(mix(float(0.5), noise, detail));
+    });
+
+    return foam;
+  })();
 }
 
 function waveNormal(point: Node<"vec2">, strength: Node<"float">): Node<"vec3"> {
-  const center = waveHeight(point);
-  const east = waveHeight(point.add(vec2(WAVE_SAMPLE_STEP, 0)));
-  const south = waveHeight(point.add(vec2(0, WAVE_SAMPLE_STEP)));
+  const broad = perlinWithSteps(point, WAVE_SAMPLE_STEP, 0.16, time.mul(0.32));
+  const fine = perlinWithSteps(point, WAVE_SAMPLE_STEP, 0.53, time.mul(0.61));
 
-  return normalize(vec3(center.sub(east).mul(strength), WAVE_SAMPLE_STEP, center.sub(south).mul(strength)));
+  const heights = broad.add(fine.mul(0.42));
+
+  return normalize(
+    vec3(heights.x.sub(heights.y).mul(strength), WAVE_SAMPLE_STEP, heights.x.sub(heights.z).mul(strength))
+  );
 }
 
 export function createWaterMaterial(
@@ -132,36 +172,33 @@ export function createWaterMaterial(
   const viewDistance = distance(positionWorld, cameraPosition);
   const mapCoordinates = positionWorld.xz.add(grid.halfSize).div(grid.worldSize);
   const viewDirection = normalize(cameraPosition.sub(positionWorld));
-  const fineWobble = smoothstep(FINE_WOBBLE_FAR, FINE_WOBBLE_NEAR, viewDistance).mul(0.35);
 
   const flow = shore.yz;
   const ice = smoothstep(THIN_ICE, SOLID_ICE, texture(textures.surface, mapCoordinates).r);
-  const shoreWobble = mx_noise_float(vec3(positionWorld.xz.mul(0.09), 3.7))
-    .add(mx_noise_float(vec3(positionWorld.xz.mul(0.37), 8.1)).mul(fineWobble))
-    .mul(SHORE_WOBBLE);
+  const shoreDepth = shore.x.add(shoreWobble(shore.x, viewDistance));
 
-  const shoreDepth = shore.x.add(shoreWobble);
+  const isWet = shoreDepth.greaterThan(0);
+  const depth = max(shoreDepth, 0);
+  const shoreEdge = max(fwidth(shoreDepth), SHORE_FADE);
+  const flowSpeed = length(flow);
+
   const normal = normalize(
     mix(surfaceNormal(flow, look).add(rainDimples(viewDistance, look.rainfall)), vec3(0, 1, 0), ice.mul(0.85))
   );
 
-  const depth = max(shoreDepth, 0);
-  const shoreEdge = max(fwidth(shoreDepth), SHORE_FADE);
-
-  material.maskNode = shoreDepth.greaterThan(0);
+  material.maskNode = isWet;
   material.normalNode = transformNormalToView(normal);
 
   const fresnel = pow(float(1).sub(max(dot(normal, viewDirection), 0)), 4);
-  const foamNoise = mx_noise_float(vec3(positionWorld.xz.mul(0.7), time.mul(0.4)))
-    .mul(0.5)
-    .add(0.5);
-
   const foamDetail = smoothstep(FOAM_FAR, FOAM_NEAR, viewDistance);
-  const steadyFoam = mix(float(0.5), foamNoise, foamDetail);
-  const shoreFoam = smoothstep(0.45, 0, depth)
+
+  const canFoam = depth.lessThan(SHORE_FOAM_DEPTH).or(flowSpeed.greaterThan(RAPIDS_START));
+  const steadyFoam = steadyFoamAt(isWet.and(foamDetail.greaterThan(0)).and(canFoam), foamDetail);
+
+  const shoreFoam = smoothstep(SHORE_FOAM_DEPTH, 0, depth)
     .mul(smoothstep(SHORE_FOAM_FAR, SHORE_FOAM_NEAR, viewDistance))
     .mul(smoothstep(0.25, 0.75, steadyFoam));
-  const rapidsFoam = smoothstep(0.1, 0.3, length(flow)).mul(smoothstep(0.45, 0.85, steadyFoam));
+  const rapidsFoam = smoothstep(RAPIDS_START, 0.3, flowSpeed).mul(smoothstep(0.45, 0.85, steadyFoam));
 
   const foam = clamp(shoreFoam.add(rapidsFoam), 0, 1).mul(float(1).sub(ice));
 

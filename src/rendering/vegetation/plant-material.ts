@@ -103,6 +103,32 @@ function isSlot(slot: Node<"float">, value: number): Node<"bool"> {
   return equal(int(slot.add(0.5)), int(value));
 }
 
+function leafPatternAt(foliage: Node<"float">): Node<"float"> {
+  return Fn(() => {
+    const pattern = float(1).toVar();
+
+    If(foliage.greaterThan(0), () => {
+      pattern.assign(
+        mx_noise_float(positionWorld.mul(LEAF_PATTERN_SCALE)).mul(foliage.mul(LEAF_PATTERN_STRENGTH)).add(1)
+      );
+    });
+
+    return pattern;
+  })();
+}
+
+function leafBumpAt(foliage: Node<"float">): Node<"vec3"> {
+  return Fn(() => {
+    const bump = vec3(0).toVar();
+
+    If(foliage.greaterThan(0), () => {
+      bump.assign(mx_noise_vec3(positionWorld.mul(LEAF_BUMP_SCALE)).mul(foliage.mul(LEAF_BUMP_STRENGTH)));
+    });
+
+    return bump;
+  })();
+}
+
 export function createPlantMaterial({
   glow,
   grid,
@@ -182,10 +208,8 @@ export function createPlantMaterial({
   const foliageMask = varying(select(isFoliage.and(isBurnt.not()), float(1), float(0)), "plantFoliage");
   const snowOnTop = snow.mul(smoothstep(0.25, 0.75, normalWorld.y));
 
-  const leafPattern = mx_noise_float(positionWorld.mul(LEAF_PATTERN_SCALE))
-    .mul(foliageMask.mul(LEAF_PATTERN_STRENGTH))
-    .add(1);
-  const leafBump = mx_noise_vec3(positionWorld.mul(LEAF_BUMP_SCALE)).mul(foliageMask.mul(LEAF_BUMP_STRENGTH));
+  const leafPattern = leafPatternAt(foliageMask);
+  const leafBump = leafBumpAt(foliageMask);
 
   const fireLight = varying(fireLightAt(glow, grid, placement.xz), "plantFireLight");
 

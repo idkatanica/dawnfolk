@@ -28,6 +28,7 @@ import { MeshStandardNodeMaterial, type Node } from "three/webgpu";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { unitNoise } from "../node-helpers.ts";
+import type { GroundWarp } from "./ground-warp.ts";
 import { sampleCellsNode } from "./height-sampling.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
@@ -108,19 +109,10 @@ function terrainPosition(textures: TerrainTextures, grid: WorldGrid, plinth: num
   })();
 }
 
-function warpedMapCoordinates(grid: WorldGrid): Node<"vec2"> {
+function warpedMapCoordinates(warp: GroundWarp, grid: WorldGrid): Node<"vec2"> {
   const point = positionWorld.xz;
 
-  const broadWarp = vec2(
-    mx_fractal_noise_float(vec3(point.mul(0.011), 0), 3, 2, 0.5),
-    mx_fractal_noise_float(vec3(point.mul(0.011), 9.3), 3, 2, 0.5)
-  );
-
-  const fineWarp = vec2(mx_noise_float(vec3(point.mul(0.09), 2)), mx_noise_float(vec3(point.mul(0.09), 5)));
-
-  const warped = point.add(broadWarp.mul(grid.cellSize * 1.4)).add(fineWarp.mul(grid.cellSize * 0.35));
-
-  return warped.add(grid.halfSize).div(grid.worldSize);
+  return point.add(warp.offsetAt(point)).add(grid.halfSize).div(grid.worldSize);
 }
 
 function underwaterDepth(textures: TerrainTextures, grid: WorldGrid): Node<"float"> {
@@ -141,12 +133,21 @@ function underwaterDepth(textures: TerrainTextures, grid: WorldGrid): Node<"floa
   })();
 }
 
-export function createTerrainMaterial(
-  textures: TerrainTextures,
-  grid: WorldGrid,
-  glow: FireGlow,
-  plinth: number
-): MeshStandardNodeMaterial {
+interface TerrainMaterialOptions {
+  readonly glow: FireGlow;
+  readonly grid: WorldGrid;
+  readonly plinth: number;
+  readonly textures: TerrainTextures;
+  readonly warp: GroundWarp;
+}
+
+export function createTerrainMaterial({
+  glow,
+  grid,
+  plinth,
+  textures,
+  warp,
+}: TerrainMaterialOptions): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial();
 
   material.positionNode = terrainPosition(textures, grid, plinth);
@@ -155,7 +156,7 @@ export function createTerrainMaterial(
     material.maskNode = textures.outline.insideNode(positionWorld.xz, 0);
   }
 
-  const mapCoordinates = warpedMapCoordinates(grid);
+  const mapCoordinates = warpedMapCoordinates(warp, grid);
   const broad = mx_fractal_noise_float(positionWorld.mul(0.012), 3, 2, 0.5);
   const patches = mx_noise_float(positionWorld.mul(0.07));
   const fine = mx_noise_float(positionWorld.mul(0.42));
