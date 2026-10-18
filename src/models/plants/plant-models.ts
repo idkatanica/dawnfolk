@@ -8,7 +8,8 @@ import { type MeshData, mergeMeshes, vertexCount } from "../mesh/mesh-data.ts";
 import { sphere } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { transformOf } from "../mesh/transforms.ts";
-import { meshBoulder, meshCactus } from "./ground-plants.ts";
+import { cactusForm, meshCactus } from "./cacti.ts";
+import { meshBoulder } from "./ground-plants.ts";
 import { FOLIAGE_FLUTTER, meshTree, type PlantDetailLevel, plantSway, type TreeLook } from "./tree-mesher.ts";
 import { CANONICAL_HEIGHTS, TREE_GENERATORS } from "./tree-species.ts";
 import type { FoliageBlob, TreeStructure } from "./tree-structure.ts";
@@ -85,7 +86,7 @@ function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDe
   const seed = variantSeed(species, variant);
 
   if (species === PlantSpecies.Cactus) {
-    return meshCactus(seed, level);
+    return meshCactus(seed, level, cactusForm(variant));
   }
 
   if (species === PlantSpecies.Boulder) {

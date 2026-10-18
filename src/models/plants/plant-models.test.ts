@@ -5,6 +5,7 @@ import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts"
 import { meshProblems } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces, meshPieces } from "../testing/mesh-connectivity.ts";
 import { windBentMesh } from "../testing/moved-mesh.ts";
+import { CACTUS_FORMS, cactusForm } from "./cacti.ts";
 import {
   BERRY_PART,
   buildPlantVariants,
@@ -27,6 +28,7 @@ const TREES = [
   PlantSpecies.Spruce,
   PlantSpecies.Willow,
 ];
+const MIXED_FORMS: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus]);
 
 function averageTriangles(species: PlantSpeciesIndex, level: (typeof PLANT_DETAIL_LEVELS)[number]): number {
   const variants = buildPlantVariants(species, level);
@@ -49,13 +51,18 @@ describe.each(SPECIES)("plant species %i", (species) => {
 
   it("stands on the ground at about its canonical height", () => {
     const height = canonicalHeight(species);
+    const shortest = MIXED_FORMS.has(species) ? 0.3 : 0.62;
 
-    for (const mesh of buildPlantVariants(species, "high")) {
+    const variants = buildPlantVariants(species, "high");
+
+    for (const mesh of variants) {
       expect(mesh.bounds.minimum[1]).toBeGreaterThan(-0.5);
       expect(mesh.bounds.minimum[1]).toBeLessThan(height * 0.2);
-      expect(mesh.bounds.maximum[1]).toBeGreaterThan(height * 0.62);
+      expect(mesh.bounds.maximum[1]).toBeGreaterThan(height * shortest);
       expect(mesh.bounds.maximum[1]).toBeLessThan(height * 1.25);
     }
+
+    expect(Math.max(...variants.map((mesh) => mesh.bounds.maximum[1]))).toBeGreaterThan(height * 0.62);
   });
 
   it("spends fewer triangles further away", () => {
@@ -159,6 +166,17 @@ describe("tree details", () => {
         }
       }
     }
+  });
+
+  it("grows a different kind of cactus from each variant", () => {
+    const [saguaro, organPipe, barrel, pricklyPear] = buildPlantVariants(PlantSpecies.Cactus, "high");
+
+    expect(CACTUS_FORMS.map((_form, variant) => cactusForm(variant))).toEqual(CACTUS_FORMS);
+    expect(saguaro.bounds.maximum[1]).toBeGreaterThan(3);
+    expect(meshPieces(organPipe).filter((piece) => piece.triangles.length > 60).length).toBeGreaterThan(3);
+    expect(barrel.bounds.maximum[1]).toBeLessThan(1.6);
+    expect(pricklyPear.channels.slot).toContain(MaterialSlot.Berry);
+    expect(saguaro.channels.slot).toContain(MaterialSlot.Blossom);
   });
 
   it("marks birch bark and hangs berries only on near bushes", () => {

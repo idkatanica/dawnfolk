@@ -43,7 +43,7 @@ const COLORS_BY_SLOT: Readonly<Record<MaterialSlotIndex, number>> = {
   [MaterialSlot.Bark]: 0x5f_4a_3a,
   [MaterialSlot.BirchBark]: 0xe9_e4_d8,
   [MaterialSlot.Berry]: 0xb8_26_3a,
-  [MaterialSlot.Blossom]: 0xf2_d8_e0,
+  [MaterialSlot.Blossom]: 0xee_7c_a2,
   [MaterialSlot.Bone]: 0xe8_dc_c4,
   [MaterialSlot.Cactus]: 0x4f_8a_4a,
   [MaterialSlot.Coat]: 0x8a_5a_36,
