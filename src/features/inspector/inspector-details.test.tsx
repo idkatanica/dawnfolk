@@ -175,17 +175,63 @@ describe("tribe details", () => {
       children: 3,
       deaths: 1,
       population: 7,
-      stock: createStock({ berries: 12.4, stone: 3, wood: 8.6 }),
+      stock: createStock({ berries: 12.4, grain: 20, stone: 3, wood: 8.6 }),
     });
 
     const screen = await render(<TribeDetails tribe={{ kind: "tribe", summary }} />);
 
+    const food = screen.getByRole("region", { name: "Food" });
+    const materials = screen.getByRole("region", { name: "Materials" });
+
     await expect.element(screen.getByText("Wanderers", { exact: true })).toBeVisible();
     await expect.element(screen.getByText("7 (3 children)", { exact: true })).toBeVisible();
     await expect.element(screen.getByText("2 · 1", { exact: true })).toBeVisible();
-    await expect.element(screen.getByText("12", { exact: true })).toBeVisible();
-    await expect.element(screen.getByText("9", { exact: true })).toBeVisible();
-    await expect.element(screen.getByText("3", { exact: true })).toBeVisible();
+    await expect.element(food.getByText("Berries", { exact: true })).toBeVisible();
+    await expect.element(food.getByText("12", { exact: true })).toBeVisible();
+    await expect.element(food.getByText("32", { exact: true })).toBeVisible();
+    await expect.element(materials.getByText("9", { exact: true })).toBeVisible();
+    await expect.element(materials.getByText("3", { exact: true })).toBeVisible();
+  });
+
+  it("shows how far the tribe has come along the eras", async () => {
+    const summary = createTribe({
+      era: { count: 6, index: 3, name: "Copper Age", nextName: "Bronze Age" },
+      eraName: "Copper Age",
+    });
+
+    const screen = await render(<TribeDetails tribe={{ kind: "tribe", summary }} />);
+
+    await expect.element(screen.getByRole("list", { name: "Era 4 of 6" })).toBeVisible();
+    await expect.element(screen.getByText("Next: Bronze Age", { exact: true })).toBeVisible();
+  });
+
+  it("names the ore a tribe still needs for its next discovery", async () => {
+    const summary = createTribe({
+      goal: { isBlocked: true, need: "4 tin ore", progress: 1, technologyName: "Bronze" },
+    });
+
+    const screen = await render(<TribeDetails tribe={{ kind: "tribe", summary }} />);
+
+    await expect.element(screen.getByRole("meter", { name: "Next: Bronze" })).toHaveAttribute("aria-valuenow", "1");
+    await expect.element(screen.getByText("Needs 4 tin ore", { exact: true })).toBeVisible();
+  });
+
+  it("lists the buildings and the land of a tribe", async () => {
+    const summary = createTribe({
+      buildings: [
+        { count: 2, kind: "longhouse", name: "Longhouse" },
+        { count: 1, kind: "smelter", name: "Smelter" },
+      ],
+      farmland: { crops: [{ count: 3, crop: "wheat", name: "Wheat" }], fields: 4, orchardTrees: 6, woodlotTrees: 0 },
+    });
+
+    const screen = await render(<TribeDetails tribe={{ kind: "tribe", summary }} />);
+
+    await expect.element(screen.getByText("Longhouse ×2", { exact: true })).toBeVisible();
+    await expect.element(screen.getByText("Smelter", { exact: true })).toBeVisible();
+    await expect.element(screen.getByText("4 (Wheat 3)", { exact: true })).toBeVisible();
+    await expect.element(screen.getByText("Orchard trees", { exact: true })).toBeVisible();
+    await expect.element(screen.getByText("Woodlot trees", { exact: true })).not.toBeInTheDocument();
   });
 
   it("shows the faith and the progress towards the next discovery", async () => {
@@ -211,7 +257,7 @@ describe("tribe details", () => {
   });
 
   it("says when every discovery is made", async () => {
-    const summary = createTribe({ nextTechnology: null });
+    const summary = createTribe({ goal: null, nextTechnology: null });
 
     const screen = await render(<TribeDetails tribe={{ kind: "tribe", summary }} />);
 
