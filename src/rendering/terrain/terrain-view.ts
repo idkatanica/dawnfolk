@@ -2,6 +2,7 @@ import type { Group, MeshStandardNodeMaterial, PerspectiveCamera } from "three/w
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
+import { islandPlinthHeight } from "./island-base-geometry.ts";
 import { type HeightRange, type PatchCorner, PatchGrid } from "./patch-grid.ts";
 import { createTerrainMaterial } from "./terrain-material.ts";
 import { PATCH_LEVEL_DISTANCES } from "./terrain-patches.ts";
@@ -16,7 +17,7 @@ export class TerrainView {
 
   constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow) {
     this.#mirror = mirror;
-    this.material = createTerrainMaterial(textures, mirror.grid, glow);
+    this.material = createTerrainMaterial(textures, mirror.grid, glow, islandPlinthHeight(mirror));
     this.#patches = new PatchGrid(mirror.grid, (corner) => this.#measure(corner), {
       castsShadow: true,
       edges: "skirted",

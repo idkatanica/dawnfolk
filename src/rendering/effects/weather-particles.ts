@@ -1,6 +1,7 @@
 import {
   attribute,
   cameraPosition,
+  distance,
   float,
   fract,
   hash,
@@ -22,14 +23,17 @@ import {
   MeshBasicNodeMaterial,
   Uint16BufferAttribute,
   Vector2,
+  Vector3,
 } from "three/webgpu";
 import type { WeatherKind } from "../../content/weather.ts";
 import { clamp } from "../../shared/math.ts";
 import type { CameraAxes } from "./billboards.ts";
 
-const BOX_SIZE = 90;
-const BOX_HEIGHT = 60;
-const MAXIMUM_DROPS = 9000;
+const NEAREST_BOX = 90;
+const FARTHEST_BOX = 900;
+const BOX_PER_DISTANCE = 0.75;
+const BOX_HEIGHT_SHARE = 0.65;
+const MAXIMUM_DROPS = 12_000;
 const LIGHTEST_PRECIPITATION = 0.04;
 
 export type Precipitation = "rain" | "snow";
@@ -53,8 +57,15 @@ function createStreakGeometry(): InstancedBufferGeometry {
   return geometry;
 }
 
+export interface WeatherView {
+  readonly focus: Vector3;
+  readonly viewDistance: number;
+}
+
 export class WeatherParticles {
   readonly mesh: Mesh;
+  readonly #anchor = uniform(new Vector3());
+  readonly #boxSize = uniform(NEAREST_BOX);
   readonly #fallSpeed = uniform(14);
   readonly #geometry = createStreakGeometry();
   readonly #isSnow = uniform(0);
@@ -65,36 +76,40 @@ export class WeatherParticles {
     const material = new MeshBasicNodeMaterial({ depthWrite: false, transparent: true });
     const corner = attribute("dropCorner", "vec2");
     const seed = float(instanceIndex);
+    const boxSize = this.#boxSize;
+    const boxHeight = boxSize.mul(BOX_HEIGHT_SHARE);
+    const scale = boxSize.div(NEAREST_BOX);
 
-    const scatter = vec2(hash(seed), hash(seed.add(0.37))).mul(BOX_SIZE);
+    const scatter = vec2(hash(seed), hash(seed.add(0.37))).mul(boxSize);
 
-    const wrapped = fract(scatter.sub(cameraPosition.xz).div(BOX_SIZE).add(0.5)).sub(0.5).mul(BOX_SIZE);
+    const wrapped = fract(scatter.sub(this.#anchor.xz).div(boxSize).add(0.5)).sub(0.5).mul(boxSize);
 
-    const fall = fract(hash(seed.add(0.71)).sub(time.mul(this.#fallSpeed).div(BOX_HEIGHT)));
-    const sway = sin(time.mul(1.3).add(seed)).mul(this.#isSnow).mul(0.8);
+    const fall = fract(hash(seed.add(0.71)).sub(time.mul(this.#fallSpeed).mul(scale).div(boxHeight)));
+    const sway = sin(time.mul(1.3).add(seed)).mul(this.#isSnow).mul(scale.mul(0.8));
 
-    const height = fall.mul(BOX_HEIGHT).sub(BOX_HEIGHT * 0.45);
+    const height = fall.mul(boxHeight).sub(boxHeight.mul(0.15));
 
-    const slant = this.#wind.mul(fall.mul(BOX_HEIGHT).div(this.#fallSpeed).mul(0.12));
+    const slant = this.#wind.mul(fall.mul(boxHeight).div(this.#fallSpeed.mul(scale)).mul(0.12));
 
     const center = vec3(
-      cameraPosition.x.add(wrapped.x).add(slant.x).add(sway),
-      cameraPosition.y.add(height),
-      cameraPosition.z.add(wrapped.y).add(slant.y)
+      this.#anchor.x.add(wrapped.x).add(slant.x).add(sway),
+      this.#anchor.y.add(height),
+      this.#anchor.z.add(wrapped.y).add(slant.y)
     );
 
-    const width = mix(float(0.03), float(0.14), this.#isSnow);
-    const tall = mix(float(1.1), float(0.14), this.#isSnow);
+    const width = mix(float(0.05), float(0.16), this.#isSnow).mul(scale);
+    const tall = mix(float(1.4), float(0.16), this.#isSnow).mul(scale);
     const slabFade = smoothstep(0, 0.15, fall).mul(smoothstep(1, 0.85, fall));
-    const rangeFade = smoothstep(BOX_SIZE * 0.5, BOX_SIZE * 0.3, length(wrapped));
+    const rangeFade = smoothstep(boxSize.mul(0.5), boxSize.mul(0.3), length(wrapped));
+    const lensFade = smoothstep(boxSize.mul(0.04), boxSize.mul(0.12), distance(center, cameraPosition));
 
     material.positionNode = center
       .add(axes.right.mul(corner.x.mul(width)))
       .add(vec3(0, 1, 0).mul(corner.y.mul(tall)))
-      .add(vec3(this.#wind.x, 0, this.#wind.y).mul(corner.y.mul(0.03)));
+      .add(vec3(this.#wind.x, 0, this.#wind.y).mul(corner.y.mul(0.03).mul(scale)));
 
     const shape = varying(corner, "dropCorner");
-    const fade = varying(slabFade.mul(rangeFade), "dropFade");
+    const fade = varying(slabFade.mul(rangeFade).mul(lensFade), "dropFade");
 
     const softness = smoothstep(0.5, 0.1, length(vec2(shape.x, shape.y.sub(0.5))));
     const streak = smoothstep(0, 0.45, shape.y).mul(smoothstep(1, 0.7, shape.y));
@@ -108,7 +123,7 @@ export class WeatherParticles {
     this.mesh.visible = false;
   }
 
-  update(precipitation: number, kind: Precipitation, windX: number, windZ: number): void {
+  update(precipitation: number, kind: Precipitation, windX: number, windZ: number, view: WeatherView): void {
     const strength = clamp((precipitation - LIGHTEST_PRECIPITATION) / (1 - LIGHTEST_PRECIPITATION), 0, 1);
     const isSnow = kind === "snow";
 
@@ -116,9 +131,11 @@ export class WeatherParticles {
 
     this.#geometry.instanceCount = count;
     this.mesh.visible = count > 0;
+    this.#anchor.value.copy(view.focus);
+    this.#boxSize.value = clamp(view.viewDistance * BOX_PER_DISTANCE, NEAREST_BOX, FARTHEST_BOX);
     this.#isSnow.value = isSnow ? 1 : 0;
     this.#fallSpeed.value = isSnow ? 2.2 : 15;
-    this.#opacity.value = isSnow ? 0.85 : 0.32;
+    this.#opacity.value = isSnow ? 0.85 : 0.45;
     this.#wind.value.set(windX, windZ);
   }
 

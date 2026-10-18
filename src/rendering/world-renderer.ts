@@ -250,7 +250,8 @@ export class WorldRenderer {
       weather.precipitation,
       precipitationOf(weather.kind),
       wind.directionX * wind.metersPerSecond,
-      wind.directionZ * wind.metersPerSecond
+      wind.directionZ * wind.metersPerSecond,
+      view
     );
   }
 

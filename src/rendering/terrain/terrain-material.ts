@@ -7,6 +7,7 @@ import {
   If,
   ivec2,
   max,
+  min,
   mix,
   mx_fractal_noise_float,
   mx_noise_float,
@@ -67,7 +68,7 @@ function burningGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"floa
   return EMBER_DEEP.mul(smoulder).add(EMBER_BRIGHT.mul(blaze));
 }
 
-function terrainPosition(textures: TerrainTextures, grid: WorldGrid): Node<"vec3"> {
+function terrainPosition(textures: TerrainTextures, grid: WorldGrid, plinth: number): Node<"vec3"> {
   const cellSize = float(grid.cellSize);
   const halfSize = float(grid.halfSize);
   const lastCell = grid.cellsPerSide - 1;
@@ -88,16 +89,11 @@ function terrainPosition(textures: TerrainTextures, grid: WorldGrid): Node<"vec3
 
     normalLocal.assign(normalize(vec3(slopeX, cellSize.mul(2), slopeZ)));
 
-    const isIslandEdge = cell.x
-      .lessThan(0.5)
-      .or(cell.y.lessThan(0.5))
-      .or(cell.x.greaterThan(lastCell - 0.5))
-      .or(cell.y.greaterThan(lastCell - 0.5));
-    const drop = select(isIslandEdge, float(0), skirt.mul(SKIRT_DROP_PER_STEP));
+    const drop = skirt.mul(SKIRT_DROP_PER_STEP);
 
     return vec3(
       cell.x.add(0.5).mul(cellSize).sub(halfSize),
-      height.sub(drop),
+      max(height.sub(drop), min(height, plinth)),
       cell.y.add(0.5).mul(cellSize).sub(halfSize)
     );
   })();
@@ -131,11 +127,12 @@ function underwaterDepth(textures: TerrainTextures, grid: WorldGrid): Node<"floa
 export function createTerrainMaterial(
   textures: TerrainTextures,
   grid: WorldGrid,
-  glow: FireGlow
+  glow: FireGlow,
+  plinth: number
 ): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial();
 
-  material.positionNode = terrainPosition(textures, grid);
+  material.positionNode = terrainPosition(textures, grid, plinth);
 
   const mapCoordinates = warpedMapCoordinates(grid);
   const broad = mx_fractal_noise_float(positionWorld.mul(0.012), 3, 2, 0.5);
