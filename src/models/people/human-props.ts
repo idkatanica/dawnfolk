@@ -1,0 +1,343 @@
+import { FULL_TURN } from "../../shared/math.ts";
+import { createVolumeNoise } from "../../shared/noise.ts";
+import { createRandom } from "../../shared/random.ts";
+import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
+import type { MeshBuilder, VertexStyle } from "../mesh/mesh-builder.ts";
+import type { Shape } from "../mesh/shape.ts";
+import { blob, box, card, cone, cylinder, lathe, loft, sphere, torus, tube } from "../mesh/shapes.ts";
+import { combine, segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
+import { rigidStyle } from "../rig/skin-weights.ts";
+import { forEachSide } from "./human-anatomy.ts";
+import type { HumanDetail } from "./human-detail.ts";
+import { armStyle, FLEXIBLE_TORSO_STYLE } from "./human-rigging.ts";
+import { HumanBone } from "./human-skeleton.ts";
+
+const PROP_NOISE = createVolumeNoise(createRandom(4242));
+
+const RIGHT_FIST: Triple = [-0.217, 0.832, 0.018];
+const LEFT_FIST: Triple = [0.217, 0.832, 0.018];
+const CRADLE: Triple = [0, 1.29, 0.28];
+const SHOULDER_GRIP: Triple = [0.25, 1.46, 0.21];
+
+function inRightHand(slot: MaterialSlotIndex): VertexStyle {
+  return { ...rigidStyle(HumanBone.HandRight), slot };
+}
+
+function inLeftHand(slot: MaterialSlotIndex): VertexStyle {
+  return { ...rigidStyle(HumanBone.HandLeft), slot };
+}
+
+function onChest(slot: MaterialSlotIndex): VertexStyle {
+  return { ...rigidStyle(HumanBone.Chest), slot };
+}
+
+function addRod(builder: MeshBuilder, start: Triple, end: Triple, radius: number, style: VertexStyle): void {
+  builder.add(
+    cylinder({ height: segmentLength(start, end), radialSegments: 6, radiusBottom: radius, radiusTop: radius * 0.9 }),
+    {
+      style,
+      transform: segmentTransform(start, end),
+    }
+  );
+}
+
+export function addHeadband(builder: MeshBuilder): void {
+  builder.add(torus(0.1, 0.011, 22, 4), {
+    style: { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Accent },
+    transform: transformOf({ position: [0, 1.684, -0.008], rotation: [0.1, 0, 0], scale: [1.02, 1, 1.13] }),
+  });
+}
+
+const FEATHER_LENGTH = 0.17;
+
+export function addFeather(builder: MeshBuilder): void {
+  const quill = transformOf({ position: [0.07, 1.68, -0.08], rotation: [-0.42, 0.6, -0.18] });
+
+  builder.add(card(0.034, FEATHER_LENGTH), {
+    style: { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Bone },
+    transform: quill,
+  });
+  builder.add(card(0.02, 0.05), {
+    style: { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Accent },
+    transform: combine(quill, transformOf({ position: [0, FEATHER_LENGTH, 0] })),
+  });
+}
+
+export function addNecklace(builder: MeshBuilder, detail: HumanDetail): void {
+  const style = onChest(MaterialSlot.Bone);
+
+  builder.add(torus(0.088, 0.008, 20, 4), {
+    style: { ...FLEXIBLE_TORSO_STYLE, slot: MaterialSlot.Rope },
+    transform: transformOf({ position: [0, 1.425, 0.005], rotation: [-0.35, 0, 0], scale: [1, 1, 0.9] }),
+  });
+
+  if (!detail.hasFineDetails) {
+    return;
+  }
+
+  for (let index = -2; index <= 2; index += 1) {
+    const angle = Math.PI / 2 + index * 0.32;
+
+    const x = Math.cos(angle) * 0.088;
+    const z = 0.005 + Math.sin(angle) * 0.079;
+
+    builder.add(cone(0.009, 0.034, 5), {
+      style,
+      transform: transformOf({
+        position: [x, 1.41 - Math.abs(index) * 0.006, z + 0.008],
+        rotation: [Math.PI + 0.3, 0, 0],
+      }),
+    });
+  }
+}
+
+export function addPaint(builder: MeshBuilder): void {
+  const style = { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Accent };
+
+  forEachSide((_side, mirror) => {
+    for (const offset of [0, 0.014]) {
+      builder.add(box(0.034, 0.006, 0.006), {
+        style,
+        transform: combine(
+          mirror,
+          transformOf({ position: [0.058, 1.596 - offset, 0.087 - offset * 0.4], rotation: [0, 0.62, -0.12] })
+        ),
+      });
+    }
+  });
+}
+
+export function addArmband(builder: MeshBuilder): void {
+  builder.add(torus(0.06, 0.009, 14, 4), {
+    style: { ...armStyle(1), slot: MaterialSlot.Accent },
+    transform: transformOf({ position: [0.202, 1.29, -0.004], rotation: [0, 0, -0.05] }),
+  });
+}
+
+export function addAxe(builder: MeshBuilder): void {
+  const [x, y, z] = RIGHT_FIST;
+
+  addRod(builder, [x, y, z - 0.09], [x, y, z + 0.5], 0.017, inRightHand(MaterialSlot.Wood));
+  builder.add(box(0.034, 0.13, 0.085), {
+    style: inRightHand(MaterialSlot.Stone),
+    transform: transformOf({ position: [x, y - 0.04, z + 0.46], rotation: [0.12, 0, 0] }),
+  });
+  builder.add(torus(0.022, 0.007, 8, 4), {
+    style: inRightHand(MaterialSlot.Rope),
+    transform: transformOf({ position: [x, y, z + 0.44], rotation: [Math.PI / 2, 0, 0] }),
+  });
+}
+
+export function addSpear(builder: MeshBuilder): void {
+  const [x, y, z] = RIGHT_FIST;
+
+  addRod(builder, [x, y, z - 0.62], [x, y, z + 1.12], 0.014, inRightHand(MaterialSlot.Wood));
+  builder.add(cone(0.026, 0.13, 5), {
+    style: inRightHand(MaterialSlot.Stone),
+    transform: transformOf({ position: [x, y, z + 1.11], rotation: [Math.PI / 2, 0, 0], scale: [1, 1, 0.55] }),
+  });
+  builder.add(torus(0.018, 0.006, 8, 4), {
+    style: inRightHand(MaterialSlot.Rope),
+    transform: transformOf({ position: [x, y, z + 1.1], rotation: [Math.PI / 2, 0, 0] }),
+  });
+}
+
+export function addDiggingStick(builder: MeshBuilder): void {
+  const [x, y, z] = RIGHT_FIST;
+
+  addRod(builder, [x, y + 0.22, z], [x, y - 0.62, z + 0.02], 0.018, inRightHand(MaterialSlot.Wood));
+  builder.add(cone(0.018, 0.09, 6), {
+    style: inRightHand(MaterialSlot.Wood),
+    transform: transformOf({ position: [x, y - 0.62, z + 0.02], rotation: [Math.PI, 0, 0] }),
+  });
+}
+
+export function addHammerStone(builder: MeshBuilder): void {
+  const [x, y, z] = RIGHT_FIST;
+
+  builder.add(blob({ detail: 1, noise: PROP_NOISE, offset: [3, 1, 2], radius: 0.05, roughness: 0.2 }), {
+    style: inRightHand(MaterialSlot.Stone),
+    transform: transformOf({ position: [x, y - 0.02, z + 0.06], scale: [0.9, 1, 1.15] }),
+  });
+}
+
+function basketShape(detail: HumanDetail): Shape {
+  return lathe(
+    [
+      { radius: 0, y: 0 },
+      { radius: 0.07, y: 0.004 },
+      { radius: 0.095, y: 0.05 },
+      { radius: 0.105, y: 0.11 },
+      { radius: 0.098, y: 0.124 },
+      { radius: 0.086, y: 0.118 },
+      { radius: 0.08, y: 0.06 },
+      { radius: 0, y: 0.05 },
+    ],
+    Math.max(7, detail.limbSegments + 3)
+  );
+}
+
+function addBasket(builder: MeshBuilder, detail: HumanDetail, hasBerries: boolean): void {
+  const [x, y, z] = LEFT_FIST;
+
+  const basketBottom = y - 0.27;
+
+  builder.add(basketShape(detail), {
+    style: inLeftHand(MaterialSlot.Thatch),
+    transform: transformOf({ position: [x, basketBottom, z] }),
+  });
+  builder.add(torus(0.095, 0.007, 14, 4), {
+    style: inLeftHand(MaterialSlot.Wood),
+    transform: transformOf({
+      position: [x, basketBottom + 0.12, z],
+      rotation: [0, 0, Math.PI / 2],
+      scale: [1.4, 1, 1],
+    }),
+  });
+
+  if (!hasBerries) {
+    return;
+  }
+
+  for (let index = 0; index < 9; index += 1) {
+    const angle = (index / 9) * FULL_TURN;
+    const distance = index % 3 === 0 ? 0.02 : 0.055;
+
+    builder.add(sphere(0.022, 6, 4), {
+      style: inLeftHand(MaterialSlot.Berry),
+      transform: transformOf({
+        position: [
+          x + Math.cos(angle) * distance,
+          basketBottom + 0.112 + (index % 2) * 0.012,
+          z + Math.sin(angle) * distance,
+        ],
+      }),
+    });
+  }
+}
+
+export function addToolBasket(builder: MeshBuilder, detail: HumanDetail): void {
+  addBasket(builder, detail, false);
+}
+
+export function addCarriedBerries(builder: MeshBuilder, detail: HumanDetail): void {
+  addBasket(builder, detail, true);
+}
+
+export function addCarriedWood(builder: MeshBuilder, detail: HumanDetail): void {
+  const logs: readonly Triple[] = [
+    [-0.165, 1.505, 0.0],
+    [-0.21, 1.53, 0.012],
+    [-0.125, 1.535, -0.01],
+  ];
+
+  for (const [index, [x, y, z]] of logs.entries()) {
+    const length = 0.86 - index * 0.08;
+
+    builder.add(
+      cylinder({
+        height: length,
+        radialSegments: Math.max(6, detail.limbSegments - 1),
+        radiusBottom: 0.045,
+        radiusTop: 0.042,
+      }),
+      {
+        style: onChest(MaterialSlot.Bark),
+        transform: transformOf({ position: [x, y, z - length / 2 + index * 0.03], rotation: [Math.PI / 2, 0, 0] }),
+      }
+    );
+  }
+}
+
+export function addCarriedStone(builder: MeshBuilder): void {
+  const [x, y, z] = CRADLE;
+
+  builder.add(blob({ detail: 1, noise: PROP_NOISE, offset: [7, 2, 1], radius: 0.13, roughness: 0.25 }), {
+    style: onChest(MaterialSlot.Stone),
+    transform: transformOf({ position: [x, y - 0.04, z], scale: [1.3, 0.9, 1] }),
+  });
+}
+
+export function addCarriedMeat(builder: MeshBuilder): void {
+  const knuckle: Triple = [0.17, 1.52, 0.12];
+
+  builder.add(blob({ detail: 1, noise: PROP_NOISE, offset: [1, 5, 3], radius: 0.1, roughness: 0.18 }), {
+    style: onChest(MaterialSlot.Meat),
+    transform: transformOf({ position: [0.16, 1.535, 0.0], scale: [0.9, 0.8, 1.7] }),
+  });
+  builder.add(
+    cylinder({
+      height: segmentLength(knuckle, SHOULDER_GRIP),
+      radialSegments: 5,
+      radiusBottom: 0.016,
+      radiusTop: 0.012,
+    }),
+    { style: onChest(MaterialSlot.Bone), transform: segmentTransform(knuckle, SHOULDER_GRIP) }
+  );
+}
+
+export function addCarriedFish(builder: MeshBuilder, detail: HumanDetail): void {
+  const [x, y, z] = RIGHT_FIST;
+  const style = inRightHand(MaterialSlot.Fish);
+
+  builder.add(
+    loft(
+      [
+        { radiusX: 0, radiusZ: 0, y: -0.38 },
+        { radiusX: 0.012, radiusZ: 0.03, y: -0.36 },
+        { radiusX: 0.026, radiusZ: 0.06, y: -0.22 },
+        { radiusX: 0.02, radiusZ: 0.045, y: -0.1 },
+        { radiusX: 0.008, radiusZ: 0.016, y: -0.04 },
+        { radiusX: 0, radiusZ: 0, y: -0.03 },
+      ],
+      Math.max(6, detail.limbSegments)
+    ),
+    { style, transform: transformOf({ position: [x, y, z + 0.02] }) }
+  );
+  builder.add(card(0.08, 0.06), {
+    style,
+    transform: transformOf({ position: [x, y - 0.42, z + 0.02], rotation: [0, Math.PI / 2, 0] }),
+  });
+}
+
+export function addCarriedCrops(builder: MeshBuilder, detail: HumanDetail): void {
+  const style = onChest(MaterialSlot.Grain);
+  const [x, y, z] = CRADLE;
+
+  const start: Triple = [x + 0.3, y, z];
+  const end: Triple = [x - 0.34, y + 0.02, z];
+
+  for (let index = 0; index < 7; index += 1) {
+    const spread = (index - 3) * 0.012;
+    const layer = (index % 2) * 0.012;
+
+    builder.add(
+      tube(
+        [
+          { radius: 0.006, x: start[0], y: start[1] + layer, z: start[2] + spread },
+          { radius: 0.006, x: end[0], y: end[1] + layer * 2, z: end[2] + spread * 2 },
+        ],
+        { radialSegments: 4 }
+      ),
+      { style }
+    );
+  }
+
+  builder.add(
+    blob({
+      detail: Math.min(1, detail.limbSegments - 4),
+      noise: PROP_NOISE,
+      offset: [2, 9, 4],
+      radius: 0.06,
+      roughness: 0.3,
+    }),
+    {
+      style,
+      transform: transformOf({ position: end, scale: [1.5, 0.8, 1] }),
+    }
+  );
+  builder.add(torus(0.035, 0.008, 8, 4), {
+    style: onChest(MaterialSlot.Rope),
+    transform: transformOf({ position: [x - 0.02, y + 0.012, z], rotation: [0, 0, Math.PI / 2] }),
+  });
+}

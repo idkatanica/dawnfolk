@@ -1,0 +1,517 @@
+import { Vector3 } from "three";
+import type { BuildingKind } from "../../content/buildings.ts";
+import { clamp, fractionalPart, lerp, smoothstep } from "../../shared/math.ts";
+import { createVolumeNoise } from "../../shared/noise.ts";
+import { createRandom, type RandomSource } from "../../shared/random.ts";
+import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
+import { MeshBuilder, type SurfacePoint } from "../mesh/mesh-builder.ts";
+import type { MeshData } from "../mesh/mesh-data.ts";
+import type { Shape } from "../mesh/shape.ts";
+import { blob, box, card, cone, cylinder, disc, type LoftSection, lathe, loft, panel } from "../mesh/shapes.ts";
+import { outermostHit } from "../mesh/surface-probe.ts";
+import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
+
+export type BuildingDetailLevel = "high" | "low";
+
+export const GLOW_PART = 1;
+
+const STRUCTURE_NOISE = createVolumeNoise(createRandom(3131));
+
+interface StructureContext {
+  readonly builder: MeshBuilder;
+  readonly level: BuildingDetailLevel;
+  readonly random: RandomSource;
+}
+
+function stage(from: number, to: number, height: number): (point: SurfacePoint) => number {
+  return (point) => from + (to - from) * clamp(point.position.y / height, 0, 1);
+}
+
+function addLog(
+  context: StructureContext,
+  start: Triple,
+  end: Triple,
+  radius: number,
+  slot: MaterialSlotIndex,
+  order: number
+): void {
+  const sides = context.level === "high" ? 6 : 4;
+
+  context.builder.add(
+    cylinder({
+      height: segmentLength(start, end),
+      radialSegments: sides,
+      radiusBottom: radius,
+      radiusTop: radius * 0.85,
+    }),
+    {
+      style: { buildOrder: order, slot },
+      transform: segmentTransform(start, end),
+    }
+  );
+}
+
+interface Flag {
+  readonly bottom: number;
+  readonly height: number;
+  readonly turn: number;
+  readonly width: number;
+}
+
+function addFlag(context: StructureContext, pole: Triple, flag: Flag): void {
+  const [x, , z] = pole;
+
+  const halfWidth = flag.width / 2;
+
+  context.builder.add(card(flag.width, flag.height), {
+    style: { buildOrder: 1, slot: MaterialSlot.Accent },
+    transform: transformOf({
+      position: [x + Math.cos(flag.turn) * halfWidth, flag.bottom, z - Math.sin(flag.turn) * halfWidth],
+      rotation: [0, flag.turn, 0],
+    }),
+  });
+}
+
+function addStone(context: StructureContext, position: Triple, radius: number, order: number): void {
+  const [x, y, z] = position;
+
+  context.builder.add(
+    blob({
+      detail: context.level === "high" ? 1 : 0,
+      noise: STRUCTURE_NOISE,
+      offset: [x * 3.1, y * 2.3, z * 2.7],
+      radius,
+      roughness: 0.3,
+    }),
+    {
+      style: { buildOrder: order, shade: 0.85, slot: MaterialSlot.Stone },
+      transform: transformOf({ position, scale: [1, 0.7, 1] }),
+    }
+  );
+}
+
+function campfire(context: StructureContext): void {
+  const { builder, random } = context;
+  const stones = context.level === "high" ? 10 : 6;
+
+  for (let stone = 0; stone < stones; stone += 1) {
+    const angle = (stone / stones) * Math.PI * 2 + random.signed() * 0.15;
+
+    addStone(
+      context,
+      [Math.cos(angle) * 0.62, 0.08, Math.sin(angle) * 0.62],
+      random.between(0.13, 0.18),
+      stone / stones / 3
+    );
+  }
+
+  builder.add(disc(0.5, 10), {
+    style: { buildOrder: 0.3, slot: MaterialSlot.Ash },
+    transform: transformOf({ position: [0, 0.02, 0] }),
+  });
+
+  const logs = 5;
+
+  for (let log = 0; log < logs; log += 1) {
+    const angle = (log / logs) * Math.PI * 2 + random.signed() * 0.2;
+
+    addLog(
+      context,
+      [Math.cos(angle) * 0.48, 0.04, Math.sin(angle) * 0.48],
+      [Math.cos(angle) * 0.06, 0.62, Math.sin(angle) * 0.06],
+      0.055,
+      MaterialSlot.Wood,
+      0.4 + (log / logs) * 0.6
+    );
+  }
+
+  builder.add(blob({ detail: 0, noise: STRUCTURE_NOISE, offset: [1, 1, 1], radius: 0.22, roughness: 0.4 }), {
+    style: { buildOrder: 0.95, part: GLOW_PART, slot: MaterialSlot.Ember },
+    transform: transformOf({ position: [0, 0.1, 0], scale: [1, 0.5, 1] }),
+  });
+}
+
+const TENT_HEIGHT = 2.9;
+const TENT_BASE_RADIUS = 1.62;
+const TENT_TOP_RADIUS = 0.04;
+const TENT_POLE_LIFT = 0.02;
+const TENT_POLE_OVERHANG = 0.6;
+const TENT_DOOR_ANGLE = Math.PI / 2;
+const TENT_DOOR_HALF_ANGLE = 0.27;
+const TENT_DOOR_HEIGHT = 1.1;
+const TENT_DOOR_LIFT = 0.005;
+const TENT_DOOR_THICKNESS = 0.03;
+
+function tentRadius(height: number): number {
+  return lerp(TENT_BASE_RADIUS, TENT_TOP_RADIUS, height / TENT_HEIGHT);
+}
+
+function addTentPole(context: StructureContext, angle: number, order: number): void {
+  const pointAt = (height: number): Triple => {
+    const reach = tentRadius(height) + TENT_POLE_LIFT;
+
+    return [Math.cos(angle) * reach, height, Math.sin(angle) * reach];
+  };
+
+  addLog(context, pointAt(0), pointAt(TENT_HEIGHT + TENT_POLE_OVERHANG), 0.045, MaterialSlot.Wood, order);
+}
+
+function addTentDoor(context: StructureContext, sides: number): void {
+  const facet = (Math.PI * 2) / sides;
+  const startAngle = TENT_DOOR_ANGLE - TENT_DOOR_HALF_ANGLE;
+  const endAngle = TENT_DOOR_ANGLE + TENT_DOOR_HALF_ANGLE;
+
+  const onFacet = (around: number): number => {
+    const offset = fractionalPart((lerp(startAngle, endAngle, around) - TENT_DOOR_ANGLE) / facet) * facet;
+
+    return Math.cos(facet / 2) / Math.cos(offset - facet / 2);
+  };
+
+  const section = (height: number): LoftSection => {
+    const radius = tentRadius(height) + TENT_DOOR_LIFT;
+
+    return { radiusX: radius, radiusZ: radius, ripple: onFacet, y: height };
+  };
+
+  context.builder.add(
+    panel({
+      angularSegments: 2,
+      endAngle,
+      sections: [section(0), section(TENT_DOOR_HEIGHT)],
+      startAngle,
+      thickness: TENT_DOOR_THICKNESS,
+    }),
+    { style: { buildOrder: 0.6, slot: MaterialSlot.Ash } }
+  );
+}
+
+function tent(context: StructureContext): void {
+  const { builder, level } = context;
+
+  const poles = level === "high" ? 7 : 4;
+  const rings = level === "high" ? 12 : 5;
+
+  const spacing = (Math.PI * 2) / poles;
+  const sides = poles * 2;
+
+  const firstPole = TENT_DOOR_ANGLE + spacing / 2;
+
+  for (let pole = 0; pole < poles; pole += 1) {
+    addTentPole(context, firstPole + pole * spacing, (pole / poles) * 0.4);
+  }
+
+  const profile = Array.from({ length: rings + 1 }, (_, ring) => {
+    const height = (TENT_HEIGHT * ring) / rings;
+
+    return { radius: tentRadius(height), y: height };
+  });
+
+  builder.add(lathe(profile, sides), {
+    style: {
+      buildOrder: stage(0.4, 1, TENT_HEIGHT),
+      shade: (point) => 0.75 + 0.25 * smoothstep(0, 1.5, point.position.y),
+      slot: (point) => tentSlot(point),
+    },
+    transform: transformOf({ rotation: [0, -firstPole, 0] }),
+  });
+  addTentDoor(context, sides);
+}
+
+function tentSlot(point: SurfacePoint): MaterialSlotIndex {
+  const { x, y, z } = point.position;
+
+  const isBand = y > 0.6 && y < 0.85;
+  const isMark = y > 1.2 && y < 1.5 && fractionalPart(Math.atan2(z, x) / (Math.PI / 3)) < 0.3;
+
+  return isBand || isMark ? MaterialSlot.Accent : MaterialSlot.Hide;
+}
+
+const HUT_RADIUS = 2.4;
+
+function thatchRing(radius: number, bottom: number, top: number, segments: number): LoftSection[] {
+  return [
+    { radiusX: 0, radiusZ: 0, y: bottom + 0.25 },
+    { radiusX: radius * 0.8, radiusZ: radius * 0.8, y: bottom + 0.12 },
+    { radiusX: radius, radiusZ: radius, ripple: (around) => 1 + 0.03 * Math.sin(around * segments * 3), y: bottom },
+    { radiusX: radius * 0.45, radiusZ: radius * 0.45, y: bottom + (top - bottom) * 0.62 },
+    { radiusX: 0.05, radiusZ: 0.05, y: top },
+  ];
+}
+
+function hut(context: StructureContext): void {
+  const { builder, level } = context;
+
+  const segments = level === "high" ? 18 : 8;
+
+  builder.add(
+    loft(
+      [
+        { radiusX: 0, radiusZ: 0, y: 0.6 },
+        {
+          radiusX: HUT_RADIUS + 0.12,
+          radiusZ: HUT_RADIUS + 0.12,
+          ripple: (around) => 1 + 0.025 * Math.sin(around * 70),
+          y: 0,
+        },
+        {
+          radiusX: HUT_RADIUS + 0.06,
+          radiusZ: HUT_RADIUS + 0.06,
+          ripple: (around) => 1 + 0.02 * Math.sin(around * 55),
+          y: 0.5,
+        },
+        { radiusX: HUT_RADIUS, radiusZ: HUT_RADIUS, y: 0.55 },
+        { radiusX: HUT_RADIUS - 0.04, radiusZ: HUT_RADIUS - 0.04, y: 1.75 },
+        { radiusX: 0, radiusZ: 0, y: 1.8 },
+      ],
+      segments
+    ),
+    {
+      style: {
+        buildOrder: (point) => 0.05 + 0.45 * clamp(point.position.y / 1.75, 0, 1),
+        shade: (point) => 0.7 + 0.3 * smoothstep(0, 1.6, point.position.y),
+        slot: (point) => (point.position.y < 0.52 ? MaterialSlot.Stone : MaterialSlot.Daub),
+      },
+    }
+  );
+
+  const tiers = level === "high" ? 3 : 1;
+
+  for (let tier = 0; tier < tiers; tier += 1) {
+    const bottom = 1.55 + tier * 0.55;
+    const radius = (HUT_RADIUS + 0.55) * (1 - tier * 0.28);
+
+    builder.add(loft(thatchRing(radius, bottom, 3.7, segments), segments), {
+      style: {
+        buildOrder: 0.55 + tier * 0.15,
+        shade: (point) => 0.72 + 0.28 * smoothstep(bottom, 3.7, point.position.y),
+        slot: MaterialSlot.Thatch,
+      },
+    });
+  }
+
+  builder.add(card(0.95, 1.45), {
+    style: { buildOrder: 0.35, slot: MaterialSlot.Ash },
+    transform: transformOf({ position: [0, 0.02, HUT_RADIUS + 0.03] }),
+  });
+  addLog(context, [-0.5, 0, HUT_RADIUS + 0.06], [-0.5, 1.55, HUT_RADIUS + 0.06], 0.06, MaterialSlot.Wood, 0.3);
+  addLog(context, [0.5, 0, HUT_RADIUS + 0.06], [0.5, 1.55, HUT_RADIUS + 0.06], 0.06, MaterialSlot.Wood, 0.3);
+  addLog(context, [-0.62, 1.52, HUT_RADIUS + 0.06], [0.62, 1.52, HUT_RADIUS + 0.06], 0.06, MaterialSlot.Wood, 0.32);
+  addFlag(context, [0, 0, 0], { bottom: 3.75, height: 0.35, turn: 0.3, width: 0.5 });
+  addLog(context, [0, 3.4, 0], [0, 4.2, 0], 0.03, MaterialSlot.Wood, 0.98);
+}
+
+function storehouse(context: StructureContext): void {
+  const { builder } = context;
+
+  for (const [x, z] of [
+    [-1.1, -0.9],
+    [1.1, -0.9],
+    [-1.1, 0.9],
+    [1.1, 0.9],
+  ] as const) {
+    addLog(context, [x, 0, z], [x, 1, z], 0.09, MaterialSlot.Wood, 0.1);
+  }
+
+  builder.add(box(2.6, 0.16, 2.2), {
+    style: { buildOrder: 0.35, slot: MaterialSlot.Wood },
+    transform: transformOf({ position: [0, 1.06, 0] }),
+  });
+  builder.add(box(2.2, 1.1, 1.8), {
+    style: {
+      buildOrder: (point) => 0.4 + 0.3 * clamp((point.position.y - 1.1) / 1.1, 0, 1),
+      shade: (point) => 0.75 + 0.25 * smoothstep(1.1, 2.2, point.position.y),
+      slot: MaterialSlot.Daub,
+    },
+    transform: transformOf({ position: [0, 1.7, 0] }),
+  });
+  for (const side of [-1, 1]) {
+    builder.add(box(1.75, 0.12, 2.7), {
+      style: { buildOrder: 0.85, shade: 0.92, slot: MaterialSlot.Thatch },
+      transform: transformOf({ position: [side * 0.68, 2.62, 0], rotation: [0, 0, -side * 0.6] }),
+    });
+  }
+  builder.add(card(0.7, 0.9), {
+    style: { buildOrder: 0.6, slot: MaterialSlot.Ash },
+    transform: transformOf({ position: [0, 1.15, 0.91] }),
+  });
+
+  for (const offset of [-0.25, 0.25]) {
+    addLog(context, [offset, 0, 1.75], [offset, 1.15, 1], 0.03, MaterialSlot.Wood, 0.5);
+  }
+
+  for (let rung = 1; rung < 4; rung += 1) {
+    const amount = rung / 4;
+
+    const y = 1.15 * amount;
+    const z = 1.75 - 0.75 * amount;
+
+    addLog(context, [-0.25, y, z], [0.25, y, z], 0.022, MaterialSlot.Wood, 0.5);
+  }
+
+  for (const [x, z, height] of [
+    [1.6, 0.6, 0.55],
+    [1.75, 0.05, 0.45],
+  ] as const) {
+    builder.add(
+      lathe(
+        [
+          { radius: 0, y: 0 },
+          { radius: 0.2, y: 0.02 },
+          { radius: 0.27, y: height * 0.45 },
+          { radius: 0.16, y: height * 0.92 },
+          { radius: 0.18, y: height },
+          { radius: 0, y: height * 0.9 },
+        ],
+        context.level === "high" ? 10 : 6
+      ),
+      { style: { buildOrder: 0.9, slot: MaterialSlot.Daub }, transform: transformOf({ position: [x, 0, z] }) }
+    );
+  }
+
+  addFlag(context, [0, 0, 1.2], { bottom: 3.55, height: 0.4, turn: 0, width: 0.6 });
+  addLog(context, [0, 3, 1.2], [0, 4, 1.2], 0.025, MaterialSlot.Wood, 0.99);
+}
+
+const TOTEM_HEADS = 3;
+const TOTEM_HEAD_HEIGHT = 1.05;
+const TOTEM_BASE = 0.15;
+const TOTEM_NOSE_LENGTH = 0.26;
+const TOTEM_NOSE_DEPTH = 0.04;
+const TOTEM_NOSE_TILT = 0.25;
+
+function totemSection(bottom: number, height: number, radius: number): LoftSection[] {
+  return [
+    { radiusX: radius * 0.92, radiusZ: radius * 0.92, y: bottom },
+    { radiusX: radius * 1.05, radiusZ: radius * 1.12, y: bottom + height * 0.3 },
+    { centerZ: radius * 0.12, radiusX: radius * 1.02, radiusZ: radius * 1.18, y: bottom + height * 0.62 },
+    { radiusX: radius * 0.9, radiusZ: radius * 0.95, y: bottom + height },
+  ];
+}
+
+function totemFooting(radius: number, isLowest: boolean): LoftSection[] {
+  if (!isLowest) {
+    return [];
+  }
+
+  return [{ radiusX: radius * 0.92, radiusZ: radius * 0.92, y: 0 }];
+}
+
+function totemHead(bottom: number, radius: number, isLowest: boolean, segments: number): Shape {
+  const foot = isLowest ? 0 : bottom;
+
+  return loft(
+    [
+      { radiusX: 0, radiusZ: 0, y: foot },
+      ...totemFooting(radius, isLowest),
+      ...totemSection(bottom, TOTEM_HEAD_HEIGHT, radius),
+      { radiusX: 0, radiusZ: 0, y: bottom + TOTEM_HEAD_HEIGHT },
+    ],
+    segments
+  );
+}
+
+function addTotemEyes(context: StructureContext, head: Shape, bottom: number, order: number): void {
+  const center = new Vector3(0, bottom + TOTEM_HEAD_HEIGHT * 0.66, 0);
+
+  for (const side of [-1, 1]) {
+    const hit = outermostHit(head, center, new Vector3(side * 0.3, 0, 1));
+
+    if (hit === null) {
+      continue;
+    }
+
+    context.builder.add(box(0.1, 0.07, 0.04), {
+      style: { buildOrder: order, slot: MaterialSlot.Bone },
+      transform: transformOf({
+        position: hit.point.toArray(),
+        rotation: [0, Math.atan2(hit.normal.x, hit.normal.z), 0],
+      }),
+    });
+  }
+}
+
+function addTotemNose(context: StructureContext, head: Shape, bottom: number, order: number): void {
+  const hit = outermostHit(head, new Vector3(0, bottom + TOTEM_HEAD_HEIGHT * 0.45, 0), new Vector3(0, 0, 1));
+
+  if (hit === null) {
+    return;
+  }
+
+  const axis = new Vector3(0, -Math.sin(TOTEM_NOSE_TILT), Math.cos(TOTEM_NOSE_TILT));
+
+  const base = hit.point.clone().addScaledVector(axis, -TOTEM_NOSE_DEPTH);
+
+  const tip = base.clone().add(axis);
+
+  context.builder.add(cone(0.08, TOTEM_NOSE_LENGTH + TOTEM_NOSE_DEPTH, 5), {
+    style: { buildOrder: order, slot: MaterialSlot.Wood },
+    transform: segmentTransform(base.toArray(), tip.toArray()),
+  });
+}
+
+function totem(context: StructureContext): void {
+  const { builder, level } = context;
+
+  const segments = level === "high" ? 12 : 6;
+
+  for (let stone = 0; stone < 5; stone += 1) {
+    const angle = (stone / 5) * Math.PI * 2;
+
+    addStone(context, [Math.cos(angle) * 0.42, 0.1, Math.sin(angle) * 0.42], 0.17, 0.05);
+  }
+
+  for (let head = 0; head < TOTEM_HEADS; head += 1) {
+    const bottom = TOTEM_BASE + head * TOTEM_HEAD_HEIGHT;
+    const radius = 0.3 - head * 0.02;
+    const order = 0.15 + head * 0.25;
+
+    const shape = totemHead(bottom, radius, head === 0, segments);
+
+    builder.add(shape, {
+      style: { buildOrder: order, slot: (point) => totemSlot(point, bottom, TOTEM_HEAD_HEIGHT) },
+    });
+
+    if (level === "high") {
+      addTotemEyes(context, shape, bottom, order + 0.05);
+    }
+
+    addTotemNose(context, shape, bottom, order + 0.05);
+  }
+
+  const top = TOTEM_BASE + TOTEM_HEADS * TOTEM_HEAD_HEIGHT;
+
+  for (const side of [-1, 1]) {
+    builder.add(box(1.2, 0.34, 0.08), {
+      style: {
+        buildOrder: 0.95,
+        slot: (point) => (Math.abs(point.position.x) > 0.55 ? MaterialSlot.Accent : MaterialSlot.Wood),
+      },
+      transform: transformOf({ position: [side * 0.62, top - 0.2, 0], rotation: [0, 0, side * 0.22] }),
+    });
+  }
+}
+
+function totemSlot(point: SurfacePoint, bottom: number, height: number): MaterialSlotIndex {
+  const relative = (point.position.y - bottom) / height;
+
+  const isBand = relative > 0.08 && relative < 0.2;
+  const isEye = relative > 0.58 && relative < 0.74 && point.normal.z > 0.6 && Math.abs(point.position.x) > 0.05;
+
+  return isBand || isEye ? MaterialSlot.Accent : MaterialSlot.Wood;
+}
+
+const BUILDERS: Readonly<Record<BuildingKind, (context: StructureContext) => void>> = {
+  campfire,
+  hut,
+  storehouse,
+  tent,
+  totem,
+};
+
+export function buildBuildingModel(kind: BuildingKind, level: BuildingDetailLevel): MeshData {
+  const builder = new MeshBuilder();
+
+  BUILDERS[kind]({ builder, level, random: createRandom(kind.length * 31 + 7) });
+
+  return builder.build();
+}

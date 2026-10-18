@@ -1,0 +1,91 @@
+@import "tailwindcss";
+@import "@svidskiy/glass-surface-react/style.css" layer(components);
+
+@theme {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+
+  --color-sky: #dbe7f1;
+  --color-ink: #1d2733;
+  --color-ink-soft: #46546a;
+  --color-ink-muted: #76849a;
+  --color-line: rgb(29 39 51 / 0.12);
+  --color-veil: rgb(255 255 255 / 0.55);
+  --color-veil-strong: rgb(255 255 255 / 0.78);
+  --color-dawn: #dd6f35;
+  --color-dawn-strong: #c25a24;
+  --color-dawn-soft: rgb(221 111 53 / 0.14);
+  --color-meadow: #4f8f45;
+  --color-meadow-soft: rgb(79 143 69 / 0.16);
+  --color-ember: #cf4436;
+  --color-ember-soft: rgb(207 68 54 / 0.14);
+  --color-lake: #3577b8;
+  --color-lake-soft: rgb(53 119 184 / 0.14);
+  --color-gold: #c9952c;
+
+  --radius-island: 22px;
+  --radius-control: 12px;
+
+  --shadow-island: 0 18px 40px -22px rgb(16 24 40 / 0.45), 0 2px 8px rgb(16 24 40 / 0.06);
+  --shadow-thumb: 0 1px 2px rgb(16 24 40 / 0.25), 0 2px 8px rgb(16 24 40 / 0.12);
+
+  --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-sky);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+.island {
+  --color-ink-muted: #556175;
+
+  pointer-events: auto;
+  box-shadow: var(--shadow-island);
+}
+
+.island > .glass-surface__content {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: inherit;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+}

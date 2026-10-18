@@ -1,0 +1,322 @@
+import { Color, Group, Sphere, Vector3 } from "three/webgpu";
+import { ANIMAL_KINDS, type AnimalKind } from "../../content/animals.ts";
+import { type AnimalAppearance, animalAppearance } from "../../models/animals/animal-appearance.ts";
+import { ANIMAL_SPECIES, animalPartMask, buildAnimalParts, poseAnimal } from "../../models/animals/animal-models.ts";
+import { MAMMOTH_BONE_COUNT } from "../../models/animals/mammoth-model.ts";
+import { QUADRUPED_CLIPS } from "../../models/animals/quadruped-clips.ts";
+import { MaterialSlot } from "../../models/materials.ts";
+import { hasPart } from "../../models/part-mask.ts";
+import { Pose } from "../../models/rig/pose.ts";
+import { SkeletonPoser } from "../../models/rig/skeleton-poser.ts";
+import { measureStride } from "../../models/rig/stride.ts";
+import { ANIMAL_STRIDE, AnimalField } from "../../world/agent-buffers.ts";
+import { ANIMAL_POSES, type AnimalPose } from "../../world/agent-poses.ts";
+import { AgentMotion } from "./agent-motion.ts";
+import { AgentPalette } from "./agent-palette.ts";
+import {
+  type AgentViewInput,
+  detailLevel,
+  HIDDEN_LEVEL,
+  type LevelDistances,
+  standingHeight,
+} from "./agent-view-input.ts";
+import { colorTexel, type PaletteLayout, paletteWidth, rootTexel } from "./palette-layout.ts";
+import { PartBatches } from "./part-batches.ts";
+import { createSkinnedMaterial } from "./skinned-material.ts";
+
+const ANIMAL_LAYOUT: PaletteLayout = {
+  boneCount: MAMMOTH_BONE_COUNT,
+  colorSlots: [MaterialSlot.Coat, MaterialSlot.CoatLight],
+};
+
+const LEVEL_DISTANCES: LevelDistances = { high: 90, low: 650 };
+const BOUNDING_RADIUS = 3.5;
+const WADING_DEPTH = 1.2;
+const DOT_COLORS: Readonly<Record<AnimalKind, number>> = { deer: 0xb0_84_52, mammoth: 0x5c_44_32 };
+const SHORTEST_STRIDE = 0.5;
+const REFERENCE_SEED = 0.5;
+const YOUTH_STEPS = 8;
+
+interface AnimalVisual {
+  readonly ageKey: number;
+  readonly appearance: AnimalAppearance;
+  readonly colors: readonly Color[];
+  readonly kind: AnimalKind;
+  readonly motion: AgentMotion;
+  readonly parts: readonly number[];
+  readonly scales: Float32Array;
+  readonly variation: number;
+}
+
+interface AnimalKindView {
+  readonly batches: PartBatches;
+  readonly poser: SkeletonPoser;
+  readonly strides: ReadonlyMap<AnimalPose, number>;
+}
+
+function measureKindStrides(kind: AnimalKind): Map<AnimalPose, number> {
+  const species = ANIMAL_SPECIES[kind];
+  const strides = new Map<AnimalPose, number>();
+
+  const scales = species.boneScales(animalAppearance({ kind, seed: REFERENCE_SEED, youth: 0 }));
+
+  for (const clip of ANIMAL_POSES) {
+    if (QUADRUPED_CLIPS[clip].timing.kind !== "stride") {
+      continue;
+    }
+
+    const stride = measureStride({
+      pose: new Pose(species.skeleton.bones.length),
+      poser: new SkeletonPoser(species.skeleton),
+      sample: (target, phase) => poseAnimal(kind, target, clip, phase, { variation: 0.5 }),
+      scales,
+      skeleton: species.skeleton,
+    });
+
+    strides.set(clip, Math.max(SHORTEST_STRIDE, stride));
+  }
+
+  return strides;
+}
+
+function visiblePartIndices(kind: AnimalKind, appearance: AnimalAppearance): number[] {
+  const mask = animalPartMask(kind, appearance);
+
+  return ANIMAL_SPECIES[kind].parts.map((_, index) => index).filter((index) => hasPart(mask, index));
+}
+
+export class AnimalView {
+  readonly group = new Group();
+  readonly #blendedPose = new Pose(MAMMOTH_BONE_COUNT);
+  readonly #bounds = new Sphere(new Vector3(), BOUNDING_RADIUS);
+  readonly #kinds: Readonly<Record<AnimalKind, AnimalKindView>>;
+  readonly #palette = new AgentPalette(paletteWidth(ANIMAL_LAYOUT));
+  readonly #pose = new Pose(MAMMOTH_BONE_COUNT);
+  readonly #previousPose = new Pose(MAMMOTH_BONE_COUNT);
+  readonly #seen = new Set<number>();
+  readonly #visuals = new Map<number, AnimalVisual>();
+
+  constructor() {
+    const material = createSkinnedMaterial(this.#palette, ANIMAL_LAYOUT);
+
+    this.#kinds = {
+      deer: this.#createKindView("deer", material),
+      mammoth: this.#createKindView("mammoth", material),
+    };
+  }
+
+  update(input: AgentViewInput): void {
+    const { frame } = input.mirror;
+    const seen = this.#seen;
+
+    seen.clear();
+
+    for (const kind of ANIMAL_KINDS) {
+      this.#kinds[kind].batches.begin();
+    }
+
+    let rows = 0;
+
+    for (let animal = 0; animal < frame.animalCount; animal += 1) {
+      const offset = animal * ANIMAL_STRIDE;
+
+      seen.add(frame.animals[offset + AnimalField.Id]);
+
+      if (this.#drawAnimal(input, offset, rows)) {
+        rows += 1;
+      }
+    }
+
+    for (const id of this.#visuals.keys()) {
+      if (!seen.has(id)) {
+        this.#visuals.delete(id);
+      }
+    }
+
+    for (const kind of ANIMAL_KINDS) {
+      this.#kinds[kind].batches.commit();
+    }
+
+    this.#palette.upload();
+  }
+
+  dispose(): void {
+    for (const kind of ANIMAL_KINDS) {
+      this.#kinds[kind].batches.dispose();
+    }
+
+    this.#palette.dispose();
+  }
+
+  #createKindView(kind: AnimalKind, material: ReturnType<typeof createSkinnedMaterial>): AnimalKindView {
+    const batches = new PartBatches(
+      [
+        { castsShadow: true, parts: buildAnimalParts(kind, "high") },
+        { castsShadow: false, parts: buildAnimalParts(kind, "low") },
+      ],
+      material
+    );
+
+    this.group.add(batches.group);
+
+    return { batches, poser: new SkeletonPoser(ANIMAL_SPECIES[kind].skeleton), strides: measureKindStrides(kind) };
+  }
+
+  #drawAnimal(input: AgentViewInput, offset: number, row: number): boolean {
+    const { animals } = input.mirror.frame;
+
+    const x = animals[offset + AnimalField.X] + animals[offset + AnimalField.VelocityX] * input.secondsSinceTick;
+    const z = animals[offset + AnimalField.Z] + animals[offset + AnimalField.VelocityZ] * input.secondsSinceTick;
+
+    const y = standingHeight(input.mirror, x, z, WADING_DEPTH);
+
+    this.#bounds.center.set(x, y + 1.5, z);
+
+    const distance = input.camera.position.distanceTo(this.#bounds.center);
+
+    const level = detailLevel(distance, LEVEL_DISTANCES, input.detail);
+
+    if (!input.frustum.intersectsSphere(this.#bounds)) {
+      return false;
+    }
+
+    if (level === HIDDEN_LEVEL) {
+      input.dots.add(x, y, z, distance, DOT_COLORS[ANIMAL_KINDS[animals[offset + AnimalField.Kind]]]);
+
+      return false;
+    }
+
+    const visual = this.#visualFor(animals, offset);
+
+    const kindView = this.#kinds[visual.kind];
+
+    this.#animate(input, visual, kindView, offset);
+    this.#palette.ensureRows(row + 1);
+    this.#writePose(visual, kindView, row);
+    this.#writeRootAndColors(row, [x, y, z, visual.motion.heading], visual.colors);
+
+    for (const part of visual.parts) {
+      kindView.batches.add(level, part, row);
+    }
+
+    return true;
+  }
+
+  #animate(input: AgentViewInput, visual: AnimalVisual, kindView: AnimalKindView, offset: number): void {
+    const { animals } = input.mirror.frame;
+
+    const clipCode = animals[offset + AnimalField.Pose];
+    const speed = Math.hypot(animals[offset + AnimalField.VelocityX], animals[offset + AnimalField.VelocityZ]);
+
+    visual.motion.advance({
+      clip: clipCode,
+      gameSeconds: input.gameSeconds,
+      heading: animals[offset + AnimalField.Heading],
+      rate: this.#cyclesPerSecond(kindView, ANIMAL_POSES[clipCode], speed, visual.appearance),
+      realSeconds: input.realSeconds,
+    });
+  }
+
+  #cyclesPerSecond(kindView: AnimalKindView, clip: AnimalPose, speed: number, appearance: AnimalAppearance): number {
+    const { timing } = QUADRUPED_CLIPS[clip];
+
+    if (timing.kind === "seconds") {
+      return 1 / timing.cycleSeconds;
+    }
+
+    const stride = kindView.strides.get(clip);
+
+    if (stride === undefined) {
+      return 0;
+    }
+
+    return speed / (stride * appearance.size * appearance.legScale);
+  }
+
+  #writePose(visual: AnimalVisual, kindView: AnimalKindView, row: number): void {
+    const { motion } = visual;
+    const context = { variation: visual.variation };
+
+    poseAnimal(visual.kind, this.#pose, ANIMAL_POSES[motion.clip], motion.phase, context);
+
+    const pose = this.#blendIfNeeded(visual);
+
+    kindView.poser.pose(pose, visual.scales);
+    kindView.poser.writePalette(this.#palette.data, this.#palette.rowOffset(row));
+  }
+
+  #blendIfNeeded(visual: AnimalVisual): Pose {
+    const { motion } = visual;
+
+    if (motion.blend >= 1) {
+      return this.#pose;
+    }
+
+    const eased = motion.blend * motion.blend * (3 - 2 * motion.blend);
+    const context = { variation: visual.variation };
+
+    poseAnimal(visual.kind, this.#previousPose, ANIMAL_POSES[motion.previousClip], motion.previousPhase, context);
+    this.#blendedPose.blendBetween(this.#previousPose, this.#pose, eased);
+
+    return this.#blendedPose;
+  }
+
+  #writeRootAndColors(row: number, root: readonly [number, number, number, number], colors: readonly Color[]): void {
+    const { data } = this.#palette;
+    const rootOffset = this.#palette.texelOffset(row, rootTexel(ANIMAL_LAYOUT));
+
+    data.set(root, rootOffset);
+
+    for (const [index, color] of colors.entries()) {
+      const offset = this.#palette.texelOffset(row, colorTexel(ANIMAL_LAYOUT, index));
+
+      data[offset] = color.r;
+      data[offset + 1] = color.g;
+      data[offset + 2] = color.b;
+    }
+  }
+
+  #visualFor(animals: Float32Array, offset: number): AnimalVisual {
+    const id = animals[offset + AnimalField.Id];
+    const youth = animals[offset + AnimalField.Youth];
+
+    const ageKey = Math.round(youth * YOUTH_STEPS);
+    const existing = this.#visuals.get(id);
+
+    if (existing !== undefined && existing.ageKey === ageKey) {
+      return existing;
+    }
+
+    const kind = ANIMAL_KINDS[animals[offset + AnimalField.Kind]];
+    const seed = animals[offset + AnimalField.AppearanceSeed];
+
+    const appearance = animalAppearance({ kind, seed, youth });
+
+    const visual: AnimalVisual = {
+      ageKey,
+      appearance,
+      colors: [new Color(appearance.coat), new Color(appearance.coatLight)],
+      kind,
+      motion: this.#motionFor(existing, animals, offset),
+      parts: visiblePartIndices(kind, appearance),
+      scales: ANIMAL_SPECIES[kind].boneScales(appearance),
+      variation: seed,
+    };
+
+    this.#visuals.set(id, visual);
+
+    return visual;
+  }
+
+  #motionFor(existing: AnimalVisual | undefined, animals: Float32Array, offset: number): AgentMotion {
+    if (existing !== undefined) {
+      return existing.motion;
+    }
+
+    return new AgentMotion(
+      animals[offset + AnimalField.Pose],
+      animals[offset + AnimalField.Phase],
+      animals[offset + AnimalField.Heading]
+    );
+  }
+}

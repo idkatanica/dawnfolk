@@ -1,0 +1,259 @@
+import type { Matrix4 } from "three";
+import { MaterialSlot } from "../materials.ts";
+import type { MeshBuilder } from "../mesh/mesh-builder.ts";
+import { box, type LoftSection, loft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
+import { combine, MIRROR_X, sideMirror, transformOf } from "../mesh/transforms.ts";
+import { rigidStyle } from "../rig/skin-weights.ts";
+import type { HumanDetail } from "./human-detail.ts";
+import { armStyle, FLEXIBLE_TORSO_STYLE, legStyle, TORSO_STYLE } from "./human-rigging.ts";
+import { HumanBone, SIDES, type Side } from "./human-skeleton.ts";
+
+export const HEAD_SECTIONS: readonly LoftSection[] = [
+  { centerZ: 0.052, radiusX: 0, radiusZ: 0, y: 1.512 },
+  { centerZ: 0.054, radiusX: 0.03, radiusZ: 0.024, y: 1.521 },
+  { centerZ: 0.03, radiusX: 0.062, radiusZ: 0.07, y: 1.545 },
+  { centerZ: 0.013, radiusX: 0.083, radiusZ: 0.094, y: 1.58 },
+  { centerZ: 0.003, radiusX: 0.093, radiusZ: 0.104, y: 1.62 },
+  { centerZ: -0.006, radiusX: 0.096, radiusZ: 0.107, y: 1.66 },
+  { centerZ: -0.012, radiusX: 0.088, radiusZ: 0.099, y: 1.7 },
+  { centerZ: -0.014, radiusX: 0.066, radiusZ: 0.076, y: 1.732 },
+  { centerZ: -0.012, radiusX: 0.035, radiusZ: 0.04, y: 1.748 },
+  { centerZ: -0.01, radiusX: 0, radiusZ: 0, y: 1.753 },
+];
+
+const MALE_TORSO: readonly LoftSection[] = [
+  { radiusX: 0, radiusZ: 0, y: 0.84 },
+  { radiusX: 0.06, radiusZ: 0.05, y: 0.85 },
+  { centerZ: -0.008, radiusX: 0.135, radiusZ: 0.095, y: 0.88 },
+  { centerZ: -0.012, radiusX: 0.158, radiusZ: 0.108, y: 0.93 },
+  { centerZ: -0.004, radiusX: 0.152, radiusZ: 0.1, y: 0.99 },
+  { centerZ: 0.004, radiusX: 0.142, radiusZ: 0.094, y: 1.05 },
+  { centerZ: 0.01, radiusX: 0.148, radiusZ: 0.098, y: 1.12 },
+  { centerZ: 0.008, radiusX: 0.16, radiusZ: 0.104, y: 1.2 },
+  { centerZ: 0.004, radiusX: 0.176, radiusZ: 0.11, y: 1.29 },
+  { centerZ: -0.004, radiusX: 0.184, radiusZ: 0.106, y: 1.36 },
+  { centerZ: -0.012, radiusX: 0.178, radiusZ: 0.095, y: 1.41 },
+  { centerZ: -0.012, radiusX: 0.12, radiusZ: 0.072, y: 1.445 },
+  { centerZ: -0.01, radiusX: 0.06, radiusZ: 0.055, y: 1.465 },
+  { centerZ: -0.008, radiusX: 0, radiusZ: 0, y: 1.47 },
+];
+
+const FEMALE_TORSO: readonly LoftSection[] = [
+  { radiusX: 0, radiusZ: 0, y: 0.84 },
+  { radiusX: 0.06, radiusZ: 0.05, y: 0.85 },
+  { centerZ: -0.012, radiusX: 0.145, radiusZ: 0.1, y: 0.88 },
+  { centerZ: -0.016, radiusX: 0.17, radiusZ: 0.112, y: 0.93 },
+  { centerZ: -0.006, radiusX: 0.16, radiusZ: 0.102, y: 0.99 },
+  { centerZ: 0.004, radiusX: 0.128, radiusZ: 0.086, y: 1.06 },
+  { centerZ: 0.01, radiusX: 0.135, radiusZ: 0.09, y: 1.13 },
+  { centerZ: 0.014, radiusX: 0.148, radiusZ: 0.1, y: 1.21 },
+  { centerZ: 0.024, radiusX: 0.158, radiusZ: 0.118, y: 1.28 },
+  { centerZ: 0.016, radiusX: 0.162, radiusZ: 0.112, y: 1.34 },
+  { centerZ: -0.008, radiusX: 0.16, radiusZ: 0.092, y: 1.4 },
+  { centerZ: -0.012, radiusX: 0.11, radiusZ: 0.07, y: 1.44 },
+  { centerZ: -0.01, radiusX: 0.055, radiusZ: 0.052, y: 1.465 },
+  { centerZ: -0.008, radiusX: 0, radiusZ: 0, y: 1.47 },
+];
+
+const CHILD_TORSO: readonly LoftSection[] = [
+  { radiusX: 0, radiusZ: 0, y: 0.84 },
+  { radiusX: 0.06, radiusZ: 0.05, y: 0.85 },
+  { centerZ: -0.006, radiusX: 0.13, radiusZ: 0.095, y: 0.88 },
+  { centerZ: -0.008, radiusX: 0.145, radiusZ: 0.105, y: 0.93 },
+  { centerZ: 0.006, radiusX: 0.145, radiusZ: 0.105, y: 1 },
+  { centerZ: 0.014, radiusX: 0.15, radiusZ: 0.11, y: 1.08 },
+  { centerZ: 0.008, radiusX: 0.15, radiusZ: 0.104, y: 1.18 },
+  { centerZ: 0, radiusX: 0.155, radiusZ: 0.1, y: 1.28 },
+  { centerZ: -0.006, radiusX: 0.16, radiusZ: 0.096, y: 1.37 },
+  { centerZ: -0.012, radiusX: 0.15, radiusZ: 0.088, y: 1.415 },
+  { centerZ: -0.012, radiusX: 0.1, radiusZ: 0.066, y: 1.445 },
+  { centerZ: -0.01, radiusX: 0.055, radiusZ: 0.05, y: 1.465 },
+  { centerZ: -0.008, radiusX: 0, radiusZ: 0, y: 1.47 },
+];
+
+const UPPER_ARM: readonly TubePoint[] = [
+  { radius: 0.024, x: 0.18, y: 1.47, z: -0.005 },
+  { radius: 0.06, x: 0.19, y: 1.44, z: 0 },
+  { radius: 0.064, x: 0.198, y: 1.37, z: -0.003 },
+  { radius: 0.055, x: 0.202, y: 1.27, z: -0.004 },
+  { radius: 0.046, x: 0.205, y: 1.165, z: -0.005 },
+  { radius: 0.044, x: 0.206, y: 1.115, z: -0.004 },
+];
+
+const FOREARM: readonly TubePoint[] = [
+  { radius: 0.045, x: 0.206, y: 1.145, z: -0.004 },
+  { radius: 0.047, x: 0.209, y: 1.065, z: 0 },
+  { radius: 0.037, x: 0.213, y: 0.965, z: 0.006 },
+  { radius: 0.031, x: 0.215, y: 0.89, z: 0.01 },
+];
+
+const THIGH: readonly TubePoint[] = [
+  { radius: 0.055, x: 0.092, y: 0.985, z: -0.005 },
+  { radius: 0.095, x: 0.095, y: 0.93, z: 0 },
+  { radius: 0.089, x: 0.097, y: 0.82, z: 0.005 },
+  { radius: 0.073, x: 0.099, y: 0.68, z: 0.008 },
+  { radius: 0.058, x: 0.1, y: 0.55, z: 0.012 },
+  { radius: 0.054, x: 0.1, y: 0.5, z: 0.014 },
+];
+
+const SHIN: readonly TubePoint[] = [
+  { radius: 0.054, x: 0.1, y: 0.525, z: 0.014 },
+  { radius: 0.056, x: 0.1, y: 0.44, z: -0.002 },
+  { radius: 0.05, x: 0.1, y: 0.32, z: -0.008 },
+  { radius: 0.037, x: 0.1, y: 0.2, z: -0.006 },
+  { radius: 0.032, x: 0.1, y: 0.11, z: -0.01 },
+  { radius: 0.032, x: 0.1, y: 0.075, z: -0.012 },
+];
+
+export const FOOT_SECTIONS: readonly LoftSection[] = [
+  { centerZ: -0.035, radiusX: 0, radiusZ: 0, y: -0.064 },
+  { centerZ: -0.037, radiusX: 0.028, radiusZ: 0.031, y: -0.054 },
+  { centerZ: -0.045, radiusX: 0.035, radiusZ: 0.043, y: -0.02 },
+  { centerZ: -0.034, radiusX: 0.041, radiusZ: 0.034, y: 0.04 },
+  { centerZ: -0.026, radiusX: 0.045, radiusZ: 0.026, y: 0.1 },
+  { centerZ: -0.021, radiusX: 0.042, radiusZ: 0.02, y: 0.148 },
+  { centerZ: -0.019, radiusX: 0, radiusZ: 0, y: 0.172 },
+];
+
+export function footTransform(side: Side, inflate = 1): Matrix4 {
+  const placement = transformOf({ position: [0.1, 0, 0], rotation: [Math.PI / 2, 0, 0], scale: inflate });
+
+  if (side === 1) {
+    return placement;
+  }
+
+  return combine(MIRROR_X, placement);
+}
+
+const SKIN = { slot: MaterialSlot.Skin };
+
+export function forEachSide(add: (side: Side, mirror: Matrix4) => void): void {
+  for (const side of SIDES) {
+    add(side, sideMirror(side));
+  }
+}
+
+function addFace(builder: MeshBuilder, detail: HumanDetail): void {
+  const head = rigidStyle(HumanBone.Head);
+  const segments = Math.max(5, detail.headSegments / 2);
+
+  builder.add(
+    tube(
+      [
+        { radius: 0.017, x: 0, y: 1.628, z: 0.097 },
+        { radius: 0.015, x: 0, y: 1.603, z: 0.114 },
+        { radius: 0.011, x: 0, y: 1.588, z: 0.121 },
+        { radius: 0, x: 0, y: 1.584, z: 0.116 },
+      ],
+      { hasEndCap: false, radialSegments: segments }
+    ),
+    { style: { ...head, ...SKIN } }
+  );
+
+  forEachSide((_side, mirror) => {
+    builder.add(sphere(0.028, segments, 5), {
+      style: { ...head, ...SKIN },
+      transform: combine(mirror, transformOf({ position: [0.093, 1.622, -0.008], scale: [0.36, 1, 0.72] })),
+    });
+  });
+
+  if (!detail.hasFineDetails) {
+    return;
+  }
+
+  forEachSide((_side, mirror) => {
+    builder.add(sphere(0.0125, 8, 5), {
+      style: { ...head, slot: MaterialSlot.Eye },
+      transform: combine(mirror, transformOf({ position: [0.034, 1.632, 0.094] })),
+    });
+    builder.add(box(0.034, 0.008, 0.014), {
+      style: { ...head, slot: MaterialSlot.Hair },
+      transform: combine(mirror, transformOf({ position: [0.035, 1.656, 0.1], rotation: [0.15, 0.2, -0.12] })),
+    });
+  });
+
+  builder.add(box(0.034, 0.007, 0.012), {
+    style: { ...head, slot: MaterialSlot.Lip },
+    transform: transformOf({ position: [0, 1.564, 0.094] }),
+  });
+}
+
+export function addHead(builder: MeshBuilder, detail: HumanDetail): void {
+  builder.add(loft(HEAD_SECTIONS, detail.headSegments), { style: { ...rigidStyle(HumanBone.Head), ...SKIN } });
+  builder.add(
+    tube(
+      [
+        { radius: 0.053, x: 0, y: 1.43, z: -0.008 },
+        { radius: 0.048, x: 0, y: 1.5, z: -0.004 },
+        { radius: 0.046, x: 0, y: 1.565, z: 0 },
+      ],
+      { radialSegments: detail.limbSegments }
+    ),
+    { style: { ...TORSO_STYLE, ...SKIN } }
+  );
+  addFace(builder, detail);
+}
+
+function handShape(builder: MeshBuilder, side: Side, mirror: Matrix4, detail: HumanDetail): void {
+  const style = { ...armStyle(side), ...SKIN };
+
+  builder.add(sphere(1, detail.limbSegments, 6), {
+    style,
+    transform: combine(
+      mirror,
+      transformOf({ position: [0.217, 0.838, 0.016], rotation: [0.08, 0, 0.06], scale: [0.026, 0.052, 0.041] })
+    ),
+  });
+  builder.add(sphere(1, Math.max(5, detail.limbSegments - 2), 5), {
+    style,
+    transform: combine(
+      mirror,
+      transformOf({ position: [0.2, 0.857, 0.044], rotation: [0.3, 0, 0.4], scale: [0.012, 0.028, 0.013] })
+    ),
+  });
+}
+
+export function addArms(builder: MeshBuilder, detail: HumanDetail): void {
+  forEachSide((side, mirror) => {
+    const style = { ...armStyle(side), ...SKIN };
+
+    builder.add(tube(UPPER_ARM, { hasStartCap: false, radialSegments: detail.limbSegments }), {
+      style,
+      transform: mirror,
+    });
+    builder.add(tube(FOREARM, { radialSegments: detail.limbSegments }), { style, transform: mirror });
+    handShape(builder, side, mirror, detail);
+  });
+}
+
+export function addLegs(builder: MeshBuilder, detail: HumanDetail): void {
+  forEachSide((side, mirror) => {
+    const style = { ...legStyle(side), ...SKIN };
+
+    builder.add(tube(THIGH, { radialSegments: detail.limbSegments }), { style, transform: mirror });
+    builder.add(tube(SHIN, { radialSegments: detail.limbSegments }), { style, transform: mirror });
+    builder.add(loft(FOOT_SECTIONS, detail.limbSegments), { style, transform: footTransform(side) });
+  });
+}
+
+function addTorso(builder: MeshBuilder, sections: readonly LoftSection[], detail: HumanDetail): void {
+  builder.add(loft(sections, detail.torsoSegments), { style: { ...FLEXIBLE_TORSO_STYLE, ...SKIN } });
+}
+
+export function addMaleTorso(builder: MeshBuilder, detail: HumanDetail): void {
+  addTorso(builder, MALE_TORSO, detail);
+}
+
+export function addFemaleTorso(builder: MeshBuilder, detail: HumanDetail): void {
+  addTorso(builder, FEMALE_TORSO, detail);
+}
+
+export function addChildTorso(builder: MeshBuilder, detail: HumanDetail): void {
+  addTorso(builder, CHILD_TORSO, detail);
+}
+
+export function addBody(builder: MeshBuilder, detail: HumanDetail): void {
+  addHead(builder, detail);
+  addArms(builder, detail);
+  addLegs(builder, detail);
+}

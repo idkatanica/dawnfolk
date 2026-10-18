@@ -1,0 +1,33 @@
+import {
+  Baby,
+  CloudLightning,
+  Crosshair,
+  Flame,
+  Footprints,
+  Gift,
+  Hammer,
+  Lightbulb,
+  type LucideIcon,
+  Skull,
+  Split,
+  Tent,
+  TriangleAlert,
+  Wheat,
+} from "lucide-react";
+import type { ChronicleCategory } from "../../simulation/chronicle.ts";
+
+export const CHRONICLE_ICONS: Readonly<Record<ChronicleCategory, LucideIcon>> = {
+  arrival: Tent,
+  birth: Baby,
+  building: Hammer,
+  death: Skull,
+  discovery: Lightbulb,
+  fire: Flame,
+  food: Wheat,
+  gift: Gift,
+  hunt: Crosshair,
+  migration: Footprints,
+  split: Split,
+  warning: TriangleAlert,
+  weather: CloudLightning,
+};
