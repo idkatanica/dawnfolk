@@ -22,6 +22,8 @@ interface HydrologyOptions {
   lakeMinimumArea: number;
   lakeMinimumCatchmentArea: number;
   lakeMinimumDepth: number;
+  riverBasinMinimumArea: number;
+  riverBasinMinimumDepth: number;
   riverCatchmentArea: number;
 }
 
@@ -29,13 +31,19 @@ export const DEFAULT_HYDROLOGY: HydrologyOptions = {
   lakeMinimumArea: 3000,
   lakeMinimumCatchmentArea: 420_000,
   lakeMinimumDepth: 1.6,
+  riverBasinMinimumArea: Number.POSITIVE_INFINITY,
+  riverBasinMinimumDepth: 0.6,
   riverCatchmentArea: 150_000,
 };
+
+export const RESHAPED_LAND_HYDROLOGY: HydrologyOptions = { ...DEFAULT_HYDROLOGY, riverBasinMinimumArea: 500 };
 
 interface CellThresholds {
   lakeMinimumCatchment: number;
   lakeMinimumCells: number;
   lakeMinimumDepth: number;
+  riverBasinMinimumCells: number;
+  riverBasinMinimumDepth: number;
   riverThreshold: number;
 }
 
@@ -46,6 +54,8 @@ function toCellThresholds(options: HydrologyOptions, grid: WorldGrid): CellThres
     lakeMinimumCatchment: options.lakeMinimumCatchmentArea / cellArea,
     lakeMinimumCells: Math.max(1, options.lakeMinimumArea / cellArea),
     lakeMinimumDepth: options.lakeMinimumDepth,
+    riverBasinMinimumCells: Math.max(1, options.riverBasinMinimumArea / cellArea),
+    riverBasinMinimumDepth: options.riverBasinMinimumDepth,
     riverThreshold: options.riverCatchmentArea / cellArea,
   };
 }
@@ -251,10 +261,19 @@ function averageCell(cells: readonly number[], grid: WorldGrid): { x: number; z:
 function isLakeKept(area: FloodedArea, centerDryness: number, options: CellThresholds): boolean {
   const catchmentNeeded = options.lakeMinimumCatchment * (1 + 6 * centerDryness);
 
-  return (
+  const isLargeLake =
     area.cells.length >= options.lakeMinimumCells &&
     area.maximumAccumulation >= catchmentNeeded &&
-    area.maximumDepth >= options.lakeMinimumDepth
+    area.maximumDepth >= options.lakeMinimumDepth;
+
+  return isLargeLake || isFilledByRiver(area, options);
+}
+
+function isFilledByRiver(area: FloodedArea, options: CellThresholds): boolean {
+  return (
+    area.cells.length >= options.riverBasinMinimumCells &&
+    area.maximumAccumulation >= options.riverThreshold &&
+    area.maximumDepth >= options.riverBasinMinimumDepth
   );
 }
 
@@ -400,6 +419,16 @@ function riverStrengthFor(flow: number, threshold: number): number {
   return Math.log2(Math.max(1, flow / threshold));
 }
 
+function channelGround(cell: number, heights: Float32Array, network: DrainageNetwork): number {
+  const filled = network.filled[cell];
+
+  if (filled - heights[cell] < FLOODED_DEPTH) {
+    return heights[cell];
+  }
+
+  return filled;
+}
+
 function riverPointFor(
   cell: number,
   heights: Float32Array,
@@ -414,7 +443,7 @@ function riverPointFor(
   return {
     depth: clamp(0.8 + 0.42 * strength, 0.8, 3.2),
     flow,
-    surface: heights[cell] - 0.3,
+    surface: channelGround(cell, heights, network) - 0.3,
     width: clamp(3.5 + 3.4 * strength, 3.5, 26),
     x: grid.cellCenterX(cell),
     z: grid.cellCenterZ(cell),

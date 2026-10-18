@@ -73,6 +73,7 @@ export class WorldState {
   heightVersion = 0;
   water: WaterFeatures;
   waterVersion = 0;
+  #hasSuddenHeightEdit = false;
 
   constructor(generated: GeneratedWorld) {
     this.grid = new WorldGrid(generated.dimensions);
@@ -227,6 +228,19 @@ export class WorldState {
     this.heightVersion += 1;
   }
 
+  finishSuddenHeightEdit(region: CellRegion): void {
+    this.finishHeightEdit(region);
+    this.#hasSuddenHeightEdit = true;
+  }
+
+  takeSuddenHeightEdit(): boolean {
+    const isSudden = this.#hasSuddenHeightEdit;
+
+    this.#hasSuddenHeightEdit = false;
+
+    return isSudden;
+  }
+
   plant(placement: PlantPlacement): number {
     if (!hasRoomFromCoast(this.terrain.coastDistance, this.grid, placement.x, placement.z)) {
       return NO_PLANT;
@@ -276,6 +290,10 @@ export class WorldState {
 
   replaceWater(water: WaterFeatures): void {
     this.water = water;
+    this.markWaterChanged();
+  }
+
+  markWaterChanged(): void {
     this.waterVersion += 1;
   }
 }

@@ -1,34 +1,57 @@
-import { computeHydrology } from "../../generation/hydrology.ts";
+import { computeHydrology, RESHAPED_LAND_HYDROLOGY } from "../../generation/hydrology.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
+import { hasWater, type Lake, NO_WATER } from "../../world/water.ts";
+import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { WorldState } from "./world-state.ts";
 
 const QUIET_SECONDS_BEFORE_RECOMPUTE = 0.7;
 const PATCH_MARGIN_CELLS = 2;
+const FILL_SECONDS = 5;
+const FILL_STEP_SECONDS = 0.25;
+const NOTICEABLE_RISE = 0.5;
+const SUNKEN_LAND = 0.5;
+
+interface RisingLake {
+  readonly cells: readonly number[];
+  readonly floor: number;
+  readonly keptLevels: Float32Array;
+  readonly level: number;
+}
+
+interface Filling {
+  elapsedSeconds: number;
+  readonly lakes: readonly RisingLake[];
+  secondsSinceStep: number;
+}
+
+function easeOut(amount: number): number {
+  return 1 - (1 - amount) * (1 - amount);
+}
 
 export class WaterRecomputation {
   readonly #world: WorldState;
+  #filling: Filling | null = null;
   #observedHeightVersion: number;
   #quietSeconds: number | null = null;
+  #settledHeights: Float32Array;
 
   constructor(world: WorldState) {
     this.#world = world;
     this.#observedHeightVersion = world.heightVersion;
+    this.#settledHeights = this.#uncarvedHeights();
   }
 
   get isPending(): boolean {
-    return this.#quietSeconds !== null;
+    return this.#quietSeconds !== null || this.#filling !== null;
   }
 
   update(realSeconds: number): boolean {
     if (this.#world.heightVersion !== this.#observedHeightVersion) {
-      this.#observedHeightVersion = this.#world.heightVersion;
-      this.#quietSeconds = 0;
-
-      return false;
+      return this.#noticeHeightEdit();
     }
 
     if (this.#quietSeconds === null) {
-      return false;
+      return this.#fill(realSeconds);
     }
 
     this.#quietSeconds += realSeconds;
@@ -45,20 +68,24 @@ export class WaterRecomputation {
   recompute(): void {
     const { grid, terrain } = this.#world;
 
-    const uncarvedHeights = new Float32Array(grid.cellCount);
-
-    for (let cell = 0; cell < grid.cellCount; cell += 1) {
-      uncarvedHeights[cell] = terrain.height[cell] + terrain.carving[cell];
-    }
+    const uncarvedHeights = this.#uncarvedHeights();
+    const previousLevels = this.#levelsStillHeld(uncarvedHeights);
 
     const carvedHeights = uncarvedHeights.slice();
 
-    const hydrology = computeHydrology(carvedHeights, grid, terrain.dryness, terrain.coastDistance);
+    const hydrology = computeHydrology(
+      carvedHeights,
+      grid,
+      terrain.dryness,
+      terrain.coastDistance,
+      RESHAPED_LAND_HYDROLOGY
+    );
 
     const changedRegion = this.#applyCarving(uncarvedHeights, carvedHeights);
 
     terrain.waterSurface.set(hydrology.waterSurface);
     terrain.riverStrength.set(hydrology.riverStrength);
+    this.#filling = this.#startFilling(hydrology.lakeIds, hydrology.features.lakes, previousLevels);
     this.#settleWater();
     this.#world.replaceWater(hydrology.features);
 
@@ -67,8 +94,135 @@ export class WaterRecomputation {
     }
 
     this.#world.surfaceChanges.markAll();
+    this.#settledHeights = uncarvedHeights;
     this.#observedHeightVersion = this.#world.heightVersion;
     this.#quietSeconds = null;
+  }
+
+  #noticeHeightEdit(): boolean {
+    this.#observedHeightVersion = this.#world.heightVersion;
+    this.#quietSeconds = 0;
+
+    if (!this.#world.takeSuddenHeightEdit()) {
+      return false;
+    }
+
+    this.recompute();
+
+    return true;
+  }
+
+  #uncarvedHeights(): Float32Array {
+    const { grid, terrain } = this.#world;
+
+    const heights = new Float32Array(grid.cellCount);
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      heights[cell] = terrain.height[cell] + terrain.carving[cell];
+    }
+
+    return heights;
+  }
+
+  #levelsStillHeld(uncarvedHeights: Float32Array): Float32Array {
+    const levels = Float32Array.from(this.#world.terrain.waterSurface);
+
+    for (let cell = 0; cell < levels.length; cell += 1) {
+      if (uncarvedHeights[cell] < this.#settledHeights[cell] - SUNKEN_LAND) {
+        levels[cell] = NO_WATER;
+      }
+    }
+
+    return levels;
+  }
+
+  #startFilling(lakeIds: Int32Array, lakes: readonly Lake[], previousLevels: Float32Array): Filling | null {
+    const cellsOfLakes = lakes.map((): number[] => []);
+
+    for (const [cell, lakeId] of lakeIds.entries()) {
+      const cells = cellsOfLakes[lakeId];
+
+      if (cells !== undefined) {
+        cells.push(cell);
+      }
+    }
+
+    const rising: RisingLake[] = [];
+
+    for (const lake of lakes) {
+      const cells = cellsOfLakes[lake.id];
+
+      if (cells !== undefined && isNewWater(cells, lake.level, previousLevels)) {
+        rising.push(this.#risingLake(cells, lake.level, previousLevels));
+      }
+    }
+
+    if (rising.length === 0) {
+      return null;
+    }
+
+    const filling: Filling = { elapsedSeconds: 0, lakes: rising, secondsSinceStep: 0 };
+
+    this.#applyFill(filling, 0);
+
+    return filling;
+  }
+
+  #risingLake(cells: readonly number[], level: number, previousLevels: Float32Array): RisingLake {
+    const { height } = this.#world.terrain;
+
+    let floor = level;
+
+    for (const cell of cells) {
+      floor = Math.min(floor, height[cell]);
+    }
+
+    return { cells, floor, keptLevels: Float32Array.from(cells, (cell) => previousLevels[cell]), level };
+  }
+
+  #fill(realSeconds: number): boolean {
+    const filling = this.#filling;
+
+    if (filling === null) {
+      return false;
+    }
+
+    filling.elapsedSeconds += realSeconds;
+    filling.secondsSinceStep += realSeconds;
+
+    if (filling.elapsedSeconds >= FILL_SECONDS) {
+      this.#applyFill(filling, 1);
+      this.#filling = null;
+      this.#settleWater();
+      this.#world.markWaterChanged();
+
+      return true;
+    }
+
+    if (filling.secondsSinceStep < FILL_STEP_SECONDS) {
+      return false;
+    }
+
+    filling.secondsSinceStep = 0;
+    this.#applyFill(filling, filling.elapsedSeconds / FILL_SECONDS);
+    this.#settleRisingLakes(filling);
+    this.#world.markWaterChanged();
+
+    return true;
+  }
+
+  #applyFill(filling: Filling, progress: number): void {
+    const { height, waterSurface } = this.#world.terrain;
+
+    for (const lake of filling.lakes) {
+      const rising = lake.floor + (lake.level - lake.floor) * easeOut(progress);
+
+      for (const [position, cell] of lake.cells.entries()) {
+        const level = Math.min(lake.level, Math.max(lake.keptLevels[position], rising));
+
+        waterSurface[cell] = hasWater(level, height[cell]) ? level : NO_WATER;
+      }
+    }
   }
 
   #applyCarving(uncarvedHeights: Float32Array, carvedHeights: Float32Array): CellRegion | null {
@@ -113,21 +267,54 @@ export class WaterRecomputation {
 
   #settleWater(): void {
     const world = this.#world;
-    const { fields } = world;
 
     for (let cell = 0; cell < world.grid.cellCount; cell += 1) {
       if (world.touchesWater(cell)) {
         world.clearPlants(cell, false);
       }
 
-      if (!world.isWater(cell)) {
-        continue;
+      if (world.isWater(cell)) {
+        this.#calmCell(cell);
       }
-
-      fields.fire[cell] = 0;
-      fields.heat[cell] = 0;
-      fields.snow[cell] = 0;
-      fields.wetness[cell] = 1;
     }
   }
+
+  #settleRisingLakes(filling: Filling): void {
+    const world = this.#world;
+    const { grid } = world;
+
+    for (const lake of filling.lakes) {
+      for (const cell of lake.cells) {
+        if (!world.isWater(cell)) {
+          continue;
+        }
+
+        this.#calmCell(cell);
+        world.clearPlants(cell, false);
+
+        for (const offset of NEIGHBOR_OFFSETS) {
+          const column = grid.columnOf(cell) + offset.column;
+          const row = grid.rowOf(cell) + offset.row;
+
+          if (grid.contains(column, row)) {
+            world.clearPlants(grid.index(column, row), false);
+          }
+        }
+      }
+    }
+  }
+
+  #calmCell(cell: number): void {
+    const { fields } = this.#world;
+
+    fields.fire[cell] = 0;
+    fields.heat[cell] = 0;
+    fields.snow[cell] = 0;
+    fields.wetness[cell] = 1;
+    this.#world.markSurfaceCell(cell);
+  }
+}
+
+function isNewWater(cells: readonly number[], level: number, previousLevels: Float32Array): boolean {
+  return cells.some((cell) => previousLevels[cell] === NO_WATER || previousLevels[cell] < level - NOTICEABLE_RISE);
 }
