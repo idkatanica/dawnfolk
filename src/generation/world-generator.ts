@@ -6,7 +6,7 @@ import { createIslandShape, type IslandShapeKind, measureCoastDistances } from "
 import type { Monument } from "../world/monuments.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { VegetationStore } from "../world/vegetation-store.ts";
-import type { WaterFeatures } from "../world/water.ts";
+import type { Spring, WaterFeatures } from "../world/water.ts";
 import { DEFAULT_GRID_DIMENSIONS, type GridDimensions, WorldGrid } from "../world/world-grid.ts";
 import { buildClimate } from "./climate.ts";
 import {
@@ -135,6 +135,18 @@ function buildRelief(
   return { coastDistance, dryness, heights, relief };
 }
 
+function reservedGround(monuments: Uint8Array, springs: readonly Spring[]): Uint8Array {
+  const reserved = Uint8Array.from(monuments);
+
+  for (const spring of springs) {
+    for (const cell of spring.cells) {
+      reserved[cell] = 1;
+    }
+  }
+
+  return reserved;
+}
+
 function bareOffIsland(ground: Uint8Array, coastDistance: Float32Array): void {
   for (let cell = 0; cell < ground.length; cell += 1) {
     if (!isOnIsland(coastDistance, cell)) {
@@ -214,7 +226,7 @@ export function generateWorld(
   const ruins = planMonuments(grid, terrain, seed);
   const vegetation = new VegetationStore(grid, Math.round(grid.cellCount * VEGETATION_CAPACITY_PER_CELL));
 
-  plantInitialVegetation(vegetation, grid, terrain, seed, ruins.ground);
+  plantInitialVegetation(vegetation, grid, terrain, seed, reservedGround(ruins.ground, hydrology.features.springs));
 
   for (const piece of ruins.pieces) {
     vegetation.add(piece);

@@ -37,6 +37,7 @@ import { TerrainView } from "./terrain/terrain-view.ts";
 import { GrassField } from "./vegetation/grass-field.ts";
 import { UnderstoryField } from "./vegetation/understory-field.ts";
 import { VegetationView } from "./vegetation/vegetation-view.ts";
+import { SpringView } from "./water/spring-view.ts";
 import { WaterView } from "./water/water-view.ts";
 import { WaterfallView } from "./water/waterfall-view.ts";
 import { type Wind, windOf } from "./wind.ts";
@@ -97,7 +98,9 @@ export class WorldRenderer {
   readonly #renderer: WebGPURenderer;
   readonly #selectionRing: GroundRing;
   readonly #splashes: RainSplashes;
+  readonly #springs = new SpringView();
   readonly #terrain: TerrainView;
+  readonly #plinth: number;
   readonly #textures: TerrainTextures;
   readonly #understory: UnderstoryField;
   readonly #vegetation: VegetationView;
@@ -116,7 +119,9 @@ export class WorldRenderer {
     this.#terrain = new TerrainView(mirror, this.#textures, this.#fireGlow, renderer);
     this.#islandBase = new IslandBase(mirror, this.#textures);
     this.#water = new WaterView(mirror, this.#textures);
-    this.#waterfalls.rebuild(mirror.water.waterfalls, this.#textures.outline);
+    this.#plinth = islandPlinthHeight(mirror, this.#textures.outline);
+    this.#rebuildWaterfalls();
+    this.#springs.rebuild(mirror);
     this.#vegetation = new VegetationView(mirror, this.#textures, this.#fireGlow);
     this.#understory = new UnderstoryField(mirror);
 
@@ -143,7 +148,7 @@ export class WorldRenderer {
     });
 
     this.#atmosphere = new Atmosphere(this.scene, {
-      cloudSeaAltitude: islandPlinthHeight(mirror, this.#textures.outline) - CLOUD_SEA_DEPTH,
+      cloudSeaAltitude: this.#plinth - CLOUD_SEA_DEPTH,
       shadowMapSize: quality.shadowMapSize,
     });
 
@@ -152,6 +157,7 @@ export class WorldRenderer {
       this.#islandBase.mesh,
       this.#water.group,
       this.#waterfalls.mesh,
+      this.#springs.mesh,
       this.#vegetation.group,
       this.#grass.mesh,
       this.#people.group,
@@ -190,7 +196,8 @@ export class WorldRenderer {
 
     if (changes.hasWaterChanged) {
       this.#water.waterChanged();
-      this.#waterfalls.rebuild(this.#mirror.water.waterfalls, this.#textures.outline);
+      this.#rebuildWaterfalls();
+      this.#springs.rebuild(this.#mirror);
     }
 
     const wind = windOf(frame.weather);
@@ -247,12 +254,23 @@ export class WorldRenderer {
     this.#understory.dispose();
     this.#water.dispose();
     this.#waterfalls.dispose();
+    this.#springs.dispose();
     this.#terrain.dispose();
     this.#islandBase.dispose();
     this.#textures.dispose();
     this.#fireGlow.dispose();
     this.#atmosphere.dispose();
     this.#output.dispose();
+  }
+
+  #rebuildWaterfalls(): void {
+    const textures = this.#textures;
+
+    this.#waterfalls.rebuild(
+      this.#mirror.water.waterfalls,
+      { depthAt: (x, z) => textures.shoreDepthAt(x, z), outline: textures.outline },
+      this.#plinth
+    );
   }
 
   #paintWater(wind: Wind, precipitation: number, rainfall: number, realSeconds: number): void {

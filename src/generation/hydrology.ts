@@ -12,9 +12,11 @@ import {
 } from "../world/water.ts";
 import { NEIGHBOR_OFFSETS, type WorldGrid } from "../world/world-grid.ts";
 import { interpolatePoint, makeSurfaceDescend, smoothRiverPath } from "./river-paths.ts";
+import { spaceRiverChains } from "./river-spacing.ts";
+import { placeSprings } from "./springs.ts";
 
 const DIAGONAL_REACH = 0.75;
-const BANK_DEPTH = 0.3;
+const BANK_DEPTH = 0.7;
 const SHALLOWEST_WATER = 0.05;
 const MINIMUM_BANK_WIDTH = 6;
 
@@ -82,7 +84,7 @@ export interface DrainageBasins {
   waterSurface: Float32Array;
 }
 
-interface RiverChain {
+export interface RiverChain {
   cells: number[];
   joinsCell: number;
   mouthReceiver: number;
@@ -97,8 +99,19 @@ const DEEPEST_BANK_CUT = 2;
 const BANK_FREEBOARD = 0.2;
 const DEEPEST_BANK_LOWERING = 10;
 const BANK_LOWERING_FADE = 0.2;
+const MINIMUM_POINT_DROP = 0.04;
+const SHALLOWEST_CHANNEL = 0.6;
+const DESCENT_PASSES = 8;
+const LIFT_ALLOWANCE = 0.3;
+const FLOW_REACH = 15;
+const PINCH_PASSES = 2;
+const PINCHED_DEPTH = 0.6;
+const OPPOSITE_SIDES = [
+  [0, 1],
+  [1, 0],
+] as const;
 
-function touchesOffIsland(cell: number, grid: WorldGrid, coastDistance: Float32Array): boolean {
+export function touchesOffIsland(cell: number, grid: WorldGrid, coastDistance: Float32Array): boolean {
   const column = grid.columnOf(cell);
   const row = grid.rowOf(cell);
 
@@ -429,6 +442,10 @@ function channelGround(cell: number, heights: Float32Array, network: DrainageNet
   return filled;
 }
 
+export function riverWidthFor(flow: number, threshold: number): number {
+  return clamp(3.5 + 3.4 * riverStrengthFor(flow, threshold), 3.5, 26);
+}
+
 function riverPointFor(
   cell: number,
   heights: Float32Array,
@@ -444,22 +461,31 @@ function riverPointFor(
     depth: clamp(0.8 + 0.42 * strength, 0.8, 3.2),
     flow,
     surface: channelGround(cell, heights, network) - 0.3,
-    width: clamp(3.5 + 3.4 * strength, 3.5, 26),
+    width: riverWidthFor(flow, threshold),
     x: grid.cellCenterX(cell),
     z: grid.cellCenterZ(cell),
   };
 }
 
-function buildRivers(
-  chains: readonly RiverChain[],
-  heights: Float32Array,
-  network: DrainageNetwork,
-  grid: WorldGrid,
-  lakes: readonly Lake[],
-  lakeIds: Int32Array,
-  threshold: number
-): River[] {
+interface NeighborCell {
+  readonly cell: number;
+  readonly outwardX: number;
+  readonly outwardZ: number;
+}
+
+interface RiverNetwork {
+  readonly basins: DrainageBasins;
+  readonly coastDistance: Float32Array;
+  readonly grid: WorldGrid;
+  readonly heights: Float32Array;
+}
+
+function buildRivers(chains: readonly RiverChain[], network: RiverNetwork): River[] {
+  const { basins, grid, heights } = network;
+
   const rivers: River[] = [];
+  const surfaces = new Map<number, number>();
+  const claimedPastCoast = new Set<number>();
 
   for (const chain of chains) {
     const cells = [...chain.cells];
@@ -472,23 +498,109 @@ function buildRivers(
       continue;
     }
 
-    const points = cells.map((cell) => riverPointFor(cell, heights, network, grid, threshold));
-    const lakeId = lakeAtMouth(chain, lakeIds);
+    const points = cells.map((cell) => riverPointFor(cell, heights, basins.network, grid, basins.riverThreshold));
+    const lakeId = lakeAtMouth(chain, basins.lakeIds);
+    const reachesEdge = chain.mouthReceiver === NO_CELL && chain.joinsCell === NO_CELL;
 
     if (lakeId >= 0) {
-      appendLakeEntry(points, lakes[lakeId], chain.mouthReceiver, grid);
+      appendLakeEntry(points, basins.lakes[lakeId], chain.mouthReceiver, grid);
     }
 
-    makeSurfaceDescend(points, 0.04);
+    makeSurfaceDescend(points, MINIMUM_POINT_DROP);
+    settleIntoMainRiver(points, surfaces.get(chain.joinsCell));
 
-    rivers.push({
-      id: rivers.length,
-      points: smoothRiverPath(points, 2),
-      reachesEdge: chain.mouthReceiver === NO_CELL && chain.joinsCell === NO_CELL,
-    });
+    for (const [index, cell] of chain.cells.entries()) {
+      surfaces.set(cell, points[index].surface);
+    }
+
+    const smoothed = smoothRiverPath(points, 2);
+
+    if (reachesEdge) {
+      runPastCoast(smoothed, network, claimedPastCoast);
+    }
+
+    rivers.push({ id: rivers.length, points: smoothed, reachesEdge });
   }
 
   return rivers;
+}
+
+function settleIntoMainRiver(points: RiverPoint[], mainSurface: number | undefined): void {
+  const last = points.at(-1);
+
+  if (mainSurface === undefined || last === undefined) {
+    return;
+  }
+
+  for (const point of points) {
+    point.surface = Math.max(point.surface, mainSurface);
+  }
+
+  last.surface = mainSurface;
+}
+
+function offIslandNeighbors(cell: number, grid: WorldGrid, coastDistance: Float32Array): NeighborCell[] {
+  const neighbors: NeighborCell[] = [];
+
+  for (const offset of NEIGHBOR_OFFSETS) {
+    const column = grid.columnOf(cell) + offset.column;
+    const row = grid.rowOf(cell) + offset.row;
+
+    if (grid.contains(column, row) && !isOnIsland(coastDistance, grid.index(column, row))) {
+      neighbors.push({
+        cell: grid.index(column, row),
+        outwardX: offset.column / offset.distance,
+        outwardZ: offset.row / offset.distance,
+      });
+    }
+  }
+
+  return neighbors;
+}
+
+function cellPastCoast(mouthCell: number, network: RiverNetwork, claimed: ReadonlySet<number>): number {
+  const neighbors = offIslandNeighbors(mouthCell, network.grid, network.coastDistance);
+
+  const outwardX = neighbors.reduce((total, neighbor) => total + neighbor.outwardX, 0);
+  const outwardZ = neighbors.reduce((total, neighbor) => total + neighbor.outwardZ, 0);
+
+  let best = NO_CELL;
+  let bestFacing = Number.NEGATIVE_INFINITY;
+
+  for (const neighbor of neighbors) {
+    const facing = neighbor.outwardX * outwardX + neighbor.outwardZ * outwardZ;
+
+    if (facing > bestFacing && !claimed.has(neighbor.cell)) {
+      best = neighbor.cell;
+      bestFacing = facing;
+    }
+  }
+
+  return best;
+}
+
+function runPastCoast(points: RiverPoint[], network: RiverNetwork, claimed: Set<number>): void {
+  const { grid } = network;
+
+  const mouth = points.at(-1);
+
+  if (mouth === undefined) {
+    return;
+  }
+
+  const cell = cellPastCoast(grid.cellAt(mouth.x, mouth.z), network, claimed);
+
+  if (cell === NO_CELL) {
+    return;
+  }
+
+  claimed.add(cell);
+  points.push({
+    ...mouth,
+    surface: mouth.surface - MINIMUM_POINT_DROP,
+    x: grid.cellCenterX(cell),
+    z: grid.cellCenterZ(cell),
+  });
 }
 
 function lakeAtMouth(chain: RiverChain, lakeIds: Int32Array): number {
@@ -545,8 +657,17 @@ interface ChannelTargets {
   waterSurface: Float32Array;
 }
 
-function carveSegment(start: RiverPoint, end: RiverPoint, targets: ChannelTargets): void {
-  const { grid } = targets;
+interface ChannelSample {
+  along: number;
+  distance: number;
+  segment: number;
+}
+
+type ChannelSamples = Map<number, ChannelSample>;
+
+function sampleSegment(points: readonly RiverPoint[], segment: number, grid: WorldGrid, samples: ChannelSamples): void {
+  const start = points[segment];
+  const end = points[segment + 1];
 
   const segmentX = end.x - start.x;
   const segmentZ = end.z - start.z;
@@ -567,26 +688,61 @@ function carveSegment(start: RiverPoint, end: RiverPoint, targets: ChannelTarget
 
       const along = saturate(((x - start.x) * segmentX + (z - start.z) * segmentZ) / lengthSquared);
 
-      const point = interpolatePoint(start, end, along);
+      const distance = Math.hypot(x - (start.x + segmentX * along), z - (start.z + segmentZ * along));
+      const cell = grid.index(column, row);
 
-      const distanceFromCenter = Math.hypot(x - point.x, z - point.z);
+      const nearest = samples.get(cell);
 
-      carveCell(grid.index(column, row), distanceFromCenter, point, targets);
+      if (nearest === undefined || distance < nearest.distance) {
+        samples.set(cell, { along, distance, segment });
+      }
     }
   }
 }
 
-function carveCell(cell: number, distanceFromCenter: number, point: RiverPoint, targets: ChannelTargets): void {
-  const halfWidth = point.width / 2;
+function nearestChannelSamples(points: readonly RiverPoint[], grid: WorldGrid): ChannelSamples {
+  const samples: ChannelSamples = new Map();
 
-  if (distanceFromCenter > halfWidth + bankWidthOf(point) || !isOnIsland(targets.coastDistance, cell)) {
+  for (let segment = 0; segment < points.length - 1; segment += 1) {
+    sampleSegment(points, segment, grid, samples);
+  }
+
+  return samples;
+}
+
+function settledOnGround(point: RiverPoint, ground: number): RiverPoint {
+  const highest = ground + LIFT_ALLOWANCE;
+
+  if (point.surface <= highest) {
+    return point;
+  }
+
+  return { ...point, surface: highest };
+}
+
+function carveCell(
+  cell: number,
+  distanceFromCenter: number,
+  sampled: RiverPoint,
+  targets: ChannelTargets,
+  isPastCoast = false
+): void {
+  const halfWidth = sampled.width / 2;
+  const wetReach = Math.max(halfWidth, targets.grid.cellSize * DIAGONAL_REACH);
+
+  if (distanceFromCenter > Math.max(halfWidth + bankWidthOf(sampled), wetReach)) {
     return;
   }
 
-  const bed = channelBed(distanceFromCenter, point, targets.uncarvedHeights[cell]);
-  const isUnderWater =
-    distanceFromCenter <= Math.max(halfWidth, targets.grid.cellSize * DIAGONAL_REACH) ||
-    bed < point.surface - SHALLOWEST_WATER;
+  if (!(isPastCoast || isOnIsland(targets.coastDistance, cell))) {
+    return;
+  }
+
+  const uncarvedHeight = targets.uncarvedHeights[cell];
+
+  const point = isPastCoast ? sampled : settledOnGround(sampled, uncarvedHeight);
+  const bed = channelBed(distanceFromCenter, point, uncarvedHeight);
+  const isUnderWater = distanceFromCenter <= wetReach || bed < point.surface - SHALLOWEST_WATER;
 
   if (!isUnderWater) {
     targets.heights[cell] = Math.min(targets.heights[cell], Math.max(bed, point.surface));
@@ -607,49 +763,167 @@ function carveCell(cell: number, distanceFromCenter: number, point: RiverPoint, 
   targets.riverStrength[cell] = Math.max(targets.riverStrength[cell], strength);
 }
 
+function pastCoastSegment(river: River, targets: ChannelTargets): number {
+  const mouth = river.points.at(-1);
+
+  if (mouth === undefined || isOnIsland(targets.coastDistance, targets.grid.cellAt(mouth.x, mouth.z))) {
+    return NO_CELL;
+  }
+
+  return river.points.length - 2;
+}
+
+function carveChannel(points: readonly RiverPoint[], targets: ChannelTargets, coastSegment = NO_CELL): void {
+  for (const [cell, sample] of nearestChannelSamples(points, targets.grid)) {
+    const point = interpolatePoint(points[sample.segment], points[sample.segment + 1], sample.along);
+
+    carveCell(cell, sample.distance, point, targets, sample.segment === coastSegment);
+  }
+}
+
 function carveRivers(rivers: readonly River[], targets: ChannelTargets): void {
   for (const river of rivers) {
-    for (let pointIndex = 1; pointIndex < river.points.length; pointIndex += 1) {
-      carveSegment(river.points[pointIndex - 1], river.points[pointIndex], targets);
+    carveChannel(river.points, targets, pastCoastSegment(river, targets));
+  }
+}
+
+function riverPathCells(river: River, grid: WorldGrid): number[] {
+  const cells: number[] = [];
+
+  for (let pointIndex = 1; pointIndex < river.points.length; pointIndex += 1) {
+    const start = river.points[pointIndex - 1];
+    const end = river.points[pointIndex];
+
+    for (const cell of grid.cellsAlong(start.x, start.z, end.x, end.z)) {
+      if (cell !== cells.at(-1)) {
+        cells.push(cell);
+      }
+    }
+  }
+
+  return cells;
+}
+
+function lowerAlongPath(path: readonly number[], targets: ChannelTargets): boolean {
+  const { heights, lakeIds, waterSurface } = targets;
+
+  let level = Number.POSITIVE_INFINITY;
+  let hasLowered = false;
+
+  for (const cell of path) {
+    if (lakeIds[cell] !== NO_CELL || waterSurface[cell] === NO_WATER) {
+      continue;
+    }
+
+    if (waterSurface[cell] > level) {
+      waterSurface[cell] = level;
+      heights[cell] = Math.min(heights[cell], level - SHALLOWEST_CHANNEL);
+      hasLowered = true;
+    }
+
+    level = waterSurface[cell];
+  }
+
+  return hasLowered;
+}
+
+function keepRiversDescending(rivers: readonly River[], targets: ChannelTargets): void {
+  const paths = rivers.map((river) => riverPathCells(river, targets.grid));
+
+  for (let pass = 0; pass < DESCENT_PASSES; pass += 1) {
+    let hasLowered = false;
+
+    for (const path of paths) {
+      hasLowered = lowerAlongPath(path, targets) || hasLowered;
+    }
+
+    if (!hasLowered) {
+      return;
     }
   }
 }
 
-interface EdgeDirection {
-  directionX: number;
-  directionZ: number;
+interface PinchedBank {
+  readonly cell: number;
+  readonly level: number;
+  readonly strength: number;
 }
 
-function edgeDirection(x: number, z: number, grid: WorldGrid): EdgeDirection {
-  if (!grid.isOnEdge(grid.cellAt(x, z))) {
-    const distanceFromCenter = Math.max(1e-6, Math.hypot(x, z));
+function isRiverWaterAt(column: number, row: number, targets: ChannelTargets): boolean {
+  const { grid, heights, riverStrength, waterSurface } = targets;
 
-    return { directionX: x / distanceFromCenter, directionZ: z / distanceFromCenter };
+  if (!grid.contains(column, row)) {
+    return false;
   }
 
-  const distanceWest = x + grid.halfSize;
-  const distanceEast = grid.halfSize - x;
-  const distanceNorth = z + grid.halfSize;
-  const distanceSouth = grid.halfSize - z;
+  const cell = grid.index(column, row);
 
-  const nearestDistance = Math.min(distanceWest, distanceEast, distanceNorth, distanceSouth);
-
-  if (nearestDistance === distanceWest) {
-    return { directionX: -1, directionZ: 0 };
-  }
-
-  if (nearestDistance === distanceEast) {
-    return { directionX: 1, directionZ: 0 };
-  }
-
-  if (nearestDistance === distanceNorth) {
-    return { directionX: 0, directionZ: -1 };
-  }
-
-  return { directionX: 0, directionZ: 1 };
+  return riverStrength[cell] > 0 && hasWater(waterSurface[cell], heights[cell]);
 }
 
-function findWaterfalls(rivers: readonly River[], grid: WorldGrid): Waterfall[] {
+function pinchedBank(cell: number, targets: ChannelTargets): PinchedBank | null {
+  const { grid, riverStrength, waterSurface } = targets;
+
+  const column = grid.columnOf(cell);
+  const row = grid.rowOf(cell);
+
+  for (const [columnStep, rowStep] of OPPOSITE_SIDES) {
+    const isBetween =
+      isRiverWaterAt(column - columnStep, row - rowStep, targets) &&
+      isRiverWaterAt(column + columnStep, row + rowStep, targets);
+
+    if (!isBetween) {
+      continue;
+    }
+
+    const before = grid.index(column - columnStep, row - rowStep);
+    const after = grid.index(column + columnStep, row + rowStep);
+
+    return {
+      cell,
+      level: (waterSurface[before] + waterSurface[after]) / 2,
+      strength: Math.max(riverStrength[before], riverStrength[after]),
+    };
+  }
+
+  return null;
+}
+
+function fillPinchedBanks(targets: ChannelTargets): void {
+  const { coastDistance, grid, heights, lakeIds, riverStrength, waterSurface } = targets;
+
+  for (let pass = 0; pass < PINCH_PASSES; pass += 1) {
+    const pinched: PinchedBank[] = [];
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      const isDryBank =
+        isOnIsland(coastDistance, cell) && lakeIds[cell] === NO_CELL && !hasWater(waterSurface[cell], heights[cell]);
+
+      const bank = isDryBank ? pinchedBank(cell, targets) : null;
+
+      if (bank !== null) {
+        pinched.push(bank);
+      }
+    }
+
+    for (const { cell, level, strength } of pinched) {
+      waterSurface[cell] = level;
+      heights[cell] = Math.min(heights[cell], level - PINCHED_DEPTH);
+      riverStrength[cell] = Math.max(riverStrength[cell], strength);
+    }
+  }
+}
+
+function flowDirectionAt(river: River, mouth: RiverPoint): { directionX: number; directionZ: number } {
+  const upstream = river.points.findLast((point) => Math.hypot(point.x - mouth.x, point.z - mouth.z) >= FLOW_REACH);
+  const from = upstream === undefined ? river.points[0] : upstream;
+
+  const length = Math.max(1e-6, Math.hypot(mouth.x - from.x, mouth.z - from.z));
+
+  return { directionX: (mouth.x - from.x) / length, directionZ: (mouth.z - from.z) / length };
+}
+
+function findWaterfalls(rivers: readonly River[]): Waterfall[] {
   const waterfalls: Waterfall[] = [];
 
   for (const river of rivers) {
@@ -660,7 +934,7 @@ function findWaterfalls(rivers: readonly River[], grid: WorldGrid): Waterfall[] 
     }
 
     waterfalls.push({
-      ...edgeDirection(mouth.x, mouth.z, grid),
+      ...flowDirectionAt(river, mouth),
       top: mouth.surface,
       width: mouth.width,
       x: mouth.x,
@@ -845,19 +1119,20 @@ export function computeHydrology(
   coastDistance: Float32Array,
   options: HydrologyOptions = DEFAULT_HYDROLOGY
 ): HydrologyResult {
-  const { lakeIds, lakes, network, riverThreshold, waterSurface } = analyzeDrainage(
-    heights,
-    grid,
-    dryness,
-    coastDistance,
-    options
-  );
+  const basins = analyzeDrainage(heights, grid, dryness, coastDistance, options);
+  const { lakeIds, lakes, riverThreshold, waterSurface } = basins;
 
   const riverStrength = new Uint8Array(grid.cellCount);
 
-  const chains = traceRiverChains(network, lakeIds, riverThreshold);
+  const chains = spaceRiverChains(traceRiverChains(basins.network, lakeIds, riverThreshold), {
+    basins,
+    coastDistance,
+    grid,
+    heights,
+  });
 
-  const rivers = buildRivers(chains, heights, network, grid, lakes, lakeIds, riverThreshold);
+  const rivers = buildRivers(chains, { basins, coastDistance, grid, heights });
+  const springs = placeSprings(rivers, { grid, heights, lakeIds, riverThreshold });
   const targets: ChannelTargets = {
     coastDistance,
     grid,
@@ -870,11 +1145,18 @@ export function computeHydrology(
   };
 
   carveRivers(rivers, targets);
+
+  for (const channel of springs.channels) {
+    carveChannel(channel, targets);
+  }
+
+  keepRiversDescending(rivers, targets);
   dropShallowWater(heights, waterSurface, riverStrength);
   lowerBanks(targets);
+  fillPinchedBanks(targets);
 
   return {
-    features: { lakes, rivers, waterfalls: findWaterfalls(rivers, grid) },
+    features: { lakes, rivers, springs: springs.springs, waterfalls: findWaterfalls(rivers) },
     lakeIds,
     riverStrength,
     waterSurface,

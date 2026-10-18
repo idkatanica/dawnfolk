@@ -19,64 +19,175 @@ import {
   MeshBasicNodeMaterial,
   Uint32BufferAttribute,
 } from "three/webgpu";
+import { saturate } from "../../shared/math.ts";
 import type { Waterfall } from "../../world/water.ts";
 import type { IslandOutline } from "../terrain/island-outline.ts";
 
 const FALL_HEIGHT = 1150;
 const GRAVITY = 9.8;
-const LAUNCH_SPEED = 3.5;
-const ALONG_SEGMENTS = 56;
+const LAUNCH_SPEED = 1.2;
+const ALONG_SEGMENTS = 48;
 const FADE_START = 0.2;
 const FADE_END = 0.62;
-const DRAWN_SEGMENTS = Math.ceil(FADE_END * ALONG_SEGMENTS);
-const ACROSS_SEGMENTS = 6;
-const MINIMUM_WIDTH = 7;
+const ROW_CROWDING = 1.7;
+const SEGMENT_LENGTH = 1.5;
+const LONGEST_CROSSING = 40;
+const CROSSING_STEPS = 24;
+const SPAN_STEP = 0.25;
+const WIDEST_HALF_SPAN = 40;
+const SPAN_INSET = 0.6;
+const NARROWEST_SPAN = 3;
+const FACE_CLEARANCE = 15;
+const BOTTOM_SPREAD = 1.4;
+const WATER_TINT = vec3(0.42, 0.6, 0.64);
+const TINTED_DROP = 5;
+
+export type ShoreDepth = (x: number, z: number) => number;
+
+interface Lip {
+  readonly centerX: number;
+  readonly centerZ: number;
+  readonly left: number;
+  readonly outwardX: number;
+  readonly outwardZ: number;
+  readonly right: number;
+  readonly top: number;
+}
 
 interface CurtainWriter {
   readonly coordinates: number[];
+  readonly drops: number[];
   readonly indices: number[];
   readonly positions: number[];
   readonly progress: number[];
   readonly sides: number[];
 }
 
-function addCurtain(writer: CurtainWriter, waterfall: Waterfall): void {
-  const fallSeconds = Math.sqrt((2 * FALL_HEIGHT) / GRAVITY);
-  const width = Math.max(MINIMUM_WIDTH, waterfall.width * 1.15);
-  const sideX = -waterfall.directionZ;
-  const sideZ = waterfall.directionX;
+interface LipSurroundings {
+  readonly depthAt: ShoreDepth;
+  readonly outline: IslandOutline;
+}
+
+function lipCrossing(waterfall: Waterfall, outline: IslandOutline): readonly [number, number] {
+  const { directionX, directionZ, x, z } = waterfall;
+
+  let inside = 0;
+  let outside = 0;
+
+  for (let reach = SEGMENT_LENGTH; reach <= LONGEST_CROSSING; reach += SEGMENT_LENGTH) {
+    if (outline.isInside(x - directionX * reach, z - directionZ * reach)) {
+      inside = reach;
+
+      break;
+    }
+  }
+
+  if (inside === 0 || outline.isInside(x, z)) {
+    return outline.atCoast(x, z);
+  }
+
+  for (let step = 0; step < CROSSING_STEPS; step += 1) {
+    const middle = (inside + outside) / 2;
+
+    if (outline.isInside(x - directionX * middle, z - directionZ * middle)) {
+      inside = middle;
+    } else {
+      outside = middle;
+    }
+  }
+
+  return [x - directionX * inside, z - directionZ * inside];
+}
+
+function wetEdge(lip: Omit<Lip, "left" | "right">, side: 1 | -1, surroundings: LipSurroundings): number {
+  const sideX = -lip.outwardZ * side;
+  const sideZ = lip.outwardX * side;
+  const baseX = lip.centerX - lip.outwardX * SPAN_INSET;
+  const baseZ = lip.centerZ - lip.outwardZ * SPAN_INSET;
+
+  let previous = surroundings.depthAt(baseX, baseZ);
+
+  for (let reach = SPAN_STEP; reach <= WIDEST_HALF_SPAN; reach += SPAN_STEP) {
+    const depth = surroundings.depthAt(baseX + sideX * reach, baseZ + sideZ * reach);
+
+    if (depth <= 0) {
+      const share = previous > depth ? previous / (previous - depth) : 1;
+
+      return reach - SPAN_STEP * (1 - saturate(share));
+    }
+
+    previous = depth;
+  }
+
+  return WIDEST_HALF_SPAN;
+}
+
+function findLip(waterfall: Waterfall, surroundings: LipSurroundings): Lip {
+  const [centerX, centerZ] = lipCrossing(waterfall, surroundings.outline);
+  const [outwardX, outwardZ] = surroundings.outline.outwardAt(centerX, centerZ);
+
+  const lip = { centerX, centerZ, outwardX, outwardZ, top: waterfall.top };
+
+  const left = wetEdge(lip, -1, surroundings);
+  const right = wetEdge(lip, 1, surroundings);
+
+  if (left + right < NARROWEST_SPAN) {
+    return { ...lip, left: waterfall.width / 2, right: waterfall.width / 2 };
+  }
+
+  return { ...lip, left, right };
+}
+
+function faceOffset(drop: number, faceDepth: number): number {
+  const launch = LAUNCH_SPEED * Math.sqrt((2 * drop) / GRAVITY);
+
+  return launch + FACE_CLEARANCE * saturate(drop / faceDepth) ** 0.7;
+}
+
+function acrossSegments(lip: Lip): number {
+  return Math.max(4, Math.ceil((lip.left + lip.right) / SEGMENT_LENGTH));
+}
+
+function addCurtain(writer: CurtainWriter, lip: Lip, outline: IslandOutline, plinth: number): void {
+  const faceDepth = Math.max(1, lip.top - plinth);
+  const across = acrossSegments(lip);
+  const sideX = -lip.outwardZ;
+  const sideZ = lip.outwardX;
   const firstVertex = writer.progress.length;
+  const width = lip.left + lip.right;
 
-  for (let along = 0; along <= DRAWN_SEGMENTS; along += 1) {
-    const amount = along / ALONG_SEGMENTS;
+  for (let along = 0; along <= ALONG_SEGMENTS; along += 1) {
+    const amount = FADE_END * (along / ALONG_SEGMENTS) ** ROW_CROWDING;
 
-    const seconds = amount * fallSeconds;
-    const spread = width * (1 + amount * 3.5);
+    const drop = amount * FALL_HEIGHT;
+    const outward = faceOffset(drop, faceDepth);
+    const spread = 1 + (BOTTOM_SPREAD - 1) * amount;
 
-    const outward = LAUNCH_SPEED * seconds;
-    const drop = 0.5 * GRAVITY * seconds * seconds;
+    for (let step = 0; step <= across; step += 1) {
+      const sideAmount = step / across;
 
-    for (let across = 0; across <= ACROSS_SEGMENTS; across += 1) {
-      const sideAmount = across / ACROSS_SEGMENTS;
-
-      const offset = (sideAmount - 0.5) * spread;
+      const offset = -lip.left + sideAmount * width;
+      const [rimX, rimZ] = outline.atCoast(lip.centerX + sideX * offset, lip.centerZ + sideZ * offset);
+      const spreadX = sideX * offset * (spread - 1);
+      const spreadZ = sideZ * offset * (spread - 1);
 
       writer.positions.push(
-        waterfall.x + waterfall.directionX * outward + sideX * offset,
-        waterfall.top - drop,
-        waterfall.z + waterfall.directionZ * outward + sideZ * offset
+        rimX + lip.outwardX * outward + spreadX,
+        lip.top - drop,
+        rimZ + lip.outwardZ * outward + spreadZ
       );
-      writer.coordinates.push(sideAmount * spread * 0.25, drop * 0.05 + outward * 0.05);
+      writer.coordinates.push(offset * spread * 0.25, drop * 0.05 + outward * 0.05);
+      writer.drops.push(drop);
       writer.progress.push(amount);
       writer.sides.push(sideAmount);
     }
   }
 
-  const rowLength = ACROSS_SEGMENTS + 1;
+  const rowLength = across + 1;
 
-  for (let along = 0; along < DRAWN_SEGMENTS; along += 1) {
-    for (let across = 0; across < ACROSS_SEGMENTS; across += 1) {
-      const corner = firstVertex + along * rowLength + across;
+  for (let along = 0; along < ALONG_SEGMENTS; along += 1) {
+    for (let step = 0; step < across; step += 1) {
+      const corner = firstVertex + along * rowLength + step;
 
       const below = corner + rowLength;
 
@@ -95,6 +206,7 @@ function createCurtainMaterial(): MeshBasicNodeMaterial {
   const coordinates = attribute("fallCoordinates", "vec2");
   const progress = attribute("fallProgress", "float");
   const sideAmount = attribute("fallSide", "float");
+  const drop = attribute("fallDrop", "float");
 
   const streaks = mx_noise_float(vec3(coordinates.x.mul(0.45), coordinates.y.sub(time.mul(1.4)), 0))
     .mul(0.5)
@@ -104,18 +216,16 @@ function createCurtainMaterial(): MeshBasicNodeMaterial {
     .add(0.5);
 
   const mist = max(smoothstep(0.08, 0.45, progress), smoothstep(600, 2400, distance(positionWorld, cameraPosition)));
-  const edges = smoothstep(0, 0.2, sideAmount).mul(smoothstep(1, 0.8, sideAmount));
+  const edges = smoothstep(0, 0.06, sideAmount).mul(smoothstep(1, 0.94, sideAmount));
   const fade = float(1).sub(smoothstep(FADE_START, FADE_END, progress));
+  const falling = smoothstep(0, TINTED_DROP, drop);
 
   const sheet = mix(smoothstep(0.3, 0.75, streaks.mul(0.75).add(spray.mul(0.25))), float(0.5), mist);
 
-  material.colorNode = mix(vec3(0.72, 0.84, 0.9), vec3(1, 1, 1), sheet);
-  material.opacityNode = sheet
-    .mul(0.3)
-    .add(0.6)
-    .mul(edges)
-    .mul(fade)
-    .mul(smoothstep(0, 0.02, progress).mul(0.6).add(0.4));
+  const fallColor = mix(vec3(0.72, 0.84, 0.9), vec3(1, 1, 1), sheet);
+
+  material.colorNode = mix(WATER_TINT, fallColor, falling);
+  material.opacityNode = mix(float(0.85), sheet.mul(0.3).add(0.6), falling).mul(edges).mul(fade);
 
   return material;
 }
@@ -129,19 +239,18 @@ export class WaterfallView {
     this.mesh.renderOrder = 3;
   }
 
-  rebuild(waterfalls: readonly Waterfall[], outline: IslandOutline): void {
-    const writer: CurtainWriter = { coordinates: [], indices: [], positions: [], progress: [], sides: [] };
+  rebuild(waterfalls: readonly Waterfall[], surroundings: LipSurroundings, plinth: number): void {
+    const writer: CurtainWriter = { coordinates: [], drops: [], indices: [], positions: [], progress: [], sides: [] };
 
     for (const waterfall of waterfalls) {
-      const [x, z] = outline.atCoast(waterfall.x, waterfall.z);
-
-      addCurtain(writer, { ...waterfall, x, z });
+      addCurtain(writer, findLip(waterfall, surroundings), surroundings.outline, plinth);
     }
 
     const geometry = new BufferGeometry();
 
     geometry.setAttribute("position", new Float32BufferAttribute(writer.positions, 3));
     geometry.setAttribute("fallCoordinates", new Float32BufferAttribute(writer.coordinates, 2));
+    geometry.setAttribute("fallDrop", new Float32BufferAttribute(writer.drops, 1));
     geometry.setAttribute("fallProgress", new Float32BufferAttribute(writer.progress, 1));
     geometry.setAttribute("fallSide", new Float32BufferAttribute(writer.sides, 1));
     geometry.setIndex(new Uint32BufferAttribute(writer.indices, 1));
