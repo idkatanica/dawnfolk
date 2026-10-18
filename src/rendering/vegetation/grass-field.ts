@@ -32,6 +32,7 @@ import {
   Mesh,
   MeshStandardNodeMaterial,
   type Node,
+  type Texture,
   Vector2,
   Vector3,
 } from "three/webgpu";
@@ -85,6 +86,7 @@ interface GrassFieldOptions {
   readonly clumpsPerSide: number;
   readonly grid: WorldGrid;
   readonly textures: TerrainTextures;
+  readonly understory: Texture;
   readonly weather: PlantWeather;
 }
 
@@ -137,7 +139,7 @@ function presenceFor(viewDistance: number): number {
 }
 
 function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms): MeshStandardNodeMaterial {
-  const { clumpsPerSide, grid, textures, weather } = options;
+  const { clumpsPerSide, grid, textures, understory, weather } = options;
   const { center, presence, spacing } = uniforms;
   const material = new MeshStandardNodeMaterial({ side: DoubleSide });
 
@@ -171,6 +173,7 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   const height = sampleHeightNode(textures.height, grid, root);
 
   const surface = textureLoad(textures.surface, cell);
+  const understoryCover = texture(understory, root.add(grid.halfSize).div(grid.worldSize)).level(float(0)).x;
   const footprint = floor(root.add(grid.halfSize).div(grid.cellSize).sub(0.5));
 
   function waterAt(column: number, row: number) {
@@ -184,6 +187,7 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   const reach = length(root.sub(center)).div(perSide.mul(spacing).mul(0.5));
 
   const cover = ground.a
+    .mul(understoryCover)
     .mul(float(1).sub(smoothstep(SNOW_START, SNOW_END, surface.r)))
     .mul(float(1).sub(surface.b))
     .mul(float(1).sub(smoothstep(FADE_START_REACH, 1, reach)))

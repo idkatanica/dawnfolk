@@ -26,6 +26,7 @@ import { islandPlinthHeight } from "./terrain/island-base-geometry.ts";
 import { TerrainTextures } from "./terrain/terrain-textures.ts";
 import { TerrainView } from "./terrain/terrain-view.ts";
 import { GrassField } from "./vegetation/grass-field.ts";
+import { UnderstoryField } from "./vegetation/understory-field.ts";
 import { VegetationView } from "./vegetation/vegetation-view.ts";
 import { WaterView } from "./water/water-view.ts";
 import { WaterfallView } from "./water/waterfall-view.ts";
@@ -88,6 +89,7 @@ export class WorldRenderer {
   readonly #splashes: RainSplashes;
   readonly #terrain: TerrainView;
   readonly #textures: TerrainTextures;
+  readonly #understory: UnderstoryField;
   readonly #vegetation: VegetationView;
   readonly #water: WaterView;
   readonly #waterfalls = new WaterfallView();
@@ -105,11 +107,13 @@ export class WorldRenderer {
     this.#water = new WaterView(mirror, this.#textures);
     this.#waterfalls.rebuild(mirror.water.waterfalls, this.#textures.outline);
     this.#vegetation = new VegetationView(mirror, this.#textures, this.#fireGlow);
+    this.#understory = new UnderstoryField(mirror);
 
     this.#grass = new GrassField({
       clumpsPerSide: quality.grassClumpsPerSide,
       grid: mirror.grid,
       textures: this.#textures,
+      understory: this.#understory.texture,
       weather: this.#vegetation.weather,
     });
 
@@ -165,10 +169,12 @@ export class WorldRenderer {
     if (changes.heightRegion !== null) {
       this.#terrain.heightsChanged(changes.heightRegion);
       this.#vegetation.heightsChanged(changes.heightRegion);
+      this.#understory.heightsChanged(changes.heightRegion);
     }
 
     if (changes.vegetationIndices.length > 0) {
       this.#vegetation.plantsChanged(changes.vegetationIndices);
+      this.#understory.plantsChanged(changes.vegetationIndices);
     }
 
     if (changes.hasWaterChanged) {
@@ -227,6 +233,7 @@ export class WorldRenderer {
     this.#buildings.dispose();
     this.#vegetation.dispose();
     this.#grass.dispose();
+    this.#understory.dispose();
     this.#water.dispose();
     this.#waterfalls.dispose();
     this.#terrain.dispose();
