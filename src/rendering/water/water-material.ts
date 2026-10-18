@@ -27,11 +27,12 @@ import {
   vec2,
   vec3,
 } from "three/tsl";
-import { Color, MeshStandardNodeMaterial, type Node, Vector2 } from "three/webgpu";
+import { Color, MeshPhysicalNodeMaterial, type MeshStandardNodeMaterial, type Node, Vector2 } from "three/webgpu";
 import { NO_WATER } from "../../world/water.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleCellsNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
+import { rainDimples } from "./rain-dimples.ts";
 import { BANK_SINK, PRESENT_LEVEL } from "./shore-field.ts";
 
 const HIDDEN_DEPTH = 40;
@@ -49,10 +50,15 @@ const SHORE_FOAM_NEAR = 500;
 const ICE_COLOR = vec3(0.78, 0.86, 0.9);
 const THIN_ICE = 0.15;
 const SOLID_ICE = 0.5;
+const RAIN_ROUGHNESS = 0.45;
+const RAIN_SKY_DAMPING = 0.35;
+const RAIN_SUN_DAMPING = 0.88;
 
 export class WaterLook {
   readonly daylight = uniform(1);
   readonly horizonColor = uniform(new Color(0xcf_e2_f0));
+  readonly precipitation = uniform(0);
+  readonly rainfall = uniform(0);
   readonly windTravel = uniform(new Vector2());
   readonly zenithColor = uniform(new Color(0x4c_8c_d6));
 }
@@ -77,7 +83,7 @@ export function createWaterMaterial(
   grid: WorldGrid,
   look: WaterLook
 ): MeshStandardNodeMaterial {
-  const material = new MeshStandardNodeMaterial({ transparent: true });
+  const material = new MeshPhysicalNodeMaterial({ transparent: true });
   const last = grid.cellsPerSide - 1;
   const cellSize = float(grid.cellSize);
   const halfSize = float(grid.halfSize);
@@ -135,7 +141,9 @@ export function createWaterMaterial(
     .mul(SHORE_WOBBLE);
 
   const shoreDepth = shore.x.add(shoreWobble);
-  const normal = normalize(mix(surfaceNormal(flow, look), vec3(0, 1, 0), ice.mul(0.85)));
+  const normal = normalize(
+    mix(surfaceNormal(flow, look).add(rainDimples(viewDistance, look.rainfall)), vec3(0, 1, 0), ice.mul(0.85))
+  );
 
   const depth = max(shoreDepth, 0);
   const shoreEdge = max(fwidth(shoreDepth), SHORE_FADE);
@@ -165,7 +173,8 @@ export function createWaterMaterial(
     .mul(fresnel)
     .mul(look.daylight.mul(0.75).add(0.1))
     .mul(float(1).sub(foam))
-    .mul(float(1).sub(ice.mul(0.7)));
+    .mul(float(1).sub(ice.mul(0.7)))
+    .mul(float(1).sub(look.precipitation.mul(RAIN_SKY_DAMPING)));
   material.opacityNode = clamp(
     mix(float(0.42), float(0.94), smoothstep(0, 3.5, depth))
       .add(foam.mul(0.5))
@@ -174,8 +183,13 @@ export function createWaterMaterial(
     0,
     1
   ).mul(smoothstep(0, shoreEdge, shoreDepth));
-  material.roughnessNode = mix(mix(float(0.06), float(0.5), foam), float(0.35), ice);
+  material.roughnessNode = mix(
+    mix(mix(float(0.06), float(RAIN_ROUGHNESS), look.precipitation), float(0.5), foam),
+    float(0.35),
+    ice
+  );
   material.metalnessNode = float(0);
+  material.specularIntensityNode = float(1).sub(look.precipitation.mul(RAIN_SUN_DAMPING));
 
   return material;
 }
