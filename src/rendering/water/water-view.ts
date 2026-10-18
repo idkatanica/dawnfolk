@@ -46,9 +46,9 @@ export class WaterView {
 
   #measure(corner: PatchCorner): HeightRange | null {
     const { grid, terrain } = this.#mirror;
+
     const firstColumn = Math.max(0, corner.firstColumn - NEIGHBOR_MARGIN);
     const firstRow = Math.max(0, corner.firstRow - NEIGHBOR_MARGIN);
-
     const lastColumn = Math.min(grid.cellsPerSide - 1, corner.lastColumn + NEIGHBOR_MARGIN);
     const lastRow = Math.min(grid.cellsPerSide - 1, corner.lastRow + NEIGHBOR_MARGIN);
 

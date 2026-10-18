@@ -1,7 +1,7 @@
 import { Vector3 } from "three";
 import { type MeshData, VERTEX_CHANNELS, vertexCount } from "../mesh/mesh-data.ts";
 import { type Shape, shapeVertexCount } from "../mesh/shape.ts";
-import type { MeshPiece } from "./mesh-connectivity.ts";
+import { type MeshPiece, vertexKey } from "./mesh-connectivity.ts";
 
 const NORMAL_TOLERANCE = 1e-3;
 
@@ -73,16 +73,6 @@ export function meshProblems(mesh: MeshData): string[] {
   return problems;
 }
 
-const EDGE_GRID = 1e4;
-
-function cornerKey(mesh: MeshData, vertex: number): string {
-  const offset = vertex * 3;
-
-  return [mesh.positions[offset], mesh.positions[offset + 1], mesh.positions[offset + 2]]
-    .map((value) => Math.round(value * EDGE_GRID))
-    .join(",");
-}
-
 interface EdgeUse {
   count: number;
   height: number;
@@ -96,8 +86,8 @@ function edgeUses(mesh: MeshData): Map<string, EdgeUse> {
       const first = mesh.indices[corner + side];
       const second = mesh.indices[corner + ((side + 1) % 3)];
 
-      const from = cornerKey(mesh, first);
-      const to = cornerKey(mesh, second);
+      const from = vertexKey(mesh, first);
+      const to = vertexKey(mesh, second);
 
       if (from === to) {
         continue;

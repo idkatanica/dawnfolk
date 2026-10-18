@@ -30,15 +30,16 @@ const ANIMAL_LAYOUT: PaletteLayout = {
   colorSlots: [MaterialSlot.Coat, MaterialSlot.CoatLight],
 };
 
-const LEVEL_DISTANCES: LevelDistances = { high: 90, low: 650 };
-const BOUNDING_RADIUS = 3.5;
-const WADING_DEPTH = 1.2;
 const DOT_COLORS: Readonly<Record<AnimalKind, number>> = {
   deer: 0xb0_84_52,
   ibex: 0x9c_8a_70,
   mammoth: 0x5c_44_32,
   wolf: 0x7c_7a_78,
 };
+
+const LEVEL_DISTANCES: LevelDistances = { high: 90, low: 650 };
+const BOUNDING_RADIUS = 3.5;
+const WADING_DEPTH = 1.2;
 const SHORTEST_STRIDE = 0.5;
 const REFERENCE_SEED = 0.5;
 const YOUTH_STEPS = 8;
@@ -97,11 +98,11 @@ export class AnimalView {
   readonly #bounds = new Sphere(new Vector3(), BOUNDING_RADIUS);
   readonly #kinds: Readonly<Record<AnimalKind, AnimalKindView>>;
   readonly #palette = new AgentPalette(paletteWidth(ANIMAL_LAYOUT));
-  #uploadedRows = 0;
   readonly #pose = new Pose(MAMMOTH_BONE_COUNT);
   readonly #previousPose = new Pose(MAMMOTH_BONE_COUNT);
   readonly #seen = new Set<number>();
   readonly #visuals = new Map<number, AnimalVisual>();
+  #uploadedRows = 0;
 
   constructor() {
     const material = createSkinnedMaterial(this.#palette, ANIMAL_LAYOUT);
@@ -116,9 +117,8 @@ export class AnimalView {
 
   update(input: AgentViewInput): void {
     const { frame } = input.mirror;
-    const seen = this.#seen;
 
-    seen.clear();
+    this.#seen.clear();
 
     for (const kind of ANIMAL_KINDS) {
       this.#kinds[kind].batches.begin();
@@ -129,7 +129,7 @@ export class AnimalView {
     for (let animal = 0; animal < frame.animalCount; animal += 1) {
       const offset = animal * ANIMAL_STRIDE;
 
-      seen.add(frame.animals[offset + AnimalField.Id]);
+      this.#seen.add(frame.animals[offset + AnimalField.Id]);
 
       if (this.#drawAnimal(input, offset, rows)) {
         rows += 1;
@@ -137,7 +137,7 @@ export class AnimalView {
     }
 
     for (const id of this.#visuals.keys()) {
-      if (!seen.has(id)) {
+      if (!this.#seen.has(id)) {
         this.#visuals.delete(id);
       }
     }
@@ -248,6 +248,7 @@ export class AnimalView {
 
   #writePose(visual: AnimalVisual, kindView: AnimalKindView, row: number): void {
     const { motion } = visual;
+
     const context = { variation: visual.variation };
 
     poseAnimal(visual.kind, this.#pose, ANIMAL_POSES[motion.clip], motion.phase, context);
@@ -276,6 +277,7 @@ export class AnimalView {
 
   #writeRootAndColors(row: number, root: readonly [number, number, number, number], colors: readonly Color[]): void {
     const { data } = this.#palette;
+
     const rootOffset = this.#palette.texelOffset(row, rootTexel(ANIMAL_LAYOUT));
 
     data.set(root, rootOffset);

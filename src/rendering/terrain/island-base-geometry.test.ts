@@ -74,6 +74,7 @@ describe("island base geometry", () => {
     const mirror = squareMirror();
 
     const { grid } = mirror;
+
     const last = CELLS_PER_SIDE - 1;
     const edges = new Set<string>();
 

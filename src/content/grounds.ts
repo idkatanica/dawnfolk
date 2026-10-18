@@ -239,6 +239,7 @@ export function groundDefinition(index: number): GroundDefinition {
 
 export function seasonalGroundColor(index: number, season: number, variation: number): Color {
   const { seasonalColors } = groundDefinition(index);
+
   const seasonIndex = Math.floor(season) % SEASON_COUNT;
   const progress = season - Math.floor(season);
   const brightness = 1 + variation * 0.09;

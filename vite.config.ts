@@ -42,7 +42,6 @@ const configuration: ViteUserConfig = defineConfig({
       {
         extends: true,
         test: {
-          environment: "node",
           exclude: [...configDefaults.exclude, "src/**/*.browser.test.ts"],
           include: ["src/**/*.test.ts"],
           name: "unit",

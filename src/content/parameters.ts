@@ -26,7 +26,7 @@ interface ToggleParameterSpecification {
   label: string;
 }
 
-export interface ChoiceOption {
+interface ChoiceOption {
   label: string;
   value: string;
 }

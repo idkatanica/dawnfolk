@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
-import { wrapAngle } from "../../shared/math.ts";
+import { FULL_TURN, wrapAngle } from "../../shared/math.ts";
 import { SocietyHarness } from "../testing/test-society.ts";
 import { findTree } from "./jobs/chop-job.ts";
 import { findBerries } from "./jobs/gather-job.ts";
@@ -266,7 +266,7 @@ describe("fishing", () => {
       }
     }
 
-    const reach = Array.from({ length: 8 }, (_unused, index) => (index / 8) * Math.PI * 2);
+    const reach = Array.from({ length: 8 }, (_unused, index) => (index / 8) * FULL_TURN);
 
     for (let attempt = 0; attempt < 100; attempt += 1) {
       const spot = nearestShore(harness.world, { x: 0, z: 0 }, 200, harness.random);

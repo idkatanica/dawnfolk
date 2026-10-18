@@ -159,7 +159,7 @@ export function CompactClock({ className }: { readonly className?: string | unde
   );
 }
 
-export function WorldStatus({ className }: { readonly className?: string | undefined }) {
+export function WorldStatus() {
   const calendar = useWorldStore((state) => state.snapshot?.calendar);
 
   if (calendar === undefined) {
@@ -167,7 +167,7 @@ export function WorldStatus({ className }: { readonly className?: string | undef
   }
 
   return (
-    <div className={cn("flex items-start gap-3", className)}>
+    <div className="flex items-start gap-3">
       <StatusIsland>
         <ClockReading calendar={calendar} />
       </StatusIsland>

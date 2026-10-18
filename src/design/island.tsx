@@ -8,7 +8,6 @@ const ISLAND_RADIUS = 22;
 const REFRACTING_GLASS: Partial<GlassSurfaceOptions> = {
   backgroundOpacity: 0.5,
   blueOffset: 8,
-  brightness: 50,
   displace: 1.5,
   distortionScale: -90,
   greenOffset: 4,

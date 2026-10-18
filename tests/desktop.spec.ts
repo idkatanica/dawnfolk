@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openIsland } from "./launch.ts";
+import { openIsland, WORLD_RISING_TIMEOUT } from "./launch.ts";
 
 const NEW_SEED_ADDRESS = /seed=42/;
 
@@ -44,6 +44,8 @@ test.describe("the wide layout", () => {
     await settings.getByRole("button", { exact: true, name: "Create" }).click();
 
     await expect(page).toHaveURL(NEW_SEED_ADDRESS);
-    await expect(page.getByRole("button", { exact: true, name: "Pause" })).toBeVisible({ timeout: 150_000 });
+    await expect(page.getByRole("button", { exact: true, name: "Pause" })).toBeVisible({
+      timeout: WORLD_RISING_TIMEOUT,
+    });
   });
 });

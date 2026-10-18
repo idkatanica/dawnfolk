@@ -101,7 +101,6 @@ export function addNecklace(builder: MeshBuilder, detail: HumanDetail): void {
 
   for (let index = -2; index <= 2; index += 1) {
     const angle = Math.PI / 2 + index * 0.32;
-
     const x = Math.cos(angle) * 0.088;
     const z = 0.005 + Math.sin(angle) * 0.079;
 
@@ -339,7 +338,7 @@ export function addCarriedFish(builder: MeshBuilder, detail: HumanDetail): void 
   );
 }
 
-export function addCarriedCrops(builder: MeshBuilder, detail: HumanDetail): void {
+export function addCarriedCrops(builder: MeshBuilder): void {
   const [x, y, z] = CRADLE;
 
   const style = onChest(MaterialSlot.Grain);
@@ -364,7 +363,7 @@ export function addCarriedCrops(builder: MeshBuilder, detail: HumanDetail): void
 
   builder.add(
     blob({
-      detail: Math.min(1, detail.limbSegments - 4),
+      detail: 1,
       noise: PROP_NOISE,
       offset: [2, 9, 4],
       radius: 0.06,

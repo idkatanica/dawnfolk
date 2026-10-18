@@ -66,6 +66,7 @@ function cellWithLivingTree(mirror: WorldMirror): number {
 
 function cellWithoutPlants(mirror: WorldMirror): number {
   const { grid, vegetation } = mirror;
+
   const occupied = new Set<number>();
 
   for (let plant = 0; plant < vegetation.count; plant += 1) {

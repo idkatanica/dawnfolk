@@ -14,13 +14,12 @@ import {
   piecesTouch,
 } from "../testing/mesh-connectivity.ts";
 import { posedMesh } from "../testing/moved-mesh.ts";
-import { personAppearance } from "./appearance.ts";
+import { type PersonAppearance, personAppearance } from "./appearance.ts";
 import { applyHumanClip } from "./human-clips.ts";
 import { HUMAN_DETAILS } from "./human-detail.ts";
 import {
   activityParts,
   appearanceParts,
-  buildHumanAtlas,
   buildHumanParts,
   HUMAN_PARTS,
   type HumanPart,
@@ -34,6 +33,7 @@ const highParts = buildHumanParts(HUMAN_DETAILS.high);
 const lowParts = buildHumanParts(HUMAN_DETAILS.low);
 
 const TOUCHING = 0.01;
+const TRIBE = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
 const TORSOS = ["torsoChild", "torsoFemale", "torsoMale"] as const satisfies readonly HumanPart[];
 
 function isWorn(part: HumanPart): boolean {
@@ -57,6 +57,10 @@ function isArm(mesh: MeshData, piece: MeshPiece): boolean {
   );
 
   return bound.length * 2 > piece.vertices.length;
+}
+
+function bodyPartsOf(appearance: PersonAppearance): HumanPart[] {
+  return appearanceParts(appearance).filter((part) => part === "body" || part.startsWith("torso"));
 }
 
 function looseParts(parts: readonly MeshData[], names: readonly HumanPart[]): string[] {
@@ -89,7 +93,7 @@ describe("human model", () => {
   });
 
   it("binds every vertex to real bones with a valid weight", () => {
-    const atlas = buildHumanAtlas(HUMAN_DETAILS.high);
+    const atlas = mergeMeshes(highParts);
 
     for (const channel of ["boneA", "boneB"] as const) {
       expect(
@@ -137,36 +141,30 @@ describe("attached parts", () => {
   });
 
   it("holds every carried load in the arms that carry it", () => {
-    const tribe = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
     const poser = new SkeletonPoser(HUMAN_SKELETON);
     const pose = new Pose(HUMAN_SKELETON.bones.length);
-
     const people = [
-      personAppearance({ age: 30, isFemale: false, seed: 0.37, tribe }),
-      personAppearance({ age: 34, isFemale: true, seed: 0.6, tribe }),
-      personAppearance({ age: 11, isFemale: false, seed: 0.4, tribe }),
+      personAppearance({ age: 30, isFemale: false, seed: 0.37, tribe: TRIBE }),
+      personAppearance({ age: 34, isFemale: true, seed: 0.6, tribe: TRIBE }),
+      personAppearance({ age: 11, isFemale: false, seed: 0.4, tribe: TRIBE }),
     ];
 
     for (const appearance of people) {
-      const body = appearanceParts(appearance).filter((part) => part === "body" || part.startsWith("torso"));
+      const body = bodyPartsOf(appearance);
 
       for (const carried of CARRIED_ITEMS.filter((item) => item !== "nothing")) {
         applyHumanClip(pose, "carry", 0.3, { ageGroup: appearance.ageGroup, carried, motion: appearance.motion });
         poser.pose(pose, humanBoneScales(appearance.body));
 
         const load = activityParts("carry", carried);
-
         const mesh = posedMesh(mergeMeshes([...body, ...load].map((name) => highParts[humanPartIndex(name)])), poser);
         const loadParts = new Set(load.map((name) => humanPartIndex(name)));
-
         const pieces = meshPieces(mesh);
         const loose = detachedPieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body))).map((piece) =>
           describePiece(mesh, piece)
         );
-
         const arms = pieces.filter((piece) => isArm(mesh, piece));
         const loads = pieces.filter((piece) => loadParts.has(mesh.channels.part[piece.vertices[0]]));
-
         const isHeld = loads.some((piece) => arms.some((arm) => piecesTouch(mesh, piece, arm, TOUCHING)));
 
         expect(loose, `${appearance.ageGroup} carrying ${carried}`).toEqual([]);
@@ -184,15 +182,13 @@ const OUTFITS: readonly (readonly HumanPart[])[] = [
 ];
 
 describe("moving parts", () => {
-  const tribe = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
-
   const people = (
     [
       [30, false],
       [28, true],
       [9, false],
     ] as const
-  ).map(([age, isFemale]) => personAppearance({ age, isFemale, seed: 0.37, tribe }));
+  ).map(([age, isFemale]) => personAppearance({ age, isFemale, seed: 0.37, tribe: TRIBE }));
 
   describe.each([
     ["high", highParts],
@@ -204,7 +200,7 @@ describe("moving parts", () => {
       const carried = clip === "carry" ? "wood" : "nothing";
 
       for (const appearance of people) {
-        const body = appearanceParts(appearance).filter((part) => part === "body" || part.startsWith("torso"));
+        const body = bodyPartsOf(appearance);
 
         for (const phase of [0.15, 0.4, 0.7]) {
           applyHumanClip(pose, clip, phase, { ageGroup: appearance.ageGroup, carried, motion: appearance.motion });
@@ -212,9 +208,7 @@ describe("moving parts", () => {
 
           for (const outfit of OUTFITS) {
             const names = [...body, ...outfit, ...activityParts(clip, carried)];
-
             const mesh = posedMesh(mergeMeshes(names.map((name) => parts[humanPartIndex(name)])), poser);
-
             const loose = detachedPieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body))).map((piece) =>
               describePiece(mesh, piece)
             );
@@ -237,24 +231,20 @@ describe("moving parts", () => {
 
 describe("resting poses", () => {
   it.each(["sit", "eat"] as const)("seats a person on the ground, not in the air, to %s", (clip) => {
-    const tribe = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
     const poser = new SkeletonPoser(HUMAN_SKELETON);
     const pose = new Pose(HUMAN_SKELETON.bones.length);
 
     for (const age of [9, 30, 70]) {
-      const appearance = personAppearance({ age, isFemale: age > 20, seed: 0.42, tribe });
+      const appearance = personAppearance({ age, isFemale: age > 20, seed: 0.42, tribe: TRIBE });
 
       applyHumanClip(pose, clip, 0.3, { ageGroup: appearance.ageGroup, carried: "nothing", motion: appearance.motion });
       poser.pose(pose, humanBoneScales(appearance.body));
 
-      const body = appearanceParts(appearance).filter((part) => part === "body" || part.startsWith("torso"));
-
+      const body = bodyPartsOf(appearance);
       const mesh = posedMesh(mergeMeshes(body.map((name) => highParts[humanPartIndex(name)])), poser);
-
       const seat = Array.from({ length: mesh.positions.length / 3 }, (_, vertex) => vertex).filter(
         (vertex) => mesh.channels.boneA[vertex] === HumanBone.Pelvis && mesh.channels.boneWeight[vertex] === 0
       );
-
       const lowestSeat = Math.min(...seat.map((vertex) => mesh.positions[vertex * 3 + 1]));
 
       expect(lowestSeat, `${appearance.ageGroup}`).toBeLessThan(0.08);
@@ -264,12 +254,14 @@ describe("resting poses", () => {
 });
 
 describe("visible parts", () => {
-  const tribe = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
-
   it("dresses everyone with a body, a torso and an outfit", () => {
     for (let index = 0; index < 40; index += 1) {
-      const appearance = personAppearance({ age: 8 + index, isFemale: index % 2 === 0, seed: index / 40, tribe });
-
+      const appearance = personAppearance({
+        age: 8 + index,
+        isFemale: index % 2 === 0,
+        seed: index / 40,
+        tribe: TRIBE,
+      });
       const parts = appearanceParts(appearance);
 
       expect(parts).toContain("body");

@@ -23,7 +23,7 @@ export interface AnimalClipContext {
 
 type AnimalClipTiming = { readonly cycleSeconds: number; readonly kind: "seconds" } | { readonly kind: "stride" };
 
-export type ExtraMotion = (pose: Pose, clip: AnimalPose, phase: number, context: AnimalClipContext) => void;
+export type ExtraMotion = (pose: Pose, clip: AnimalPose, phase: number) => void;
 
 interface AnimalClip {
   readonly apply: (pose: Pose, phase: number, context: AnimalClipContext) => void;
@@ -61,8 +61,9 @@ interface LegMotion {
 }
 
 function moveLeg(pose: Pose, end: LegEnd, side: LegSide, motion: LegMotion): void {
-  const bones = legBones(end, side);
   const { fold, outward = 0, swing } = motion;
+
+  const bones = legBones(end, side);
 
   pose.rotate(bones.upper, -swing, side * outward, 0);
 
@@ -198,6 +199,6 @@ export function applyAnimalClip(
   QUADRUPED_CLIPS[clip].apply(pose, phase, context);
 
   if (extra !== null) {
-    extra(pose, clip, phase, context);
+    extra(pose, clip, phase);
   }
 }

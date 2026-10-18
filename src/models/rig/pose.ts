@@ -10,10 +10,8 @@ export const RotationAxis = {
 
 export class Pose {
   readonly angles: Float32Array;
-  forward = 0;
   grounding: Grounding = "feet";
   height = 0;
-  side = 0;
 
   constructor(boneCount: number) {
     this.angles = new Float32Array(boneCount * ANGLES_PER_BONE);
@@ -21,10 +19,8 @@ export class Pose {
 
   reset(): void {
     this.angles.fill(0);
-    this.forward = 0;
     this.grounding = "feet";
     this.height = 0;
-    this.side = 0;
   }
 
   rotate(bone: number, pitch: number, roll: number, yaw: number): void {
@@ -40,9 +36,7 @@ export class Pose {
       this.angles[index] = from.angles[index] + (to.angles[index] - from.angles[index]) * amount;
     }
 
-    this.forward = from.forward + (to.forward - from.forward) * amount;
     this.height = from.height + (to.height - from.height) * amount;
-    this.side = from.side + (to.side - from.side) * amount;
     this.grounding = blendedGrounding(from.grounding, to.grounding);
   }
 }

@@ -1,13 +1,13 @@
 import { abs, atan, floor, fract, ivec2, length, max, mix, textureLoad, vec2 } from "three/tsl";
 import { ClampToEdgeWrapping, DataTexture, FloatType, NearestFilter, type Node, RedFormat } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
+import { FULL_TURN } from "../../shared/math.ts";
 import { sampleHeight } from "../../world/terrain-sampling.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 
 const COAST_SAMPLES = 2048;
 const COAST_SEARCH_STEPS = 24;
 const INLAND_START = 0.5;
-const FULL_TURN = Math.PI * 2;
 const WALK_STEPS = 65_536;
 const CROSSING_STEPS = 24;
 const SAME_ANGLE = 1e-9;

@@ -40,7 +40,7 @@ function useQualityChoice() {
 
   const active = activeQuality(engine);
 
-  const [quality, setQuality] = useState<QualityLevel>(active);
+  const [quality, setQuality] = useState(active);
 
   function changeQuality(value: string): void {
     if (!isQualityLevel(value)) {

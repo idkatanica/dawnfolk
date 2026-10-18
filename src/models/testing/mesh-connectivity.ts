@@ -90,15 +90,17 @@ class DisjointSets {
   }
 }
 
-function positionKey(point: Point): string {
-  return point.map((value) => Math.round(value * POSITION_GRID)).join(",");
+export function vertexKey(mesh: MeshData, vertex: number): string {
+  return pointOf(mesh, vertex)
+    .map((value) => Math.round(value * POSITION_GRID))
+    .join(",");
 }
 
 function joinSharedPositions(mesh: MeshData, sets: DisjointSets, count: number): void {
   const firstAtPosition = new Map<string, number>();
 
   for (let vertex = 0; vertex < count; vertex += 1) {
-    const key = positionKey(pointOf(mesh, vertex));
+    const key = vertexKey(mesh, vertex);
 
     const first = firstAtPosition.get(key);
 
@@ -312,7 +314,6 @@ function boundsOverlap(first: MeshPiece, second: MeshPiece, margin: number): boo
 
 function samplePoints(mesh: MeshData, piece: MeshPiece): Point[] {
   const corners = piece.vertices.map((vertex) => pointOf(mesh, vertex));
-
   const centers = piece.triangles.map((triangle) => {
     const [first, second, third] = triangleCorners(mesh, triangle);
 

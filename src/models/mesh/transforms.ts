@@ -26,14 +26,12 @@ export function transformOf(options: TransformOptions): Matrix4 {
   return new Matrix4().compose(new Vector3(...position), quaternion, scaleVector(scale));
 }
 
-export function segmentTransform(start: Triple, end: Triple, twist = 0): Matrix4 {
+export function segmentTransform(start: Triple, end: Triple): Matrix4 {
   const from = new Vector3(...start);
 
   const direction = new Vector3(...end).sub(from);
 
-  const alignment = new Quaternion().setFromUnitVectors(UP, direction.clone().normalize());
-
-  const rotation = alignment.multiply(new Quaternion().setFromAxisAngle(UP, twist));
+  const rotation = new Quaternion().setFromUnitVectors(UP, direction.clone().normalize());
 
   return new Matrix4().compose(from, rotation, new Vector3(1, 1, 1));
 }

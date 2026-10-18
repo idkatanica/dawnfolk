@@ -9,7 +9,7 @@ import { rigidStyle } from "../rig/skin-weights.ts";
 import { legStyle } from "./quadruped-rigging.ts";
 import { LEG_ENDS, LEG_SIDES, type LegEnd, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
-export type LegPoint = readonly [radius: number, y: number, z: number, inset?: number];
+type LegPoint = readonly [radius: number, y: number, z: number, inset?: number];
 
 export function legPath(x: number, points: readonly LegPoint[]): TubePoint[] {
   return points.map(([radius, y, z, inset = 0]) => ({ radius, x: x - inset, y, z }));

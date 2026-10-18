@@ -49,7 +49,7 @@ function cellColor(mirror: WorldMirror, palette: readonly Color[], cell: number)
 }
 
 export function paintMinimapTerrain(mirror: WorldMirror, size: number): ImageData {
-  const { frame, grid } = mirror;
+  const { frame, grid, terrain } = mirror;
 
   const image = new ImageData(size, size);
   const palette = GROUNDS.map((_, index) => seasonalGroundColor(index, frame.calendar.season, 0));
@@ -63,7 +63,7 @@ export function paintMinimapTerrain(mirror: WorldMirror, size: number): ImageDat
 
       const cell = grid.index(column, row);
 
-      if (!isOnIsland(mirror.terrain.coastDistance, cell)) {
+      if (!isOnIsland(terrain.coastDistance, cell)) {
         continue;
       }
 

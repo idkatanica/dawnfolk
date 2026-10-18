@@ -12,7 +12,7 @@ export interface LatticeArea {
   readonly radius: number;
 }
 
-export interface LatticeElement {
+interface LatticeElement {
   readonly presence: Node<"float">;
   readonly seed: Node<"uint">;
   readonly tile: Node<"vec2">;

@@ -53,11 +53,11 @@ export function distanceFromBillboardCenter(corner: Node<"vec2">): Node<"float">
   return length(vec2(corner.x, corner.y.sub(0.5)));
 }
 
-export function createQuadGeometry(cornerAttribute: string): InstancedBufferGeometry {
+function createQuadGeometry(): InstancedBufferGeometry {
   const geometry = new InstancedBufferGeometry();
 
   geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(12), 3));
-  geometry.setAttribute(cornerAttribute, new Float32BufferAttribute([-0.5, 0, 0.5, 0, 0.5, 1, -0.5, 1], 2));
+  geometry.setAttribute(CORNER_ATTRIBUTE, new Float32BufferAttribute([-0.5, 0, 0.5, 0, 0.5, 1, -0.5, 1], 2));
   geometry.setIndex(new Uint16BufferAttribute([0, 1, 2, 0, 2, 3], 1));
   geometry.instanceCount = 0;
 
@@ -73,7 +73,7 @@ export class BillboardBatch {
 
   constructor(material: Material, renderOrder: number) {
     this.#material = material;
-    this.#geometry = createQuadGeometry(CORNER_ATTRIBUTE);
+    this.#geometry = createQuadGeometry();
     this.#instances = new InterleavedInstances(this.#geometry, BILLBOARD_FIELDS, 256);
     this.mesh = new Mesh(this.#geometry, material);
     this.mesh.frustumCulled = false;

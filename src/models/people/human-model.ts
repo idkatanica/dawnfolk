@@ -1,10 +1,10 @@
 import type { CarriedItem, PersonPose } from "../../world/agent-poses.ts";
 import { MeshBuilder } from "../mesh/mesh-builder.ts";
-import { type MeshData, mergeMeshes } from "../mesh/mesh-data.ts";
+import type { MeshData } from "../mesh/mesh-data.ts";
 import { maskOf, type PartMask } from "../part-mask.ts";
-import type { HairStyle, Outfit, PersonAppearance } from "./appearance.ts";
+import type { HairStyle, PersonAppearance } from "./appearance.ts";
 import { addBody, addChildTorso, addFemaleTorso, addMaleTorso } from "./human-anatomy.ts";
-import { HUMAN_CLIPS, type HumanTool } from "./human-clips.ts";
+import { HUMAN_CLIPS } from "./human-clips.ts";
 import { addBoots, addCape, addCloak, addDress, addLoincloth, addTunic, addWrap } from "./human-clothing.ts";
 import type { HumanDetail } from "./human-detail.ts";
 import {
@@ -133,10 +133,6 @@ export function buildHumanParts(detail: HumanDetail): MeshData[] {
   });
 }
 
-export function buildHumanAtlas(detail: HumanDetail): MeshData {
-  return mergeMeshes(buildHumanParts(detail));
-}
-
 const HAIR_PARTS: Readonly<Record<HairStyle, HumanPart | null>> = {
   bald: null,
   braids: "hairBraids",
@@ -146,21 +142,6 @@ const HAIR_PARTS: Readonly<Record<HairStyle, HumanPart | null>> = {
   ponytail: "hairPonytail",
   short: "hairShort",
   wild: "hairWild",
-};
-
-const OUTFIT_PARTS: Readonly<Record<Outfit, HumanPart>> = {
-  dress: "dress",
-  loincloth: "loincloth",
-  tunic: "tunic",
-  wrap: "wrap",
-};
-
-const TOOL_PARTS: Readonly<Record<HumanTool, HumanPart>> = {
-  axe: "axe",
-  basket: "basket",
-  diggingStick: "diggingStick",
-  hammerStone: "hammerStone",
-  spear: "spear",
 };
 
 const CARRIED_PARTS: Readonly<Record<CarriedItem, HumanPart | null>> = {
@@ -195,7 +176,7 @@ export function appearanceParts(appearance: PersonAppearance): HumanPart[] {
     torsoPart(appearance),
     HAIR_PARTS[appearance.hair],
     beardPart(appearance),
-    OUTFIT_PARTS[appearance.outfit],
+    appearance.outfit,
     ...appearance.accessories,
   ];
 
@@ -221,7 +202,7 @@ export function activityParts(pose: PersonPose, carried: CarriedItem): HumanPart
   const parts: HumanPart[] = [];
 
   if (tool !== null) {
-    parts.push(TOOL_PARTS[tool]);
+    parts.push(tool);
   }
 
   if (pose === "carry" && carriedPart !== null) {

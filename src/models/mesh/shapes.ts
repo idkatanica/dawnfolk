@@ -223,6 +223,7 @@ function sectionLengths(sections: readonly LoftSection[]): number[] {
 
 function loftRing(writer: ShapeWriter, section: LoftSection, along: number, segments: number): Ring {
   const { centerX = 0, centerZ = 0, ripple = () => 1 } = section;
+
   const placeholderNormal = new Vector3(0, 1, 0);
 
   if (section.radiusX <= POLE_RADIUS && section.radiusZ <= POLE_RADIUS) {
@@ -288,6 +289,7 @@ function panelRow(
 ): number[] {
   const { centerX = 0, centerZ = 0, ripple = () => 1 } = section;
   const { angularSegments, endAngle, startAngle } = options;
+
   const placeholderNormal = new Vector3(0, 1, 0);
   const row: number[] = [];
 
@@ -359,26 +361,20 @@ export function panel(options: PanelOptions): Shape {
 }
 
 interface CylinderOptions {
-  readonly hasBottomCap?: boolean;
-  readonly hasTopCap?: boolean;
   readonly height: number;
-  readonly heightSegments?: number;
   readonly radialSegments?: number;
   readonly radiusBottom: number;
   readonly radiusTop: number;
 }
 
 export function cylinder(options: CylinderOptions): Shape {
-  const { hasBottomCap = true, hasTopCap = true, heightSegments = 1, radialSegments = 8 } = options;
-  const { height, radiusBottom, radiusTop } = options;
+  const { height, radialSegments = 8, radiusBottom, radiusTop } = options;
 
   const writer = new ShapeWriter();
   const slope = new Vector3(height, radiusBottom - radiusTop, 0).normalize();
   const rings: Ring[] = [];
 
-  for (let level = 0; level <= heightSegments; level += 1) {
-    const amount = level / heightSegments;
-
+  for (const amount of [0, 1]) {
     const point = { radius: radiusBottom + (radiusTop - radiusBottom) * amount, y: height * amount };
 
     rings.push(latheRing(writer, point, { radial: slope.x, vertical: slope.y }, amount, radialSegments));
@@ -386,11 +382,11 @@ export function cylinder(options: CylinderOptions): Shape {
 
   connectRingChain(writer, rings);
 
-  if (hasBottomCap && radiusBottom > POLE_RADIUS) {
+  if (radiusBottom > POLE_RADIUS) {
     addFlatCap(writer, radiusBottom, 0, radialSegments, false);
   }
 
-  if (hasTopCap && radiusTop > POLE_RADIUS) {
+  if (radiusTop > POLE_RADIUS) {
     addFlatCap(writer, radiusTop, height, radialSegments, true);
   }
 
@@ -800,8 +796,8 @@ function ribbonSide(
     const frame = frames[index];
     const center = new Vector3(point.x, point.y, point.z);
     const along = lengths[index] / totalLength;
-    const facing = isBack ? frame.normal.clone().negate() : frame.normal.clone();
 
+    const facing = isBack ? frame.normal.clone().negate() : frame.normal.clone();
     const left = center.clone().addScaledVector(frame.binormal, point.radius);
     const middle = center.clone().addScaledVector(frame.normal, point.radius * fold);
     const right = center.clone().addScaledVector(frame.binormal, -point.radius);
@@ -841,9 +837,10 @@ export function ribbon(points: readonly TubePoint[], options: RibbonOptions = {}
   const { fold = 0.3 } = options;
 
   const centers = points.map((point) => new Vector3(point.x, point.y, point.z));
+  const writer = new ShapeWriter();
+
   const frames = transportFrames(tubeTangents(centers));
   const lengths = arcLengths(centers);
-  const writer = new ShapeWriter();
 
   ribbonSide(writer, points, frames, fold, lengths, false);
   ribbonSide(writer, points, frames, fold, lengths, true);

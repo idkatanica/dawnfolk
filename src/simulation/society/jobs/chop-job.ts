@@ -46,6 +46,7 @@ class ChopJob implements Job {
 
   update(tick: PersonTick): Job | null {
     const { world } = tick.context;
+
     const tree = this.claimedPlant;
 
     if (!world.vegetation.isAlive(tree)) {

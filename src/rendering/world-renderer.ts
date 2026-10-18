@@ -156,6 +156,7 @@ export class WorldRenderer {
 
   render(view: RenderView): void {
     const { frame } = this.#mirror;
+
     const changes = this.#changes.take();
 
     this.#textures.update(this.#renderer, frame.calendar.season, changes);
@@ -213,6 +214,29 @@ export class WorldRenderer {
     this.#output.render();
   }
 
+  dispose(): void {
+    this.#fire.dispose();
+    this.#effects.dispose();
+    this.#weather.dispose();
+    this.#splashes.dispose();
+    this.cursor.dispose();
+    this.#selectionRing.dispose();
+    this.#people.dispose();
+    this.#animals.dispose();
+    this.#dots.dispose();
+    this.#buildings.dispose();
+    this.#vegetation.dispose();
+    this.#grass.dispose();
+    this.#water.dispose();
+    this.#waterfalls.dispose();
+    this.#terrain.dispose();
+    this.#islandBase.dispose();
+    this.#textures.dispose();
+    this.#fireGlow.dispose();
+    this.#atmosphere.dispose();
+    this.#output.dispose();
+  }
+
   #paintWater(wind: Wind, precipitation: number, rainfall: number, realSeconds: number): void {
     const { look } = this.#water;
     const { palette } = this.#atmosphere;
@@ -255,7 +279,9 @@ export class WorldRenderer {
 
   #updateEffects(view: RenderView, wind: Wind, form: Precipitation, rainfall: number): void {
     const { weather } = this.#mirror.frame;
+
     const darkness = 1 - this.#atmosphere.daylight;
+    const brightness = 0.25 + this.#atmosphere.daylight * 0.75;
 
     this.#axes.update(view.camera);
     this.#fire.smoke.brightness.value = 0.3 + this.#atmosphere.daylight * 0.7;
@@ -265,9 +291,6 @@ export class WorldRenderer {
     this.#fire.update(this.#mirror, view.camera, darkness);
     this.#effects.add(view.effects);
     this.#effects.update(view.realSeconds);
-
-    const brightness = 0.25 + this.#atmosphere.daylight * 0.75;
-
     this.#splashes.update(rainfall, brightness, {
       camera: view.camera,
       focusX: view.focus.x,
@@ -289,6 +312,7 @@ export class WorldRenderer {
 
   #precipitationAt(focus: Vector3): Precipitation {
     const { frame, grid, terrain } = this.#mirror;
+
     const cell = grid.cellAt(focus.x, focus.z);
 
     const ground = cell < 0 ? 0 : terrain.baseTemperature[cell];
@@ -306,28 +330,5 @@ export class WorldRenderer {
     }
 
     this.#selectionRing.show(inspection.x, inspection.z, SELECTION_RADIUS[inspection.kind], SELECTION_COLOR, 0.9);
-  }
-
-  dispose(): void {
-    this.#fire.dispose();
-    this.#effects.dispose();
-    this.#weather.dispose();
-    this.#splashes.dispose();
-    this.cursor.dispose();
-    this.#selectionRing.dispose();
-    this.#people.dispose();
-    this.#animals.dispose();
-    this.#dots.dispose();
-    this.#buildings.dispose();
-    this.#vegetation.dispose();
-    this.#grass.dispose();
-    this.#water.dispose();
-    this.#waterfalls.dispose();
-    this.#terrain.dispose();
-    this.#islandBase.dispose();
-    this.#textures.dispose();
-    this.#fireGlow.dispose();
-    this.#atmosphere.dispose();
-    this.#output.dispose();
   }
 }

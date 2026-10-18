@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Ground, groundDefinition } from "../../content/grounds.ts";
 import { PlantSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
+import { NO_PLANT } from "../../world/vegetation-store.ts";
 import { centerCell, createTestWorld, floodCells, plantInCell } from "../testing/test-world.ts";
 
 describe("world state", () => {
@@ -42,7 +43,7 @@ describe("world state", () => {
 
     world.terrain.coastDistance.fill(3);
 
-    expect(world.plant(placement)).toBe(-1);
+    expect(world.plant(placement)).toBe(NO_PLANT);
   });
 
   it("keeps everything beyond the coast off the island", () => {

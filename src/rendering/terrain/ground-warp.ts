@@ -43,6 +43,7 @@ export class GroundWarp {
 
   bake(renderer: WebGPURenderer): void {
     const { cellSize, halfSize, worldSize } = this.#grid;
+
     const material = new NodeMaterial();
     const previousTarget = renderer.getRenderTarget();
 

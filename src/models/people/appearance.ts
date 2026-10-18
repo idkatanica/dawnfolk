@@ -7,7 +7,7 @@ export type HairStyle = "bald" | "braids" | "bun" | "fringe" | "long" | "ponytai
 
 type BeardStyle = "full" | "none" | "short";
 
-export type Outfit = "dress" | "loincloth" | "tunic" | "wrap";
+type Outfit = "dress" | "loincloth" | "tunic" | "wrap";
 
 type Accessory = "armband" | "feather" | "headband" | "necklace" | "paint";
 
@@ -298,11 +298,9 @@ export function personAppearance(input: AppearanceInput): PersonAppearance {
   const random = createRandom(Math.floor(input.seed * 2_147_483_647) + 1);
   const ageGroup = ageGroupOf(input.age);
   const elderGrey = smoothstep(ELDER_AGE, ELDER_AGE + 15, input.age);
-
   const skinDarkness = skinTonePosition(random, input.tribe.id);
   const wearsCape = random.chance(0.3);
   const wearsCloak = random.chance(0.45);
-
   const skin = colorFromPalette(SKIN_TONES, skinDarkness);
   const hair = mixColors(hairColor(random, ageGroup, skinDarkness), ELDER_HAIR[1], elderGrey * 0.3);
 

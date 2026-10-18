@@ -10,8 +10,12 @@ export function wave(phase: number, offset = 0): number {
   return Math.sin(FULL_TURN * (phase + offset));
 }
 
-export function cosineWave(phase: number, offset = 0): number {
-  return Math.cos(FULL_TURN * (phase + offset));
+export function cosineWave(phase: number): number {
+  return Math.cos(FULL_TURN * phase);
+}
+
+export function triangleWave(phase: number): number {
+  return 1 - Math.abs(fractionalPart(phase) * 2 - 1);
 }
 
 export function cyclicDistance(phase: number, center: number): number {
@@ -48,7 +52,6 @@ export function keyframes(phase: number, keys: readonly Keyframe[]): number {
   }
 
   const time = fractionalPart(phase);
-
   const nextIndex = keys.findIndex(([keyTime]) => keyTime > time);
 
   if (nextIndex > 0) {

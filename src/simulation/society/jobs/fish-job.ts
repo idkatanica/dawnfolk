@@ -3,6 +3,7 @@ import { pickUpFood } from "../person.ts";
 import { nearestShore, type ShoreSpot } from "../resources.ts";
 import type { PersonTick } from "../society-context.ts";
 import { learn, markScarce } from "../tribe.ts";
+import { campPoint } from "../tribe-places.ts";
 import { DeliverJob } from "./deliver-job.ts";
 import { Errand, headTo, type Job } from "./job.ts";
 
@@ -14,7 +15,7 @@ const SEARCH_RADIUS = 320;
 export function findFishingSpot(tick: PersonTick): FishJob | null {
   const { tribe } = tick;
 
-  const spot = nearestShore(tick.context.world, { x: tribe.campX, z: tribe.campZ }, SEARCH_RADIUS, tick.context.random);
+  const spot = nearestShore(tick.context.world, campPoint(tribe), SEARCH_RADIUS, tick.context.random);
 
   if (spot === null) {
     markScarce(tribe, "fish", tick.context.environment.day);

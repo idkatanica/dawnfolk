@@ -83,6 +83,7 @@ describe("seam normals", () => {
 
     const limb = builder.build();
     const alone = limbOnBody(null, null);
+
     const limbOnly = verticesWhere(alone, (_x, _y, _z, part) => part === 1);
     const atSeam = verticesWhere(limb, (_x, y) => Math.abs(y - 1.05) < 1e-4);
 

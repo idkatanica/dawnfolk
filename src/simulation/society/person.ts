@@ -18,7 +18,7 @@ const ADULT_RUN_SPEED = 5.2;
 
 export type DeathCause = "age" | "blast" | "cold" | "earthquake" | "fire" | "hunger" | "lightning" | "mammoth";
 
-export interface Carrying {
+interface Carrying {
   food: number;
   foodItem: CarriedItem;
   stone: number;

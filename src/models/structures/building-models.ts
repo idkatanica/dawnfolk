@@ -1,6 +1,6 @@
 import { Vector3 } from "three";
 import type { BuildingKind } from "../../content/buildings.ts";
-import { clamp, FULL_TURN, fractionalPart, lerp, smoothstep } from "../../shared/math.ts";
+import { clamp, FULL_TURN, fractionalPart, lerp, saturate, smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom, type RandomSource } from "../../shared/random.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
@@ -36,7 +36,7 @@ interface StructureContext {
 }
 
 function stage(from: number, to: number, height: number): (point: SurfacePoint) => number {
-  return (point) => from + (to - from) * clamp(point.position.y / height, 0, 1);
+  return (point) => lerp(from, to, saturate(point.position.y / height));
 }
 
 function addLog(
@@ -103,8 +103,9 @@ function addStone(context: StructureContext, position: Triple, radius: number, o
 }
 
 function campfire(context: StructureContext): void {
-  const { builder, random } = context;
-  const stones = context.level === "high" ? 10 : 6;
+  const { builder, level, random } = context;
+
+  const stones = level === "high" ? 10 : 6;
 
   for (let stone = 0; stone < stones; stone += 1) {
     const angle = (stone / stones) * FULL_TURN + random.signed() * 0.15;
@@ -249,7 +250,7 @@ const HUT_POST_RADIUS = 0.06;
 const HUT_POST_SINK = 0.035;
 
 function wallRadiusAt(height: number): number {
-  return HUT_RADIUS - 0.04 * clamp((height - 0.55) / 1.2, 0, 1);
+  return HUT_RADIUS - 0.04 * saturate((height - 0.55) / 1.2);
 }
 
 function onWall(x: number, height: number, sink: number): number {
@@ -343,7 +344,7 @@ function hut(context: StructureContext): void {
     ),
     {
       style: {
-        buildOrder: (point) => 0.05 + 0.45 * clamp(point.position.y / 1.75, 0, 1),
+        buildOrder: (point) => 0.05 + 0.45 * saturate(point.position.y / 1.75),
         shade: (point) => 0.7 + 0.3 * smoothstep(0, 1.6, point.position.y),
         slot: (point) => (point.position.y < 0.52 ? MaterialSlot.Stone : MaterialSlot.Daub),
       },
@@ -412,13 +413,12 @@ function storehouse(context: StructureContext): void {
   });
   builder.add(box(2.2, 1.1, 1.8), {
     style: {
-      buildOrder: (point) => 0.4 + 0.3 * clamp((point.position.y - 1.1) / 1.1, 0, 1),
+      buildOrder: (point) => 0.4 + 0.3 * saturate((point.position.y - 1.1) / 1.1),
       shade: (point) => 0.75 + 0.25 * smoothstep(1.1, 2.2, point.position.y),
       slot: MaterialSlot.Daub,
     },
     transform: transformOf({ position: [0, 1.7, 0] }),
   });
-
   builder.add(gableShape(), { style: { buildOrder: 0.72, shade: 0.97, slot: MaterialSlot.Daub } });
 
   for (const side of [-1, 1]) {
@@ -480,6 +480,8 @@ const TOTEM_NOSE_DEPTH = 0.04;
 const TOTEM_NOSE_TILT = 0.25;
 const TOTEM_WAIST = 0.94;
 
+const TOTEM_TOP = TOTEM_BASE + TOTEM_HEADS * TOTEM_HEAD_HEIGHT;
+
 function totemRadius(head: number): number {
   return 0.3 - head * 0.02;
 }
@@ -498,7 +500,6 @@ function waist(head: number): LoftSection {
 }
 
 function totemLog(segments: number): Shape {
-  const top = TOTEM_BASE + TOTEM_HEADS * TOTEM_HEAD_HEIGHT;
   const lowest = totemRadius(0);
   const highest = totemRadius(TOTEM_HEADS - 1);
 
@@ -518,7 +519,10 @@ function totemLog(segments: number): Shape {
     sections.push(...headSections(bottom, TOTEM_HEAD_HEIGHT, totemRadius(head)));
   }
 
-  sections.push({ radiusX: highest * 0.9, radiusZ: highest * 0.95, y: top }, { radiusX: 0, radiusZ: 0, y: top });
+  sections.push(
+    { radiusX: highest * 0.9, radiusZ: highest * 0.95, y: TOTEM_TOP },
+    { radiusX: 0, radiusZ: 0, y: TOTEM_TOP }
+  );
 
   return loft(sections, segments);
 }
@@ -605,15 +609,13 @@ function totem(context: StructureContext): void {
     addTotemNose(context, log, bottom, order + 0.05);
   }
 
-  const top = TOTEM_BASE + TOTEM_HEADS * TOTEM_HEAD_HEIGHT;
-
   for (const side of [-1, 1]) {
     builder.add(box(1.2, 0.34, 0.08), {
       style: {
         buildOrder: 0.95,
         slot: (point) => (Math.abs(point.position.x) > 0.55 ? MaterialSlot.Accent : MaterialSlot.Wood),
       },
-      transform: transformOf({ position: [side * 0.62, top - 0.2, 0], rotation: [0, 0, side * 0.22] }),
+      transform: transformOf({ position: [side * 0.62, TOTEM_TOP - 0.2, 0], rotation: [0, 0, side * 0.22] }),
     });
   }
 }

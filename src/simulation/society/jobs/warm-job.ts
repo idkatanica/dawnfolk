@@ -13,17 +13,14 @@ export class WarmJob implements Job {
   readonly #errand: Errand;
 
   constructor(tick: PersonTick, campfire: Building) {
-    this.#errand = new Errand(WARMING_SECONDS, "sit", campfire);
-
     const seat = aroundPoint(campfire, FIRESIDE_DISTANCE, tick.context.random.next() * FULL_TURN);
 
+    this.#errand = new Errand(WARMING_SECONDS, "sit", campfire);
     headTo(tick.person, seat, tick.context);
   }
 
   update(tick: PersonTick): Job | null {
-    const progress = this.#errand.update(tick);
-
-    if (progress === "finished" || tick.person.warmth > WARM_ENOUGH) {
+    if (this.#errand.update(tick) === "finished" || tick.person.warmth > WARM_ENOUGH) {
       return null;
     }
 

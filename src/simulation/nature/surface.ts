@@ -167,6 +167,7 @@ export class SurfaceSystem {
     }
 
     const { baseTemperature, height, waterSurface } = terrain;
+
     const waterCells = this.#waterCells;
     const rowStart = row * grid.cellsPerSide;
     const rowEnd = rowStart + grid.cellsPerSide;
@@ -202,6 +203,7 @@ export class SurfaceSystem {
     const { fields, terrain } = this.#world;
     const { fuel } = fields;
     const { ground } = terrain;
+
     const waterCells = this.#waterCells;
     const snowBits = this.#snowBits;
     const wetnessBits = this.#wetnessBits;
@@ -243,6 +245,7 @@ export class SurfaceSystem {
     const { snow, wetness } = fields;
     const { baseTemperature, ground } = terrain;
     const { airTemperatureOffset, isDrying, meltRate, seconds } = step;
+
     const waterCells = this.#waterCells;
 
     let isChanged = false;
@@ -300,6 +303,7 @@ export class SurfaceSystem {
     const { snow, wetness } = fields;
     const { baseTemperature, ground } = terrain;
     const { airTemperatureOffset, isSnowfall, meltRate, seconds } = step;
+
     const waterCells = this.#waterCells;
 
     let isChanged = false;

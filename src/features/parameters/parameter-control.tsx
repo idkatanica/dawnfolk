@@ -41,6 +41,7 @@ function useParameterChange(key: string, onChange: ParameterControlProps["onChan
 
 export function ParameterControl({ field, onChange, value }: ParameterControlProps) {
   const { metadata } = field;
+
   const handleChange = useParameterChange(field.key, onChange);
 
   switch (metadata.kind) {

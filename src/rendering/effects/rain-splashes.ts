@@ -33,6 +33,7 @@ import {
   Uint16BufferAttribute,
   Vector2,
 } from "three/webgpu";
+import { clamp as clampNumber, saturate } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
@@ -76,7 +77,7 @@ const SALT_ALONG = 0x48_b2_f1_c7;
 
 const NO_DRIFT = new Vector2();
 
-export interface SplashView {
+interface SplashView {
   readonly camera: PerspectiveCamera;
   readonly focusX: number;
   readonly focusZ: number;
@@ -228,8 +229,8 @@ export class RainSplashes {
   }
 
   update(strength: number, brightness: number, view: SplashView): void {
-    const nearness = 1 - Math.min(1, Math.max(0, (view.viewDistance - CLOSEST_VIEW) / (FARTHEST_VIEW - CLOSEST_VIEW)));
-    const span = Math.min(FARTHEST_SPAN, Math.max(NEAREST_SPAN, view.viewDistance * SPAN_PER_DISTANCE));
+    const nearness = 1 - saturate((view.viewDistance - CLOSEST_VIEW) / (FARTHEST_VIEW - CLOSEST_VIEW));
+    const span = clampNumber(view.viewDistance * SPAN_PER_DISTANCE, NEAREST_SPAN, FARTHEST_SPAN);
 
     const crowding = Math.min(MOST_PER_TILE, (SPLASHES_IN_VIEW * TILE_SIZE * TILE_SIZE) / (span * span));
     const area = { centerX: view.focusX, centerZ: view.focusZ, halfSize: this.#halfSize, radius: span / 2 };

@@ -68,6 +68,10 @@ function isWoodland(mirror: WorldMirror, cell: number): boolean {
   return ground === Ground.Forest || ground === Ground.Scrub;
 }
 
+function campfireHeat(building: BuildingView): number {
+  return Math.min(1, building.fuel * 1.4);
+}
+
 export class FireView {
   readonly group = new Group();
   readonly smoke = new SmokeLook();
@@ -155,6 +159,7 @@ export class FireView {
     const { burningCells, burningIntensity } = mirror.frame;
     const { grid } = mirror;
     const { position } = camera;
+
     const cells: BurningCell[] = [];
 
     for (const [index, cell] of burningCells.entries()) {
@@ -190,6 +195,7 @@ export class FireView {
 
   #addCrownFlames(mirror: WorldMirror, intensities: ReadonlyMap<number, number>): void {
     const { grid, vegetation } = mirror;
+
     const chunkIndices = new Set<number>();
     let added = 0;
 
@@ -236,8 +242,8 @@ export class FireView {
 
   #addFireSmoke(mirror: WorldMirror, burning: BurningCell): void {
     const { grid } = mirror;
-    const isHeavy = isWoodland(mirror, burning.cell) && burning.intensity >= CROWN_FIRE;
 
+    const isHeavy = isWoodland(mirror, burning.cell) && burning.intensity >= CROWN_FIRE;
     const x = grid.cellCenterX(burning.cell);
     const z = grid.cellCenterZ(burning.cell);
     const height = (isHeavy ? HEAVY_SMOKE_HEIGHT : LIGHT_SMOKE_HEIGHT) * (0.6 + 0.5 * burning.intensity);
@@ -280,7 +286,7 @@ export class FireView {
       }
 
       const ground = mirror.heightAt(building.x, building.z);
-      const heat = Math.min(1, building.fuel * 1.4);
+      const heat = campfireHeat(building);
 
       for (let flame = 0; flame < 2; flame += 1) {
         const seed = hashToUnit(building.id, flame);
@@ -331,7 +337,7 @@ export class FireView {
 
       const flicker = 0.85 + Math.random() * 0.15;
 
-      light.intensity = CAMPFIRE_LIGHT_POWER * darkness * Math.min(1, building.fuel * 1.4) * flicker;
+      light.intensity = CAMPFIRE_LIGHT_POWER * darkness * campfireHeat(building) * flicker;
     }
   }
 }

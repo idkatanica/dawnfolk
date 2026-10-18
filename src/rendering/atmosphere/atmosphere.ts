@@ -202,7 +202,7 @@ export class Atmosphere {
 function gloomOf(state: AtmosphereState): number {
   const rainfall = Math.max(0, state.precipitation - state.snowfall);
 
-  return clamp(rainfall * 0.75 + state.snowfall * 0.25 + state.storm * 0.35, 0, 1);
+  return saturate(rainfall * 0.75 + state.snowfall * 0.25 + state.storm * 0.35);
 }
 
 function quantizedReach(reach: number): number {

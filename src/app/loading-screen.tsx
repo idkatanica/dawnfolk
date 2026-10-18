@@ -54,17 +54,13 @@ export function LoadingScreen() {
     return null;
   }
 
-  if (status.kind === "failed") {
-    return (
-      <div className="absolute inset-0 grid place-items-center bg-sky p-6">
-        <FailureMessage message={status.message} />
-      </div>
-    );
-  }
-
   return (
     <div className="absolute inset-0 grid place-items-center bg-sky p-6">
-      <LoadingMessage name={name} progress={status.progress} />
+      {status.kind === "failed" ? (
+        <FailureMessage message={status.message} />
+      ) : (
+        <LoadingMessage name={name} progress={status.progress} />
+      )}
     </div>
   );
 }
