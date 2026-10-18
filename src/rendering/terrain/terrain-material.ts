@@ -4,6 +4,7 @@ import {
   Fn,
   float,
   fwidth,
+  If,
   ivec2,
   max,
   mix,
@@ -36,11 +37,25 @@ const EMBER_DEEP = vec3(1.2, 0.24, 0.03);
 const EMBER_BRIGHT = vec3(1.3, 0.42, 0.06);
 const GROUND_FIRE_LIGHT = 0.6;
 
+const EMBER_THRESHOLD = 0.004;
+
 function unitNoise(point: Node<"vec2">): Node<"float"> {
   return mx_noise_float(vec3(point, 0)).mul(0.5).add(0.5);
 }
 
 function emberGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"float">): Node<"vec3"> {
+  return Fn(() => {
+    const glow = vec3(0).toVar();
+
+    If(fire.greaterThan(EMBER_THRESHOLD), () => {
+      glow.assign(burningGlow(fire, point, grain));
+    });
+
+    return glow;
+  })();
+}
+
+function burningGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"float">): Node<"vec3"> {
   const flicker = unitNoise(point.mul(0.35).add(vec2(time.mul(1.3), time.mul(-0.9))))
     .mul(0.4)
     .add(0.6);

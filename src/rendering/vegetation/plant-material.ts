@@ -9,6 +9,7 @@ import {
   floor,
   fract,
   hash,
+  If,
   int,
   ivec2,
   mix,
@@ -59,6 +60,7 @@ const CROWN_FIRE_LIGHT = 0.45;
 const SMOULDER_COLOR = vec3(1, 0.33, 0.06);
 const SMOULDER_STRENGTH = 2.4;
 const SMOULDER_HEIGHT = 5;
+const SMOULDER_HEAT = 0.02;
 const SMOULDER_CRACK_SCALE = 3.4;
 
 function linearColorVector(hex: number): Vector3 {
@@ -171,18 +173,30 @@ export function createPlantMaterial({
   const fireLight = varying(fireLightAt(glow, grid, placement.xz), "plantFireLight");
 
   material.colorNode = mix(vertexColor.mul(leafPattern), SNOW, snowOnTop);
-  const cracks = smoothstep(0.35, 0.75, mx_noise_float(positionWorld.mul(SMOULDER_CRACK_SCALE)).mul(0.5).add(0.5));
-  const breathing = sin(time.mul(1.7).add(placement.x.mul(0.37)).add(positionWorld.y.mul(2.1)))
-    .mul(0.3)
-    .add(0.7);
   const nearRoots = varying(smoothstep(SMOULDER_HEIGHT, 0, positionLocal.y.mul(scale)), "plantNearRoots");
-  const smoulder = SMOULDER_COLOR.mul(
-    cracks
-      .mul(breathing)
-      .mul(nearRoots)
-      .mul(charred)
-      .mul(smoothstep(0.02, 0.5, heat))
-  ).mul(SMOULDER_STRENGTH);
+
+  const smoulder = Fn(() => {
+    const embers = vec3(0).toVar();
+
+    If(heat.greaterThan(SMOULDER_HEAT).and(charred.mul(nearRoots).greaterThan(0)), () => {
+      const cracks = smoothstep(0.35, 0.75, mx_noise_float(positionWorld.mul(SMOULDER_CRACK_SCALE)).mul(0.5).add(0.5));
+      const breathing = sin(time.mul(1.7).add(placement.x.mul(0.37)).add(positionWorld.y.mul(2.1)))
+        .mul(0.3)
+        .add(0.7);
+
+      embers.assign(
+        SMOULDER_COLOR.mul(
+          cracks
+            .mul(breathing)
+            .mul(charred)
+            .mul(nearRoots)
+            .mul(smoothstep(SMOULDER_HEAT, 0.5, heat))
+        ).mul(SMOULDER_STRENGTH)
+      );
+    });
+
+    return embers;
+  })();
 
   material.emissiveNode = vertexColor.mul(fireLight).mul(CROWN_FIRE_LIGHT).add(smoulder);
   material.normalNode = normalize(normalView.add(leafBump));
