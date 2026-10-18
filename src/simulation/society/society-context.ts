@@ -3,6 +3,7 @@ import type { RandomSource } from "../../shared/random.ts";
 import type { HazardMap } from "../agents/hazards.ts";
 import type { NavigationGrid } from "../agents/navigation.ts";
 import type { Chronicle } from "../chronicle.ts";
+import type { EffectLog } from "../effects.ts";
 import type { FaunaSystem } from "../fauna/fauna.ts";
 import type { IdentifierSource } from "../identifiers.ts";
 import type { Environment } from "../nature/environment.ts";
@@ -22,6 +23,7 @@ export interface PeopleDirectory {
 export interface SocietyContext {
   buildings: BuildingSystem;
   chronicle: Chronicle;
+  effects: EffectLog;
   environment: Environment;
   fauna: FaunaSystem;
   fire: FireSystem;

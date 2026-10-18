@@ -3,13 +3,14 @@ import { createRandom } from "../shared/random.ts";
 import { ANIMALS } from "./animals.ts";
 import { BIOMES, Biome } from "./biomes.ts";
 import { BUILDINGS } from "./buildings.ts";
+import { currentEra, ERAS } from "./eras.ts";
 import { GROUNDS, Ground, seasonalGroundColor } from "./grounds.ts";
 import { personName, tribeIdentity } from "./names.ts";
 import { describeParameters } from "./parameters.ts";
 import { isTreeSpecies, PLANT_SPECIES, PLANTING_RULES, PlantSpecies, regrowingSpecies } from "./plants.ts";
 import { defaultPowerParameters, POWER_ORDER, POWERS, powersInCategory, readPowerParameters } from "./powers.ts";
 import { seasonName, seasonTemperatureOffset } from "./seasons.ts";
-import { currentEra, nextTechnology, TECHNOLOGIES, type TechnologyId } from "./technologies.ts";
+import { nextTechnology, TECHNOLOGIES, type TechnologyId } from "./technologies.ts";
 import { WEATHER, WEATHER_KINDS } from "./weather.ts";
 import { DEFAULT_WORLD_RULES, readWorldRules } from "./world-rules.ts";
 
@@ -168,7 +169,31 @@ describe("technologies", () => {
 
   it("name the era after the latest milestone", () => {
     expect(currentEra(new Set()).name).toBe("Wanderers");
-    expect(currentEra(new Set<TechnologyId>(["fire", "spear"])).name).toBe("Hunters");
+    expect(currentEra(new Set<TechnologyId>(["fire", "spear"])).name).toBe("Stone Age");
+    expect(currentEra(new Set<TechnologyId>(["fire", "farming", "copper", "bronze"])).name).toBe("Bronze Age");
+  });
+
+  it("climbs a ladder of eras, each opened by a technology learned after the previous one", () => {
+    const order = TECHNOLOGIES.map((technology) => technology.id);
+    const keys = ERAS.map((era) => era.unlockedBy).filter((technology) => technology !== null);
+
+    expect(ERAS.map((era) => era.name)).toEqual([
+      "Wanderers",
+      "Stone Age",
+      "Neolithic",
+      "Copper Age",
+      "Bronze Age",
+      "Iron Age",
+    ]);
+    expect(keys.map((technology) => order.indexOf(technology))).toEqual(
+      [...keys.map((technology) => order.indexOf(technology))].sort((first, second) => first - second)
+    );
+  });
+
+  it("asks for ore before the metal ages", () => {
+    const needs = TECHNOLOGIES.filter((technology) => technology.needs !== null).map((technology) => technology.id);
+
+    expect(needs).toEqual(["copper", "bronze", "iron"]);
   });
 });
 

@@ -1,11 +1,26 @@
 import { describe, expect, it } from "vitest";
+import { Ground } from "../../content/grounds.ts";
 import { SocietyHarness, settle, tickFor } from "../testing/test-society.ts";
 import { floodCells } from "../testing/test-world.ts";
 import { assignJob } from "./decisions.ts";
 import { FleeJob } from "./jobs/flee-job.ts";
 import { WanderJob } from "./jobs/wander-job.ts";
 import type { Person } from "./person.ts";
+import type { Field } from "./tribe.ts";
 import { updateTribe } from "./tribe-life.ts";
+
+function sownField(cell: number): Field {
+  return {
+    cell,
+    crop: "wheat",
+    growth: 0.8,
+    isFenced: false,
+    isSown: true,
+    plantings: 1,
+    previousGround: Ground.Meadow,
+    tending: 0,
+  };
+}
 
 const MORNING = 0.3;
 const STRIP_HALF_WIDTH = 10;
@@ -58,7 +73,7 @@ describe("staying dry", () => {
       person.age = 30;
     }
 
-    tribe.stock.food = 100;
+    tribe.stock.grain = 100;
     updateTribe({
       context: harness.context,
       days: 10,
@@ -152,7 +167,7 @@ describe("staying dry", () => {
     const drowned = harness.world.grid.cellAt(tribe.campX + 40, tribe.campZ);
     const dry = harness.world.grid.cellAt(tribe.campX - 40, tribe.campZ);
 
-    tribe.fields.push({ cell: drowned, growth: 0.8, tending: 0 }, { cell: dry, growth: 0.8, tending: 0 });
+    tribe.fields.push(sownField(drowned), sownField(dry));
     harness.world.terrain.waterSurface[drowned] = harness.world.terrain.height[drowned] + 2;
     harness.step();
 

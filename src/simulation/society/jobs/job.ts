@@ -15,6 +15,8 @@ const SHORTEST_APPROACH = 0.01;
 export type JobKind =
   | "build"
   | "chop"
+  | "clay"
+  | "craft"
   | "deliver"
   | "eat"
   | "farm"
@@ -24,6 +26,9 @@ export type JobKind =
   | "hunt"
   | "idle"
   | "migrate"
+  | "mine"
+  | "pick"
+  | "plant"
   | "play"
   | "pray"
   | "quarry"
@@ -34,6 +39,8 @@ export type JobKind =
 export const JOB_LABELS: Readonly<Record<JobKind, string>> = {
   build: "Building",
   chop: "Chopping wood",
+  clay: "Digging clay",
+  craft: "Crafting",
   deliver: "Carrying goods to camp",
   eat: "Eating",
   farm: "Working the field",
@@ -43,6 +50,9 @@ export const JOB_LABELS: Readonly<Record<JobKind, string>> = {
   hunt: "Hunting",
   idle: "Resting",
   migrate: "Moving to a new camp",
+  mine: "Mining ore",
+  pick: "Picking fruit",
+  plant: "Planting",
   play: "Playing",
   pray: "Praying at the totem",
   quarry: "Breaking stone",
@@ -53,7 +63,9 @@ export const JOB_LABELS: Readonly<Record<JobKind, string>> = {
 
 export interface Job {
   readonly claimedPlant?: number;
+  readonly isExpedition?: boolean;
   readonly kind: JobKind;
+  readonly label?: string;
   update: (tick: PersonTick) => Job | null;
 }
 

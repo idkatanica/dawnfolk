@@ -3,10 +3,12 @@ import { HUMAN_BONE_COUNT, HumanBone, SIDES, sideBones } from "./human-skeleton.
 
 const STYLIZED_HEAD = 1.1;
 
+export const FIGURE_SCALE = 1.18;
+
 function setScale(scales: Float32Array, bone: number, x: number, y: number, z: number): void {
-  scales[bone * 3] = x;
-  scales[bone * 3 + 1] = y;
-  scales[bone * 3 + 2] = z;
+  scales[bone * 3] = x * FIGURE_SCALE;
+  scales[bone * 3 + 1] = y * FIGURE_SCALE;
+  scales[bone * 3 + 2] = z * FIGURE_SCALE;
 }
 
 export function humanBoneScales(body: BodyShape): Float32Array {

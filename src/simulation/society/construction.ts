@@ -1,49 +1,27 @@
-import { BUILDINGS, type BuildingKind } from "../../content/buildings.ts";
-import { Ground, groundDefinition } from "../../content/grounds.ts";
+import { BUILDINGS, type BuildingKind, isEnclosure } from "../../content/buildings.ts";
+import type { MaterialKind } from "../../content/resources.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import { aroundPoint, type Waypoint } from "../agents/navigation.ts";
 import { NO_BUILDING } from "../world/world-state.ts";
-import type { Building, BuildingLoss } from "./buildings.ts";
+import { type Building, type BuildingLoss, NO_DEPOSIT } from "./buildings.ts";
+import { type BuildingPlan, buildingPlans } from "./camp-plan.ts";
+import { addFieldIfNeeded } from "./farming.ts";
+import { footprintCells } from "./footprints.ts";
+import { assignHomes } from "./housing.ts";
+import { addPlotIfNeeded } from "./plots.ts";
 import type { SocietyContext } from "./society-context.ts";
-import { BASE_HOUSING, knows, learn, type Tribe } from "./tribe.ts";
-import { campPoint, completedBuilding } from "./tribe-places.ts";
+import { amountOf, hasResources, spendResources } from "./stock.ts";
+import { learn, type Tribe } from "./tribe.ts";
 
-const MAXIMUM_SHELTERS = 12;
-const MAXIMUM_FIELDS = 10;
-const PLACEMENT_ATTEMPTS = 30;
-const FIELD_ATTEMPTS = 40;
-const FIELD_SLOPE = 0.3;
-const FERTILE_GROUND = 0.4;
-const CAMPFIRE_SPACING = 4;
-const BUILDING_SPACING = 9;
-
-type BuildingSlot = "campfire" | "shelter" | "storehouse" | "totem";
-
-interface BuildingPlan {
-  farthest: number;
-  kind: BuildingKind;
-  nearest: number;
-  replacesTentId: number | null;
-  slot: BuildingSlot;
-}
-
-function completedShelters(tribe: Tribe, context: SocietyContext): Building[] {
-  return tribe.buildings.shelterIds
-    .map((shelterId) => completedBuilding(context.buildings, shelterId))
-    .filter((shelter) => shelter !== null);
-}
-
-export function housingCapacity(tribe: Tribe, context: SocietyContext): number {
-  return completedShelters(tribe, context).reduce(
-    (capacity, shelter) => capacity + BUILDINGS[shelter.kind].capacity,
-    BASE_HOUSING
-  );
-}
+const PLACEMENT_ATTEMPTS = 36;
+const BUILDING_GAP = 3;
+const CAMPFIRE_GAP = 1;
+const POSTPONE_DAYS = 1.5;
+const LONGEST_STALL_DAYS = 2.5;
+const PLANS_TO_SAVE_FOR = 3;
 
 export function canAfford(tribe: Tribe, kind: BuildingKind): boolean {
-  const { stone, wood } = BUILDINGS[kind];
-
-  return tribe.stock.wood >= wood && tribe.stock.stone >= stone;
+  return hasResources(tribe.stock, BUILDINGS[kind].cost);
 }
 
 export function planConstruction(tribe: Tribe, context: SocietyContext): void {
@@ -51,135 +29,163 @@ export function planConstruction(tribe: Tribe, context: SocietyContext): void {
     return;
   }
 
-  const plan = nextBuildingPlan(tribe, context);
+  addFieldIfNeeded(tribe, context);
+  addPlotIfNeeded(tribe, context);
 
-  if (plan === null) {
-    addFieldIfNeeded(tribe, context);
+  const plans = buildingPlans(tribe, context);
+
+  const goal = savingGoals(tribe, plans, context).at(0);
+  const plan = plans.find((candidate) => canAfford(tribe, candidate.kind));
+
+  if (plan === undefined) {
+    if (goal !== undefined) {
+      noteStall(tribe, goal.kind, context);
+    }
 
     return;
   }
 
-  if (!canAfford(tribe, plan.kind)) {
-    return;
+  if (plan === goal) {
+    tribe.stall.kind = null;
   }
 
   const site = placeBuilding(tribe, plan, context);
 
-  if (site !== null) {
-    assignSlot(tribe, plan, site, context);
+  if (site === null) {
+    tribe.postponed[plan.kind] = context.environment.day + POSTPONE_DAYS;
+
+    return;
   }
+
+  assignSlot(tribe, plan, site, context);
+}
+
+function noteStall(tribe: Tribe, kind: BuildingKind, context: SocietyContext): void {
+  const { day } = context.environment;
+
+  if (tribe.stall.kind !== kind) {
+    tribe.stall.kind = kind;
+    tribe.stall.since = day;
+
+    return;
+  }
+
+  if (day - tribe.stall.since < LONGEST_STALL_DAYS) {
+    return;
+  }
+
+  tribe.stalled[kind] = day + POSTPONE_DAYS;
+  tribe.stall.kind = null;
+}
+
+function isStalled(tribe: Tribe, kind: BuildingKind, day: number): boolean {
+  const until = tribe.stalled[kind];
+
+  return until !== undefined && until > day;
+}
+
+function savingGoals(tribe: Tribe, plans: readonly BuildingPlan[], context: SocietyContext): BuildingPlan[] {
+  return plans.filter((plan) => !isStalled(tribe, plan.kind, context.environment.day));
 }
 
 export function plannedBuilding(tribe: Tribe, context: SocietyContext): BuildingKind | null {
-  const plan = nextBuildingPlan(tribe, context);
+  const goal = savingGoals(tribe, buildingPlans(tribe, context), context).at(0);
 
-  if (plan === null) {
+  if (goal === undefined) {
     return null;
   }
 
-  return plan.kind;
+  return goal.kind;
 }
 
-function nextBuildingPlan(tribe: Tribe, context: SocietyContext): BuildingPlan | null {
-  const { buildings } = context;
-
-  const shelterCount = tribe.buildings.shelterIds.length;
-
-  if (knows(tribe, "fire") && buildings.find(tribe.buildings.campfireId) === null) {
-    return { farthest: 4, kind: "campfire", nearest: 0, replacesTentId: null, slot: "campfire" };
-  }
-
-  if (needsShelter(tribe, context)) {
-    const kind = knows(tribe, "huts") ? "hut" : "tent";
-
-    return { farthest: 24 + shelterCount * 1.5, kind, nearest: 11, replacesTentId: null, slot: "shelter" };
-  }
-
-  if (knows(tribe, "storage") && buildings.find(tribe.buildings.storehouseId) === null) {
-    return { farthest: 12, kind: "storehouse", nearest: 6, replacesTentId: null, slot: "storehouse" };
-  }
-
-  const tent = tentToReplace(tribe, context);
-
-  if (tent !== null) {
-    return { farthest: 26 + shelterCount * 1.5, kind: "hut", nearest: 12, replacesTentId: tent.id, slot: "shelter" };
-  }
-
-  if (knows(tribe, "totem") && buildings.find(tribe.buildings.totemId) === null) {
-    return { farthest: 10, kind: "totem", nearest: 5, replacesTentId: null, slot: "totem" };
-  }
-
-  return null;
-}
-
-function needsShelter(tribe: Tribe, context: SocietyContext): boolean {
-  if (!knows(tribe, "shelter") || tribe.buildings.shelterIds.length >= MAXIMUM_SHELTERS) {
-    return false;
-  }
-
-  return housingCapacity(tribe, context) < tribe.memberIds.length + 2;
-}
-
-function tentToReplace(tribe: Tribe, context: SocietyContext): Building | null {
-  if (!knows(tribe, "huts")) {
-    return null;
-  }
-
-  const tent = completedShelters(tribe, context).find((shelter) => shelter.kind === "tent" && !shelter.isRetiring);
-
-  if (tent === undefined) {
-    return null;
-  }
-
-  return tent;
+export function constructionNeed(tribe: Tribe, context: SocietyContext, resource: MaterialKind): number {
+  return savingGoals(tribe, buildingPlans(tribe, context), context)
+    .slice(0, PLANS_TO_SAVE_FOR)
+    .reduce((total, plan) => total + amountOf(BUILDINGS[plan.kind].cost, resource), 0);
 }
 
 function placeBuilding(tribe: Tribe, plan: BuildingPlan, context: SocietyContext): Building | null {
+  if (isEnclosure(plan.kind)) {
+    return startBuilding(tribe, plan, plan.origin, context);
+  }
+
   const { random } = context;
 
   for (let attempt = 0; attempt < PLACEMENT_ATTEMPTS; attempt += 1) {
     const angle = random.next() * FULL_TURN;
     const distance = random.between(plan.nearest, plan.farthest);
 
-    const spot = aroundPoint(campPoint(tribe), distance, angle);
+    const spot = aroundPoint(plan.origin, distance, angle);
 
     if (isBuildable(spot, plan.kind, context)) {
-      return startBuilding(tribe, plan.kind, spot, context);
+      return startBuilding(tribe, plan, spot, context);
     }
   }
 
   return null;
 }
 
-function isBuildable(spot: Waypoint, kind: BuildingKind, context: SocietyContext): boolean {
+function isClearOfOthers(spot: Waypoint, kind: BuildingKind, context: SocietyContext): boolean {
+  const gap = kind === "campfire" ? CAMPFIRE_GAP : BUILDING_GAP;
+  const { footprint } = BUILDINGS[kind];
+
+  return context.buildings.all.every((other) => {
+    if (isEnclosure(other.kind)) {
+      return true;
+    }
+
+    const clearance = footprint + BUILDINGS[other.kind].footprint + gap;
+
+    return Math.hypot(other.x - spot.x, other.z - spot.z) >= clearance;
+  });
+}
+
+export function isBuildable(spot: Waypoint, kind: BuildingKind, context: SocietyContext): boolean {
   const { world } = context;
+  const { footprint, steepestSlope } = BUILDINGS[kind];
 
   const cell = world.grid.cellAt(spot.x, spot.z);
 
-  if (!world.isWalkable(cell) || world.occupancy[cell] !== NO_BUILDING) {
+  if (cell < 0 || !world.isWalkable(cell) || world.occupancy[cell] !== NO_BUILDING) {
     return false;
   }
 
-  if (world.slope(cell) > BUILDINGS[kind].steepestSlope) {
-    return false;
-  }
+  const covered = footprintCells(world.grid, spot.x, spot.z, footprint);
 
-  const spacing = kind === "campfire" ? CAMPFIRE_SPACING : BUILDING_SPACING;
+  const isFirmGround = covered.every(
+    (footprintCell) =>
+      world.isWalkable(footprintCell) &&
+      world.slope(footprintCell) <= steepestSlope &&
+      world.occupancy[footprintCell] === NO_BUILDING
+  );
 
-  return context.buildings.nearest(spot.x, spot.z, spacing) === null;
+  return isFirmGround && isClearOfOthers(spot, kind, context);
 }
 
-function startBuilding(tribe: Tribe, kind: BuildingKind, spot: Waypoint, context: SocietyContext): Building {
-  const { stone, wood } = BUILDINGS[kind];
-
+function startBuilding(tribe: Tribe, plan: BuildingPlan, spot: Waypoint, context: SocietyContext): Building {
   const rotation = Math.atan2(tribe.campX - spot.x, tribe.campZ - spot.z);
 
-  const site = context.buildings.add({ kind, rotation, tribeId: tribe.id, x: spot.x, z: spot.z }, context.random);
+  const site = context.buildings.add(
+    {
+      depositId: plan.depositId,
+      extent: plan.extent,
+      kind: plan.kind,
+      rotation: isEnclosure(plan.kind) ? plan.gateAngle : rotation,
+      style: tribe.eraIndex,
+      tribeId: tribe.id,
+      x: spot.x,
+      z: spot.z,
+    },
+    context.random
+  );
 
-  tribe.stock.wood -= wood;
-  tribe.stock.stone -= stone;
+  site.replacesId = plan.replacesId;
+  spendResources(tribe.stock, BUILDINGS[plan.kind].cost);
   tribe.buildings.constructionSiteId = site.id;
-  context.world.clearPlants(site.cell, false);
+
+  for (const cell of site.cells) {
+    context.world.clearPlants(cell, false);
+  }
 
   return site;
 }
@@ -187,72 +193,37 @@ function startBuilding(tribe: Tribe, kind: BuildingKind, spot: Waypoint, context
 function assignSlot(tribe: Tribe, plan: BuildingPlan, site: Building, context: SocietyContext): void {
   const { buildings } = tribe;
 
-  switch (plan.slot) {
-    case "campfire":
+  markForRetirement(plan.replacesId, context);
+
+  switch (BUILDINGS[plan.kind].role) {
+    case "fire":
       buildings.campfireId = site.id;
       break;
-    case "shelter":
+    case "dwelling":
       buildings.shelterIds.push(site.id);
-      markTentForRetirement(plan.replacesTentId, context);
       break;
-    case "storehouse":
-      buildings.storehouseId = site.id;
-      break;
-    case "totem":
+    case "shrine":
       buildings.totemId = site.id;
       break;
+    case "store":
+      if (plan.kind === "storehouse") {
+        buildings.storehouseId = site.id;
+      } else {
+        buildings.structureIds.push(site.id);
+      }
+
+      break;
     default:
-      throw new Error(`Unknown building slot ${String(plan.slot)}`);
+      buildings.structureIds.push(site.id);
   }
 }
 
-function markTentForRetirement(tentId: number | null, context: SocietyContext): void {
-  const tent = context.buildings.find(tentId);
+function markForRetirement(buildingId: number | null, context: SocietyContext): void {
+  const building = context.buildings.find(buildingId);
 
-  if (tent !== null) {
-    tent.isRetiring = true;
+  if (building !== null) {
+    building.isRetiring = true;
   }
-}
-
-function addFieldIfNeeded(tribe: Tribe, context: SocietyContext): void {
-  const wantedFields = Math.min(MAXIMUM_FIELDS, 2 + tribe.memberIds.length / 2);
-
-  if (!knows(tribe, "farming") || tribe.fields.length >= wantedFields) {
-    return;
-  }
-
-  const { random, world } = context;
-
-  for (let attempt = 0; attempt < FIELD_ATTEMPTS; attempt += 1) {
-    const angle = random.next() * FULL_TURN;
-    const distance = random.between(30, 75);
-
-    const spot = aroundPoint(campPoint(tribe), distance, angle);
-
-    const cell = world.grid.cellAt(spot.x, spot.z);
-
-    if (isFarmable(tribe, cell, context)) {
-      world.clearPlants(cell, false);
-      world.setGround(cell, Ground.Farm);
-      tribe.fields.push({ cell, growth: 0, tending: 0 });
-
-      return;
-    }
-  }
-}
-
-function isFarmable(tribe: Tribe, cell: number, context: SocietyContext): boolean {
-  const { world } = context;
-
-  if (!world.isWalkable(cell) || world.occupancy[cell] !== NO_BUILDING || world.slope(cell) > FIELD_SLOPE) {
-    return false;
-  }
-
-  if (groundDefinition(world.terrain.ground[cell]).fertility < FERTILE_GROUND) {
-    return false;
-  }
-
-  return !tribe.fields.some((field) => field.cell === cell);
 }
 
 export function completeConstruction(tribe: Tribe, site: Building, context: SocietyContext): void {
@@ -262,37 +233,49 @@ export function completeConstruction(tribe: Tribe, site: Building, context: Soci
 
   context.chronicle.record({
     category: "building",
-    text: constructionMessage(tribe, site),
+    text: constructionMessage(tribe, site, context),
     tribeId: tribe.id,
     x: site.x,
     z: site.z,
   });
 
-  if (site.kind === "hut") {
-    retireReplacedTent(tribe, context);
-  }
-
+  retireReplaced(site, context);
   assignHomes(tribe, context);
   learn(tribe, 2, context.rules);
 }
 
-function constructionMessage(tribe: Tribe, site: Building): string {
-  if (site.kind === "campfire") {
-    return `${tribe.name} lit a campfire`;
+function constructionMessage(tribe: Tribe, site: Building, context: SocietyContext): string {
+  switch (site.kind) {
+    case "campfire":
+      return `${tribe.name} lit a campfire`;
+    case "mine":
+      return `${tribe.name} opened a mine at the ${depositName(site, context)}`;
+    case "palisade":
+      return `${tribe.name} raised a palisade around the camp`;
+    case "stoneWall":
+      return `${tribe.name} walled their village in stone`;
+    default:
+      return `${tribe.name} built a ${BUILDINGS[site.kind].name.toLowerCase()}`;
   }
-
-  return `${tribe.name} built a ${BUILDINGS[site.kind].name.toLowerCase()}`;
 }
 
-function retireReplacedTent(tribe: Tribe, context: SocietyContext): void {
-  for (const shelterId of tribe.buildings.shelterIds) {
-    const shelter = context.buildings.find(shelterId);
+function depositName(site: Building, context: SocietyContext): string {
+  const deposit = context.world.deposits.find((candidate) => candidate.id === site.depositId);
 
-    if (shelter?.isRetiring === true) {
-      context.buildings.remove(shelter, "replaced");
+  if (deposit === undefined || site.depositId === NO_DEPOSIT) {
+    return "hills";
+  }
 
-      return;
-    }
+  return `${deposit.kind} vein`;
+}
+
+function retireReplaced(site: Building, context: SocietyContext): void {
+  const replaced = context.buildings.find(site.replacesId);
+
+  site.replacesId = null;
+
+  if (replaced !== null) {
+    context.buildings.remove(replaced, "replaced");
   }
 }
 
@@ -305,6 +288,13 @@ export function handleBuildingLoss(tribe: Tribe, loss: BuildingLoss, context: So
   buildings.storehouseId = clearedId(buildings.storehouseId, building);
   buildings.totemId = clearedId(buildings.totemId, building);
   buildings.shelterIds = buildings.shelterIds.filter((shelterId) => shelterId !== building.id);
+  buildings.structureIds = buildings.structureIds.filter((structureId) => structureId !== building.id);
+
+  const replaced = context.buildings.find(building.replacesId);
+
+  if (replaced !== null) {
+    replaced.isRetiring = false;
+  }
 
   if (reason === "burnt" || reason === "destroyed") {
     context.chronicle.record({
@@ -325,22 +315,4 @@ function clearedId(id: number | null, lost: Building): number | null {
   }
 
   return id;
-}
-
-export function assignHomes(tribe: Tribe, context: SocietyContext): void {
-  const beds = completedShelters(tribe, context).flatMap((shelter) =>
-    Array.from({ length: BUILDINGS[shelter.kind].capacity }, () => shelter.id)
-  );
-
-  for (const [index, person] of context.people.membersOf(tribe).entries()) {
-    person.homeId = bedAt(beds, index);
-  }
-}
-
-function bedAt(beds: readonly number[], index: number): number | null {
-  if (index >= beds.length) {
-    return null;
-  }
-
-  return beds[index];
 }

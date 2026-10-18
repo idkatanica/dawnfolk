@@ -6,7 +6,7 @@ import type { MotionStyle } from "./appearance.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
 import { HumanBone, otherSide, SIDES, type Side } from "./human-skeleton.ts";
 
-type HumanTool = "axe" | "basket" | "diggingStick" | "hammerStone" | "spear";
+type HumanTool = "axe" | "basket" | "diggingStick" | "drawnBow" | "hammerStone" | "pickaxe" | "spear";
 
 export interface HumanClipContext {
   readonly ageGroup: AgeGroup;
@@ -101,7 +101,9 @@ function carryingArms(pose: Pose, phase: number, context: HumanClipContext): voi
     }
 
     case "stone":
-    case "crops": {
+    case "crops":
+    case "ore":
+    case "clay": {
       for (const side of SIDES) {
         swingArm(pose, side, { forward: degrees(38), outward: -degrees(4) });
         bendElbow(pose, side, degrees(82));
@@ -112,7 +114,8 @@ function carryingArms(pose: Pose, phase: number, context: HumanClipContext): voi
       return;
     }
 
-    case "berries": {
+    case "berries":
+    case "fruit": {
       swingArm(pose, 1, { forward: degrees(14), outward: degrees(14) });
       bendElbow(pose, 1, degrees(55));
       walkingArm(pose, phase, -1, swing);
@@ -347,6 +350,111 @@ function throwSpear(pose: Pose, phase: number): void {
   bendKnee(pose, -1, degrees(22));
 }
 
+const MINE_SHOULDER: readonly Keyframe[] = [
+  [0, 150],
+  [0.38, 172],
+  [0.56, 30],
+  [0.68, 22],
+  [0.86, 95],
+];
+
+const MINE_ELBOW: readonly Keyframe[] = [
+  [0, 70],
+  [0.38, 78],
+  [0.56, 6],
+  [0.68, 10],
+  [0.86, 50],
+];
+
+const MINE_BEND: readonly Keyframe[] = [
+  [0, -6],
+  [0.38, -10],
+  [0.56, 30],
+  [0.68, 34],
+  [0.86, 10],
+];
+
+const MINE_WRIST: readonly Keyframe[] = [
+  [0, 0],
+  [0.38, 0],
+  [0.56, -30],
+  [0.68, -34],
+  [0.86, -10],
+];
+
+function mine(pose: Pose, phase: number): void {
+  const shoulder = degrees(keyframes(phase, MINE_SHOULDER));
+  const elbow = degrees(keyframes(phase, MINE_ELBOW));
+  const bend = degrees(keyframes(phase, MINE_BEND));
+  const wrist = degrees(keyframes(phase, MINE_WRIST));
+
+  moveBody(pose, { forward: bend * 0.35, turnLeft: degrees(6) });
+  bendTrunk(pose, HumanBone.Spine, { forward: bend * 0.45 });
+  bendTrunk(pose, HumanBone.Chest, { forward: bend * 0.35 });
+  bendTrunk(pose, HumanBone.Head, { forward: degrees(10) });
+
+  swingArm(pose, -1, { forward: shoulder, outward: -degrees(6) });
+  bendElbow(pose, -1, elbow);
+  bendWrist(pose, -1, wrist);
+  swingArm(pose, 1, { forward: shoulder * 0.95, outward: -degrees(18) });
+  bendElbow(pose, 1, elbow + degrees(8));
+
+  swingLeg(pose, 1, { forward: degrees(12) + bend * 0.5, outward: degrees(9) });
+  bendKnee(pose, 1, degrees(18) + bend * 0.3);
+  swingLeg(pose, -1, { forward: -degrees(14) + bend * 0.5, outward: degrees(9) });
+  bendKnee(pose, -1, degrees(12) + bend * 0.5);
+}
+
+const DRAW_FORWARD: readonly Keyframe[] = [
+  [0, 100],
+  [0.12, 100],
+  [0.42, 105],
+  [0.62, 105],
+  [0.67, 100],
+  [0.85, 95],
+];
+
+const DRAW_OUTWARD: readonly Keyframe[] = [
+  [0, -50],
+  [0.12, -50],
+  [0.42, 10],
+  [0.62, 10],
+  [0.67, 18],
+  [0.85, -20],
+];
+
+const DRAW_ELBOW: readonly Keyframe[] = [
+  [0, 10],
+  [0.12, 10],
+  [0.42, 125],
+  [0.62, 125],
+  [0.67, 135],
+  [0.85, 60],
+];
+
+function shoot(pose: Pose, phase: number): void {
+  const breath = wave(phase * 2) * degrees(1.2);
+
+  moveBody(pose, { turnLeft: -degrees(45) });
+  bendTrunk(pose, HumanBone.Spine, { forward: degrees(2) });
+  bendTrunk(pose, HumanBone.Chest, { forward: breath, turnLeft: -degrees(10) });
+  bendTrunk(pose, HumanBone.Head, { forward: degrees(4), turnLeft: degrees(55) });
+
+  swingArm(pose, 1, { forward: degrees(100), outward: degrees(32), twist: -degrees(10) });
+  bendElbow(pose, 1, degrees(4));
+  swingArm(pose, -1, {
+    forward: degrees(keyframes(phase, DRAW_FORWARD)),
+    outward: degrees(keyframes(phase, DRAW_OUTWARD)),
+    twist: -degrees(70),
+  });
+  bendElbow(pose, -1, degrees(keyframes(phase, DRAW_ELBOW)));
+
+  for (const side of SIDES) {
+    swingLeg(pose, side, { forward: degrees(7) * side, outward: degrees(11) });
+    bendKnee(pose, side, degrees(9));
+  }
+}
+
 function sitting(pose: Pose): void {
   pose.grounding = "body";
   moveBody(pose, { forward: -degrees(18) });
@@ -471,9 +579,11 @@ export const HUMAN_CLIPS: Readonly<Record<PersonPose, HumanClip>> = {
   fish: { apply: fish, timing: seconds(3.4), tool: "spear" },
   gather: { apply: gather, timing: seconds(2.2), tool: "basket" },
   idle: { apply: idle, timing: seconds(5.5), tool: null },
+  mine: { apply: mine, timing: seconds(1.3), tool: "pickaxe" },
   play: { apply: play, timing: seconds(0.95), tool: null },
   pray: { apply: pray, timing: seconds(4.8), tool: null },
   run: { apply: run, timing: STRIDE_TIMING, tool: null },
+  shoot: { apply: shoot, timing: seconds(1.8), tool: "drawnBow" },
   sit: { apply: sit, timing: seconds(7), tool: null },
   sleep: { apply: sleep, timing: seconds(6), tool: null },
   throw: { apply: throwSpear, timing: seconds(1.7), tool: "spear" },

@@ -15,6 +15,8 @@ export const PERSON_POSES = [
   "pray",
   "play",
   "dead",
+  "shoot",
+  "mine",
 ] as const;
 
 export type PersonPose = (typeof PERSON_POSES)[number];
@@ -23,7 +25,18 @@ export const ANIMAL_POSES = ["graze", "walk", "run", "dead"] as const;
 
 export type AnimalPose = (typeof ANIMAL_POSES)[number];
 
-export const CARRIED_ITEMS = ["nothing", "berries", "meat", "fish", "crops", "wood", "stone"] as const;
+export const CARRIED_ITEMS = [
+  "nothing",
+  "berries",
+  "meat",
+  "fish",
+  "crops",
+  "wood",
+  "stone",
+  "ore",
+  "clay",
+  "fruit",
+] as const;
 
 export type CarriedItem = (typeof CARRIED_ITEMS)[number];
 

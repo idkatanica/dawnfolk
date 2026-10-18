@@ -34,6 +34,7 @@ import { IslandBase } from "./terrain/island-base.ts";
 import { islandPlinthHeight } from "./terrain/island-base-geometry.ts";
 import { TerrainTextures } from "./terrain/terrain-textures.ts";
 import { TerrainView } from "./terrain/terrain-view.ts";
+import { CropField } from "./vegetation/crop-field.ts";
 import { GrassField } from "./vegetation/grass-field.ts";
 import { UnderstoryField } from "./vegetation/understory-field.ts";
 import { VegetationView } from "./vegetation/vegetation-view.ts";
@@ -62,7 +63,7 @@ const SELECTION_RADIUS: Readonly<Record<"animal" | "building" | "cell" | "person
   animal: 2.6,
   building: 5.5,
   cell: 5,
-  person: 1.1,
+  person: 1.3,
 };
 
 type ShakeListener = (amount: number, x: number, z: number) => void;
@@ -83,6 +84,7 @@ export class WorldRenderer {
   readonly #axes = new CameraAxes();
   readonly #buildings = new BuildingView();
   readonly #changes: WorldChangeReader;
+  readonly #crops: CropField;
   readonly #effects: EffectView;
   readonly #fire: FireView;
   readonly #fireGlow: FireGlow;
@@ -123,6 +125,7 @@ export class WorldRenderer {
     this.#rebuildWaterfalls();
     this.#springs.rebuild(mirror);
     this.#vegetation = new VegetationView(mirror, this.#textures, this.#fireGlow);
+    this.#crops = new CropField(mirror, this.#vegetation.weather);
     this.#understory = new UnderstoryField(mirror);
 
     this.#grass = new GrassField({
@@ -159,6 +162,7 @@ export class WorldRenderer {
       this.#waterfalls.mesh,
       this.#springs.mesh,
       this.#vegetation.group,
+      this.#crops.group,
       this.#grass.mesh,
       this.#people.group,
       this.#animals.group,
@@ -187,6 +191,11 @@ export class WorldRenderer {
       this.#terrain.heightsChanged(changes.heightRegion);
       this.#vegetation.heightsChanged(changes.heightRegion);
       this.#understory.heightsChanged(changes.heightRegion);
+      this.#crops.heightsChanged(changes.heightRegion);
+    }
+
+    if (changes.groundRuns.length > 0) {
+      this.#crops.groundChanged(changes.groundRuns);
     }
 
     if (changes.vegetationIndices.length > 0) {
@@ -231,6 +240,7 @@ export class WorldRenderer {
     this.#islandBase.followPatchLevels(this.#terrain.patchLevels);
     this.#water.update(view.camera, this.#quality.terrainDetail, this.#terrain.patchLevels);
     this.#vegetation.update(view.camera, this.#atmosphere.sun, this.#quality.vegetationDetail, frame.calendar.season);
+    this.#crops.update(view.camera, this.#quality.vegetationDetail);
     this.#grass.update(view.camera, view.viewDistance);
     this.#updateAgents(view);
     this.#markSelection();
@@ -250,6 +260,7 @@ export class WorldRenderer {
     this.#markers.dispose();
     this.#buildings.dispose();
     this.#vegetation.dispose();
+    this.#crops.dispose();
     this.#grass.dispose();
     this.#understory.dispose();
     this.#water.dispose();

@@ -1,9 +1,12 @@
 import { Frustum, Matrix4, PerspectiveCamera } from "three/webgpu";
 import { describe, expect, it } from "vitest";
 import { WorldMirror } from "../../game/world-mirror.ts";
+import { HUMAN_PARTS, humanPartIndex } from "../../models/people/human-model.ts";
 import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
 import { PersonField } from "../../world/agent-buffers.ts";
+import { personPoseCode } from "../../world/agent-poses.ts";
+import { gearCode, weaponCode } from "../../world/gear.ts";
 import { CameraAxes } from "../effects/billboards.ts";
 import { AgentMarkers } from "./agent-markers.ts";
 import type { AgentViewInput } from "./agent-view-input.ts";
@@ -79,5 +82,23 @@ describe("people view", () => {
 
     expect(people.figureCount).toBeGreaterThan(0);
     expect(input.markers.count).toBe(0);
+  });
+
+  it("draws a hunter drawing a bow with a quiver on the back", () => {
+    const mirror = createPopulatedMirror();
+
+    const { people } = mirror.frame;
+
+    people[PersonField.Pose] = personPoseCode("shoot");
+    people[PersonField.Weapon] = weaponCode("bow");
+    people[PersonField.Gear] = gearCode("iron");
+    people[PersonField.Era] = 5;
+
+    const view = drawPeople(inputFrom(mirror, 6));
+
+    const highLevel = view.group.children.slice(0, HUMAN_PARTS.length);
+
+    expect(highLevel[humanPartIndex("drawnBow")]?.visible).toBe(true);
+    expect(highLevel[humanPartIndex("quiver")]?.visible).toBe(true);
   });
 });

@@ -1,4 +1,7 @@
 import type { BuildingKind } from "../content/buildings.ts";
+import type { CropKind } from "../content/crops.ts";
+import type { ResourceKind } from "../content/resources.ts";
+import type { ToolMaterial } from "../content/weapons.ts";
 import type { WeatherKind } from "../content/weather.ts";
 import type { WorldRules } from "../content/world-rules.ts";
 import type { CellRegion } from "../world/change-tracking.ts";
@@ -45,6 +48,7 @@ export interface WaterUpdate {
 }
 
 export interface BuildingView {
+  extent: number;
   fuel: number;
   health: number;
   id: number;
@@ -52,33 +56,69 @@ export interface BuildingView {
   progress: number;
   rotation: number;
   seed: number;
+  style: number;
   tribeId: number;
+  variant: number;
   x: number;
   z: number;
 }
 
-interface StockView {
-  food: number;
-  stone: number;
-  wood: number;
-}
+export type StockView = Readonly<Record<ResourceKind, number>>;
 
 export interface TechnologyProgress {
   cost: number;
   name: string;
 }
 
+export interface EraView {
+  count: number;
+  index: number;
+  name: string;
+  nextName: string | null;
+}
+
+export interface GoalView {
+  isBlocked: boolean;
+  need: string | null;
+  progress: number;
+  technologyName: string;
+}
+
+export interface BuildingCount {
+  count: number;
+  kind: BuildingKind;
+  name: string;
+}
+
+export interface CropCount {
+  count: number;
+  crop: CropKind;
+  name: string;
+}
+
+export interface FarmlandView {
+  crops: CropCount[];
+  fields: number;
+  orchardTrees: number;
+  woodlotTrees: number;
+}
+
 export interface TribeSummary {
+  armory: ToolMaterial;
   births: number;
+  buildings: BuildingCount[];
   campX: number;
   campZ: number;
   children: number;
   color: string;
   deaths: number;
+  era: EraView;
   eraName: string;
   faith: number;
+  farmland: FarmlandView;
   foundedDay: number;
   furColor: string;
+  goal: GoalView | null;
   id: number;
   isMigrating: boolean;
   knowledge: number;
@@ -87,6 +127,7 @@ export interface TribeSummary {
   population: number;
   stock: StockView;
   technologies: string[];
+  tools: ToolMaterial;
 }
 
 export interface WeatherView {

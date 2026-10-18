@@ -2,6 +2,7 @@ import { Ground } from "../content/grounds.ts";
 import { lerp, smoothstep } from "../shared/math.ts";
 import { createRandom } from "../shared/random.ts";
 import { isOnIsland } from "../world/coast.ts";
+import type { Deposit } from "../world/deposits.ts";
 import { createIslandShape, type IslandShapeKind, measureCoastDistances } from "../world/island-shape.ts";
 import type { Monument } from "../world/monuments.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
@@ -9,6 +10,7 @@ import { VegetationStore } from "../world/vegetation-store.ts";
 import type { Spring, WaterFeatures } from "../world/water.ts";
 import { DEFAULT_GRID_DIMENSIONS, type GridDimensions, WorldGrid } from "../world/world-grid.ts";
 import { buildClimate } from "./climate.ts";
+import { exposeDeposits, planDeposits } from "./deposits.ts";
 import {
   type ErosionPlan,
   type ErosionScale,
@@ -45,6 +47,7 @@ export const DEFAULT_GENERATION_OPTIONS: GenerationOptions = {
 };
 
 export interface GeneratedWorld {
+  deposits: readonly Deposit[];
   dimensions: GridDimensions;
   monuments: readonly Monument[];
   seed: number;
@@ -232,9 +235,13 @@ export function generateWorld(
     vegetation.add(piece);
   }
 
+  const deposits = planDeposits(grid, terrain, seed, ruins.ground);
+
+  exposeDeposits(deposits, terrain, vegetation);
   vegetation.discardChanges();
 
   return {
+    deposits,
     dimensions: options.dimensions,
     monuments: ruins.monuments,
     seed,

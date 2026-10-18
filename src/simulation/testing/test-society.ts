@@ -3,6 +3,7 @@ import { createRandom, type RandomSource } from "../../shared/random.ts";
 import { HazardMap } from "../agents/hazards.ts";
 import { NavigationGrid } from "../agents/navigation.ts";
 import { Chronicle } from "../chronicle.ts";
+import { EffectLog } from "../effects.ts";
 import { FaunaSystem } from "../fauna/fauna.ts";
 import { IdentifierSource } from "../identifiers.ts";
 import { Calendar, DEFAULT_CALENDAR } from "../nature/calendar.ts";
@@ -66,6 +67,7 @@ export class SocietyHarness {
     this.context = {
       buildings: this.buildings,
       chronicle: this.chronicle,
+      effects: new EffectLog(),
       environment: describeEnvironment(this.calendar, this.weather),
       fauna: this.fauna,
       fire: this.fire,

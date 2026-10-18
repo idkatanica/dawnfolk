@@ -12,10 +12,12 @@ import { dropJob, updateMind } from "./decisions.ts";
 import { walk } from "./jobs/job.ts";
 import { updateNeeds } from "./needs.ts";
 import { createPerson, type DeathCause, type Person, walkSpeed } from "./person.ts";
+import { syncEra } from "./progress.ts";
 import { findCampSite } from "./settlement.ts";
 import type { PeopleDirectory, PersonTick, SocietyContext } from "./society-context.ts";
 import { createTribe, type Tribe } from "./tribe.ts";
 import { type SocietyServices, updateTribe } from "./tribe-life.ts";
+import { TroddenGround } from "./trodden-ground.ts";
 
 const CORPSE_SECONDS = 40;
 const ARRIVAL_SEARCH_RADIUS = 260;
@@ -51,6 +53,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
   readonly quarryUses = new Map<number, number>();
   readonly #dependencies: SocietyDependencies;
   readonly #tribesById = new Map<number, Tribe>();
+  readonly #trodden = new TroddenGround();
   #deaths = 0;
   #people: Person[] = [];
   #tribeNumber = 0;
@@ -154,6 +157,8 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     for (const technology of arrival.technologies) {
       tribe.technologies.add(technology);
     }
+
+    syncEra(tribe);
 
     for (let member = 0; member < arrival.people; member += 1) {
       this.addPerson(tribe, this.#newcomer(tribe, site, member, arrival));
@@ -282,6 +287,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
       this.#updatePerson(person, seconds, days, context);
     }
 
+    this.#trodden.update(days, context, this.#tribes);
     this.#removeRemains(seconds);
   }
 

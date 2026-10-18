@@ -1,14 +1,16 @@
 import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
-import { BUILDING_KINDS } from "../../content/buildings.ts";
+import { BUILDING_KINDS, isEnclosure } from "../../content/buildings.ts";
 import { MaterialSlot } from "../materials.ts";
 import { triangleCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
-import { buildBuildingModel, GLOW_PART } from "./building-models.ts";
+import { buildBuildingModel, buildingScale, GLOW_PART } from "./building-models.ts";
 
 const TOUCHING = 0.01;
+const FLOAT_SLACK = 1e-4;
+const DEEPEST_FOOTING = -0.5;
 
 describe.each(BUILDING_KINDS)("%s model", (kind) => {
   const high = buildBuildingModel(kind, "high");
@@ -21,8 +23,10 @@ describe.each(BUILDING_KINDS)("%s model", (kind) => {
   });
 
   it("keeps every part attached to the ground at both levels of detail", () => {
+    const touching = TOUCHING * buildingScale(kind) + FLOAT_SLACK;
+
     for (const mesh of [high, low]) {
-      expect(detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece))).toEqual([]);
+      expect(detachedPieces(mesh, touching).map((piece) => describePiece(mesh, piece))).toEqual([]);
     }
   });
 
@@ -37,7 +41,7 @@ describe.each(BUILDING_KINDS)("%s model", (kind) => {
     expect(Math.min(...orders)).toBeLessThan(0.3);
     expect(Math.max(...orders)).toBeGreaterThan(0.85);
     expect(orders.every((order) => order >= 0 && order <= 1)).toBe(true);
-    expect(high.bounds.minimum[1]).toBeGreaterThan(-0.1);
+    expect(high.bounds.minimum[1]).toBeGreaterThan(isEnclosure(kind) ? DEEPEST_FOOTING : -0.1);
   });
 });
 

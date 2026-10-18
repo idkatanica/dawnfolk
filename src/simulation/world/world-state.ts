@@ -3,6 +3,7 @@ import type { GeneratedWorld } from "../../generation/world-generator.ts";
 import { clamp } from "../../shared/math.ts";
 import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../world/change-tracking.ts";
 import { hasRoomFromCoast, isOnIsland } from "../../world/coast.ts";
+import type { Deposit } from "../../world/deposits.ts";
 import { canGrowWild, canStandOn, isOpenGround, slopeAt } from "../../world/footing.ts";
 import type { IslandShapeKind } from "../../world/island-shape.ts";
 import { type Monument, type MonumentCondition, MonumentDamage } from "../../world/monuments.ts";
@@ -22,12 +23,15 @@ import { CellSet } from "./cell-set.ts";
 export const NO_BUILDING = -1;
 export const MONUMENT_GROUND = -2;
 export const SPRING_GROUND = -3;
+export const PLOT_GROUND = -4;
 export const SNOW_CAPACITY = 1.2;
+export const TRODDEN_GROUND = 0.35;
 
 const MAXIMUM_TERRAIN_HEIGHT = 3200;
 const TERRAIN_LAPSE_RATE = 6.5 / 1000;
 const LOWEST_EDIT_BELOW_ORIGINAL = 60;
 const WALKABLE_SLOPE = 1.15;
+const TRODDEN_LEVELS = 32;
 
 export interface SurfaceFields {
   crop: Float32Array;
@@ -36,6 +40,7 @@ export interface SurfaceFields {
   heat: Float32Array;
   scorch: Float32Array;
   snow: Float32Array;
+  trodden: Float32Array;
   wetness: Float32Array;
 }
 
@@ -53,6 +58,7 @@ function createSurfaceFields(cellCount: number, ground: Uint8Array): SurfaceFiel
     heat: new Float32Array(cellCount),
     scorch: new Float32Array(cellCount),
     snow: new Float32Array(cellCount),
+    trodden: new Float32Array(cellCount),
     wetness: new Float32Array(cellCount),
   };
 }
@@ -60,6 +66,8 @@ function createSurfaceFields(cellCount: number, ground: Uint8Array): SurfaceFiel
 export class WorldState {
   readonly canopyFuel: Float32Array;
   readonly disturbedDay: Float32Array;
+  readonly cropCodes: Uint8Array;
+  readonly deposits: readonly Deposit[];
   readonly fields: SurfaceFields;
   readonly grid: WorldGrid;
   readonly groundChanges: RowChangeTracker;
@@ -89,7 +97,9 @@ export class WorldState {
     this.water = generated.water;
     this.monuments = generated.monuments;
     this.monumentConditions = generated.monuments.map(() => ({ damage: MonumentDamage.Standing, isDrowned: false }));
+    this.deposits = generated.deposits;
     this.fields = createSurfaceFields(this.grid.cellCount, generated.terrain.ground);
+    this.cropCodes = new Uint8Array(this.grid.cellCount);
     this.occupancy = new Int32Array(this.grid.cellCount).fill(NO_BUILDING);
     this.canopyFuel = new Float32Array(this.grid.cellCount);
     this.initialCanopyFuel = new Float32Array(this.grid.cellCount);
@@ -159,7 +169,15 @@ export class WorldState {
   }
 
   canGrowWild(cell: number, species: number): boolean {
-    return canGrowWild(this.terrain, this.grid, cell, species) && this.occupancy[cell] === NO_BUILDING;
+    if (this.occupancy[cell] !== NO_BUILDING || this.isTrodden(cell)) {
+      return false;
+    }
+
+    return canGrowWild(this.terrain, this.grid, cell, species);
+  }
+
+  isTrodden(cell: number): boolean {
+    return this.fields.trodden[cell] > TRODDEN_GROUND;
   }
 
   temperature(cell: number, airTemperatureOffset: number): number {
@@ -236,6 +254,25 @@ export class WorldState {
 
     this.fields.crop[cell] = growth;
     this.groundChanges.markRow(this.grid.rowOf(cell));
+  }
+
+  setCropCode(cell: number, code: number): void {
+    if (this.cropCodes[cell] === code) {
+      return;
+    }
+
+    this.cropCodes[cell] = code;
+    this.groundChanges.markRow(this.grid.rowOf(cell));
+  }
+
+  setTrodden(cell: number, trodden: number): void {
+    const previous = this.fields.trodden[cell];
+
+    this.fields.trodden[cell] = trodden;
+
+    if (Math.round(previous * TRODDEN_LEVELS) !== Math.round(trodden * TRODDEN_LEVELS)) {
+      this.groundChanges.markRow(this.grid.rowOf(cell));
+    }
   }
 
   setHeight(cell: number, height: number): void {

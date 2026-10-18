@@ -1,10 +1,11 @@
-import { BUILDINGS, type BuildingKind } from "../../content/buildings.ts";
+import { BUILDINGS, type BuildingKind, isFlammable } from "../../content/buildings.ts";
 import { distanceSquared } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { IdentifierSource } from "../identifiers.ts";
 import type { FireSystem } from "../nature/fire.ts";
 import { NO_BUILDING, type WorldState } from "../world/world-state.ts";
+import { footprintCells } from "./footprints.ts";
 
 const CATCHING_FIRE = 0.15;
 const BURN_DAMAGE_FACTOR = 1.1;
@@ -23,18 +24,25 @@ export type BuildingIncidentKind = "campfireEscaped" | "caughtFire";
 export interface Building {
   burningSeconds: number;
   cell: number;
+  cells: readonly number[];
+  depositId: number;
+  extent: number;
   fuel: number;
   health: number;
   id: number;
   isRetiring: boolean;
   kind: BuildingKind;
   progress: number;
+  replacesId: number | null;
   rotation: number;
   seed: number;
+  style: number;
   tribeId: number;
   x: number;
   z: number;
 }
+
+export const NO_DEPOSIT = -1;
 
 export interface BuildingLoss {
   building: Building;
@@ -47,8 +55,11 @@ interface BuildingIncident {
 }
 
 interface BuildingPlacement {
+  depositId?: number;
+  extent?: number;
   kind: BuildingKind;
   rotation: number;
+  style?: number;
   tribeId: number;
   x: number;
   z: number;
@@ -97,23 +108,38 @@ export class BuildingSystem {
   }
 
   add(placement: BuildingPlacement, random: RandomSource): Building {
-    const cell = this.#world.grid.cellAt(placement.x, placement.z);
+    const { grid } = this.#world;
+
+    const cell = grid.cellAt(placement.x, placement.z);
+    const covered = footprintCells(grid, placement.x, placement.z, BUILDINGS[placement.kind].footprint);
+    const id = this.#identifiers.next();
+
+    const cells = covered.filter((candidate) => this.#world.occupancy[candidate] === NO_BUILDING);
+
+    for (const occupied of cells) {
+      this.#world.occupancy[occupied] = id;
+    }
 
     const building: Building = {
-      ...placement,
       burningSeconds: 0,
       cell,
+      cells,
+      depositId: placement.depositId === undefined ? NO_DEPOSIT : placement.depositId,
+      extent: placement.extent === undefined ? 0 : placement.extent,
       fuel: 1,
       health: BUILDINGS[placement.kind].health,
-      id: this.#identifiers.next(),
+      id,
       isRetiring: false,
+      kind: placement.kind,
       progress: 0,
+      replacesId: null,
+      rotation: placement.rotation,
       seed: random.next(),
+      style: placement.style === undefined ? 0 : placement.style,
+      tribeId: placement.tribeId,
+      x: placement.x,
+      z: placement.z,
     };
-
-    if (cell >= 0) {
-      this.#world.occupancy[cell] = building.id;
-    }
 
     this.#buildings.push(building);
 
@@ -175,7 +201,7 @@ export class BuildingSystem {
   }
 
   setAlight(building: Building): void {
-    if (building.kind === "campfire") {
+    if (!isFlammable(building.kind)) {
       return;
     }
 
@@ -201,11 +227,11 @@ export class BuildingSystem {
   }
 
   #releaseCell(building: Building): void {
-    if (building.cell < 0 || this.#world.occupancy[building.cell] !== building.id) {
-      return;
+    for (const cell of building.cells) {
+      if (this.#world.occupancy[cell] === building.id) {
+        this.#world.occupancy[cell] = NO_BUILDING;
+      }
     }
-
-    this.#world.occupancy[building.cell] = NO_BUILDING;
   }
 
   #damage(building: Building, damage: number, ignites: boolean): void {
@@ -235,7 +261,7 @@ export class BuildingSystem {
   }
 
   #catchWildfire(building: Building): void {
-    const isExposed = building.kind !== "campfire" && isComplete(building) && building.burningSeconds <= 0;
+    const isExposed = isFlammable(building.kind) && isComplete(building) && building.burningSeconds <= 0;
 
     if (!isExposed || this.#world.fields.fire[building.cell] <= CATCHING_FIRE) {
       return;

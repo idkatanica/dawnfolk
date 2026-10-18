@@ -88,6 +88,42 @@ describe("human clips", () => {
     expect(jointOf(posed("idle", 0.3), HumanBone.Pelvis).y).toBeGreaterThan(0.85);
   });
 
+  it("draws the bow string back to the face while holding the bow out towards the target", () => {
+    const anchored = posed("shoot", 0.5);
+
+    const head = jointOf(anchored, HumanBone.Head);
+    const drawHand = jointOf(anchored, HumanBone.HandRight);
+    const bowHand = jointOf(anchored, HumanBone.HandLeft);
+
+    expect(drawHand.distanceTo(head)).toBeLessThan(0.2);
+    expect(bowHand.z - drawHand.z).toBeGreaterThan(0.5);
+    expect(Math.abs(bowHand.y - drawHand.y)).toBeLessThan(0.12);
+  });
+
+  it("swings the pickaxe from over the head down to the ground", () => {
+    const windUp = posed("mine", 0.2);
+    const strike = posed("mine", 0.62);
+
+    expect(jointOf(windUp, HumanBone.HandRight).y).toBeGreaterThan(jointOf(windUp, HumanBone.Head).y);
+    expect(jointOf(strike, HumanBone.HandRight).y).toBeLessThan(1);
+  });
+
+  it("keeps both feet on the ground while shooting and mining", () => {
+    const point = new Vector3();
+
+    for (const clip of ["shoot", "mine"] as const) {
+      for (const phase of [0, 0.2, 0.4, 0.6, 0.8]) {
+        const poser = posed(clip, phase);
+        const heights = HUMAN_SKELETON.footContacts.map(
+          (contact) => poser.skinPoint(contact.bone, point.set(...contact.position), point).y
+        );
+
+        expect(Math.min(heights[0], heights[1]), `${clip} ${phase} left`).toBeLessThan(0.03);
+        expect(Math.min(heights[2], heights[3]), `${clip} ${phase} right`).toBeLessThan(0.03);
+      }
+    }
+  });
+
   it("leaves the ground in the middle of a jump", () => {
     const poser = posed("play", 0.48);
     const point = new Vector3();

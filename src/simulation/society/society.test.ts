@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { worldRulesSchema } from "../../content/world-rules.ts";
 import { SocietyHarness, settle } from "../testing/test-society.ts";
 import type { Person } from "./person.ts";
+import { totalFood } from "./stock.ts";
 
 const MORNING = 0.3;
 const EVENING = 0.9;
@@ -37,7 +38,7 @@ describe("daily life", () => {
 
     const tribe = settle(harness, 6);
 
-    tribe.stock.food = 0;
+    tribe.stock.berries = 0;
     harness.run(60);
 
     const jobs = harness.society.membersOf(tribe).map((person) => person.job?.kind);
@@ -46,7 +47,7 @@ describe("daily life", () => {
 
     harness.run(120);
 
-    expect(tribe.stock.food).toBeGreaterThan(0);
+    expect(totalFood(tribe.stock)).toBeGreaterThan(0);
   });
 
   it("eats when hungry", () => {
@@ -89,7 +90,7 @@ describe("daily life", () => {
       person.health = 0.05;
     }
 
-    tribe.stock.food = 0;
+    tribe.stock.berries = 0;
     harness.run(30);
 
     expect(harness.society.population).toBeLessThan(3);
@@ -180,7 +181,7 @@ describe("progress", () => {
 
     hut.progress = 1;
     tribe.buildings.shelterIds.push(hut.id);
-    tribe.stock.food = 200;
+    tribe.stock.grain = 200;
     harness.run(480);
 
     expect(tribe.births).toBeGreaterThan(0);

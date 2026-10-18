@@ -1,19 +1,23 @@
 import { ANIMALS, animalWithArticle } from "../../../content/animals.ts";
 import { faceTowards } from "../../agents/movement.ts";
 import { type Animal, startleAnimal } from "../../fauna/fauna.ts";
-import { pickUpFood, walkSpeed } from "../person.ts";
+import { pickUp, type Weapon, walkSpeed } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
 import { learn, markScarce } from "../tribe.ts";
+import { armForHunt, canShoot, weaponHitBonus } from "../weapons.ts";
 import { DeliverJob } from "./deliver-job.ts";
 import { headTo, type Job, standStill, walk } from "./job.ts";
 
 const HUNT_SECONDS = 50;
 const HUNTING_RANGE = 800;
 const THROWING_RANGE = 28;
-const LOST_RANGE = 34;
+const SHOOTING_RANGE = 46;
+const LOST_RANGE_MARGIN = 6;
+const ARROW_SPEED = 38;
 const RETARGET_SECONDS = 2;
 const FIRST_THROW_DELAY = 0.5;
 const THROW_COOLDOWN = 2.2;
+const SHOT_COOLDOWN = 1.8;
 const MAXIMUM_CARRIED_MEAT = 8;
 const HELPER_RANGE = 40;
 const MAMMOTH_REACH = 12;
@@ -23,10 +27,19 @@ const HELPER_HIT_BONUS = 0.05;
 
 type HuntPhase = "stalk" | "strike";
 
+function strikingRange(weapon: Weapon): number {
+  return weapon.kind === "bow" ? SHOOTING_RANGE : THROWING_RANGE;
+}
+
 export function findGame(tick: PersonTick): HuntJob | null {
   const { tribe } = tick;
 
   const hunters = tribe.memberIds.length;
+  const weapon = armForHunt(tick.person, tribe);
+
+  if (weapon === null) {
+    return null;
+  }
 
   const animal = tick.context.fauna.nearestAnimal(tribe.campX, tribe.campZ, HUNTING_RANGE, (candidate) => {
     const { huntingPartySize } = ANIMALS[candidate.kind];
@@ -40,19 +53,21 @@ export function findGame(tick: PersonTick): HuntJob | null {
     return null;
   }
 
-  return new HuntJob(tick, animal);
+  return new HuntJob(tick, animal, weapon);
 }
 
 export class HuntJob implements Job {
   readonly kind = "hunt";
   readonly #animalId: number;
+  readonly #weapon: Weapon;
   #phase: HuntPhase = "stalk";
   #remainingSeconds = HUNT_SECONDS;
   #retargetSeconds = 0;
   #throwCooldown = 0;
 
-  constructor(tick: PersonTick, animal: Animal) {
+  constructor(tick: PersonTick, animal: Animal, weapon: Weapon) {
     this.#animalId = animal.id;
+    this.#weapon = weapon;
     headTo(tick.person, animal.mover, tick.context);
   }
 
@@ -86,17 +101,19 @@ export class HuntJob implements Job {
 
     walk(tick, walkSpeed(tick.person) * (distance > 60 ? 1.1 : 0.75));
 
-    if (distance < THROWING_RANGE) {
+    if (distance < strikingRange(this.#weapon)) {
       this.#phase = "strike";
       this.#throwCooldown = FIRST_THROW_DELAY;
     }
   }
 
   #strike(tick: PersonTick, animal: Animal, distance: number): Job | null {
-    standStill(tick.person, "throw");
+    const isBow = this.#weapon.kind === "bow";
+
+    standStill(tick.person, isBow ? "shoot" : "throw");
     faceTowards(tick.person.mover, animal.mover.x, animal.mover.z);
 
-    if (distance > LOST_RANGE) {
+    if (distance > strikingRange(this.#weapon) + LOST_RANGE_MARGIN) {
       this.#phase = "stalk";
 
       return this;
@@ -108,14 +125,24 @@ export class HuntJob implements Job {
       return this;
     }
 
-    this.#throwCooldown = THROW_COOLDOWN;
+    if (isBow && !canShoot(tick.tribe)) {
+      return null;
+    }
+
+    this.#throwCooldown = isBow ? SHOT_COOLDOWN : THROW_COOLDOWN;
     sufferCounterattack(tick, animal, distance);
 
     if (!tick.person.isAlive) {
       return null;
     }
 
-    if (!tick.context.random.chance(hitChance(tick, animal))) {
+    const isHit = tick.context.random.chance(hitChance(tick, animal, this.#weapon));
+
+    if (isBow) {
+      loose(tick, animal, isHit);
+    }
+
+    if (!isHit) {
       startleAnimal(animal, tick.person.mover.x, tick.person.mover.z, 0.8);
       this.#phase = "stalk";
 
@@ -134,11 +161,35 @@ export class HuntJob implements Job {
   }
 }
 
-function hitChance(tick: PersonTick, animal: Animal): number {
+function loose(tick: PersonTick, animal: Animal, isHit: boolean): void {
+  const { mover } = tick.person;
+  const { random } = tick.context;
+
+  const missX = isHit ? 0 : random.signed() * 4;
+  const missZ = isHit ? 0 : random.signed() * 4;
+
+  const toX = animal.mover.x + missX;
+  const toZ = animal.mover.z + missZ;
+
+  tick.tribe.stock.arrows -= 1;
+  tick.context.effects.add({
+    durationSeconds: Math.hypot(toX - mover.x, toZ - mover.z) / ARROW_SPEED,
+    fromX: mover.x,
+    fromZ: mover.z,
+    isHit,
+    kind: "arrow",
+    toX,
+    toZ,
+  });
+}
+
+function hitChance(tick: PersonTick, animal: Animal, weapon: Weapon): number {
   const definition = ANIMALS[animal.kind];
 
+  const bonus = weaponHitBonus(weapon);
+
   if (definition.huntingPartySize === null || definition.huntingPartySize <= 1) {
-    return definition.hitChance;
+    return definition.hitChance + bonus;
   }
 
   const helpers = tick.context.people.countNear(
@@ -148,7 +199,7 @@ function hitChance(tick: PersonTick, animal: Animal): number {
     (person) => person.tribeId === tick.tribe.id && person.job?.kind === "hunt"
   );
 
-  return definition.hitChance + HELPER_HIT_BONUS * helpers;
+  return definition.hitChance + bonus + HELPER_HIT_BONUS * helpers;
 }
 
 function sufferCounterattack(tick: PersonTick, animal: Animal, distance: number): void {
@@ -183,8 +234,8 @@ function bringDown(tick: PersonTick, animal: Animal): Job {
   const carried = Math.min(MAXIMUM_CARRIED_MEAT, food);
 
   tick.context.fauna.kill(animal, "hunt");
-  pickUpFood(tick.person, carried, "meat");
-  tick.tribe.stock.food += food - carried;
+  pickUp(tick.person, "meat", carried, "meat");
+  tick.tribe.stock.meat += food - carried;
   learn(tick.tribe, 3, tick.context.rules);
   tick.context.chronicle.record({
     category: "hunt",

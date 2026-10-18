@@ -2,7 +2,7 @@ import { isTreeSpecies, PlantSpecies, plantSpeciesDefinition } from "../../conte
 import { clamp, FULL_TURN, hashToUnit, lerp, smoothstep } from "../../shared/math.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
 import type { Waypoint } from "../agents/navigation.ts";
-import { discover } from "../society/tribe-life.ts";
+import { discover } from "../society/progress.ts";
 import { type Catastrophe, ruinText, type Shock, shakeMonuments } from "../world/monument-damage.ts";
 import { carveCrater, cellsInArea, shakeTerrain } from "../world/terrain-editing.ts";
 import type { WorldState } from "../world/world-state.ts";

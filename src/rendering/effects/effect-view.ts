@@ -1,5 +1,6 @@
 import { Group, PointLight, type Vector3 } from "three/webgpu";
 import type { SimulationEffect } from "../../simulation/effects.ts";
+import { ArrowFlight, ArrowParts } from "./arrow-flight.ts";
 import { BillboardBatch, type CameraAxes } from "./billboards.ts";
 import { EffectMeshes } from "./effect-meshes.ts";
 import type { GroundRing } from "./ground-ring.ts";
@@ -30,6 +31,7 @@ const LIGHT_DISTANCE = 900;
 export class EffectView {
   readonly group = new Group();
   readonly #active: ActiveEffect[] = [];
+  readonly #arrowParts = new ArrowParts();
   readonly #context: EffectContext;
   readonly #createRing: () => GroundRing;
   readonly #idleRings: GroundRing[] = [];
@@ -106,10 +108,13 @@ export class EffectView {
     this.#sinks.dust.dispose();
     this.#sinks.glow.dispose();
     this.#meshes.dispose();
+    this.#arrowParts.dispose();
   }
 
   #start(effect: SimulationEffect): ActiveEffect {
     switch (effect.kind) {
+      case "arrow":
+        return new ArrowFlight(this.#context, effect, this.#arrowParts);
       case "blessing":
         return new Blessing(this.#context, effect);
       case "earthquake":

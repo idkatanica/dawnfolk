@@ -1,28 +1,31 @@
+import { BUILDINGS } from "../../content/buildings.ts";
 import { personName } from "../../content/names.ts";
-import { isGrowingSeason, isWinter } from "../../content/seasons.ts";
-import type { TechnologyId } from "../../content/technologies.ts";
 import { nearestWalkableSpot } from "../agents/walkable-ground.ts";
-import { assignHomes, housingCapacity, planConstruction } from "./construction.ts";
+import { completedOfKind, tribeBuildings } from "./camp-plan.ts";
+import { planConstruction } from "./construction.ts";
+import { abandonFloodedFields, updateFields } from "./farming.ts";
+import { assignHomes, housingCapacity } from "./housing.ts";
 import { createPerson, isChild, isElder, type Person } from "./person.ts";
+import { updatePlots } from "./plots.ts";
+import { discover, isReadyToDiscover } from "./progress.ts";
 import { considerMoving, considerSplit, type SettlementServices, updateMigration } from "./settlement.ts";
 import type { SocietyContext } from "./society-context.ts";
+import { type Storage, spoilFood, totalFood } from "./stock.ts";
 import { knows, learn, type Tribe, upcomingTechnology } from "./tribe.ts";
-import { completedBuilding } from "./tribe-places.ts";
 
-const BASE_LEARNING_PER_DAY = 8;
-const ADULT_LEARNING = 1.9;
-const ELDER_LEARNING = 3;
+const BASE_LEARNING_PER_DAY = 24;
+const ADULT_LEARNING = 4.5;
+const ELDER_LEARNING = 5;
 const FAITH_LEARNING = 0.05;
 const DISCOVERY_EFFORT = 0.15;
-const STORED_SPOILAGE = 0.012;
-const OPEN_SPOILAGE = 0.045;
-const FIELD_GROWTH = 0.25;
-const TENDED_GROWTH = 0.5;
-const TENDING_DECAY = 0.5;
+const OPEN_FOOD_STORAGE = 40;
+const OPEN_MATERIAL_STORAGE = 60;
 const PLANNING_SECONDS = 3;
 const BIRTH_CHECK_DAYS = 0.25;
 const DAILY_CHECK_DAYS = 0.5;
 const CROP_DISPLAY_DAYS = 0.08;
+const WORKSHOP_LEARNING = 4;
+const TOTEM_LEARNING = 2;
 const FAITH_BASELINE = 30;
 const FAITH_DRIFT = 0.05;
 const MOTHER_YOUNGEST = 15;
@@ -48,12 +51,21 @@ export interface SocietyServices extends SettlementServices {
 
 export function updateTribe(tick: TribeTick): void {
   learnAndDiscover(tick);
-  spoilFood(tick);
-  growFields(tick);
+  spoilStock(tick);
+  tendLand(tick);
   planBuildings(tick);
   considerBirths(tick);
   driftFaith(tick);
   runDailyChecks(tick);
+}
+
+function buildingLearning(tick: TribeTick): number {
+  const { context, tribe } = tick;
+
+  const workshop = completedOfKind(tribe, context, "workshop") === null ? 0 : WORKSHOP_LEARNING;
+  const totem = completedOfKind(tribe, context, "totem") === null ? 0 : TOTEM_LEARNING;
+
+  return workshop + totem;
 }
 
 function learnAndDiscover(tick: TribeTick): void {
@@ -63,7 +75,11 @@ function learnAndDiscover(tick: TribeTick): void {
   const elders = members.filter((person) => isElder(person)).length;
 
   const learning =
-    BASE_LEARNING_PER_DAY + adults * ADULT_LEARNING + elders * ELDER_LEARNING + tribe.faith * FAITH_LEARNING;
+    BASE_LEARNING_PER_DAY +
+    adults * ADULT_LEARNING +
+    elders * ELDER_LEARNING +
+    tribe.faith * FAITH_LEARNING +
+    buildingLearning(tick);
 
   learn(tribe, tick.days * learning, context.rules);
   discoverUpcoming(tribe, context);
@@ -80,73 +96,50 @@ function discoverUpcoming(tribe: Tribe, context: SocietyContext): void {
     return;
   }
 
+  if (!isReadyToDiscover(tribe, upcoming)) {
+    tribe.knowledge = upcoming.cost;
+
+    return;
+  }
+
   tribe.knowledge = Math.max(0, tribe.knowledge - upcoming.cost * DISCOVERY_EFFORT);
   discover(tribe, upcoming.id, `${tribe.name} discovered ${upcoming.name.toLowerCase()}`, context);
 }
 
-export function discover(tribe: Tribe, technology: TechnologyId, message: string, context: SocietyContext): void {
-  if (knows(tribe, technology)) {
-    return;
-  }
+export function storageOf(tribe: Tribe, context: SocietyContext): Storage {
+  const stores = tribeBuildings(tribe, context).filter(
+    (building) => building.progress >= 1 && BUILDINGS[building.kind].storage > 0
+  );
 
-  tribe.technologies.add(technology);
-  context.chronicle.record({ category: "discovery", text: message, tribeId: tribe.id, x: tribe.campX, z: tribe.campZ });
+  const extra = stores.reduce((total, building) => total + BUILDINGS[building.kind].storage, 0);
+
+  return {
+    foodCapacity: OPEN_FOOD_STORAGE + extra,
+    hasGranary: stores.some((building) => building.kind === "granary"),
+    hasStorehouse: stores.some((building) => building.kind === "storehouse"),
+    materialCapacity: OPEN_MATERIAL_STORAGE + extra,
+    pottery: tribe.stock.pottery,
+  };
 }
 
-function spoilFood(tick: TribeTick): void {
-  const { tribe } = tick;
-
-  const storehouse = completedBuilding(tick.context.buildings, tribe.buildings.storehouseId);
-
-  const spoilage = storehouse === null ? OPEN_SPOILAGE : STORED_SPOILAGE;
-
-  tribe.stock.food = Math.max(0, tribe.stock.food - tribe.stock.food * spoilage * tick.days);
-}
-
-function growFields(tick: TribeTick): void {
+function spoilStock(tick: TribeTick): void {
   const { context, tribe } = tick;
-  const { season } = context.environment;
 
-  abandonFloodedFields(tribe, context);
+  spoilFood(tribe.stock, tick.days, storageOf(tribe, context));
+}
+
+function tendLand(tick: TribeTick): void {
+  const { context, tribe } = tick;
+
   tribe.timers.cropDays += tick.days;
+  abandonFloodedFields(tribe, context.world);
 
-  const isShowingCrops = tribe.timers.cropDays > CROP_DISPLAY_DAYS;
-
-  for (const field of tribe.fields) {
-    if (isGrowingSeason(season)) {
-      field.growth = Math.min(1, field.growth + tick.days * (FIELD_GROWTH + field.tending * TENDED_GROWTH));
-    }
-
-    if (isWinter(season)) {
-      field.growth = 0;
-    }
-
-    field.tending = Math.max(0, field.tending - tick.days * TENDING_DECAY);
-
-    if (isShowingCrops) {
-      context.world.setCrop(field.cell, field.growth);
-    }
-  }
-
-  if (isShowingCrops) {
+  if (tribe.timers.cropDays > CROP_DISPLAY_DAYS) {
+    updateFields(tribe, context, tribe.timers.cropDays);
     tribe.timers.cropDays = 0;
   }
-}
 
-function abandonFloodedFields(tribe: Tribe, context: SocietyContext): void {
-  const { world } = context;
-
-  const flooded = tribe.fields.filter((field) => world.isWater(field.cell));
-
-  if (flooded.length === 0) {
-    return;
-  }
-
-  for (const field of flooded) {
-    world.setCrop(field.cell, 0);
-  }
-
-  tribe.fields = tribe.fields.filter((field) => !flooded.includes(field));
+  updatePlots(tribe, context, tick.days);
 }
 
 function planBuildings(tick: TribeTick): void {
@@ -194,7 +187,7 @@ function chooseMother(tick: TribeTick, elapsedDays: number): Person | null {
   const hasFather = members.some((person) => !person.isFemale && person.age > FATHER_YOUNGEST);
   const children = members.filter((person) => isChild(person)).length;
 
-  const isFed = tribe.stock.food > members.length * FOOD_PER_PERSON_FOR_BIRTHS;
+  const isFed = totalFood(tribe.stock) > members.length * FOOD_PER_PERSON_FOR_BIRTHS;
   const hasRoom = members.length < housingCapacity(tribe, context);
   const hasEnoughAdults = children <= members.length - children;
 

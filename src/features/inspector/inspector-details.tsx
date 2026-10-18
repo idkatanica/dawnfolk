@@ -1,4 +1,5 @@
 import { Flame } from "lucide-react";
+import { FOOD_KINDS } from "../../content/resources.ts";
 import { cn } from "../../design/cn.ts";
 import { FactList } from "../../design/fact-list.tsx";
 import { formatPercent } from "../../design/format.ts";
@@ -166,7 +167,7 @@ export function TribeDetails({ tribe }: { readonly tribe: TribeInspection }) {
     { label: "Era", value: summary.eraName },
     { label: "People", value: `${summary.population} (${summary.children} children)` },
     { label: "Births · deaths", value: `${summary.births} · ${summary.deaths}` },
-    { label: "Food", value: Math.round(summary.stock.food) },
+    { label: "Food", value: Math.round(FOOD_KINDS.reduce((total, kind) => total + summary.stock[kind], 0)) },
     { label: "Wood", value: Math.round(summary.stock.wood) },
     { label: "Stone", value: Math.round(summary.stock.stone) },
   ];

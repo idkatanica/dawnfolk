@@ -4,6 +4,7 @@ import { PlantSpecies } from "../../content/plants.ts";
 import { POWER_ORDER, POWERS } from "../../content/powers.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
 import { Simulation } from "../simulation.ts";
+import { totalFood } from "../society/stock.ts";
 import {
   centerCell,
   createVegetatedWorld,
@@ -242,11 +243,11 @@ describe("life", () => {
 
     const [tribe] = simulation.society.tribes();
 
-    const foodBefore = tribe.stock.food;
+    const foodBefore = totalFood(tribe.stock);
 
     simulation.usePower("abundance", tribe.campX, tribe.campZ, {});
 
-    expect(tribe.stock.food).toBeGreaterThan(foodBefore);
+    expect(totalFood(tribe.stock)).toBeGreaterThan(foodBefore);
   });
 
   it("inspiration brings the next discovery closer", () => {

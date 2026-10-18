@@ -1,4 +1,5 @@
 import { isBiomeIndex } from "../content/biomes.ts";
+import { WILD_BERRY_RULES } from "../content/cultivated-plants.ts";
 import { groundDefinition } from "../content/grounds.ts";
 import {
   canGrowAt,
@@ -116,6 +117,44 @@ export function plantInitialVegetation(
     for (const rule of ROCK_RULES[biome]) {
       if (canGrowAt(rule, temperature) && rocks.chance(rule.chancePerCell)) {
         plantWhereRoom(sow(rule, rocks, grid, cell), cell);
+      }
+    }
+  }
+
+  plantWildBerries(store, grid, terrain, seed, reserved);
+}
+
+function plantWildBerries(
+  store: VegetationStore,
+  grid: WorldGrid,
+  terrain: TerrainData,
+  seed: number,
+  reserved: Uint8Array
+): void {
+  const berries = createRandom(seed * 3 + 3);
+
+  for (let cell = 0; cell < grid.cellCount; cell += 1) {
+    if (reserved[cell] !== 0 || touchesWaterCell(terrain, grid, cell) || !isOnIsland(terrain.coastDistance, cell)) {
+      continue;
+    }
+
+    const biome = blendedBiome(grid, terrain, cell, seed);
+
+    if (!isBiomeIndex(biome)) {
+      continue;
+    }
+
+    const clearing = 0.45 + 0.9 * (0.5 + 0.5 * terrain.variation[cell]);
+
+    for (const rule of WILD_BERRY_RULES[biome]) {
+      if (!berries.chance(rule.chancePerCell * clearing)) {
+        continue;
+      }
+
+      const plant = sow(rule, berries, grid, cell);
+
+      if (hasRoomToGrow(terrain, grid, plant.x, plant.z, plant.species)) {
+        store.add(plant);
       }
     }
   }

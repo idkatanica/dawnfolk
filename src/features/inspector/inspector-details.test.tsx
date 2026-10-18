@@ -5,6 +5,7 @@ import {
   createBuildingInspection,
   createCellInspection,
   createPersonInspection,
+  createStock,
   createTribe,
 } from "../testing/world-fixtures.ts";
 import { AnimalDetails, BuildingDetails, CellDetails, PersonDetails, TribeDetails } from "./inspector-details.tsx";
@@ -174,7 +175,7 @@ describe("tribe details", () => {
       children: 3,
       deaths: 1,
       population: 7,
-      stock: { food: 12.4, stone: 3, wood: 8.6 },
+      stock: createStock({ berries: 12.4, stone: 3, wood: 8.6 }),
     });
 
     const screen = await render(<TribeDetails tribe={{ kind: "tribe", summary }} />);

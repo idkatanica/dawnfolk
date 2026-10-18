@@ -53,3 +53,54 @@ describe("person appearance", () => {
     }
   });
 });
+
+describe("era details", () => {
+  function crowd(era: number) {
+    return seeds(200).map((seed) => appearanceFor({ age: 20 + seed * 30, era, isFemale: seed > 0.5, seed }));
+  }
+
+  it("leaves the first eras looking as they always did", () => {
+    for (const seed of seeds(60)) {
+      const before = appearanceFor({ seed });
+
+      expect(appearanceFor({ era: 0, seed })).toEqual(before);
+      expect(appearanceFor({ era: 1, seed })).toEqual(before);
+    }
+  });
+
+  it("dresses many people in linen from the Neolithic on", () => {
+    const wanderers = crowd(0);
+    const farmers = crowd(2);
+
+    const changed = farmers.filter((person, index) => person.colors.hide !== wanderers[index].colors.hide);
+
+    expect(changed.length).toBeGreaterThan(60);
+    expect(changed.length).toBeLessThan(140);
+  });
+
+  it("adds metalwork as the eras advance and helmets only in the Iron Age", () => {
+    const copper = crowd(3);
+    const iron = crowd(5);
+
+    const helmeted = iron.filter((person) => person.accessories.has("helmet"));
+
+    expect(copper.filter((person) => person.accessories.has("torc")).length).toBeGreaterThan(30);
+    expect(copper.some((person) => person.accessories.has("helmet") || person.accessories.has("buckle"))).toBe(false);
+    expect(iron.filter((person) => person.accessories.has("buckle")).length).toBeGreaterThan(50);
+    expect(helmeted.length).toBeGreaterThan(15);
+    expect(helmeted.every((person) => !person.isFemale && person.ageGroup !== "child")).toBe(true);
+  });
+
+  it("keeps what a person wears as the tribe advances", () => {
+    for (const seed of seeds(100)) {
+      const copper = appearanceFor({ era: 3, seed });
+      const iron = appearanceFor({ era: 5, seed });
+
+      for (const accessory of copper.accessories) {
+        const isUnderHelmet = iron.accessories.has("helmet") && (accessory === "headband" || accessory === "feather");
+
+        expect(iron.accessories.has(accessory) || isUnderHelmet).toBe(true);
+      }
+    }
+  });
+});

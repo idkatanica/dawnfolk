@@ -2,13 +2,14 @@ import { PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
 import { SEASON_COUNT } from "../../content/seasons.ts";
 import { mixColors } from "../../shared/color.ts";
 import { lerp } from "../../shared/math.ts";
+import { ORCHARD_FOLIAGE_KEYS } from "./orchard-palette.ts";
 
 interface FoliageLook {
   readonly color: number;
   readonly coverage: number;
 }
 
-interface FoliageKey {
+export interface FoliageKey {
   readonly color: number;
   readonly coverage: number;
   readonly season: number;
@@ -45,6 +46,7 @@ const LEAFLESS: readonly FoliageKey[] = [{ color: BARE_BRANCHES, coverage: 0, se
 const STONEWORK: readonly FoliageKey[] = evergreen(0x6f_8a_3e, 0x6a_6a_48);
 
 const FOLIAGE_KEYS: Readonly<Record<PlantSpeciesIndex, readonly FoliageKey[]>> = {
+  ...ORCHARD_FOLIAGE_KEYS,
   [PlantSpecies.Acacia]: evergreen(0x76_93_42, 0x86_8c_4c),
   [PlantSpecies.Arch]: STONEWORK,
   [PlantSpecies.Birch]: deciduous(0x6f_a8_40, 0xe0_b0_36),

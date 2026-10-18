@@ -1,4 +1,6 @@
 import { ADULT_AGE, ELDER_AGE } from "../../content/life-stages.ts";
+import { isFoodKind, type ResourceKind } from "../../content/resources.ts";
+import type { ToolMaterial, WeaponKind } from "../../content/weapons.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import type { CarriedItem, PersonPose } from "../../world/agent-poses.ts";
@@ -19,10 +21,14 @@ const ADULT_RUN_SPEED = 5.2;
 export type DeathCause = "age" | "blast" | "cold" | "earthquake" | "fire" | "hunger" | "lightning" | "mammoth";
 
 interface Carrying {
-  food: number;
-  foodItem: CarriedItem;
-  stone: number;
-  wood: number;
+  amount: number;
+  item: CarriedItem;
+  resource: ResourceKind | null;
+}
+
+export interface Weapon {
+  kind: WeaponKind;
+  material: ToolMaterial;
 }
 
 export interface Person {
@@ -50,6 +56,7 @@ export interface Person {
   speed: number;
   tribeId: number;
   warmth: number;
+  weapon: Weapon | null;
 }
 
 interface PersonBirth {
@@ -66,7 +73,7 @@ export function createPerson(birth: PersonBirth, random: RandomSource): Person {
   return {
     age: birth.age,
     appearanceSeed: random.next(),
-    carrying: { food: 0, foodItem: "nothing", stone: 0, wood: 0 },
+    carrying: { amount: 0, item: "nothing", resource: null },
     causeOfDeath: null,
     dangerCheckSeconds: random.next(),
     deathSeconds: 0,
@@ -88,6 +95,7 @@ export function createPerson(birth: PersonBirth, random: RandomSource): Person {
     speed: 0,
     tribeId: birth.tribeId,
     warmth: 1,
+    weapon: null,
   };
 }
 
@@ -120,21 +128,11 @@ export function runSpeed(person: Person): number {
 }
 
 export function carriedItem(person: Person): CarriedItem {
-  const { carrying } = person;
-
-  if (carrying.wood > 0) {
-    return "wood";
+  if (person.carrying.amount <= 0) {
+    return "nothing";
   }
 
-  if (carrying.stone > 0) {
-    return "stone";
-  }
-
-  if (carrying.food > 0) {
-    return carrying.foodItem;
-  }
-
-  return "nothing";
+  return person.carrying.item;
 }
 
 export function isCarryingAnything(person: Person): boolean {
@@ -142,13 +140,43 @@ export function isCarryingAnything(person: Person): boolean {
 }
 
 export function dropCarrying(person: Person): void {
-  person.carrying.food = 0;
-  person.carrying.foodItem = "nothing";
-  person.carrying.stone = 0;
-  person.carrying.wood = 0;
+  person.carrying.amount = 0;
+  person.carrying.item = "nothing";
+  person.carrying.resource = null;
 }
 
-export function pickUpFood(person: Person, amount: number, item: CarriedItem): void {
-  person.carrying.food += amount;
-  person.carrying.foodItem = item;
+export function pickUp(person: Person, resource: ResourceKind, amount: number, item: CarriedItem): void {
+  if (person.carrying.resource !== resource) {
+    dropCarrying(person);
+  }
+
+  person.carrying.amount += amount;
+  person.carrying.item = item;
+  person.carrying.resource = resource;
+}
+
+export function putDown(person: Person, amount: number): void {
+  person.carrying.amount -= amount;
+
+  if (person.carrying.amount <= 0) {
+    dropCarrying(person);
+  }
+}
+
+export function carriedFood(person: Person): number {
+  const { resource } = person.carrying;
+
+  if (resource === null || !isFoodKind(resource)) {
+    return 0;
+  }
+
+  return person.carrying.amount;
+}
+
+export function carriedAmount(person: Person, resource: ResourceKind): number {
+  if (person.carrying.resource !== resource) {
+    return 0;
+  }
+
+  return person.carrying.amount;
 }

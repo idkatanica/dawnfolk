@@ -1,10 +1,12 @@
 import { type PerspectiveCamera, Vector3 } from "three/webgpu";
+import { FIGURE_SCALE } from "../../models/people/human-proportions.ts";
 import type { Selection } from "../../simulation/commands.ts";
 import type { SimulationFrame } from "../../simulation/frame.ts";
 import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
 import type { HeightField, ScreenPoint, ViewportSize } from "./ground-picker.ts";
 
 const PICK_RADIUS_PIXELS = 26;
+const PERSON_CENTER_HEIGHT = 0.9 * FIGURE_SCALE;
 const BUILDING_PICK_RADIUS_PIXELS = 40;
 const SMALLEST_OCCLUSION_MARGIN = 12;
 const OCCLUSION_MARGIN_PER_METER = 0.04;
@@ -64,7 +66,7 @@ export class EntityPicker {
       const x = frame.people[offset + PersonField.X];
       const z = frame.people[offset + PersonField.Z];
 
-      const hit = this.#screenHit(x, 0.9, z, screen, viewport);
+      const hit = this.#screenHit(x, PERSON_CENTER_HEIGHT, z, screen, viewport);
 
       if (hit.distance < PICK_RADIUS_PIXELS) {
         candidates.push({ ...hit, selection: { id: frame.people[offset + PersonField.Id], kind: "person" } });

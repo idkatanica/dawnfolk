@@ -3,14 +3,16 @@ import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex } from "../../conte
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, mergeMeshes, vertexCount } from "../mesh/mesh-data.ts";
 import { isMonumentModel, MONUMENT_HEIGHTS, meshMonument } from "../structures/monuments.ts";
-import { berryClusters } from "./berries.ts";
+import { BERRY_PART, berryClusters } from "./berries.ts";
 import { CACTUS_FORMS, cactusForm, meshCactus } from "./cacti.ts";
+import { isOrchardModel, meshOrchardPlant, ORCHARD_HEIGHTS, ORCHARD_VARIANT_COUNTS } from "./orchard-plants.ts";
 import { isRockModel, meshRock, ROCK_HEIGHTS, ROCK_VARIANT_COUNTS } from "./rocks.ts";
 import { isDistantLevel, meshTree, type PlantDetailLevel, type TreeLook } from "./tree-mesher.ts";
 import { DESERT_SHRUB_FORM_COUNT, TREE_GENERATORS, TREE_HEIGHTS } from "./tree-species.ts";
 
 const VARIANT_COUNTS: Readonly<Record<PlantSpeciesIndex, number>> = {
   ...ROCK_VARIANT_COUNTS,
+  ...ORCHARD_VARIANT_COUNTS,
   [PlantSpecies.Acacia]: 3,
   [PlantSpecies.Arch]: PIECE_FORMS[PlantSpecies.Arch].length,
   [PlantSpecies.Birch]: 4,
@@ -36,6 +38,7 @@ const CANONICAL_HEIGHTS: Readonly<Record<PlantSpeciesIndex, number>> = {
   ...TREE_HEIGHTS,
   ...ROCK_HEIGHTS,
   ...MONUMENT_HEIGHTS,
+  ...ORCHARD_HEIGHTS,
 };
 
 const FORM_PER_VARIANT: ReadonlySet<PlantSpeciesIndex> = new Set([
@@ -88,6 +91,10 @@ function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDe
 
   if (isMonumentModel(species)) {
     return meshMonument(species, seed, variant, level);
+  }
+
+  if (isOrchardModel(species)) {
+    return meshOrchardPlant(species, seed, level, BERRY_PART);
   }
 
   const generator = TREE_GENERATORS[species];

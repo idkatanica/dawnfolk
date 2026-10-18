@@ -77,7 +77,7 @@ export const abundancePower: PowerHandler<"abundance"> = {
       return APPLIED;
     }
 
-    tribe.stock.food += ABUNDANCE_FOOD * (percent(parameters.strength) / DEFAULT_ABUNDANCE);
+    tribe.stock.berries += ABUNDANCE_FOOD * (percent(parameters.strength) / DEFAULT_ABUNDANCE);
     tribe.faith = Math.min(MAXIMUM_FAITH, tribe.faith + ABUNDANCE_FAITH);
     services.chronicle.record({
       category: "gift",

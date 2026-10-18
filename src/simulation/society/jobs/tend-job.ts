@@ -1,4 +1,5 @@
 import type { Building } from "../buildings.ts";
+import { pickUp, putDown } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
 import { Errand, headToWork, type Job, type WorkTarget } from "./job.ts";
 
@@ -19,7 +20,7 @@ export class TendJob implements Job {
     this.#campfireId = campfire.id;
     this.#errand = new Errand(TENDING_SECONDS, "build", target);
     tick.tribe.stock.wood -= LOG;
-    tick.person.carrying.wood += LOG;
+    pickUp(tick.person, "wood", LOG, "wood");
     headToWork(tick.person, target, tick.context);
   }
 
@@ -28,7 +29,7 @@ export class TendJob implements Job {
 
     if (campfire === null) {
       tick.tribe.stock.wood += LOG;
-      tick.person.carrying.wood = Math.max(0, tick.person.carrying.wood - LOG);
+      putDown(tick.person, LOG);
 
       return null;
     }
@@ -38,7 +39,7 @@ export class TendJob implements Job {
     }
 
     campfire.fuel = Math.min(1, campfire.fuel + FUEL_PER_LOG);
-    tick.person.carrying.wood = Math.max(0, tick.person.carrying.wood - LOG);
+    putDown(tick.person, LOG);
 
     return null;
   }
