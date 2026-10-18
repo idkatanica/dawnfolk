@@ -64,7 +64,7 @@ function Reading({ detail, icon: Icon, title, value }: ReadingProps) {
       <Icon aria-hidden="true" className="shrink-0" size={18} />
 
       <span className="flex flex-col gap-1 leading-none">
-        <span className="tabular font-semibold text-ink text-sm">{value}</span>
+        <span className="font-semibold text-ink text-sm tabular-nums">{value}</span>
 
         <span className="flex items-center gap-1 text-ink-muted text-xs max-lg:hidden">{detail}</span>
       </span>
@@ -75,7 +75,7 @@ function Reading({ detail, icon: Icon, title, value }: ReadingProps) {
 function StatusIsland({ children }: { readonly children: ReactNode }) {
   return (
     <Island>
-      <div className="m-1.5 flex h-10 pointer-coarse:h-11 items-center px-2.5">{children}</div>
+      <div className="flex h-13 pointer-coarse:h-14 items-center px-4">{children}</div>
     </Island>
   );
 }
@@ -104,7 +104,7 @@ function WeatherReading() {
           <>
             <Wind aria-hidden="true" size={11} />
 
-            <span className="tabular">{Math.round(weather.windSpeed)} km/h</span>
+            <span className="tabular-nums">{Math.round(weather.windSpeed)} km/h</span>
           </>
         }
         icon={WEATHER_ICONS[weather.kind]}
@@ -144,18 +144,16 @@ export function CompactClock({ className }: { readonly className?: string | unde
   const DaylightIcon = daylightIcon(calendar.hours);
 
   return (
-    <div className={cn("@container min-w-0", className)}>
-      <div className="flex items-center gap-2">
-        <DaylightIcon aria-hidden="true" className="@max-[6.5rem]:hidden shrink-0" size={18} />
+    <div className={cn("@container flex min-w-0 items-center gap-2", className)}>
+      <DaylightIcon aria-hidden="true" className="@max-[6.5rem]:hidden shrink-0" size={18} />
 
-        <div className="flex min-w-0 flex-col leading-none">
-          <span className="tabular font-semibold text-ink text-sm">{formatClock(calendar.hours)}</span>
+      <div className="flex min-w-0 flex-col leading-none">
+        <span className="font-semibold text-ink text-sm tabular-nums">{formatClock(calendar.hours)}</span>
 
-          <span className="truncate text-[11px] text-ink-muted">
-            <span className="@max-[5rem]:hidden">{calendar.seasonName} · </span>
-            Day {calendar.dayOfSeason}
-          </span>
-        </div>
+        <span className="truncate text-2xs text-ink-muted">
+          <span className="@max-[5rem]:hidden">{calendar.seasonName} · </span>
+          Day {calendar.dayOfSeason}
+        </span>
       </div>
     </div>
   );

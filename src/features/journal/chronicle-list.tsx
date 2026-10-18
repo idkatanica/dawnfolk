@@ -46,7 +46,7 @@ export function ChronicleList() {
   }
 
   return (
-    <ol className="flex flex-col">
+    <ol>
       {latest.map((entry) => (
         <ChronicleItem entry={entry} key={entry.id} />
       ))}

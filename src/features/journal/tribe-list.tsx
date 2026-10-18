@@ -37,7 +37,7 @@ function TribeCard({ tribe }: { readonly tribe: TribeSummary }) {
         </span>
 
         <span className="flex flex-col items-end gap-0.5">
-          <span className="tabular font-semibold text-ink text-lg leading-none">{tribe.population}</span>
+          <span className="font-semibold text-ink text-lg tabular-nums leading-none">{tribe.population}</span>
 
           <span className="text-ink-muted text-xs">people</span>
         </span>

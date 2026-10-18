@@ -71,15 +71,11 @@ export function SettingsDialog() {
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-40 bg-ink/18 transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0" />
 
-        <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-[min(40rem,calc(100vw-1.5rem))] -translate-x-1/2 -translate-y-1/2 outline-none transition-[scale,opacity] duration-200 ease-glide data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
-          <div className="w-full rounded-[22px] bg-white/55 ring-1 ring-white/40 backdrop-blur-xl backdrop-saturate-150">
-            <Tabs.Root
-              className="flex max-h-[min(44rem,calc(100dvh-1.5rem))] flex-col gap-3 p-4"
-              onValueChange={changeTab}
-              value={tab}
-            >
+        <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-dialog -translate-x-1/2 -translate-y-1/2 outline-none transition-[scale,opacity] duration-200 ease-glide data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
+          <div className="rounded-island bg-white/55 ring-1 ring-white/40 backdrop-blur-xl backdrop-saturate-150">
+            <Tabs.Root className="flex max-h-dialog flex-col gap-3 p-4" onValueChange={changeTab} value={tab}>
               <header className="flex items-center justify-between gap-3">
-                <div className="flex flex-col">
+                <div>
                   <Dialog.Title className="font-semibold text-ink text-xl">Settings</Dialog.Title>
 
                   <Dialog.Description className="text-ink-muted text-sm">
@@ -99,13 +95,13 @@ export function SettingsDialog() {
               </Tabs.List>
 
               <ScrollArea.Root className="relative min-h-0 flex-1">
-                <ScrollArea.Viewport className="h-full max-h-[min(34rem,calc(100dvh-12rem))] overscroll-contain pr-2.5 outline-none">
+                <ScrollArea.Viewport className="h-full max-h-dialog-body overscroll-contain pr-2.5 outline-none">
                   {SECTIONS.map((section) => (
                     <SectionPanel key={section.value} section={section} />
                   ))}
                 </ScrollArea.Viewport>
 
-                <ScrollArea.Scrollbar className="flex w-1.5 justify-center rounded-full py-1 opacity-0 transition-opacity data-hovering:opacity-100 data-scrolling:opacity-100">
+                <ScrollArea.Scrollbar className="w-1.5 rounded-full py-1 opacity-0 transition-opacity data-hovering:opacity-100 data-scrolling:opacity-100">
                   <ScrollArea.Thumb className="w-full rounded-full bg-ink/25" />
                 </ScrollArea.Scrollbar>
               </ScrollArea.Root>

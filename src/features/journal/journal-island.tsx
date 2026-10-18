@@ -14,7 +14,7 @@ export function JournalIsland({ className }: { readonly className?: string | und
 
   return (
     <Island className={className}>
-      <section aria-label="Journal" className="flex w-[min(21rem,calc(100vw-2rem))] flex-col gap-2 p-3">
+      <section aria-label="Journal" className="flex w-journal flex-col gap-2 p-3">
         <header className="flex items-center justify-between pl-1">
           <h2 className="font-semibold text-ink text-lg">Journal</h2>
 
