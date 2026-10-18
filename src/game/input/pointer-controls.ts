@@ -22,6 +22,13 @@ interface TrackedPointer {
   y: number;
 }
 
+interface PinchMeasure {
+  readonly angle: number;
+  readonly distance: number;
+  readonly middleX: number;
+  readonly middleY: number;
+}
+
 type Gesture =
   | { readonly kind: "idle" }
   | { readonly kind: "orbit" }
@@ -46,6 +53,21 @@ function wheelPixels(event: WheelEvent, pageHeight: number): number {
   }
 
   return event.deltaY;
+}
+
+function measurePinch(pointers: ReadonlyMap<number, TrackedPointer>): PinchMeasure | null {
+  const [first, second] = [...pointers.values()];
+
+  if (first === undefined || second === undefined) {
+    return null;
+  }
+
+  return {
+    angle: Math.atan2(second.y - first.y, second.x - first.x),
+    distance: Math.hypot(second.x - first.x, second.y - first.y),
+    middleX: (first.x + second.x) / 2,
+    middleY: (first.y + second.y) / 2,
+  };
 }
 
 export class PointerControls {
@@ -125,19 +147,13 @@ export class PointerControls {
       this.#tool.end();
     }
 
-    const [first, second] = [...this.#pointers.values()];
+    const pinch = measurePinch(this.#pointers);
 
-    if (first === undefined || second === undefined) {
+    if (pinch === null) {
       return;
     }
 
-    this.#gesture = {
-      angle: Math.atan2(second.y - first.y, second.x - first.x),
-      distance: Math.hypot(second.x - first.x, second.y - first.y),
-      kind: "pinch",
-      middleX: (first.x + second.x) / 2,
-      middleY: (first.y + second.y) / 2,
-    };
+    this.#gesture = { ...pinch, kind: "pinch" };
   }
 
   #move(event: PointerEvent): void {
@@ -188,25 +204,20 @@ export class PointerControls {
   }
 
   #continuePinch(gesture: Extract<Gesture, { kind: "pinch" }>): void {
-    const [first, second] = [...this.#pointers.values()];
+    const pinch = measurePinch(this.#pointers);
 
-    if (first === undefined || second === undefined) {
+    if (pinch === null) {
       return;
     }
 
-    const distance = Math.hypot(second.x - first.x, second.y - first.y);
-    const angle = Math.atan2(second.y - first.y, second.x - first.x);
-    const middleX = (first.x + second.x) / 2;
-    const middleY = (first.y + second.y) / 2;
+    this.#camera.zoom(gesture.distance / Math.max(1, pinch.distance), this.#pick(pinch.middleX, pinch.middleY));
+    this.#camera.orbit(pinch.angle - gesture.angle, 0);
+    this.#camera.pan(pinch.middleX - gesture.middleX, pinch.middleY - gesture.middleY, this.#canvas.clientHeight);
 
-    this.#camera.zoom(gesture.distance / Math.max(1, distance), this.#pick(middleX, middleY));
-    this.#camera.orbit(angle - gesture.angle, 0);
-    this.#camera.pan(middleX - gesture.middleX, middleY - gesture.middleY, this.#canvas.clientHeight);
-
-    gesture.distance = distance;
-    gesture.angle = angle;
-    gesture.middleX = middleX;
-    gesture.middleY = middleY;
+    gesture.distance = pinch.distance;
+    gesture.angle = pinch.angle;
+    gesture.middleX = pinch.middleX;
+    gesture.middleY = pinch.middleY;
   }
 
   #up(event: PointerEvent): void {

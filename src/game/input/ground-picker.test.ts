@@ -26,7 +26,9 @@ describe("ground picker", () => {
   });
 
   it("lands on the slope of uneven ground", () => {
-    const heightAt = (x: number) => x * 0.2;
+    function heightAt(x: number): number {
+      return x * 0.2;
+    }
 
     const picker = new GroundPicker(cameraLookingAt(0, 0), heightAt, 2000);
 

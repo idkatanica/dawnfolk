@@ -9,19 +9,18 @@ export interface PowerSelection {
   readonly powerId: PowerId;
 }
 
-export interface BrushCursor {
+interface BrushCursor {
   readonly hide: () => void;
   readonly show: (point: Vector3, radius: number, isPressed: boolean) => void;
 }
 
-export type CommandSink = (command: SimulationCommand) => void;
+type CommandSink = (command: SimulationCommand) => void;
 
-export type TapSelector = (point: Vector3 | null, screen: ScreenPoint) => void;
-
-const MARKER_RADIUS = 12;
+type TapSelector = (point: Vector3 | null, screen: ScreenPoint) => void;
 
 type StrokeState = "idle" | "stroking";
 
+const MARKER_RADIUS = 12;
 const RADIUS_PARAMETERS = ["radius", "craterRadius"] as const;
 const SCATTER_PARAMETER = "scatter";
 
@@ -35,7 +34,7 @@ function numberParameter(parameters: ParameterValueMap, name: string): number | 
   return null;
 }
 
-export function cursorRadius(selection: PowerSelection): number {
+function cursorRadius(selection: PowerSelection): number {
   for (const name of RADIUS_PARAMETERS) {
     const radius = numberParameter(selection.parameters, name);
 

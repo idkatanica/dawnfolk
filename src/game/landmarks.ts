@@ -3,7 +3,7 @@ import { createRandom } from "../shared/random.ts";
 import type { Lake } from "../world/water.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 
-export type LandmarkKind = "lake" | "peak";
+type LandmarkKind = "lake" | "peak";
 
 export interface Landmark {
   readonly detail: string | null;
