@@ -26,7 +26,7 @@ top (`src/features`, `src/design`, `src/app`).
 
 - Rendering changes are verified by looking, not by tests alone. Open a
   reproducible scene with URL parameters, such as
-  `?seed=7&quality=high&paused=1&hours=11&camera=x,z,distance,pitch,yaw`, and
+  `?seed=7&shape=round&quality=high&paused=1&hours=11&camera=x,z,distance,pitch,yaw`, and
   compare screenshots before and after at 1440×900, 768×1024 and 390×844.
 - Headless Chromium with `--use-angle=swiftshader` renders in software:
   colors, speed and some WebGPU paths differ from a GPU. Prefer
@@ -55,6 +55,11 @@ top (`src/features`, `src/design`, `src/app`).
   or plants stand in rivers.
 - Terrain and water share their level of detail per patch. A shader that reads
   a neighbour cell must account for the patch step, or far views break.
+- The island edge is one outline per shape, in
+  `rendering/terrain/island-outline.ts`. Terrain, water, grass and rain are cut
+  by it, and the cliff top breaks at every terrain edge it crosses, so the
+  ground and the cliff meet at any level of detail. Plants keep clear of the
+  coast through `hasRoomFromCoast`.
 - Shaders are TSL node graphs in TypeScript. Keep large numbers out of float
   hashes: float32 loses precision past 16 million and patterns line up.
 - The engine projects compile with `noUncheckedIndexedAccess` off for typed

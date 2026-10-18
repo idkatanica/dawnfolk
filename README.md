@@ -43,8 +43,9 @@ procedurally generated island rendered with WebGPU.
 
 ## Features
 
-- **A living island.** Every world is generated from a seed: relief, erosion, rivers, lakes, waterfalls off the
-  edge, climate, biomes and forests. Seasons change foliage, snow settles and melts, fire spreads with the wind.
+- **A living island.** Every world is named and grown from a seed, round with bays and headlands or square: relief,
+  erosion, rivers, lakes, waterfalls off the edge, climate, biomes and forests. Seasons change foliage, snow settles
+  and melts, fire spreads with the wind.
 - **Tribes with their own lives.** People gather, hunt, fish, farm, chop, quarry, build camps and huts, warm
   themselves at campfires, pray, learn technologies, migrate and split into new tribes. Herds of deer, mammoths and
   ibex graze and flee, ibex up the nearest heights, and wolf packs roam far from people.
@@ -73,7 +74,8 @@ bun install
 bun run dev          # http://localhost:5173
 ```
 
-URL parameters help when exploring: `?seed=7&quality=low|medium|high&hours=21&paused=1&camera=x,z,distance,pitch,yaw`.
+Without parameters the game opens on a start screen that names the world and picks its shape. URL parameters skip
+it and help when exploring: `?seed=7&shape=round|square&name=Ashvale&quality=low|medium|high&hours=21&paused=1&camera=x,z,distance,pitch,yaw`.
 
 | Script | What it does |
 | --- | --- |
