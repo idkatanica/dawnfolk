@@ -6,6 +6,7 @@ import { PlantState } from "../../world/vegetation-store.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
 import { Simulation } from "../simulation.ts";
 import { createVegetatedWorld, floodCells, monumentAround, plantInCell } from "../testing/test-world.ts";
+import { raiseTerrain } from "../world/terrain-editing.ts";
 
 const VALLEY_SIDES = 0.25;
 const VALLEY_FALL = 0.02;
@@ -97,6 +98,19 @@ describe("water after a blast", () => {
 
     expect(simulation.world.water.lakes.length).toBeGreaterThan(before);
     expect(upstream.length).toBeGreaterThan(0);
+  });
+
+  it("washes away the buildings that a new lake covers", () => {
+    const simulation = createValley();
+
+    const shelter = simulation.buildings.add({ kind: "tent", rotation: 0, tribeId: 0, x: 5, z: 80 }, simulation.random);
+
+    shelter.progress = 1;
+    raiseTerrain(simulation.world, { radius: 40, x: 5, z: 30 }, 9);
+    settle(simulation, 8);
+
+    expect(simulation.world.isWaterAt(5, 80)).toBe(true);
+    expect(simulation.buildings.all).not.toContain(shelter);
   });
 
   it("drowns the plants that the rising water reaches", () => {

@@ -470,6 +470,12 @@ export class Simulation {
   }
 
   #settleNewWater(): void {
+    for (const building of [...this.buildings.all]) {
+      if (building.cell >= 0 && this.world.isWater(building.cell)) {
+        this.buildings.remove(building, "destroyed");
+      }
+    }
+
     for (const monument of drownMonuments(this.world)) {
       this.chronicle.record({
         category: "warning",
