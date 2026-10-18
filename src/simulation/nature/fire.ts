@@ -234,6 +234,7 @@ export class FireSystem {
 
     if (canopyFuel[cell] < crownThreshold && canopyBefore >= crownThreshold) {
       this.#burntTreeCount += vegetation.burnTreesInCell(cell, tick.conditions.day);
+      this.#world.markDisturbed(cell, tick.conditions.day);
     }
 
     this.#raiseScorch(cell);
@@ -254,6 +255,7 @@ export class FireSystem {
     const { canopyFuel, fields, initialCanopyFuel, vegetation } = this.#world;
 
     fields.fire[cell] = 0;
+    this.#world.markDisturbed(cell, day);
 
     if (fuelLeft <= BURNT_OUT_FUEL) {
       fields.scorch[cell] = 1;

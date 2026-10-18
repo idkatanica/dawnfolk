@@ -31,6 +31,7 @@ import { applyPower, parsePowerParameters } from "./powers/power-registry.ts";
 import { type BuildingIncidentKind, BuildingSystem } from "./society/buildings.ts";
 import { SocietySystem } from "./society/society.ts";
 import type { Tribe } from "./society/tribe.ts";
+import { drowningText, drownMonuments } from "./world/monument-damage.ts";
 import { WaterRecomputation } from "./world/water-recomputation.ts";
 import { WorldState } from "./world/world-state.ts";
 
@@ -382,6 +383,7 @@ export class Simulation {
       buildings: this.buildings,
       chronicle: this.chronicle,
       effects: this.effects,
+      embers: this.embers,
       environment: describeEnvironment(this.calendar, this.weather),
       fauna: this.fauna,
       fire: this.fire,
@@ -464,6 +466,25 @@ export class Simulation {
       riverStrength: Uint8Array.from(this.world.terrain.riverStrength),
       waterSurface: Float32Array.from(this.world.terrain.waterSurface),
     };
+    this.#settleNewWater();
+  }
+
+  #settleNewWater(): void {
+    for (const building of [...this.buildings.all]) {
+      if (building.cell >= 0 && this.world.isWater(building.cell)) {
+        this.buildings.remove(building, "destroyed");
+      }
+    }
+
+    for (const monument of drownMonuments(this.world)) {
+      this.chronicle.record({
+        category: "warning",
+        text: drowningText(monument),
+        tribeId: null,
+        x: monument.x,
+        z: monument.z,
+      });
+    }
   }
 
   #updateWeather(days: number): void {

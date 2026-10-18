@@ -91,6 +91,8 @@ const SMOULDER_STRENGTH = 2.4;
 const SMOULDER_HEIGHT = 5;
 const SMOULDER_HEAT = 0.02;
 const SMOULDER_CRACK_SCALE = 3.4;
+const FALLEN_TILT = Math.PI / 2 - 0.06;
+const FALLEN_CHARRING = 0.85;
 
 interface PlantMaterialOptions {
   readonly glow: FireGlow;
@@ -102,6 +104,13 @@ interface PlantMaterialOptions {
 
 function isSlot(slot: Node<"float">, value: number): Node<"bool"> {
   return equal(int(slot.add(0.5)), int(value));
+}
+
+function tiltOver(vector: Node<"vec3">): Node<"vec3"> {
+  const cosine = Math.cos(FALLEN_TILT);
+  const sine = Math.sin(FALLEN_TILT);
+
+  return vec3(vector.x, vector.y.mul(cosine).sub(vector.z.mul(sine)), vector.y.mul(sine).add(vector.z.mul(cosine)));
 }
 
 function leafPatternAt(foliage: Node<"float">): Node<"float"> {
@@ -150,6 +159,8 @@ export function createPlantMaterial({
   const scale = appearance.x;
   const tint = appearance.y;
   const isBurnt = equal(int(appearance.z.add(0.5)), int(PlantState.Burnt));
+  const isFallen = equal(int(appearance.z.add(0.5)), int(PlantState.Fallen));
+  const isDead = isBurnt.or(isFallen);
   const fruit = appearance.w;
 
   const isFoliage = isSlot(slot, MaterialSlot.Leaf).or(isSlot(slot, MaterialSlot.Needle));
@@ -157,11 +168,12 @@ export function createPlantMaterial({
   const isBerry = equal(int(part.add(0.5)), int(BERRY_PART));
   const treeThreshold = fract(tint.mul(13.7)).mul(0.9).add(0.05);
 
-  const hasFoliage = look.foliageCoverage.greaterThan(treeThreshold).and(isBurnt.not());
+  const hasFoliage = look.foliageCoverage.greaterThan(treeThreshold).and(isDead.not());
   const hasBerry = fruit.greaterThan(berryChance).and(hasFoliage);
 
-  const keep = select(isFoliage, hasFoliage, select(isBerry, hasBerry, isBlossom.not().or(isBurnt.not())));
-  const local = positionLocal.mul(scale).mul(select(keep, float(1), float(0)));
+  const keep = select(isFoliage, hasFoliage, select(isBerry, hasBerry, isBlossom.not().or(isDead.not())));
+  const kept = positionLocal.mul(scale).mul(select(keep, float(1), float(0)));
+  const local = select(isFallen, tiltOver(kept), kept);
 
   const phase = placement.x.mul(0.047).add(placement.z.mul(0.031));
   const swaySquared = sway.mul(sway);
@@ -179,10 +191,11 @@ export function createPlantMaterial({
 
   const windOffset = vec3(weather.wind.x, 0, weather.wind.y)
     .mul(bend)
-    .add(vec3(shiver, shiver.mul(0.5), shiver.negate()));
+    .add(vec3(shiver, shiver.mul(0.5), shiver.negate()))
+    .mul(select(isFallen, float(0), float(1)));
 
   material.positionNode = Fn(() => {
-    normalLocal.assign(rotateAroundUp(normalLocal, placement.w));
+    normalLocal.assign(rotateAroundUp(select(isFallen, tiltOver(normalLocal), normalLocal), placement.w));
 
     return rotateAroundUp(local, placement.w).add(windOffset).add(placement.xyz);
   })();
@@ -193,7 +206,8 @@ export function createPlantMaterial({
 
   const snow = varying(smoothstep(0.1, 0.45, surface.r), "plantSnow");
   const heat = varying(surface.a, "plantHeat");
-  const charred = varying(select(isBurnt, float(1), select(isFoliage, float(0), float(0.6))), "plantCharred");
+  const charred = varying(select(isDead, float(1), select(isFoliage, float(0), float(0.6))), "plantCharred");
+  const charring = select(isBurnt, float(0.92), select(isFallen, surface.b.mul(FALLEN_CHARRING), float(0)));
 
   const slotColors = slotColorTable();
 
@@ -202,8 +216,8 @@ export function createPlantMaterial({
 
   const shaded = baseColor.mul(shade).mul(variation);
 
-  const vertexColor = varying(mix(shaded, CHARCOAL, select(isBurnt, float(0.92), float(0))), "plantColor");
-  const foliageMask = varying(select(isFoliage.and(isBurnt.not()), float(1), float(0)), "plantFoliage");
+  const vertexColor = varying(mix(shaded, CHARCOAL, charring), "plantColor");
+  const foliageMask = varying(select(isFoliage.and(isDead.not()), float(1), float(0)), "plantFoliage");
   const snowOnTop = snow.mul(smoothstep(0.25, 0.75, normalWorld.y));
 
   const leafPattern = leafPatternAt(foliageMask);

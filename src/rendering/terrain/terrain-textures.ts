@@ -1,3 +1,4 @@
+import { uniform } from "three/tsl";
 import {
   ClampToEdgeWrapping,
   DataTexture,
@@ -15,6 +16,7 @@ import type { WorldMirror } from "../../game/world-mirror.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { buildShoreField, SHORE_CHANNELS, type ShoreSource, updateShoreDepths } from "../water/shore-field.ts";
 import type { WorldChanges } from "../world-changes.ts";
+import { bloomFor } from "./fireweed.ts";
 import { GroundAlbedo } from "./ground-albedo.ts";
 import { IslandOutline } from "./island-outline.ts";
 
@@ -45,6 +47,7 @@ function surfaceTexture(data: Uint8Array, size: number): DataTexture {
 }
 
 export class TerrainTextures {
+  readonly bloom = uniform(0);
   readonly height: DataTexture;
   readonly outline: IslandOutline;
   readonly shore: DataTexture;
@@ -76,6 +79,8 @@ export class TerrainTextures {
   }
 
   update(renderer: WebGPURenderer, season: number, changes: WorldChanges): void {
+    this.bloom.value = bloomFor(season);
+
     if (changes.heightRegion !== null) {
       this.height.needsUpdate = true;
     }

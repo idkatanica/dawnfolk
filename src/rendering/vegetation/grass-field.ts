@@ -38,6 +38,7 @@ import {
 } from "three/webgpu";
 import { clamp as clampNumber, FULL_TURN, inverseLerp, saturate } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
+import { FIREWEED, fireweedOn } from "../terrain/fireweed.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { gustAt, type PlantWeather } from "./plant-material.ts";
@@ -220,7 +221,9 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   )();
 
   const shadedGround = ground.rgb.mul(mix(float(0.68), float(1.22), along)).mul(tint);
-  const bladeColor = mix(shadedGround, shadedGround.mul(vec3(1.08, 1.1, 0.82)), curve);
+  const leafColor = mix(shadedGround, shadedGround.mul(vec3(1.08, 1.1, 0.82)), curve);
+  const isFlowering = bladeRandom(19).lessThan(fireweedOn(surface.b, textures.bloom).mul(0.7));
+  const bladeColor = mix(leafColor, FIREWEED, select(isFlowering, smoothstep(0.55, 0.85, along), float(0)));
 
   material.colorNode = varying(mix(ground.rgb, bladeColor, growth), "grassColor");
   material.normalNode = transformNormalToView(varying(bladeNormal, "grassNormal"));

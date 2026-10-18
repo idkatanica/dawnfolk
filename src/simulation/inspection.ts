@@ -208,9 +208,11 @@ function plantsIn(world: WorldState, cell: number): PlantDescription[] {
   const plants: PlantDescription[] = [];
 
   for (let plant = vegetation.firstPlantInCell(cell); plant !== NO_PLANT; plant = vegetation.nextPlantInCell(plant)) {
+    const { name } = plantSpeciesDefinition(vegetation.species[plant]);
+
     plants.push({
       isBurnt: vegetation.state[plant] === PlantState.Burnt,
-      name: plantSpeciesDefinition(vegetation.species[plant]).name,
+      name: vegetation.state[plant] === PlantState.Fallen ? `${name} (fallen)` : name,
     });
   }
 

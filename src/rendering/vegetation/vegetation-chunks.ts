@@ -1,5 +1,5 @@
 import { Box3, Vector3 } from "three/webgpu";
-import { PLANT_SPECIES, type PlantSpeciesIndex } from "../../content/plants.ts";
+import { isMonumentSpecies, PLANT_SPECIES, type PlantSpeciesIndex } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { canonicalHeight, farVariantOf, footprintRadius, plantVariantCount } from "../../models/plants/plant-models.ts";
 import type { PlantDetailLevel } from "../../models/plants/tree-mesher.ts";
@@ -211,7 +211,8 @@ export class VegetationChunks {
     const height = vegetation.height[plant];
     const seed = vegetation.seed[plant];
     const scale = height / canonicalHeight(PLANT_SPECIES[species].index);
-    const y = this.#groundUnder(x, z, this.#footprints[species] * scale);
+    const footprint = this.#footprints[species] * scale;
+    const y = isMonumentSpecies(species) ? this.#groundAround(x, z, footprint) : this.#groundUnder(x, z, footprint);
 
     target[offset] = x;
     target[offset + 1] = y - PLANT_SINKING;
@@ -222,8 +223,22 @@ export class VegetationChunks {
     target[offset + 6] = vegetation.state[plant];
     target[offset + 7] = vegetation.fruit[plant];
 
-    bounds.expandByPoint(corner.set(x - height * 0.5, y - 1, z - height * 0.5));
-    bounds.expandByPoint(corner.set(x + height * 0.5, y + height, z + height * 0.5));
+    const reach = vegetation.state[plant] === PlantState.Fallen ? height : height * 0.5;
+
+    bounds.expandByPoint(corner.set(x - reach, y - 1, z - reach));
+    bounds.expandByPoint(corner.set(x + reach, y + height, z + reach));
+  }
+
+  #groundAround(x: number, z: number, radius: number): number {
+    const mirror = this.#mirror;
+
+    const around =
+      mirror.heightAt(x + radius, z) +
+      mirror.heightAt(x - radius, z) +
+      mirror.heightAt(x, z + radius) +
+      mirror.heightAt(x, z - radius);
+
+    return Math.min(mirror.heightAt(x, z), around / 4);
   }
 
   #groundUnder(x: number, z: number, radius: number): number {

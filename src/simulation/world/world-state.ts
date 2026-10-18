@@ -5,7 +5,7 @@ import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../wo
 import { hasRoomFromCoast, isOnIsland } from "../../world/coast.ts";
 import { canGrowWild, canStandOn, isOpenGround, slopeAt } from "../../world/footing.ts";
 import type { IslandShapeKind } from "../../world/island-shape.ts";
-import type { Monument } from "../../world/monuments.ts";
+import { type Monument, type MonumentCondition, MonumentDamage } from "../../world/monuments.ts";
 import type { TerrainData } from "../../world/terrain-data.ts";
 import {
   isWaterAtPoint,
@@ -17,6 +17,7 @@ import {
 import { NO_PLANT, type PlantPlacement, type VegetationStore } from "../../world/vegetation-store.ts";
 import { NO_WATER, type WaterFeatures } from "../../world/water.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
+import { CellSet } from "./cell-set.ts";
 
 export const NO_BUILDING = -1;
 export const MONUMENT_GROUND = -2;
@@ -57,14 +58,17 @@ function createSurfaceFields(cellCount: number, ground: Uint8Array): SurfaceFiel
 
 export class WorldState {
   readonly canopyFuel: Float32Array;
+  readonly disturbedDay: Float32Array;
   readonly fields: SurfaceFields;
   readonly grid: WorldGrid;
   readonly groundChanges: RowChangeTracker;
   readonly heightChanges = new RegionChangeTracker();
   readonly initialCanopyFuel: Float32Array;
   readonly lowestHeight: number;
+  readonly monumentConditions: readonly MonumentCondition[];
   readonly monuments: readonly Monument[];
   readonly occupancy: Int32Array;
+  readonly recovering: CellSet;
   readonly seed: number;
   readonly shape: IslandShapeKind;
   readonly surfaceChanges: RowChangeTracker;
@@ -73,6 +77,7 @@ export class WorldState {
   heightVersion = 0;
   water: WaterFeatures;
   waterVersion = 0;
+  #hasSuddenHeightEdit = false;
 
   constructor(generated: GeneratedWorld) {
     this.grid = new WorldGrid(generated.dimensions);
@@ -82,10 +87,13 @@ export class WorldState {
     this.vegetation = generated.vegetation;
     this.water = generated.water;
     this.monuments = generated.monuments;
+    this.monumentConditions = generated.monuments.map(() => ({ damage: MonumentDamage.Standing, isDrowned: false }));
     this.fields = createSurfaceFields(this.grid.cellCount, generated.terrain.ground);
     this.occupancy = new Int32Array(this.grid.cellCount).fill(NO_BUILDING);
     this.canopyFuel = new Float32Array(this.grid.cellCount);
     this.initialCanopyFuel = new Float32Array(this.grid.cellCount);
+    this.disturbedDay = new Float32Array(this.grid.cellCount);
+    this.recovering = new CellSet(this.grid.cellCount);
     this.surfaceChanges = new RowChangeTracker(this.grid.cellsPerSide);
     this.groundChanges = new RowChangeTracker(this.grid.cellsPerSide);
     this.lowestHeight = lowestValue(generated.terrain.height);
@@ -191,6 +199,15 @@ export class WorldState {
     return this.fields.fire[cell] > 0;
   }
 
+  markDisturbed(cell: number, day: number): void {
+    if (cell < 0) {
+      return;
+    }
+
+    this.disturbedDay[cell] = day;
+    this.recovering.add(cell);
+  }
+
   markSurfaceCell(cell: number): void {
     this.surfaceChanges.markRow(this.grid.rowOf(cell));
   }
@@ -227,6 +244,19 @@ export class WorldState {
     this.heightVersion += 1;
   }
 
+  finishSuddenHeightEdit(region: CellRegion): void {
+    this.finishHeightEdit(region);
+    this.#hasSuddenHeightEdit = true;
+  }
+
+  takeSuddenHeightEdit(): boolean {
+    const isSudden = this.#hasSuddenHeightEdit;
+
+    this.#hasSuddenHeightEdit = false;
+
+    return isSudden;
+  }
+
   plant(placement: PlantPlacement): number {
     if (!hasRoomFromCoast(this.terrain.coastDistance, this.grid, placement.x, placement.z)) {
       return NO_PLANT;
@@ -245,6 +275,16 @@ export class WorldState {
     const cell = this.vegetation.cell[index];
 
     this.vegetation.remove(index);
+
+    if (cell >= 0) {
+      this.refreshCanopy(cell);
+    }
+  }
+
+  fellPlant(index: number, day: number, rotation: number): void {
+    const cell = this.vegetation.cell[index];
+
+    this.vegetation.fell(index, day, rotation);
 
     if (cell >= 0) {
       this.refreshCanopy(cell);
@@ -276,6 +316,10 @@ export class WorldState {
 
   replaceWater(water: WaterFeatures): void {
     this.water = water;
+    this.markWaterChanged();
+  }
+
+  markWaterChanged(): void {
     this.waterVersion += 1;
   }
 }

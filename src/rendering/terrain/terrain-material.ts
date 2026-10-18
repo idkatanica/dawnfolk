@@ -28,6 +28,7 @@ import { MeshStandardNodeMaterial, type Node } from "three/webgpu";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { unitNoise } from "../node-helpers.ts";
+import { FIREWEED, fireweedOn } from "./fireweed.ts";
 import type { GroundWarp } from "./ground-warp.ts";
 import { sampleCellsNode } from "./height-sampling.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
@@ -39,6 +40,10 @@ const ASH = vec3(0.13, 0.12, 0.11);
 const EMBER_DEEP = vec3(1.2, 0.24, 0.03);
 const EMBER_BRIGHT = vec3(1.3, 0.42, 0.06);
 const GROUND_FIRE_LIGHT = 0.6;
+const STONE = vec3(0.19, 0.155, 0.12);
+const STRATA_FREQUENCY = 0.45;
+const STRATA_CONTRAST = 0.035;
+const STEEP_FACE_SHADE = 0.82;
 const EMBER_THRESHOLD = 0.004;
 
 function emberGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"float">): Node<"vec3"> {
@@ -165,20 +170,26 @@ export function createTerrainMaterial({
 
   const surface = texture(textures.surface, mapCoordinates);
   const albedo = texture(textures.albedo, mapCoordinates).rgb;
-  const strata = sin(positionWorld.y.mul(0.32).add(broad.mul(6)).add(patches.mul(2.5)))
-    .mul(strataFade.mul(0.05))
-    .add(0.95);
+  const strata = sin(positionWorld.y.mul(STRATA_FREQUENCY).add(broad.mul(2)))
+    .mul(strataFade.mul(STRATA_CONTRAST))
+    .add(1);
 
   const depth = underwaterDepth(textures, grid);
   const snowCover = smoothstep(0.08, 0.42, surface.r);
   const mottled = albedo.mul(broad.mul(0.1).add(patches.mul(0.07)).add(fine.mul(0.035)).add(1));
-  const rockColor = vec3(0.4, 0.38, 0.355)
+  const redStone = smoothstep(0.6, 0.45, albedo.g.div(max(albedo.r, 0.001)));
+  const faceShade = mix(float(1), float(STEEP_FACE_SHADE), smoothstep(0.3, 0.7, steepness));
+  const rockColor = mix(STONE, albedo.mul(0.85), redStone)
     .mul(strata)
-    .mul(fine.mul(0.1).add(patches.mul(0.05)).add(0.97));
+    .mul(broad.mul(0.06).add(patches.mul(0.04)).add(1))
+    .mul(faceShade);
 
   const rockStart = mix(float(0.24), float(0.16), snowCover);
 
-  const rock = smoothstep(rockStart, rockStart.add(0.14), steepness.add(broad.mul(0.07)));
+  const rockBand = mix(float(0.07), float(0.14), snowCover);
+  const edgeGrain = fine.mul(float(0.025).mul(float(1).sub(snowCover)));
+
+  const rock = smoothstep(rockStart, rockStart.add(rockBand), steepness.add(broad.mul(0.07)).add(edgeGrain));
 
   const ground = mix(mottled, rockColor, rock);
 
@@ -193,9 +204,12 @@ export function createTerrainMaterial({
 
   const scorched = mix(underwater, ash, surface.b.mul(0.95));
 
+  const petals = smoothstep(0.55, 0.85, fine.mul(0.65).add(patches.mul(0.35)).add(0.5));
+  const flowering = mix(scorched, FIREWEED, fireweedOn(surface.b, textures.bloom).mul(petals).mul(0.42));
+
   const fireLight = fireLightAt(glow, grid, positionWorld.xz);
 
-  material.colorNode = scorched;
+  material.colorNode = flowering;
   material.roughnessNode = mix(float(0.95), float(0.5), wetness);
   material.metalnessNode = float(0);
   material.emissiveNode = emberGlow(surface.a, positionWorld.xz, fine.mul(0.5).add(0.5)).add(

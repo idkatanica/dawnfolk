@@ -114,6 +114,7 @@ export const explosionPower: PowerHandler<"explosion"> = {
     explode(
       {
         burnsDebris: parameters.burningDebris,
+        catastrophe: "explosion",
         power: percent(parameters.power) / DEFAULT_BLAST_POWER,
         radius: parameters.radius,
         x: target.x,
@@ -147,6 +148,7 @@ export const meteorPower: PowerHandler<"meteor"> = {
       explode(
         {
           burnsDebris: parameters.ignites,
+          catastrophe: "meteor",
           power: METEOR_POWER * (parameters.craterRadius / METEOR_REFERENCE_CRATER),
           radius: parameters.craterRadius,
           x: target.x,

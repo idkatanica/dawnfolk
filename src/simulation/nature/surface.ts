@@ -12,6 +12,7 @@ const PRECIPITATION_THRESHOLD = 0.02;
 const ETERNAL_SNOW_COVER = 0.45;
 const ICE_TEMPERATURE = -2;
 const WARM_GROUND_TEMPERATURE = 3;
+const COLD_GROWTH = 0.2;
 const RAIN_MELT = 0.004;
 const UNBUILT_MASK = -1;
 const GROUND_FUEL = Float64Array.from(GROUNDS, (ground) => ground.fuel);
@@ -360,11 +361,12 @@ export class SurfaceSystem {
 }
 
 function updateWaterCell(cell: number, fields: SurfaceFields, terrain: TerrainData, step: SurfaceStep): boolean {
-  const { snow, wetness } = fields;
+  const { scorch, snow, wetness } = fields;
 
   const temperature = terrain.baseTemperature[cell] + step.airTemperatureOffset;
   const snowBefore = snow[cell];
   const wetnessBefore = wetness[cell];
+  const scorchBefore = scorch[cell];
 
   const snowAfter =
     temperature < ICE_TEMPERATURE
@@ -374,7 +376,11 @@ function updateWaterCell(cell: number, fields: SurfaceFields, terrain: TerrainDa
   snow[cell] = snowAfter;
   wetness[cell] = 1;
 
-  return snowAfter !== snowBefore || wetnessBefore !== 1;
+  if (scorchBefore > 0) {
+    scorch[cell] = Math.fround(Math.max(0, scorchBefore - step.scorchFading));
+  }
+
+  return snowAfter !== snowBefore || wetnessBefore !== 1 || scorch[cell] !== scorchBefore;
 }
 
 function recoverFromFire(cell: number, fields: SurfaceFields, terrain: TerrainData, step: SurfaceStep): boolean {
@@ -386,20 +392,25 @@ function recoverFromFire(cell: number, fields: SurfaceFields, terrain: TerrainDa
 
   const groundFuel = GROUND_FUEL[terrain.ground[cell]];
   const fuelBefore = fuel[cell];
+  const scorchBefore = scorch[cell];
 
-  if (fuelBefore < groundFuel) {
-    const growthRate = terrain.baseTemperature[cell] + step.airTemperatureOffset > WARM_GROUND_TEMPERATURE ? 1 : 0.2;
-
-    fuel[cell] = Math.min(groundFuel, fuelBefore + groundFuel * 0.35 * step.days * growthRate);
+  if (fuelBefore >= groundFuel && scorchBefore <= 0) {
+    return false;
   }
 
-  const scorchBefore = scorch[cell];
+  const isWarm = terrain.baseTemperature[cell] + step.airTemperatureOffset > WARM_GROUND_TEMPERATURE;
+
+  const growthRate = isWarm ? 1 : COLD_GROWTH;
+
+  if (fuelBefore < groundFuel) {
+    fuel[cell] = Math.min(groundFuel, fuelBefore + groundFuel * 0.35 * step.days * growthRate);
+  }
 
   if (scorchBefore <= 0) {
     return false;
   }
 
-  const scorchAfter = Math.fround(Math.max(0, scorchBefore - step.scorchFading));
+  const scorchAfter = Math.fround(Math.max(0, scorchBefore - step.scorchFading * growthRate));
 
   scorch[cell] = scorchAfter;
 
