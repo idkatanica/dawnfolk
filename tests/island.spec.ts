@@ -32,10 +32,15 @@ test.describe("the island", () => {
     await expect(places.getByText(PEAK_HEIGHT)).toBeAttached();
   });
 
-  test("shows the settings of the chosen power", async ({ page }) => {
+  test("shows the settings of the chosen power", async ({ page }, testInfo) => {
     await page.getByRole("button", { exact: true, name: "Fire" }).click();
 
     await expect(page.getByRole("region", { name: "Fire settings" })).toBeVisible();
+
+    if (testInfo.project.name === "phone") {
+      await page.getByRole("button", { name: "Adjust settings" }).click();
+    }
+
     await expect(page.getByRole("slider", { name: "Strength" })).toBeVisible();
 
     await page.getByRole("button", { exact: true, name: "Select" }).click();
