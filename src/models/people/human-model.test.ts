@@ -31,6 +31,7 @@ import { HUMAN_BONE_COUNT, HUMAN_SKELETON, HumanBone } from "./human-skeleton.ts
 
 const highParts = buildHumanParts(HUMAN_DETAILS.high);
 const lowParts = buildHumanParts(HUMAN_DETAILS.low);
+const farParts = buildHumanParts(HUMAN_DETAILS.far);
 
 const TOUCHING = 0.01;
 const TRIBE = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
@@ -118,13 +119,16 @@ describe("human model", () => {
   it("closes the body so no hole opens at a shoulder or a joint", () => {
     expect(openEdgeCount(highParts[humanPartIndex("body")])).toBe(0);
     expect(openEdgeCount(lowParts[humanPartIndex("body")])).toBe(0);
+    expect(openEdgeCount(farParts[humanPartIndex("body")])).toBe(0);
   });
 
-  it("saves triangles at the low level of detail", () => {
+  it("saves triangles at every lower level of detail", () => {
     const highTriangles = highParts.reduce((sum, mesh) => sum + triangleCount(mesh), 0);
     const lowTriangles = lowParts.reduce((sum, mesh) => sum + triangleCount(mesh), 0);
+    const farTriangles = farParts.reduce((sum, mesh) => sum + triangleCount(mesh), 0);
 
     expect(lowTriangles).toBeLessThan(highTriangles * 0.75);
+    expect(farTriangles).toBeLessThan(lowTriangles * 0.5);
   });
 });
 
@@ -132,6 +136,7 @@ describe("attached parts", () => {
   it.each([
     ["high", highParts],
     ["low", lowParts],
+    ["far", farParts],
   ] as const)("keeps every worn part and tool on the %s body standing on the ground", (_level, parts) => {
     for (const torso of TORSOS) {
       for (const part of HUMAN_PARTS.filter(isWorn)) {
@@ -193,6 +198,7 @@ describe("moving parts", () => {
   describe.each([
     ["high", highParts],
     ["low", lowParts],
+    ["far", farParts],
   ] as const)("on the %s body", (_level, parts) => {
     it.each(PERSON_POSES)("keeps every limb, garment and tool on the body to %s", (clip) => {
       const poser = new SkeletonPoser(HUMAN_SKELETON);
@@ -221,7 +227,7 @@ describe("moving parts", () => {
   });
 
   it("builds every part from solid shapes, never paper-thin cards", () => {
-    for (const parts of [highParts, lowParts]) {
+    for (const parts of [highParts, lowParts, farParts]) {
       for (const [index, mesh] of parts.entries()) {
         expect(thinnestPiece(mesh, meshPieces(mesh)), HUMAN_PARTS[index]).toBeGreaterThan(0.001);
       }

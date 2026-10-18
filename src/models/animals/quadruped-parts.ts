@@ -1,4 +1,5 @@
 import { Vector3 } from "three";
+import { alongPath, type DetailSteps } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, SurfacePoint, VertexStyle } from "../mesh/mesh-builder.ts";
 import type { Shape } from "../mesh/shape.ts";
@@ -17,6 +18,7 @@ export function legPath(x: number, points: readonly LegPoint[]): TubePoint[] {
 
 interface LegOptions {
   readonly blend: number;
+  readonly detail: DetailSteps;
   readonly frame: QuadrupedFrame;
   readonly paths: Readonly<Record<LegEnd, readonly TubePoint[]>>;
   readonly seam: number;
@@ -25,13 +27,17 @@ interface LegOptions {
 }
 
 export function addLegs(builder: MeshBuilder, options: LegOptions): void {
-  const { blend, frame, paths, seam, segments, slot } = options;
+  const { blend, detail, frame, paths, seam, segments, slot } = options;
 
   for (const side of LEG_SIDES) {
     for (const end of LEG_ENDS) {
       const style: VertexStyle = { ...legStyle(frame, end, side, blend), slot };
 
-      builder.add(tube(paths[end], { radialSegments: segments }), { seam, style, transform: sideMirror(side) });
+      builder.add(tube(alongPath(paths[end], detail), { radialSegments: segments }), {
+        seam,
+        style,
+        transform: sideMirror(side),
+      });
     }
   }
 }

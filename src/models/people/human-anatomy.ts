@@ -1,4 +1,5 @@
 import { type Matrix4, Vector3 } from "three";
+import { alongPath, segmentsAtLeast } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, VertexStyle } from "../mesh/mesh-builder.ts";
 import type { Shape } from "../mesh/shape.ts";
@@ -139,7 +140,7 @@ export function forEachSide(add: (side: Side, mirror: Matrix4) => void): void {
 }
 
 export function headShape(detail: HumanDetail): Shape {
-  return loft(HEAD_SECTIONS, detail.headSegments);
+  return loft(alongPath(HEAD_SECTIONS, detail), detail.headSegments);
 }
 
 const HEAD_AXIS_Z = -0.01;
@@ -177,6 +178,10 @@ const MOUTH: readonly Triple[] = [
 ];
 
 function addFace(builder: MeshBuilder, head: Shape, detail: HumanDetail): void {
+  if (!detail.hasSmallParts) {
+    return;
+  }
+
   const style = rigidStyle(HumanBone.Head);
   const segments = Math.max(5, detail.headSegments / 2);
 
@@ -234,7 +239,7 @@ function addHead(builder: MeshBuilder, detail: HumanDetail): void {
 }
 
 function handShape(builder: MeshBuilder, style: VertexStyle, mirror: Matrix4, detail: HumanDetail): void {
-  builder.add(sphere(1, detail.limbSegments, 6), {
+  builder.add(sphere(1, detail.limbSegments, segmentsAtLeast(detail, 6, 4)), {
     seam: HAND_SEAM,
     style,
     transform: combine(
@@ -242,6 +247,11 @@ function handShape(builder: MeshBuilder, style: VertexStyle, mirror: Matrix4, de
       transformOf({ position: [0.217, 0.838, 0.016], rotation: [0.08, 0, 0.06], scale: [0.028, 0.054, 0.041] })
     ),
   });
+
+  if (!detail.hasSmallParts) {
+    return;
+  }
+
   builder.add(sphere(1, Math.max(5, detail.limbSegments - 2), 5), {
     seam: HAND_SEAM,
     style,
@@ -258,7 +268,11 @@ function addArms(builder: MeshBuilder, detail: HumanDetail): void {
   forEachSide((side, mirror) => {
     const style = { ...armStyle(side), ...SKIN };
 
-    builder.add(tube(ARM, { radialSegments: detail.limbSegments }), { seam: SKIN_SEAM, style, transform: mirror });
+    builder.add(tube(alongPath(ARM, detail), { radialSegments: detail.limbSegments }), {
+      seam: SKIN_SEAM,
+      style,
+      transform: mirror,
+    });
     builder.add(sphere(SHOULDER_RADIUS, detail.limbSegments, Math.max(4, detail.limbSegments - 3)), {
       seam: SKIN_SEAM,
       style: { ...rigidStyle(sideBones(side).upperArm), ...SKIN },
@@ -272,8 +286,12 @@ function addLegs(builder: MeshBuilder, detail: HumanDetail): void {
   forEachSide((side, mirror) => {
     const style = { ...legStyle(side), ...SKIN };
 
-    builder.add(tube(LEG, { radialSegments: detail.limbSegments }), { seam: SKIN_SEAM, style, transform: mirror });
-    builder.add(loft(FOOT_SECTIONS, detail.limbSegments), {
+    builder.add(tube(alongPath(LEG, detail), { radialSegments: detail.limbSegments }), {
+      seam: SKIN_SEAM,
+      style,
+      transform: mirror,
+    });
+    builder.add(loft(alongPath(FOOT_SECTIONS, detail), detail.limbSegments), {
       seam: SKIN_SEAM,
       style,
       transform: footTransform(side),
@@ -282,16 +300,16 @@ function addLegs(builder: MeshBuilder, detail: HumanDetail): void {
 }
 
 function torsoShape(sections: readonly LoftSection[], detail: HumanDetail): Shape {
-  return loft(sections, detail.torsoSegments);
+  return loft(alongPath(sections, detail), detail.torsoSegments);
 }
 
 function addLimbReferences(builder: MeshBuilder, detail: HumanDetail): void {
   builder.addSeamReference(tube(NECK, { radialSegments: detail.limbSegments }));
 
   forEachSide((side, mirror) => {
-    builder.addSeamReference(tube(ARM, { radialSegments: detail.limbSegments }), mirror);
-    builder.addSeamReference(tube(LEG, { radialSegments: detail.limbSegments }), mirror);
-    builder.addSeamReference(loft(FOOT_SECTIONS, detail.limbSegments), footTransform(side));
+    builder.addSeamReference(tube(alongPath(ARM, detail), { radialSegments: detail.limbSegments }), mirror);
+    builder.addSeamReference(tube(alongPath(LEG, detail), { radialSegments: detail.limbSegments }), mirror);
+    builder.addSeamReference(loft(alongPath(FOOT_SECTIONS, detail), detail.limbSegments), footTransform(side));
   });
 }
 

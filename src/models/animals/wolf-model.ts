@@ -1,5 +1,6 @@
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
+import { alongPath, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, SurfacePoint } from "../mesh/mesh-builder.ts";
 import { deformShape, type Shape, transformShape } from "../mesh/shape.ts";
@@ -7,6 +8,7 @@ import { type BodySection, cone, lengthwiseLoft, sphere, type TubePoint, tube } 
 import { combine, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
 import { degrees } from "../rig/curves.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
+import type { AnimalDetail } from "./animal-detail.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
 import { addEyes, addLegs, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, legStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
@@ -114,10 +116,10 @@ function coatSlot(point: SurfacePoint): number {
   return isBelly ? MaterialSlot.CoatLight : MaterialSlot.Coat;
 }
 
-function addPaws(builder: MeshBuilder, segments: number): void {
+function addPaws(builder: MeshBuilder, detail: AnimalDetail, segments: number): void {
   for (const side of LEG_SIDES) {
     for (const end of LEG_ENDS) {
-      builder.add(sphere(0.042, segments, Math.max(4, segments - 2)), {
+      builder.add(sphere(0.042, segments, segmentsAtLeast(detail, 4, segments - 2)), {
         seam: PAW_SEAM,
         style: { ...legStyle(WOLF_FRAME, end, side, BLEND), slot: MaterialSlot.Coat },
         transform: combine(sideMirror(side), transformOf({ position: PAWS[end], scale: [0.88, 0.62, 1.45] })),
@@ -126,44 +128,59 @@ function addPaws(builder: MeshBuilder, segments: number): void {
   }
 }
 
-function bodyShape(segments: number): Shape {
-  return lengthwiseLoft(BODY, segments + 2);
+function bodyShape(detail: AnimalDetail): Shape {
+  return lengthwiseLoft(BODY, detail.segments + 2);
 }
 
-function neckShape(segments: number): Shape {
+function neckShape(detail: AnimalDetail): Shape {
   const neck = tube(
     [
       { radius: 0.14, x: 0, y: 0.84, z: 0.38 },
       { radius: 0.125, x: 0, y: 0.92, z: 0.5 },
       { radius: 0.105, x: 0, y: 1.02, z: 0.6 },
     ],
-    { radialSegments: segments }
+    { radialSegments: detail.segments }
   );
 
   return transformShape(neck, transformOf({ scale: [0.9, 1, 1] }));
 }
 
-function headShape(segments: number): Shape {
+function headShape(detail: AnimalDetail): Shape {
   const muzzle = tube(
-    [
-      { radius: 0, x: 0, y: 1.045, z: 0.49 },
-      { radius: 0.075, x: 0, y: 1.05, z: 0.52 },
-      { radius: 0.1, x: 0, y: 1.05, z: 0.57 },
-      { radius: 0.105, x: 0, y: 1.05, z: 0.65 },
-      { radius: 0.07, x: 0, y: 1.0, z: 0.76 },
-      { radius: 0.045, x: 0, y: 0.97, z: 0.86 },
-      { radius: 0.038, x: 0, y: 0.96, z: 0.9 },
-      { radius: 0, x: 0, y: 0.958, z: 0.915 },
-    ],
-    { hasEndCap: false, radialSegments: segments }
+    alongPath(
+      [
+        { radius: 0, x: 0, y: 1.045, z: 0.49 },
+        { radius: 0.075, x: 0, y: 1.05, z: 0.52 },
+        { radius: 0.1, x: 0, y: 1.05, z: 0.57 },
+        { radius: 0.105, x: 0, y: 1.05, z: 0.65 },
+        { radius: 0.07, x: 0, y: 1.0, z: 0.76 },
+        { radius: 0.045, x: 0, y: 0.97, z: 0.86 },
+        { radius: 0.038, x: 0, y: 0.96, z: 0.9 },
+        { radius: 0, x: 0, y: 0.958, z: 0.915 },
+      ],
+      detail
+    ),
+    { hasEndCap: false, radialSegments: detail.segments }
   );
 
   return transformShape(muzzle, transformOf({ scale: [0.88, 1, 1] }));
 }
 
-function addHead(builder: MeshBuilder, segments: number): void {
+function addFace(builder: MeshBuilder, shape: Shape, detail: AnimalDetail): void {
+  if (!detail.hasSmallParts) {
+    return;
+  }
+
+  builder.add(sphere(0.026, 6, 4), {
+    style: { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Hoof },
+    transform: transformOf({ position: [0, 0.97, 0.905] }),
+  });
+  addEyes(builder, shape, { direction: [1, 0.7, 0.35], origin: [0, 1.04, 0.68], radius: 0.016, sink: 0.5 });
+}
+
+function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
   const head = rigidStyle(QuadrupedBone.Head);
-  const shape = headShape(segments);
+  const shape = headShape(detail);
 
   builder.add(shape, {
     seam: HEAD_SEAM,
@@ -172,14 +189,10 @@ function addHead(builder: MeshBuilder, segments: number): void {
       slot: (point) => (point.position.y < 0.99 && point.position.z > 0.7 ? MaterialSlot.CoatLight : MaterialSlot.Coat),
     },
   });
-  builder.add(sphere(0.026, 6, 4), {
-    style: { ...head, slot: MaterialSlot.Hoof },
-    transform: transformOf({ position: [0, 0.97, 0.905] }),
-  });
-  addEyes(builder, shape, { direction: [1, 0.7, 0.35], origin: [0, 1.04, 0.68], radius: 0.016, sink: 0.5 });
+  addFace(builder, shape, detail);
 
   for (const side of LEG_SIDES) {
-    builder.add(cone(0.045, 0.13, 5), {
+    builder.add(cone(0.045, 0.13, segmentsUpTo(detail, 5)), {
       seam: EAR_SEAM,
       style: { ...head, slot: MaterialSlot.Coat },
       transform: combine(
@@ -199,23 +212,26 @@ const TAIL: readonly TubePoint[] = [
   { radius: 0, x: 0, y: 0.38, z: -0.86 },
 ];
 
-export function addWolfBody(builder: MeshBuilder, segments: number): void {
-  builder.add(bodyShape(segments), { seam: BODY_SEAM, style: { ...bodyStyle(WOLF_FRAME, 0.14), slot: coatSlot } });
-  builder.add(neckShape(segments), {
+export function addWolfBody(builder: MeshBuilder, detail: AnimalDetail): void {
+  const legSegments = segmentsAtLeast(detail, 5, detail.segments - 2);
+
+  builder.add(bodyShape(detail), { seam: BODY_SEAM, style: { ...bodyStyle(WOLF_FRAME, 0.14), slot: coatSlot } });
+  builder.add(neckShape(detail), {
     seam: NECK_SEAM,
     style: { ...neckStyle(WOLF_FRAME, 0.09), slot: MaterialSlot.Coat },
   });
-  addHead(builder, segments);
+  addHead(builder, detail);
   addLegs(builder, {
     blend: BLEND,
+    detail,
     frame: WOLF_FRAME,
     paths: LEGS,
     seam: LEG_SEAM,
-    segments: Math.max(5, segments - 2),
+    segments: legSegments,
     slot: MaterialSlot.Coat,
   });
-  addPaws(builder, Math.max(5, segments - 2));
-  builder.add(tube(TAIL, { hasEndCap: false, radialSegments: Math.max(5, segments - 3) }), {
+  addPaws(builder, detail, legSegments);
+  builder.add(tube(TAIL, { hasEndCap: false, radialSegments: segmentsAtLeast(detail, 5, detail.segments - 3) }), {
     seam: TAIL_SEAM,
     style: {
       ...tailStyle(WOLF_FRAME, 0.05),
@@ -234,8 +250,11 @@ const RUFF: readonly TubePoint[] = [
 
 const RUFF_NOISE = createVolumeNoise(createRandom(5353));
 
-function ruffShape(segments: number): Shape {
-  const sleeve = transformShape(tube(RUFF, { radialSegments: segments + 4 }), transformOf({ scale: [0.95, 1, 1] }));
+function ruffShape(detail: AnimalDetail): Shape {
+  const sleeve = transformShape(
+    tube(RUFF, { radialSegments: detail.segments + 4 }),
+    transformOf({ scale: [0.95, 1, 1] })
+  );
 
   return deformShape(sleeve, (vertex) => {
     const shag = 0.018 * RUFF_NOISE.fractal(vertex.x * 22, vertex.y * 22, vertex.z * 22, { octaves: 2 });
@@ -245,15 +264,15 @@ function ruffShape(segments: number): Shape {
   });
 }
 
-export function addRuff(builder: MeshBuilder, segments: number): void {
-  builder.add(ruffShape(segments), {
+export function addRuff(builder: MeshBuilder, detail: AnimalDetail): void {
+  builder.add(ruffShape(detail), {
     seam: RUFF_SEAM,
     style: {
       ...neckStyle(WOLF_FRAME, 0.09),
       slot: (point) => (point.position.z > 0.5 && point.position.y < 0.86 ? MaterialSlot.CoatLight : MaterialSlot.Coat),
     },
   });
-  builder.addSeamReference(bodyShape(segments));
-  builder.addSeamReference(neckShape(segments));
-  builder.addSeamReference(headShape(segments));
+  builder.addSeamReference(bodyShape(detail));
+  builder.addSeamReference(neckShape(detail));
+  builder.addSeamReference(headShape(detail));
 }

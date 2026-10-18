@@ -6,6 +6,7 @@ import { maskOf, type PartMask } from "../part-mask.ts";
 import type { Pose } from "../rig/pose.ts";
 import type { Skeleton } from "../rig/skeleton.ts";
 import type { AnimalAppearance } from "./animal-appearance.ts";
+import { ANIMAL_DETAILS, type AnimalDetail, type AnimalDetailLevel } from "./animal-detail.ts";
 import { addDeerBody, addFawnSpots, addLargeAntlers, addSmallAntlers, DEER_FRAME, DEER_GAIT } from "./deer-model.ts";
 import { addIbexBody, addLongHorns, addShortHorns, IBEX_FRAME, IBEX_GAIT } from "./ibex-model.ts";
 import {
@@ -20,11 +21,7 @@ import { type AnimalClipContext, applyAnimalClip, type ExtraMotion, type GaitSty
 import { createQuadrupedSkeleton, LEG_ENDS, LEG_SIDES, legBones, QuadrupedBone } from "./quadruped-skeleton.ts";
 import { addRuff, addWolfBody, WOLF_FRAME, WOLF_GAIT } from "./wolf-model.ts";
 
-type AnimalDetailLevel = "high" | "low";
-
-const ANIMAL_SEGMENTS: Readonly<Record<AnimalDetailLevel, number>> = { high: 10, low: 6 };
-
-type PartBuilder = (builder: MeshBuilder, segments: number) => void;
+type PartBuilder = (builder: MeshBuilder, detail: AnimalDetail) => void;
 
 interface PartDefinition {
   readonly build: PartBuilder;
@@ -162,7 +159,7 @@ export function buildAnimalParts(kind: AnimalKind, level: AnimalDetailLevel): Me
   return ANIMAL_SPECIES[kind].parts.map((part, index) => {
     const builder = new MeshBuilder({ part: index });
 
-    part.build(builder, ANIMAL_SEGMENTS[level]);
+    part.build(builder, ANIMAL_DETAILS[level]);
 
     return builder.build();
   });
