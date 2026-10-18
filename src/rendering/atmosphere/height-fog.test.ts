@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fogShapeFor } from "./height-fog.ts";
 
-const CLEAR_NOON = { mist: 0, precipitation: 0, sunHeight: 0.9 };
+const CLEAR_NOON = { mist: 0, precipitation: 0, snowfall: 0, sunHeight: 0.9 };
 
 describe("fogShapeFor", () => {
   it("keeps a clear noon almost transparent", () => {
@@ -37,5 +37,13 @@ describe("fogShapeFor", () => {
     const rainy = fogShapeFor({ ...CLEAR_NOON, precipitation: 1 });
 
     expect(rainy.density).toBeGreaterThan(clear.density);
+    expect(rainy.veil).toBeGreaterThan(clear.veil);
+  });
+
+  it("hangs a thicker veil in snowfall than in rain", () => {
+    const rainy = fogShapeFor({ ...CLEAR_NOON, precipitation: 1 });
+    const snowy = fogShapeFor({ ...CLEAR_NOON, precipitation: 1, snowfall: 1 });
+
+    expect(snowy.veil).toBeGreaterThan(rainy.veil);
   });
 });

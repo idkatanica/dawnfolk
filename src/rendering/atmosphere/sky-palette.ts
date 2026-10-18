@@ -72,6 +72,17 @@ const OVERCAST: SkyPalette = {
   zenith: 0x96_a0_ac,
 };
 
+const RAINY: SkyPalette = {
+  abyss: 0x5c_64_70,
+  ambientGround: 0x4c_4e_4a,
+  ambientSky: 0x86_90_9c,
+  cloudLit: 0x9e_a6_b0,
+  cloudShade: 0x5c_64_70,
+  horizon: 0x84_8e_99,
+  sunlight: 0xa8_b0_ba,
+  zenith: 0x68_72_7e,
+};
+
 const NIGHT_KEY: PaletteKey = { palette: NIGHT, sunHeight: -0.22 };
 
 const PALETTE_KEYS: readonly PaletteKey[] = [
@@ -110,11 +121,12 @@ function clearSkyPalette(sunHeight: number): SkyPalette {
   return lower.palette;
 }
 
-export function skyPaletteAt(sunHeight: number, overcast: number): SkyPalette {
+export function skyPaletteAt(sunHeight: number, overcast: number, gloom: number): SkyPalette {
   const clear = clearSkyPalette(sunHeight);
   const daylight = clamp(inverseLerp(-0.2, 0.25, sunHeight), 0, 1);
+  const darkness = clamp(gloom, 0, 1);
 
-  const gloomy = mixPalettes(NIGHT, OVERCAST, daylight);
+  const gloomy = mixPalettes(NIGHT, mixPalettes(OVERCAST, RAINY, darkness), daylight);
 
-  return mixPalettes(clear, gloomy, clamp(overcast, 0, 1) * 0.85);
+  return mixPalettes(clear, gloomy, clamp(Math.max(overcast, darkness), 0, 1) * 0.85 + darkness * 0.1);
 }

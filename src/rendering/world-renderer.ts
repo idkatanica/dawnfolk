@@ -174,6 +174,7 @@ export class WorldRenderer {
     }
 
     const wind = windOf(frame.weather);
+    const form = this.#precipitationAt(view.focus);
 
     this.#atmosphere.update(
       {
@@ -183,6 +184,7 @@ export class WorldRenderer {
         hours: frame.calendar.hours,
         precipitation: frame.weather.precipitation,
         season: frame.calendar.season,
+        snowfall: form === "snow" ? frame.weather.precipitation : 0,
         storm: frame.weather.storm,
         windX: wind.directionX * wind.metersPerSecond,
         windZ: wind.directionZ * wind.metersPerSecond,
@@ -201,7 +203,7 @@ export class WorldRenderer {
     this.#grass.update(view.camera, view.viewDistance);
     this.#updateAgents(view);
     this.#markSelection();
-    this.#updateEffects(view, wind, this.#precipitationAt(view.focus));
+    this.#updateEffects(view, wind, form);
     this.#output.render();
   }
 

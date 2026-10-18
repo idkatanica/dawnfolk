@@ -14,6 +14,7 @@ export interface AtmosphereState {
   readonly hours: number;
   readonly precipitation: number;
   readonly season: number;
+  readonly snowfall: number;
   readonly storm: number;
   readonly windX: number;
   readonly windZ: number;
@@ -43,7 +44,7 @@ export class Atmosphere {
   readonly #shadowUp = new Vector3();
   readonly #sky = new SkyDome();
   #daylight = 1;
-  #palette: SkyPalette = skyPaletteAt(1, 0);
+  #palette: SkyPalette = skyPaletteAt(1, 0, 0);
 
   constructor(scene: Scene, options: AtmosphereOptions) {
     this.#cloudSea = new CloudSea(options.cloudSeaAltitude);
@@ -77,14 +78,15 @@ export class Atmosphere {
     const sun = sunDirection(state.hours, state.season);
     const moon = moonDirection(state.hours);
     const overcast = clamp(state.cloudCover * 0.75 + state.storm * 0.5, 0, 1);
+    const gloom = gloomOf(state);
 
-    const palette = skyPaletteAt(sun.y, overcast);
+    const palette = skyPaletteAt(sun.y, overcast, gloom);
 
     this.#daylight = smoothstep(-0.1, 0.16, sun.y);
     this.#palette = palette;
     this.#paintSky(palette, sun, moon, state, overcast);
     this.#driftClouds(state, realSeconds);
-    this.#light(palette, sun, moon, overcast);
+    this.#light(palette, sun, moon, overcast, gloom);
     this.hemisphere.intensity += state.flash * 4;
     this.#placeSun(focus, viewDistance);
     this.#fog(palette, state, sun.y);
@@ -140,10 +142,11 @@ export class Atmosphere {
     palette: SkyPalette,
     sun: { x: number; y: number; z: number },
     moon: { x: number; y: number; z: number },
-    overcast: number
+    overcast: number,
+    gloom: number
   ): void {
     const isMoonlit = sun.y < -0.04;
-    const strength = lerp(3.2, 0.9, overcast);
+    const strength = lerp(3.2, 0.9, overcast) * (1 - gloom * 0.4);
 
     this.sun.color.setHex(palette.sunlight);
 
@@ -157,7 +160,7 @@ export class Atmosphere {
 
     this.hemisphere.color.setHex(palette.ambientSky);
     this.hemisphere.groundColor.setHex(palette.ambientGround);
-    this.hemisphere.intensity = lerp(0.95, 1.8, this.#daylight) * lerp(1, 1.25, overcast);
+    this.hemisphere.intensity = lerp(0.95, 1.8, this.#daylight) * lerp(1, 1.25, overcast) * (1 - gloom * 0.3);
   }
 
   #placeSun(focus: Vector3, viewDistance: number): void {
@@ -200,8 +203,16 @@ export class Atmosphere {
 
   #fog(palette: SkyPalette, state: AtmosphereState, sunHeight: number): void {
     this.#fogColor.value.setHex(palette.horizon);
-    this.#heightFog.apply(fogShapeFor({ mist: state.fog, precipitation: state.precipitation, sunHeight }));
+    this.#heightFog.apply(
+      fogShapeFor({ mist: state.fog, precipitation: state.precipitation, snowfall: state.snowfall, sunHeight })
+    );
   }
+}
+
+function gloomOf(state: AtmosphereState): number {
+  const rainfall = Math.max(0, state.precipitation - state.snowfall);
+
+  return clamp(rainfall * 0.75 + state.snowfall * 0.25 + state.storm * 0.35, 0, 1);
 }
 
 function quantizedReach(reach: number): number {
