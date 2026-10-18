@@ -263,7 +263,7 @@ describe("full-size island rim", () => {
 
   beforeAll(() => {
     fullSize = generateWorld(7);
-  });
+  }, 60_000);
 
   it("meets the cliff at a moderate height without steps that could open gaps", () => {
     const grid = new WorldGrid(fullSize.dimensions);

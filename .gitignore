@@ -8,3 +8,4 @@ playwright-report
 *.tsbuildinfo
 CONTEXT.md
 .DS_Store
+.wrangler
