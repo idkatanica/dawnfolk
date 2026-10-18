@@ -131,7 +131,7 @@ function treadPatch(wear: Wear, world: WorldState, patch: Patch): void {
 }
 
 function tread(wear: Wear, world: WorldState, cell: number, amount: number): void {
-  if (amount <= 0 || world.isWater(cell) || wearOf(wear, cell) >= amount) {
+  if (amount <= 0 || world.isWater(cell) || world.isObstructed(cell) || wearOf(wear, cell) >= amount) {
     return;
   }
 

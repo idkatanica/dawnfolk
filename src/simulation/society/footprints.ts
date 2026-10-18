@@ -41,7 +41,7 @@ export function isDryWay(world: WorldState, from: Waypoint, to: Waypoint): boole
     const share = sample / samples;
     const cell = world.grid.cellAt(from.x + (to.x - from.x) * share, from.z + (to.z - from.z) * share);
 
-    if (cell >= 0 && world.isWater(cell)) {
+    if (cell >= 0 && (world.isWater(cell) || world.isObstructed(cell))) {
       return false;
     }
   }

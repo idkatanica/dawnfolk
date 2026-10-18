@@ -229,13 +229,15 @@ export function generateWorld(
   const ruins = planMonuments(grid, terrain, seed);
   const vegetation = new VegetationStore(grid, Math.round(grid.cellCount * VEGETATION_CAPACITY_PER_CELL));
 
-  plantInitialVegetation(vegetation, grid, terrain, seed, reservedGround(ruins.ground, hydrology.features.springs));
+  const reserved = reservedGround(ruins.ground, hydrology.features.springs);
+
+  plantInitialVegetation(vegetation, grid, terrain, seed, reserved);
 
   for (const piece of ruins.pieces) {
     vegetation.add(piece);
   }
 
-  const deposits = planDeposits(grid, terrain, seed, ruins.ground);
+  const deposits = planDeposits(grid, terrain, seed, reserved);
 
   exposeDeposits(deposits, terrain, vegetation);
   vegetation.discardChanges();

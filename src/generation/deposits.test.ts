@@ -55,6 +55,18 @@ describe("ore and clay deposits", () => {
     }
   });
 
+  it("keep their veins off springs", () => {
+    const springGround = new Set(world.water.springs.flatMap((spring) => spring.cells));
+
+    expect(springGround.size).toBeGreaterThan(0);
+
+    for (const deposit of world.deposits) {
+      for (const cell of deposit.cells) {
+        expect(springGround.has(cell)).toBe(false);
+      }
+    }
+  });
+
   it("leave no trees standing on the veins", () => {
     const veins = new Set(world.deposits.flatMap((deposit) => deposit.cells));
     const { vegetation } = world;
