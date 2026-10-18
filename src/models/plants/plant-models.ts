@@ -14,7 +14,7 @@ import { CACTUS_FORMS, cactusForm, meshCactus } from "./cacti.ts";
 import { isRockModel, meshRock, ROCK_HEIGHTS, ROCK_VARIANT_COUNTS } from "./rocks.ts";
 import { FOLIAGE_FLUTTER, meshTree, type PlantDetailLevel, plantSway, type TreeLook } from "./tree-mesher.ts";
 import { DESERT_SHRUB_FORM_COUNT, TREE_GENERATORS, TREE_HEIGHTS } from "./tree-species.ts";
-import type { FoliageBlob, TreeStructure } from "./tree-structure.ts";
+import type { TreeStructure } from "./tree-structure.ts";
 
 const VARIANT_COUNTS: Readonly<Record<PlantSpeciesIndex, number>> = {
   ...ROCK_VARIANT_COUNTS,
@@ -95,7 +95,7 @@ function berries(
 ): MeshData {
   const random = createRandom(seed);
   const builder = new MeshBuilder({ flutter: FOLIAGE_FLUTTER, part: BERRY_PART, slot: MaterialSlot.Berry });
-  const blobs = structure.foliage.filter((foliage): foliage is FoliageBlob => foliage.kind === "blob");
+  const blobs = structure.foliage.filter((foliage) => foliage.kind === "blob");
   const count = level === "high" ? 26 : 12;
 
   function isFoliage(triangle: number): boolean {
@@ -106,11 +106,8 @@ function berries(
     const host = random.pick(blobs);
     const angle = random.next() * FULL_TURN;
     const height = random.between(-0.2, 0.9);
-
     const horizontal = Math.sqrt(1 - height * height);
-
     const outward = new Vector3(Math.cos(angle) * horizontal, height * host.squash, Math.sin(angle) * horizontal);
-
     const hit = outermostHit(tree, new Vector3(...host.center), outward, isFoliage);
 
     if (hit === null) {
@@ -149,7 +146,6 @@ function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDe
   }
 
   const structure = generator(seed, variant);
-
   const tree = meshTree(structure, look, level);
 
   if (species !== PlantSpecies.Bush || level === "low") {

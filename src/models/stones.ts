@@ -51,8 +51,7 @@ export function chiseledStone(random: RandomSource, options: ChiselOptions, deta
 
   const randomPlanes = Array.from({ length: options.cuts }, () => randomPlane(random, options.depth));
   const offset: Triple = [random.next() * 40, random.next() * 40, random.next() * 40];
-
-  const planes = [...flats.map((cut) => flatPlane(cut)), ...randomPlanes];
+  const planes = [...flats.map(flatPlane), ...randomPlanes];
   const direction = new Vector3();
 
   return facetShape(
@@ -83,7 +82,7 @@ export function chiseledStone(random: RandomSource, options: ChiselOptions, deta
   );
 }
 
-export interface Weathering {
+interface Weathering {
   readonly base: MaterialSlotIndex;
   readonly frost: number;
   readonly lichen: number;

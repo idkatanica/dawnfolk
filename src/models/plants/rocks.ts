@@ -74,7 +74,6 @@ interface StoneLook {
 
 function lowestPoint(shape: Shape, transform: Matrix4): number {
   const point = new Vector3();
-
   let lowest = Number.POSITIVE_INFINITY;
 
   for (let offset = 0; offset < shape.positions.length; offset += 3) {
@@ -404,11 +403,12 @@ interface Stratum {
 }
 
 function strataSections(strata: readonly Stratum[], random: RandomSource): LoftSection[] {
-  const offset = random.next() * 30;
   const [first] = strata;
+
+  const offset = random.next() * 30;
   const last = strata.at(-1);
 
-  if (first === undefined || last === undefined) {
+  if (last === undefined) {
     return [];
   }
 
@@ -446,7 +446,6 @@ function strataSections(strata: readonly Stratum[], random: RandomSource): LoftS
 
 function stack(bottom: number, layers: readonly (readonly [number, number])[]): Stratum[] {
   const strata: Stratum[] = [];
-
   let floor = bottom;
 
   for (const [radius, thickness] of layers) {

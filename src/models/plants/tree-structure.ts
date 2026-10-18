@@ -1,4 +1,5 @@
 import { Vector3 } from "three";
+import { clamp, inverseLerp, lerp } from "../../shared/math.ts";
 import type { VolumeNoise } from "../../shared/noise.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import type { TubePoint } from "../mesh/shapes.ts";
@@ -60,17 +61,17 @@ const UP = new Vector3(0, 1, 0);
 
 export function growBranch(growth: BranchGrowth): TubePoint[] {
   const { bend, gravity, length, noise, radiusEnd, radiusStart, segments, wobble } = growth;
+
   const points: TubePoint[] = [];
   const position = growth.start.clone();
   const direction = growth.direction.clone().normalize();
-
   const step = length / segments;
 
   for (let index = 0; index <= segments; index += 1) {
     const amount = index / segments;
 
     points.push({
-      radius: radiusStart + (radiusEnd - radiusStart) * amount,
+      radius: lerp(radiusStart, radiusEnd, amount),
       x: position.x,
       y: position.y,
       z: position.z,
@@ -94,20 +95,17 @@ export function growBranch(growth: BranchGrowth): TubePoint[] {
 }
 
 export function pointAlong(points: readonly TubePoint[], amount: number): TubePoint {
-  const scaled = Math.min(points.length - 1.000_001, Math.max(0, amount * (points.length - 1)));
-
+  const scaled = clamp(amount * (points.length - 1), 0, points.length - 1.000_001);
   const index = Math.floor(scaled);
-
   const fraction = scaled - index;
-
   const from = points[index];
   const to = points[index + 1];
 
   return {
-    radius: from.radius + (to.radius - from.radius) * fraction,
-    x: from.x + (to.x - from.x) * fraction,
-    y: from.y + (to.y - from.y) * fraction,
-    z: from.z + (to.z - from.z) * fraction,
+    radius: lerp(from.radius, to.radius, fraction),
+    x: lerp(from.x, to.x, fraction),
+    y: lerp(from.y, to.y, fraction),
+    z: lerp(from.z, to.z, fraction),
   };
 }
 
@@ -131,14 +129,13 @@ export function endedBelow(points: readonly TubePoint[], ceiling: number): TubeP
 
   const below = points[cut - 1];
   const above = points[cut];
-
-  const amount = (ceiling - below.y) / (above.y - below.y);
+  const amount = inverseLerp(below.y, above.y, ceiling);
 
   const end: TubePoint = {
-    radius: below.radius + (above.radius - below.radius) * amount,
-    x: below.x + (above.x - below.x) * amount,
+    radius: lerp(below.radius, above.radius, amount),
+    x: lerp(below.x, above.x, amount),
     y: ceiling,
-    z: below.z + (above.z - below.z) * amount,
+    z: lerp(below.z, above.z, amount),
   };
 
   return [...points.slice(0, cut), end, { ...end, radius: 0, y: ceiling + end.radius }];
@@ -154,11 +151,8 @@ function crossReference(axis: Vector3): Vector3 {
 
 export function sideDirection(axis: Vector3, azimuth: number, tilt: number): Vector3 {
   const reference = crossReference(axis);
-
   const across = new Vector3().crossVectors(axis, reference).normalize();
-
   const other = new Vector3().crossVectors(axis, across).normalize();
-
   const outward = across.multiplyScalar(Math.cos(azimuth)).addScaledVector(other, Math.sin(azimuth));
 
   return axis.clone().multiplyScalar(Math.cos(tilt)).addScaledVector(outward, Math.sin(tilt)).normalize();
