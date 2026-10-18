@@ -9,11 +9,12 @@ import { deformShape, type Shape } from "../mesh/shape.ts";
 import { blob, cone, icosphere, type LoftSection, loft, ribbon, type TubePoint, tube } from "../mesh/shapes.ts";
 import { transformOf } from "../mesh/transforms.ts";
 import {
+  type Branch,
+  endedBelow,
   type Foliage,
   type FoliageBlob,
   type FoliageFrond,
   type FoliageSkirt,
-  type FoliageStrand,
   type TreeStructure,
   toVector,
 } from "./tree-structure.ts";
@@ -29,8 +30,6 @@ export interface TreeLook {
 const MESH_NOISE = createVolumeNoise(createRandom(5150));
 
 const BLOB_LIMITS: Readonly<Record<PlantDetailLevel, number>> = { high: 9, low: 1, medium: 4 };
-
-const STRAND_ROOT_DEPTH = 0.85;
 
 const GROUNDED_CROWN_LIFT = 0.8;
 
@@ -77,7 +76,7 @@ function crownCenter(structure: TreeStructure): Vector3 {
 }
 
 function foliageCenter(foliage: Foliage): Vector3 {
-  if (foliage.kind === "strand" || foliage.kind === "frond") {
+  if (foliage.kind === "frond") {
     const [first] = foliage.points;
 
     return toVector(first);
@@ -104,6 +103,83 @@ function foliageStyle(structure: TreeStructure, look: TreeLook, tint: number, ce
   };
 }
 
+const DOME: readonly (readonly [reach: number, radius: number])[] = [
+  [0.45, 0.82],
+  [0.8, 0.5],
+  [0.98, 0],
+];
+
+const LOW_STEM_TAPER = 0.6;
+
+function domed(points: readonly TubePoint[]): TubePoint[] {
+  const last = points.at(-1);
+  const before = points.at(-2);
+
+  if (last === undefined || before === undefined) {
+    return [...points];
+  }
+
+  const direction = toVector(last).sub(toVector(before)).normalize();
+
+  const cap = DOME.map(([reach, radius]) => {
+    const point = toVector(last).addScaledVector(direction, last.radius * reach);
+
+    return { radius: last.radius * radius, x: point.x, y: point.y, z: point.z };
+  });
+
+  return [...points, ...cap];
+}
+
+function branchPoints(branch: Branch, structure: TreeStructure, level: PlantDetailLevel): TubePoint[] {
+  const points = level === "high" ? [...branch.points] : thinned(branch.points);
+
+  if (branch.depth > 0) {
+    return points;
+  }
+
+  if (level === "low") {
+    return lowTrunk(points, structure);
+  }
+
+  if (branch.forks === true) {
+    return domed(points);
+  }
+
+  return points;
+}
+
+const LOW_CONE_TRUNK = 0.5;
+
+function lowTrunk(points: readonly TubePoint[], structure: TreeStructure): TubePoint[] {
+  const crown = lowCone(structure);
+
+  if (crown !== null) {
+    return endedBelow(points, crown.bottom + (crown.top - crown.bottom) * LOW_CONE_TRUNK);
+  }
+
+  return reachingCrown(points, lowCrownCenter(structure));
+}
+
+function reachingCrown(points: readonly TubePoint[], crown: Vector3 | null): TubePoint[] {
+  const last = points.at(-1);
+
+  if (crown === null || last === undefined || crown.y <= last.y) {
+    return [...points];
+  }
+
+  return [...points, { radius: last.radius * LOW_STEM_TAPER, x: crown.x, y: crown.y, z: crown.z }];
+}
+
+function branchSeam(points: readonly TubePoint[], level: PlantDetailLevel): { seam?: number } {
+  const [root] = points;
+
+  if (level === "low" || root === undefined) {
+    return {};
+  }
+
+  return { seam: clamp(root.radius * 1.5, 0.05, 0.45) };
+}
+
 function addBranches(builder: MeshBuilder, structure: TreeStructure, look: TreeLook, level: PlantDetailLevel): void {
   const maximumDepth = { high: 2, low: 0, medium: 1 }[level];
 
@@ -112,10 +188,11 @@ function addBranches(builder: MeshBuilder, structure: TreeStructure, look: TreeL
       continue;
     }
 
-    const points = level === "high" ? branch.points : thinned(branch.points);
+    const points = branchPoints(branch, structure, level);
     const sides = BRANCH_SIDES[level][Math.min(2, branch.depth)];
 
     builder.add(tube(points, { hasStartCap: branch.depth > 0, radialSegments: sides }), {
+      ...(branch.depth < 2 ? branchSeam(points, level) : {}),
       style: woodStyle(structure.height, look, branch.depth),
     });
   }
@@ -172,20 +249,94 @@ function addSkirt(
   });
 }
 
+const DRAPE_FALL = 0.5;
+const FRINGE_DEPTH = 0.62;
+const DRAPE_TEETH: Readonly<Record<PlantDetailLevel, number>> = { high: 8, low: 4, medium: 5 };
+
+function weepingShape(foliage: FoliageBlob, drape: number, level: PlantDetailLevel): Shape {
+  const { radius, squash } = foliage;
+
+  const teeth = DRAPE_TEETH[level];
+  const segments = teeth * 2;
+  const fall = -radius * squash * DRAPE_FALL;
+  const hem = fall - drape;
+  const valley = hem + drape * FRINGE_DEPTH;
+  const strands = (around: number) => 1 + 0.07 * Math.abs(Math.cos(around * Math.PI * teeth));
+
+  const sections: LoftSection[] = [
+    { radiusX: 0, radiusZ: 0, y: fall * 0.6 },
+    { radiusX: radius * 0.82, radiusZ: radius * 0.82, ripple: strands, y: hem },
+    { radiusX: radius * 0.97, radiusZ: radius * 0.97, ripple: strands, y: fall - drape * 0.12 },
+    { radiusX: radius, radiusZ: radius, y: radius * squash * 0.12 },
+    { radiusX: radius * 0.66, radiusZ: radius * 0.66, y: radius * squash * 0.74 },
+    { radiusX: 0, radiusZ: 0, y: radius * squash },
+  ];
+
+  const [x, y, z] = foliage.center;
+
+  return deformShape(loft(sections, segments), (vertex) => {
+    if (Math.abs(vertex.y - hem) < 1e-4) {
+      const isValley = Math.round(vertex.around * segments) % 2 === 1;
+
+      return isValley ? [vertex.x * 0.04, valley - hem, vertex.z * 0.04] : [0, 0, 0];
+    }
+
+    if (vertex.y < fall) {
+      return [0, 0, 0];
+    }
+
+    const lump =
+      radius *
+      0.12 *
+      MESH_NOISE.fractal(x * 0.37 + vertex.x * 0.6, y * 0.29 + vertex.y * 0.6, z * 0.41 + vertex.z * 0.6, {
+        octaves: 2,
+      });
+
+    return [vertex.normalX * lump, vertex.normalY * lump, vertex.normalZ * lump];
+  });
+}
+
+function weepingStyle(structure: TreeStructure, look: TreeLook, foliage: FoliageBlob, drape: number): VertexStyle {
+  const fallHeight = foliage.center[1] - foliage.radius * foliage.squash * DRAPE_FALL;
+  const fallSway = plantSway(fallHeight, structure.height);
+
+  return {
+    ...foliageStyle(structure, look, foliage.tint, crownCenter(structure)),
+    sway: (point) => {
+      const { y } = point.position;
+
+      if (y >= fallHeight) {
+        return plantSway(y, structure.height);
+      }
+
+      return lerp(fallSway, 1, clamp((fallHeight - y) / drape, 0, 1));
+    },
+  };
+}
+
 function addBlob(
   builder: MeshBuilder,
   structure: TreeStructure,
   look: TreeLook,
   foliage: FoliageBlob,
-  detail: number
+  level: PlantDetailLevel
 ): void {
   const [x, y, z] = foliage.center;
-  const center = crownCenter(structure);
+  const { drape = 0 } = foliage;
+
+  if (drape > 0 && level !== "low") {
+    builder.add(weepingShape(foliage, drape, level), {
+      style: weepingStyle(structure, look, foliage, drape),
+      transform: transformOf({ position: foliage.center }),
+    });
+
+    return;
+  }
 
   const shape =
-    detail > 0
+    level === "high"
       ? blob({
-          detail,
+          detail: 1,
           noise: MESH_NOISE,
           offset: [x * 0.37, y * 0.29, z * 0.41],
           radius: foliage.radius,
@@ -194,27 +345,8 @@ function addBlob(
       : icosphere(foliage.radius, 0);
 
   builder.add(shape, {
-    style: foliageStyle(structure, look, foliage.tint, center),
+    style: foliageStyle(structure, look, foliage.tint, crownCenter(structure)),
     transform: transformOf({ position: foliage.center, scale: [1, foliage.squash, 1] }),
-  });
-}
-
-function addStrand(
-  builder: MeshBuilder,
-  structure: TreeStructure,
-  look: TreeLook,
-  strand: FoliageStrand,
-  sides: number
-): void {
-  const [root] = strand.points;
-
-  const rootSway = plantSway(root.y, structure.height);
-
-  builder.add(tube(strand.points, { radialSegments: sides }), {
-    style: {
-      ...foliageStyle(structure, look, strand.tint, crownCenter(structure)),
-      sway: (point) => lerp(rootSway, 1, point.along),
-    },
   });
 }
 
@@ -238,51 +370,9 @@ function addFrond(
   });
 }
 
-function relativeDistance(foliage: FoliageBlob, point: TubePoint): number {
-  const [x, y, z] = foliage.center;
-
-  return Math.hypot(
-    (point.x - x) / foliage.radius,
-    (point.y - y) / (foliage.radius * foliage.squash),
-    (point.z - z) / foliage.radius
-  );
-}
-
-function anchoredStrand(strand: FoliageStrand, blobs: readonly FoliageBlob[]): FoliageStrand {
-  const [root] = strand.points;
-
-  if (blobs.length === 0) {
-    return strand;
-  }
-
-  const host = blobs.reduce((closest, foliage) =>
-    relativeDistance(foliage, root) < relativeDistance(closest, root) ? foliage : closest
-  );
-
-  const distance = relativeDistance(host, root);
-
-  if (distance <= STRAND_ROOT_DEPTH) {
-    return strand;
-  }
-
-  const [x, y, z] = host.center;
-  const pull = 1 - STRAND_ROOT_DEPTH / distance;
-
-  const shift = new Vector3(x - root.x, y - root.y, z - root.z).multiplyScalar(pull);
-
-  return {
-    ...strand,
-    points: strand.points.map((point) => ({
-      ...point,
-      x: point.x + shift.x,
-      y: point.y + shift.y,
-      z: point.z + shift.z,
-    })),
-  };
-}
-
 interface MergedBlob {
   readonly center: Vector3;
+  readonly drape: number;
   readonly radius: number;
   readonly squash: number;
   readonly tint: number;
@@ -318,6 +408,7 @@ function mergeClosest(blobs: MergedBlob[]): MergedBlob[] {
 
   const merged: MergedBlob = {
     center,
+    drape: (first.drape * first.weight + second.drape * second.weight) / weight,
     radius: Math.max(first.radius, second.radius) + bestDistance * 0.35,
     squash: (first.squash + second.squash) / 2,
     tint: (first.tint + second.tint) / 2,
@@ -330,6 +421,7 @@ function mergeClosest(blobs: MergedBlob[]): MergedBlob[] {
 function mergedBlobs(blobs: readonly FoliageBlob[], target: number): FoliageBlob[] {
   let merged: MergedBlob[] = blobs.map((foliage) => ({
     center: new Vector3(...foliage.center),
+    drape: foliage.drape === undefined ? 0 : foliage.drape,
     radius: foliage.radius,
     squash: foliage.squash,
     tint: foliage.tint,
@@ -342,6 +434,7 @@ function mergedBlobs(blobs: readonly FoliageBlob[], target: number): FoliageBlob
 
   return merged.map((foliage) => ({
     center: foliage.center.toArray(),
+    drape: foliage.drape,
     kind: "blob",
     radius: foliage.radius,
     squash: foliage.squash,
@@ -378,7 +471,7 @@ interface Reach {
 }
 
 function foliageReach(foliage: Foliage): Reach {
-  if (foliage.kind === "strand" || foliage.kind === "frond") {
+  if (foliage.kind === "frond") {
     const points = foliage.points.map(toVector);
 
     return {
@@ -398,22 +491,53 @@ function foliageReach(foliage: Foliage): Reach {
 
   const center = new Vector3(...foliage.center);
   const extent = new Vector3(foliage.radius, foliage.radius * foliage.squash, foliage.radius);
+  const { drape = 0 } = foliage;
 
-  return { maximum: center.clone().add(extent), minimum: center.clone().sub(extent) };
+  const lowest = center.clone().sub(extent);
+
+  return {
+    maximum: center.clone().add(extent),
+    minimum: lowest.setY(Math.min(lowest.y, center.y - drape - extent.y * 0.5)),
+  };
+}
+
+function lowCrownCenter(structure: TreeStructure): Vector3 | null {
+  if (structure.foliage.length === 0 || lowCone(structure) !== null) {
+    return null;
+  }
+
+  return new Vector3(...crownEnvelope(structure).center);
+}
+
+interface LowCone {
+  readonly bottom: number;
+  readonly center: FoliageSkirt["center"];
+  readonly radius: number;
+  readonly top: number;
+}
+
+function lowCone(structure: TreeStructure): LowCone | null {
+  const skirts = structure.foliage.filter((foliage) => foliage.kind === "skirt");
+
+  if (skirts.length === 0) {
+    return null;
+  }
+
+  const widest = skirts.reduce((best, skirt) => (skirt.radius > best.radius ? skirt : best));
+  const top = skirts.reduce((highest, skirt) => Math.max(highest, skirt.top), 0);
+
+  return { bottom: widest.bottom - widest.droop * 0.5, center: widest.center, radius: widest.radius * 1.02, top };
 }
 
 function addLowCrown(builder: MeshBuilder, structure: TreeStructure, look: TreeLook): void {
-  const skirts = structure.foliage.filter((foliage) => foliage.kind === "skirt");
+  const crown = lowCone(structure);
 
-  if (skirts.length > 0) {
-    const widest = skirts.reduce((best, skirt) => (skirt.radius > best.radius ? skirt : best));
-    const top = skirts.reduce((highest, skirt) => Math.max(highest, skirt.top), 0);
+  if (crown !== null) {
+    const { bottom, center, radius, top } = crown;
 
-    const bottom = widest.bottom - widest.droop * 0.5;
-
-    builder.add(cone(widest.radius * 1.02, top - bottom, 7), {
+    builder.add(cone(radius, top - bottom, 7), {
       style: foliageStyle(structure, look, 0, new Vector3(0, (top + bottom) / 2, 0)),
-      transform: transformOf({ position: [widest.center[0], bottom, widest.center[2]] }),
+      transform: transformOf({ position: [center[0], bottom, center[2]] }),
     });
 
     return;
@@ -424,15 +548,26 @@ function addLowCrown(builder: MeshBuilder, structure: TreeStructure, look: TreeL
   }
 
   const envelope = crownEnvelope(structure);
+  const root = stemRoot(structure);
 
-  if (stemRoot(structure) === null) {
-    addBlob(builder, structure, look, groundedEnvelope(envelope), 0);
+  if (root === null) {
+    addBlob(builder, structure, look, groundedEnvelope(envelope), "low");
 
     return;
   }
 
-  addCrownStem(builder, structure, look, envelope);
-  addBlob(builder, structure, look, envelope, 0);
+  if (!trunkReachesCrown(structure, root)) {
+    addCrownStem(builder, structure, look, root, envelope);
+  }
+
+  addBlob(builder, structure, look, envelope, "low");
+}
+
+function trunkReachesCrown(structure: TreeStructure, root: TubePoint): boolean {
+  const crown = lowCrownCenter(structure);
+  const hasTrunk = structure.branches.some((branch) => branch.depth === 0);
+
+  return hasTrunk && crown !== null && crown.y > root.y;
 }
 
 function groundedEnvelope(envelope: FoliageBlob): FoliageBlob {
@@ -466,13 +601,13 @@ function stemRoot(structure: TreeStructure): TubePoint | null {
   };
 }
 
-function addCrownStem(builder: MeshBuilder, structure: TreeStructure, look: TreeLook, envelope: FoliageBlob): void {
-  const root = stemRoot(structure);
-
-  if (root === null) {
-    return;
-  }
-
+function addCrownStem(
+  builder: MeshBuilder,
+  structure: TreeStructure,
+  look: TreeLook,
+  root: TubePoint,
+  envelope: FoliageBlob
+): void {
   const [x, y, z] = envelope.center;
 
   builder.add(
@@ -499,16 +634,12 @@ function addFoliage(builder: MeshBuilder, structure: TreeStructure, look: TreeLo
   const visibleBlobs = mergedBlobs(blobs, BLOB_LIMITS[level]);
 
   for (const foliage of visibleBlobs) {
-    addBlob(builder, structure, look, foliage, level === "high" ? 1 : 0);
+    addBlob(builder, structure, look, foliage, level);
   }
 
   for (const foliage of structure.foliage) {
     if (foliage.kind === "skirt") {
       addSkirt(builder, structure, look, foliage, level);
-    }
-
-    if (foliage.kind === "strand") {
-      addStrand(builder, structure, look, anchoredStrand(foliage, visibleBlobs), level === "high" ? 4 : 3);
     }
 
     if (foliage.kind === "frond") {

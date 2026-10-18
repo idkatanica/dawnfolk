@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
-import { meshProblems } from "../testing/mesh-checks.ts";
+import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces, meshPieces } from "../testing/mesh-connectivity.ts";
 import { windBentMesh } from "../testing/moved-mesh.ts";
 import { CACTUS_FORMS, cactusForm } from "./cacti.ts";
@@ -19,6 +19,7 @@ import { FOLIAGE_FLUTTER, plantSway } from "./tree-mesher.ts";
 const TOUCHING = 0.01;
 const RADIUS_TOLERANCE = 0.2;
 const STORM_PUSH = 2;
+const GROUND_LEVEL = 0.05;
 
 const SPECIES: readonly PlantSpeciesIndex[] = PLANT_SPECIES.map((definition) => definition.index);
 const FOLIAGE_SLOTS: ReadonlySet<number> = new Set([MaterialSlot.Leaf, MaterialSlot.Needle]);
@@ -112,6 +113,14 @@ describe.each(SPECIES)("plant species %i", (species) => {
     );
   });
 
+  it("closes every variant everywhere above the ground", () => {
+    for (const level of PLANT_DETAIL_LEVELS) {
+      for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
+        expect(highestOpenEdge(mesh), `${level} variant ${variant}`).toBeLessThan(GROUND_LEVEL);
+      }
+    }
+  });
+
   it("keeps every part of every variant attached to the ground", () => {
     for (const level of PLANT_DETAIL_LEVELS) {
       for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
@@ -166,7 +175,7 @@ describe("tree details", () => {
     expect(averageSway(foliage)).toBeGreaterThan(averageSway(foot));
   });
 
-  it("starts every willow strand swaying with the crown it hangs from", () => {
+  it("sways the top of every willow crown with the tree", () => {
     for (const level of ["high", "medium"] as const) {
       for (const willow of buildPlantVariants(PlantSpecies.Willow, level)) {
         const foliage = meshPieces(willow).filter(

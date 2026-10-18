@@ -131,7 +131,7 @@ export function createPlantMaterial({
   const treeThreshold = fract(tint.mul(13.7)).mul(0.9).add(0.05);
 
   const hasFoliage = look.foliageCoverage.greaterThan(treeThreshold).and(isBurnt.not());
-  const hasBerry = fruit.greaterThan(berryChance).and(isBurnt.not());
+  const hasBerry = fruit.greaterThan(berryChance).and(hasFoliage);
 
   const keep = select(isFoliage, hasFoliage, select(isBerry, hasBerry, isBlossom.not().or(isBurnt.not())));
 

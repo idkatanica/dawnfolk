@@ -4,10 +4,10 @@ import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import type { MeshBuilder, VertexStyle } from "../mesh/mesh-builder.ts";
 import type { Shape } from "../mesh/shape.ts";
-import { blob, box, card, cone, cylinder, lathe, loft, sphere, torus, tube } from "../mesh/shapes.ts";
-import { combine, segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
+import { blob, box, cone, cylinder, type LoftSection, lathe, loft, sphere, torus, tube } from "../mesh/shapes.ts";
+import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
-import { forEachSide } from "./human-anatomy.ts";
+import { forEachSide, headShape, headStroke } from "./human-anatomy.ts";
 import type { HumanDetail } from "./human-detail.ts";
 import { armStyle, FLEXIBLE_TORSO_STYLE } from "./human-rigging.ts";
 import { HumanBone } from "./human-skeleton.ts";
@@ -49,18 +49,42 @@ export function addHeadband(builder: MeshBuilder): void {
 }
 
 const FEATHER_LENGTH = 0.17;
+const FEATHER_TIP = 0.05;
 
-export function addFeather(builder: MeshBuilder): void {
+function featherVane(detail: HumanDetail): Shape {
+  const sections: LoftSection[] = [
+    { radiusX: 0, radiusZ: 0, y: 0 },
+    { radiusX: 0.009, radiusZ: 0.003, y: 0.012 },
+    { radiusX: 0.016, radiusZ: 0.004, y: 0.05 },
+    { radiusX: 0.017, radiusZ: 0.004, y: 0.1 },
+    { radiusX: 0.012, radiusZ: 0.003, y: 0.15 },
+    { radiusX: 0, radiusZ: 0, y: FEATHER_LENGTH },
+  ];
+
+  return loft(sections, detail.hasFineDetails ? 6 : 4);
+}
+
+export function addFeather(builder: MeshBuilder, detail: HumanDetail): void {
   const quill = transformOf({ position: [0.07, 1.68, -0.08], rotation: [-0.42, 0.6, -0.18] });
+  const style = rigidStyle(HumanBone.Head);
 
-  builder.add(card(0.034, FEATHER_LENGTH), {
-    style: { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Bone },
+  builder.add(featherVane(detail), {
+    style: {
+      ...style,
+      slot: (point) => (point.local.y > FEATHER_LENGTH - FEATHER_TIP ? MaterialSlot.Accent : MaterialSlot.Bone),
+    },
     transform: quill,
   });
-  builder.add(card(0.02, 0.05), {
-    style: { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Accent },
-    transform: combine(quill, transformOf({ position: [0, FEATHER_LENGTH, 0] })),
-  });
+  builder.add(
+    tube(
+      [
+        { radius: 0.004, x: 0, y: -0.045, z: 0 },
+        { radius: 0.004, x: 0, y: 0.03, z: 0 },
+      ],
+      { radialSegments: 4 }
+    ),
+    { style: { ...style, slot: MaterialSlot.Bone }, transform: quill }
+  );
 }
 
 export function addNecklace(builder: MeshBuilder, detail: HumanDetail): void {
@@ -91,18 +115,24 @@ export function addNecklace(builder: MeshBuilder, detail: HumanDetail): void {
   }
 }
 
-export function addPaint(builder: MeshBuilder): void {
+export function addPaint(builder: MeshBuilder, detail: HumanDetail): void {
   const style = { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Accent };
+  const head = headShape(detail);
 
   forEachSide((_side, mirror) => {
     for (const offset of [0, 0.014]) {
-      builder.add(box(0.034, 0.006, 0.006), {
-        style,
-        transform: combine(
-          mirror,
-          transformOf({ position: [0.058, 1.596 - offset, 0.087 - offset * 0.4], rotation: [0, 0.62, -0.12] })
-        ),
-      });
+      const stroke = headStroke(
+        head,
+        [
+          [0.044, 1.601 - offset, 0.09],
+          [0.058, 1.597 - offset, 0.08],
+          [0.072, 1.592 - offset, 0.07],
+        ],
+        0.0035,
+        -0.0008
+      );
+
+      builder.add(tube(stroke, { radialSegments: detail.hasFineDetails ? 4 : 3 }), { style, transform: mirror });
     }
   });
 }
@@ -295,10 +325,18 @@ export function addCarriedFish(builder: MeshBuilder, detail: HumanDetail): void 
     ),
     { style, transform: transformOf({ position: [x, y, z + 0.02] }) }
   );
-  builder.add(card(0.08, 0.06), {
-    style,
-    transform: transformOf({ position: [x, y - 0.42, z + 0.02], rotation: [0, Math.PI / 2, 0] }),
-  });
+  builder.add(
+    loft(
+      [
+        { radiusX: 0, radiusZ: 0, y: -0.432 },
+        { radiusX: 0.004, radiusZ: 0.042, y: -0.425 },
+        { radiusX: 0.007, radiusZ: 0.014, y: -0.37 },
+        { radiusX: 0, radiusZ: 0, y: -0.345 },
+      ],
+      Math.max(6, detail.limbSegments)
+    ),
+    { style, transform: transformOf({ position: [x, y, z + 0.02] }) }
+  );
 }
 
 export function addCarriedCrops(builder: MeshBuilder, detail: HumanDetail): void {

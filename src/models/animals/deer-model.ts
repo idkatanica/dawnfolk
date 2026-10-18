@@ -1,14 +1,16 @@
 import { Vector3 } from "three";
 import { FULL_TURN } from "../../shared/math.ts";
 import { MaterialSlot } from "../materials.ts";
-import type { MeshBuilder, SurfacePoint, VertexStyle } from "../mesh/mesh-builder.ts";
-import { type BodySection, cone, lengthwiseLoft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
+import type { MeshBuilder, SurfacePoint } from "../mesh/mesh-builder.ts";
+import { type Shape, transformShape } from "../mesh/shape.ts";
+import { type BodySection, lengthwiseLoft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { outermostHit, surfaceTransform } from "../mesh/surface-probe.ts";
 import { combine, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
 import { degrees } from "../rig/curves.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
-import { bodyStyle, legStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
+import { addEyes, addLegs, hoofBelow, legPath } from "./quadruped-parts.ts";
+import { bodyStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
 import { LEG_SIDES, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
 export const DEER_FRAME: QuadrupedFrame = {
@@ -66,41 +68,37 @@ const BODY: readonly BodySection[] = [
   { centerY: 1.12, halfHeight: 0, halfWidth: 0, z: 0.6 },
 ];
 
-const FRONT_LEG: readonly (readonly TubePoint[])[] = [
-  [
-    { radius: 0.085, x: 0.12, y: 1.04, z: 0.42 },
-    { radius: 0.066, x: 0.12, y: 0.84, z: 0.4 },
-    { radius: 0.05, x: 0.12, y: 0.69, z: 0.38 },
-  ],
-  [
-    { radius: 0.046, x: 0.12, y: 0.73, z: 0.38 },
-    { radius: 0.035, x: 0.12, y: 0.5, z: 0.41 },
-    { radius: 0.032, x: 0.12, y: 0.37, z: 0.42 },
-  ],
-  [
-    { radius: 0.03, x: 0.12, y: 0.41, z: 0.42 },
-    { radius: 0.022, x: 0.12, y: 0.13, z: 0.44 },
-    { radius: 0.023, x: 0.12, y: 0.06, z: 0.445 },
-  ],
-];
+const LEGS: Readonly<Record<"front" | "hind", readonly TubePoint[]>> = {
+  front: legPath(0.115, [
+    [0.05, 1.04, 0.42],
+    [0.078, 0.9, 0.41],
+    [0.056, 0.78, 0.39],
+    [0.046, 0.7, 0.38],
+    [0.036, 0.5, 0.41],
+    [0.03, 0.38, 0.42],
+    [0.022, 0.13, 0.44],
+    [0.025, 0.075, 0.445],
+    [0.033, 0, 0.45],
+  ]),
+  hind: legPath(0.12, [
+    [0.06, 1.04, -0.5],
+    [0.105, 0.88, -0.46],
+    [0.075, 0.76, -0.41],
+    [0.054, 0.67, -0.37],
+    [0.042, 0.55, -0.5],
+    [0.033, 0.44, -0.62],
+    [0.022, 0.13, -0.57],
+    [0.025, 0.075, -0.565],
+    [0.033, 0, -0.56],
+  ]),
+};
 
-const HIND_LEG: readonly (readonly TubePoint[])[] = [
-  [
-    { radius: 0.13, x: 0.12, y: 1.06, z: -0.52 },
-    { radius: 0.1, x: 0.12, y: 0.85, z: -0.44 },
-    { radius: 0.06, x: 0.12, y: 0.66, z: -0.36 },
-  ],
-  [
-    { radius: 0.056, x: 0.12, y: 0.69, z: -0.37 },
-    { radius: 0.042, x: 0.12, y: 0.55, z: -0.5 },
-    { radius: 0.035, x: 0.12, y: 0.43, z: -0.62 },
-  ],
-  [
-    { radius: 0.031, x: 0.12, y: 0.47, z: -0.62 },
-    { radius: 0.022, x: 0.12, y: 0.13, z: -0.57 },
-    { radius: 0.023, x: 0.12, y: 0.06, z: -0.565 },
-  ],
-];
+const BODY_SEAM = 0.09;
+const NECK_SEAM = 0.07;
+const HEAD_SEAM = 0.05;
+const LEG_SEAM = 0.08;
+const TAIL_SEAM = 0.03;
+const EAR_SEAM = 0.02;
 
 const BLEND = 0.06;
 
@@ -113,71 +111,62 @@ function coatSlot(point: SurfacePoint): number {
   return isBelly || isRump ? MaterialSlot.CoatLight : MaterialSlot.Coat;
 }
 
-function addLegs(builder: MeshBuilder, segments: number): void {
-  for (const side of LEG_SIDES) {
-    const mirror = sideMirror(side);
+function headShape(segments: number): Shape {
+  const muzzle = tube(
+    [
+      { radius: 0, x: 0, y: 1.66, z: 0.67 },
+      { radius: 0.062, x: 0, y: 1.665, z: 0.7 },
+      { radius: 0.084, x: 0, y: 1.665, z: 0.75 },
+      { radius: 0.088, x: 0, y: 1.665, z: 0.85 },
+      { radius: 0.066, x: 0, y: 1.6, z: 0.98 },
+      { radius: 0.046, x: 0, y: 1.535, z: 1.08 },
+      { radius: 0.04, x: 0, y: 1.505, z: 1.14 },
+      { radius: 0, x: 0, y: 1.495, z: 1.165 },
+    ],
+    { hasEndCap: false, radialSegments: segments }
+  );
 
-    for (const [end, segmentsOfLeg] of [
-      ["front", FRONT_LEG],
-      ["hind", HIND_LEG],
-    ] as const) {
-      const style: VertexStyle = { ...legStyle(DEER_FRAME, end, side, BLEND), slot: MaterialSlot.Coat };
-
-      for (const points of segmentsOfLeg) {
-        builder.add(tube(points, { radialSegments: segments }), { style, transform: mirror });
-      }
-
-      const hoof: Triple = end === "front" ? [0.12, 0, 0.45] : [0.12, 0, -0.56];
-
-      builder.add(cone(0.032, 0.075, segments), {
-        style: { ...style, slot: MaterialSlot.Hoof },
-        transform: combine(mirror, transformOf({ position: hoof, scale: [1, 1, 1.25] })),
-      });
-    }
-  }
+  return transformShape(muzzle, transformOf({ scale: [0.78, 1, 1] }));
 }
+
+const EAR = transformOf({ position: [0, 0.075, 0], scale: [0.036, 0.085, 0.014] });
 
 function addHead(builder: MeshBuilder, segments: number): void {
   const head = rigidStyle(QuadrupedBone.Head);
+  const shape = headShape(segments);
 
-  builder.add(
-    tube(
-      [
-        { radius: 0.084, x: 0, y: 1.665, z: 0.75 },
-        { radius: 0.088, x: 0, y: 1.665, z: 0.85 },
-        { radius: 0.066, x: 0, y: 1.6, z: 0.98 },
-        { radius: 0.046, x: 0, y: 1.535, z: 1.08 },
-        { radius: 0.04, x: 0, y: 1.505, z: 1.14 },
-        { radius: 0, x: 0, y: 1.495, z: 1.165 },
-      ],
-      { hasEndCap: false, radialSegments: segments }
-    ),
-    { style: { ...head, slot: MaterialSlot.Coat }, transform: transformOf({ scale: [0.78, 1, 1] }) }
-  );
+  builder.add(shape, { seam: HEAD_SEAM, style: { ...head, slot: MaterialSlot.Coat } });
   builder.add(sphere(0.026, 6, 4), {
     style: { ...head, slot: MaterialSlot.Hoof },
     transform: transformOf({ position: [0, 1.508, 1.148] }),
   });
+  addEyes(builder, shape, { direction: [1, 0.25, 0.35], origin: [0, 1.64, 0.88], radius: 0.016, sink: 0.5 });
 
   for (const side of LEG_SIDES) {
-    const mirror = sideMirror(side);
-
-    builder.add(sphere(0.016, 6, 4), {
-      style: { ...head, slot: MaterialSlot.Eye },
-      transform: combine(mirror, transformOf({ position: [0.058, 1.678, 0.9] })),
-    });
-    builder.add(cone(0.042, 0.15, 6), {
+    builder.add(sphere(1, 6, 4), {
+      seam: EAR_SEAM,
       style: { ...head, slot: MaterialSlot.Coat },
       transform: combine(
-        mirror,
-        transformOf({ position: [0.06, 1.72, 0.78], rotation: [-0.5, 0.2, -0.9], scale: [1, 1, 0.42] })
+        sideMirror(side),
+        transformOf({ position: [0.042, 1.7, 0.78], rotation: [-0.5, 0.2, -0.9] }),
+        EAR
       ),
     });
   }
 }
 
+const TAIL: readonly TubePoint[] = [
+  { radius: 0.045, x: 0, y: 1.1, z: -0.7 },
+  { radius: 0.045, x: 0, y: 1.1, z: -0.79 },
+  { radius: 0.034, x: 0, y: 1.03, z: -0.86 },
+  { radius: 0, x: 0, y: 0.95, z: -0.88 },
+];
+
 export function addDeerBody(builder: MeshBuilder, segments: number): void {
-  builder.add(lengthwiseLoft(BODY, segments + 2), { style: { ...bodyStyle(DEER_FRAME, 0.14), slot: coatSlot } });
+  builder.add(lengthwiseLoft(BODY, segments + 2), {
+    seam: BODY_SEAM,
+    style: { ...bodyStyle(DEER_FRAME, 0.14), slot: coatSlot },
+  });
   builder.add(
     tube(
       [
@@ -189,6 +178,7 @@ export function addDeerBody(builder: MeshBuilder, segments: number): void {
       { radialSegments: segments }
     ),
     {
+      seam: NECK_SEAM,
       style: {
         ...neckStyle(DEER_FRAME, 0.09),
         slot: (point) =>
@@ -198,15 +188,23 @@ export function addDeerBody(builder: MeshBuilder, segments: number): void {
     }
   );
   addHead(builder, segments);
-  addLegs(builder, Math.max(5, segments - 2));
-  builder.add(cone(0.055, 0.17, 6), {
+  addLegs(builder, {
+    blend: BLEND,
+    frame: DEER_FRAME,
+    paths: LEGS,
+    seam: LEG_SEAM,
+    segments: Math.max(5, segments - 2),
+    slot: hoofBelow(0.07),
+  });
+  builder.add(tube(TAIL, { radialSegments: 5 }), {
+    seam: TAIL_SEAM,
     style: { ...tailStyle(DEER_FRAME, 0.04), slot: MaterialSlot.CoatLight },
-    transform: transformOf({ position: [0, 1.12, -0.77], rotation: [2.5, 0, 0], scale: [1, 1, 0.5] }),
   });
 }
 
 function antlerBeam(scale: number): TubePoint[] {
   return [
+    { radius: 0.027, x: 0.035, y: 1.69, z: 0.8 },
     { radius: 0.024, x: 0.05, y: 1.74, z: 0.8 },
     { radius: 0.021, x: 0.12, y: 1.74 + 0.18 * scale, z: 0.8 - 0.06 * scale },
     { radius: 0.017, x: 0.12 + 0.08 * scale, y: 1.74 + 0.34 * scale, z: 0.8 - 0.14 * scale },

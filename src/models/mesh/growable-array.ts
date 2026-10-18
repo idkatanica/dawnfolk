@@ -38,6 +38,10 @@ export class GrowableIndexArray {
   #values = new Uint32Array(INITIAL_CAPACITY);
   #length = 0;
 
+  get length(): number {
+    return this.#length;
+  }
+
   pushTriangle(first: number, second: number, third: number): void {
     this.#reserve(this.#length + 3);
     this.#values[this.#length] = first;

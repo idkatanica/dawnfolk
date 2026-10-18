@@ -1,11 +1,21 @@
+import { Vector3 } from "three";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import type { AnimalPose } from "../../world/agent-poses.ts";
 import { MaterialSlot } from "../materials.ts";
-import type { MeshBuilder, VertexStyle } from "../mesh/mesh-builder.ts";
-import { deformShape } from "../mesh/shape.ts";
-import { type BodySection, blob, cone, lengthwiseLoft, loft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
-import { combine, sideMirror, transformOf } from "../mesh/transforms.ts";
+import type { MeshBuilder, SurfacePoint, VertexStyle } from "../mesh/mesh-builder.ts";
+import { deformShape, type Shape, transformShape } from "../mesh/shape.ts";
+import {
+  type BodySection,
+  type LoftSection,
+  lengthwiseLoft,
+  loft,
+  sphere,
+  type TubePoint,
+  tube,
+} from "../mesh/shapes.ts";
+import { outermostHit, surfaceTransform } from "../mesh/surface-probe.ts";
+import { combine, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
 import { degrees, wave } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
 import { chainStyle, createChain, rigidStyle } from "../rig/skin-weights.ts";
@@ -68,87 +78,145 @@ export const MAMMOTH_GAIT: GaitStyle = {
   walkSwing: degrees(16),
 };
 
-const BODY: readonly BodySection[] = [
-  { centerY: 2.1, halfHeight: 0, halfWidth: 0, z: -1.62 },
-  { centerY: 2.1, halfHeight: 0.5, halfWidth: 0.45, z: -1.52 },
-  { centerY: 2.1, halfHeight: 0.8, halfWidth: 0.78, z: -1.2 },
-  { centerY: 2.15, halfHeight: 0.92, halfWidth: 0.88, z: -0.6 },
-  { centerY: 2.25, halfHeight: 1, halfWidth: 0.9, z: 0 },
-  { centerY: 2.4, halfHeight: 1.08, halfWidth: 0.86, z: 0.5 },
-  { centerY: 2.5, halfHeight: 0.95, halfWidth: 0.7, z: 0.95 },
-  { centerY: 2.55, halfHeight: 0.7, halfWidth: 0.45, z: 1.2 },
-  { centerY: 2.55, halfHeight: 0, halfWidth: 0, z: 1.3 },
+interface BodyRing {
+  readonly back: number;
+  readonly front: number;
+  readonly halfWidth: number;
+  readonly y: number;
+}
+
+const HEM_HEIGHT = 1.16;
+
+const BODY_RINGS: readonly BodyRing[] = [
+  { back: -1.22, front: 0.98, halfWidth: 0.78, y: HEM_HEIGHT },
+  { back: -1.42, front: 1.14, halfWidth: 0.9, y: 1.4 },
+  { back: -1.56, front: 1.24, halfWidth: 0.94, y: 1.84 },
+  { back: -1.58, front: 1.28, halfWidth: 0.92, y: 2.3 },
+  { back: -1.45, front: 1.22, halfWidth: 0.86, y: 2.7 },
+  { back: -1.05, front: 1.1, halfWidth: 0.74, y: 3.05 },
+  { back: -0.55, front: 0.98, halfWidth: 0.6, y: 3.32 },
+  { back: -0.1, front: 0.84, halfWidth: 0.44, y: 3.52 },
+  { back: 0.18, front: 0.66, halfWidth: 0.25, y: 3.64 },
+];
+
+const HEAD: readonly BodySection[] = [
+  { centerY: 2.72, halfHeight: 0, halfWidth: 0, z: 0.42 },
+  { centerY: 2.72, halfHeight: 0.5, halfWidth: 0.48, z: 0.55 },
+  { centerY: 2.8, halfHeight: 0.64, halfWidth: 0.55, z: 0.85 },
+  { centerY: 2.96, halfHeight: 0.74, halfWidth: 0.55, z: 1.1 },
+  { centerY: 3.01, halfHeight: 0.76, halfWidth: 0.52, z: 1.35 },
+  { centerY: 2.93, halfHeight: 0.68, halfWidth: 0.47, z: 1.6 },
+  { centerY: 2.76, halfHeight: 0.52, halfWidth: 0.38, z: 1.8 },
+  { centerY: 2.62, halfHeight: 0.33, halfWidth: 0.25, z: 1.93 },
+  { centerY: 2.58, halfHeight: 0, halfWidth: 0, z: 1.98 },
 ];
 
 const FUR_NOISE = createVolumeNoise(createRandom(7171));
 
+const FUR_DEPTH = 0.035;
+const HEM_DEPTH = 0.1;
+const STRAND_DEPTH = 0.13;
+const BOXINESS = 2.5;
+
+const BODY_SEAM = 0.3;
+const HEAD_SEAM = 0.22;
+const LEG_SEAM = 0.26;
+const TAIL_SEAM = 0.12;
+const TRUNK_SEAM = 0.18;
+const EAR_SEAM = 0.08;
+
 const BLEND = 0.2;
 
-function legPoints(x: number, z: number, top: number, joints: readonly [number, number]): TubePoint[][] {
-  const [middle, lower] = joints;
+function boxy(around: number): number {
+  const angle = around * Math.PI * 2;
 
-  return [
-    [
-      { radius: 0.4, x, y: top, z },
-      { radius: 0.33, x, y: (top + middle) / 2, z },
-      { radius: 0.3, x, y: middle - 0.05, z },
-    ],
-    [
-      { radius: 0.29, x, y: middle + 0.05, z },
-      { radius: 0.26, x, y: lower - 0.05, z: z + 0.02 },
-    ],
-    [
-      { radius: 0.25, x, y: lower + 0.05, z: z + 0.03 },
-      { radius: 0.26, x, y: 0.1, z: z + 0.04 },
-      { radius: 0.27, x, y: 0, z: z + 0.04 },
-    ],
-  ];
+  return (Math.abs(Math.cos(angle)) ** BOXINESS + Math.abs(Math.sin(angle)) ** BOXINESS) ** (-1 / BOXINESS);
 }
 
-const LEG_PIECES: Readonly<Record<"front" | "hind", readonly TubePoint[][]>> = {
-  front: legPoints(0.45, 0.62, 2.3, [1.25, 0.55]),
-  hind: legPoints(0.48, -0.95, 2.2, [1.2, 0.55]),
+function ringSection(ring: BodyRing): LoftSection {
+  return {
+    centerZ: (ring.back + ring.front) / 2,
+    radiusX: ring.halfWidth,
+    radiusZ: (ring.front - ring.back) / 2,
+    ripple: boxy,
+    y: ring.y,
+  };
+}
+
+function bodyShape(segments: number): Shape {
+  const shape = loft(
+    [
+      { centerZ: -0.13, radiusX: 0, radiusZ: 0, y: 1.54 },
+      { centerZ: -0.13, radiusX: 0.6, radiusZ: 0.9, y: 1.36 },
+      ...BODY_RINGS.map(ringSection),
+      { centerZ: 0.42, radiusX: 0, radiusZ: 0, y: 3.68 },
+    ],
+    segments
+  );
+
+  return deformShape(shape, (vertex) => {
+    if (Math.abs(vertex.y - HEM_HEIGHT) < 1e-4) {
+      const strand = Math.round(vertex.around * segments) % 2;
+      const shag = Math.abs(FUR_NOISE.sample(vertex.x * 3, 0, vertex.z * 3));
+
+      return [
+        vertex.normalX * 0.04 * strand,
+        -HEM_DEPTH - STRAND_DEPTH * strand - 0.05 * shag,
+        vertex.normalZ * 0.04 * strand,
+      ];
+    }
+
+    const fur = FUR_DEPTH * FUR_NOISE.fractal(vertex.x * 2.2, vertex.y * 2.2, vertex.z * 2.2, { octaves: 2 });
+
+    return [vertex.normalX * fur, vertex.normalY * fur, vertex.normalZ * fur];
+  });
+}
+
+function headShape(segments: number): Shape {
+  return deformShape(lengthwiseLoft(HEAD, segments), (vertex) => {
+    const fur = FUR_DEPTH * 0.8 * FUR_NOISE.fractal(vertex.x * 2.6 + 9, vertex.y * 2.6, vertex.z * 2.6, { octaves: 2 });
+
+    return [vertex.normalX * fur, vertex.normalY * fur, vertex.normalZ * fur];
+  });
+}
+
+function legPoints(x: number, joints: readonly (readonly [number, number, number])[]): TubePoint[] {
+  return joints.map(([radius, y, z]) => ({ radius, x, y, z }));
+}
+
+const LEGS: Readonly<Record<"front" | "hind", readonly TubePoint[]>> = {
+  front: legPoints(0.45, [
+    [0.24, 2.25, 0.6],
+    [0.37, 1.7, 0.6],
+    [0.32, 1.25, 0.6],
+    [0.27, 0.6, 0.63],
+    [0.28, 0.14, 0.66],
+    [0.3, 0, 0.66],
+  ]),
+  hind: legPoints(0.48, [
+    [0.26, 2.15, -0.98],
+    [0.38, 1.66, -0.93],
+    [0.31, 1.2, -0.86],
+    [0.26, 0.6, -1],
+    [0.27, 0.14, -0.98],
+    [0.29, 0, -0.98],
+  ]),
 };
+
+function footSlot(point: SurfacePoint): number {
+  return point.position.y < 0.05 ? MaterialSlot.Hoof : MaterialSlot.Coat;
+}
 
 function addLegs(builder: MeshBuilder, segments: number): void {
   for (const side of LEG_SIDES) {
     const mirror = sideMirror(side);
 
     for (const end of ["front", "hind"] as const) {
-      const style: VertexStyle = { ...legStyle(MAMMOTH_FRAME, end, side, BLEND), slot: MaterialSlot.Coat };
+      const style: VertexStyle = { ...legStyle(MAMMOTH_FRAME, end, side, BLEND), slot: footSlot };
 
-      for (const points of LEG_PIECES[end]) {
-        builder.add(tube(points, { radialSegments: segments }), { style, transform: mirror });
-      }
+      builder.add(tube(LEGS[end], { radialSegments: segments }), { seam: LEG_SEAM, style, transform: mirror });
     }
   }
-}
-
-function addFurSkirt(builder: MeshBuilder, segments: number): void {
-  const skirt = loft(
-    [
-      { centerZ: -0.45, radiusX: 0, radiusZ: 0, y: 1.6 },
-      { centerZ: -0.45, radiusX: 0.6, radiusZ: 0.82, y: 1.52 },
-      { centerZ: -0.45, radiusX: 0.9, radiusZ: 1.12, y: 1.32 },
-      { centerZ: -0.4, radiusX: 0.97, radiusZ: 1.26, y: 1.55 },
-      { centerZ: -0.32, radiusX: 0.98, radiusZ: 1.32, y: 1.9 },
-      { centerZ: -0.25, radiusX: 0.92, radiusZ: 1.28, y: 2.3 },
-      { centerZ: -0.25, radiusX: 0, radiusZ: 0, y: 2.35 },
-    ],
-    segments * 3
-  );
-
-  const shaggy = deformShape(skirt, (vertex) => {
-    if (vertex.y > 1.4) {
-      return [0, 0, 0];
-    }
-
-    const strand = FUR_NOISE.sample(vertex.x * 7, 0, vertex.z * 7);
-
-    return [0, -0.12 - 0.14 * Math.abs(strand), 0];
-  });
-
-  builder.add(shaggy, { style: { ...bodyStyle(MAMMOTH_FRAME, 0.5), slot: MaterialSlot.Coat } });
 }
 
 const TRUNK_STYLE = chainStyle(
@@ -162,48 +230,71 @@ const TRUNK_STYLE = chainStyle(
   )
 );
 
-function addHead(builder: MeshBuilder, segments: number): void {
-  const head = rigidStyle(QuadrupedBone.Head);
+const TRUNK: readonly TubePoint[] = [
+  { radius: 0.24, x: 0, y: 2.8, z: 1.62 },
+  { radius: 0.21, x: 0, y: 2.56, z: 1.9 },
+  { radius: 0.17, x: 0, y: 2.15, z: 2.02 },
+  { radius: 0.13, x: 0, y: 1.65, z: 2.04 },
+  { radius: 0.1, x: 0, y: 1.18, z: 2.04 },
+  { radius: 0.08, x: 0, y: 0.98, z: 2.12 },
+  { radius: 0.065, x: 0, y: 0.92, z: 2.24 },
+];
 
-  builder.add(sphere(0.6, segments + 2, segments), {
-    style: { ...head, slot: MaterialSlot.Coat },
-    transform: transformOf({ position: [0, 2.9, 1.45], scale: [0.82, 1.08, 0.9] }),
-  });
-  builder.add(blob({ noise: FUR_NOISE, offset: [3, 4, 5], radius: 0.42, roughness: 0.3 }), {
-    style: { ...head, slot: MaterialSlot.Coat },
-    transform: transformOf({ position: [0, 3.36, 1.3], scale: [0.9, 0.8, 1] }),
-  });
-  builder.add(
-    tube(
-      [
-        { radius: 0.21, x: 0, y: 2.62, z: 1.88 },
-        { radius: 0.17, x: 0, y: 2.15, z: 2.02 },
-        { radius: 0.13, x: 0, y: 1.65, z: 2.04 },
-        { radius: 0.1, x: 0, y: 1.18, z: 2.04 },
-        { radius: 0.08, x: 0, y: 0.98, z: 2.12 },
-        { radius: 0.065, x: 0, y: 0.92, z: 2.24 },
-      ],
-      { radialSegments: segments }
-    ),
-    { style: { ...TRUNK_STYLE, slot: MaterialSlot.Coat } }
-  );
+const EYE_RADIUS = 0.045;
+const EAR_SIZE: Triple = [0.27, 0.07, 0.2];
+const HEAD_CURVATURE = 0.7;
+
+function earShape(segments: number): Shape {
+  const flap = transformShape(sphere(1, segments, Math.max(4, segments - 4)), transformOf({ scale: EAR_SIZE }));
+
+  return deformShape(flap, (vertex) => [0, -(vertex.x * vertex.x + vertex.z * vertex.z) / (2 * HEAD_CURVATURE), 0]);
+}
+
+function addFace(builder: MeshBuilder, head: Shape, segments: number): void {
+  const style = rigidStyle(QuadrupedBone.Head);
+  const eye = outermostHit(head, new Vector3(0, 2.92, 1.5), new Vector3(1, -0.05, 0.75));
+  const ear = outermostHit(head, new Vector3(0, 3.02, 1.12), new Vector3(1, 0.12, -0.2));
 
   for (const side of LEG_SIDES) {
     const mirror = sideMirror(side);
 
-    builder.add(sphere(0.045, 6, 4), {
-      style: { ...head, slot: MaterialSlot.Eye },
-      transform: combine(mirror, transformOf({ position: [0.38, 3.0, 1.82] })),
-    });
-    builder.add(sphere(0.24, segments, Math.max(4, segments - 3)), {
-      style: { ...head, slot: MaterialSlot.Coat },
-      transform: combine(
-        mirror,
-        transformOf({ position: [0.5, 3.02, 1.22], rotation: [0, 0.3, 0], scale: [0.35, 1, 0.8] })
-      ),
-    });
+    if (eye !== null) {
+      builder.add(sphere(EYE_RADIUS, 6, 4), {
+        style: { ...style, slot: MaterialSlot.Eye },
+        transform: combine(mirror, surfaceTransform(eye, EYE_RADIUS * 0.65)),
+      });
+    }
+
+    if (ear !== null) {
+      builder.add(earShape(segments), {
+        seam: EAR_SEAM,
+        style: { ...style, slot: MaterialSlot.Coat },
+        transform: combine(mirror, surfaceTransform(ear, 0.005)),
+      });
+    }
   }
 }
+
+function addHead(builder: MeshBuilder, segments: number): void {
+  const head = headShape(segments + 4);
+
+  builder.add(head, { seam: HEAD_SEAM, style: { ...neckStyle(MAMMOTH_FRAME, 0.25), slot: MaterialSlot.Coat } });
+  builder.add(tube(TRUNK, { radialSegments: segments }), {
+    seam: TRUNK_SEAM,
+    style: { ...TRUNK_STYLE, slot: MaterialSlot.Coat },
+  });
+  addFace(builder, head, segments);
+}
+
+const TAIL: readonly TubePoint[] = [
+  { radius: 0.13, x: 0, y: 2.48, z: -1.36 },
+  { radius: 0.09, x: 0, y: 2.36, z: -1.62 },
+  { radius: 0.06, x: 0, y: 2.1, z: -1.72 },
+  { radius: 0.05, x: 0, y: 1.86, z: -1.74 },
+  { radius: 0.085, x: 0, y: 1.72, z: -1.74 },
+  { radius: 0.07, x: 0, y: 1.58, z: -1.73 },
+  { radius: 0, x: 0, y: 1.48, z: -1.72 },
+];
 
 function tuskPath(length: number): TubePoint[] {
   return [
@@ -237,41 +328,15 @@ export function addLongTusks(builder: MeshBuilder, segments: number): void {
 }
 
 export function addMammothBody(builder: MeshBuilder, segments: number): void {
-  builder.add(lengthwiseLoft(BODY, segments + 4), {
+  builder.add(bodyShape(segments * 3 + 6), {
+    seam: BODY_SEAM,
     style: { ...bodyStyle(MAMMOTH_FRAME, 0.5), slot: MaterialSlot.Coat },
   });
-  builder.add(blob({ noise: FUR_NOISE, offset: [1, 2, 3], radius: 0.62, roughness: 0.25 }), {
-    style: { ...bodyStyle(MAMMOTH_FRAME, 0.5), slot: MaterialSlot.Coat },
-    transform: transformOf({ position: [0, 3.18, 0.42], scale: [1.15, 0.72, 1.3] }),
-  });
-  builder.add(
-    tube(
-      [
-        { radius: 0.7, x: 0, y: 2.55, z: 0.9 },
-        { radius: 0.62, x: 0, y: 2.7, z: 1.15 },
-        { radius: 0.55, x: 0, y: 2.8, z: 1.35 },
-      ],
-      { radialSegments: segments + 2 }
-    ),
-    { style: { ...neckStyle(MAMMOTH_FRAME, 0.25), slot: MaterialSlot.Coat } }
-  );
   addHead(builder, segments);
   addLegs(builder, segments);
-  addFurSkirt(builder, segments);
-  builder.add(
-    tube(
-      [
-        { radius: 0.08, x: 0, y: 2.25, z: -1.52 },
-        { radius: 0.05, x: 0, y: 1.9, z: -1.66 },
-        { radius: 0.04, x: 0, y: 1.65, z: -1.68 },
-      ],
-      { radialSegments: 5 }
-    ),
-    { style: { ...tailStyle(MAMMOTH_FRAME, 0.15), slot: MaterialSlot.Coat } }
-  );
-  builder.add(cone(0.09, 0.28, 6), {
+  builder.add(tube(TAIL, { radialSegments: Math.max(5, segments - 4) }), {
+    seam: TAIL_SEAM,
     style: { ...tailStyle(MAMMOTH_FRAME, 0.15), slot: MaterialSlot.Coat },
-    transform: transformOf({ position: [0, 1.66, -1.68], rotation: [Math.PI, 0, 0] }),
   });
 }
 

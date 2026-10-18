@@ -96,11 +96,21 @@ export const FLEXIBLE_TORSO_STYLE: VertexStyle = {
   boneWeight: (point) => torsoBlend(point).weight,
 };
 
+const SKIRT_BACK_FOLLOW = 0.4;
+const SKIRT_SPLIT_START = 0.01;
+const SKIRT_SPLIT_END = 0.09;
+
 export function skirtStyle(followsLegs: number, hipLine: number, hemLine: number): VertexStyle {
   return {
     boneA: HumanBone.Pelvis,
     boneB: (point) => sideBones(sideOf(point)).thigh,
-    boneWeight: (point) => followsLegs * smoothstep(hipLine, hemLine, point.position.y),
+    boneWeight: (point) => {
+      const front = smoothstep(-0.1, 0.06, point.position.z);
+      const follow = followsLegs * (SKIRT_BACK_FOLLOW + (1 - SKIRT_BACK_FOLLOW) * front);
+      const apart = smoothstep(SKIRT_SPLIT_START, SKIRT_SPLIT_END, Math.abs(point.position.x));
+
+      return follow * apart * smoothstep(hipLine, hemLine, point.position.y);
+    },
   };
 }
 
