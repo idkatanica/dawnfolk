@@ -148,6 +148,24 @@ describe("regrowth", () => {
     expect(plantsTooSteep(world)).toEqual([]);
   });
 
+  it("leaves glades open and lets thin stands grow back thin", () => {
+    const world = createTestWorld({ biome: Biome.Forest, ground: Ground.Forest });
+    const { grid, terrain, vegetation } = world;
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      terrain.woodland[cell] = grid.cellCenterX(cell) < 0 ? 0 : 0.5;
+    }
+
+    growFor(world, { days: 3, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
+
+    const columns = Array.from({ length: vegetation.count }, (_, plant) => grid.columnOf(vegetation.cell[plant]));
+    const thinCells = grid.cellCount / 2;
+
+    expect(columns.every((column) => column >= grid.cellsPerSide / 2)).toBe(true);
+    expect(vegetation.aliveCount).toBeGreaterThan(thinCells * 0.3);
+    expect(vegetation.aliveCount).toBeLessThan(thinCells * 0.65);
+  });
+
   it("keeps trees off sandy banks", () => {
     const world = createTestWorld({ biome: Biome.Forest, ground: Ground.Sand });
 

@@ -3,7 +3,7 @@ import type { GeneratedWorld } from "../../generation/world-generator.ts";
 import { clamp } from "../../shared/math.ts";
 import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../world/change-tracking.ts";
 import { hasRoomFromCoast, isOnIsland } from "../../world/coast.ts";
-import { canStandOn, isOpenGround, slopeAt } from "../../world/footing.ts";
+import { canGrowWild, canStandOn, isOpenGround, slopeAt } from "../../world/footing.ts";
 import type { IslandShapeKind } from "../../world/island-shape.ts";
 import type { TerrainData } from "../../world/terrain-data.ts";
 import {
@@ -135,6 +135,10 @@ export class WorldState {
 
   canPlace(cell: number, steepestSlope: number): boolean {
     return canStandOn(this.terrain, this.grid, cell, steepestSlope) && this.occupancy[cell] === NO_BUILDING;
+  }
+
+  canGrowWild(cell: number, species: number): boolean {
+    return canGrowWild(this.terrain, this.grid, cell, species) && this.occupancy[cell] === NO_BUILDING;
   }
 
   temperature(cell: number, airTemperatureOffset: number): number {

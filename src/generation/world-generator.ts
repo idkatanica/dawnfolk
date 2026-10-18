@@ -21,6 +21,7 @@ import { digRiverLakes, fillSinks } from "./lake-basins.ts";
 import { createRelief, islandPointAt, type Relief } from "./relief.ts";
 import { carveValleys } from "./valleys.ts";
 import { plantInitialVegetation } from "./vegetation.ts";
+import { openWoodland } from "./woodland.ts";
 
 export type GenerationStage = "climate" | "erosion" | "relief" | "vegetation" | "water";
 
@@ -200,9 +201,11 @@ export function generateWorld(
     height: heights,
     riverStrength: hydrology.riverStrength,
     waterSurface: hydrology.waterSurface,
+    woodland: new Float32Array(grid.cellCount).fill(1),
   };
 
   onProgress({ progress: 0, stage: "vegetation" });
+  openWoodland(terrain, grid, seed);
 
   const vegetation = new VegetationStore(grid, Math.round(grid.cellCount * VEGETATION_CAPACITY_PER_CELL));
 

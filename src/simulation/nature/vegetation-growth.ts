@@ -1,6 +1,6 @@
 import { Biome, isBiomeIndex } from "../../content/biomes.ts";
 import { groundDefinition } from "../../content/grounds.ts";
-import { plantSpeciesDefinition, regrowingSpecies } from "../../content/plants.ts";
+import { regrowingSpecies } from "../../content/plants.ts";
 import { isGrowingSeason } from "../../content/seasons.ts";
 import type { WorldRules } from "../../content/world-rules.ts";
 import { plantHeight } from "../../generation/vegetation.ts";
@@ -113,7 +113,7 @@ export class VegetationGrowthSystem {
 
     const species = random.pick(candidates);
 
-    if (!world.canPlace(cell, plantSpeciesDefinition(species).steepestSlope)) {
+    if (!world.canGrowWild(cell, species)) {
       return;
     }
 

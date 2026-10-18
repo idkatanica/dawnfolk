@@ -13,6 +13,7 @@ export interface TerrainData {
   riverStrength: Uint8Array;
   variation: Float32Array;
   waterSurface: Float32Array;
+  woodland: Float32Array;
 }
 
 export function createTerrainData({ cellsPerSide }: GridDimensions): TerrainData {
@@ -30,5 +31,6 @@ export function createTerrainData({ cellsPerSide }: GridDimensions): TerrainData
     riverStrength: new Uint8Array(cellCount),
     variation: new Float32Array(cellCount),
     waterSurface: new Float32Array(cellCount),
+    woodland: new Float32Array(cellCount).fill(1),
   };
 }

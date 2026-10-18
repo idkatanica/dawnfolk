@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { PlantSpecies } from "../content/plants.ts";
 import { landEverywhere } from "./coast.ts";
-import { canStandOn, type FootingTerrain, isOpenGround, slopeAt } from "./footing.ts";
+import { admitsWildPlant, canGrowWild, canStandOn, type FootingTerrain, isOpenGround, slopeAt } from "./footing.ts";
 import { NO_WATER } from "./water.ts";
 import { WorldGrid } from "./world-grid.ts";
 
@@ -18,6 +19,22 @@ function terrainOf(heightAt: (column: number, row: number) => number): FootingTe
     height,
     waterSurface: new Float32Array(grid.cellCount).fill(NO_WATER),
   };
+}
+
+function woodlandOf(density: number) {
+  return { ...terrainOf(() => 100), woodland: new Float32Array(grid.cellCount).fill(density) };
+}
+
+function admittedCells(density: number, species: number): number {
+  const terrain = woodlandOf(density);
+
+  let admitted = 0;
+
+  for (let cell = 0; cell < grid.cellCount; cell += 1) {
+    admitted += admitsWildPlant(terrain, grid, cell, species) ? 1 : 0;
+  }
+
+  return admitted;
 }
 
 describe("footing", () => {
@@ -65,5 +82,28 @@ describe("footing", () => {
     expect(canStandOn(terrain, grid, gentle, 0.5)).toBe(true);
     expect(canStandOn(terrain, grid, steep, 0.5)).toBe(false);
     expect(canStandOn(terrain, grid, steep, 5)).toBe(true);
+  });
+});
+
+describe("wild growth", () => {
+  it("lets wild plants into full woodland and keeps trees out of a bare glade", () => {
+    expect(admittedCells(1, PlantSpecies.Spruce)).toBe(grid.cellCount);
+    expect(admittedCells(0, PlantSpecies.Spruce)).toBe(0);
+    expect(admittedCells(0, PlantSpecies.Boulder)).toBe(grid.cellCount);
+  });
+
+  it("keeps more bushes than trees in a thin stand", () => {
+    expect(admittedCells(0.3, PlantSpecies.Bush)).toBeGreaterThan(admittedCells(0.3, PlantSpecies.Oak));
+    expect(admittedCells(0, PlantSpecies.Bush)).toBeGreaterThan(grid.cellCount * 0.3);
+  });
+
+  it("asks the slope and the woodland together", () => {
+    const terrain = woodlandOf(1);
+    const cell = grid.index(3, 3);
+
+    expect(canGrowWild(terrain, grid, cell, PlantSpecies.Oak)).toBe(true);
+    expect(canGrowWild({ ...terrain, woodland: new Float32Array(grid.cellCount) }, grid, cell, PlantSpecies.Oak)).toBe(
+      false
+    );
   });
 });

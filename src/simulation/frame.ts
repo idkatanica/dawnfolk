@@ -144,7 +144,7 @@ export interface SimulationFrame {
   weather: WeatherView;
 }
 
-export type TerrainSnapshot = Omit<TerrainData, "carving" | "dryness">;
+export type TerrainSnapshot = Omit<TerrainData, "carving" | "dryness" | "woodland">;
 
 export interface InitialWorld {
   dimensions: GridDimensions;

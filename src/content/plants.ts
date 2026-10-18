@@ -1,3 +1,4 @@
+import { lerp } from "../shared/math.ts";
 import { Biome, type BiomeIndex } from "./biomes.ts";
 
 export const PlantSpecies = {
@@ -208,6 +209,22 @@ export function isLivingTreeSpecies(index: number): boolean {
 
 export function isTreeSpecies(index: number): boolean {
   return isLivingTreeSpecies(index) || plantSpeciesDefinition(index).form === "deadwood";
+}
+
+const UNDERGROWTH_IN_CLEARINGS = 0.55;
+
+export function woodlandShare(index: number, woodland: number): number {
+  if (isTreeSpecies(index)) {
+    return woodland;
+  }
+
+  const { form } = plantSpeciesDefinition(index);
+
+  if (form === "shrub" || form === "succulent") {
+    return lerp(UNDERGROWTH_IN_CLEARINGS, 1, woodland);
+  }
+
+  return 1;
 }
 
 interface PlantingRule {

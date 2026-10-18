@@ -1,10 +1,18 @@
-import { isOnIsland } from "./coast.ts";
+import { plantSpeciesDefinition, woodlandShare } from "../content/plants.ts";
+import { hashToUnit } from "../shared/math.ts";
+import { hasRoomFromCoast, isOnIsland } from "./coast.ts";
 import { type SampledTerrain, touchesWaterCell } from "./terrain-sampling.ts";
 import type { WorldGrid } from "./world-grid.ts";
 
 export interface FootingTerrain extends SampledTerrain {
   readonly coastDistance: Float32Array;
 }
+
+export interface WildTerrain extends FootingTerrain {
+  readonly woodland: Float32Array;
+}
+
+const STAND_SALT = 19.19;
 
 export function slopeAt(heights: Float32Array, grid: WorldGrid, cell: number): number {
   const { cellSize } = grid;
@@ -31,4 +39,22 @@ export function isOpenGround(terrain: FootingTerrain, grid: WorldGrid, cell: num
 
 export function canStandOn(terrain: FootingTerrain, grid: WorldGrid, cell: number, steepestSlope: number): boolean {
   return isOpenGround(terrain, grid, cell) && slopeAt(terrain.height, grid, cell) <= steepestSlope;
+}
+
+export function admitsWildPlant(terrain: WildTerrain, grid: WorldGrid, cell: number, species: number): boolean {
+  const share = woodlandShare(species, terrain.woodland[cell]);
+
+  return hashToUnit(grid.columnOf(cell), grid.rowOf(cell), STAND_SALT) < share;
+}
+
+export function canGrowWild(terrain: WildTerrain, grid: WorldGrid, cell: number, species: number): boolean {
+  const { steepestSlope } = plantSpeciesDefinition(species);
+
+  return canStandOn(terrain, grid, cell, steepestSlope) && admitsWildPlant(terrain, grid, cell, species);
+}
+
+export function hasRoomToGrow(terrain: WildTerrain, grid: WorldGrid, x: number, z: number, species: number): boolean {
+  const cell = grid.cellAt(x, z);
+
+  return canGrowWild(terrain, grid, cell, species) && hasRoomFromCoast(terrain.coastDistance, grid, x, z);
 }

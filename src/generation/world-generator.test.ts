@@ -3,7 +3,7 @@ import { Biome } from "../content/biomes.ts";
 import { Ground } from "../content/grounds.ts";
 import { isTreeSpecies, plantSpeciesDefinition } from "../content/plants.ts";
 import { isOnIsland } from "../world/coast.ts";
-import { slopeAt } from "../world/footing.ts";
+import { admitsWildPlant, slopeAt } from "../world/footing.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { sampleHeight } from "../world/terrain-sampling.ts";
@@ -103,6 +103,16 @@ function plantsAboveTheirSlope(generated: GeneratedWorld): string[] {
   }
 
   return misplaced;
+}
+
+function isWooded(terrain: TerrainData, cell: number): boolean {
+  return terrain.biome[cell] === Biome.Forest || terrain.biome[cell] === Biome.Taiga;
+}
+
+function nearWater(terrain: TerrainData, grid: WorldGrid, cell: number, radius: number): boolean {
+  return grid
+    .cellsInRadius(grid.cellCenterX(cell), grid.cellCenterZ(cell), radius)
+    .some((other) => hasWater(terrain.waterSurface[other], terrain.height[other]));
 }
 
 function median(values: readonly number[]): number {
@@ -390,6 +400,47 @@ describe("world generation", () => {
 
   it("plants nothing on ground steeper than its species can hold", () => {
     expect(plantsAboveTheirSlope(world)).toEqual([]);
+  });
+
+  it("opens glades, sparse stands and riverside meadows in the forests", () => {
+    const grid = new WorldGrid(TEST_DIMENSIONS);
+    const { terrain } = world;
+
+    const wooded = Array.from({ length: grid.cellCount }, (_, cell) => cell).filter((cell) => isWooded(terrain, cell));
+
+    const densities = wooded.map((cell) => terrain.woodland[cell]);
+    const mean = densities.reduce((total, density) => total + density, 0) / densities.length;
+
+    const banks = wooded.filter((cell) => nearWater(terrain, grid, cell, 50));
+    const bankMean = banks.reduce((total, cell) => total + terrain.woodland[cell], 0) / banks.length;
+
+    expect(wooded.length).toBeGreaterThan(1000);
+    expect(mean).toBeGreaterThan(0.5);
+    expect(mean).toBeLessThan(0.85);
+    expect(densities.filter((density) => density < 0.05).length / densities.length).toBeGreaterThan(0.04);
+    expect(densities.filter((density) => density > 0.95).length / densities.length).toBeGreaterThan(0.2);
+    expect(bankMean).toBeLessThan(mean * 0.7);
+
+    for (const cell of wooded) {
+      if (terrain.woodland[cell] < 0.3) {
+        expect(terrain.ground[cell]).not.toBe(Ground.Forest);
+      }
+    }
+  });
+
+  it("grows no wild plant where the woodland turns it away", () => {
+    const grid = new WorldGrid(TEST_DIMENSIONS);
+    const { terrain, vegetation } = world;
+
+    for (let plant = 0; plant < vegetation.count; plant += 1) {
+      const cell = grid.cellAt(vegetation.x[plant], vegetation.z[plant]);
+
+      expect(admitsWildPlant(terrain, grid, cell, vegetation.species[plant])).toBe(true);
+    }
+  });
+
+  it("keeps the woodland the same for a seed", () => {
+    expect(generateTestWorld(7).terrain.woodland).toEqual(world.terrain.woodland);
   });
 
   it("produces many biomes and a living vegetation cover", () => {
