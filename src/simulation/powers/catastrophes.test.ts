@@ -3,8 +3,9 @@ import { Biome } from "../../content/biomes.ts";
 import { Ground } from "../../content/grounds.ts";
 import { isTreeSpecies, PlantSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
+import { WorldGrid } from "../../world/world-grid.ts";
 import { Simulation } from "../simulation.ts";
-import { createVegetatedWorld, floodCells, plantInCell } from "../testing/test-world.ts";
+import { createVegetatedWorld, floodCells, monumentAround, plantInCell } from "../testing/test-world.ts";
 
 const VALLEY_SIDES = 0.25;
 const VALLEY_FALL = 0.02;
@@ -291,5 +292,48 @@ describe("earthquakes", () => {
     simulation.usePower("earthquake", 0, 0, { magnitude: 100, radius: 300 });
 
     expect(treesWithin(simulation, 300, PlantState.Fallen)).toBeGreaterThan(20);
+  });
+});
+
+describe("determinism", () => {
+  function replay(): Simulation {
+    const dimensions = { cellSize: 10, cellsPerSide: 96 };
+
+    const simulation = new Simulation(
+      createVegetatedWorld({
+        dimensions,
+        heightAt: valleyHeight,
+        monuments: [monumentAround(new WorldGrid(dimensions), 200, 150, 20)],
+      })
+    );
+
+    simulation.weather.setKind("clear");
+    simulation.waterRecomputation.recompute();
+    simulation.populate();
+    simulation.execute({
+      parameters: { craterRadius: 140, fallTime: 0.5 },
+      powerId: "meteor",
+      type: "usePower",
+      x: 0,
+      z: METEOR_Z,
+    });
+    simulation.execute({ parameters: {}, powerId: "explosion", type: "usePower", x: 150, z: 150 });
+    simulation.execute({ parameters: {}, powerId: "earthquake", type: "usePower", x: -100, z: 0 });
+    settle(simulation, 8);
+    simulation.runTicks(1200);
+
+    return simulation;
+  }
+
+  it("replays the same catastrophes the same way", () => {
+    const first = replay();
+    const second = replay();
+
+    expect(second.world.terrain.height).toEqual(first.world.terrain.height);
+    expect(second.world.terrain.waterSurface).toEqual(first.world.terrain.waterSurface);
+    expect(second.world.fields.scorch).toEqual(first.world.fields.scorch);
+    expect(second.world.vegetation.exportBuffers()).toEqual(first.world.vegetation.exportBuffers());
+    expect(second.world.monumentConditions).toEqual(first.world.monumentConditions);
+    expect(second.advance(0).people).toEqual(first.advance(0).people);
   });
 });

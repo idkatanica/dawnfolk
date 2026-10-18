@@ -20,14 +20,34 @@ export const PIECE_FORMS = {
 
 export type PieceForm<Piece extends MonumentPiece> = (typeof PIECE_FORMS)[Piece][number];
 
-function pieceFormIndex<Piece extends MonumentPiece>(piece: Piece, form: PieceForm<Piece>): number {
+export function isMonumentPiece(species: number): species is MonumentPiece {
+  return Object.hasOwn(PIECE_FORMS, species);
+}
+
+export function pieceFormIndex<Piece extends MonumentPiece>(piece: Piece, form: PieceForm<Piece>): number {
   const forms: readonly string[] = PIECE_FORMS[piece];
 
   return forms.indexOf(form);
 }
 
+export function seedOfForm(piece: MonumentPiece, formIndex: number, jitter: number): number {
+  return (formIndex + 0.1 + 0.8 * jitter) / PIECE_FORMS[piece].length;
+}
+
 export function pieceSeed<Piece extends MonumentPiece>(piece: Piece, form: PieceForm<Piece>, jitter: number): number {
-  return (pieceFormIndex(piece, form) + 0.1 + 0.8 * jitter) / PIECE_FORMS[piece].length;
+  return seedOfForm(piece, pieceFormIndex(piece, form), jitter);
+}
+
+export function formIndexOf(piece: MonumentPiece, seed: number): number {
+  const count = PIECE_FORMS[piece].length;
+
+  return Math.min(count - 1, Math.floor(seed * count));
+}
+
+export function jitterOf(piece: MonumentPiece, seed: number): number {
+  const count = PIECE_FORMS[piece].length;
+
+  return Math.min(1, Math.max(0, (seed * count - formIndexOf(piece, seed) - 0.1) / 0.8));
 }
 
 export const MONUMENT_KINDS = ["stoneCircle", "menhirRow", "dolmen", "idol", "colonnade", "cairn"] as const;

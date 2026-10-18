@@ -163,6 +163,16 @@ export class VegetationStore {
     this.#kill(index, day, PlantState.Fallen);
   }
 
+  reshape(index: number, seed: number, rotation: number): void {
+    if (this.state[index] !== PlantState.Alive) {
+      return;
+    }
+
+    this.seed[index] = seed;
+    this.rotation[index] = rotation;
+    this.#changed.add(index);
+  }
+
   setFruit(index: number, fruit: number): void {
     if (this.state[index] !== PlantState.Alive) {
       return;

@@ -3,6 +3,7 @@ import { clamp, FULL_TURN, hashToUnit, lerp, smoothstep } from "../../shared/mat
 import { NO_PLANT } from "../../world/vegetation-store.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import { discover } from "../society/tribe-life.ts";
+import { type Catastrophe, ruinText, type Shock, shakeMonuments } from "../world/monument-damage.ts";
 import { carveCrater, cellsInArea, shakeTerrain } from "../world/terrain-editing.ts";
 import type { WorldState } from "../world/world-state.ts";
 import type { PowerServices } from "./power-handler.ts";
@@ -31,6 +32,7 @@ const FEWEST_DEBRIS = 6;
 const MOST_DEBRIS = 120;
 const WATERY_CORE = 0.5;
 const BLAST_REACH = 1.8;
+const MONUMENT_REACH = 3.2;
 const NATURAL_STRIKE_ATTEMPTS = 6;
 const HIGH_GROUND = 700;
 const TALL_FOREST = 1;
@@ -128,6 +130,7 @@ function isStrikeSite(cell: number, acceptsAnyLand: boolean, services: PowerServ
 
 interface Blast {
   burnsDebris: boolean;
+  catastrophe: Catastrophe;
   power: number;
   radius: number;
   x: number;
@@ -153,6 +156,16 @@ export function explode(blast: Blast, services: PowerServices): void {
     hurlBurningDebris(blast, services);
   }
 
+  ruinMonuments(
+    {
+      catastrophe: blast.catastrophe,
+      reach: blast.radius * MONUMENT_REACH * reachScale(blast),
+      strength: 1 + 0.1 * blast.power,
+      x: blast.x,
+      z: blast.z,
+    },
+    services
+  );
   buildings.damageArea(blast.x, blast.z, reach, 120 * blast.power, burnsDebris);
   society.damageArea(blast.x, blast.z, reach, 1.6 * blast.power, "blast");
   fauna.damageArea(blast.x, blast.z, reach, 3 * blast.power, "blast");
@@ -327,6 +340,20 @@ function hurlBurningDebris(blast: Blast, services: PowerServices): void {
   }
 }
 
+function ruinMonuments(shock: Shock, services: PowerServices): void {
+  const { chronicle, environment, world } = services;
+
+  for (const harm of shakeMonuments(world, shock, environment.day)) {
+    chronicle.record({
+      category: "warning",
+      text: ruinText(shock.catastrophe, harm),
+      tribeId: null,
+      x: harm.monument.x,
+      z: harm.monument.z,
+    });
+  }
+}
+
 function vaporize(cell: number, services: PowerServices): void {
   const { fields } = services.world;
 
@@ -357,6 +384,10 @@ export function shakeLand(quake: Quake, services: PowerServices): void {
     }
   }
 
+  ruinMonuments(
+    { catastrophe: "earthquake", reach: quake.radius, strength: 0.6 * quake.magnitude, x: quake.x, z: quake.z },
+    services
+  );
   buildings.damageArea(quake.x, quake.z, quake.radius, 45 * quake.magnitude, false);
   society.damageArea(quake.x, quake.z, quake.radius * 0.6, 0.35 * quake.magnitude, "earthquake");
   fauna.scare(quake.x, quake.z, quake.radius * 1.5, 1);

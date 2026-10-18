@@ -5,7 +5,7 @@ import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../wo
 import { hasRoomFromCoast, isOnIsland } from "../../world/coast.ts";
 import { canGrowWild, canStandOn, isOpenGround, slopeAt } from "../../world/footing.ts";
 import type { IslandShapeKind } from "../../world/island-shape.ts";
-import type { Monument } from "../../world/monuments.ts";
+import { type Monument, type MonumentCondition, MonumentDamage } from "../../world/monuments.ts";
 import type { TerrainData } from "../../world/terrain-data.ts";
 import {
   isWaterAtPoint,
@@ -63,6 +63,7 @@ export class WorldState {
   readonly heightChanges = new RegionChangeTracker();
   readonly initialCanopyFuel: Float32Array;
   readonly lowestHeight: number;
+  readonly monumentConditions: readonly MonumentCondition[];
   readonly monuments: readonly Monument[];
   readonly occupancy: Int32Array;
   readonly seed: number;
@@ -83,6 +84,7 @@ export class WorldState {
     this.vegetation = generated.vegetation;
     this.water = generated.water;
     this.monuments = generated.monuments;
+    this.monumentConditions = generated.monuments.map(() => ({ damage: MonumentDamage.Standing, isDrowned: false }));
     this.fields = createSurfaceFields(this.grid.cellCount, generated.terrain.ground);
     this.occupancy = new Int32Array(this.grid.cellCount).fill(NO_BUILDING);
     this.canopyFuel = new Float32Array(this.grid.cellCount);
