@@ -69,11 +69,11 @@ const TUNIC: readonly LoftSection[] = [
   { radiusX: 0, radiusZ: 0, y: 0.75 },
   { radiusX: 0.13, radiusZ: 0.09, y: 0.72 },
   { centerZ: -0.006, radiusX: 0.205, radiusZ: 0.14, y: 0.7 },
-  { centerZ: -0.008, radiusX: 0.2, radiusZ: 0.136, y: 0.78 },
-  { centerZ: -0.01, radiusX: 0.194, radiusZ: 0.132, y: 0.86 },
-  { centerZ: -0.012, radiusX: 0.188, radiusZ: 0.13, y: 0.93 },
-  { centerZ: -0.006, radiusX: 0.176, radiusZ: 0.122, y: 0.99 },
-  { centerZ: 0.004, radiusX: 0.165, radiusZ: 0.116, y: 1.05 },
+  { centerZ: -0.004, radiusX: 0.205, radiusZ: 0.152, y: 0.78 },
+  { centerZ: -0.004, radiusX: 0.204, radiusZ: 0.156, y: 0.86 },
+  { centerZ: -0.008, radiusX: 0.2, radiusZ: 0.15, y: 0.93 },
+  { centerZ: -0.004, radiusX: 0.176, radiusZ: 0.124, y: 0.99 },
+  { centerZ: 0.008, radiusX: 0.167, radiusZ: 0.124, y: 1.05 },
   { centerZ: 0.01, radiusX: 0.168, radiusZ: 0.12, y: 1.12 },
   { centerZ: 0.01, radiusX: 0.178, radiusZ: 0.128, y: 1.2 },
   { centerZ: 0.018, radiusX: 0.192, radiusZ: 0.142, y: 1.28 },
@@ -88,7 +88,7 @@ export function addTunic(builder: MeshBuilder, detail: HumanDetail): void {
   const shape = jaggedHem(loft(alongPath(TUNIC, detail), detail.torsoSegments), 0.73, 14, 0.035);
 
   builder.add(shape, { style: { ...garmentStyle(0.55), slot: MaterialSlot.Fur } });
-  addBelt(builder, detail, { depthRatio: 0.7, radius: 0.172, y: 1.02 });
+  addBelt(builder, detail, { depthRatio: 0.75, radius: 0.176, y: 1.02 });
 }
 
 const DRESS: readonly LoftSection[] = [
@@ -96,9 +96,9 @@ const DRESS: readonly LoftSection[] = [
   { radiusX: 0.17, radiusZ: 0.14, y: 0.53 },
   { radiusX: 0.235, radiusZ: 0.19, y: 0.49 },
   { radiusX: 0.226, radiusZ: 0.18, y: 0.6 },
-  { centerZ: -0.004, radiusX: 0.212, radiusZ: 0.162, y: 0.75 },
-  { centerZ: -0.012, radiusX: 0.198, radiusZ: 0.142, y: 0.88 },
-  { centerZ: -0.014, radiusX: 0.19, radiusZ: 0.132, y: 0.95 },
+  { centerZ: -0.004, radiusX: 0.214, radiusZ: 0.168, y: 0.75 },
+  { centerZ: -0.008, radiusX: 0.206, radiusZ: 0.158, y: 0.88 },
+  { centerZ: -0.01, radiusX: 0.198, radiusZ: 0.146, y: 0.95 },
   { radiusX: 0.152, radiusZ: 0.108, y: 1.03 },
   { centerZ: 0.012, radiusX: 0.152, radiusZ: 0.11, y: 1.12 },
   { centerZ: 0.018, radiusX: 0.164, radiusZ: 0.126, y: 1.22 },
@@ -133,9 +133,9 @@ export function addDress(builder: MeshBuilder, detail: HumanDetail): void {
 const LOINCLOTH: readonly LoftSection[] = [
   { radiusX: 0, radiusZ: 0, y: 0.83 },
   { radiusX: 0.12, radiusZ: 0.09, y: 0.8 },
-  { centerZ: -0.008, radiusX: 0.175, radiusZ: 0.124, y: 0.78 },
-  { centerZ: -0.012, radiusX: 0.172, radiusZ: 0.122, y: 0.86 },
-  { centerZ: -0.014, radiusX: 0.172, radiusZ: 0.122, y: 0.94 },
+  { centerZ: -0.004, radiusX: 0.19, radiusZ: 0.142, y: 0.78 },
+  { centerZ: -0.006, radiusX: 0.19, radiusZ: 0.144, y: 0.86 },
+  { centerZ: -0.01, radiusX: 0.188, radiusZ: 0.138, y: 0.94 },
   { centerZ: -0.006, radiusX: 0.165, radiusZ: 0.115, y: 1 },
   { radiusX: 0.12, radiusZ: 0.08, y: 1.02 },
   { radiusX: 0, radiusZ: 0, y: 1.03 },
@@ -152,8 +152,8 @@ const WRAP_SKIRT: readonly LoftSection[] = [
   { radiusX: 0, radiusZ: 0, y: 0.66 },
   { radiusX: 0.13, radiusZ: 0.1, y: 0.63 },
   { centerZ: -0.004, radiusX: 0.2, radiusZ: 0.15, y: 0.61 },
-  { centerZ: -0.01, radiusX: 0.192, radiusZ: 0.138, y: 0.75 },
-  { centerZ: -0.014, radiusX: 0.18, radiusZ: 0.126, y: 0.9 },
+  { centerZ: -0.004, radiusX: 0.204, radiusZ: 0.156, y: 0.75 },
+  { centerZ: -0.008, radiusX: 0.2, radiusZ: 0.15, y: 0.9 },
   { centerZ: -0.008, radiusX: 0.17, radiusZ: 0.118, y: 0.98 },
   { radiusX: 0.165, radiusZ: 0.112, y: 1.03 },
   { radiusX: 0.12, radiusZ: 0.08, y: 1.045 },
@@ -234,7 +234,7 @@ export function addBoots(builder: MeshBuilder, detail: HumanDetail): void {
 
     builder.add(loft(alongPath(FOOT_SECTIONS, detail), detail.limbSegments), {
       style,
-      transform: combine(footTransform(side), transformOf({ position: [0, 0.004, -0.003], scale: [1.16, 1.06, 1.14] })),
+      transform: combine(footTransform(side), transformOf({ position: [0, -0.003, -0.003], scale: [1.16, 1.1, 1.14] })),
     });
     builder.add(jaggedTop(wrap, 0.28, 7, 0.025), {
       style,

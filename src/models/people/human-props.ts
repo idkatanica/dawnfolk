@@ -1,3 +1,4 @@
+import { Vector3 } from "three";
 import { FULL_TURN } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
@@ -109,12 +110,15 @@ export function addFeather(builder: MeshBuilder, detail: HumanDetail): void {
   );
 }
 
+const NECKLACE_RADIUS = 0.088;
+const NECKLACE_CORD = transformOf({ position: [0, 1.425, 0.005], rotation: [-0.35, 0, 0], scale: [1, 1, 0.9] });
+
 export function addNecklace(builder: MeshBuilder, detail: HumanDetail): void {
   const style = onChest(MaterialSlot.Bone);
 
-  builder.add(ring(detail, 0.088, 0.008, 20), {
+  builder.add(ring(detail, NECKLACE_RADIUS, 0.008, 20), {
     style: { ...FLEXIBLE_TORSO_STYLE, slot: MaterialSlot.Rope },
-    transform: transformOf({ position: [0, 1.425, 0.005], rotation: [-0.35, 0, 0], scale: [1, 1, 0.9] }),
+    transform: NECKLACE_CORD,
   });
 
   if (!detail.hasFineDetails) {
@@ -123,15 +127,14 @@ export function addNecklace(builder: MeshBuilder, detail: HumanDetail): void {
 
   for (let index = -2; index <= 2; index += 1) {
     const angle = Math.PI / 2 + index * 0.32;
-    const x = Math.cos(angle) * 0.088;
-    const z = 0.005 + Math.sin(angle) * 0.079;
+
+    const knot = new Vector3(Math.cos(angle) * NECKLACE_RADIUS, 0, Math.sin(angle) * NECKLACE_RADIUS).applyMatrix4(
+      NECKLACE_CORD
+    );
 
     builder.add(cone(0.009, 0.034, 5), {
       style,
-      transform: transformOf({
-        position: [x, 1.41 - Math.abs(index) * 0.006, z + 0.008],
-        rotation: [Math.PI + 0.3, 0, 0],
-      }),
+      transform: transformOf({ position: [knot.x, knot.y - 0.004, knot.z + 0.005], rotation: [Math.PI + 0.25, 0, 0] }),
     });
   }
 }
