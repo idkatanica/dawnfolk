@@ -75,7 +75,7 @@ function Reading({ detail, icon: Icon, title, value }: ReadingProps) {
 function StatusIsland({ children }: { readonly children: ReactNode }) {
   return (
     <Island>
-      <div className="m-1.5 flex h-10 pointer-coarse:h-11 items-center px-2.5">{children}</div>
+      <div className="flex h-13 pointer-coarse:h-14 items-center px-4">{children}</div>
     </Island>
   );
 }
