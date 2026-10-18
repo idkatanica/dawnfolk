@@ -5,7 +5,6 @@ import { createVolumeNoise, type VolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 
-const PERIMETER_STEP = 2;
 const CLIFF_DROP = 60;
 const CLIFF_RINGS = 6;
 const UNDERSIDE_DEPTH = 1650;
@@ -37,19 +36,19 @@ function perimeter(size: number): PerimeterPoint[] {
   const points: PerimeterPoint[] = [];
   const last = size - 1;
 
-  for (let column = 0; column < last; column += PERIMETER_STEP) {
+  for (let column = 0; column < last; column += 1) {
     points.push({ column, outwardX: 0, outwardZ: -1, row: 0 });
   }
 
-  for (let row = 0; row < last; row += PERIMETER_STEP) {
+  for (let row = 0; row < last; row += 1) {
     points.push({ column: last, outwardX: 1, outwardZ: 0, row });
   }
 
-  for (let column = last; column > 0; column -= PERIMETER_STEP) {
+  for (let column = last; column > 0; column -= 1) {
     points.push({ column, outwardX: 0, outwardZ: 1, row: last });
   }
 
-  for (let row = last; row > 0; row -= PERIMETER_STEP) {
+  for (let row = last; row > 0; row -= 1) {
     points.push({ column: 0, outwardX: -1, outwardZ: 0, row });
   }
 
