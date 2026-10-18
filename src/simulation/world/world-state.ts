@@ -265,6 +265,16 @@ export class WorldState {
     }
   }
 
+  fellPlant(index: number, day: number, rotation: number): void {
+    const cell = this.vegetation.cell[index];
+
+    this.vegetation.fell(index, day, rotation);
+
+    if (cell >= 0) {
+      this.refreshCanopy(cell);
+    }
+  }
+
   clearPlants(cell: number, includesStones: boolean): void {
     if (!this.vegetation.hasPlantsInCell(cell)) {
       return;

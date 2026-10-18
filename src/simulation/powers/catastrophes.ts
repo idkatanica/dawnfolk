@@ -1,7 +1,10 @@
-import { clamp, FULL_TURN } from "../../shared/math.ts";
+import { isTreeSpecies, PlantSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
+import { clamp, FULL_TURN, hashToUnit, lerp, smoothstep } from "../../shared/math.ts";
+import { NO_PLANT } from "../../world/vegetation-store.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import { discover } from "../society/tribe-life.ts";
 import { carveCrater, cellsInArea, shakeTerrain } from "../world/terrain-editing.ts";
+import type { WorldState } from "../world/world-state.ts";
 import type { PowerServices } from "./power-handler.ts";
 
 const STRIKE_RADIUS = 20;
@@ -13,9 +16,20 @@ const STRIKE_SCARE_RADIUS = 200;
 const TEACHING_DISTANCE = 300;
 const SOAKED = 0.5;
 const CRATER_CORE = 0.85;
-const DEBRIS_REACH = 1.9;
-const DEBRIS_CLEARING = 1.45;
-const DEBRIS_IGNITION = 1.35;
+const FELLING_REACH = 1.45;
+const FELLING_FRINGE = 0.3;
+const FALLING_SWAY = 0.5;
+const SHATTERING_REACH = 0.6;
+const SHATTERING_HEIGHT = 1.4;
+const SHARDS = 3;
+const IGNITION_REACH = 2;
+const NEAR_IGNITION = 0.9;
+const FAR_IGNITION = 0.12;
+const DEBRIS_REACH = 3.2;
+const DEBRIS_PER_METER = 0.35;
+const FEWEST_DEBRIS = 6;
+const MOST_DEBRIS = 120;
+const WATERY_CORE = 0.5;
 const BLAST_REACH = 1.8;
 const NATURAL_STRIKE_ATTEMPTS = 6;
 const HIGH_GROUND = 700;
@@ -120,16 +134,26 @@ interface Blast {
   z: number;
 }
 
+function reachScale(blast: Blast): number {
+  return 0.85 + 0.15 * blast.power;
+}
+
 export function explode(blast: Blast, services: PowerServices): void {
   const { buildings, fauna, hazards, society, world } = services;
 
   const reach = blast.radius * BLAST_REACH;
 
-  const isInWater = world.isWaterAt(blast.x, blast.z);
+  const isInWater = isMostlyWater(blast, services);
+  const burnsDebris = blast.burnsDebris && !isInWater;
 
   carveCrater(world, blast, blast.radius * 0.3 * (blast.power > 1.5 ? 1.25 : 1));
-  scatterDebris(blast, isInWater, services);
-  buildings.damageArea(blast.x, blast.z, reach, 120 * blast.power, blast.burnsDebris);
+  scatterDebris(blast, burnsDebris, services);
+
+  if (burnsDebris) {
+    hurlBurningDebris(blast, services);
+  }
+
+  buildings.damageArea(blast.x, blast.z, reach, 120 * blast.power, burnsDebris);
   society.damageArea(blast.x, blast.z, reach, 1.6 * blast.power, "blast");
   fauna.damageArea(blast.x, blast.z, reach, 3 * blast.power, "blast");
   fauna.scare(blast.x, blast.z, blast.radius * 8, 1);
@@ -144,44 +168,162 @@ export function explode(blast: Blast, services: PowerServices): void {
   });
 }
 
-function scatterDebris(blast: Blast, isInWater: boolean, services: PowerServices): void {
+function isMostlyWater(blast: Blast, services: PowerServices): boolean {
   const { world } = services;
 
-  for (const { cell, distance } of cellsInArea(world, { ...blast, radius: blast.radius * DEBRIS_REACH })) {
+  const core = cellsInArea(world, { ...blast, radius: blast.radius * CRATER_CORE });
+
+  const wet = core.filter(({ cell }) => world.isWater(cell)).length;
+
+  return wet > core.length * WATERY_CORE;
+}
+
+function scatterDebris(blast: Blast, burnsDebris: boolean, services: PowerServices): void {
+  const { random, world } = services;
+
+  const scale = reachScale(blast);
+  const felling = FELLING_REACH * scale;
+  const ignition = IGNITION_REACH * scale;
+
+  for (const { cell, distance } of cellsInArea(world, { ...blast, radius: blast.radius * ignition })) {
     const relativeDistance = distance / blast.radius;
 
     world.markSurfaceCell(cell);
 
     if (relativeDistance < CRATER_CORE) {
       vaporize(cell, services);
-    } else {
-      showerWithDebris(cell, relativeDistance, blast.burnsDebris && !isInWater, services);
+
+      continue;
+    }
+
+    const flattening = 1 - smoothstep(felling - FELLING_FRINGE, felling, relativeDistance);
+
+    if (random.chance(flattening)) {
+      flatten(cell, blast, (relativeDistance - CRATER_CORE) / (felling - CRATER_CORE), services);
+    }
+
+    if (burnsDebris) {
+      igniteDebris(cell, smoothstep(felling, ignition, relativeDistance), services);
     }
   }
 }
 
-function showerWithDebris(cell: number, relativeDistance: number, canIgnite: boolean, services: PowerServices): void {
-  const { fire } = services;
-  const { fields } = services.world;
+function igniteDebris(cell: number, remoteness: number, services: PowerServices): void {
+  const { fire, random, world } = services;
 
-  const falloff = DEBRIS_REACH - relativeDistance;
-
-  if (relativeDistance < DEBRIS_CLEARING) {
-    clearSomePlants(cell, services);
+  if (random.chance(lerp(NEAR_IGNITION, FAR_IGNITION, remoteness))) {
+    fire.ignite(cell, lerp(0.8, 0.45, remoteness));
   }
 
-  if (canIgnite && relativeDistance < DEBRIS_IGNITION) {
-    fire.ignite(cell, 0.5);
-  }
-
-  fire.addHeat(cell, 0.35 * falloff);
-  fields.scorch[cell] = Math.max(fields.scorch[cell], 0.3 * falloff);
-  fields.snow[cell] *= 0.3;
+  fire.addHeat(cell, 0.35 * (1 - remoteness));
+  world.fields.snow[cell] *= 0.3;
 }
 
-function clearSomePlants(cell: number, services: PowerServices): void {
-  if (services.random.chance(0.55)) {
-    services.world.clearPlants(cell, false);
+function flatten(cell: number, blast: Blast, remoteness: number, services: PowerServices): void {
+  const { environment, world } = services;
+  const { vegetation } = world;
+
+  for (const plant of plantsIn(world, cell)) {
+    const { form } = plantSpeciesDefinition(vegetation.species[plant]);
+
+    if (isTreeSpecies(vegetation.species[plant])) {
+      world.fellPlant(plant, environment.day, fallingAway(plant, blast, world));
+    } else if (form === "shrub" || form === "succulent") {
+      world.removePlant(plant);
+    } else if (form === "stone" && remoteness < SHATTERING_REACH) {
+      shatter(plant, blast, services);
+    }
+  }
+
+  world.fields.scorch[cell] = Math.max(world.fields.scorch[cell], lerp(0.85, 0.35, remoteness));
+  world.fields.snow[cell] = 0;
+}
+
+function plantsIn(world: WorldState, cell: number): number[] {
+  const { vegetation } = world;
+
+  const plants: number[] = [];
+
+  for (let plant = vegetation.firstPlantInCell(cell); plant !== NO_PLANT; plant = vegetation.nextPlantInCell(plant)) {
+    if (vegetation.isAlive(plant)) {
+      plants.push(plant);
+    }
+  }
+
+  return plants;
+}
+
+function fallingAway(plant: number, blast: Blast, world: WorldState): number {
+  const { vegetation } = world;
+
+  const outwardX = vegetation.x[plant] - blast.x;
+  const outwardZ = vegetation.z[plant] - blast.z;
+  const sway = (hashToUnit(vegetation.seed[plant] * 97, plant) - 0.5) * FALLING_SWAY;
+
+  return Math.atan2(outwardX, outwardZ) + sway;
+}
+
+function shatter(plant: number, blast: Blast, services: PowerServices): void {
+  const { environment, world } = services;
+  const { vegetation } = world;
+
+  const height = vegetation.height[plant];
+  const seed = vegetation.seed[plant];
+  const x = vegetation.x[plant];
+  const z = vegetation.z[plant];
+
+  if (height < SHATTERING_HEIGHT) {
+    return;
+  }
+
+  world.removePlant(plant);
+
+  const away = Math.atan2(z - blast.z, x - blast.x);
+
+  for (let shard = 0; shard < SHARDS; shard += 1) {
+    const angle = away + (hashToUnit(seed * 53, shard, 1) - 0.5) * 1.8;
+    const throwDistance = 1.5 + hashToUnit(seed * 53, shard, 2) * height * 1.5;
+
+    const shardX = x + Math.cos(angle) * throwDistance;
+    const shardZ = z + Math.sin(angle) * throwDistance;
+
+    if (!world.canPlace(world.grid.cellAt(shardX, shardZ), Number.POSITIVE_INFINITY)) {
+      continue;
+    }
+
+    world.plant({
+      bornDay: environment.day,
+      height: height * lerp(0.22, 0.42, hashToUnit(seed * 53, shard, 3)),
+      rotation: hashToUnit(seed * 53, shard, 4) * FULL_TURN,
+      seed: hashToUnit(seed * 53, shard, 5),
+      species: PlantSpecies.Boulder,
+      x: shardX,
+      z: shardZ,
+    });
+  }
+}
+
+function hurlBurningDebris(blast: Blast, services: PowerServices): void {
+  const { effects, embers, random } = services;
+
+  const scale = reachScale(blast);
+  const count = Math.round(clamp(blast.radius * blast.power * DEBRIS_PER_METER, FEWEST_DEBRIS, MOST_DEBRIS));
+
+  for (let piece = 0; piece < count; piece += 1) {
+    const angle = random.next() * FULL_TURN;
+    const distance = blast.radius * random.between(FELLING_REACH * scale, DEBRIS_REACH * scale);
+    const durationSeconds = random.between(1.2, 3.2);
+
+    const hurl = {
+      durationSeconds,
+      fromX: blast.x,
+      fromZ: blast.z,
+      toX: blast.x + Math.cos(angle) * distance,
+      toZ: blast.z + Math.sin(angle) * distance,
+    };
+
+    embers.hurl(hurl);
+    effects.add({ ...hurl, kind: "ember" });
   }
 }
 
@@ -211,7 +353,7 @@ export function shakeLand(quake: Quake, services: PowerServices): void {
 
   for (const { cell, distance } of cellsInArea(world, quake)) {
     if (random.chance(0.08 * (1 - distance / quake.radius) * quake.magnitude)) {
-      world.clearPlants(cell, false);
+      toppleTrees(cell, services);
     }
   }
 
@@ -226,4 +368,15 @@ export function shakeLand(quake: Quake, services: PowerServices): void {
     x: quake.x,
     z: quake.z,
   });
+}
+
+function toppleTrees(cell: number, services: PowerServices): void {
+  const { environment, world } = services;
+  const { vegetation } = world;
+
+  for (const plant of plantsIn(world, cell)) {
+    if (isTreeSpecies(vegetation.species[plant])) {
+      world.fellPlant(plant, environment.day, hashToUnit(vegetation.seed[plant] * 31, cell) * FULL_TURN);
+    }
+  }
 }

@@ -5,6 +5,7 @@ import type { WorldGrid } from "./world-grid.ts";
 export const PlantState = {
   Alive: 0,
   Burnt: 1,
+  Fallen: 3,
   Removed: 2,
 } as const;
 
@@ -150,17 +151,16 @@ export class VegetationStore {
   }
 
   burn(index: number, day: number): void {
+    this.#kill(index, day, PlantState.Burnt);
+  }
+
+  fell(index: number, day: number, rotation: number): void {
     if (this.state[index] !== PlantState.Alive) {
       return;
     }
 
-    this.#untrackBerryBush(index);
-    this.state[index] = PlantState.Burnt;
-    this.#burntDay[index] = day;
-    this.#burntQueue.push({ day: this.#burntDay[index], index });
-    this.fruit[index] = 0;
-    this.#aliveCount -= 1;
-    this.#changed.add(index);
+    this.rotation[index] = rotation;
+    this.#kill(index, day, PlantState.Fallen);
   }
 
   setFruit(index: number, fruit: number): void {
@@ -210,7 +210,7 @@ export class VegetationStore {
 
       this.#burntQueueStart += 1;
 
-      if (this.state[oldest.index] === PlantState.Burnt && this.#burntDay[oldest.index] === oldest.day) {
+      if (this.#isDead(oldest.index) && this.#burntDay[oldest.index] === oldest.day) {
         expired.push(oldest.index);
       }
     }
@@ -218,6 +218,24 @@ export class VegetationStore {
     this.#compactBurntQueue();
 
     return expired;
+  }
+
+  #kill(index: number, day: number, state: number): void {
+    if (this.state[index] !== PlantState.Alive) {
+      return;
+    }
+
+    this.#untrackBerryBush(index);
+    this.state[index] = state;
+    this.#burntDay[index] = day;
+    this.#burntQueue.push({ day: this.#burntDay[index], index });
+    this.fruit[index] = 0;
+    this.#aliveCount -= 1;
+    this.#changed.add(index);
+  }
+
+  #isDead(index: number): boolean {
+    return this.state[index] === PlantState.Burnt || this.state[index] === PlantState.Fallen;
   }
 
   #compactBurntQueue(): void {

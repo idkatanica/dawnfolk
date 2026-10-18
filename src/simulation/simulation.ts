@@ -382,6 +382,7 @@ export class Simulation {
       buildings: this.buildings,
       chronicle: this.chronicle,
       effects: this.effects,
+      embers: this.embers,
       environment: describeEnvironment(this.calendar, this.weather),
       fauna: this.fauna,
       fire: this.fire,

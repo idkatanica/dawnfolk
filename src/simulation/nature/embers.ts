@@ -21,6 +21,14 @@ interface EmberWind {
   z: number;
 }
 
+interface Hurl {
+  durationSeconds: number;
+  fromX: number;
+  fromZ: number;
+  toX: number;
+  toZ: number;
+}
+
 export class EmberSystem {
   readonly #embers: Ember[] = [];
   readonly #world: WorldState;
@@ -53,6 +61,14 @@ export class EmberSystem {
       toX: fromX + wind.x * reach - wind.z * scatter,
       toZ: fromZ + wind.z * reach + wind.x * scatter,
     };
+
+    this.#embers.push(ember);
+
+    return ember;
+  }
+
+  hurl(hurl: Hurl): Ember {
+    const ember: Ember = { ...hurl, isGlowing: true, remainingSeconds: hurl.durationSeconds };
 
     this.#embers.push(ember);
 
