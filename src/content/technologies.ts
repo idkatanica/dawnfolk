@@ -1,4 +1,4 @@
-export const TECHNOLOGY_IDS = ["fire", "shelter", "spear", "fishing", "storage", "huts", "farming", "totem"] as const;
+const TECHNOLOGY_IDS = ["fire", "shelter", "spear", "fishing", "storage", "huts", "farming", "totem"] as const;
 
 export type TechnologyId = (typeof TECHNOLOGY_IDS)[number];
 
@@ -74,7 +74,7 @@ export interface EraDefinition {
   unlockedBy: TechnologyId | "start";
 }
 
-export const ERAS: readonly EraDefinition[] = [
+const ERAS: readonly EraDefinition[] = [
   { name: "Wanderers", unlockedBy: "start" },
   { name: "Fire keepers", unlockedBy: "fire" },
   { name: "Hunters", unlockedBy: "spear" },
@@ -105,10 +105,6 @@ export function currentEra(known: ReadonlySet<TechnologyId>): EraDefinition {
     if (candidate.unlockedBy === "start" || known.has(candidate.unlockedBy)) {
       era = candidate;
     }
-  }
-
-  if (era === undefined) {
-    throw new RangeError("No eras are defined");
   }
 
   return era;

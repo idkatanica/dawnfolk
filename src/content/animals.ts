@@ -14,7 +14,6 @@ export interface AnimalDefinition {
   maximumHerdSize: number;
   name: string;
   runSpeed: number;
-  scale: number;
   walkSpeed: number;
 }
 
@@ -29,7 +28,6 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     maximumHerdSize: 10,
     name: "Deer",
     runSpeed: 10,
-    scale: 1,
     walkSpeed: 3.2,
   },
   mammoth: {
@@ -42,7 +40,6 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     maximumHerdSize: 7,
     name: "Mammoth",
     runSpeed: 5.2,
-    scale: 1,
     walkSpeed: 1.9,
   },
 };

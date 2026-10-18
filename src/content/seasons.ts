@@ -1,3 +1,5 @@
+import { FULL_TURN } from "../shared/math.ts";
+
 export const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
 
 export type SeasonName = (typeof SEASONS)[number];
@@ -15,7 +17,7 @@ export function seasonName(season: number): SeasonName {
 }
 
 export function seasonTemperatureOffset(season: number): number {
-  return 10 * Math.cos((2 * Math.PI * (season - 1.5)) / SEASON_COUNT);
+  return 10 * Math.cos((FULL_TURN * (season - 1.5)) / SEASON_COUNT);
 }
 
 export function isWinter(season: number): boolean {

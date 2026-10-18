@@ -7,15 +7,14 @@ import { isWaterCell, touchesWaterCell } from "../world/terrain-sampling.ts";
 import type { VegetationStore } from "../world/vegetation-store.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 
-export const INITIAL_PLANT_DAY = -999;
+const INITIAL_PLANT_DAY = -999;
+const BIOME_BLEND_CELLS = 3;
 
 export function plantHeight(species: number, random: RandomSource, heightScale: number): number {
   const [shortest, tallest] = plantSpeciesDefinition(species).heightRange;
 
   return random.between(shortest, tallest) * heightScale;
 }
-
-const BIOME_BLEND_CELLS = 3;
 
 function blendedBiome(grid: WorldGrid, terrain: TerrainData, cell: number, seed: number): number {
   const column = grid.columnOf(cell);
@@ -31,7 +30,7 @@ function blendedBiome(grid: WorldGrid, terrain: TerrainData, cell: number, seed:
 
   const neighbor = grid.index(neighborColumn, neighborRow);
 
-  if (!isBiomeIndex(terrain.biome[neighbor]) || isWaterCell(terrain, neighbor)) {
+  if (isWaterCell(terrain, neighbor)) {
     return terrain.biome[cell];
   }
 

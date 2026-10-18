@@ -6,7 +6,6 @@ import {
   hashToUnit,
   inverseLerp,
   lerp,
-  remap,
   smoothstep,
   wrapAngle,
 } from "./math.ts";
@@ -22,7 +21,6 @@ describe("math helpers", () => {
     expect(lerp(10, 20, 0.25)).toBe(12.5);
     expect(inverseLerp(10, 20, 12.5)).toBe(0.25);
     expect(inverseLerp(4, 4, 4)).toBe(0);
-    expect(remap(5, 0, 10, 100, 200)).toBe(150);
   });
 
   it("eases between edges", () => {

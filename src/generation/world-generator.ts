@@ -1,5 +1,5 @@
 import { createRandom } from "../shared/random.ts";
-import { createTerrainData, type TerrainData } from "../world/terrain-data.ts";
+import type { TerrainData } from "../world/terrain-data.ts";
 import { VegetationStore } from "../world/vegetation-store.ts";
 import type { WaterFeatures } from "../world/water.ts";
 import { DEFAULT_GRID_DIMENSIONS, type GridDimensions, WorldGrid } from "../world/world-grid.ts";
@@ -98,7 +98,6 @@ export function generateWorld(
   });
 
   const terrain: TerrainData = {
-    ...createTerrainData(options.dimensions),
     ...climate,
     carving,
     dryness,

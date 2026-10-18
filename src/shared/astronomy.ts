@@ -1,4 +1,4 @@
-import { clamp } from "./math.ts";
+import { clamp, FULL_TURN } from "./math.ts";
 
 export interface Direction {
   x: number;
@@ -12,7 +12,7 @@ const RADIANS_PER_HOUR = (15 * Math.PI) / 180;
 const MOON_ORBIT_TILT = 0.9;
 
 export function sunDeclination(season: number): number {
-  return AXIAL_TILT * Math.sin((2 * Math.PI * season) / 4);
+  return AXIAL_TILT * Math.sin((FULL_TURN * season) / 4);
 }
 
 export function sunDirection(hours: number, season: number): Direction {
@@ -38,7 +38,7 @@ export function sunDirection(hours: number, season: number): Direction {
 
 function afternoonAzimuth(azimuth: number, hourAngle: number): number {
   if (hourAngle > 0) {
-    return 2 * Math.PI - azimuth;
+    return FULL_TURN - azimuth;
   }
 
   return azimuth;

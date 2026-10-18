@@ -7,8 +7,6 @@ export const PlantState = {
   Removed: 2,
 } as const;
 
-export type PlantStateValue = (typeof PlantState)[keyof typeof PlantState];
-
 export interface PlantPlacement {
   bornDay: number;
   height: number;
@@ -32,7 +30,7 @@ export interface VegetationBuffers {
   z: Float32Array;
 }
 
-export interface BurntPlant {
+interface BurntPlant {
   day: number;
   index: number;
 }
@@ -55,6 +53,7 @@ const FRUIT_LEVELS = 4;
 const BURNT_QUEUE_COMPACTION = 1024;
 
 export class VegetationStore {
+  readonly #burntDay: Float32Array;
   readonly #burntQueue: BurntPlant[] = [];
   readonly #changed = new Set<number>();
   readonly #firstInCell: Int32Array;
@@ -62,7 +61,6 @@ export class VegetationStore {
   readonly #grid: WorldGrid;
   readonly #nextInCell: Int32Array;
   readonly bornDay: Float32Array;
-  readonly burntDay: Float32Array;
   readonly capacity: number;
   readonly cell: Int32Array;
   readonly fruit: Float32Array;
@@ -86,7 +84,7 @@ export class VegetationStore {
     this.height = new Float32Array(capacity);
     this.seed = new Float32Array(capacity);
     this.bornDay = new Float32Array(capacity);
-    this.burntDay = new Float32Array(capacity);
+    this.#burntDay = new Float32Array(capacity);
     this.fruit = new Float32Array(capacity);
     this.species = new Uint8Array(capacity);
     this.state = new Uint8Array(capacity).fill(PlantState.Removed);
@@ -149,8 +147,8 @@ export class VegetationStore {
     }
 
     this.state[index] = PlantState.Burnt;
-    this.burntDay[index] = day;
-    this.#burntQueue.push({ day: this.burntDay[index], index });
+    this.#burntDay[index] = day;
+    this.#burntQueue.push({ day: this.#burntDay[index], index });
     this.fruit[index] = 0;
     this.#aliveCount -= 1;
     this.#changed.add(index);
@@ -182,7 +180,7 @@ export class VegetationStore {
 
       this.#burntQueueStart += 1;
 
-      if (this.state[oldest.index] === PlantState.Burnt && this.burntDay[oldest.index] === oldest.day) {
+      if (this.state[oldest.index] === PlantState.Burnt && this.#burntDay[oldest.index] === oldest.day) {
         expired.push(oldest.index);
       }
     }
@@ -203,16 +201,6 @@ export class VegetationStore {
 
   isAlive(index: number): boolean {
     return this.state[index] === PlantState.Alive;
-  }
-
-  plantsInCell(cellIndex: number): number[] {
-    const plants: number[] = [];
-
-    for (let index = this.#firstInCell[cellIndex]; index !== NO_PLANT; index = this.#nextInCell[index]) {
-      plants.push(index);
-    }
-
-    return plants;
   }
 
   firstPlantInCell(cellIndex: number): number {
@@ -253,7 +241,7 @@ export class VegetationStore {
   }
 
   clearCell(cellIndex: number, includesStones: boolean): void {
-    for (const index of this.plantsInCell(cellIndex)) {
+    for (const index of this.#plantsInCell(cellIndex)) {
       if (includesStones || plantSpeciesDefinition(this.species[index]).form !== "stone") {
         this.remove(index);
       }
@@ -332,6 +320,16 @@ export class VegetationStore {
     this.#count += 1;
 
     return index;
+  }
+
+  #plantsInCell(cellIndex: number): number[] {
+    const plants: number[] = [];
+
+    for (let index = this.#firstInCell[cellIndex]; index !== NO_PLANT; index = this.#nextInCell[index]) {
+      plants.push(index);
+    }
+
+    return plants;
   }
 
   #initialFruit(species: number): number {

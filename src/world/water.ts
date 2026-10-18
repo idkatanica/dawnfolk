@@ -19,7 +19,6 @@ export interface RiverPoint {
 }
 
 export interface River {
-  endsInLake: boolean;
   id: number;
   points: RiverPoint[];
   reachesEdge: boolean;
@@ -28,7 +27,6 @@ export interface River {
 export interface Waterfall {
   directionX: number;
   directionZ: number;
-  strength: number;
   top: number;
   width: number;
   x: number;

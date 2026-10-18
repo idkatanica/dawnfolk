@@ -51,7 +51,7 @@ const BIOME_GROUND: Readonly<Record<BiomeIndex, GroundIndex>> = {
   [Biome.Water]: Ground.Sand,
 };
 
-export function baseTemperature(height: number, southness: number, desert: number): number {
+function baseTemperature(height: number, southness: number, desert: number): number {
   return 9.6 - (6.5 * (height - 200)) / 1000 + 5 * southness + 3.5 * desert;
 }
 
@@ -119,7 +119,7 @@ function classifyTemperate(cell: CellClimate): BiomeIndex {
   return cell.desert > 0.25 ? Biome.Desert : Biome.Steppe;
 }
 
-export function classifyBiome(cell: CellClimate): BiomeIndex {
+function classifyBiome(cell: CellClimate): BiomeIndex {
   if (cell.isWater) {
     return Biome.Water;
   }
@@ -137,7 +137,7 @@ export function classifyBiome(cell: CellClimate): BiomeIndex {
   return classifyTemperate(cell);
 }
 
-export function distanceToWater(
+function distanceToWater(
   grid: WorldGrid,
   waterSurface: Float32Array,
   heights: Float32Array,

@@ -10,7 +10,6 @@ export interface FractalOptions {
 export interface NoiseSampler {
   fractal: (x: number, z: number, options: FractalOptions) => number;
   ridged: (x: number, z: number, options: FractalOptions) => number;
-  sample: (x: number, z: number) => number;
 }
 
 const RIDGE_ROUNDING = 0.012;
@@ -20,10 +19,6 @@ class SimplexSampler implements NoiseSampler {
 
   constructor(noise: NoiseFunction2D) {
     this.#noise = noise;
-  }
-
-  sample(x: number, z: number): number {
-    return this.#noise(x, z);
   }
 
   fractal(x: number, z: number, { octaves, lacunarity = 2.03, gain = 0.5 }: FractalOptions): number {

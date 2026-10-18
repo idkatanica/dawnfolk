@@ -1,3 +1,4 @@
+import { lerp } from "../shared/math.ts";
 import type { RiverPoint } from "../world/water.ts";
 
 export function smoothRiverPath(points: readonly RiverPoint[], iterations: number): RiverPoint[] {
@@ -34,12 +35,12 @@ function chaikinPass(points: readonly RiverPoint[]): RiverPoint[] {
 
 export function interpolatePoint(start: RiverPoint, end: RiverPoint, amount: number): RiverPoint {
   return {
-    depth: start.depth + (end.depth - start.depth) * amount,
-    flow: start.flow + (end.flow - start.flow) * amount,
-    surface: start.surface + (end.surface - start.surface) * amount,
-    width: start.width + (end.width - start.width) * amount,
-    x: start.x + (end.x - start.x) * amount,
-    z: start.z + (end.z - start.z) * amount,
+    depth: lerp(start.depth, end.depth, amount),
+    flow: lerp(start.flow, end.flow, amount),
+    surface: lerp(start.surface, end.surface, amount),
+    width: lerp(start.width, end.width, amount),
+    x: lerp(start.x, end.x, amount),
+    z: lerp(start.z, end.z, amount),
   };
 }
 
@@ -50,17 +51,4 @@ export function makeSurfaceDescend(points: RiverPoint[], minimumDrop: number): v
 
     current.surface = Math.min(current.surface, previous.surface - minimumDrop);
   }
-}
-
-export function riverLength(points: readonly RiverPoint[]): number {
-  let length = 0;
-
-  for (let pointIndex = 1; pointIndex < points.length; pointIndex += 1) {
-    const previous = points[pointIndex - 1];
-    const current = points[pointIndex];
-
-    length += Math.hypot(current.x - previous.x, current.z - previous.z);
-  }
-
-  return length;
 }

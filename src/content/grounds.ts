@@ -1,4 +1,4 @@
-import { clamp, lerp, smoothstep } from "../shared/math.ts";
+import { lerp, saturate, smoothstep } from "../shared/math.ts";
 import { SEASON_COUNT } from "./seasons.ts";
 
 export const Ground = {
@@ -235,8 +235,8 @@ export function seasonalGroundColor(index: number, season: number, variation: nu
   const blend = smoothstep(0.55, 1, progress);
 
   return [
-    clamp(lerp(current[0], following[0], blend) * brightness, 0, 1),
-    clamp(lerp(current[1], following[1], blend) * brightness, 0, 1),
-    clamp(lerp(current[2], following[2], blend) * brightness, 0, 1),
+    saturate(lerp(current[0], following[0], blend) * brightness),
+    saturate(lerp(current[1], following[1], blend) * brightness),
+    saturate(lerp(current[2], following[2], blend) * brightness),
   ];
 }

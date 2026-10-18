@@ -125,7 +125,3 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
     windFactor: 2,
   },
 };
-
-export function isWeatherKind(value: string): value is WeatherKind {
-  return Object.hasOwn(WEATHER, value);
-}
