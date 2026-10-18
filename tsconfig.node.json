@@ -9,6 +9,5 @@
     "tsBuildInfoFile": "./node_modules/.tmp/node.tsbuildinfo",
     "types": ["node"]
   },
-  "include": ["playwright.config.ts", "tests", "vite.config.ts"],
-  "references": [{ "path": "./tsconfig.engine.json" }, { "path": "./tsconfig.app.json" }]
+  "include": ["playwright.config.ts", "tests", "vite.config.ts"]
 }
