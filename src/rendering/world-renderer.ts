@@ -115,7 +115,7 @@ export class WorldRenderer {
     this.#selectionRing = new GroundRing(this.#textures, mirror.grid);
     this.#fire = new FireView({ axes: this.#axes, chunks: this.#vegetation.chunks });
     this.#dots = new AgentDots(this.#axes);
-    this.#weather = new WeatherParticles(this.#axes);
+    this.#weather = new WeatherParticles(this.#axes, this.#textures, mirror.grid);
     this.#splashes = new RainSplashes(this.#textures, mirror.grid);
 
     this.#effects = new EffectView({
@@ -146,7 +146,7 @@ export class WorldRenderer {
       this.#fire.group,
       this.#effects.group,
       this.#splashes.mesh,
-      this.#weather.mesh
+      this.#weather.group
     );
 
     this.#output = createRenderOutput(renderer, this.scene, camera, quality);
