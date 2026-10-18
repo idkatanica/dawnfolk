@@ -10,18 +10,19 @@ import { describeEnvironment } from "../nature/environment.ts";
 import { FireSystem } from "../nature/fire.ts";
 import { WeatherSystem } from "../nature/weather.ts";
 import { BuildingSystem } from "../society/buildings.ts";
+import type { Person } from "../society/person.ts";
 import { SocietySystem } from "../society/society.ts";
-import type { SocietyContext } from "../society/society-context.ts";
+import type { PersonTick, SocietyContext } from "../society/society-context.ts";
 import type { Tribe } from "../society/tribe.ts";
 import { WorldState } from "../world/world-state.ts";
 import { createVegetatedWorld, type TestWorldOptions } from "./test-world.ts";
 
 const TICK_SECONDS = 0.1;
+const SEED = 3;
 
 interface SocietyHarnessOptions {
   day: number;
   rules: WorldRules;
-  seed: number;
   world: Partial<TestWorldOptions>;
 }
 
@@ -44,14 +45,13 @@ export class SocietyHarness {
     const settings: SocietyHarnessOptions = {
       day: 0.36,
       rules: DEFAULT_WORLD_RULES,
-      seed: 3,
       world: { dimensions: { cellSize: 10, cellsPerSide: 96 } },
       ...options,
     };
 
-    this.world = new WorldState(createVegetatedWorld(settings.world, settings.seed));
+    this.world = new WorldState(createVegetatedWorld(settings.world, SEED));
     this.calendar = new Calendar({ ...DEFAULT_CALENDAR, day: settings.day });
-    this.random = createRandom(settings.seed);
+    this.random = createRandom(SEED);
     this.navigation = new NavigationGrid(this.world);
     this.fire = new FireSystem(this.world);
     this.hazards = new HazardMap(this.world, this.fire);
@@ -107,7 +107,27 @@ export class SocietyHarness {
     this.hazards.update(TICK_SECONDS);
   }
 
-  spawnTribe(people = 7, x = 0, z = 0): Tribe | null {
-    return this.society.spawnTribe({ context: this.context, people, technologies: [], x, z });
+  spawnTribe(people: number): Tribe | null {
+    return this.society.spawnTribe({ context: this.context, people, technologies: [], x: 0, z: 0 });
   }
+}
+
+export function settle(harness: SocietyHarness, people: number): Tribe {
+  const tribe = harness.spawnTribe(people);
+
+  if (tribe === null) {
+    throw new Error("Expected the tribe to settle");
+  }
+
+  return tribe;
+}
+
+export function tickFor(harness: SocietyHarness, person: Person, tribe: Tribe): PersonTick {
+  return { context: harness.context, person, seconds: TICK_SECONDS, tribe };
+}
+
+export function firstMemberTick(harness: SocietyHarness, tribe: Tribe): PersonTick {
+  const [person] = harness.society.membersOf(tribe);
+
+  return tickFor(harness, person, tribe);
 }

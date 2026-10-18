@@ -54,7 +54,7 @@ export function createMover(x: number, z: number, heading: number): Mover {
   };
 }
 
-export interface RouteOptions {
+interface RouteOptions {
   readonly arrivalDistance?: number;
   readonly mayPlanRoute?: boolean;
 }

@@ -44,10 +44,23 @@ export class HazardMap {
       }
     }
 
-    return this.fireNear(x, z, radius);
+    return this.#fireNear(x, z, radius);
   }
 
-  fireNear(x: number, z: number, radius: number): Waypoint | null {
+  isFireAround(x: number, z: number): boolean {
+    for (let direction = 0; direction < CAMP_WATCH_DIRECTIONS; direction += 1) {
+      const angle = (direction / CAMP_WATCH_DIRECTIONS) * FULL_TURN;
+      const distance = 60 + (direction % 3) * 90;
+
+      if (this.#isBurningAt(x + Math.cos(angle) * distance, z + Math.sin(angle) * distance)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  #fireNear(x: number, z: number, radius: number): Waypoint | null {
     if (this.#fire.burningCount === 0) {
       return null;
     }
@@ -93,19 +106,6 @@ export class HazardMap {
       x: grid.centerX(centerColumn) + (weightedColumn / totalWeight) * grid.cellSize,
       z: grid.centerZ(centerRow) + (weightedRow / totalWeight) * grid.cellSize,
     };
-  }
-
-  isFireAround(x: number, z: number): boolean {
-    for (let direction = 0; direction < CAMP_WATCH_DIRECTIONS; direction += 1) {
-      const angle = (direction / CAMP_WATCH_DIRECTIONS) * FULL_TURN;
-      const distance = 60 + (direction % 3) * 90;
-
-      if (this.#isBurningAt(x + Math.cos(angle) * distance, z + Math.sin(angle) * distance)) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   #isBurningAt(x: number, z: number): boolean {

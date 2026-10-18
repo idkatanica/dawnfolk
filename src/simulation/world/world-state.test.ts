@@ -39,7 +39,7 @@ describe("world state", () => {
     const cell = centerCell(world);
     const x = world.grid.cellCenterX(cell);
     const z = world.grid.cellCenterZ(cell);
-    const placement = { bornDay: 0, height: 8, rotation: 0, seed: 0.5, species: 0, x, z };
+    const placement = { bornDay: 0, height: 8, rotation: 0, seed: 0.5, species: PlantSpecies.Spruce, x, z };
 
     expect(world.plant(placement)).toBeGreaterThanOrEqual(0);
 
@@ -87,7 +87,6 @@ describe("world state", () => {
     const world = createTestWorld();
 
     const cell = centerCell(world);
-
     const tree = plantInCell(world, cell, PlantSpecies.Oak);
 
     expect(world.canopyFuel[cell]).toBeCloseTo(plantSpeciesDefinition(PlantSpecies.Oak).canopyFuel);
@@ -102,7 +101,6 @@ describe("world state", () => {
     const world = createTestWorld();
 
     const cell = centerCell(world);
-
     const tree = plantInCell(world, cell, PlantSpecies.Spruce);
 
     world.fields.fire[cell] = 0.5;
@@ -131,7 +129,6 @@ describe("world state", () => {
     const world = createTestWorld();
 
     const cell = centerCell(world);
-
     const menhir = plantInCell(world, cell, PlantSpecies.Menhir);
     const boulder = plantInCell(world, cell, PlantSpecies.Boulder);
 

@@ -2,7 +2,7 @@ import { clamp } from "../../shared/math.ts";
 import { MinHeap } from "../../shared/min-heap.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { WorldState } from "../world/world-state.ts";
-import { nearestWalkableSpot } from "./walkable-ground.ts";
+import { nearestWalkableSpot, pointInsideCell } from "./walkable-ground.ts";
 
 const NODE_SIZE = 40;
 const LINE_SAMPLE_SPACING = 7;
@@ -14,7 +14,6 @@ const SEARCH_LIMIT = 6000;
 const DIAGONAL_HEURISTIC = Math.SQRT2 - 1;
 const LANDING_SEARCH_RADIUS = 120;
 const NO_SHORE = 65_535;
-const SHORE_INSET = 0.5;
 
 export interface Waypoint {
   x: number;
@@ -100,9 +99,8 @@ export class NavigationGrid {
 
   stepAshore(x: number, z: number): Waypoint | null {
     const world = this.#world;
-    const { grid } = world;
 
-    const cell = grid.cellAt(x, z);
+    const cell = world.grid.cellAt(x, z);
 
     if (cell < 0 || !world.isWater(cell)) {
       return null;
@@ -121,24 +119,8 @@ export class NavigationGrid {
     return this.#nearestStepAshore(cell, x, z);
   }
 
-  hasClearLine(fromX: number, fromZ: number, toX: number, toZ: number): boolean {
-    const length = Math.hypot(toX - fromX, toZ - fromZ);
-
-    const samples = Math.ceil(length / LINE_SAMPLE_SPACING);
-
-    for (let sample = 1; sample <= samples; sample += 1) {
-      const amount = sample / samples;
-
-      if (!this.isPassable(fromX + (toX - fromX) * amount, fromZ + (toZ - fromZ) * amount)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
   findPath(from: Waypoint, to: Waypoint): Waypoint[] | null {
-    if (this.hasClearLine(from.x, from.z, to.x, to.z)) {
+    if (this.#hasClearLine(from.x, from.z, to.x, to.z)) {
       return [{ x: to.x, z: to.z }];
     }
 
@@ -203,6 +185,7 @@ export class NavigationGrid {
 
   #spreadFromShore(isShore: (cell: number) => boolean, leadsToSteepShore: number): void {
     const { grid } = this.#world;
+
     const steps = this.#shoreSteps;
     const queue = this.#shoreQueue;
 
@@ -263,7 +246,7 @@ export class NavigationGrid {
         continue;
       }
 
-      const spot = pointInside(world, neighbor, x, z);
+      const spot = pointInsideCell(world, neighbor, x, z);
 
       const distance = Math.hypot(spot.x - x, spot.z - z);
 
@@ -426,27 +409,33 @@ export class NavigationGrid {
 
   #farthestVisible(from: Waypoint, route: readonly Waypoint[], first: number): number {
     for (let candidate = route.length - 1; candidate > first; candidate -= 1) {
-      if (this.hasClearLine(from.x, from.z, route[candidate].x, route[candidate].z)) {
+      if (this.#hasClearLine(from.x, from.z, route[candidate].x, route[candidate].z)) {
         return candidate;
       }
     }
 
     return first;
   }
+
+  #hasClearLine(fromX: number, fromZ: number, toX: number, toZ: number): boolean {
+    const length = Math.hypot(toX - fromX, toZ - fromZ);
+
+    const samples = Math.ceil(length / LINE_SAMPLE_SPACING);
+
+    for (let sample = 1; sample <= samples; sample += 1) {
+      const amount = sample / samples;
+
+      if (!this.isPassable(fromX + (toX - fromX) * amount, fromZ + (toZ - fromZ) * amount)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 }
 
 function isDryLand(world: WorldState, cell: number): boolean {
   return world.isOnIsland(cell) && !world.isWater(cell);
-}
-
-function pointInside(world: WorldState, cell: number, x: number, z: number): Waypoint {
-  const { grid } = world;
-
-  const reach = grid.cellSize / 2 - SHORE_INSET;
-  const centerX = grid.cellCenterX(cell);
-  const centerZ = grid.cellCenterZ(cell);
-
-  return { x: clamp(x, centerX - reach, centerX + reach), z: clamp(z, centerZ - reach, centerZ + reach) };
 }
 
 function slopePenalty(slope: number): number {

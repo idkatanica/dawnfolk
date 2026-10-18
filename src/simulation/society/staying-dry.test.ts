@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { SocietyHarness } from "../testing/test-society.ts";
+import { SocietyHarness, settle, tickFor } from "../testing/test-society.ts";
 import { floodCells } from "../testing/test-world.ts";
 import { assignJob } from "./decisions.ts";
 import { FleeJob } from "./jobs/flee-job.ts";
 import { WanderJob } from "./jobs/wander-job.ts";
 import type { Person } from "./person.ts";
-import type { PersonTick } from "./society-context.ts";
-import type { Tribe } from "./tribe.ts";
 import { updateTribe } from "./tribe-life.ts";
 
 const MORNING = 0.3;
@@ -26,20 +24,6 @@ function createStripHarness(): SocietyHarness {
   harness.navigation.rebuild();
 
   return harness;
-}
-
-function settle(harness: SocietyHarness, people: number): Tribe {
-  const tribe = harness.spawnTribe(people);
-
-  if (tribe === null) {
-    throw new Error("Expected the tribe to settle");
-  }
-
-  return tribe;
-}
-
-function tickFor(harness: SocietyHarness, person: Person, tribe: Tribe): PersonTick {
-  return { context: harness.context, person, seconds: 0.1, tribe };
 }
 
 function standsOnDryLand(harness: SocietyHarness, person: Person): boolean {

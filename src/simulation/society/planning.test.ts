@@ -1,35 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { PlantSpecies } from "../../content/plants.ts";
-import { SocietyHarness } from "../testing/test-society.ts";
+import { firstMemberTick, SocietyHarness, settle } from "../testing/test-society.ts";
 import { plantInCell } from "../testing/test-world.ts";
 import { canAfford, housingCapacity, planConstruction } from "./construction.ts";
 import { decideJob } from "./decisions.ts";
 import { findCampSite, scoreSite, siteSearchNear } from "./settlement.ts";
-import type { PersonTick } from "./society-context.ts";
-import type { Tribe } from "./tribe.ts";
 import { chooseWork } from "./work-planner.ts";
 
-function settledTribe(harness: SocietyHarness, people = 6): Tribe {
-  const tribe = harness.spawnTribe(people);
-
-  if (tribe === null) {
-    throw new Error("Expected the tribe to settle");
-  }
-
-  return tribe;
-}
-
-function firstMemberTick(harness: SocietyHarness, tribe: Tribe): PersonTick {
-  const [person] = harness.society.membersOf(tribe);
-
-  return { context: harness.context, person, seconds: 0.1, tribe };
-}
+const TRIBE_SIZE = 6;
 
 describe("construction planning", () => {
   it("lays out a campfire once the tribe knows fire", () => {
     const harness = new SocietyHarness();
 
-    const tribe = settledTribe(harness);
+    const tribe = settle(harness, TRIBE_SIZE);
 
     tribe.technologies.add("fire");
     planConstruction(tribe, harness.context);
@@ -43,7 +27,7 @@ describe("construction planning", () => {
   it("waits until the tribe can afford a building", () => {
     const harness = new SocietyHarness();
 
-    const tribe = settledTribe(harness);
+    const tribe = settle(harness, TRIBE_SIZE);
 
     tribe.technologies.add("fire");
     tribe.stock.wood = 0;
@@ -56,7 +40,7 @@ describe("construction planning", () => {
   it("counts housing from finished shelters only", () => {
     const harness = new SocietyHarness();
 
-    const tribe = settledTribe(harness);
+    const tribe = settle(harness, TRIBE_SIZE);
 
     const tent = harness.buildings.add({ kind: "tent", rotation: 0, tribeId: tribe.id, x: 30, z: 30 }, harness.random);
 
@@ -74,7 +58,7 @@ describe("work planning", () => {
   it("does not hunt before spears are known", () => {
     const harness = new SocietyHarness();
 
-    const tribe = settledTribe(harness);
+    const tribe = settle(harness, TRIBE_SIZE);
 
     const tick = firstMemberTick(harness, tribe);
 
@@ -88,7 +72,7 @@ describe("work planning", () => {
   it("sends people to sleep at night", () => {
     const harness = new SocietyHarness({ day: 0.95 });
 
-    const tribe = settledTribe(harness);
+    const tribe = settle(harness, TRIBE_SIZE);
 
     expect(decideJob(firstMemberTick(harness, tribe)).kind).toBe("sleep");
   });
@@ -96,7 +80,7 @@ describe("work planning", () => {
   it("quarries the stone for a hut it plans but cannot afford yet", () => {
     const harness = new SocietyHarness({ day: 0.4 });
 
-    const tribe = settledTribe(harness);
+    const tribe = settle(harness, TRIBE_SIZE);
 
     const tick = firstMemberTick(harness, tribe);
 
@@ -126,7 +110,7 @@ describe("work planning", () => {
   it("feeds a starving person before sending them to sleep", () => {
     const harness = new SocietyHarness({ day: 0.95 });
 
-    const tribe = settledTribe(harness);
+    const tribe = settle(harness, TRIBE_SIZE);
 
     const tick = firstMemberTick(harness, tribe);
 
@@ -139,7 +123,7 @@ describe("work planning", () => {
   it("lets people woken by hunger at night eat and go back to sleep", () => {
     const harness = new SocietyHarness({ day: 0.92 });
 
-    const tribe = settledTribe(harness);
+    const tribe = settle(harness, TRIBE_SIZE);
 
     const [person] = harness.society.membersOf(tribe);
 
@@ -156,7 +140,7 @@ describe("work planning", () => {
   it("sends hungry people to eat when there is food", () => {
     const harness = new SocietyHarness({ day: 0.4 });
 
-    const tribe = settledTribe(harness);
+    const tribe = settle(harness, TRIBE_SIZE);
 
     const tick = firstMemberTick(harness, tribe);
 
@@ -196,7 +180,7 @@ describe("settlement", () => {
   it("keeps new camps away from other tribes", () => {
     const harness = new SocietyHarness();
 
-    const tribe = settledTribe(harness);
+    const tribe = settle(harness, TRIBE_SIZE);
 
     const site = findCampSite(siteSearchNear({ x: tribe.campX, z: tribe.campZ }, 400, null), harness.context, [tribe]);
 

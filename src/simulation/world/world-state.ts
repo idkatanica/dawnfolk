@@ -265,7 +265,7 @@ export class WorldState {
 
     this.canopyFuel[cell] = fuel;
 
-    if (this.fields.fire[cell] > 0) {
+    if (this.isBurning(cell)) {
       this.initialCanopyFuel[cell] = Math.max(this.initialCanopyFuel[cell], fuel);
 
       return;

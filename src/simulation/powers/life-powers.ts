@@ -134,7 +134,6 @@ export const healingPower: PowerHandler<"healing"> = {
       person.health = 1;
       person.hunger = Math.min(person.hunger, HEALED_HUNGER);
       person.warmth = 1;
-      person.fear = 0;
 
       if (tribe !== null) {
         tribe.faith = Math.min(MAXIMUM_FAITH, tribe.faith + HEALING_FAITH);

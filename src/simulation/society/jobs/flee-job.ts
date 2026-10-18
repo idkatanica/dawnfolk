@@ -28,7 +28,6 @@ export class FleeJob implements Job {
       z: person.mover.z + Math.cos(heading) * FLEE_DISTANCE,
     };
 
-    person.fear = 1;
     person.mover.canWade = true;
     dropCarrying(person);
     setDestination(person.mover, refuge, tick.context.navigation, { mayPlanRoute: false });
@@ -38,8 +37,6 @@ export class FleeJob implements Job {
     if (!walk(tick, runSpeed(tick.person))) {
       return this;
     }
-
-    tick.person.fear *= 0.5;
 
     const danger = tick.context.hazards.dangerNear(tick.person.mover.x, tick.person.mover.z, DANGER_AWARENESS);
 

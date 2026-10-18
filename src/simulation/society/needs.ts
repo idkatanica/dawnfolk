@@ -129,7 +129,6 @@ function sufferFlames(tick: PersonTick): void {
   }
 
   person.health -= tick.seconds * BURN_DAMAGE_PER_SECOND * (0.5 + world.fields.fire[cell]);
-  person.fear = 1;
 }
 
 export function isStandingInFire(tick: PersonTick): boolean {

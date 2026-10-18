@@ -33,7 +33,6 @@ export interface Person {
   dangerCheckSeconds: number;
   deathSeconds: number;
   energy: number;
-  fear: number;
   health: number;
   homeId: number | null;
   hunger: number;
@@ -72,7 +71,6 @@ export function createPerson(birth: PersonBirth, random: RandomSource): Person {
     dangerCheckSeconds: random.next(),
     deathSeconds: 0,
     energy: 0.9,
-    fear: 0,
     health: 1,
     homeId: null,
     hunger: random.between(0.15, 0.35),

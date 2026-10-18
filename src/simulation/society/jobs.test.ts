@@ -7,7 +7,7 @@ import {
   plantSpeciesDefinition,
 } from "../../content/plants.ts";
 import { FULL_TURN, wrapAngle } from "../../shared/math.ts";
-import { SocietyHarness } from "../testing/test-society.ts";
+import { firstMemberTick, SocietyHarness, settle } from "../testing/test-society.ts";
 import { findTree } from "./jobs/chop-job.ts";
 import { findBerries } from "./jobs/gather-job.ts";
 import { findGame, HuntJob } from "./jobs/hunt-job.ts";
@@ -16,7 +16,6 @@ import { findStone } from "./jobs/quarry-job.ts";
 import { TendJob } from "./jobs/tend-job.ts";
 import { nearestShore } from "./resources.ts";
 import type { PersonTick } from "./society-context.ts";
-import type { Tribe } from "./tribe.ts";
 
 const MORNING = 0.3;
 const WORK_SPOT_TOLERANCE = 0.35;
@@ -28,22 +27,6 @@ const ROCKS: readonly PlantSpeciesIndex[] = PLANT_SPECIES.filter((species) => is
 interface WorkPlacement {
   readonly missedBy: number;
   readonly turnedAwayBy: number;
-}
-
-function settle(harness: SocietyHarness, people: number): Tribe {
-  const tribe = harness.spawnTribe(people);
-
-  if (tribe === null) {
-    throw new Error("Expected the tribe to settle");
-  }
-
-  return tribe;
-}
-
-function firstMemberTick(harness: SocietyHarness, tribe: Tribe): PersonTick {
-  const [person] = harness.society.membersOf(tribe);
-
-  return { context: harness.context, person, seconds: 0.1, tribe };
 }
 
 function plantNear(tick: PersonTick, species: PlantSpeciesIndex, height: number): number {

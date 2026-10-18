@@ -18,7 +18,7 @@ export function sampleHeight(heights: Float32Array, grid: WorldGrid, x: number, 
 
   const amountX = gridX - column;
   const amountZ = gridZ - row;
-  const cell = row * cellsPerSide + column;
+  const cell = grid.index(column, row);
 
   const near = heights[cell] * (1 - amountX) + heights[cell + 1] * amountX;
   const far = heights[cell + cellsPerSide] * (1 - amountX) + heights[cell + cellsPerSide + 1] * amountX;

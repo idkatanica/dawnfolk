@@ -6,7 +6,7 @@ import { NO_BUILDING } from "../world/world-state.ts";
 import type { Building, BuildingLoss } from "./buildings.ts";
 import type { SocietyContext } from "./society-context.ts";
 import { BASE_HOUSING, knows, learn, type Tribe } from "./tribe.ts";
-import { completedBuilding } from "./tribe-places.ts";
+import { campPoint, completedBuilding } from "./tribe-places.ts";
 
 const MAXIMUM_SHELTERS = 12;
 const MAXIMUM_FIELDS = 10;
@@ -141,7 +141,7 @@ function placeBuilding(tribe: Tribe, plan: BuildingPlan, context: SocietyContext
     const angle = random.next() * FULL_TURN;
     const distance = random.between(plan.nearest, plan.farthest);
 
-    const spot = aroundPoint({ x: tribe.campX, z: tribe.campZ }, distance, angle);
+    const spot = aroundPoint(campPoint(tribe), distance, angle);
 
     if (isBuildable(spot, plan.kind, context)) {
       return startBuilding(tribe, plan.kind, spot, context);
@@ -227,7 +227,9 @@ function addFieldIfNeeded(tribe: Tribe, context: SocietyContext): void {
     const angle = random.next() * FULL_TURN;
     const distance = random.between(30, 75);
 
-    const cell = world.grid.cellAt(tribe.campX + Math.cos(angle) * distance, tribe.campZ + Math.sin(angle) * distance);
+    const spot = aroundPoint(campPoint(tribe), distance, angle);
+
+    const cell = world.grid.cellAt(spot.x, spot.z);
 
     if (isFarmable(tribe, cell, context)) {
       world.clearPlants(cell, false);

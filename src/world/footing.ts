@@ -8,7 +8,7 @@ export interface FootingTerrain extends SampledTerrain {
   readonly coastDistance: Float32Array;
 }
 
-export interface WildTerrain extends FootingTerrain {
+interface WildTerrain extends FootingTerrain {
   readonly woodland: Float32Array;
 }
 

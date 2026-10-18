@@ -28,7 +28,7 @@ const DEFAULT_TEST_WORLD: TestWorldOptions = {
   monuments: [],
 };
 
-function createTestGeneratedWorld(overrides: Partial<TestWorldOptions> = {}): GeneratedWorld {
+function createTestGeneratedWorld(overrides: Partial<TestWorldOptions>): GeneratedWorld {
   const options: TestWorldOptions = { ...DEFAULT_TEST_WORLD, ...overrides };
 
   const grid = new WorldGrid(options.dimensions);
@@ -104,6 +104,7 @@ export function steepeningRamp(steepestSlope: number, halfSize: number): (x: num
 
 export function plantsTooSteep(world: WorldState): string[] {
   const { vegetation } = world;
+
   const misplaced: string[] = [];
 
   for (let plant = 0; plant < vegetation.count; plant += 1) {
