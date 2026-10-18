@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
-import { meshProblems } from "../testing/mesh-checks.ts";
+import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces, meshPieces } from "../testing/mesh-connectivity.ts";
 import { windBentMesh } from "../testing/moved-mesh.ts";
 import { CACTUS_FORMS, cactusForm } from "./cacti.ts";
@@ -19,6 +19,7 @@ import { FOLIAGE_FLUTTER, plantSway } from "./tree-mesher.ts";
 const TOUCHING = 0.01;
 const RADIUS_TOLERANCE = 0.2;
 const STORM_PUSH = 2;
+const GROUND_LEVEL = 0.05;
 
 const SPECIES: readonly PlantSpeciesIndex[] = PLANT_SPECIES.map((definition) => definition.index);
 const FOLIAGE_SLOTS: ReadonlySet<number> = new Set([MaterialSlot.Leaf, MaterialSlot.Needle]);
@@ -110,6 +111,14 @@ describe.each(SPECIES)("plant species %i", (species) => {
     expect(Math.abs(plantSpeciesDefinition(species).radiusPerMeter - measured)).toBeLessThan(
       measured * RADIUS_TOLERANCE
     );
+  });
+
+  it("closes every variant everywhere above the ground", () => {
+    for (const level of PLANT_DETAIL_LEVELS) {
+      for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
+        expect(highestOpenEdge(mesh), `${level} variant ${variant}`).toBeLessThan(GROUND_LEVEL);
+      }
+    }
   });
 
   it("keeps every part of every variant attached to the ground", () => {
