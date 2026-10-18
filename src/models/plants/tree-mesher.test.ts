@@ -58,20 +58,13 @@ const SHRUB: TreeStructure = {
   height: 2.2,
 };
 
-const WEEPING: TreeStructure = {
+const WEEPING_CROWN = { center: [3, 7.5, 0], drape: 2.5, kind: "blob", radius: 2, squash: 0.8, tint: 0 } as const;
+
+const WEEPING: TreeStructure = { ...TREE, foliage: [WEEPING_CROWN] };
+
+const FORKED: TreeStructure = {
   ...TREE,
-  foliage: [
-    ...TREE.foliage,
-    {
-      kind: "strand",
-      points: [
-        { radius: 0.3, x: 5.4, y: 7.1, z: 0 },
-        { radius: 0.2, x: 5.6, y: 5, z: 0 },
-        { radius: 0.04, x: 5.7, y: 3, z: 0 },
-      ],
-      tint: 0,
-    },
-  ],
+  branches: TREE.branches.map((branch) => (branch.depth === 0 ? { ...branch, forks: true } : branch)),
 };
 
 const FROND_TREE: TreeStructure = {
@@ -97,6 +90,12 @@ function heightOf(mesh: MeshData, vertex: number): number {
   return mesh.positions[vertex * 3 + 1];
 }
 
+function foliageOf(mesh: MeshData): number[] {
+  return Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex).filter(
+    (vertex) => mesh.channels.slot[vertex] === MaterialSlot.Leaf
+  );
+}
+
 describe("tree mesher", () => {
   it.each(LEVELS)("sways the trunk, the branches and the crown alike at every height at %s detail", (level) => {
     const mesh = meshTree(TREE, LOOK, level);
@@ -114,23 +113,58 @@ describe("tree mesher", () => {
     expect(detachedPieces(mesh, 0.01).map((piece) => describePiece(mesh, piece))).toEqual([]);
   });
 
-  it.each(LEVELS)("hangs a strand from inside the crown at %s detail", (level) => {
+  it.each(LEVELS)("drapes a weeping crown in one piece at %s detail", (level) => {
     const mesh = meshTree(WEEPING, LOOK, level);
 
+    const leaves = foliageOf(mesh);
+
     expect(detachedPieces(mesh, 0.01).map((piece) => describePiece(mesh, piece))).toEqual([]);
+    expect(Math.min(...leaves.map((vertex) => heightOf(mesh, vertex)))).toBeLessThan(
+      WEEPING_CROWN.center[1] - WEEPING_CROWN.radius * WEEPING_CROWN.squash
+    );
   });
 
-  it("swings a strand from the sway of the crown at its root to the full sway at its tip", () => {
-    const first = vertexCount(meshTree(TREE, LOOK, "high"));
-    const mesh = meshTree(WEEPING, LOOK, "high");
+  it.each(["high", "medium"] as const)(
+    "sways the top of a weeping crown with the tree and swings its hem fully at %s detail",
+    (level) => {
+      const mesh = meshTree(WEEPING, LOOK, level);
 
-    const strand = Array.from({ length: vertexCount(mesh) - first }, (_, index) => first + index);
+      const leaves = foliageOf(mesh);
 
-    const root = strand.reduce((top, vertex) => (heightOf(mesh, vertex) > heightOf(mesh, top) ? vertex : top));
-    const tip = strand.reduce((bottom, vertex) => (heightOf(mesh, vertex) < heightOf(mesh, bottom) ? vertex : bottom));
+      const top = leaves.reduce((highest, vertex) =>
+        heightOf(mesh, vertex) > heightOf(mesh, highest) ? vertex : highest
+      );
+      const hem = leaves.reduce((lowest, vertex) =>
+        heightOf(mesh, vertex) < heightOf(mesh, lowest) ? vertex : lowest
+      );
 
-    expect(mesh.channels.sway[root]).toBeCloseTo(plantSway(heightOf(mesh, root), TREE.height), 2);
-    expect(mesh.channels.sway[tip]).toBeCloseTo(1, 5);
+      expect(mesh.channels.sway[top]).toBeCloseTo(plantSway(heightOf(mesh, top), TREE.height), 5);
+      expect(mesh.channels.sway[hem]).toBeCloseTo(1, 5);
+    }
+  );
+
+  it.each(["high", "medium"] as const)("rounds off the top of a forking trunk at %s detail", (level) => {
+    const mesh = meshTree({ ...FORKED, foliage: [] }, LOOK, level);
+
+    const trunkTop = TREE.branches[0].points.at(-1);
+
+    const wood = Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex).filter(
+      (vertex) => Math.hypot(mesh.positions[vertex * 3], mesh.positions[vertex * 3 + 2]) < 0.25
+    );
+
+    expect(trunkTop).toBeDefined();
+    expect(Math.max(...wood.map((vertex) => heightOf(mesh, vertex)))).toBeGreaterThan(7.15);
+  });
+
+  it("carries the trunk on into the crown at low detail", () => {
+    const mesh = meshTree(TREE, LOOK, "low");
+
+    const wood = Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex).filter(
+      (vertex) => mesh.channels.slot[vertex] === MaterialSlot.Bark
+    );
+
+    expect(Math.max(...wood.map((vertex) => heightOf(mesh, vertex)))).toBeGreaterThan(7.5);
+    expect(detachedPieces(mesh, 0.01).map((piece) => describePiece(mesh, piece))).toEqual([]);
   });
 
   it.each(LEVELS)("grows fronds out of the crown on both faces at %s detail", (level) => {

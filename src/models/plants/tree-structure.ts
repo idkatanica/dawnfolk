@@ -6,11 +6,13 @@ import type { Triple } from "../mesh/transforms.ts";
 
 export interface Branch {
   readonly depth: number;
+  readonly forks?: boolean;
   readonly points: readonly TubePoint[];
 }
 
 export interface FoliageBlob {
   readonly center: Triple;
+  readonly drape?: number;
   readonly kind: "blob";
   readonly radius: number;
   readonly squash: number;
@@ -27,19 +29,13 @@ export interface FoliageSkirt {
   readonly top: number;
 }
 
-export interface FoliageStrand {
-  readonly kind: "strand";
-  readonly points: readonly TubePoint[];
-  readonly tint: number;
-}
-
 export interface FoliageFrond {
   readonly kind: "frond";
   readonly points: readonly TubePoint[];
   readonly tint: number;
 }
 
-export type Foliage = FoliageBlob | FoliageFrond | FoliageSkirt | FoliageStrand;
+export type Foliage = FoliageBlob | FoliageFrond | FoliageSkirt;
 
 export interface TreeStructure {
   readonly branches: readonly Branch[];
@@ -124,6 +120,28 @@ export function directionAlong(points: readonly TubePoint[], amount: number): Ve
 
 export function tipOf(points: readonly TubePoint[]): TubePoint {
   return pointAlong(points, 1);
+}
+
+export function endedBelow(points: readonly TubePoint[], ceiling: number): TubePoint[] {
+  const cut = points.findIndex((point) => point.y > ceiling);
+
+  if (cut <= 0) {
+    return [...points];
+  }
+
+  const below = points[cut - 1];
+  const above = points[cut];
+
+  const amount = (ceiling - below.y) / (above.y - below.y);
+
+  const end: TubePoint = {
+    radius: below.radius + (above.radius - below.radius) * amount,
+    x: below.x + (above.x - below.x) * amount,
+    y: ceiling,
+    z: below.z + (above.z - below.z) * amount,
+  };
+
+  return [...points.slice(0, cut), end, { ...end, radius: 0, y: ceiling + end.radius }];
 }
 
 function crossReference(axis: Vector3): Vector3 {

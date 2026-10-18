@@ -1,13 +1,15 @@
 import { Vector3 } from "three";
 import { PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
-import { FULL_TURN, lerp } from "../../shared/math.ts";
+import { FULL_TURN, lerp, smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise, type VolumeNoise } from "../../shared/noise.ts";
 import { createRandom, type RandomSource } from "../../shared/random.ts";
 import type { TubePoint } from "../mesh/shapes.ts";
 import {
   type Branch,
   directionAlong,
+  endedBelow,
   type Foliage,
+  type FoliageSkirt,
   GOLDEN_ANGLE,
   growBranch,
   jitter,
@@ -53,6 +55,7 @@ function finish(growth: Growth, height: number): TreeStructure {
 }
 
 interface TrunkOptions {
+  readonly forks: boolean;
   readonly height: number;
   readonly lean: number;
   readonly radiusBottom: number;
@@ -83,9 +86,21 @@ function addTrunk(growth: Growth, options: TrunkOptions, start = new Vector3()):
 
   const flared = points.map((point, index) => (index === 0 ? { ...point, radius: point.radius * 1.35 } : point));
 
-  growth.branches.push({ depth: 0, points: flared });
+  growth.branches.push({ depth: 0, forks: options.forks, points: rooted(flared) });
 
   return flared;
+}
+
+const ROOT_DEPTH = 0.3;
+
+function rooted(points: readonly TubePoint[]): TubePoint[] {
+  const [base] = points;
+
+  if (base === undefined) {
+    return [];
+  }
+
+  return [{ ...base, y: base.y - ROOT_DEPTH }, ...points];
 }
 
 interface LimbOptions {
@@ -116,7 +131,7 @@ function addLimb(
     length: options.length,
     noise: growth.noise,
     radiusEnd: options.radiusEnd,
-    radiusStart: Math.min(base.radius * 0.75, options.radiusEnd * 4 + 0.02),
+    radiusStart: Math.min(base.radius * lerp(0.75, 0.85, smoothstep(0.85, 1, along)), options.radiusEnd * 4 + 0.02),
     segments: options.segments,
     start: toVector(base),
     wobble: options.wobble,
@@ -143,6 +158,7 @@ function oak(seed: number): TreeStructure {
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
+    forks: true,
     height: random.between(5, 6.4),
     lean: random.between(0, 0.1),
     radiusBottom: 0.56,
@@ -217,6 +233,7 @@ function birch(seed: number): TreeStructure {
     const trunk = addTrunk(
       growth,
       {
+        forks: false,
         height: random.between(16, 18.5) - stem * 2,
         lean: stemLean(random, stems),
         radiusBottom: 0.3 - stem * 0.06,
@@ -252,12 +269,15 @@ function birch(seed: number): TreeStructure {
   return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Birch]);
 }
 
+const FORK_HEIGHT = 0.93;
+
 function maple(seed: number): TreeStructure {
   const growth = createGrowth(seed);
 
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
+    forks: true,
     height: random.between(4, 5.2),
     lean: random.between(0, 0.07),
     radiusBottom: 0.45,
@@ -269,7 +289,7 @@ function maple(seed: number): TreeStructure {
   const limbCount = random.integer(2, 4);
 
   for (let limb = 0; limb < limbCount; limb += 1) {
-    const main = addLimb(growth, trunk, 1, (limb / limbCount) * FULL_TURN + jitter(random, 0.5), {
+    const main = addLimb(growth, trunk, FORK_HEIGHT, (limb / limbCount) * FULL_TURN + jitter(random, 0.5), {
       bend: 0.05,
       depth: 1,
       gravity: 0.02,
@@ -301,12 +321,15 @@ function maple(seed: number): TreeStructure {
   return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Maple]);
 }
 
+const DRAPE_SHARE = 0.68;
+
 function willow(seed: number): TreeStructure {
   const growth = createGrowth(seed);
 
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
+    forks: true,
     height: random.between(2.6, 3.4),
     lean: random.between(0.04, 0.16),
     radiusBottom: 0.55,
@@ -331,27 +354,16 @@ function willow(seed: number): TreeStructure {
 
     const tip = toVector(tipOf(main));
     const crownRadius = random.between(2, 2.6);
+    const hang = random.between(4, Math.max(4.5, tip.y - 1));
 
-    addBlob(growth, tip, crownRadius, 0.8);
-
-    for (let strand = 0; strand < 3; strand += 1) {
-      const angle = random.next() * FULL_TURN;
-      const reach = random.between(0.35, 0.8) * crownRadius;
-
-      const top = tip.clone().add(new Vector3(Math.cos(angle) * reach, -0.4, Math.sin(angle) * reach));
-
-      const length = random.between(4, Math.max(4.5, top.y - 0.6));
-
-      growth.foliage.push({
-        kind: "strand",
-        points: [
-          { radius: 0.32, x: top.x, y: top.y, z: top.z },
-          { radius: 0.22, x: top.x * 1.04, y: top.y - length * 0.5, z: top.z * 1.04 },
-          { radius: 0.04, x: top.x * 1.06, y: top.y - length, z: top.z * 1.06 },
-        ],
-        tint: jitter(random, 0.1),
-      });
-    }
+    growth.foliage.push({
+      center: tip.toArray(),
+      drape: hang * DRAPE_SHARE,
+      kind: "blob",
+      radius: crownRadius,
+      squash: 0.8,
+      tint: jitter(random, 0.12),
+    });
   }
 
   return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Willow]);
@@ -365,6 +377,7 @@ function spruce(seed: number): TreeStructure {
   const height = CANONICAL_HEIGHTS[PlantSpecies.Spruce] * random.between(0.94, 1.02);
 
   const trunk = addTrunk(growth, {
+    forks: false,
     height,
     lean: random.between(0, 0.03),
     radiusBottom: 0.42,
@@ -398,7 +411,31 @@ function spruce(seed: number): TreeStructure {
     });
   }
 
+  tuckTrunk(growth, Math.min(height, skirtCeiling(growth.foliage)));
+
   return finish(growth, height);
+}
+
+const TUCKED_SHARE = 0.12;
+
+function skirtCeiling(foliage: readonly Foliage[]): number {
+  const skirts = foliage.filter((item): item is FoliageSkirt => item.kind === "skirt");
+
+  const highest = skirts.reduce((top, skirt) => (skirt.top > top.top ? skirt : top));
+
+  return highest.top - (highest.top - highest.bottom) * TUCKED_SHARE;
+}
+
+function tuckTrunk(growth: Growth, ceiling: number): void {
+  const index = growth.branches.findIndex((branch) => branch.depth === 0);
+
+  const trunk = growth.branches[index];
+
+  if (trunk === undefined) {
+    return;
+  }
+
+  growth.branches[index] = { ...trunk, points: endedBelow(trunk.points, ceiling) };
 }
 
 function pine(seed: number): TreeStructure {
@@ -407,6 +444,7 @@ function pine(seed: number): TreeStructure {
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
+    forks: false,
     height: random.between(19, 21.5),
     lean: random.between(0.02, 0.1),
     radiusBottom: 0.42,
@@ -529,7 +567,7 @@ function palm(seed: number): TreeStructure {
 
   growth.branches.push({
     depth: 0,
-    points: trunk.map((point, index) => (index === 0 ? { ...point, radius: 0.42 } : point)),
+    points: rooted(trunk.map((point, index) => (index === 0 ? { ...point, radius: 0.42 } : point))),
   });
 
   const crown = toVector(tipOf(trunk));
@@ -564,6 +602,7 @@ function acacia(seed: number): TreeStructure {
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
+    forks: true,
     height: random.between(2.4, 3.4),
     lean: random.between(0.05, 0.22),
     radiusBottom: 0.34,
@@ -622,6 +661,7 @@ function poplar(seed: number): TreeStructure {
   const height = random.between(18, 20.5);
 
   const trunk = addTrunk(growth, {
+    forks: false,
     height,
     lean: random.between(0, 0.04),
     radiusBottom: 0.4,
@@ -663,7 +703,21 @@ function poplar(seed: number): TreeStructure {
     );
   }
 
+  tuckTrunk(growth, blobCeiling(growth.foliage));
+
   return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Poplar]);
+}
+
+const BLOB_COVER = 0.45;
+
+function blobCeiling(foliage: readonly Foliage[]): number {
+  return foliage.reduce((ceiling, item) => {
+    if (item.kind !== "blob") {
+      return ceiling;
+    }
+
+    return Math.max(ceiling, item.center[1] + item.radius * item.squash * BLOB_COVER);
+  }, 0);
 }
 
 function deadTree(seed: number): TreeStructure {
@@ -674,6 +728,7 @@ function deadTree(seed: number): TreeStructure {
   const isStump = random.chance(0.25);
 
   const trunk = addTrunk(growth, {
+    forks: false,
     height: isStump ? random.between(3.5, 5) : random.between(7, 9.5),
     lean: random.between(0, 0.18),
     radiusBottom: 0.42,

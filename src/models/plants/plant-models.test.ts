@@ -166,7 +166,7 @@ describe("tree details", () => {
     expect(averageSway(foliage)).toBeGreaterThan(averageSway(foot));
   });
 
-  it("starts every willow strand swaying with the crown it hangs from", () => {
+  it("sways the top of every willow crown with the tree", () => {
     for (const level of ["high", "medium"] as const) {
       for (const willow of buildPlantVariants(PlantSpecies.Willow, level)) {
         const foliage = meshPieces(willow).filter(
