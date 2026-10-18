@@ -36,6 +36,7 @@ import { sampleCellsNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { rainDimples } from "./rain-dimples.ts";
 import { BANK_SINK, PRESENT_LEVEL } from "./shore-field.ts";
+import { perlinWithSteps } from "./wave-noise.ts";
 
 const HIDDEN_DEPTH = 40;
 const SHORE_FADE = 0.2;
@@ -106,19 +107,15 @@ function steadyFoamAt(hasFoam: Node<"bool">, detail: Node<"float">): Node<"float
   })();
 }
 
-function waveHeight(point: Node<"vec2">): Node<"float"> {
-  const broad = mx_noise_float(vec3(point.mul(0.16), time.mul(0.32)));
-  const fine = mx_noise_float(vec3(point.mul(0.53), time.mul(0.61)));
-
-  return broad.add(fine.mul(0.42));
-}
-
 function waveNormal(point: Node<"vec2">, strength: Node<"float">): Node<"vec3"> {
-  const center = waveHeight(point);
-  const east = waveHeight(point.add(vec2(WAVE_SAMPLE_STEP, 0)));
-  const south = waveHeight(point.add(vec2(0, WAVE_SAMPLE_STEP)));
+  const broad = perlinWithSteps(point, WAVE_SAMPLE_STEP, 0.16, time.mul(0.32));
+  const fine = perlinWithSteps(point, WAVE_SAMPLE_STEP, 0.53, time.mul(0.61));
 
-  return normalize(vec3(center.sub(east).mul(strength), WAVE_SAMPLE_STEP, center.sub(south).mul(strength)));
+  const heights = broad.add(fine.mul(0.42));
+
+  return normalize(
+    vec3(heights.x.sub(heights.y).mul(strength), WAVE_SAMPLE_STEP, heights.x.sub(heights.z).mul(strength))
+  );
 }
 
 export function createWaterMaterial(
