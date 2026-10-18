@@ -51,6 +51,13 @@ export interface LightningEffect {
   z: number;
 }
 
+export interface SplashEffect {
+  kind: "splash";
+  level: number;
+  x: number;
+  z: number;
+}
+
 export interface MeteorEffect {
   durationSeconds: number;
   fromX: number;
@@ -69,7 +76,8 @@ export type SimulationEffect =
   | EmberEffect
   | ExplosionEffect
   | LightningEffect
-  | MeteorEffect;
+  | MeteorEffect
+  | SplashEffect;
 
 export class EffectLog {
   #effects: SimulationEffect[] = [];

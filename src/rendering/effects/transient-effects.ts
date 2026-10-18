@@ -7,6 +7,7 @@ import type {
   ExplosionEffect,
   LightningEffect,
   MeteorEffect,
+  SplashEffect,
 } from "../../simulation/effects.ts";
 import type { BillboardBatch } from "./billboards.ts";
 import type { EffectMeshes, RibbonPoint } from "./effect-meshes.ts";
@@ -43,6 +44,9 @@ const DUST_PUFFS = 26;
 const SPARKLES = 70;
 const TRAIL_SAMPLES = 16;
 const RING_COLOR = 0xff_f0_d8;
+const SPLASH_SECONDS = 0.55;
+const SPLASH_DROPS = 9;
+const SPLASH_COLOR: readonly [number, number, number] = [0.86, 0.93, 0.97];
 
 const BLESSING_COLORS: Readonly<Record<BlessingEffect["style"], readonly [number, number, number]>> = {
   abundance: [1, 0.78, 0.3],
@@ -343,5 +347,36 @@ export class Blessing implements ActiveEffect {
     }
 
     return this.#age < BLESSING_SECONDS;
+  }
+}
+
+export class Splash implements ActiveEffect {
+  readonly meshes: readonly Mesh[] = [];
+  readonly #effect: SplashEffect;
+  #age = 0;
+
+  constructor(effect: SplashEffect) {
+    this.#effect = effect;
+  }
+
+  update(seconds: number, sinks: SpriteSinks): boolean {
+    this.#age += seconds;
+
+    const { level, x, z } = this.#effect;
+    const age = this.#age / SPLASH_SECONDS;
+    const fade = (1 - smoothstep(0.35, 1, age)) * 0.85;
+
+    for (let drop = 0; drop < SPLASH_DROPS; drop += 1) {
+      const angle = hashToUnit(drop, 7, x + z) * FULL_TURN;
+      const reach = (0.2 + hashToUnit(drop, 8, x - z) * 0.5) * age;
+      const rise = (0.35 + hashToUnit(drop, 9, x) * 0.45) * 4 * age * (1 - age);
+
+      sinks.dust.add(
+        [x + Math.cos(angle) * reach, level + rise, z + Math.sin(angle) * reach, 0.16 + age * 0.22],
+        [SPLASH_COLOR[0], SPLASH_COLOR[1], SPLASH_COLOR[2], fade]
+      );
+    }
+
+    return this.#age < SPLASH_SECONDS;
   }
 }

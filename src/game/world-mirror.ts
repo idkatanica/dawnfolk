@@ -7,10 +7,12 @@ import type {
   VegetationPatch,
 } from "../simulation/frame.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../world/agent-buffers.ts";
+import { isBrookCell } from "../world/brooks.ts";
 import { RegionChangeTracker, RowChangeTracker } from "../world/change-tracking.ts";
+import { type Crossing, CrossingIndex } from "../world/crossings.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import type { Monument } from "../world/monuments.ts";
-import { isWaterAtPoint, sampleHeight, sampleSurface } from "../world/terrain-sampling.ts";
+import { isWaterAtPoint, sampleHeight, sampleSurface, sampleWaterLevel } from "../world/terrain-sampling.ts";
 import type { VegetationBuffers } from "../world/vegetation-store.ts";
 import type { WaterFeatures } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
@@ -18,6 +20,7 @@ import { WorldGrid } from "../world/world-grid.ts";
 const GROWTH_FACTOR = 1.5;
 const MILLISECONDS_PER_SECOND = 1000;
 const LONGEST_EXTRAPOLATION_SECONDS = 0.1;
+const CROSSING_LOOKUP_MARGIN = 0.6;
 
 function grown<Values extends Float32Array | Uint8Array>(previous: Values, next: Values): Values {
   next.set(previous);
@@ -115,17 +118,21 @@ export class WorldMirror {
   readonly surfaceChanges: RowChangeTracker;
   readonly terrain: TerrainSnapshot;
   readonly vegetation: MirroredVegetation;
+  crossings: readonly Crossing[];
   frame: SimulationFrame;
   frameReceivedAt: number;
   landVersion = 0;
   water: WaterFeatures;
   waterVersion = 0;
+  #crossingIndex: CrossingIndex;
 
   constructor(initial: InitialWorld, receivedAt: number) {
     this.grid = new WorldGrid(initial.dimensions);
     this.seed = initial.seed;
     this.shape = initial.shape;
     this.monuments = initial.monuments;
+    this.crossings = initial.crossings;
+    this.#crossingIndex = new CrossingIndex(this.grid, initial.crossings, CROSSING_LOOKUP_MARGIN);
     this.terrain = initial.terrain;
     this.surface = initial.surface;
     this.ground = initial.ground;
@@ -180,6 +187,20 @@ export class WorldMirror {
     return isWaterAtPoint(this.terrain, this.grid, x, z);
   }
 
+  isBrookAt(x: number, z: number): boolean {
+    const cell = this.grid.cellAt(x, z);
+
+    return cell >= 0 && isBrookCell(this.terrain, cell);
+  }
+
+  waterLevelAt(x: number, z: number): number {
+    return sampleWaterLevel(this.terrain, this.grid, x, z);
+  }
+
+  crossingAt(x: number, z: number): Crossing | null {
+    return this.#crossingIndex.crossingAt(x, z);
+  }
+
   #applyRows(rows: readonly PackedRows[], target: Uint8Array, changes: RowChangeTracker): void {
     for (const run of rows) {
       const bytesPerRow = run.data.length / run.rowCount;
@@ -231,6 +252,8 @@ export class WorldMirror {
     this.terrain.waterSurface.set(update.waterSurface);
     this.terrain.riverStrength.set(update.riverStrength);
     this.water = update.features;
+    this.crossings = update.crossings;
+    this.#crossingIndex = new CrossingIndex(this.grid, update.crossings, CROSSING_LOOKUP_MARGIN);
     this.waterVersion += 1;
   }
 }

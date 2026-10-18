@@ -584,6 +584,18 @@ export class Simulation {
     });
     this.hazards.update(TICK_SECONDS);
     this.#recordBuildingIncidents();
+    this.#recordSplashes();
+  }
+
+  #recordSplashes(): void {
+    const movers = [...this.society.people, ...this.fauna.animals].map((walker) => walker.mover);
+
+    for (const mover of movers) {
+      if (mover.splash !== null) {
+        this.effects.add({ ...mover.splash, kind: "splash" });
+        mover.splash = null;
+      }
+    }
   }
 
   #faunaThreats(): FaunaThreats {
