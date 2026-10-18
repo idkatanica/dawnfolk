@@ -83,6 +83,26 @@ describe("buildShoreField", () => {
     expect(target[(size * size - 1) * SHORE_CHANNELS + ShoreChannel.Reach]).toBe(MAXIMUM_REACH);
   });
 
+  it("puts the shore of deep water halfway to a low bank instead of against it", () => {
+    const source = createSource();
+
+    for (let column = 0; column < SIZE; column += 1) {
+      const river = RIVER_ROW * SIZE + column;
+
+      source.heights[river] = riverLevel(column) - 4;
+      source.heights[river - SIZE] = riverLevel(column) + 0.1;
+    }
+
+    const field = build(source);
+
+    const water = valueAt(field, 3, RIVER_ROW, ShoreChannel.Depth);
+    const bank = valueAt(field, 3, RIVER_ROW - 1, ShoreChannel.Depth);
+
+    expect(water).toBeCloseTo(4);
+    expect(bank).toBeCloseTo(-4);
+    expect((water + bank) / 2).toBeCloseTo(0);
+  });
+
   it("joins water that steps diagonally from cell to cell", () => {
     const heights = new Float32Array(SIZE * SIZE).fill(3);
     const levels = new Float32Array(SIZE * SIZE).fill(NO_WATER);
