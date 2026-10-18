@@ -19,6 +19,7 @@ const CAMPFIRE_GAP = 1;
 const POSTPONE_DAYS = 1.5;
 const LONGEST_STALL_DAYS = 2.5;
 const PLANS_TO_SAVE_FOR = 3;
+const CLEARING = 4;
 
 export function canAfford(tribe: Tribe, kind: BuildingKind): boolean {
   return hasResources(tribe.stock, BUILDINGS[kind].cost);
@@ -183,7 +184,7 @@ function startBuilding(tribe: Tribe, plan: BuildingPlan, spot: Waypoint, context
   spendResources(tribe.stock, BUILDINGS[plan.kind].cost);
   tribe.buildings.constructionSiteId = site.id;
 
-  for (const cell of site.cells) {
+  for (const cell of footprintCells(context.world.grid, site.x, site.z, BUILDINGS[plan.kind].footprint + CLEARING)) {
     context.world.clearPlants(cell, false);
   }
 

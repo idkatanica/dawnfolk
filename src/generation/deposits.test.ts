@@ -6,7 +6,7 @@ import { isWaterCell } from "../world/terrain-sampling.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 import { generateWorld } from "./world-generator.ts";
 
-const DIMENSIONS = { cellSize: 20, cellsPerSide: 192 };
+const DIMENSIONS = { cellSize: 10, cellsPerSide: 384 };
 
 function generate(seed: number) {
   return generateWorld(seed, { dimensions: DIMENSIONS, erosionStrength: 1, shape: "round" });

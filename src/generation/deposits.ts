@@ -20,8 +20,8 @@ const ORE_SPACING = 140;
 const CLAY_SPACING = 110;
 const ATTEMPTS_PER_DEPOSIT = 60;
 const SMALLEST_VEIN = 4;
-const VEIN_WIDTH = 0.42;
-const VEIN_WAVINESS = 0.35;
+const VEIN_WIDTH = 0.5;
+const VEIN_WAVINESS = 0.16;
 const VEIN_SALT = 61.7;
 const BARREN_GROUNDS: ReadonlySet<number> = new Set([Ground.Snow, Ground.Sand]);
 

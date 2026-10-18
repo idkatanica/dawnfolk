@@ -3,6 +3,7 @@ import type { RecipeId } from "../../content/recipes.ts";
 import { isWinter } from "../../content/seasons.ts";
 import { mineFor } from "./camp-plan.ts";
 import { constructionNeed } from "./construction.ts";
+import { isExpeditionSeason } from "./jobs/build-job.ts";
 import { findClay } from "./jobs/clay-job.ts";
 import { findCraftWork } from "./jobs/craft-job.ts";
 import { findFruit } from "./jobs/gather-job.ts";
@@ -80,8 +81,9 @@ export const ERA_WORK_OPTIONS: readonly WorkOption[] = [
     start: findClay,
     weight: (tick) => {
       const wanted = clayWanted(tick);
+      const { season } = tick.context.environment;
 
-      if (!knows(tick.tribe, "pottery") || wanted <= 0 || !isWorthIt(tick, "clay", 1)) {
+      if (!knows(tick.tribe, "pottery") || wanted <= 0 || !isWorthIt(tick, "clay", 1) || !isExpeditionSeason(season)) {
         return 0;
       }
 
@@ -102,7 +104,7 @@ export const ERA_WORK_OPTIONS: readonly WorkOption[] = [
     weight: (tick) => {
       const ore = neediestOre(tick);
 
-      if (ore === null) {
+      if (ore === null || !isExpeditionSeason(tick.context.environment.season)) {
         return 0;
       }
 

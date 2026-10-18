@@ -3,7 +3,7 @@ import type { Building } from "./buildings.ts";
 import { constructionNeed } from "./construction.ts";
 import { ERA_WORK_OPTIONS } from "./era-work.ts";
 import { type FieldTask, fieldTask, neediestField } from "./farming.ts";
-import { BuildJob } from "./jobs/build-job.ts";
+import { BuildJob, isExpeditionSeason, isFarSite } from "./jobs/build-job.ts";
 import { findTree } from "./jobs/chop-job.ts";
 import { FarmJob } from "./jobs/farm-job.ts";
 import { findFishingSpot } from "./jobs/fish-job.ts";
@@ -72,7 +72,19 @@ const WORK_OPTIONS: readonly WorkOption[] = [
 
       return new BuildJob(tick, site);
     },
-    weight: (tick) => (constructionSite(tick) === null ? 0 : 6),
+    weight: (tick) => {
+      const site = constructionSite(tick);
+
+      if (site === null) {
+        return 0;
+      }
+
+      if (isFarSite(tick.tribe, site) && !isExpeditionSeason(tick.context.environment.season)) {
+        return 0;
+      }
+
+      return 6;
+    },
   },
   {
     kind: "tend",

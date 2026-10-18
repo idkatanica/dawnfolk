@@ -17,9 +17,12 @@ import {
   rising,
   type StructureContext,
   type StructureLevel,
+  scaledMesh,
 } from "./structure-parts.ts";
 
 export type MineOre = "copper" | "iron" | "tin";
+
+export const MINE_SCALE = 1.5;
 
 const ORE_SLOTS: Readonly<Record<MineOre, MaterialSlotIndex>> = {
   copper: MaterialSlot.CopperOre,
@@ -185,5 +188,5 @@ export function buildMineModel(ore: MineOre, level: StructureLevel): MeshData {
 
   mineWith({ builder, level, random: createRandom(ore.length * 37 + 11) }, ore);
 
-  return builder.build();
+  return scaledMesh(builder.build(), MINE_SCALE);
 }

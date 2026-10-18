@@ -25,7 +25,7 @@ import { segmentLength, segmentTransform, type Triple, transformOf } from "../me
 import { palisadeSegment, stoneWallSegment } from "./enclosures.ts";
 import { longhouse, stoneHouse } from "./era-dwellings.ts";
 import { forge, granary, kiln, smelter, workshop } from "./era-workplaces.ts";
-import { mine } from "./mine-model.ts";
+import { MINE_SCALE, mine } from "./mine-model.ts";
 import { scaledMesh } from "./structure-parts.ts";
 
 type BuildingDetailLevel = "high" | "low";
@@ -655,6 +655,7 @@ const BUILDERS: Readonly<Record<BuildingKind, (context: StructureContext) => voi
 const BUILDING_SCALES: Readonly<Partial<Record<BuildingKind, number>>> = {
   campfire: 1.15,
   hut: 1.4,
+  mine: MINE_SCALE,
   storehouse: 1.25,
   tent: 1.55,
   totem: 1.2,

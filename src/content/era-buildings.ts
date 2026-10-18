@@ -163,7 +163,7 @@ export const ERA_BUILDINGS: Readonly<Record<EraBuildingKind, BuildingDefinition>
     burnTime: 50,
     capacity: 0,
     cost: { stone: 4, wood: 14 },
-    footprint: 4,
+    footprint: 6,
     health: 120,
     name: "Mine",
     role: "mine",
