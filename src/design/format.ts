@@ -45,15 +45,10 @@ export function formatParameterValue(value: number, unit: ParameterUnit, step = 
 
 export function formatClock(hours: number): string {
   const wholeMinutes = Math.floor(hours * 60) % (24 * 60);
-
   const hour = Math.floor(wholeMinutes / 60);
   const minute = wholeMinutes % 60;
 
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-}
-
-export function formatTemperature(celsius: number): string {
-  return `${Math.round(celsius)}°`;
 }
 
 export function formatPercent(fraction: number): string {

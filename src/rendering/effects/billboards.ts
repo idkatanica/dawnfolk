@@ -1,4 +1,4 @@
-import { attribute, normalize, uniform, vec3 } from "three/tsl";
+import { attribute, length, uniform, vec2 } from "three/tsl";
 import {
   Float32BufferAttribute,
   InstancedBufferGeometry,
@@ -11,12 +11,19 @@ import {
 } from "three/webgpu";
 import { InterleavedInstances } from "../instancing.ts";
 
-export const FLOATS_PER_BILLBOARD = 8;
+const FLOATS_PER_BILLBOARD = 8;
+const CORNER_ATTRIBUTE = "billboardCorner";
 
 const BILLBOARD_FIELDS = [
   { name: "billboardPlacement", size: 4 },
   { name: "billboardLook", size: 4 },
 ] as const;
+
+interface BillboardNodes {
+  readonly corner: Node<"vec2">;
+  readonly look: Node<"vec4">;
+  readonly placement: Node<"vec4">;
+}
 
 export class CameraAxes {
   readonly right = uniform(new Vector3(1, 0, 0));
@@ -30,35 +37,27 @@ export class CameraAxes {
   }
 }
 
-export interface BillboardNodes {
-  readonly corner: Node<"vec2">;
-  readonly look: Node<"vec4">;
-  readonly placement: Node<"vec4">;
-}
-
 export function billboardNodes(): BillboardNodes {
   return {
-    corner: attribute("billboardCorner", "vec2"),
+    corner: attribute(CORNER_ATTRIBUTE, "vec2"),
     look: attribute("billboardLook", "vec4"),
     placement: attribute("billboardPlacement", "vec4"),
   };
-}
-
-export function uprightBillboard(axes: CameraAxes, center: Node<"vec3">, corner: Node<"vec2">, size: Node<"vec2">) {
-  const flatRight = normalize(vec3(axes.right.x, 0, axes.right.z));
-
-  return center.add(flatRight.mul(corner.x.mul(size.x))).add(vec3(0, 1, 0).mul(corner.y.mul(size.y)));
 }
 
 export function facingBillboard(axes: CameraAxes, center: Node<"vec3">, corner: Node<"vec2">, size: Node<"float">) {
   return center.add(axes.right.mul(corner.x.mul(size))).add(axes.up.mul(corner.y.sub(0.5).mul(size)));
 }
 
-function createQuad(): InstancedBufferGeometry {
+export function distanceFromBillboardCenter(corner: Node<"vec2">): Node<"float"> {
+  return length(vec2(corner.x, corner.y.sub(0.5)));
+}
+
+export function createQuadGeometry(cornerAttribute: string): InstancedBufferGeometry {
   const geometry = new InstancedBufferGeometry();
 
   geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(12), 3));
-  geometry.setAttribute("billboardCorner", new Float32BufferAttribute([-0.5, 0, 0.5, 0, 0.5, 1, -0.5, 1], 2));
+  geometry.setAttribute(cornerAttribute, new Float32BufferAttribute([-0.5, 0, 0.5, 0, 0.5, 1, -0.5, 1], 2));
   geometry.setIndex(new Uint16BufferAttribute([0, 1, 2, 0, 2, 3], 1));
   geometry.instanceCount = 0;
 
@@ -74,7 +73,7 @@ export class BillboardBatch {
 
   constructor(material: Material, renderOrder: number) {
     this.#material = material;
-    this.#geometry = createQuad();
+    this.#geometry = createQuadGeometry(CORNER_ATTRIBUTE);
     this.#instances = new InterleavedInstances(this.#geometry, BILLBOARD_FIELDS, 256);
     this.mesh = new Mesh(this.#geometry, material);
     this.mesh.frustumCulled = false;

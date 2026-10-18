@@ -28,7 +28,7 @@ export class CloudSea {
     geometry.rotateX(-Math.PI / 2);
 
     const material = new MeshBasicNodeMaterial({ depthWrite: false, transparent: true });
-    const coordinates = positionWorld.xz.mul(0.000_45).add(this.drift);
+    const coordinates = positionWorld.xz.mul(0.000_45).sub(this.drift);
     const distanceFade = smoothstep(
       float(SEA_SIZE * 0.48),
       float(SEA_SIZE * 0.3),

@@ -33,6 +33,7 @@ test.describe("the wide layout", () => {
 
     await expect(settings).toBeHidden();
   });
+
   test("grows a new world from a seed without reloading the page", async ({ page }) => {
     await page.getByRole("button", { exact: true, name: "Settings" }).click();
 

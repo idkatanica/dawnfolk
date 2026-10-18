@@ -38,6 +38,7 @@ interface WorldStore {
 
 const REFRESH_MILLISECONDS = 125;
 const MAXIMUM_NOTICES = 4;
+const ANNOUNCED_CATEGORIES: ReadonlySet<ChronicleCategory> = new Set(["arrival", "discovery", "split", "warning"]);
 
 export const useWorldStore = create<WorldStore>()(() => ({
   chronicle: [],
@@ -58,8 +59,6 @@ function snapshotOf(frame: SimulationFrame): WorldSnapshot {
     weather: frame.weather,
   };
 }
-
-const ANNOUNCED_CATEGORIES: ReadonlySet<ChronicleCategory> = new Set(["arrival", "discovery", "split", "warning"]);
 
 let nextNoticeId = 1;
 

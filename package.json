@@ -24,7 +24,6 @@
   "dependencies": {
     "@base-ui/react": "^1.9.0",
     "@fontsource-variable/geist": "^5.3.0",
-    "@fontsource-variable/geist-mono": "^5.3.0",
     "@svidskiy/glass-surface-react": "file:vendor/svidskiy-glass-surface-react-1.0.0.tgz",
     "clsx": "^2.1.1",
     "comlink": "^4.4.2",
@@ -39,7 +38,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@babel/core": "^8.0.5",
+    "@babel/core": "^8.0.7",
     "@biomejs/biome": "2.5.15",
     "@playwright/test": "^1.64.1",
     "@rolldown/plugin-babel": "^0.2.4",

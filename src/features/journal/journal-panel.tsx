@@ -18,7 +18,7 @@ function isJournalTab(value: unknown): value is JournalTab {
 function JournalTabButton({ label, value }: { readonly label: string; readonly value: JournalTab }) {
   return (
     <Tabs.Tab
-      className="h-8 flex-1 rounded-full px-3 font-semibold text-ink-soft text-sm outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink data-active:shadow-thumb"
+      className="h-8 flex-1 rounded-full px-3 font-semibold text-ink-soft text-sm outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink"
       value={value}
     >
       {label}
@@ -46,11 +46,11 @@ function useJournalTab() {
   const journalTab = useInterfaceStore((state) => state.journalTab);
   const setJournalTab = useInterfaceStore((state) => state.setJournalTab);
 
-  const changeTab = (value: unknown) => {
+  function changeTab(value: unknown): void {
     if (isJournalTab(value)) {
       setJournalTab(value);
     }
-  };
+  }
 
   return { changeTab, journalTab };
 }

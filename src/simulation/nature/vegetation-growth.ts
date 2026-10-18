@@ -15,7 +15,7 @@ const SCORCH_BLOCKING_REGROWTH = 0.3;
 const MEADOW_REGROWTH_CHANCE = 0.15;
 const REGROWING_BIOMES: ReadonlySet<number> = new Set([Biome.Forest, Biome.Swamp, Biome.Taiga]);
 
-export interface GrowthConditions {
+interface GrowthConditions {
   day: number;
   season: number;
 }
@@ -108,8 +108,9 @@ export class VegetationGrowthSystem {
       return;
     }
 
-    const species = random.pick(candidates);
     const { grid } = world;
+
+    const species = random.pick(candidates);
 
     world.plant({
       bornDay: day,
@@ -124,7 +125,7 @@ export class VegetationGrowthSystem {
 
   #canSprout(cell: number, random: RandomSource): boolean {
     const world = this.#world;
-    const biome = this.#world.terrain.biome[cell];
+    const biome = world.terrain.biome[cell];
 
     if (world.grid.isOnEdge(cell) || world.touchesWater(cell)) {
       return false;
@@ -147,6 +148,7 @@ export class VegetationGrowthSystem {
 
   #growBerries(days: number, season: number, rules: WorldRules): void {
     const { vegetation } = this.#world;
+
     const change = berryChange(season, days, rules);
 
     if (change === 0) {

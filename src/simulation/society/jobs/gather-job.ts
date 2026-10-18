@@ -16,7 +16,7 @@ const NEXT_BUSH_RADIUS = 70;
 const CHILD_SEARCH_RADIUS = 160;
 const ADULT_SEARCH_RADIUS = 380;
 
-export function isRipeBush(tick: PersonTick): (plant: number) => boolean {
+function isRipeBush(tick: PersonTick): (plant: number) => boolean {
   const { vegetation } = tick.context.world;
   const { claimedPlants } = tick.tribe;
 
@@ -57,7 +57,7 @@ export function findBerries(tick: PersonTick): GatherJob | null {
   return new GatherJob(tick, bush);
 }
 
-export class GatherJob implements Job {
+class GatherJob implements Job {
   readonly claimedPlant: number;
   readonly kind = "gather";
   readonly #errand = new Errand(GATHERING_SECONDS, "gather");

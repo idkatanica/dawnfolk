@@ -1,7 +1,7 @@
 import { ANIMAL_KINDS } from "../content/animals.ts";
 import { BUILDINGS } from "../content/buildings.ts";
 import { technologyDefinition } from "../content/technologies.ts";
-import { WEATHER } from "../content/weather.ts";
+import { saturate } from "../shared/math.ts";
 import {
   ANIMAL_STRIDE,
   AnimalField,
@@ -35,7 +35,7 @@ import { SNOW_CAPACITY, type WorldState } from "./world/world-state.ts";
 const BYTE = 255;
 
 function toByte(value: number): number {
-  return Math.round(Math.min(1, Math.max(0, value)) * BYTE);
+  return Math.round(saturate(value) * BYTE);
 }
 
 export function packSurfaceRows(world: WorldState, runs: readonly RowRun[]): PackedRows[] {
@@ -58,6 +58,54 @@ export function packSurfaceRows(world: WorldState, runs: readonly RowRun[]): Pac
 
     return { data, firstRow: run.firstRow, rowCount: run.rowCount };
   });
+}
+
+export function keepChangedRows(runs: readonly PackedRows[], sent: Uint8Array, bytesPerRow: number): PackedRows[] {
+  const changed: PackedRows[] = [];
+
+  for (const run of runs) {
+    let firstChanged = -1;
+
+    for (let row = 0; row <= run.rowCount; row += 1) {
+      const isChanged = row < run.rowCount && !isRowSent(run, row, sent, bytesPerRow);
+
+      if (isChanged && firstChanged === -1) {
+        firstChanged = row;
+      }
+
+      if (!isChanged && firstChanged !== -1) {
+        changed.push(sliceRows(run, firstChanged, row, bytesPerRow));
+        firstChanged = -1;
+      }
+    }
+  }
+
+  for (const run of changed) {
+    sent.set(run.data, run.firstRow * bytesPerRow);
+  }
+
+  return changed;
+}
+
+function isRowSent(run: PackedRows, row: number, sent: Uint8Array, bytesPerRow: number): boolean {
+  const offset = row * bytesPerRow;
+  const sentOffset = (run.firstRow + row) * bytesPerRow;
+
+  for (let position = 0; position < bytesPerRow; position += 1) {
+    if (run.data[offset + position] !== sent[sentOffset + position]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function sliceRows(run: PackedRows, firstRow: number, endRow: number, bytesPerRow: number): PackedRows {
+  return {
+    data: run.data.slice(firstRow * bytesPerRow, endRow * bytesPerRow),
+    firstRow: run.firstRow + firstRow,
+    rowCount: endRow - firstRow,
+  };
 }
 
 export function packGroundRows(world: WorldState, runs: readonly RowRun[]): PackedRows[] {
@@ -139,8 +187,9 @@ export function packPeople(people: readonly Person[]): Float32Array {
   const buffer = new Float32Array(people.length * PERSON_STRIDE);
 
   for (const [index, person] of people.entries()) {
-    const offset = index * PERSON_STRIDE;
     const { mover } = person;
+
+    const offset = index * PERSON_STRIDE;
 
     buffer[offset + PersonField.Id] = person.id;
     buffer[offset + PersonField.X] = mover.x;
@@ -165,8 +214,9 @@ export function packAnimals(animals: readonly Animal[]): Float32Array {
   const buffer = new Float32Array(animals.length * ANIMAL_STRIDE);
 
   for (const [index, animal] of animals.entries()) {
-    const offset = index * ANIMAL_STRIDE;
     const { mover } = animal;
+
+    const offset = index * ANIMAL_STRIDE;
 
     buffer[offset + AnimalField.Id] = animal.id;
     buffer[offset + AnimalField.X] = mover.x;
@@ -242,7 +292,7 @@ export function describeWeather(weather: WeatherSystem, environment: Environment
     fog: state.fog,
     isAutomatic: state.isAutomatic,
     kind: state.kind,
-    name: WEATHER[state.kind].name,
+    name: weather.name,
     precipitation: state.precipitation,
     storm: state.storm,
     userTemperatureOffset: state.userTemperatureOffset,

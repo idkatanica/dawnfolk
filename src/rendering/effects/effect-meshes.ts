@@ -31,7 +31,7 @@ export interface RibbonPoint {
   readonly width: number;
 }
 
-export function buildRibbonGeometry(strands: readonly (readonly RibbonPoint[])[]): BufferGeometry {
+function buildRibbonGeometry(strands: readonly (readonly RibbonPoint[])[]): BufferGeometry {
   const points: number[] = [];
   const tangents: number[] = [];
   const sides: number[] = [];

@@ -3,7 +3,7 @@ import { useId } from "react";
 import { cn } from "./cn.ts";
 import { useHeldDraft } from "./use-held-draft.ts";
 
-export interface RangeFieldProps {
+interface RangeFieldProps {
   readonly className?: string | undefined;
   readonly description?: string | undefined;
   readonly label: string;
@@ -18,10 +18,10 @@ export interface RangeFieldProps {
 function useHeldRange(value: number, onChange: (value: number) => void) {
   const [shown, hold] = useHeldDraft(value);
 
-  const change = (next: number) => {
+  function change(next: number): void {
     hold(next);
     onChange(next);
-  };
+  }
 
   return { change, shown };
 }
@@ -65,7 +65,7 @@ export function RangeField({
 
             <Slider.Thumb
               aria-label={label}
-              className="pointer-coarse:size-6 size-4.5 select-none rounded-full bg-white shadow-thumb ring-2 ring-dawn transition-[scale] duration-100 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-dawn/40 data-dragging:scale-110"
+              className="pointer-coarse:size-6 size-4.5 select-none rounded-full bg-white ring-2 ring-dawn transition-[scale] duration-100 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-dawn/40 data-dragging:scale-110"
             />
           </Slider.Track>
         </Slider.Control>

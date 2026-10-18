@@ -1,5 +1,5 @@
 import { Ground } from "../../content/grounds.ts";
-import { FULL_TURN } from "../../shared/math.ts";
+import { distanceSquared, FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
 import type { Waypoint } from "../agents/navigation.ts";
@@ -18,7 +18,7 @@ const ORTHOGONAL_STEPS: readonly (readonly [number, number])[] = [
   [0, -1],
 ];
 
-export interface PlantSearch {
+interface PlantSearch {
   accepts: (plant: number) => boolean;
   radius: number;
   x: number;
@@ -66,6 +66,7 @@ export function nearestPlant(world: WorldState, search: PlantSearch): number | n
 
 function ringCells(world: WorldState, centerColumn: number, centerRow: number, ring: number): number[] {
   const { grid } = world;
+
   const cells: number[] = [];
 
   for (let rowOffset = -ring; rowOffset <= ring; rowOffset += 1) {
@@ -93,10 +94,10 @@ function nearerPlantInCell(world: WorldState, cell: number, search: PlantSearch,
   let result = nearest;
 
   for (let plant = vegetation.firstPlantInCell(cell); plant !== NO_PLANT; plant = vegetation.nextPlantInCell(plant)) {
-    const distanceSquared = (vegetation.x[plant] - search.x) ** 2 + (vegetation.z[plant] - search.z) ** 2;
+    const squaredDistance = distanceSquared(search.x, search.z, vegetation.x[plant], vegetation.z[plant]);
 
-    if (distanceSquared < result.distanceSquared && search.accepts(plant)) {
-      result = { distanceSquared, plant };
+    if (squaredDistance < result.distanceSquared && search.accepts(plant)) {
+      result = { distanceSquared: squaredDistance, plant };
     }
   }
 

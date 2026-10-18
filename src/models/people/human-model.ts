@@ -216,13 +216,13 @@ export function appearanceParts(appearance: PersonAppearance): HumanPart[] {
 
 export function activityParts(pose: PersonPose, carried: CarriedItem): HumanPart[] {
   const { tool } = HUMAN_CLIPS[pose];
+
+  const carriedPart = CARRIED_PARTS[carried];
   const parts: HumanPart[] = [];
 
   if (tool !== null) {
     parts.push(TOOL_PARTS[tool]);
   }
-
-  const carriedPart = CARRIED_PARTS[carried];
 
   if (pose === "carry" && carriedPart !== null) {
     parts.push(carriedPart);

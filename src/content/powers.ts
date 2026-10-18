@@ -3,9 +3,9 @@ import { choiceParameter, rangeParameter, toggleParameter } from "./parameters.t
 
 export type PowerCategory = "elements" | "land" | "life" | "observe";
 
-export type PowerUsage = "brush" | "inspect" | "point";
+type PowerUsage = "brush" | "inspect" | "point";
 
-export interface PowerDefinition {
+interface PowerDefinition {
   category: PowerCategory;
   description: string;
   name: string;
@@ -13,7 +13,7 @@ export interface PowerDefinition {
   usage: PowerUsage;
 }
 
-export interface PowerCategoryDefinition {
+interface PowerCategoryDefinition {
   id: PowerCategory;
   name: string;
 }

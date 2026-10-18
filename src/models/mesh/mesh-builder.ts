@@ -18,18 +18,18 @@ export interface SurfacePoint {
   readonly position: Vector3;
 }
 
-export type ChannelValue = number | ((point: SurfacePoint) => number);
+type ChannelValue = number | ((point: SurfacePoint) => number);
 
 export type VertexStyle = Partial<Readonly<Record<VertexChannel, ChannelValue>>>;
 
-export interface Placement {
+interface Placement {
   readonly style?: VertexStyle;
   readonly transform?: Matrix4;
 }
 
 const IDENTITY = new Matrix4();
 
-function resolveChannel(value: ChannelValue | undefined, fallback: number, point: SurfacePoint): number {
+export function resolveChannel(value: ChannelValue | undefined, fallback: number, point: SurfacePoint): number {
   if (value === undefined) {
     return fallback;
   }
@@ -65,10 +65,6 @@ export class MeshBuilder {
 
   constructor(baseStyle: VertexStyle = {}) {
     this.#baseStyle = baseStyle;
-  }
-
-  get vertexCount(): number {
-    return this.#vertexCount;
   }
 
   add(shape: Shape, placement: Placement = {}): void {
@@ -110,12 +106,11 @@ export class MeshBuilder {
       const normal = new Vector3(mesh.normals[offset], mesh.normals[offset + 1], mesh.normals[offset + 2])
         .applyMatrix3(normalMatrix)
         .normalize();
+      const point = { along: 0, around: 0, local, normal, position };
 
       this.#pushVertex(position, normal);
 
       for (const channel of VERTEX_CHANNELS) {
-        const point = { along: 0, around: 0, local, normal, position };
-
         this.#channels[channel].push(resolveChannel(style[channel], mesh.channels[channel][index], point));
       }
     }

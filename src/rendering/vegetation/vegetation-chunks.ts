@@ -22,7 +22,7 @@ export interface VegetationChunk {
   readonly plants: Set<number>;
 }
 
-export function bucketOf(species: number, variant: number): number {
+function bucketOf(species: number, variant: number): number {
   return species * PLANT_VARIANT_COUNT + variant;
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createNoiseSampler } from "./noise.ts";
-import { createRandom, restoreRandom } from "./random.ts";
+import { createRandom } from "./random.ts";
 
 describe("seeded random", () => {
   it("repeats the same sequence for the same seed", () => {
@@ -23,16 +23,6 @@ describe("seeded random", () => {
       expect(whole).toBeLessThan(6);
       expect(Number.isInteger(whole)).toBe(true);
     }
-  });
-
-  it("restores from a saved state", () => {
-    const random = createRandom(99);
-
-    random.next();
-
-    const restored = restoreRandom(random.saveState());
-
-    expect(restored.next()).toBe(random.next());
   });
 
   it("derives independent streams deterministically", () => {

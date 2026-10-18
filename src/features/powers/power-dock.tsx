@@ -16,13 +16,16 @@ function usePowerSelection(powerId: PowerId) {
   const isSelected = usePowerStore((state) => state.selectedPowerId === powerId);
   const selectPower = usePowerStore((state) => state.selectPower);
 
-  const toggle = () => selectPower(isSelected ? null : powerId);
+  function toggle(): void {
+    selectPower(isSelected ? null : powerId);
+  }
 
   return { isSelected, toggle };
 }
 
 function PowerTile({ powerId }: { readonly powerId: PowerId }) {
   const { isSelected, toggle } = usePowerSelection(powerId);
+
   const power = POWERS[powerId];
   const Icon = POWER_ICONS[powerId];
 
@@ -31,7 +34,7 @@ function PowerTile({ powerId }: { readonly powerId: PowerId }) {
       <button
         aria-pressed={isSelected}
         className={cn(TILE_CLASS, {
-          "bg-dawn text-white shadow-thumb hover:bg-dawn-strong hover:text-white": isSelected,
+          "bg-dawn text-white hover:bg-dawn-strong hover:text-white": isSelected,
         })}
         onClick={toggle}
         type="button"
@@ -48,7 +51,9 @@ function useClearPower() {
   const isSelecting = usePowerStore((state) => state.selectedPowerId === null);
   const selectPower = usePowerStore((state) => state.selectPower);
 
-  const clearPower = () => selectPower(null);
+  function clearPower(): void {
+    selectPower(null);
+  }
 
   return { clearPower, isSelecting };
 }
@@ -75,7 +80,7 @@ function SelectTile() {
 function CategoryTab({ category }: { readonly category: (typeof DOCK_CATEGORIES)[number] }) {
   return (
     <Tabs.Tab
-      className="h-7 rounded-full px-3 font-semibold text-ink-muted text-xs uppercase tracking-wider outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink data-active:shadow-thumb"
+      className="h-7 rounded-full px-3 font-semibold text-ink-muted text-xs uppercase tracking-wider outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink"
       value={category.id}
     >
       {category.name}
@@ -105,17 +110,15 @@ function useCategory() {
   const category = usePowerStore((state) => state.category);
   const setCategory = usePowerStore((state) => state.setCategory);
 
-  const changeCategory = (next: PowerCategory) => setCategory(next);
-
-  return { category, changeCategory };
+  return { category, setCategory };
 }
 
 export function PowerDock({ className }: { readonly className?: string | undefined }) {
-  const { category, changeCategory } = useCategory();
+  const { category, setCategory } = useCategory();
 
   return (
     <Island className={cn("max-w-full", className)}>
-      <Tabs.Root className="flex flex-col gap-2 p-2" onValueChange={changeCategory} value={category}>
+      <Tabs.Root className="flex flex-col gap-2 p-2" onValueChange={setCategory} value={category}>
         <Tabs.List aria-label="Kinds of powers" className="flex items-center justify-center gap-1">
           {DOCK_CATEGORIES.map((entry) => (
             <CategoryTab category={entry} key={entry.id} />

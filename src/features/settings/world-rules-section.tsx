@@ -11,6 +11,8 @@ const RULE_GROUPS = describeParameterGroups(worldRulesSchema);
 
 type RuleValues = Readonly<Record<string, Readonly<Record<string, unknown>>>>;
 
+type RuleChange = (groupKey: string, fieldKey: string, value: ParameterValue) => void;
+
 function ruleValue(rules: RuleValues, groupKey: string, fieldKey: string): ParameterValue | undefined {
   const value = rules[groupKey]?.[fieldKey];
 
@@ -27,12 +29,12 @@ function useWorldRules() {
 
   const [rules, holdRules] = useHeldDraft(confirmedRules);
 
-  const applyRules = (next: WorldRules) => {
+  function applyRules(next: WorldRules): void {
     holdRules(next);
     send({ rules: next, type: "setWorldRules" });
-  };
+  }
 
-  const changeRule = (groupKey: string, fieldKey: string, value: ParameterValue) => {
+  function changeRule(groupKey: string, fieldKey: string, value: ParameterValue): void {
     if (rules === undefined) {
       return;
     }
@@ -40,17 +42,16 @@ function useWorldRules() {
     const groups: RuleValues = rules;
 
     applyRules(readWorldRules({ ...groups, [groupKey]: { ...groups[groupKey], [fieldKey]: value } }));
-  };
+  }
 
-  const resetRules = () => applyRules(DEFAULT_WORLD_RULES);
+  function resetRules(): void {
+    applyRules(DEFAULT_WORLD_RULES);
+  }
 
   return { changeRule, resetRules, rules };
 }
 
-function useRuleChange(
-  groupKey: string,
-  onChange: (groupKey: string, fieldKey: string, value: ParameterValue) => void
-) {
+function useRuleChange(groupKey: string, onChange: RuleChange) {
   return (key: string, value: ParameterValue) => onChange(groupKey, key, value);
 }
 
@@ -62,7 +63,7 @@ function RuleControl({
 }: {
   readonly field: ParameterField;
   readonly group: ParameterGroupField;
-  readonly onChange: (groupKey: string, fieldKey: string, value: ParameterValue) => void;
+  readonly onChange: RuleChange;
   readonly rules: WorldRules;
 }) {
   const handleChange = useRuleChange(group.key, onChange);
@@ -76,7 +77,7 @@ function RuleGroup({
   rules,
 }: {
   readonly group: ParameterGroupField;
-  readonly onChange: (groupKey: string, fieldKey: string, value: ParameterValue) => void;
+  readonly onChange: RuleChange;
   readonly rules: WorldRules;
 }) {
   return (

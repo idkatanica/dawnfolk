@@ -1,6 +1,5 @@
 import { Frustum, Matrix4, type PerspectiveCamera, Scene, type Vector3, type WebGPURenderer } from "three/webgpu";
 import type { WorldMirror } from "../game/world-mirror.ts";
-import { clamp } from "../shared/math.ts";
 import type { SimulationEffect } from "../simulation/effects.ts";
 import { AgentDots } from "./agents/agent-dots.ts";
 import type { AgentViewInput } from "./agents/agent-view-input.ts";
@@ -12,7 +11,13 @@ import { EffectView } from "./effects/effect-view.ts";
 import { FireGlow } from "./effects/fire-glow.ts";
 import { FireView } from "./effects/fire-view.ts";
 import { GroundRing } from "./effects/ground-ring.ts";
-import { precipitationOf, WeatherParticles } from "./effects/weather-particles.ts";
+import { RainSplashes } from "./effects/rain-splashes.ts";
+import {
+  type Precipitation,
+  precipitationOf,
+  precipitationStrength,
+  WeatherParticles,
+} from "./effects/weather-particles.ts";
 import { createRenderOutput, type RenderOutput } from "./render-output.ts";
 import type { RenderQuality } from "./render-quality.ts";
 import { BuildingView } from "./structures/building-view.ts";
@@ -27,7 +32,7 @@ import { WaterfallView } from "./water/waterfall-view.ts";
 import { type Wind, windOf } from "./wind.ts";
 import { WorldChangeReader } from "./world-changes.ts";
 
-export interface RenderView {
+interface RenderView {
   readonly camera: PerspectiveCamera;
   readonly effects: readonly SimulationEffect[];
   readonly focus: Vector3;
@@ -37,6 +42,7 @@ export interface RenderView {
 }
 
 const CLOUD_SEA_DEPTH = 760;
+const WATER_DRIFT = 0.08;
 
 const SELECTION_COLOR = 0xff_f2_c8;
 
@@ -47,9 +53,9 @@ const SELECTION_RADIUS: Readonly<Record<"animal" | "building" | "cell" | "person
   person: 1.1,
 };
 
-export type ShakeListener = (amount: number, x: number, z: number) => void;
+type ShakeListener = (amount: number, x: number, z: number) => void;
 
-export interface WorldRendererOptions {
+interface WorldRendererOptions {
   readonly camera: PerspectiveCamera;
   readonly mirror: WorldMirror;
   readonly onShake: ShakeListener;
@@ -78,6 +84,7 @@ export class WorldRenderer {
   readonly #people = new PeopleView();
   readonly #quality: RenderQuality;
   readonly #selectionRing: GroundRing;
+  readonly #splashes: RainSplashes;
   readonly #terrain: TerrainView;
   readonly #textures: TerrainTextures;
   readonly #vegetation: VegetationView;
@@ -109,6 +116,7 @@ export class WorldRenderer {
     this.#fire = new FireView({ axes: this.#axes, chunks: this.#vegetation.chunks });
     this.#dots = new AgentDots(this.#axes);
     this.#weather = new WeatherParticles(this.#axes);
+    this.#splashes = new RainSplashes(this.#textures, mirror.grid);
 
     this.#effects = new EffectView({
       axes: this.#axes,
@@ -137,6 +145,7 @@ export class WorldRenderer {
       this.#selectionRing.mesh,
       this.#fire.group,
       this.#effects.group,
+      this.#splashes.mesh,
       this.#weather.mesh
     );
 
@@ -165,6 +174,7 @@ export class WorldRenderer {
     }
 
     const wind = windOf(frame.weather);
+    const form = this.#precipitationAt(view.focus);
 
     this.#atmosphere.update(
       {
@@ -174,6 +184,7 @@ export class WorldRenderer {
         hours: frame.calendar.hours,
         precipitation: frame.weather.precipitation,
         season: frame.calendar.season,
+        snowfall: form === "snow" ? frame.weather.precipitation : 0,
         storm: frame.weather.storm,
         windX: wind.directionX * wind.metersPerSecond,
         windZ: wind.directionZ * wind.metersPerSecond,
@@ -183,8 +194,8 @@ export class WorldRenderer {
       view.realSeconds
     );
 
-    this.#paintWater(wind);
-    this.#blowWind(wind);
+    this.#paintWater(wind, view.realSeconds);
+    this.#vegetation.weather.blow(wind.directionX, wind.directionZ, wind.metersPerSecond, view.realSeconds);
     view.camera.updateMatrixWorld();
     this.#terrain.update(view.camera, this.#quality.terrainDetail);
     this.#water.update(view.camera, this.#quality.terrainDetail, this.#terrain.patchLevels);
@@ -192,25 +203,25 @@ export class WorldRenderer {
     this.#grass.update(view.camera, view.viewDistance);
     this.#updateAgents(view);
     this.#markSelection();
-    this.#updateEffects(view, wind);
+    this.#updateEffects(view, wind, form);
     this.#output.render();
   }
 
-  #paintWater(wind: Wind): void {
+  #paintWater(wind: Wind, realSeconds: number): void {
     const { look } = this.#water;
     const { palette } = this.#atmosphere;
 
     look.horizonColor.value.setHex(palette.horizon);
     look.zenithColor.value.setHex(palette.zenith);
     look.daylight.value = this.#atmosphere.daylight;
-    look.windDrift.value.set(wind.directionX, wind.directionZ).multiplyScalar(wind.metersPerSecond * 0.08);
+    look.windTravel.value.x += wind.directionX * wind.metersPerSecond * WATER_DRIFT * realSeconds;
+    look.windTravel.value.y += wind.directionZ * wind.metersPerSecond * WATER_DRIFT * realSeconds;
   }
 
   #updateAgents(view: RenderView): void {
     const mirror = this.#mirror;
-    const { camera } = view;
-
     const { frame } = mirror;
+    const { camera } = view;
 
     this.#frustum.setFromProjectionMatrix(
       this.#matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
@@ -234,7 +245,7 @@ export class WorldRenderer {
     this.#buildings.update(input);
   }
 
-  #updateEffects(view: RenderView, wind: Wind): void {
+  #updateEffects(view: RenderView, wind: Wind, form: Precipitation): void {
     const { weather } = this.#mirror.frame;
     const darkness = 1 - this.#atmosphere.daylight;
 
@@ -246,12 +257,35 @@ export class WorldRenderer {
     this.#fire.update(this.#mirror, view.camera, darkness);
     this.#effects.add(view.effects);
     this.#effects.update(view.realSeconds);
+
+    const brightness = 0.25 + this.#atmosphere.daylight * 0.75;
+    const rainfall = form === "rain" ? precipitationStrength(weather.precipitation) : 0;
+
+    this.#splashes.update(rainfall, brightness, {
+      camera: view.camera,
+      focusX: view.focus.x,
+      focusZ: view.focus.z,
+      viewDistance: view.viewDistance,
+    });
     this.#weather.update(
-      weather.precipitation,
-      precipitationOf(weather.kind),
-      wind.directionX * wind.metersPerSecond,
-      wind.directionZ * wind.metersPerSecond
+      {
+        brightness,
+        form,
+        precipitation: weather.precipitation,
+        windX: wind.directionX * wind.metersPerSecond,
+        windZ: wind.directionZ * wind.metersPerSecond,
+      },
+      view
     );
+  }
+
+  #precipitationAt(focus: Vector3): Precipitation {
+    const { frame, grid, terrain } = this.#mirror;
+    const cell = grid.cellAt(focus.x, focus.z);
+
+    const ground = cell < 0 ? 0 : terrain.baseTemperature[cell];
+
+    return precipitationOf(frame.weather.kind, ground + frame.weather.airTemperatureOffset);
   }
 
   #markSelection(): void {
@@ -266,17 +300,11 @@ export class WorldRenderer {
     this.#selectionRing.show(inspection.x, inspection.z, SELECTION_RADIUS[inspection.kind], SELECTION_COLOR, 0.9);
   }
 
-  #blowWind(wind: Wind): void {
-    const { weather } = this.#vegetation;
-
-    weather.gust.value = clamp(wind.metersPerSecond / 7, 0.12, 2);
-    weather.wind.value.set(wind.directionX, wind.directionZ);
-  }
-
   dispose(): void {
     this.#fire.dispose();
     this.#effects.dispose();
     this.#weather.dispose();
+    this.#splashes.dispose();
     this.cursor.dispose();
     this.#selectionRing.dispose();
     this.#people.dispose();

@@ -1,7 +1,7 @@
 import { lerp } from "../shared/math.ts";
 import type { RandomSource } from "../shared/random.ts";
 
-export interface HydraulicErosionOptions {
+interface HydraulicErosionOptions {
   brushRadius: number;
   capacity: number;
   depositionSpeed: number;

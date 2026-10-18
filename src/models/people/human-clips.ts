@@ -1,6 +1,6 @@
 import type { AgeGroup } from "../../content/life-stages.ts";
 import type { CarriedItem, PersonPose } from "../../world/agent-poses.ts";
-import { arc, cosineWave, degrees, keyframes, pulse, wave } from "../rig/curves.ts";
+import { arc, cosineWave, degrees, type Keyframe, keyframes, pulse, wave } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
 import type { MotionStyle } from "./appearance.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
@@ -14,9 +14,9 @@ export interface HumanClipContext {
   readonly motion: MotionStyle;
 }
 
-export type ClipTiming = { readonly kind: "seconds"; readonly cycleSeconds: number } | { readonly kind: "stride" };
+type ClipTiming = { readonly kind: "seconds"; readonly cycleSeconds: number } | { readonly kind: "stride" };
 
-export interface HumanClip {
+interface HumanClip {
   readonly apply: (pose: Pose, phase: number, context: HumanClipContext) => void;
   readonly timing: ClipTiming;
   readonly tool: HumanTool | null;
@@ -211,7 +211,7 @@ function gather(pose: Pose, phase: number, context: HumanClipContext): void {
   stoop(pose, context);
 }
 
-const CHOP_SHOULDER: readonly (readonly [number, number])[] = [
+const CHOP_SHOULDER: readonly Keyframe[] = [
   [0, 160],
   [0.34, 168],
   [0.5, 38],
@@ -219,7 +219,7 @@ const CHOP_SHOULDER: readonly (readonly [number, number])[] = [
   [0.8, 90],
 ];
 
-const CHOP_ELBOW: readonly (readonly [number, number])[] = [
+const CHOP_ELBOW: readonly Keyframe[] = [
   [0, 52],
   [0.34, 58],
   [0.5, 12],
@@ -227,7 +227,7 @@ const CHOP_ELBOW: readonly (readonly [number, number])[] = [
   [0.8, 40],
 ];
 
-const CHOP_BEND: readonly (readonly [number, number])[] = [
+const CHOP_BEND: readonly Keyframe[] = [
   [0, -8],
   [0.34, -10],
   [0.5, 18],

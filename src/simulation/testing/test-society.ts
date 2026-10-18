@@ -18,7 +18,7 @@ import { createVegetatedWorld, type TestWorldOptions } from "./test-world.ts";
 
 const TICK_SECONDS = 0.1;
 
-export interface SocietyHarnessOptions {
+interface SocietyHarnessOptions {
   day: number;
   rules: WorldRules;
   seed: number;

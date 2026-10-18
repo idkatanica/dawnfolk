@@ -2,7 +2,6 @@ import type { PowerId } from "../content/powers.ts";
 import type { WeatherKind } from "../content/weather.ts";
 import { DEFAULT_WORLD_RULES, readWorldRules, type WorldRules } from "../content/world-rules.ts";
 import {
-  DEFAULT_GENERATION_OPTIONS,
   type GeneratedWorld,
   type GenerationOptions,
   type GenerationProgress,
@@ -27,7 +26,7 @@ import { SurfaceSystem } from "./nature/surface.ts";
 import { VegetationGrowthSystem } from "./nature/vegetation-growth.ts";
 import { WeatherSystem } from "./nature/weather.ts";
 import { naturalStrikeSite, strikeLightning } from "./powers/catastrophes.ts";
-import type { PowerServices } from "./powers/power-handler.ts";
+import { type PowerOutcome, type PowerServices, percent } from "./powers/power-handler.ts";
 import { applyPower, parsePowerParameters } from "./powers/power-registry.ts";
 import { type BuildingIncidentKind, BuildingSystem } from "./society/buildings.ts";
 import { SocietySystem } from "./society/society.ts";
@@ -170,14 +169,18 @@ export class Simulation {
 
   static generate(
     seed: number,
-    options: GenerationOptions = DEFAULT_GENERATION_OPTIONS,
-    onProgress: (progress: GenerationProgress) => void = () => undefined
+    options: GenerationOptions,
+    onProgress: (progress: GenerationProgress) => void
   ): Simulation {
     return new Simulation(generateWorld(seed, options, onProgress));
   }
 
   get environment(): Environment {
     return this.services.environment;
+  }
+
+  get isBusy(): boolean {
+    return this.#tasks.length > 0 || this.#stroke !== null || this.waterRecomputation.isPending;
   }
 
   get isPaused(): boolean {
@@ -230,9 +233,11 @@ export class Simulation {
   execute(command: unknown): void {
     const parsed = readCommand(command);
 
-    if (parsed !== null) {
-      runCommand(this, parsed.type, parsed);
+    if (parsed === null) {
+      return;
     }
+
+    runCommand(this, parsed.type, parsed);
   }
 
   usePower(powerId: PowerId, x: number, z: number, values: unknown): void {
@@ -405,7 +410,7 @@ export class Simulation {
     return tribe !== null;
   }
 
-  #recordOutcome(outcome: ReturnType<typeof applyPower>): void {
+  #recordOutcome(outcome: PowerOutcome): void {
     if (outcome.kind === "refused") {
       this.#notices.push(outcome.reason);
     }
@@ -491,22 +496,17 @@ export class Simulation {
       return;
     }
 
-    const ignitionChance = this.services.rules.storms.lightningIgnition / 100;
+    const ignitionChance = percent(this.services.rules.storms.lightningIgnition);
 
     strikeLightning({ ignitionChance, isNatural: true, x: site.x, z: site.z }, this.services);
   }
 
   #updateNature(days: number, environment: Environment): void {
     const { rules } = this.services;
-    const conditions = {
-      airTemperatureOffset: environment.airTemperatureOffset,
-      day: environment.day,
-      drought: environment.drought,
-    };
 
     this.fire.setWind(environment.windX, environment.windZ, environment.windSpeed, rules);
 
-    for (const cell of this.fire.update(TICK_SECONDS, conditions, rules, this.random)) {
+    for (const cell of this.fire.update(TICK_SECONDS, environment, rules, this.random)) {
       this.#launchEmber(cell, environment);
     }
 

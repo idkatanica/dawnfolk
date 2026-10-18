@@ -3,13 +3,14 @@ import type { RenderQuality } from "./render-quality.ts";
 
 export type GraphicsBackend = "webgl" | "webgpu";
 
-export interface CreatedRenderer {
+interface CreatedRenderer {
   readonly backend: GraphicsBackend;
   readonly renderer: WebGPURenderer;
 }
 
 export async function createRenderer(canvas: HTMLCanvasElement, quality: RenderQuality): Promise<CreatedRenderer> {
   const renderer = new WebGPURenderer({
+    alpha: false,
     antialias: quality.hasAntialias,
     canvas,
     powerPreference: "high-performance",

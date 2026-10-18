@@ -71,7 +71,7 @@ export class WaterRecomputation {
 
   #settleWater(): void {
     const world = this.#world;
-    const { fields } = this.#world;
+    const { fields } = world;
 
     for (let cell = 0; cell < world.grid.cellCount; cell += 1) {
       if (world.touchesWater(cell)) {

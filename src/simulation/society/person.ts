@@ -53,7 +53,7 @@ export interface Person {
   warmth: number;
 }
 
-export interface PersonBirth {
+interface PersonBirth {
   age: number;
   id: number;
   isFemale: boolean;

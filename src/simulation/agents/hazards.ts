@@ -1,3 +1,4 @@
+import { FULL_TURN } from "../../shared/math.ts";
 import type { WorldState } from "../world/world-state.ts";
 import type { Waypoint } from "./navigation.ts";
 
@@ -6,7 +7,7 @@ const FIRE_NEAR_CAMP = 0.2;
 const CAMP_WATCH_DIRECTIONS = 24;
 const COARSE_SCAN_RADIUS_CELLS = 8;
 
-export interface DangerZone {
+interface DangerZone {
   radius: number;
   remainingSeconds: number;
   x: number;
@@ -19,10 +20,6 @@ export class HazardMap {
 
   constructor(world: WorldState) {
     this.#world = world;
-  }
-
-  get zones(): readonly DangerZone[] {
-    return this.#zones;
   }
 
   addZone(zone: DangerZone): void {
@@ -93,7 +90,7 @@ export class HazardMap {
 
   isFireAround(x: number, z: number): boolean {
     for (let direction = 0; direction < CAMP_WATCH_DIRECTIONS; direction += 1) {
-      const angle = (direction / CAMP_WATCH_DIRECTIONS) * Math.PI * 2;
+      const angle = (direction / CAMP_WATCH_DIRECTIONS) * FULL_TURN;
       const distance = 60 + (direction % 3) * 90;
 
       if (this.#isBurningAt(x + Math.cos(angle) * distance, z + Math.sin(angle) * distance)) {

@@ -2,7 +2,7 @@ import type { Triple } from "../mesh/transforms.ts";
 
 export const NO_PARENT = -1;
 
-export type RotationOrder = "limb" | "trunk";
+type RotationOrder = "limb" | "trunk";
 
 export interface BoneDefinition {
   readonly joint: Triple;
@@ -18,7 +18,7 @@ export interface ContactPoint {
 
 export type Grounding = "body" | "feet";
 
-export interface SkeletonDefinition {
+interface SkeletonDefinition {
   readonly bodyContacts: readonly ContactPoint[];
   readonly bones: readonly BoneDefinition[];
   readonly footContacts: readonly ContactPoint[];

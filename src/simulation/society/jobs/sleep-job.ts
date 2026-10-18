@@ -3,9 +3,9 @@ import type { PersonTick } from "../society-context.ts";
 import { sleepingSpot } from "../tribe-places.ts";
 import { headTo, type Job, standStill, walk } from "./job.ts";
 
-type SleepPhase = "asleep" | "travel";
-
 const WAKING_HOUR = 12;
+
+type SleepPhase = "asleep" | "travel";
 
 export class SleepJob implements Job {
   readonly kind = "sleep";
@@ -15,10 +15,6 @@ export class SleepJob implements Job {
     const { buildings, random } = tick.context;
 
     headTo(tick.person, sleepingSpot(tick.person, tick.tribe, buildings, random), tick.context);
-  }
-
-  get isAsleep(): boolean {
-    return this.#phase === "asleep";
   }
 
   update(tick: PersonTick): Job | null {

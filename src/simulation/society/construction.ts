@@ -1,7 +1,7 @@
 import { BUILDINGS, type BuildingKind } from "../../content/buildings.ts";
 import { Ground, groundDefinition } from "../../content/grounds.ts";
 import { FULL_TURN } from "../../shared/math.ts";
-import type { Waypoint } from "../agents/navigation.ts";
+import { aroundPoint, type Waypoint } from "../agents/navigation.ts";
 import { NO_BUILDING } from "../world/world-state.ts";
 import type { Building, BuildingLoss } from "./buildings.ts";
 import type { SocietyContext } from "./society-context.ts";
@@ -83,6 +83,7 @@ export function plannedBuilding(tribe: Tribe, context: SocietyContext): Building
 
 function nextBuildingPlan(tribe: Tribe, context: SocietyContext): BuildingPlan | null {
   const { buildings } = context;
+
   const shelterCount = tribe.buildings.shelterIds.length;
 
   if (knows(tribe, "fire") && buildings.find(tribe.buildings.campfireId) === null) {
@@ -141,7 +142,7 @@ function placeBuilding(tribe: Tribe, plan: BuildingPlan, context: SocietyContext
     const angle = random.next() * FULL_TURN;
     const distance = random.between(plan.nearest, plan.farthest);
 
-    const spot = { x: tribe.campX + Math.cos(angle) * distance, z: tribe.campZ + Math.sin(angle) * distance };
+    const spot = aroundPoint({ x: tribe.campX, z: tribe.campZ }, distance, angle);
 
     if (isBuildable(spot, plan.kind, context)) {
       return startBuilding(tribe, plan.kind, spot, context);
@@ -167,6 +168,7 @@ function isBuildable(spot: Waypoint, kind: BuildingKind, context: SocietyContext
 
 function startBuilding(tribe: Tribe, kind: BuildingKind, spot: Waypoint, context: SocietyContext): Building {
   const { stone, wood } = BUILDINGS[kind];
+
   const rotation = Math.atan2(tribe.campX - spot.x, tribe.campZ - spot.z);
 
   const site = context.buildings.add({ kind, rotation, tribeId: tribe.id, x: spot.x, z: spot.z }, context.random);

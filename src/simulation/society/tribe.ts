@@ -13,7 +13,7 @@ const NEVER = Number.NEGATIVE_INFINITY;
 
 export type ScarceResource = "berries" | "fish" | "game" | "stone" | "wood";
 
-export interface Stock {
+interface Stock {
   food: number;
   stone: number;
   wood: number;
@@ -25,7 +25,7 @@ export interface Field {
   tending: number;
 }
 
-export interface TribeBuildings {
+interface TribeBuildings {
   campfireId: number | null;
   constructionSiteId: number | null;
   shelterIds: number[];
@@ -33,7 +33,7 @@ export interface TribeBuildings {
   totemId: number | null;
 }
 
-export interface TribeTimers {
+interface TribeTimers {
   birthDays: number;
   cropDays: number;
   dailyDays: number;
@@ -64,7 +64,7 @@ export interface Tribe {
   timers: TribeTimers;
 }
 
-export interface TribeFounding {
+interface TribeFounding {
   campX: number;
   campZ: number;
   day: number;

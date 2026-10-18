@@ -1,5 +1,5 @@
 import { lerp, smoothstep } from "../../shared/math.ts";
-import { createVolumeNoise, type VolumeNoise } from "../../shared/noise.ts";
+import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder } from "../mesh/mesh-builder.ts";
@@ -16,7 +16,7 @@ const HEAD_CROWN = 1.753;
 
 const HAIR = { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Hair };
 
-const HAIR_NOISE: VolumeNoise = createVolumeNoise(createRandom(911));
+const HAIR_NOISE = createVolumeNoise(createRandom(911));
 
 const HEAD_PROFILE: readonly LoftSection[] = [
   { centerZ: 0.03, radiusX: 0.062, radiusZ: 0.07, y: 1.545 },
@@ -38,9 +38,10 @@ function headSectionAt(y: number): LoftSection {
   const lower = HEAD_PROFILE[upperIndex - 1];
   const upper = HEAD_PROFILE[upperIndex];
 
-  const amount = (y - lower.y) / (upper.y - lower.y);
   const { centerZ: lowerCenter = 0 } = lower;
   const { centerZ: upperCenter = 0 } = upper;
+
+  const amount = (y - lower.y) / (upper.y - lower.y);
 
   return {
     centerZ: lerp(lowerCenter, upperCenter, amount),
@@ -62,7 +63,7 @@ function grown(section: LoftSection, offset: number): LoftSection {
 }
 
 function headShell(detail: HumanDetail, options: ShellOptions): Shape {
-  const { bottom, offset, roughness } = options;
+  const { bottom, coverage, offset, roughness } = options;
 
   const bottomSection = headSectionAt(bottom + 0.006);
 
@@ -78,7 +79,7 @@ function headShell(detail: HumanDetail, options: ShellOptions): Shape {
   const shell = loft(sections, detail.headSegments + 2);
 
   return deformShape(shell, (vertex) => {
-    const covered = options.coverage(vertex);
+    const covered = coverage(vertex);
     const texture = roughness * HAIR_NOISE.fractal(vertex.x * 38, vertex.y * 38, vertex.z * 38, { octaves: 2 });
 
     const push = -(offset + 0.012) * (1 - covered) + texture * covered;
@@ -128,15 +129,17 @@ export function addWildHair(builder: MeshBuilder, detail: HumanDetail): void {
 
 const SIDE_COVERAGE = hairlineCoverage(1.75, 1.585);
 
+function ringCoverage(vertex: ShapeVertex): number {
+  const sides = SIDE_COVERAGE(vertex);
+  const balding = 1 - smoothstep(1.655, 1.67, vertex.y);
+
+  return sides * balding * (1 - frontness(vertex) ** 2);
+}
+
 export function addFringeHair(builder: MeshBuilder, detail: HumanDetail): void {
-  const ring = (vertex: ShapeVertex): number => {
-    const sides = SIDE_COVERAGE(vertex);
-    const balding = 1 - smoothstep(1.655, 1.67, vertex.y);
+  const shell = headShell(detail, { bottom: 1.555, coverage: ringCoverage, offset: 0.01, roughness: 0.006 });
 
-    return sides * balding * (1 - frontness(vertex) ** 2);
-  };
-
-  builder.add(headShell(detail, { bottom: 1.555, coverage: ring, offset: 0.01, roughness: 0.006 }), { style: HAIR });
+  builder.add(shell, { style: HAIR });
 }
 
 function lockPath(angle: number, length: number): TubePoint[] {
@@ -161,11 +164,11 @@ function lockPath(angle: number, length: number): TubePoint[] {
 }
 
 export function addLongHair(builder: MeshBuilder, detail: HumanDetail): void {
-  builder.add(capShell(detail, 0.014, 1.688, 1.56), { style: HAIR });
-
   const style = { ...headToChestStyle(1.56, 1.4), slot: MaterialSlot.Hair };
   const lockCount = detail.hasFineDetails ? 9 : 5;
   const segments = Math.max(4, detail.limbSegments - 3);
+
+  builder.add(capShell(detail, 0.014, 1.688, 1.56), { style: HAIR });
 
   for (let lock = 0; lock < lockCount; lock += 1) {
     const amount = lock / (lockCount - 1);
@@ -197,15 +200,15 @@ function braidPath(): TubePoint[] {
 }
 
 export function addBraids(builder: MeshBuilder, detail: HumanDetail): void {
-  builder.add(capShell(detail, 0.012), { style: HAIR });
-
   const braid = braidPath();
   const style = { ...headToChestStyle(1.58, 1.42), slot: MaterialSlot.Hair };
+
+  builder.add(capShell(detail, 0.012), { style: HAIR });
 
   forEachSide((_side, mirror) => {
     builder.add(tube(braid, { radialSegments: Math.max(5, detail.limbSegments - 2) }), { style, transform: mirror });
     builder.add(torus(0.016, 0.006, 10, 4), {
-      style: { ...headToChestStyle(1.58, 1.42), slot: MaterialSlot.Accent },
+      style: { ...style, slot: MaterialSlot.Accent },
       transform: combine(mirror, transformOf({ position: [0.12, 1.325, 0.088], rotation: [0.3, 0, 0] })),
     });
   });

@@ -1,17 +1,18 @@
 import { Ground, groundDefinition } from "../../content/grounds.ts";
+import { SNOWFALL_TEMPERATURE } from "../../content/weather.ts";
 import type { WorldRules } from "../../content/world-rules.ts";
 import { SNOW_CAPACITY, type WorldState } from "../world/world-state.ts";
 
 export const ROWS_PER_TICK = 32;
 
 const PRECIPITATION_THRESHOLD = 0.02;
-const SNOWFALL_TEMPERATURE = 0.5;
 const ETERNAL_SNOW_COVER = 0.45;
 const ICE_TEMPERATURE = -2;
 const WARM_GROUND_TEMPERATURE = 3;
 
 export interface SurfaceConditions {
   airTemperatureOffset: number;
+  isSnowfall: boolean;
   precipitation: number;
   sunlight: number;
 }
@@ -33,6 +34,7 @@ export class SurfaceSystem {
 
   update(seconds: number, days: number, conditions: SurfaceConditions, rules: WorldRules): void {
     const { cellsPerSide } = this.#world.grid;
+
     const firstRow = this.#nextRow;
 
     const lastRow = Math.min(cellsPerSide, firstRow + ROWS_PER_TICK) - 1;
@@ -90,7 +92,7 @@ export class SurfaceSystem {
       return;
     }
 
-    if (temperature < SNOWFALL_TEMPERATURE) {
+    if (landsAsSnow(temperature, step.conditions)) {
       const snowfall = precipitation * 0.012 * step.seconds * step.rules.water.snowfall;
 
       fields.snow[cell] = Math.min(SNOW_CAPACITY, fields.snow[cell] + snowfall);
@@ -108,7 +110,9 @@ export class SurfaceSystem {
     const { precipitation, sunlight } = step.conditions;
 
     if (fields.snow[cell] > 0 && temperature > 0) {
-      const rainMelt = precipitation > PRECIPITATION_THRESHOLD ? 0.004 : 0;
+      const isRaining = precipitation > PRECIPITATION_THRESHOLD && !landsAsSnow(temperature, step.conditions);
+
+      const rainMelt = isRaining ? 0.004 : 0;
 
       const melt = (temperature * 0.0035 + sunlight * 0.003 + rainMelt) * step.seconds * step.rules.water.snowMelt;
 
@@ -135,6 +139,7 @@ export class SurfaceSystem {
     }
 
     const { fuel } = groundDefinition(terrain.ground[cell]);
+
     const growthRate = temperature > WARM_GROUND_TEMPERATURE ? 1 : 0.2;
 
     if (fields.fuel[cell] < fuel) {
@@ -145,4 +150,8 @@ export class SurfaceSystem {
       fields.scorch[cell] = Math.max(0, fields.scorch[cell] - 0.22 * step.days);
     }
   }
+}
+
+function landsAsSnow(temperature: number, conditions: SurfaceConditions): boolean {
+  return conditions.isSnowfall || temperature < SNOWFALL_TEMPERATURE;
 }

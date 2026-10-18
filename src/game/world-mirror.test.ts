@@ -89,8 +89,8 @@ describe("world mirror", () => {
 
     mirror.surfaceChanges.takeRuns();
     mirror.groundChanges.takeRuns();
-    strokeFor(simulation, mirror, { parameters: { material: "sand", radius: 40 }, powerId: "paint" }, 0.3);
     strokeFor(simulation, mirror, { parameters: { intensity: 100, radius: 30 }, powerId: "fire" }, 0.3);
+    strokeFor(simulation, mirror, { parameters: { material: "sand", radius: 40 }, powerId: "paint" }, 0.3);
     advanceTogether(simulation, mirror, 1);
 
     const [surface] = packSurfaceRows(simulation.world, allRows(simulation.world));

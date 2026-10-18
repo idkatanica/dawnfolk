@@ -29,7 +29,7 @@ export function findTree(tick: PersonTick): ChopJob | null {
   return new ChopJob(tick, tree);
 }
 
-export class ChopJob implements Job {
+class ChopJob implements Job {
   readonly claimedPlant: number;
   readonly kind = "chop";
   readonly #errand = new Errand(CHOPPING_SECONDS, "chop");

@@ -166,7 +166,7 @@ export function createChronicleEntry(overrides: Partial<ChronicleEntry> = {}): C
   };
 }
 
-export function createSnapshot(overrides: Partial<WorldSnapshot> = {}): WorldSnapshot {
+function createSnapshot(overrides: Partial<WorldSnapshot> = {}): WorldSnapshot {
   return {
     calendar: createCalendar(),
     inspection: null,
@@ -193,6 +193,7 @@ export function createFrame(overrides: Partial<SimulationFrame> = {}): Simulatio
     groundRows: [],
     heightPatch: null,
     inspection: null,
+    isBusy: false,
     isPaused: false,
     notices: [],
     people: new Float32Array(0),

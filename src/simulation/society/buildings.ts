@@ -1,4 +1,5 @@
 import { BUILDINGS, type BuildingKind } from "../../content/buildings.ts";
+import { distanceSquared } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { IdentifierSource } from "../identifiers.ts";
@@ -15,7 +16,7 @@ const ESCAPE_DROUGHT = 0.55;
 const ESCAPE_WIND = 20;
 const LIT_CAMPFIRE_FUEL = 0.02;
 
-export type BuildingLossReason = "abandoned" | "burnt" | "destroyed" | "replaced";
+type BuildingLossReason = "abandoned" | "burnt" | "destroyed" | "replaced";
 
 export type BuildingIncidentKind = "campfireEscaped" | "caughtFire";
 
@@ -40,12 +41,12 @@ export interface BuildingLoss {
   reason: BuildingLossReason;
 }
 
-export interface BuildingIncident {
+interface BuildingIncident {
   building: Building;
   kind: BuildingIncidentKind;
 }
 
-export interface BuildingPlacement {
+interface BuildingPlacement {
   kind: BuildingKind;
   rotation: number;
   tribeId: number;
@@ -53,7 +54,7 @@ export interface BuildingPlacement {
   z: number;
 }
 
-export interface BuildingWeather {
+interface BuildingWeather {
   drought: number;
   precipitation: number;
   windSpeed: number;
@@ -162,11 +163,11 @@ export class BuildingSystem {
     let nearestDistance = radius * radius;
 
     for (const building of this.#buildings) {
-      const distanceSquared = (building.x - x) ** 2 + (building.z - z) ** 2;
+      const squaredDistance = distanceSquared(x, z, building.x, building.z);
 
-      if (distanceSquared < nearestDistance) {
+      if (squaredDistance < nearestDistance) {
         nearest = building;
-        nearestDistance = distanceSquared;
+        nearestDistance = squaredDistance;
       }
     }
 
@@ -294,6 +295,7 @@ export class BuildingSystem {
 
   #randomNeighbor(cell: number, random: RandomSource): number {
     const { grid } = this.#world;
+
     const offset = random.pick(NEIGHBOR_OFFSETS);
 
     const column = grid.columnOf(cell) + offset.column;

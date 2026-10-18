@@ -18,7 +18,6 @@ import {
   smoothstep,
   texture,
   textureLoad,
-  time,
   transformNormalToView,
   uint,
   uniform,
@@ -37,11 +36,11 @@ import {
   Vector2,
   Vector3,
 } from "three/webgpu";
-import { clamp as clampNumber } from "../../shared/math.ts";
+import { clamp as clampNumber, FULL_TURN, saturate } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
-import type { PlantWeather } from "./plant-material.ts";
+import { gustAt, type PlantWeather } from "./plant-material.ts";
 
 const BLADES_PER_CLUMP = 4;
 const BLADE_OUTLINE: readonly (readonly [side: number, along: number])[] = [
@@ -83,7 +82,7 @@ const SPACING_PER_DISTANCE = 0.011;
 const FADE_START_DISTANCE = 130;
 const FADE_END_DISTANCE = 190;
 
-export interface GrassFieldOptions {
+interface GrassFieldOptions {
   readonly clumpsPerSide: number;
   readonly grid: WorldGrid;
   readonly textures: TerrainTextures;
@@ -135,7 +134,7 @@ function spacingFor(viewDistance: number): number {
 function presenceFor(viewDistance: number): number {
   const amount = (viewDistance - FADE_START_DISTANCE) / (FADE_END_DISTANCE - FADE_START_DISTANCE);
 
-  return 1 - clampNumber(amount, 0, 1);
+  return 1 - saturate(amount);
 }
 
 function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms): MeshStandardNodeMaterial {
@@ -158,8 +157,13 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
     .mul(LATTICE_ROW)
     .add(uint(lattice.y.add(LATTICE_OFFSET)));
 
-  const random = (salt: number) => hash(key.bitXor(salt));
-  const bladeRandom = (salt: number) => hash(key.bitXor(SALT_BLADE).add(uint(blade.mul(SALTS_PER_BLADE).add(salt))));
+  function random(salt: number) {
+    return hash(key.bitXor(salt));
+  }
+
+  function bladeRandom(salt: number) {
+    return hash(key.bitXor(SALT_BLADE).add(uint(blade.mul(SALTS_PER_BLADE).add(salt))));
+  }
 
   const root = lattice.add(vec2(random(SALT_JITTER_X), random(SALT_JITTER_Z))).mul(spacing);
 
@@ -170,8 +174,9 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   const surface = textureLoad(textures.surface, cell);
   const footprint = floor(root.add(grid.halfSize).div(grid.cellSize).sub(0.5));
 
-  const waterAt = (column: number, row: number) =>
-    textureLoad(textures.water, ivec2(clamp(footprint.add(vec2(column, row)), vec2(0, 0), vec2(last, last)))).x;
+  function waterAt(column: number, row: number) {
+    return textureLoad(textures.water, ivec2(clamp(footprint.add(vec2(column, row)), vec2(0, 0), vec2(last, last)))).x;
+  }
 
   const nearestWater = max(max(waterAt(0, 0), waterAt(1, 0)), max(waterAt(0, 1), waterAt(1, 1)));
 
@@ -192,19 +197,17 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
     .mul(mix(float(0.65), float(1), ground.a))
     .mul(growth);
   const bladeWidth = mix(float(NARROWEST_BLADE), float(WIDEST_BLADE), bladeRandom(5)).mul(growth);
-  const facingAngle = bladeRandom(7).mul(Math.PI * 2);
-  const spreadAngle = blade.mul((Math.PI * 2) / BLADES_PER_CLUMP).add(random(SALT_SPREAD).mul(Math.PI * 2));
-  const leanAngle = bladeRandom(11).mul(Math.PI * 2);
+  const facingAngle = bladeRandom(7).mul(FULL_TURN);
+  const spreadAngle = blade.mul(FULL_TURN / BLADES_PER_CLUMP).add(random(SALT_SPREAD).mul(FULL_TURN));
+  const leanAngle = bladeRandom(11).mul(FULL_TURN);
 
   const facing = vec2(cos(facingAngle), sin(facingAngle));
   const spread = vec2(cos(spreadAngle), sin(spreadAngle)).mul(spacing.mul(CLUMP_SPREAD));
   const lean = vec2(cos(leanAngle), sin(leanAngle)).mul(bladeRandom(13).mul(0.35));
-  const wave = sin(time.mul(1.9).add(root.x.mul(0.21)).add(root.y.mul(0.17)))
-    .mul(0.5)
-    .add(0.5);
+  const wave = gustAt(weather, root);
   const curve = along.mul(along);
 
-  const bend = lean.add(weather.wind.mul(weather.gust).mul(wave.mul(0.22).add(0.18)));
+  const bend = lean.add(weather.wind.mul(weather.gust).mul(wave.mul(0.28).add(0.14)));
 
   const offset = facing.mul(side.mul(bladeWidth)).add(bend.mul(curve.mul(bladeHeight)));
   const rise = along.mul(bladeHeight).mul(float(1).sub(curve.mul(length(bend)).mul(0.25)));

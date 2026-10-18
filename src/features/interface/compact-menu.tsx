@@ -32,8 +32,13 @@ function useCompactMenu() {
   const openSettings = useInterfaceStore((state) => state.openSettings);
   const isMapOpen = useInterfaceStore((state) => state.isMapOpen);
 
-  const showJournal = () => openJournal("tribes");
-  const showSettings = () => openSettings("world");
+  function showJournal(): void {
+    openJournal("tribes");
+  }
+
+  function showSettings(): void {
+    openSettings("world");
+  }
 
   return { isMapOpen, showJournal, showSettings, toggleMap };
 }
@@ -61,7 +66,7 @@ export function CompactMenu() {
 
       <Menu.Portal>
         <Menu.Positioner align="end" className="z-50 outline-none" sideOffset={10}>
-          <Menu.Popup className="min-w-52 origin-[var(--transform-origin)] rounded-2xl bg-white/94 p-1.5 shadow-island outline-none backdrop-blur-2xl transition-[scale,opacity] duration-150 data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
+          <Menu.Popup className="min-w-52 origin-[var(--transform-origin)] rounded-2xl bg-white/94 p-1.5 outline-none backdrop-blur-2xl transition-[scale,opacity] duration-150 data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
             <MenuEntry icon={<BookOpen aria-hidden="true" size={17} />} onClick={showJournal}>
               Tribes and chronicle
             </MenuEntry>

@@ -11,13 +11,19 @@ import {
 } from "three/webgpu";
 import { type Color, GROUNDS, Ground, seasonalGroundColor } from "../../content/grounds.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import { clamp, lerp } from "../../shared/math.ts";
+import { lerp, saturate } from "../../shared/math.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import { NO_WATER } from "../../world/water.ts";
 import type { WorldChanges } from "../world-changes.ts";
 
 const BYTE = 255;
 const SEASON_STEP = 0.01;
+const CROP_COVER = 0.9;
+const POOLED_WATER_STEPS = [2, 4, 8] as const;
+
+const FIELD_SOIL: Color = [0.4, 0.31, 0.22];
+const FIELD_SPROUT: Color = [0.42, 0.55, 0.25];
+const FIELD_RIPE: Color = [0.8, 0.67, 0.32];
 
 function floatTexture(data: Float32Array, size: number): DataTexture {
   const texture = new DataTexture(data, size, size, RedFormat, FloatType);
@@ -44,14 +50,8 @@ function colorTexture(data: Uint8Array, size: number, isSrgb: boolean): DataText
   return texture;
 }
 
-const CROP_COVER = 0.9;
-
-const FIELD_SOIL: Color = [0.4, 0.31, 0.22];
-const FIELD_SPROUT: Color = [0.42, 0.55, 0.25];
-const FIELD_RIPE: Color = [0.8, 0.67, 0.32];
-
 function toByte(value: number): number {
-  return Math.round(clamp(value, 0, 1) * BYTE);
+  return Math.round(saturate(value) * BYTE);
 }
 
 function mixColor(from: Color, to: Color, amount: number): Color {
@@ -73,8 +73,6 @@ function cropColor(growth: number): Color {
 
   return mixColor(FIELD_SPROUT, FIELD_RIPE, (growth - 0.5) / 0.5);
 }
-
-const POOLED_WATER_STEPS = [2, 4, 8] as const;
 
 function poolWater(source: Float32Array, size: number, radius: number, target: Float32Array): void {
   const across = new Float32Array(source.length);
@@ -113,6 +111,7 @@ export class TerrainTextures {
   readonly water: DataTexture;
   readonly #albedoData: Uint8Array;
   readonly #mirror: WorldMirror;
+  readonly #pooledData: readonly Float32Array[];
   #albedoSeason = Number.NaN;
 
   constructor(mirror: WorldMirror) {
@@ -122,7 +121,8 @@ export class TerrainTextures {
     this.size = size;
     this.height = floatTexture(mirror.terrain.height, size);
     this.water = floatTexture(mirror.terrain.waterSurface, size);
-    this.pooledWater = POOLED_WATER_STEPS.map(() => floatTexture(new Float32Array(size * size), size));
+    this.#pooledData = POOLED_WATER_STEPS.map(() => new Float32Array(size * size));
+    this.pooledWater = this.#pooledData.map((data) => floatTexture(data, size));
     this.#poolWater();
     this.surface = colorTexture(mirror.surface, size, false);
     this.#albedoData = new Uint8Array(size * size * 4);
@@ -163,10 +163,8 @@ export class TerrainTextures {
 
   #poolWater(): void {
     for (const [index, step] of POOLED_WATER_STEPS.entries()) {
-      const texture = this.pooledWater[index];
-
-      poolWater(this.#mirror.terrain.waterSurface, this.size, step / 2, texture.image.data as Float32Array);
-      texture.needsUpdate = true;
+      poolWater(this.#mirror.terrain.waterSurface, this.size, step / 2, this.#pooledData[index]);
+      this.pooledWater[index].needsUpdate = true;
     }
   }
 
@@ -179,7 +177,7 @@ export class TerrainTextures {
     for (let cell = 0; cell < cellCount; cell += 1) {
       const groundIndex = ground[cell * GROUND_CHANNELS + GroundChannel.Ground];
       const crop = ground[cell * GROUND_CHANNELS + GroundChannel.Crop];
-      const moisture = clamp(terrain.moisture[cell], 0, 1);
+      const moisture = saturate(terrain.moisture[cell]);
       const brightness = 1 + terrain.variation[cell] * 0.09;
       const offset = cell * 4;
 

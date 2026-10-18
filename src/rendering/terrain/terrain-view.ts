@@ -2,6 +2,7 @@ import type { Group, MeshStandardNodeMaterial, PerspectiveCamera } from "three/w
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
+import { islandPlinthHeight } from "./island-base-geometry.ts";
 import { type HeightRange, type PatchCorner, PatchGrid } from "./patch-grid.ts";
 import { createTerrainMaterial } from "./terrain-material.ts";
 import { PATCH_LEVEL_DISTANCES } from "./terrain-patches.ts";
@@ -10,18 +11,18 @@ import type { TerrainTextures } from "./terrain-textures.ts";
 const SKIRT_ALLOWANCE = 220;
 
 export class TerrainView {
-  readonly material: MeshStandardNodeMaterial;
+  readonly #material: MeshStandardNodeMaterial;
   readonly #mirror: WorldMirror;
   readonly #patches: PatchGrid;
 
   constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow) {
     this.#mirror = mirror;
-    this.material = createTerrainMaterial(textures, mirror.grid, glow);
+    this.#material = createTerrainMaterial(textures, mirror.grid, glow, islandPlinthHeight(mirror));
     this.#patches = new PatchGrid(mirror.grid, (corner) => this.#measure(corner), {
       castsShadow: true,
       edges: "skirted",
       levelDistances: PATCH_LEVEL_DISTANCES,
-      material: this.material,
+      material: this.#material,
       renderOrder: 0,
     });
   }
@@ -30,12 +31,12 @@ export class TerrainView {
     return this.#patches.group;
   }
 
-  heightsChanged(region: CellRegion): void {
-    this.#patches.remeasure(region);
-  }
-
   get patchLevels(): Readonly<Int8Array> {
     return this.#patches.chosenLevels;
+  }
+
+  heightsChanged(region: CellRegion): void {
+    this.#patches.remeasure(region);
   }
 
   update(camera: PerspectiveCamera, detail: number): void {
@@ -44,7 +45,7 @@ export class TerrainView {
 
   dispose(): void {
     this.#patches.dispose();
-    this.material.dispose();
+    this.#material.dispose();
   }
 
   #measure(corner: PatchCorner): HeightRange {

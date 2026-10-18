@@ -26,16 +26,6 @@ export function smoothstep(edgeStart: number, edgeEnd: number, value: number): n
   return amount * amount * (3 - 2 * amount);
 }
 
-export function remap(
-  value: number,
-  inputStart: number,
-  inputEnd: number,
-  outputStart: number,
-  outputEnd: number
-): number {
-  return lerp(outputStart, outputEnd, inverseLerp(inputStart, inputEnd, value));
-}
-
 export function wrapAngle(angle: number): number {
   const wrapped = (((angle + Math.PI) % FULL_TURN) + FULL_TURN) % FULL_TURN;
 
@@ -53,7 +43,7 @@ export function distanceSquared(fromX: number, fromZ: number, toX: number, toZ: 
   return deltaX * deltaX + deltaZ * deltaZ;
 }
 
-export function distance(fromX: number, fromZ: number, toX: number, toZ: number): number {
+function distance(fromX: number, fromZ: number, toX: number, toZ: number): number {
   return Math.sqrt(distanceSquared(fromX, fromZ, toX, toZ));
 }
 

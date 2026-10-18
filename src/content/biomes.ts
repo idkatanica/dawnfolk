@@ -22,26 +22,25 @@ export function isBiomeIndex(value: number): value is BiomeIndex {
   return BIOME_INDICES.has(value);
 }
 
-export interface BiomeDefinition {
+interface BiomeDefinition {
   index: BiomeIndex;
-  mapColor: string;
   name: string;
 }
 
 export const BIOMES: readonly BiomeDefinition[] = [
-  { index: Biome.Water, mapColor: "#4d7d9e", name: "Water" },
-  { index: Biome.Glacier, mapColor: "#e9eff5", name: "Glacier" },
-  { index: Biome.Alpine, mapColor: "#9b968e", name: "Alpine rock" },
-  { index: Biome.Tundra, mapColor: "#a8a27f", name: "Tundra" },
-  { index: Biome.Taiga, mapColor: "#3d5838", name: "Taiga" },
-  { index: Biome.Forest, mapColor: "#5f7d3c", name: "Broadleaf forest" },
-  { index: Biome.Meadow, mapColor: "#97a75c", name: "Meadow" },
-  { index: Biome.Steppe, mapColor: "#cfb57c", name: "Dry steppe" },
-  { index: Biome.Scrub, mapColor: "#a39d6d", name: "Scrubland" },
-  { index: Biome.Desert, mapColor: "#dfb97f", name: "Desert" },
-  { index: Biome.Swamp, mapColor: "#4f5b38", name: "Swamp" },
-  { index: Biome.Beach, mapColor: "#dacba2", name: "Shore" },
-  { index: Biome.Mesa, mapColor: "#b9714c", name: "Mesas" },
+  { index: Biome.Water, name: "Water" },
+  { index: Biome.Glacier, name: "Glacier" },
+  { index: Biome.Alpine, name: "Alpine rock" },
+  { index: Biome.Tundra, name: "Tundra" },
+  { index: Biome.Taiga, name: "Taiga" },
+  { index: Biome.Forest, name: "Broadleaf forest" },
+  { index: Biome.Meadow, name: "Meadow" },
+  { index: Biome.Steppe, name: "Dry steppe" },
+  { index: Biome.Scrub, name: "Scrubland" },
+  { index: Biome.Desert, name: "Desert" },
+  { index: Biome.Swamp, name: "Swamp" },
+  { index: Biome.Beach, name: "Shore" },
+  { index: Biome.Mesa, name: "Mesas" },
 ];
 
 export function biomeDefinition(index: number): BiomeDefinition {

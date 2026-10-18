@@ -1,6 +1,6 @@
 import type { Matrix4 } from "three";
 import { MaterialSlot } from "../materials.ts";
-import type { MeshBuilder } from "../mesh/mesh-builder.ts";
+import type { MeshBuilder, VertexStyle } from "../mesh/mesh-builder.ts";
 import { box, type LoftSection, loft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { combine, MIRROR_X, sideMirror, transformOf } from "../mesh/transforms.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
@@ -8,7 +8,7 @@ import type { HumanDetail } from "./human-detail.ts";
 import { armStyle, FLEXIBLE_TORSO_STYLE, legStyle, TORSO_STYLE } from "./human-rigging.ts";
 import { HumanBone, SIDES, type Side } from "./human-skeleton.ts";
 
-export const HEAD_SECTIONS: readonly LoftSection[] = [
+const HEAD_SECTIONS: readonly LoftSection[] = [
   { centerZ: 0.052, radiusX: 0, radiusZ: 0, y: 1.512 },
   { centerZ: 0.054, radiusX: 0.03, radiusZ: 0.024, y: 1.521 },
   { centerZ: 0.03, radiusX: 0.062, radiusZ: 0.07, y: 1.545 },
@@ -115,8 +115,8 @@ export const FOOT_SECTIONS: readonly LoftSection[] = [
   { centerZ: -0.019, radiusX: 0, radiusZ: 0, y: 0.172 },
 ];
 
-export function footTransform(side: Side, inflate = 1): Matrix4 {
-  const placement = transformOf({ position: [0.1, 0, 0], rotation: [Math.PI / 2, 0, 0], scale: inflate });
+export function footTransform(side: Side): Matrix4 {
+  const placement = transformOf({ position: [0.1, 0, 0], rotation: [Math.PI / 2, 0, 0] });
 
   if (side === 1) {
     return placement;
@@ -178,7 +178,7 @@ function addFace(builder: MeshBuilder, detail: HumanDetail): void {
   });
 }
 
-export function addHead(builder: MeshBuilder, detail: HumanDetail): void {
+function addHead(builder: MeshBuilder, detail: HumanDetail): void {
   builder.add(loft(HEAD_SECTIONS, detail.headSegments), { style: { ...rigidStyle(HumanBone.Head), ...SKIN } });
   builder.add(
     tube(
@@ -194,9 +194,7 @@ export function addHead(builder: MeshBuilder, detail: HumanDetail): void {
   addFace(builder, detail);
 }
 
-function handShape(builder: MeshBuilder, side: Side, mirror: Matrix4, detail: HumanDetail): void {
-  const style = { ...armStyle(side), ...SKIN };
-
+function handShape(builder: MeshBuilder, style: VertexStyle, mirror: Matrix4, detail: HumanDetail): void {
   builder.add(sphere(1, detail.limbSegments, 6), {
     style,
     transform: combine(
@@ -213,7 +211,7 @@ function handShape(builder: MeshBuilder, side: Side, mirror: Matrix4, detail: Hu
   });
 }
 
-export function addArms(builder: MeshBuilder, detail: HumanDetail): void {
+function addArms(builder: MeshBuilder, detail: HumanDetail): void {
   forEachSide((side, mirror) => {
     const style = { ...armStyle(side), ...SKIN };
 
@@ -222,11 +220,11 @@ export function addArms(builder: MeshBuilder, detail: HumanDetail): void {
       transform: mirror,
     });
     builder.add(tube(FOREARM, { radialSegments: detail.limbSegments }), { style, transform: mirror });
-    handShape(builder, side, mirror, detail);
+    handShape(builder, style, mirror, detail);
   });
 }
 
-export function addLegs(builder: MeshBuilder, detail: HumanDetail): void {
+function addLegs(builder: MeshBuilder, detail: HumanDetail): void {
   forEachSide((side, mirror) => {
     const style = { ...legStyle(side), ...SKIN };
 

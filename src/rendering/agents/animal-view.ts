@@ -1,4 +1,4 @@
-import { Color, Group, Sphere, Vector3 } from "three/webgpu";
+import { Color, Group, type MeshStandardNodeMaterial, Sphere, Vector3 } from "three/webgpu";
 import { ANIMAL_KINDS, type AnimalKind } from "../../content/animals.ts";
 import { type AnimalAppearance, animalAppearance } from "../../models/animals/animal-appearance.ts";
 import { ANIMAL_SPECIES, animalPartMask, buildAnimalParts, poseAnimal } from "../../models/animals/animal-models.ts";
@@ -9,6 +9,7 @@ import { hasPart } from "../../models/part-mask.ts";
 import { Pose } from "../../models/rig/pose.ts";
 import { SkeletonPoser } from "../../models/rig/skeleton-poser.ts";
 import { measureStride } from "../../models/rig/stride.ts";
+import { smoothstep } from "../../shared/math.ts";
 import { ANIMAL_STRIDE, AnimalField } from "../../world/agent-buffers.ts";
 import { ANIMAL_POSES, type AnimalPose } from "../../world/agent-poses.ts";
 import { AgentMotion } from "./agent-motion.ts";
@@ -91,6 +92,7 @@ export class AnimalView {
   readonly #bounds = new Sphere(new Vector3(), BOUNDING_RADIUS);
   readonly #kinds: Readonly<Record<AnimalKind, AnimalKindView>>;
   readonly #palette = new AgentPalette(paletteWidth(ANIMAL_LAYOUT));
+  #uploadedRows = 0;
   readonly #pose = new Pose(MAMMOTH_BONE_COUNT);
   readonly #previousPose = new Pose(MAMMOTH_BONE_COUNT);
   readonly #seen = new Set<number>();
@@ -137,7 +139,11 @@ export class AnimalView {
       this.#kinds[kind].batches.commit();
     }
 
-    this.#palette.upload();
+    if (rows > 0 || this.#uploadedRows > 0) {
+      this.#palette.upload();
+    }
+
+    this.#uploadedRows = rows;
   }
 
   dispose(): void {
@@ -148,7 +154,7 @@ export class AnimalView {
     this.#palette.dispose();
   }
 
-  #createKindView(kind: AnimalKind, material: ReturnType<typeof createSkinnedMaterial>): AnimalKindView {
+  #createKindView(kind: AnimalKind, material: MeshStandardNodeMaterial): AnimalKindView {
     const batches = new PartBatches(
       [
         { castsShadow: true, parts: buildAnimalParts(kind, "high") },
@@ -252,7 +258,7 @@ export class AnimalView {
       return this.#pose;
     }
 
-    const eased = motion.blend * motion.blend * (3 - 2 * motion.blend);
+    const eased = smoothstep(0, 1, motion.blend);
     const context = { variation: visual.variation };
 
     poseAnimal(visual.kind, this.#previousPose, ANIMAL_POSES[motion.previousClip], motion.previousPhase, context);

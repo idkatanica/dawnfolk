@@ -16,7 +16,7 @@ import { createPatchGeometry, PATCH_CELLS, PATCH_STEPS, type PatchEdges, type Pa
 
 const NO_LEVEL = -1;
 
-export interface PatchGridOptions {
+interface PatchGridOptions {
   readonly castsShadow: boolean;
   readonly edges: PatchEdges;
   readonly levelDistances: readonly number[];
@@ -48,7 +48,7 @@ interface PatchLevel {
   readonly origins: InstancedBufferAttribute;
 }
 
-export type PatchMeasure = (corner: PatchCorner) => HeightRange | null;
+type PatchMeasure = (corner: PatchCorner) => HeightRange | null;
 
 function overlaps(region: CellRegion, corner: PatchCorner): boolean {
   return (
@@ -64,6 +64,7 @@ export class PatchGrid {
   readonly #counts: number[];
   readonly #frustum = new Frustum();
   readonly #chosenLevels: Int8Array;
+  readonly #previousLevels: Int8Array;
   readonly #grid: WorldGrid;
   readonly #levelDistances: readonly number[];
   readonly #levels: readonly PatchLevel[];
@@ -82,12 +83,17 @@ export class PatchGrid {
     this.#levels = PATCH_STEPS.map((step) => this.#createLevel(step, patchCount, options));
     this.#counts = this.#levels.map(() => 0);
     this.#chosenLevels = new Int8Array(patchCount).fill(NO_LEVEL);
+    this.#previousLevels = new Int8Array(patchCount).fill(NO_LEVEL);
 
     for (let row = 0; row < patchesPerSide; row += 1) {
       for (let column = 0; column < patchesPerSide; column += 1) {
         this.#patches.push(this.#createPatch(column, row));
       }
     }
+  }
+
+  get chosenLevels(): Readonly<Int8Array> {
+    return this.#chosenLevels;
   }
 
   remeasure(region: CellRegion | null): void {
@@ -98,11 +104,8 @@ export class PatchGrid {
     }
   }
 
-  get chosenLevels(): Readonly<Int8Array> {
-    return this.#chosenLevels;
-  }
-
   update(camera: PerspectiveCamera, detail: number, sharedLevels?: Readonly<Int8Array>): void {
+    this.#previousLevels.set(this.#chosenLevels);
     this.#counts.fill(0);
     this.#chosenLevels.fill(NO_LEVEL);
     this.#frustum.setFromProjectionMatrix(
@@ -114,7 +117,7 @@ export class PatchGrid {
         continue;
       }
 
-      const shared = sharedLevels?.[index] ?? NO_LEVEL;
+      const shared = sharedLevels === undefined ? NO_LEVEL : sharedLevels[index];
       const level =
         shared === NO_LEVEL ? this.#levelFor(patch.bounds.distanceToPoint(camera.position), detail) : shared;
 
@@ -126,10 +129,15 @@ export class PatchGrid {
       this.#counts[level] = slot + 1;
     }
 
+    const hasChanged = this.#chosenLevels.some((level, index) => level !== this.#previousLevels[index]);
+
     for (const [index, level] of this.#levels.entries()) {
       level.geometry.instanceCount = this.#counts[index];
       level.mesh.visible = this.#counts[index] > 0;
-      level.origins.needsUpdate = true;
+
+      if (hasChanged) {
+        level.origins.needsUpdate = true;
+      }
     }
   }
 

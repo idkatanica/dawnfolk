@@ -12,7 +12,7 @@ export const VERTEX_CHANNELS = [
 
 export type VertexChannel = (typeof VERTEX_CHANNELS)[number];
 
-export type VertexValues = Readonly<Record<VertexChannel, number>>;
+type VertexValues = Readonly<Record<VertexChannel, number>>;
 
 export const DEFAULT_VERTEX_VALUES: VertexValues = {
   boneA: 0,
@@ -26,7 +26,7 @@ export const DEFAULT_VERTEX_VALUES: VertexValues = {
   sway: 0,
 };
 
-export interface Bounds {
+interface Bounds {
   readonly maximum: readonly [number, number, number];
   readonly minimum: readonly [number, number, number];
 }
@@ -65,7 +65,7 @@ export function boundsOf(positions: Float32Array): Bounds {
   return { maximum, minimum };
 }
 
-export function emptyChannels(count: number): Record<VertexChannel, Float32Array> {
+function emptyChannels(count: number): Record<VertexChannel, Float32Array> {
   return {
     boneA: new Float32Array(count),
     boneB: new Float32Array(count),

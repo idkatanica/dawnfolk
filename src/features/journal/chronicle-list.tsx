@@ -22,8 +22,8 @@ function ChronicleItem({ entry }: { readonly entry: ChronicleEntry }) {
         onClick={showPlace}
         type="button"
       >
-        <span className="flex h-5 shrink-0 items-center">
-          <Icon aria-hidden="true" className="text-ink-soft" size={16} />
+        <span className="flex h-5 shrink-0 items-center text-ink-soft">
+          <Icon aria-hidden="true" size={16} />
         </span>
 
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">

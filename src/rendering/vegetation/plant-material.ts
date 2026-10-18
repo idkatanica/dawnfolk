@@ -2,13 +2,14 @@ import {
   attribute,
   bool,
   clamp,
-  cos,
+  dot,
   equal,
   Fn,
   float,
   floor,
   fract,
   hash,
+  If,
   int,
   ivec2,
   mix,
@@ -26,22 +27,51 @@ import {
   textureLoad,
   time,
   uniform,
-  uniformArray,
   varying,
   vec2,
   vec3,
 } from "three/tsl";
-import { Color, MeshStandardNodeMaterial, type Node, Vector2, Vector3 } from "three/webgpu";
-import { MaterialSlot, SLOT_COLOR_TABLE } from "../../models/materials.ts";
+import { Color, MeshStandardNodeMaterial, type Node, Vector2 } from "three/webgpu";
+import { MaterialSlot } from "../../models/materials.ts";
 import { BERRY_PART } from "../../models/plants/plant-models.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
+import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
+
+const CALM_GUST = 0.12;
+const STRONGEST_GUST = 2;
+const METERS_PER_SECOND_PER_GUST = 7;
+const SLOWEST_GUST_FRONT = 1.5;
+const GUST_FRONT_SPEEDUP = 2;
 
 export class PlantWeather {
   readonly gust = uniform(0.5);
+  readonly gustTravel = uniform(0);
   readonly wind = uniform(new Vector2(1, 0));
+
+  blow(directionX: number, directionZ: number, metersPerSecond: number, realSeconds: number): void {
+    const frontSpeed = Math.max(metersPerSecond, SLOWEST_GUST_FRONT) * GUST_FRONT_SPEEDUP;
+
+    this.gust.value = Math.min(STRONGEST_GUST, Math.max(CALM_GUST, metersPerSecond / METERS_PER_SECOND_PER_GUST));
+    this.gustTravel.value += frontSpeed * realSeconds;
+    this.wind.value.set(directionX, directionZ);
+  }
+}
+
+export function gustAt(weather: PlantWeather, point: Node<"vec2">): Node<"float"> {
+  const front = dot(point, weather.wind).sub(weather.gustTravel);
+  const across = dot(point, vec2(weather.wind.y.negate(), weather.wind.x));
+
+  const rolling = sin(front.mul(0.045).add(sin(across.mul(0.013)).mul(2.2)))
+    .mul(0.5)
+    .add(0.5);
+  const ripple = sin(front.mul(0.19).add(across.mul(0.05)))
+    .mul(0.5)
+    .add(0.5);
+
+  return rolling.mul(0.7).add(ripple.mul(0.3));
 }
 
 export class SpeciesLook {
@@ -59,31 +89,19 @@ const CROWN_FIRE_LIGHT = 0.45;
 const SMOULDER_COLOR = vec3(1, 0.33, 0.06);
 const SMOULDER_STRENGTH = 2.4;
 const SMOULDER_HEIGHT = 5;
+const SMOULDER_HEAT = 0.02;
 const SMOULDER_CRACK_SCALE = 3.4;
 
-function linearColorVector(hex: number): Vector3 {
-  const color = new Color(hex);
-
-  return new Vector3(color.r, color.g, color.b);
-}
-
-function rotateAroundUp(vector: Node<"vec3">, angle: Node<"float">): Node<"vec3"> {
-  const cosine = cos(angle);
-  const sine = sin(angle);
-
-  return vec3(vector.x.mul(cosine).add(vector.z.mul(sine)), vector.y, vector.z.mul(cosine).sub(vector.x.mul(sine)));
-}
-
-function isSlot(slot: Node<"float">, value: number): Node<"bool"> {
-  return equal(int(slot.add(0.5)), int(value));
-}
-
-export interface PlantMaterialOptions {
+interface PlantMaterialOptions {
   readonly glow: FireGlow;
   readonly grid: WorldGrid;
   readonly look: SpeciesLook;
   readonly textures: TerrainTextures;
   readonly weather: PlantWeather;
+}
+
+function isSlot(slot: Node<"float">, value: number): Node<"bool"> {
+  return equal(int(slot.add(0.5)), int(value));
 }
 
 export function createPlantMaterial({
@@ -124,9 +142,12 @@ export function createPlantMaterial({
   const phase = placement.x.mul(0.047).add(placement.z.mul(0.031));
   const swaySquared = sway.mul(sway);
 
-  const bend = swaySquared
-    .mul(scale.mul(0.55).add(0.25))
-    .mul(sin(time.mul(1.6).add(phase)).mul(0.35).add(0.65).mul(weather.gust));
+  const gusting = gustAt(weather, placement.xz)
+    .mul(0.5)
+    .add(0.35)
+    .add(sin(time.mul(1.6).add(phase)).mul(0.12));
+
+  const bend = swaySquared.mul(scale.mul(0.55).add(0.25)).mul(gusting.mul(weather.gust));
   const shiver = sin(time.mul(9).add(positionLocal.x.mul(3)).add(phase.mul(7)))
     .mul(flutter)
     .mul(0.04)
@@ -152,7 +173,7 @@ export function createPlantMaterial({
   const heat = varying(surface.a, "plantHeat");
   const charred = varying(select(isBurnt, float(1), select(isFoliage, float(0), float(0.6))), "plantCharred");
 
-  const slotColors = uniformArray<"vec3">(SLOT_COLOR_TABLE.map(linearColorVector), "vec3");
+  const slotColors = slotColorTable();
 
   const variation = tint.mul(0.3).add(0.85);
   const baseColor = select(isFoliage, look.foliageColor.rgb, slotColors.element(int(slot.add(0.5))));
@@ -171,18 +192,31 @@ export function createPlantMaterial({
   const fireLight = varying(fireLightAt(glow, grid, placement.xz), "plantFireLight");
 
   material.colorNode = mix(vertexColor.mul(leafPattern), SNOW, snowOnTop);
-  const cracks = smoothstep(0.35, 0.75, mx_noise_float(positionWorld.mul(SMOULDER_CRACK_SCALE)).mul(0.5).add(0.5));
-  const breathing = sin(time.mul(1.7).add(placement.x.mul(0.37)).add(positionWorld.y.mul(2.1)))
-    .mul(0.3)
-    .add(0.7);
+
   const nearRoots = varying(smoothstep(SMOULDER_HEIGHT, 0, positionLocal.y.mul(scale)), "plantNearRoots");
-  const smoulder = SMOULDER_COLOR.mul(
-    cracks
-      .mul(breathing)
-      .mul(nearRoots)
-      .mul(charred)
-      .mul(smoothstep(0.02, 0.5, heat))
-  ).mul(SMOULDER_STRENGTH);
+
+  const smoulder = Fn(() => {
+    const embers = vec3(0).toVar();
+
+    If(heat.greaterThan(SMOULDER_HEAT).and(charred.mul(nearRoots).greaterThan(0)), () => {
+      const cracks = smoothstep(0.35, 0.75, mx_noise_float(positionWorld.mul(SMOULDER_CRACK_SCALE)).mul(0.5).add(0.5));
+      const breathing = sin(time.mul(1.7).add(placement.x.mul(0.37)).add(positionWorld.y.mul(2.1)))
+        .mul(0.3)
+        .add(0.7);
+
+      embers.assign(
+        SMOULDER_COLOR.mul(
+          cracks
+            .mul(breathing)
+            .mul(charred)
+            .mul(nearRoots)
+            .mul(smoothstep(SMOULDER_HEAT, 0.5, heat))
+        ).mul(SMOULDER_STRENGTH)
+      );
+    });
+
+    return embers;
+  })();
 
   material.emissiveNode = vertexColor.mul(fireLight).mul(CROWN_FIRE_LIGHT).add(smoulder);
   material.normalNode = normalize(normalView.add(leafBump));

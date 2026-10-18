@@ -1,6 +1,6 @@
-import { cos, float, fract, length, mix, sin, smoothstep, time, varying, vec2, vec3 } from "three/tsl";
+import { cos, float, fract, mix, sin, smoothstep, time, varying, vec2, vec3 } from "three/tsl";
 import { AdditiveBlending, MeshBasicNodeMaterial } from "three/webgpu";
-import { billboardNodes, type CameraAxes, facingBillboard } from "./billboards.ts";
+import { billboardNodes, type CameraAxes, distanceFromBillboardCenter, facingBillboard } from "./billboards.ts";
 import type { SmokeLook } from "./smoke-material.ts";
 
 const COOL_SPARK = vec3(3.2, 0.8, 0.12);
@@ -32,7 +32,7 @@ export function createSparkMaterial(axes: CameraAxes, look: SmokeLook): MeshBasi
   const age = varying(life, "sparkAge");
   const warmth = varying(heat, "sparkHeat");
 
-  const glow = float(1).sub(smoothstep(0, 0.5, length(vec2(shape.x, shape.y.sub(0.5)))));
+  const glow = float(1).sub(smoothstep(0, 0.5, distanceFromBillboardCenter(shape)));
   const fade = smoothstep(0, 0.08, age).mul(float(1).sub(smoothstep(0.55, 1, age)));
 
   material.colorNode = mix(COOL_SPARK, HOT_SPARK, warmth.mul(float(1).sub(age))).mul(glow.mul(fade));

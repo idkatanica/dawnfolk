@@ -30,10 +30,6 @@ export class AgentPalette {
     this.node = texture(this.#texture);
   }
 
-  get rowFloats(): number {
-    return this.width * CHANNELS;
-  }
-
   get data(): Float32Array {
     return this.#data;
   }
@@ -61,11 +57,11 @@ export class AgentPalette {
   }
 
   rowOffset(row: number): number {
-    return row * this.rowFloats;
+    return row * this.#rowFloats;
   }
 
   texelOffset(row: number, texel: number): number {
-    return row * this.rowFloats + texel * CHANNELS;
+    return row * this.#rowFloats + texel * CHANNELS;
   }
 
   upload(): void {
@@ -74,6 +70,10 @@ export class AgentPalette {
 
   dispose(): void {
     this.#texture.dispose();
+  }
+
+  get #rowFloats(): number {
+    return this.width * CHANNELS;
   }
 
   #readData(): Float32Array {

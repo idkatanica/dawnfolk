@@ -60,8 +60,8 @@ interface ReadingProps {
 
 function Reading({ detail, icon: Icon, title, value }: ReadingProps) {
   return (
-    <div className="flex items-center gap-2.5 whitespace-nowrap" title={title}>
-      <Icon aria-hidden="true" className="shrink-0 text-ink-soft" size={18} />
+    <div className="flex items-center gap-2.5 whitespace-nowrap text-ink-soft" title={title}>
+      <Icon aria-hidden="true" className="shrink-0" size={18} />
 
       <span className="flex flex-col gap-1 leading-none">
         <span className="tabular font-semibold text-ink text-sm">{value}</span>

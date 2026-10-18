@@ -15,8 +15,9 @@ import { interpolatePoint, makeSurfaceDescend, smoothRiverPath } from "./river-p
 const DIAGONAL_REACH = 0.75;
 const BANK_DEPTH = 0.3;
 const SHALLOWEST_WATER = 0.05;
+const MINIMUM_BANK_WIDTH = 6;
 
-export interface HydrologyOptions {
+interface HydrologyOptions {
   lakeMinimumArea: number;
   lakeMinimumCatchmentArea: number;
   lakeMinimumDepth: number;
@@ -48,8 +49,7 @@ function toCellThresholds(options: HydrologyOptions, grid: WorldGrid): CellThres
   };
 }
 
-export interface HydrologyResult {
-  accumulation: Float32Array;
+interface HydrologyResult {
   features: WaterFeatures;
   lakeIds: Int32Array;
   riverStrength: Uint8Array;
@@ -85,12 +85,12 @@ function fillDepressions(heights: Float32Array, grid: WorldGrid): DrainageNetwor
 
   const heap = new MinHeap(size * 16);
 
-  const seedCell = (cellIndex: number): void => {
+  function seedCell(cellIndex: number): void {
     if (closed[cellIndex] === 0) {
       closed[cellIndex] = 1;
       heap.push(cellIndex, filled[cellIndex]);
     }
-  };
+  }
 
   for (let position = 0; position < size; position += 1) {
     seedCell(grid.index(position, 0));
@@ -208,16 +208,6 @@ function averageCell(cells: readonly number[], grid: WorldGrid): { x: number; z:
   return { x: sumX / cells.length, z: sumZ / cells.length };
 }
 
-function drynessAt(point: { x: number; z: number }, grid: WorldGrid, dryness: Float32Array): number {
-  const cell = grid.cellAt(point.x, point.z);
-
-  if (cell < 0) {
-    return 0;
-  }
-
-  return dryness[cell];
-}
-
 function isLakeKept(area: FloodedArea, centerDryness: number, options: CellThresholds): boolean {
   const catchmentNeeded = options.lakeMinimumCatchment * (1 + 6 * centerDryness);
 
@@ -249,8 +239,9 @@ function findLakes(
     const area = collectFloodedArea(cell, heights, network, grid, lakeIds, id);
 
     const center = averageCell(area.cells, grid);
+    const centerDryness = dryness[grid.cellAt(center.x, center.z)];
 
-    if (!isLakeKept(area, drynessAt(center, grid, dryness), options)) {
+    if (!isLakeKept(area, centerDryness, options)) {
       for (const floodedCell of area.cells) {
         lakeIds[floodedCell] = REJECTED_LAKE;
       }
@@ -293,11 +284,13 @@ function buildUpstreamLists(isRiver: Uint8Array, receivers: Int32Array): Map<num
 
     const list = upstream.get(receiver);
 
-    if (list === undefined) {
-      upstream.set(receiver, [cell]);
-    } else {
+    if (list !== undefined) {
       list.push(cell);
+
+      continue;
     }
+
+    upstream.set(receiver, [cell]);
   }
 
   return upstream;
@@ -413,16 +406,13 @@ function buildRivers(
     const points = cells.map((cell) => riverPointFor(cell, heights, network, grid, threshold));
     const lakeId = lakeAtMouth(chain, lakeIds);
 
-    const endsInLake = lakeId >= 0;
-
-    if (endsInLake) {
+    if (lakeId >= 0) {
       appendLakeEntry(points, lakes[lakeId], chain.mouthReceiver, grid);
     }
 
     makeSurfaceDescend(points, 0.04);
 
     rivers.push({
-      endsInLake,
       id: rivers.length,
       points: smoothRiverPath(points, 2),
       reachesEdge: chain.mouthReceiver === NO_CELL && chain.joinsCell === NO_CELL,
@@ -440,10 +430,10 @@ function lakeAtMouth(chain: RiverChain, lakeIds: Int32Array): number {
   return lakeIds[chain.mouthReceiver];
 }
 
-function appendLakeEntry(points: RiverPoint[], lake: Lake | undefined, lakeCell: number, grid: WorldGrid): void {
+function appendLakeEntry(points: RiverPoint[], lake: Lake, lakeCell: number, grid: WorldGrid): void {
   const last = points.at(-1);
 
-  if (lake === undefined || last === undefined) {
+  if (last === undefined) {
     return;
   }
 
@@ -455,7 +445,7 @@ function appendLakeEntry(points: RiverPoint[], lake: Lake | undefined, lakeCell:
 }
 
 function bankWidthOf(point: RiverPoint): number {
-  return Math.max(6, point.width);
+  return Math.max(MINIMUM_BANK_WIDTH, point.width);
 }
 
 function channelBed(distanceFromCenter: number, point: RiverPoint, uncarvedHeight: number): number {
@@ -490,7 +480,8 @@ function carveSegment(start: RiverPoint, end: RiverPoint, targets: ChannelTarget
   const segmentX = end.x - start.x;
   const segmentZ = end.z - start.z;
 
-  const reach = Math.max(start.width, end.width) / 2 + Math.max(6, start.width, end.width) + grid.cellSize;
+  const reach =
+    Math.max(start.width, end.width) / 2 + Math.max(MINIMUM_BANK_WIDTH, start.width, end.width) + grid.cellSize;
   const lengthSquared = Math.max(1e-6, segmentX * segmentX + segmentZ * segmentZ);
 
   const firstColumn = Math.max(0, grid.columnAt(Math.min(start.x, end.x) - reach));
@@ -581,7 +572,7 @@ function edgeDirection(x: number, z: number, grid: WorldGrid): EdgeDirection {
   return { directionX: 0, directionZ: 1 };
 }
 
-function findWaterfalls(rivers: readonly River[], grid: WorldGrid, threshold: number): Waterfall[] {
+function findWaterfalls(rivers: readonly River[], grid: WorldGrid): Waterfall[] {
   const waterfalls: Waterfall[] = [];
 
   for (const river of rivers) {
@@ -593,7 +584,6 @@ function findWaterfalls(rivers: readonly River[], grid: WorldGrid, threshold: nu
 
     waterfalls.push({
       ...edgeDirection(mouth.x, mouth.z, grid),
-      strength: riverStrengthFor(mouth.flow, threshold),
       top: mouth.surface,
       width: mouth.width,
       x: mouth.x,
@@ -643,8 +633,7 @@ export function computeHydrology(
   dropShallowWater(heights, waterSurface, riverStrength);
 
   return {
-    accumulation: network.accumulation,
-    features: { lakes, rivers, waterfalls: findWaterfalls(rivers, grid, thresholds.riverThreshold) },
+    features: { lakes, rivers, waterfalls: findWaterfalls(rivers, grid) },
     lakeIds,
     riverStrength,
     waterSurface,

@@ -1,7 +1,8 @@
 import { FULL_TURN } from "../../../shared/math.ts";
+import { aroundPoint } from "../../agents/navigation.ts";
 import type { Building } from "../buildings.ts";
 import type { PersonTick } from "../society-context.ts";
-import { aroundPoint, Errand, headTo, type Job } from "./job.ts";
+import { Errand, headTo, type Job } from "./job.ts";
 
 const WARMING_SECONDS = 18;
 const WARM_ENOUGH = 0.95;

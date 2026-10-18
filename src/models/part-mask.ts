@@ -1,6 +1,6 @@
-export const PART_MASK_BITS_PER_WORD = 24;
+const PART_MASK_BITS_PER_WORD = 24;
 
-export const PART_MASK_WORDS = 2;
+const PART_MASK_WORDS = 2;
 
 export const MAXIMUM_PARTS = PART_MASK_BITS_PER_WORD * PART_MASK_WORDS;
 

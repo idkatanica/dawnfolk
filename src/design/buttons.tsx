@@ -4,9 +4,9 @@ import { cn } from "./cn.ts";
 
 const FOCUS_RING = "outline-none focus-visible:ring-2 focus-visible:ring-dawn focus-visible:ring-offset-1";
 
-export type IconButtonTone = "accent" | "plain";
+type IconButtonTone = "accent" | "plain";
 
-export interface IconButtonProps extends Omit<ComponentProps<typeof BaseButton>, "aria-label" | "children"> {
+interface IconButtonProps extends Omit<ComponentProps<typeof BaseButton>, "aria-label" | "children"> {
   readonly icon: ReactNode;
   readonly isPressed?: boolean | undefined;
   readonly label: string;
@@ -22,8 +22,8 @@ export function IconButton({ className, icon, isPressed, label, tone = "plain", 
       className={cn(
         "grid pointer-coarse:size-11 size-10 shrink-0 place-items-center rounded-full transition-colors duration-150",
         {
-          "bg-dawn text-white shadow-thumb hover:bg-dawn-strong active:bg-dawn-strong": tone === "accent",
-          "bg-white text-ink shadow-thumb": tone === "plain" && isPressed === true,
+          "bg-dawn text-white hover:bg-dawn-strong active:bg-dawn-strong": tone === "accent",
+          "bg-white text-ink": tone === "plain" && isPressed === true,
           "text-ink-soft hover:bg-veil hover:text-ink active:bg-veil-strong": tone === "plain" && isPressed !== true,
         },
         FOCUS_RING,
@@ -35,9 +35,9 @@ export function IconButton({ className, icon, isPressed, label, tone = "plain", 
   );
 }
 
-export type ButtonTone = "accent" | "plain" | "quiet";
+type ButtonTone = "accent" | "plain" | "quiet";
 
-export interface TextButtonProps extends ComponentProps<typeof BaseButton> {
+interface TextButtonProps extends ComponentProps<typeof BaseButton> {
   readonly tone?: ButtonTone;
 }
 

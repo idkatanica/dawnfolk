@@ -53,7 +53,7 @@ export class FleeJob implements Job {
   }
 }
 
-export function safestHeading(world: WorldState, from: Waypoint, danger: Waypoint): number {
+function safestHeading(world: WorldState, from: Waypoint, danger: Waypoint): number {
   const away = Math.atan2(from.x - danger.x, from.z - danger.z);
 
   let bestScore = Number.NEGATIVE_INFINITY;

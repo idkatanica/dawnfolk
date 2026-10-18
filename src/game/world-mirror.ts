@@ -17,6 +17,12 @@ const GROWTH_FACTOR = 1.5;
 const MILLISECONDS_PER_SECOND = 1000;
 const LONGEST_EXTRAPOLATION_SECONDS = 0.1;
 
+function grown<Values extends Float32Array | Uint8Array>(previous: Values, next: Values): Values {
+  next.set(previous);
+
+  return next;
+}
+
 export class MirroredVegetation {
   bornDay: Float32Array;
   count: number;
@@ -93,12 +99,6 @@ export class MirroredVegetation {
     this.x = grown(this.x, new Float32Array(capacity));
     this.z = grown(this.z, new Float32Array(capacity));
   }
-}
-
-function grown<Values extends Float32Array | Uint8Array>(previous: Values, next: Values): Values {
-  next.set(previous);
-
-  return next;
 }
 
 export class WorldMirror {

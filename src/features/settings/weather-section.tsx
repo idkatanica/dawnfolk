@@ -45,26 +45,35 @@ function useWeatherControls(weather: WeatherView) {
     speed: weather.windBaseSpeed,
   });
 
-  const changeWeather = (value: string) => {
+  function changeWeather(value: string): void {
     if (isWeatherChoice(value)) {
       send({ type: "setWeather", weather: value });
     }
-  };
+  }
 
-  const changeWind = (next: WindSetting) => {
+  function changeWind(next: WindSetting): void {
     holdWind(next);
     send({ ...next, type: "setWind" });
-  };
+  }
 
-  const changeDirection = (direction: number) => changeWind({ ...wind, direction });
-  const changeSpeed = (speed: number) => changeWind({ ...wind, speed });
-  const changeTemperature = (offset: number) => send({ offset, type: "setTemperatureOffset" });
+  function changeDirection(direction: number): void {
+    changeWind({ ...wind, direction });
+  }
+
+  function changeSpeed(speed: number): void {
+    changeWind({ ...wind, speed });
+  }
+
+  function changeTemperature(offset: number): void {
+    send({ offset, type: "setTemperatureOffset" });
+  }
 
   return { changeDirection, changeSpeed, changeTemperature, changeWeather, wind };
 }
 
 function WeatherControls({ weather }: { readonly weather: WeatherView }) {
   const { changeDirection, changeSpeed, changeTemperature, changeWeather, wind } = useWeatherControls(weather);
+
   const choice = weather.isAutomatic ? AUTOMATIC : weather.kind;
 
   return (

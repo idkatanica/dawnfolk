@@ -1,25 +1,26 @@
 import { fog, uniform } from "three/tsl";
 import { Color, DirectionalLight, Group, HemisphereLight, type Scene, Vector3 } from "three/webgpu";
-import { moonDirection, sunDirection } from "../../shared/astronomy.ts";
-import { clamp, lerp, smoothstep } from "../../shared/math.ts";
+import { type Direction, moonDirection, sunDirection } from "../../shared/astronomy.ts";
+import { clamp, lerp, saturate, smoothstep } from "../../shared/math.ts";
 import { CloudSea } from "./cloud-sea.ts";
 import { fogShapeFor, HeightFog } from "./height-fog.ts";
 import { SkyDome } from "./sky-dome.ts";
 import { type SkyPalette, skyPaletteAt } from "./sky-palette.ts";
 
-export interface AtmosphereState {
+interface AtmosphereState {
   readonly cloudCover: number;
   readonly flash: number;
   readonly fog: number;
   readonly hours: number;
   readonly precipitation: number;
   readonly season: number;
+  readonly snowfall: number;
   readonly storm: number;
   readonly windX: number;
   readonly windZ: number;
 }
 
-export interface AtmosphereOptions {
+interface AtmosphereOptions {
   readonly cloudSeaAltitude: number;
   readonly shadowMapSize: number;
 }
@@ -43,7 +44,7 @@ export class Atmosphere {
   readonly #shadowUp = new Vector3();
   readonly #sky = new SkyDome();
   #daylight = 1;
-  #palette: SkyPalette = skyPaletteAt(1, 0);
+  #palette: SkyPalette = skyPaletteAt(1, 0, 0);
 
   constructor(scene: Scene, options: AtmosphereOptions) {
     this.#cloudSea = new CloudSea(options.cloudSeaAltitude);
@@ -65,10 +66,6 @@ export class Atmosphere {
     return this.#daylight;
   }
 
-  get lightDirection(): Vector3 {
-    return this.#lightDirection.clone();
-  }
-
   get palette(): SkyPalette {
     return this.#palette;
   }
@@ -76,15 +73,16 @@ export class Atmosphere {
   update(state: AtmosphereState, focus: Vector3, viewDistance: number, realSeconds: number): void {
     const sun = sunDirection(state.hours, state.season);
     const moon = moonDirection(state.hours);
-    const overcast = clamp(state.cloudCover * 0.75 + state.storm * 0.5, 0, 1);
+    const overcast = saturate(state.cloudCover * 0.75 + state.storm * 0.5);
+    const gloom = gloomOf(state);
 
-    const palette = skyPaletteAt(sun.y, overcast);
+    const palette = skyPaletteAt(sun.y, overcast, gloom);
 
     this.#daylight = smoothstep(-0.1, 0.16, sun.y);
     this.#palette = palette;
     this.#paintSky(palette, sun, moon, state, overcast);
     this.#driftClouds(state, realSeconds);
-    this.#light(palette, sun, moon, overcast);
+    this.#light(palette, sun, moon, overcast, gloom);
     this.hemisphere.intensity += state.flash * 4;
     this.#placeSun(focus, viewDistance);
     this.#fog(palette, state, sun.y);
@@ -99,13 +97,7 @@ export class Atmosphere {
     this.sun.shadow.dispose();
   }
 
-  #paintSky(
-    palette: SkyPalette,
-    sun: { x: number; y: number; z: number },
-    moon: { x: number; y: number; z: number },
-    state: AtmosphereState,
-    overcast: number
-  ): void {
+  #paintSky(palette: SkyPalette, sun: Direction, moon: Direction, state: AtmosphereState, overcast: number): void {
     const sky = this.#sky;
     const clearness = 1 - overcast * 0.9;
 
@@ -120,7 +112,7 @@ export class Atmosphere {
     sky.sunVisibility.value = smoothstep(-0.06, 0.02, sun.y) * clearness;
     sky.moonVisibility.value = (1 - this.#daylight) * smoothstep(-0.05, 0.05, moon.y) * clearness;
     sky.starVisibility.value = (1 - smoothstep(-0.16, 0.02, sun.y)) * clearness;
-    sky.cloudCover.value = clamp(0.2 + state.cloudCover * 0.8, 0, 1);
+    sky.cloudCover.value = saturate(0.2 + state.cloudCover * 0.8);
 
     const sea = this.#cloudSea;
 
@@ -136,14 +128,9 @@ export class Atmosphere {
     this.#cloudSea.drift.value.y += (state.windZ + 0.4) * SEA_CLOUD_DRIFT * realSeconds * 60;
   }
 
-  #light(
-    palette: SkyPalette,
-    sun: { x: number; y: number; z: number },
-    moon: { x: number; y: number; z: number },
-    overcast: number
-  ): void {
+  #light(palette: SkyPalette, sun: Direction, moon: Direction, overcast: number, gloom: number): void {
     const isMoonlit = sun.y < -0.04;
-    const strength = lerp(3.2, 0.9, overcast);
+    const strength = lerp(3.2, 0.9, overcast) * (1 - gloom * 0.4);
 
     this.sun.color.setHex(palette.sunlight);
 
@@ -157,7 +144,7 @@ export class Atmosphere {
 
     this.hemisphere.color.setHex(palette.ambientSky);
     this.hemisphere.groundColor.setHex(palette.ambientGround);
-    this.hemisphere.intensity = lerp(0.95, 1.8, this.#daylight) * lerp(1, 1.25, overcast);
+    this.hemisphere.intensity = lerp(0.95, 1.8, this.#daylight) * lerp(1, 1.25, overcast) * (1 - gloom * 0.3);
   }
 
   #placeSun(focus: Vector3, viewDistance: number): void {
@@ -200,8 +187,16 @@ export class Atmosphere {
 
   #fog(palette: SkyPalette, state: AtmosphereState, sunHeight: number): void {
     this.#fogColor.value.setHex(palette.horizon);
-    this.#heightFog.apply(fogShapeFor({ mist: state.fog, precipitation: state.precipitation, sunHeight }));
+    this.#heightFog.apply(
+      fogShapeFor({ mist: state.fog, precipitation: state.precipitation, snowfall: state.snowfall, sunHeight })
+    );
   }
+}
+
+function gloomOf(state: AtmosphereState): number {
+  const rainfall = Math.max(0, state.precipitation - state.snowfall);
+
+  return clamp(rainfall * 0.75 + state.snowfall * 0.25 + state.storm * 0.35, 0, 1);
 }
 
 function quantizedReach(reach: number): number {

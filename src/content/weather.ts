@@ -12,10 +12,9 @@ export const WEATHER_KINDS = [
 
 export type WeatherKind = (typeof WEATHER_KINDS)[number];
 
-export interface WeatherDefinition {
+interface WeatherDefinition {
   cloudCover: number;
   fog: number;
-  kind: WeatherKind;
   name: string;
   precipitation: number;
   seasonalOdds: readonly [number, number, number, number];
@@ -28,7 +27,6 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
   blizzard: {
     cloudCover: 1,
     fog: 0.5,
-    kind: "blizzard",
     name: "Blizzard",
     precipitation: 1,
     seasonalOdds: [0, 0, 0.1, 0.9],
@@ -39,7 +37,6 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
   clear: {
     cloudCover: 0.12,
     fog: 0,
-    kind: "clear",
     name: "Clear",
     precipitation: 0,
     seasonalOdds: [3, 4, 2.6, 2.4],
@@ -50,7 +47,6 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
   cloudy: {
     cloudCover: 0.5,
     fog: 0,
-    kind: "cloudy",
     name: "Cloudy",
     precipitation: 0,
     seasonalOdds: [2.4, 2, 2.4, 2],
@@ -61,7 +57,6 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
   fog: {
     cloudCover: 0.6,
     fog: 1,
-    kind: "fog",
     name: "Fog",
     precipitation: 0,
     seasonalOdds: [0.8, 0.2, 1.4, 0.8],
@@ -72,7 +67,6 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
   heat: {
     cloudCover: 0.04,
     fog: 0,
-    kind: "heat",
     name: "Heatwave",
     precipitation: 0,
     seasonalOdds: [0.2, 1.6, 0.4, 0],
@@ -83,7 +77,6 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
   overcast: {
     cloudCover: 0.92,
     fog: 0.1,
-    kind: "overcast",
     name: "Overcast",
     precipitation: 0,
     seasonalOdds: [1.2, 0.6, 1.6, 1.8],
@@ -94,7 +87,6 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
   rain: {
     cloudCover: 0.95,
     fog: 0.15,
-    kind: "rain",
     name: "Rain",
     precipitation: 0.75,
     seasonalOdds: [2, 1.1, 2.2, 0.4],
@@ -105,7 +97,6 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
   snow: {
     cloudCover: 0.95,
     fog: 0.2,
-    kind: "snow",
     name: "Snow",
     precipitation: 0.7,
     seasonalOdds: [0.3, 0, 0.5, 2.6],
@@ -116,7 +107,6 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
   storm: {
     cloudCover: 1,
     fog: 0.1,
-    kind: "storm",
     name: "Thunderstorm",
     precipitation: 1,
     seasonalOdds: [0.6, 1.2, 0.5, 0],
@@ -126,6 +116,12 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
   },
 };
 
-export function isWeatherKind(value: string): value is WeatherKind {
-  return Object.hasOwn(WEATHER, value);
+export const SNOWFALL_TEMPERATURE = 0.5;
+
+export function isSnowfallWeather(kind: WeatherKind): boolean {
+  return kind === "snow" || kind === "blizzard";
+}
+
+export function fallsAsSnow(kind: WeatherKind, temperature: number): boolean {
+  return isSnowfallWeather(kind) || temperature < SNOWFALL_TEMPERATURE;
 }
