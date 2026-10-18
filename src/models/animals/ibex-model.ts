@@ -1,3 +1,4 @@
+import { alongPath, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, SurfacePoint } from "../mesh/mesh-builder.ts";
 import { type Shape, transformShape } from "../mesh/shape.ts";
@@ -5,6 +6,7 @@ import { type BodySection, lengthwiseLoft, sphere, type TubePoint, tube } from "
 import { combine, sideMirror, transformOf } from "../mesh/transforms.ts";
 import { degrees } from "../rig/curves.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
+import type { AnimalDetail } from "./animal-detail.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
 import { addEyes, addLegs, hoofBelow, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
@@ -109,19 +111,22 @@ function coatSlot(point: SurfacePoint): number {
   return isBelly || isRump ? MaterialSlot.CoatLight : MaterialSlot.Coat;
 }
 
-function headShape(segments: number): Shape {
+function headShape(detail: AnimalDetail): Shape {
   const muzzle = tube(
-    [
-      { radius: 0, x: 0, y: 1.278, z: 0.47 },
-      { radius: 0.064, x: 0, y: 1.28, z: 0.5 },
-      { radius: 0.085, x: 0, y: 1.28, z: 0.55 },
-      { radius: 0.09, x: 0, y: 1.27, z: 0.63 },
-      { radius: 0.07, x: 0, y: 1.21, z: 0.74 },
-      { radius: 0.05, x: 0, y: 1.15, z: 0.83 },
-      { radius: 0.042, x: 0, y: 1.13, z: 0.87 },
-      { radius: 0, x: 0, y: 1.125, z: 0.89 },
-    ],
-    { hasEndCap: false, radialSegments: segments }
+    alongPath(
+      [
+        { radius: 0, x: 0, y: 1.278, z: 0.47 },
+        { radius: 0.064, x: 0, y: 1.28, z: 0.5 },
+        { radius: 0.085, x: 0, y: 1.28, z: 0.55 },
+        { radius: 0.09, x: 0, y: 1.27, z: 0.63 },
+        { radius: 0.07, x: 0, y: 1.21, z: 0.74 },
+        { radius: 0.05, x: 0, y: 1.15, z: 0.83 },
+        { radius: 0.042, x: 0, y: 1.13, z: 0.87 },
+        { radius: 0, x: 0, y: 1.125, z: 0.89 },
+      ],
+      detail
+    ),
+    { hasEndCap: false, radialSegments: detail.segments }
   );
 
   return transformShape(muzzle, transformOf({ scale: [0.8, 1, 1] }));
@@ -129,19 +134,27 @@ function headShape(segments: number): Shape {
 
 const EAR = transformOf({ position: [0, 0.055, 0], scale: [0.03, 0.068, 0.012] });
 
-function addHead(builder: MeshBuilder, segments: number): void {
-  const head = rigidStyle(QuadrupedBone.Head);
-  const shape = headShape(segments);
+function addFace(builder: MeshBuilder, shape: Shape, detail: AnimalDetail): void {
+  if (!detail.hasSmallParts) {
+    return;
+  }
 
-  builder.add(shape, { seam: HEAD_SEAM, style: { ...head, slot: MaterialSlot.Coat } });
   builder.add(sphere(0.026, 6, 4), {
-    style: { ...head, slot: MaterialSlot.Hoof },
+    style: { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Hoof },
     transform: transformOf({ position: [0, 1.13, 0.875] }),
   });
   addEyes(builder, shape, { direction: [1, 0.45, 0.12], origin: [0, 1.26, 0.65], radius: 0.016, sink: 0.5 });
+}
+
+function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
+  const head = rigidStyle(QuadrupedBone.Head);
+  const shape = headShape(detail);
+
+  builder.add(shape, { seam: HEAD_SEAM, style: { ...head, slot: MaterialSlot.Coat } });
+  addFace(builder, shape, detail);
 
   for (const side of LEG_SIDES) {
-    builder.add(sphere(1, 6, 4), {
+    builder.add(sphere(1, segmentsUpTo(detail, 6), 4), {
       seam: EAR_SEAM,
       style: { ...head, slot: MaterialSlot.Coat },
       transform: combine(
@@ -160,7 +173,9 @@ const TAIL: readonly TubePoint[] = [
   { radius: 0, x: 0, y: 1.01, z: -0.73 },
 ];
 
-export function addIbexBody(builder: MeshBuilder, segments: number): void {
+export function addIbexBody(builder: MeshBuilder, detail: AnimalDetail): void {
+  const { segments } = detail;
+
   builder.add(lengthwiseLoft(BODY, segments + 2), {
     seam: BODY_SEAM,
     style: { ...bodyStyle(IBEX_FRAME, 0.14), slot: coatSlot },
@@ -181,16 +196,17 @@ export function addIbexBody(builder: MeshBuilder, segments: number): void {
       transform: transformOf({ scale: [0.85, 1, 1] }),
     }
   );
-  addHead(builder, segments);
+  addHead(builder, detail);
   addLegs(builder, {
     blend: BLEND,
+    detail,
     frame: IBEX_FRAME,
     paths: LEGS,
     seam: LEG_SEAM,
-    segments: Math.max(5, segments - 2),
+    segments: segmentsAtLeast(detail, 5, segments - 2),
     slot: hoofBelow(0.075),
   });
-  builder.add(tube(TAIL, { radialSegments: 5 }), {
+  builder.add(tube(TAIL, { radialSegments: segmentsUpTo(detail, 5) }), {
     seam: TAIL_SEAM,
     style: { ...tailStyle(IBEX_FRAME, 0.04), slot: MaterialSlot.Coat },
   });
@@ -207,19 +223,20 @@ function hornPath(length: number): TubePoint[] {
   ];
 }
 
-function addHorns(builder: MeshBuilder, segments: number, length: number): void {
+function addHorns(builder: MeshBuilder, detail: AnimalDetail, length: number): void {
   const style = { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Horn };
+  const radialSegments = segmentsAtLeast(detail, 5, detail.segments - 3);
 
   for (const side of LEG_SIDES) {
-    builder.add(tube(hornPath(length), { hasEndCap: false, radialSegments: Math.max(5, segments - 3) }), {
+    builder.add(tube(hornPath(length), { hasEndCap: false, radialSegments }), {
       style,
       transform: sideMirror(side),
     });
   }
 }
 
-export function addShortHorns(builder: MeshBuilder, segments: number): void {
-  addHorns(builder, segments, 0.45);
+export function addShortHorns(builder: MeshBuilder, detail: AnimalDetail): void {
+  addHorns(builder, detail, 0.45);
 }
 
 const BEARD: readonly TubePoint[] = [
@@ -229,11 +246,11 @@ const BEARD: readonly TubePoint[] = [
   { radius: 0, x: 0, y: 0.99, z: 0.8 },
 ];
 
-export function addLongHorns(builder: MeshBuilder, segments: number): void {
-  addHorns(builder, segments, 1.15);
-  builder.add(tube(BEARD, { radialSegments: 5 }), {
+export function addLongHorns(builder: MeshBuilder, detail: AnimalDetail): void {
+  addHorns(builder, detail, 1.15);
+  builder.add(tube(BEARD, { radialSegments: segmentsUpTo(detail, 5) }), {
     seam: BEARD_SEAM,
     style: { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Coat },
   });
-  builder.addSeamReference(headShape(segments));
+  builder.addSeamReference(headShape(detail));
 }

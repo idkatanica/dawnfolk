@@ -1,6 +1,8 @@
+import { Vector3 } from "three";
 import { FULL_TURN } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
+import { segmentsAtLeast } from "../level-of-detail.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import type { MeshBuilder, VertexStyle } from "../mesh/mesh-builder.ts";
 import type { Shape } from "../mesh/shape.ts";
@@ -8,7 +10,7 @@ import { blob, box, cone, cylinder, type LoftSection, lathe, loft, sphere, torus
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
 import { forEachSide, headShape, headStroke } from "./human-anatomy.ts";
-import type { HumanDetail } from "./human-detail.ts";
+import { type HumanDetail, trimSegments } from "./human-detail.ts";
 import { armStyle, FLEXIBLE_TORSO_STYLE } from "./human-rigging.ts";
 import { HumanBone } from "./human-skeleton.ts";
 
@@ -31,9 +33,22 @@ function onChest(slot: MaterialSlotIndex): VertexStyle {
   return { ...rigidStyle(HumanBone.Chest), slot };
 }
 
-function addRod(builder: MeshBuilder, start: Triple, end: Triple, radius: number, style: VertexStyle): void {
+interface Rod {
+  readonly end: Triple;
+  readonly radius: number;
+  readonly start: Triple;
+}
+
+function addRod(builder: MeshBuilder, detail: HumanDetail, rod: Rod, style: VertexStyle): void {
+  const { end, radius, start } = rod;
+
   builder.add(
-    cylinder({ height: segmentLength(start, end), radialSegments: 6, radiusBottom: radius, radiusTop: radius * 0.9 }),
+    cylinder({
+      height: segmentLength(start, end),
+      radialSegments: trimSegments(detail, 6),
+      radiusBottom: radius,
+      radiusTop: radius * 0.9,
+    }),
     {
       style,
       transform: segmentTransform(start, end),
@@ -41,8 +56,16 @@ function addRod(builder: MeshBuilder, start: Triple, end: Triple, radius: number
   );
 }
 
-export function addHeadband(builder: MeshBuilder): void {
-  builder.add(torus(0.1, 0.011, 22, 4), {
+function ring(detail: HumanDetail, radius: number, thickness: number, segments: number): Shape {
+  return torus(radius, thickness, trimSegments(detail, segments), trimSegments(detail, 4));
+}
+
+function lump(detail: HumanDetail, offset: Triple, radius: number, roughness: number): Shape {
+  return blob({ detail: detail.propSubdivisions, noise: PROP_NOISE, offset, radius, roughness });
+}
+
+export function addHeadband(builder: MeshBuilder, detail: HumanDetail): void {
+  builder.add(ring(detail, 0.1, 0.011, 16), {
     style: { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Accent },
     transform: transformOf({ position: [0, 1.684, -0.008], rotation: [0.1, 0, 0], scale: [1.02, 1, 1.13] }),
   });
@@ -81,40 +104,47 @@ export function addFeather(builder: MeshBuilder, detail: HumanDetail): void {
         { radius: 0.004, x: 0, y: -0.045, z: 0 },
         { radius: 0.004, x: 0, y: 0.03, z: 0 },
       ],
-      { radialSegments: 4 }
+      { radialSegments: trimSegments(detail, 4) }
     ),
     { style: { ...style, slot: MaterialSlot.Bone }, transform: quill }
   );
 }
 
+const NECKLACE_RADIUS = 0.088;
+const NECKLACE_CORD = transformOf({ position: [0, 1.425, 0.005], rotation: [-0.35, 0, 0], scale: [1, 1, 0.9] });
+const TOOTH_ANGLES = [-0.3, 0, 0.3];
+
 export function addNecklace(builder: MeshBuilder, detail: HumanDetail): void {
   const style = onChest(MaterialSlot.Bone);
 
-  builder.add(torus(0.088, 0.008, 20, 4), {
+  builder.add(ring(detail, NECKLACE_RADIUS, 0.008, 14), {
     style: { ...FLEXIBLE_TORSO_STYLE, slot: MaterialSlot.Rope },
-    transform: transformOf({ position: [0, 1.425, 0.005], rotation: [-0.35, 0, 0], scale: [1, 1, 0.9] }),
+    transform: NECKLACE_CORD,
   });
 
   if (!detail.hasFineDetails) {
     return;
   }
 
-  for (let index = -2; index <= 2; index += 1) {
-    const angle = Math.PI / 2 + index * 0.32;
-    const x = Math.cos(angle) * 0.088;
-    const z = 0.005 + Math.sin(angle) * 0.079;
+  for (const offset of TOOTH_ANGLES) {
+    const angle = Math.PI / 2 + offset;
 
-    builder.add(cone(0.009, 0.034, 5), {
+    const knot = new Vector3(Math.cos(angle) * NECKLACE_RADIUS, 0, Math.sin(angle) * NECKLACE_RADIUS).applyMatrix4(
+      NECKLACE_CORD
+    );
+
+    builder.add(cone(0.011, 0.04, 5), {
       style,
-      transform: transformOf({
-        position: [x, 1.41 - Math.abs(index) * 0.006, z + 0.008],
-        rotation: [Math.PI + 0.3, 0, 0],
-      }),
+      transform: transformOf({ position: [knot.x, knot.y - 0.004, knot.z + 0.005], rotation: [Math.PI + 0.25, 0, 0] }),
     });
   }
 }
 
 export function addPaint(builder: MeshBuilder, detail: HumanDetail): void {
+  if (!detail.hasSmallParts) {
+    return;
+  }
+
   const style = { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Accent };
   const head = headShape(detail);
 
@@ -136,55 +166,70 @@ export function addPaint(builder: MeshBuilder, detail: HumanDetail): void {
   });
 }
 
-export function addArmband(builder: MeshBuilder): void {
-  builder.add(torus(0.06, 0.009, 14, 4), {
+export function addArmband(builder: MeshBuilder, detail: HumanDetail): void {
+  builder.add(ring(detail, 0.06, 0.009, 12), {
     style: { ...armStyle(1), slot: MaterialSlot.Accent },
     transform: transformOf({ position: [0.202, 1.29, -0.004], rotation: [0, 0, -0.05] }),
   });
 }
 
-export function addAxe(builder: MeshBuilder): void {
+export function addAxe(builder: MeshBuilder, detail: HumanDetail): void {
   const [x, y, z] = RIGHT_FIST;
 
-  addRod(builder, [x, y, z - 0.09], [x, y, z + 0.5], 0.017, inRightHand(MaterialSlot.Wood));
+  addRod(
+    builder,
+    detail,
+    { end: [x, y, z + 0.5], radius: 0.017, start: [x, y, z - 0.09] },
+    inRightHand(MaterialSlot.Wood)
+  );
   builder.add(box(0.034, 0.13, 0.085), {
     style: inRightHand(MaterialSlot.Stone),
     transform: transformOf({ position: [x, y - 0.04, z + 0.46], rotation: [0.12, 0, 0] }),
   });
-  builder.add(torus(0.022, 0.007, 8, 4), {
+  builder.add(ring(detail, 0.022, 0.007, 8), {
     style: inRightHand(MaterialSlot.Rope),
     transform: transformOf({ position: [x, y, z + 0.44], rotation: [Math.PI / 2, 0, 0] }),
   });
 }
 
-export function addSpear(builder: MeshBuilder): void {
+export function addSpear(builder: MeshBuilder, detail: HumanDetail): void {
   const [x, y, z] = RIGHT_FIST;
 
-  addRod(builder, [x, y, z - 0.62], [x, y, z + 1.12], 0.014, inRightHand(MaterialSlot.Wood));
-  builder.add(cone(0.026, 0.13, 5), {
+  addRod(
+    builder,
+    detail,
+    { end: [x, y, z + 1.12], radius: 0.014, start: [x, y, z - 0.62] },
+    inRightHand(MaterialSlot.Wood)
+  );
+  builder.add(cone(0.026, 0.13, trimSegments(detail, 5)), {
     style: inRightHand(MaterialSlot.Stone),
     transform: transformOf({ position: [x, y, z + 1.11], rotation: [Math.PI / 2, 0, 0], scale: [1, 1, 0.55] }),
   });
-  builder.add(torus(0.018, 0.006, 8, 4), {
+  builder.add(ring(detail, 0.018, 0.006, 8), {
     style: inRightHand(MaterialSlot.Rope),
     transform: transformOf({ position: [x, y, z + 1.1], rotation: [Math.PI / 2, 0, 0] }),
   });
 }
 
-export function addDiggingStick(builder: MeshBuilder): void {
+export function addDiggingStick(builder: MeshBuilder, detail: HumanDetail): void {
   const [x, y, z] = RIGHT_FIST;
 
-  addRod(builder, [x, y + 0.22, z], [x, y - 0.62, z + 0.02], 0.018, inRightHand(MaterialSlot.Wood));
-  builder.add(cone(0.018, 0.09, 6), {
+  addRod(
+    builder,
+    detail,
+    { end: [x, y - 0.62, z + 0.02], radius: 0.018, start: [x, y + 0.22, z] },
+    inRightHand(MaterialSlot.Wood)
+  );
+  builder.add(cone(0.018, 0.09, trimSegments(detail, 6)), {
     style: inRightHand(MaterialSlot.Wood),
     transform: transformOf({ position: [x, y - 0.62, z + 0.02], rotation: [Math.PI, 0, 0] }),
   });
 }
 
-export function addHammerStone(builder: MeshBuilder): void {
+export function addHammerStone(builder: MeshBuilder, detail: HumanDetail): void {
   const [x, y, z] = RIGHT_FIST;
 
-  builder.add(blob({ detail: 1, noise: PROP_NOISE, offset: [3, 1, 2], radius: 0.05, roughness: 0.2 }), {
+  builder.add(lump(detail, [3, 1, 2], 0.05, 0.2), {
     style: inRightHand(MaterialSlot.Stone),
     transform: transformOf({ position: [x, y - 0.02, z + 0.06], scale: [0.9, 1, 1.15] }),
   });
@@ -202,7 +247,7 @@ function basketShape(detail: HumanDetail): Shape {
       { radius: 0.08, y: 0.06 },
       { radius: 0, y: 0.05 },
     ],
-    Math.max(7, detail.limbSegments + 3)
+    segmentsAtLeast(detail, 7, detail.limbSegments + 3)
   );
 }
 
@@ -215,7 +260,7 @@ function addBasket(builder: MeshBuilder, detail: HumanDetail, hasBerries: boolea
     style: inLeftHand(MaterialSlot.Thatch),
     transform: transformOf({ position: [x, basketBottom, z] }),
   });
-  builder.add(torus(0.095, 0.007, 14, 4), {
+  builder.add(ring(detail, 0.095, 0.007, 14), {
     style: inLeftHand(MaterialSlot.Wood),
     transform: transformOf({
       position: [x, basketBottom + 0.12, z],
@@ -224,7 +269,7 @@ function addBasket(builder: MeshBuilder, detail: HumanDetail, hasBerries: boolea
     }),
   });
 
-  if (!hasBerries) {
+  if (!(hasBerries && detail.hasSmallParts)) {
     return;
   }
 
@@ -278,26 +323,26 @@ export function addCarriedWood(builder: MeshBuilder, detail: HumanDetail): void 
   }
 }
 
-export function addCarriedStone(builder: MeshBuilder): void {
+export function addCarriedStone(builder: MeshBuilder, detail: HumanDetail): void {
   const [x, y, z] = CRADLE;
 
-  builder.add(blob({ detail: 1, noise: PROP_NOISE, offset: [7, 2, 1], radius: 0.13, roughness: 0.25 }), {
+  builder.add(lump(detail, [7, 2, 1], 0.13, 0.25), {
     style: onChest(MaterialSlot.Stone),
     transform: transformOf({ position: [x, y - 0.04, z], scale: [1.3, 0.9, 1] }),
   });
 }
 
-export function addCarriedMeat(builder: MeshBuilder): void {
+export function addCarriedMeat(builder: MeshBuilder, detail: HumanDetail): void {
   const knuckle: Triple = [0.17, 1.52, 0.12];
 
-  builder.add(blob({ detail: 1, noise: PROP_NOISE, offset: [1, 5, 3], radius: 0.1, roughness: 0.18 }), {
+  builder.add(lump(detail, [1, 5, 3], 0.1, 0.18), {
     style: onChest(MaterialSlot.Meat),
     transform: transformOf({ position: [0.16, 1.535, 0.0], scale: [0.9, 0.8, 1.7] }),
   });
   builder.add(
     cylinder({
       height: segmentLength(knuckle, SHOULDER_GRIP),
-      radialSegments: 5,
+      radialSegments: trimSegments(detail, 5),
       radiusBottom: 0.016,
       radiusTop: 0.012,
     }),
@@ -309,6 +354,7 @@ export function addCarriedFish(builder: MeshBuilder, detail: HumanDetail): void 
   const [x, y, z] = RIGHT_FIST;
 
   const style = inRightHand(MaterialSlot.Fish);
+  const segments = segmentsAtLeast(detail, 6, detail.limbSegments);
 
   builder.add(
     loft(
@@ -320,7 +366,7 @@ export function addCarriedFish(builder: MeshBuilder, detail: HumanDetail): void 
         { radiusX: 0.008, radiusZ: 0.016, y: -0.04 },
         { radiusX: 0, radiusZ: 0, y: -0.03 },
       ],
-      Math.max(6, detail.limbSegments)
+      segments
     ),
     { style, transform: transformOf({ position: [x, y, z + 0.02] }) }
   );
@@ -332,13 +378,13 @@ export function addCarriedFish(builder: MeshBuilder, detail: HumanDetail): void 
         { radiusX: 0.007, radiusZ: 0.014, y: -0.37 },
         { radiusX: 0, radiusZ: 0, y: -0.345 },
       ],
-      Math.max(6, detail.limbSegments)
+      segments
     ),
     { style, transform: transformOf({ position: [x, y, z + 0.02] }) }
   );
 }
 
-export function addCarriedCrops(builder: MeshBuilder): void {
+export function addCarriedCrops(builder: MeshBuilder, detail: HumanDetail): void {
   const [x, y, z] = CRADLE;
 
   const style = onChest(MaterialSlot.Grain);
@@ -355,26 +401,17 @@ export function addCarriedCrops(builder: MeshBuilder): void {
           { radius: 0.006, x: start[0], y: start[1] + layer, z: start[2] + spread },
           { radius: 0.006, x: end[0], y: end[1] + layer * 2, z: end[2] + spread * 2 },
         ],
-        { radialSegments: 4 }
+        { radialSegments: trimSegments(detail, 4) }
       ),
       { style }
     );
   }
 
-  builder.add(
-    blob({
-      detail: 1,
-      noise: PROP_NOISE,
-      offset: [2, 9, 4],
-      radius: 0.06,
-      roughness: 0.3,
-    }),
-    {
-      style,
-      transform: transformOf({ position: end, scale: [1.5, 0.8, 1] }),
-    }
-  );
-  builder.add(torus(0.035, 0.008, 8, 4), {
+  builder.add(lump(detail, [2, 9, 4], 0.06, 0.3), {
+    style,
+    transform: transformOf({ position: end, scale: [1.5, 0.8, 1] }),
+  });
+  builder.add(ring(detail, 0.035, 0.008, 8), {
     style: onChest(MaterialSlot.Rope),
     transform: transformOf({ position: [x - 0.02, y + 0.012, z], rotation: [0, 0, Math.PI / 2] }),
   });

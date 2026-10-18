@@ -1,5 +1,6 @@
 import { Vector3 } from "three";
 import { FULL_TURN } from "../../shared/math.ts";
+import { alongPath, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, SurfacePoint } from "../mesh/mesh-builder.ts";
 import { type Shape, transformShape } from "../mesh/shape.ts";
@@ -8,6 +9,7 @@ import { outermostHit, surfaceTransform } from "../mesh/surface-probe.ts";
 import { combine, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
 import { degrees } from "../rig/curves.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
+import type { AnimalDetail } from "./animal-detail.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
 import { addEyes, addLegs, hoofBelow, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
@@ -111,19 +113,22 @@ function coatSlot(point: SurfacePoint): number {
   return isBelly || isRump ? MaterialSlot.CoatLight : MaterialSlot.Coat;
 }
 
-function headShape(segments: number): Shape {
+function headShape(detail: AnimalDetail): Shape {
   const muzzle = tube(
-    [
-      { radius: 0, x: 0, y: 1.66, z: 0.67 },
-      { radius: 0.062, x: 0, y: 1.665, z: 0.7 },
-      { radius: 0.084, x: 0, y: 1.665, z: 0.75 },
-      { radius: 0.088, x: 0, y: 1.665, z: 0.85 },
-      { radius: 0.066, x: 0, y: 1.6, z: 0.98 },
-      { radius: 0.046, x: 0, y: 1.535, z: 1.08 },
-      { radius: 0.04, x: 0, y: 1.505, z: 1.14 },
-      { radius: 0, x: 0, y: 1.495, z: 1.165 },
-    ],
-    { hasEndCap: false, radialSegments: segments }
+    alongPath(
+      [
+        { radius: 0, x: 0, y: 1.66, z: 0.67 },
+        { radius: 0.062, x: 0, y: 1.665, z: 0.7 },
+        { radius: 0.084, x: 0, y: 1.665, z: 0.75 },
+        { radius: 0.088, x: 0, y: 1.665, z: 0.85 },
+        { radius: 0.066, x: 0, y: 1.6, z: 0.98 },
+        { radius: 0.046, x: 0, y: 1.535, z: 1.08 },
+        { radius: 0.04, x: 0, y: 1.505, z: 1.14 },
+        { radius: 0, x: 0, y: 1.495, z: 1.165 },
+      ],
+      detail
+    ),
+    { hasEndCap: false, radialSegments: detail.segments }
   );
 
   return transformShape(muzzle, transformOf({ scale: [0.78, 1, 1] }));
@@ -131,19 +136,27 @@ function headShape(segments: number): Shape {
 
 const EAR = transformOf({ position: [0, 0.075, 0], scale: [0.036, 0.085, 0.014] });
 
-function addHead(builder: MeshBuilder, segments: number): void {
-  const head = rigidStyle(QuadrupedBone.Head);
-  const shape = headShape(segments);
+function addFace(builder: MeshBuilder, shape: Shape, detail: AnimalDetail): void {
+  if (!detail.hasSmallParts) {
+    return;
+  }
 
-  builder.add(shape, { seam: HEAD_SEAM, style: { ...head, slot: MaterialSlot.Coat } });
   builder.add(sphere(0.026, 6, 4), {
-    style: { ...head, slot: MaterialSlot.Hoof },
+    style: { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Hoof },
     transform: transformOf({ position: [0, 1.508, 1.148] }),
   });
   addEyes(builder, shape, { direction: [1, 0.25, 0.35], origin: [0, 1.64, 0.88], radius: 0.016, sink: 0.5 });
+}
+
+function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
+  const head = rigidStyle(QuadrupedBone.Head);
+  const shape = headShape(detail);
+
+  builder.add(shape, { seam: HEAD_SEAM, style: { ...head, slot: MaterialSlot.Coat } });
+  addFace(builder, shape, detail);
 
   for (const side of LEG_SIDES) {
-    builder.add(sphere(1, 6, 4), {
+    builder.add(sphere(1, segmentsUpTo(detail, 6), 4), {
       seam: EAR_SEAM,
       style: { ...head, slot: MaterialSlot.Coat },
       transform: combine(
@@ -162,7 +175,9 @@ const TAIL: readonly TubePoint[] = [
   { radius: 0, x: 0, y: 0.95, z: -0.88 },
 ];
 
-export function addDeerBody(builder: MeshBuilder, segments: number): void {
+export function addDeerBody(builder: MeshBuilder, detail: AnimalDetail): void {
+  const { segments } = detail;
+
   builder.add(lengthwiseLoft(BODY, segments + 2), {
     seam: BODY_SEAM,
     style: { ...bodyStyle(DEER_FRAME, 0.14), slot: coatSlot },
@@ -187,16 +202,17 @@ export function addDeerBody(builder: MeshBuilder, segments: number): void {
       transform: transformOf({ scale: [0.82, 1, 1] }),
     }
   );
-  addHead(builder, segments);
+  addHead(builder, detail);
   addLegs(builder, {
     blend: BLEND,
+    detail,
     frame: DEER_FRAME,
     paths: LEGS,
     seam: LEG_SEAM,
-    segments: Math.max(5, segments - 2),
+    segments: segmentsAtLeast(detail, 5, segments - 2),
     slot: hoofBelow(0.07),
   });
-  builder.add(tube(TAIL, { radialSegments: 5 }), {
+  builder.add(tube(TAIL, { radialSegments: segmentsUpTo(detail, 5) }), {
     seam: TAIL_SEAM,
     style: { ...tailStyle(DEER_FRAME, 0.04), slot: MaterialSlot.CoatLight },
   });
@@ -220,13 +236,16 @@ function antlerTine(start: Triple, end: Triple): TubePoint[] {
   ];
 }
 
-function addAntlers(builder: MeshBuilder, segments: number, scale: number): void {
+function addAntlers(builder: MeshBuilder, detail: AnimalDetail, scale: number): void {
   const style = { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Antler };
 
   for (const side of LEG_SIDES) {
     const mirror = sideMirror(side);
 
-    builder.add(tube(antlerBeam(scale), { radialSegments: Math.max(4, segments - 3) }), { style, transform: mirror });
+    builder.add(tube(antlerBeam(scale), { radialSegments: segmentsAtLeast(detail, 4, detail.segments - 3) }), {
+      style,
+      transform: mirror,
+    });
 
     for (const [start, end] of antlerTines(scale)) {
       builder.add(tube(antlerTine(start, end), { radialSegments: 4 }), { style, transform: mirror });
@@ -246,21 +265,25 @@ function antlerTines(scale: number): (readonly [Triple, Triple])[] {
   ];
 }
 
-export function addSmallAntlers(builder: MeshBuilder, segments: number): void {
-  addAntlers(builder, segments, 0.72);
+export function addSmallAntlers(builder: MeshBuilder, detail: AnimalDetail): void {
+  addAntlers(builder, detail, 0.72);
 }
 
-export function addLargeAntlers(builder: MeshBuilder, segments: number): void {
-  addAntlers(builder, segments, 1.1);
+export function addLargeAntlers(builder: MeshBuilder, detail: AnimalDetail): void {
+  addAntlers(builder, detail, 1.1);
 }
 
 const SPOT_COUNT = 14;
 const SPOT_RAY_HEIGHT = 1;
 const SPOT_FLATNESS = transformOf({ scale: [1, 0.5, 1] });
 
-export function addFawnSpots(builder: MeshBuilder, segments: number): void {
+export function addFawnSpots(builder: MeshBuilder, detail: AnimalDetail): void {
+  if (!detail.hasSmallParts) {
+    return;
+  }
+
   const style = { ...bodyStyle(DEER_FRAME, 0.14), slot: MaterialSlot.CoatLight };
-  const body = lengthwiseLoft(BODY, segments + 2);
+  const body = lengthwiseLoft(BODY, detail.segments + 2);
 
   for (let index = 0; index < SPOT_COUNT; index += 1) {
     const side = index % 2 === 0 ? 1 : -1;

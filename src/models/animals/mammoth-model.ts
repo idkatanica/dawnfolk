@@ -3,6 +3,7 @@ import { FULL_TURN } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import type { AnimalPose } from "../../world/agent-poses.ts";
+import { alongPath, segmentsAtLeast } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder } from "../mesh/mesh-builder.ts";
 import { deformShape, type Shape, transformShape } from "../mesh/shape.ts";
@@ -20,6 +21,7 @@ import { combine, sideMirror, type Triple, transformOf } from "../mesh/transform
 import { degrees, wave } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
 import { chainStyle, createChain, rigidStyle } from "../rig/skin-weights.ts";
+import type { AnimalDetail } from "./animal-detail.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
 import { addLegs, hoofBelow, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
@@ -145,14 +147,18 @@ function ringSection(ring: BodyRing): LoftSection {
   };
 }
 
-function bodyShape(segments: number): Shape {
+function bodyShape(detail: AnimalDetail): Shape {
+  const segments = detail.segments * 3 + 6;
   const shape = loft(
-    [
-      { centerZ: -0.13, radiusX: 0, radiusZ: 0, y: 1.54 },
-      { centerZ: -0.13, radiusX: 0.6, radiusZ: 0.9, y: 1.36 },
-      ...BODY_RINGS.map(ringSection),
-      { centerZ: 0.42, radiusX: 0, radiusZ: 0, y: 3.68 },
-    ],
+    alongPath(
+      [
+        { centerZ: -0.13, radiusX: 0, radiusZ: 0, y: 1.54 },
+        { centerZ: -0.13, radiusX: 0.6, radiusZ: 0.9, y: 1.36 },
+        ...BODY_RINGS.map(ringSection),
+        { centerZ: 0.42, radiusX: 0, radiusZ: 0, y: 3.68 },
+      ],
+      detail
+    ),
     segments
   );
 
@@ -174,8 +180,8 @@ function bodyShape(segments: number): Shape {
   });
 }
 
-function headShape(segments: number): Shape {
-  return deformShape(lengthwiseLoft(HEAD, segments), (vertex) => {
+function headShape(detail: AnimalDetail): Shape {
+  return deformShape(lengthwiseLoft(alongPath(HEAD, detail), detail.segments + 4), (vertex) => {
     const fur = FUR_DEPTH * 0.8 * FUR_NOISE.fractal(vertex.x * 2.6 + 9, vertex.y * 2.6, vertex.z * 2.6, { octaves: 2 });
 
     return [vertex.normalX * fur, vertex.normalY * fur, vertex.normalZ * fur];
@@ -226,13 +232,18 @@ const EYE_RADIUS = 0.045;
 const EAR_SIZE: Triple = [0.27, 0.07, 0.2];
 const HEAD_CURVATURE = 0.7;
 
-function earShape(segments: number): Shape {
-  const flap = transformShape(sphere(1, segments, Math.max(4, segments - 4)), transformOf({ scale: EAR_SIZE }));
+function earShape(detail: AnimalDetail): Shape {
+  const { segments } = detail;
+
+  const flap = transformShape(
+    sphere(1, segments, segmentsAtLeast(detail, 4, segments - 4)),
+    transformOf({ scale: EAR_SIZE })
+  );
 
   return deformShape(flap, (vertex) => [0, -(vertex.x * vertex.x + vertex.z * vertex.z) / (2 * HEAD_CURVATURE), 0]);
 }
 
-function addFace(builder: MeshBuilder, head: Shape, segments: number): void {
+function addFace(builder: MeshBuilder, head: Shape, detail: AnimalDetail): void {
   const style = rigidStyle(QuadrupedBone.Head);
   const eye = outermostHit(head, new Vector3(0, 2.92, 1.5), new Vector3(1, -0.05, 0.75));
   const ear = outermostHit(head, new Vector3(0, 3.02, 1.12), new Vector3(1, 0.12, -0.2));
@@ -240,7 +251,7 @@ function addFace(builder: MeshBuilder, head: Shape, segments: number): void {
   for (const side of LEG_SIDES) {
     const mirror = sideMirror(side);
 
-    if (eye !== null) {
+    if (eye !== null && detail.hasSmallParts) {
       builder.add(sphere(EYE_RADIUS, 6, 4), {
         style: { ...style, slot: MaterialSlot.Eye },
         transform: combine(mirror, surfaceTransform(eye, EYE_RADIUS * 0.65)),
@@ -248,7 +259,7 @@ function addFace(builder: MeshBuilder, head: Shape, segments: number): void {
     }
 
     if (ear !== null) {
-      builder.add(earShape(segments), {
+      builder.add(earShape(detail), {
         seam: EAR_SEAM,
         style: { ...style, slot: MaterialSlot.Coat },
         transform: combine(mirror, surfaceTransform(ear, 0.005)),
@@ -257,15 +268,15 @@ function addFace(builder: MeshBuilder, head: Shape, segments: number): void {
   }
 }
 
-function addHead(builder: MeshBuilder, segments: number): void {
-  const head = headShape(segments + 4);
+function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
+  const head = headShape(detail);
 
   builder.add(head, { seam: HEAD_SEAM, style: { ...neckStyle(MAMMOTH_FRAME, 0.25), slot: MaterialSlot.Coat } });
-  builder.add(tube(TRUNK, { radialSegments: segments }), {
+  builder.add(tube(alongPath(TRUNK, detail), { radialSegments: detail.segments }), {
     seam: TRUNK_SEAM,
     style: { ...TRUNK_STYLE, slot: MaterialSlot.Coat },
   });
-  addFace(builder, head, segments);
+  addFace(builder, head, detail);
 }
 
 const TAIL: readonly TubePoint[] = [
@@ -290,40 +301,42 @@ function tuskPath(length: number): TubePoint[] {
   ];
 }
 
-function addTusks(builder: MeshBuilder, segments: number, length: number): void {
+function addTusks(builder: MeshBuilder, detail: AnimalDetail, length: number): void {
   const style = { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Tusk };
+  const radialSegments = segmentsAtLeast(detail, 5, detail.segments - 2);
 
   for (const side of LEG_SIDES) {
-    builder.add(tube(tuskPath(length), { hasEndCap: false, radialSegments: Math.max(5, segments - 2) }), {
+    builder.add(tube(tuskPath(length), { hasEndCap: false, radialSegments }), {
       style,
       transform: sideMirror(side),
     });
   }
 }
 
-export function addShortTusks(builder: MeshBuilder, segments: number): void {
-  addTusks(builder, segments, 0.55);
+export function addShortTusks(builder: MeshBuilder, detail: AnimalDetail): void {
+  addTusks(builder, detail, 0.55);
 }
 
-export function addLongTusks(builder: MeshBuilder, segments: number): void {
-  addTusks(builder, segments, 1);
+export function addLongTusks(builder: MeshBuilder, detail: AnimalDetail): void {
+  addTusks(builder, detail, 1);
 }
 
-export function addMammothBody(builder: MeshBuilder, segments: number): void {
-  builder.add(bodyShape(segments * 3 + 6), {
+export function addMammothBody(builder: MeshBuilder, detail: AnimalDetail): void {
+  builder.add(bodyShape(detail), {
     seam: BODY_SEAM,
     style: { ...bodyStyle(MAMMOTH_FRAME, 0.5), slot: MaterialSlot.Coat },
   });
-  addHead(builder, segments);
+  addHead(builder, detail);
   addLegs(builder, {
     blend: BLEND,
+    detail,
     frame: MAMMOTH_FRAME,
     paths: LEGS,
     seam: LEG_SEAM,
-    segments,
+    segments: detail.segments,
     slot: hoofBelow(0.05),
   });
-  builder.add(tube(TAIL, { radialSegments: Math.max(5, segments - 4) }), {
+  builder.add(tube(TAIL, { radialSegments: segmentsAtLeast(detail, 5, detail.segments - 4) }), {
     seam: TAIL_SEAM,
     style: { ...tailStyle(MAMMOTH_FRAME, 0.15), slot: MaterialSlot.Coat },
   });

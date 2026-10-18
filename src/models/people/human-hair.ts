@@ -1,6 +1,7 @@
 import { lerp, smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
+import { alongPath, segmentsAtLeast } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder } from "../mesh/mesh-builder.ts";
 import { deformShape, type Shape, type ShapeVertex } from "../mesh/shape.ts";
@@ -9,7 +10,7 @@ import { combine, transformOf } from "../mesh/transforms.ts";
 import { triangleWave } from "../rig/curves.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
 import { forEachSide } from "./human-anatomy.ts";
-import type { HumanDetail } from "./human-detail.ts";
+import { type HumanDetail, trimSegments } from "./human-detail.ts";
 import { headToChestStyle } from "./human-rigging.ts";
 import { HumanBone } from "./human-skeleton.ts";
 
@@ -76,7 +77,7 @@ function headShell(detail: HumanDetail, options: ShellOptions): Shape {
     ...HEAD_PROFILE.filter((section) => section.y > bottom + 0.012).map((section) => grown(section, offset)),
     { centerZ: -0.012, radiusX: 0, radiusZ: 0, y: HEAD_CROWN + offset },
   ];
-  const shell = loft(sections, detail.headSegments + 2);
+  const shell = loft(alongPath(sections, detail), detail.headSegments + 2);
 
   return deformShape(shell, (vertex) => {
     const { centerZ: axisZ = 0 } = sectionAt(HEAD_PROFILE, Math.min(vertex.y, HEAD_CROWN - 0.01));
@@ -190,10 +191,10 @@ function curtainSection(ring: CurtainRing, strands: number): LoftSection {
 }
 
 function curtainShape(detail: HumanDetail): Shape {
-  const strands = detail.hasFineDetails ? 9 : 5;
+  const strands = detail.hasFineDetails ? 7 : 5;
   const rings = detail.hasFineDetails ? CURTAIN_RINGS : LOW_CURTAIN_RINGS;
   const curtain = panel({
-    angularSegments: detail.hasFineDetails ? 18 : 8,
+    angularSegments: detail.hasFineDetails ? 14 : 8,
     endAngle: CURTAIN_END,
     sections: rings.map((ring) => curtainSection(ring, strands)).reverse(),
     startAngle: CURTAIN_START,
@@ -234,14 +235,17 @@ function braidPath(): TubePoint[] {
 }
 
 export function addBraids(builder: MeshBuilder, detail: HumanDetail): void {
-  const braid = braidPath();
+  const braid = alongPath(braidPath(), detail);
   const style = { ...headToChestStyle(1.58, 1.42), slot: MaterialSlot.Hair };
 
   builder.add(capShell(detail, 0.012), { style: HAIR });
 
   forEachSide((_side, mirror) => {
-    builder.add(tube(braid, { radialSegments: Math.max(5, detail.limbSegments - 2) }), { style, transform: mirror });
-    builder.add(torus(0.016, 0.006, 10, 4), {
+    builder.add(tube(braid, { radialSegments: segmentsAtLeast(detail, 5, detail.limbSegments - 2) }), {
+      style,
+      transform: mirror,
+    });
+    builder.add(torus(0.016, 0.006, trimSegments(detail, 8), trimSegments(detail, 4)), {
       style: { ...style, slot: MaterialSlot.Accent },
       transform: combine(mirror, transformOf({ position: [0.12, 1.325, 0.088], rotation: [0.3, 0, 0] })),
     });
@@ -250,10 +254,15 @@ export function addBraids(builder: MeshBuilder, detail: HumanDetail): void {
 
 export function addBun(builder: MeshBuilder, detail: HumanDetail): void {
   builder.add(capShell(detail, 0.012, 1.7, 1.575), { style: HAIR });
-  builder.add(sphere(0.05, detail.headSegments, 6), {
+  builder.add(sphere(0.05, detail.headSegments, segmentsAtLeast(detail, 6, 4)), {
     style: HAIR,
     transform: transformOf({ position: [0, 1.722, -0.088], scale: [1, 0.86, 0.92] }),
   });
+
+  if (!detail.hasSmallParts) {
+    return;
+  }
+
   builder.add(
     tube(
       [
@@ -279,11 +288,11 @@ export function addPonytail(builder: MeshBuilder, detail: HumanDetail): void {
         { radius: 0.018, x: 0, y: 1.46, z: -0.15 },
         { radius: 0, x: 0, y: 1.41, z: -0.145 },
       ],
-      { hasEndCap: false, radialSegments: Math.max(5, detail.limbSegments - 2) }
+      { hasEndCap: false, radialSegments: segmentsAtLeast(detail, 5, detail.limbSegments - 2) }
     ),
     { style: { ...headToChestStyle(1.62, 1.46), slot: MaterialSlot.Hair } }
   );
-  builder.add(torus(0.03, 0.007, 10, 4), {
+  builder.add(torus(0.03, 0.007, trimSegments(detail, 8), trimSegments(detail, 4)), {
     style: { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Accent },
     transform: transformOf({ position: [0, 1.672, -0.112], rotation: [1.2, 0, 0] }),
   });
@@ -321,7 +330,7 @@ const FULL_BEARD_SECTIONS: readonly LoftSection[] = [
 const BEARD_TUCK = 0.02;
 
 function beardShell(sections: readonly LoftSection[], detail: HumanDetail): Shape {
-  return deformShape(loft(sections, detail.headSegments), (vertex) => {
+  return deformShape(loft(alongPath(sections, detail), detail.headSegments), (vertex) => {
     const { centerZ = 0 } = sectionAt(sections, vertex.y);
 
     const tuck = BEARD_TUCK * (1 - beardCoverage(vertex));

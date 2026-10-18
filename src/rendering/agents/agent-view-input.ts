@@ -14,6 +14,7 @@ export interface AgentViewInput {
 }
 
 export interface LevelDistances {
+  readonly far: number;
   readonly high: number;
   readonly low: number;
 }
@@ -26,15 +27,19 @@ export function detailLevel(distance: number, limits: LevelDistances, detail: nu
     return 0;
   }
 
-  if (distance < farthestFigure(limits, detail)) {
+  if (distance < limits.low * detail) {
     return 1;
+  }
+
+  if (distance < farthestFigure(limits, detail)) {
+    return 2;
   }
 
   return HIDDEN_LEVEL;
 }
 
 export function farthestFigure(limits: LevelDistances, detail: number): number {
-  return limits.low * detail;
+  return limits.far * detail;
 }
 
 export function standingHeight(mirror: WorldMirror, x: number, z: number, wadingDepth: number): number {

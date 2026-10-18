@@ -19,6 +19,7 @@ const ADULT = { seed: 0.31, youth: 0 };
 const TOUCHING = 0.01;
 const THINNEST = 0.001;
 const PHASES = [0, 0.25, 0.5, 0.75];
+const LEVELS = ["high", "low", "far"] as const;
 
 function isTorso(piece: MeshPiece): boolean {
   return piece.vertices.includes(0);
@@ -53,7 +54,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
   });
 
   it("stands every part on the body and the body on the ground", () => {
-    for (const level of ["high", "low"] as const) {
+    for (const level of LEVELS) {
       const [body, ...extras] = buildAnimalParts(kind, level);
 
       for (const [index, extra] of extras.entries()) {
@@ -66,20 +67,20 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     }
   });
 
-  it("leaves no holes in any part at either level of detail", () => {
-    for (const level of ["high", "low"] as const) {
+  it("leaves no holes in any part at any level of detail", () => {
+    for (const level of LEVELS) {
       for (const [index, mesh] of buildAnimalParts(kind, level).entries()) {
         expect(openEdgeCount(mesh), `${level} ${species.parts[index].name}`).toBe(0);
       }
     }
   });
 
-  it("keeps every part on the body through every clip at both levels of detail", () => {
+  it("keeps every part on the body through every clip at every level of detail", () => {
     const scales = species.boneScales(animalAppearance({ kind, ...ADULT }));
     const poser = new SkeletonPoser(species.skeleton);
     const pose = new Pose(species.skeleton.bones.length);
 
-    for (const level of ["high", "low"] as const) {
+    for (const level of LEVELS) {
       const mesh = mergeMeshes(buildAnimalParts(kind, level));
 
       for (const clip of ANIMAL_POSES) {
@@ -98,7 +99,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
   });
 
   it("builds every part from solid shapes, never paper-thin cards", () => {
-    for (const level of ["high", "low"] as const) {
+    for (const level of LEVELS) {
       for (const [index, mesh] of buildAnimalParts(kind, level).entries()) {
         expect(thinnestPiece(mesh, meshPieces(mesh)), `${level} ${species.parts[index].name}`).toBeGreaterThan(
           THINNEST
@@ -107,12 +108,13 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     }
   });
 
-  it("uses fewer triangles at the low level of detail", () => {
-    function count(level: "high" | "low"): number {
+  it("uses fewer triangles at every lower level of detail", () => {
+    function count(level: (typeof LEVELS)[number]): number {
       return buildAnimalParts(kind, level).reduce((sum, mesh) => sum + mesh.indices.length, 0);
     }
 
     expect(count("low")).toBeLessThan(count("high"));
+    expect(count("far")).toBeLessThan(count("low") * 0.6);
   });
 
   it("keeps every pose finite", () => {
