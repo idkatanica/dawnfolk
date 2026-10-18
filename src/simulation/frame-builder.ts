@@ -96,6 +96,7 @@ export class FrameBuilder {
       terrain: {
         baseTemperature: Float32Array.from(terrain.baseTemperature),
         biome: Uint8Array.from(terrain.biome),
+        coastDistance: Float32Array.from(terrain.coastDistance),
         ground: Uint8Array.from(terrain.ground),
         height: Float32Array.from(terrain.height),
         moisture: Float32Array.from(terrain.moisture),

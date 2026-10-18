@@ -30,6 +30,20 @@ describe("world state", () => {
     expect(world.isWalkable(cell)).toBe(false);
   });
 
+  it("keeps everything beyond the coast off the island", () => {
+    const world = createTestWorld();
+
+    const cell = centerCell(world);
+
+    expect(world.isOnIsland(cell)).toBe(true);
+    expect(world.isWalkable(cell)).toBe(true);
+
+    world.terrain.coastDistance[cell] = -5;
+
+    expect(world.isOnIsland(cell)).toBe(false);
+    expect(world.isWalkable(cell)).toBe(false);
+  });
+
   it("cools raised land by the lapse rate", () => {
     const world = createTestWorld();
 

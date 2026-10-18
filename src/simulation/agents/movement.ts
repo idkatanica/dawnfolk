@@ -232,7 +232,7 @@ function uphillSlowdown(rise: number, run: number): number {
 function canEnter(mover: Mover, x: number, z: number, isEscapingWater: boolean, world: WorldState): boolean {
   const target = world.grid.cellAt(x, z);
 
-  if (target < 0 || world.slope(target) > CLIMBABLE_SLOPE) {
+  if (!world.isOnIsland(target) || world.slope(target) > CLIMBABLE_SLOPE) {
     return false;
   }
 

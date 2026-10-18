@@ -127,7 +127,7 @@ export class VegetationGrowthSystem {
     const world = this.#world;
     const biome = world.terrain.biome[cell];
 
-    if (world.grid.isOnEdge(cell) || world.touchesWater(cell)) {
+    if (world.grid.isOnEdge(cell) || !world.isOnIsland(cell) || world.touchesWater(cell)) {
       return false;
     }
 

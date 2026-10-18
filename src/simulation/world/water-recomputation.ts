@@ -47,7 +47,7 @@ export class WaterRecomputation {
 
     const carvedHeights = Float32Array.from(uncarvedHeights);
 
-    const hydrology = computeHydrology(carvedHeights, grid, terrain.dryness);
+    const hydrology = computeHydrology(carvedHeights, grid, terrain.dryness, terrain.coastDistance);
 
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
       terrain.carving[cell] = uncarvedHeights[cell] - carvedHeights[cell];

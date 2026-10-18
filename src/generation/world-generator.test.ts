@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { Biome } from "../content/biomes.ts";
+import { isOnIsland } from "../world/coast.ts";
 import { hasWater, NO_WATER } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 import { type GeneratedWorld, type GenerationProgress, generateWorld } from "./world-generator.ts";
@@ -85,7 +86,31 @@ describe("world generation", () => {
     expect(world.water.waterfalls).toHaveLength(edgeRivers.length);
 
     for (const waterfall of world.water.waterfalls) {
-      expect(Math.abs(waterfall.directionX) + Math.abs(waterfall.directionZ)).toBe(1);
+      expect(Math.hypot(waterfall.directionX, waterfall.directionZ)).toBeCloseTo(1);
+    }
+  });
+
+  it("rounds the island off with a coast inside the square", () => {
+    const grid = new WorldGrid(TEST_DIMENSIONS);
+    const last = grid.cellsPerSide - 1;
+    const middle = Math.floor(grid.cellsPerSide / 2);
+
+    for (const corner of [grid.index(0, 0), grid.index(last, 0), grid.index(0, last), grid.index(last, last)]) {
+      expect(isOnIsland(world.terrain.coastDistance, corner)).toBe(false);
+    }
+
+    expect(isOnIsland(world.terrain.coastDistance, grid.index(middle, middle))).toBe(true);
+
+    for (let plant = 0; plant < world.vegetation.count; plant += 1) {
+      const cell = grid.cellAt(world.vegetation.x[plant], world.vegetation.z[plant]);
+
+      expect(isOnIsland(world.terrain.coastDistance, cell)).toBe(true);
+    }
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      if (!isOnIsland(world.terrain.coastDistance, cell)) {
+        expect(world.terrain.waterSurface[cell]).toBe(NO_WATER);
+      }
     }
   });
 

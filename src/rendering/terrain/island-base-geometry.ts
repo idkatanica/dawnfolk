@@ -3,9 +3,12 @@ import type { WorldMirror } from "../../game/world-mirror.ts";
 import { smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise, type VolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
+import { sampleHeight } from "../../world/terrain-sampling.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 
-const PERIMETER_STEP = 2;
+const PERIMETER_POINTS = 1024;
+const INLAND_START = 0.5;
+const COAST_SEARCH_STEPS = 24;
 const CLIFF_DROP = 60;
 const CLIFF_RINGS = 6;
 const UNDERSIDE_DEPTH = 1650;
@@ -14,10 +17,10 @@ const CLIFF_BULGE = 9;
 const RIM_OFFSET = 0.4;
 
 interface PerimeterPoint {
-  readonly column: number;
   readonly outwardX: number;
   readonly outwardZ: number;
-  readonly row: number;
+  readonly x: number;
+  readonly z: number;
 }
 
 interface RingVertex {
@@ -33,24 +36,48 @@ interface VertexPlacement {
   readonly ring: RingVertex;
 }
 
-function perimeter(size: number): PerimeterPoint[] {
+function coastRadius(mirror: WorldMirror, outwardX: number, outwardZ: number): number {
+  const { grid, terrain } = mirror;
+
+  function coastDistanceAt(radius: number): number {
+    return sampleHeight(terrain.coastDistance, grid, outwardX * radius, outwardZ * radius);
+  }
+
+  const step = grid.cellSize / 2;
+  const farthest = grid.halfSize - grid.cellSize;
+
+  let inside = grid.halfSize * INLAND_START;
+
+  while (inside + step < farthest && coastDistanceAt(inside + step) > 0) {
+    inside += step;
+  }
+
+  let outside = Math.min(inside + step, farthest);
+
+  for (let iteration = 0; iteration < COAST_SEARCH_STEPS; iteration += 1) {
+    const middle = (inside + outside) / 2;
+
+    if (coastDistanceAt(middle) > 0) {
+      inside = middle;
+    } else {
+      outside = middle;
+    }
+  }
+
+  return inside;
+}
+
+function perimeter(mirror: WorldMirror): PerimeterPoint[] {
   const points: PerimeterPoint[] = [];
-  const last = size - 1;
 
-  for (let column = 0; column < last; column += PERIMETER_STEP) {
-    points.push({ column, outwardX: 0, outwardZ: -1, row: 0 });
-  }
+  for (let index = 0; index < PERIMETER_POINTS; index += 1) {
+    const angle = (index / PERIMETER_POINTS) * Math.PI * 2;
+    const outwardX = Math.cos(angle);
+    const outwardZ = Math.sin(angle);
 
-  for (let row = 0; row < last; row += PERIMETER_STEP) {
-    points.push({ column: last, outwardX: 1, outwardZ: 0, row });
-  }
+    const radius = coastRadius(mirror, outwardX, outwardZ);
 
-  for (let column = last; column > 0; column -= PERIMETER_STEP) {
-    points.push({ column, outwardX: 0, outwardZ: 1, row: last });
-  }
-
-  for (let row = last; row > 0; row -= PERIMETER_STEP) {
-    points.push({ column: 0, outwardX: -1, outwardZ: 0, row });
+    points.push({ outwardX, outwardZ, x: outwardX * radius, z: outwardZ * radius });
   }
 
   return points;
@@ -70,28 +97,18 @@ function ringLayout(): RingVertex[] {
   return rings;
 }
 
-function lowestEdgeHeight(mirror: WorldMirror): number {
-  const { grid, terrain } = mirror;
-
-  const last = grid.cellsPerSide - 1;
-
+function lowestCoastHeight(mirror: WorldMirror, points: readonly PerimeterPoint[]): number {
   let lowest = Number.POSITIVE_INFINITY;
 
-  for (let index = 0; index <= last; index += 1) {
-    lowest = Math.min(
-      lowest,
-      terrain.height[grid.index(index, 0)],
-      terrain.height[grid.index(index, last)],
-      terrain.height[grid.index(0, index)],
-      terrain.height[grid.index(last, index)]
-    );
+  for (const point of points) {
+    lowest = Math.min(lowest, sampleHeight(mirror.terrain.height, mirror.grid, point.x, point.z));
   }
 
   return lowest;
 }
 
 export function islandPlinthHeight(mirror: WorldMirror): number {
-  return lowestEdgeHeight(mirror) - CLIFF_DROP;
+  return lowestCoastHeight(mirror, perimeter(mirror)) - CLIFF_DROP;
 }
 
 function undersideReach(depth: number): number {
@@ -99,15 +116,14 @@ function undersideReach(depth: number): number {
 }
 
 function roundedRadius(x: number, z: number, depth: number, halfSize: number): number {
-  const squareRadius = Math.hypot(x, z);
-  const circleRadius = halfSize * 1.08;
+  const rimRadius = Math.hypot(x, z);
+  const circleRadius = halfSize * 0.98;
 
-  return squareRadius + (circleRadius - squareRadius) * smoothstep(0, 0.45, depth);
+  return rimRadius + (circleRadius - rimRadius) * smoothstep(0, 0.45, depth);
 }
 
 function placeVertex({ grid, noise, plinth, point, ring }: VertexPlacement): readonly [number, number, number] {
-  const x = grid.centerX(point.column);
-  const z = grid.centerZ(point.row);
+  const { x, z } = point;
 
   const angle = Math.atan2(z, x);
 
@@ -134,12 +150,11 @@ export function buildIslandBaseGeometry(mirror: WorldMirror): BufferGeometry {
   const { grid } = mirror;
   const noise = createVolumeNoise(createRandom(mirror.seed + 17));
   const rings = ringLayout();
-  const plinth = islandPlinthHeight(mirror);
-
-  const points = perimeter(grid.cellsPerSide);
+  const points = perimeter(mirror);
+  const plinth = lowestCoastHeight(mirror, points) - CLIFF_DROP;
 
   const positions: number[] = [];
-  const cells: number[] = [];
+  const topPoints: number[] = [];
   const cliffAmounts: number[] = [];
   const outwards: number[] = [];
   const indices: number[] = [];
@@ -147,7 +162,7 @@ export function buildIslandBaseGeometry(mirror: WorldMirror): BufferGeometry {
   for (const point of points) {
     for (const ring of rings) {
       positions.push(...placeVertex({ grid, noise, plinth, point, ring }));
-      cells.push(point.column, point.row);
+      topPoints.push(point.x, point.z);
       cliffAmounts.push(ring.cliffAmount);
       outwards.push(point.outwardX, point.outwardZ);
     }
@@ -157,7 +172,7 @@ export function buildIslandBaseGeometry(mirror: WorldMirror): BufferGeometry {
   const ringCount = rings.length;
 
   positions.push(0, plinth - UNDERSIDE_DEPTH * 1.12, 0);
-  cells.push(0, 0);
+  topPoints.push(0, 0);
   cliffAmounts.push(0);
   outwards.push(0, 0);
 
@@ -177,7 +192,7 @@ export function buildIslandBaseGeometry(mirror: WorldMirror): BufferGeometry {
   const geometry = new BufferGeometry();
 
   geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("topCell", new Float32BufferAttribute(cells, 2));
+  geometry.setAttribute("topPoint", new Float32BufferAttribute(topPoints, 2));
   geometry.setAttribute("cliffAmount", new Float32BufferAttribute(cliffAmounts, 1));
   geometry.setAttribute("outward", new Float32BufferAttribute(outwards, 2));
   geometry.setIndex(new Uint32BufferAttribute(indices, 1));

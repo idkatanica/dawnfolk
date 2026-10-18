@@ -104,6 +104,7 @@ function poolWater(source: Float32Array, size: number, radius: number, target: F
 
 export class TerrainTextures {
   readonly albedo: DataTexture;
+  readonly coast: DataTexture;
   readonly height: DataTexture;
   readonly pooledWater: readonly DataTexture[];
   readonly size: number;
@@ -119,6 +120,7 @@ export class TerrainTextures {
 
     this.#mirror = mirror;
     this.size = size;
+    this.coast = floatTexture(mirror.terrain.coastDistance, size);
     this.height = floatTexture(mirror.terrain.height, size);
     this.water = floatTexture(mirror.terrain.waterSurface, size);
     this.#pooledData = POOLED_WATER_STEPS.map(() => new Float32Array(size * size));
@@ -152,6 +154,7 @@ export class TerrainTextures {
 
   dispose(): void {
     this.albedo.dispose();
+    this.coast.dispose();
     this.height.dispose();
     this.surface.dispose();
     this.water.dispose();

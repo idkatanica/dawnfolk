@@ -2,6 +2,7 @@ import { groundDefinition } from "../../content/grounds.ts";
 import type { GeneratedWorld } from "../../generation/world-generator.ts";
 import { clamp } from "../../shared/math.ts";
 import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../world/change-tracking.ts";
+import { isOnIsland } from "../../world/coast.ts";
 import type { TerrainData } from "../../world/terrain-data.ts";
 import {
   isWaterAtPoint,
@@ -94,6 +95,10 @@ export class WorldState {
     return sampleSurface(this.terrain, this.grid, x, z);
   }
 
+  isOnIsland(cell: number): boolean {
+    return isOnIsland(this.terrain.coastDistance, cell);
+  }
+
   isWater(cell: number): boolean {
     return isWaterCell(this.terrain, cell);
   }
@@ -136,7 +141,7 @@ export class WorldState {
   }
 
   isWalkable(cell: number): boolean {
-    if (cell < 0 || this.isWater(cell)) {
+    if (!this.isOnIsland(cell) || this.isWater(cell)) {
       return false;
     }
 

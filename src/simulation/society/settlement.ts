@@ -76,7 +76,7 @@ function isCampable(world: WorldState, cell: number, point: Waypoint): boolean {
     return false;
   }
 
-  return world.grid.isInside(point.x, point.z, RIM_MARGIN);
+  return world.grid.isInside(point.x, point.z, RIM_MARGIN) && world.terrain.coastDistance[cell] > RIM_MARGIN;
 }
 
 function waterScore(world: WorldState, point: Waypoint): number {

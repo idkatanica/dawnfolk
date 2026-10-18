@@ -98,6 +98,7 @@ export class RainSplashes {
     const water = textureLoad(textures.water, cell).x;
 
     const isOnWater = water.greaterThan(ground);
+    const isOnIsland = sampleHeightNode(textures.coast, grid, spot).greaterThan(0);
     const level = max(ground, water);
     const viewportMeters = distance(vec3(spot.x, level, spot.y), cameraPosition).mul(this.#viewportSpan);
 
@@ -115,7 +116,8 @@ export class RainSplashes {
       float(1)
         .sub(age)
         .pow(1.5)
-        .mul(select(isOnWater, float(WATER_SHOW), float(GROUND_SHOW))),
+        .mul(select(isOnWater, float(WATER_SHOW), float(GROUND_SHOW)))
+        .mul(select(isOnIsland, float(1), float(0))),
       "splashFade"
     );
     const reach = varying(length(spot.sub(this.#center)).div(this.#span), "splashReach");

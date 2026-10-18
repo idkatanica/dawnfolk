@@ -1,5 +1,6 @@
 import { clamp, saturate, smoothstep } from "../shared/math.ts";
 import { MinHeap } from "../shared/min-heap.ts";
+import { isOnIsland } from "../world/coast.ts";
 import {
   hasWater,
   type Lake,
@@ -75,7 +76,26 @@ const FLOODED_DEPTH = 0.25;
 const BANK_HEIGHT = 1.6;
 const DEEPEST_BANK_CUT = 2;
 
-function fillDepressions(heights: Float32Array, grid: WorldGrid): DrainageNetwork {
+function touchesOffIsland(cell: number, grid: WorldGrid, coastDistance: Float32Array): boolean {
+  const column = grid.columnOf(cell);
+  const row = grid.rowOf(cell);
+
+  for (const offset of NEIGHBOR_OFFSETS) {
+    const neighborColumn = column + offset.column;
+    const neighborRow = row + offset.row;
+
+    if (
+      grid.contains(neighborColumn, neighborRow) &&
+      !isOnIsland(coastDistance, grid.index(neighborColumn, neighborRow))
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function fillDepressions(heights: Float32Array, grid: WorldGrid, coastDistance: Float32Array): DrainageNetwork {
   const size = grid.cellsPerSide;
   const filled = Float32Array.from(heights);
   const closed = new Uint8Array(grid.cellCount);
@@ -86,7 +106,7 @@ function fillDepressions(heights: Float32Array, grid: WorldGrid): DrainageNetwor
   const heap = new MinHeap(size * 16);
 
   function seedCell(cellIndex: number): void {
-    if (closed[cellIndex] === 0) {
+    if (closed[cellIndex] === 0 && isOnIsland(coastDistance, cellIndex)) {
       closed[cellIndex] = 1;
       heap.push(cellIndex, filled[cellIndex]);
     }
@@ -97,6 +117,12 @@ function fillDepressions(heights: Float32Array, grid: WorldGrid): DrainageNetwor
     seedCell(grid.index(position, size - 1));
     seedCell(grid.index(0, position));
     seedCell(grid.index(size - 1, position));
+  }
+
+  for (let cell = 0; cell < grid.cellCount; cell += 1) {
+    if (isOnIsland(coastDistance, cell) && touchesOffIsland(cell, grid, coastDistance)) {
+      seedCell(cell);
+    }
   }
 
   while (heap.size > 0) {
@@ -119,7 +145,7 @@ function fillDepressions(heights: Float32Array, grid: WorldGrid): DrainageNetwor
 
       const neighbor = grid.index(neighborColumn, neighborRow);
 
-      if (closed[neighbor] === 1) {
+      if (closed[neighbor] === 1 || !isOnIsland(coastDistance, neighbor)) {
         continue;
       }
 
@@ -466,6 +492,7 @@ function channelBed(distanceFromCenter: number, point: RiverPoint, uncarvedHeigh
 }
 
 interface ChannelTargets {
+  coastDistance: Float32Array;
   grid: WorldGrid;
   heights: Float32Array;
   lakeIds: Int32Array;
@@ -508,7 +535,7 @@ function carveSegment(start: RiverPoint, end: RiverPoint, targets: ChannelTarget
 function carveCell(cell: number, distanceFromCenter: number, point: RiverPoint, targets: ChannelTargets): void {
   const halfWidth = point.width / 2;
 
-  if (distanceFromCenter > halfWidth + bankWidthOf(point)) {
+  if (distanceFromCenter > halfWidth + bankWidthOf(point) || !isOnIsland(targets.coastDistance, cell)) {
     return;
   }
 
@@ -550,6 +577,12 @@ interface EdgeDirection {
 }
 
 function edgeDirection(x: number, z: number, grid: WorldGrid): EdgeDirection {
+  if (!grid.isOnEdge(grid.cellAt(x, z))) {
+    const distanceFromCenter = Math.max(1e-6, Math.hypot(x, z));
+
+    return { directionX: x / distanceFromCenter, directionZ: z / distanceFromCenter };
+  }
+
   const distanceWest = x + grid.halfSize;
   const distanceEast = grid.halfSize - x;
   const distanceNorth = z + grid.halfSize;
@@ -607,10 +640,11 @@ export function computeHydrology(
   heights: Float32Array,
   grid: WorldGrid,
   dryness: Float32Array,
+  coastDistance: Float32Array,
   options: HydrologyOptions = DEFAULT_HYDROLOGY
 ): HydrologyResult {
   const thresholds = toCellThresholds(options, grid);
-  const network = fillDepressions(heights, grid);
+  const network = fillDepressions(heights, grid, coastDistance);
   const waterSurface = new Float32Array(grid.cellCount).fill(NO_WATER);
   const lakeIds = new Int32Array(grid.cellCount).fill(NO_CELL);
   const riverStrength = new Uint8Array(grid.cellCount);
@@ -622,6 +656,7 @@ export function computeHydrology(
   const uncarvedHeights = Float32Array.from(heights);
 
   carveRivers(rivers, {
+    coastDistance,
     grid,
     heights,
     lakeIds,

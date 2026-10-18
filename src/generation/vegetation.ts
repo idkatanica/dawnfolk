@@ -2,6 +2,7 @@ import { isBiomeIndex } from "../content/biomes.ts";
 import { canGrowAt, PLANTING_RULES, plantSpeciesDefinition } from "../content/plants.ts";
 import { FULL_TURN, hashToUnit } from "../shared/math.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
+import { isOnIsland } from "../world/coast.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { isWaterCell, touchesWaterCell } from "../world/terrain-sampling.ts";
 import type { VegetationStore } from "../world/vegetation-store.ts";
@@ -46,7 +47,7 @@ export function plantInitialVegetation(
   const random = createRandom(seed * 3 + 1);
 
   for (let cell = 0; cell < grid.cellCount; cell += 1) {
-    if (touchesWaterCell(terrain, grid, cell)) {
+    if (touchesWaterCell(terrain, grid, cell) || !isOnIsland(terrain.coastDistance, cell)) {
       continue;
     }
 

@@ -29,6 +29,7 @@ import { NO_WATER } from "../../world/water.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { unitNoise } from "../node-helpers.ts";
+import { sampleHeightNode } from "./height-sampling.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
 const SKIRT_DROP_PER_STEP = 25;
@@ -143,6 +144,7 @@ export function createTerrainMaterial(
   const material = new MeshStandardNodeMaterial();
 
   material.positionNode = terrainPosition(textures, grid, plinth);
+  material.maskNode = sampleHeightNode(textures.coast, grid, positionWorld.xz).greaterThan(0);
 
   const mapCoordinates = warpedMapCoordinates(grid);
   const broad = mx_fractal_noise_float(positionWorld.mul(0.012), 3, 2, 0.5);

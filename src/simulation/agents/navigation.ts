@@ -134,7 +134,7 @@ export class NavigationGrid {
         const cell = world.grid.index(column, row);
 
         samples += 1;
-        waterSamples += world.isWater(cell) ? 1 : 0;
+        waterSamples += world.isWater(cell) || !world.isOnIsland(cell) ? 1 : 0;
         steepness += slopePenalty(world.slope(cell));
       }
     }

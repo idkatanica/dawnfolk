@@ -122,7 +122,11 @@ function speciesFor(choice: ForestSpecies, temperature: number, random: RandomSo
 }
 
 function canPlantIn(world: WorldState, cell: number): boolean {
-  if (world.grid.isOnEdge(cell) || world.touchesWater(cell) || world.occupancy[cell] !== NO_BUILDING) {
+  if (world.grid.isOnEdge(cell) || !world.isOnIsland(cell) || world.touchesWater(cell)) {
+    return false;
+  }
+
+  if (world.occupancy[cell] !== NO_BUILDING) {
     return false;
   }
 

@@ -1,11 +1,9 @@
 import {
   attribute,
-  clamp,
   Fn,
   float,
   fwidth,
   If,
-  ivec2,
   mix,
   mx_fractal_noise_float,
   mx_noise_float,
@@ -14,26 +12,23 @@ import {
   positionWorld,
   sin,
   smoothstep,
-  textureLoad,
-  vec2,
   vec3,
 } from "three/tsl";
 import { Mesh, MeshStandardNodeMaterial } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
+import type { WorldGrid } from "../../world/world-grid.ts";
+import { sampleHeightNode } from "./height-sampling.ts";
 import { buildIslandBaseGeometry, islandPlinthHeight } from "./island-base-geometry.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
-function createBaseMaterial(textures: TerrainTextures, size: number, plinth: number): MeshStandardNodeMaterial {
+function createBaseMaterial(textures: TerrainTextures, grid: WorldGrid, plinth: number): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial();
-  const topCell = attribute("topCell", "vec2");
+  const topPoint = attribute("topPoint", "vec2");
   const cliffAmount = attribute("cliffAmount", "float");
   const outward = attribute("outward", "vec2");
-  const last = size - 1;
 
   material.positionNode = Fn(() => {
-    const cell = ivec2(clamp(topCell, vec2(0, 0), vec2(last, last)));
-
-    const surface = textureLoad(textures.height, cell).x;
+    const surface = sampleHeightNode(textures.height, grid, topPoint);
 
     If(cliffAmount.greaterThan(0), () => {
       normalLocal.assign(vec3(outward.x, 0, outward.y));
@@ -73,7 +68,7 @@ export class IslandBase {
   readonly mesh: Mesh;
 
   constructor(mirror: WorldMirror, textures: TerrainTextures) {
-    const material = createBaseMaterial(textures, mirror.grid.cellsPerSide, islandPlinthHeight(mirror));
+    const material = createBaseMaterial(textures, mirror.grid, islandPlinthHeight(mirror));
 
     this.mesh = new Mesh(buildIslandBaseGeometry(mirror), material);
     this.mesh.castShadow = true;

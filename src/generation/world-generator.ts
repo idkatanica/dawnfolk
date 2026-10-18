@@ -1,4 +1,7 @@
+import { Ground } from "../content/grounds.ts";
 import { createRandom } from "../shared/random.ts";
+import { isOnIsland } from "../world/coast.ts";
+import { createIslandShape, measureCoastDistances } from "../world/island-shape.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { VegetationStore } from "../world/vegetation-store.ts";
 import type { WaterFeatures } from "../world/water.ts";
@@ -37,7 +40,9 @@ export interface GeneratedWorld {
 const VEGETATION_CAPACITY_PER_CELL = 1.25;
 
 function buildRelief(grid: WorldGrid, seed: number, onProgress: (progress: GenerationProgress) => void) {
-  const relief = createRelief(seed);
+  const shape = createIslandShape(seed);
+  const relief = createRelief(seed, shape);
+  const coastDistance = measureCoastDistances(grid, shape);
   const heights = new Float32Array(grid.cellCount);
   const dryness = new Float32Array(grid.cellCount);
 
@@ -55,7 +60,15 @@ function buildRelief(grid: WorldGrid, seed: number, onProgress: (progress: Gener
     }
   }
 
-  return { dryness, heights, relief };
+  return { coastDistance, dryness, heights, relief };
+}
+
+function bareOffIsland(ground: Uint8Array, coastDistance: Float32Array): void {
+  for (let cell = 0; cell < ground.length; cell += 1) {
+    if (!isOnIsland(coastDistance, cell)) {
+      ground[cell] = Ground.Rock;
+    }
+  }
 }
 
 export function generateWorld(
@@ -66,7 +79,7 @@ export function generateWorld(
   const grid = new WorldGrid(options.dimensions);
 
   const size = grid.cellsPerSide;
-  const { dryness, heights, relief } = buildRelief(grid, seed, onProgress);
+  const { coastDistance, dryness, heights, relief } = buildRelief(grid, seed, onProgress);
 
   erodeThermally(heights, size, grid.cellSize, 3, 1.25);
   erodeHydraulically(
@@ -81,7 +94,7 @@ export function generateWorld(
   onProgress({ progress: 0, stage: "water" });
 
   const uncarvedHeights = Float32Array.from(heights);
-  const hydrology = computeHydrology(heights, grid, dryness);
+  const hydrology = computeHydrology(heights, grid, dryness, coastDistance);
 
   const carving = uncarvedHeights.map((uncarvedHeight, cell) => uncarvedHeight - heights[cell]);
 
@@ -97,9 +110,12 @@ export function generateWorld(
     waterSurface: hydrology.waterSurface,
   });
 
+  bareOffIsland(climate.ground, coastDistance);
+
   const terrain: TerrainData = {
     ...climate,
     carving,
+    coastDistance,
     dryness,
     height: heights,
     riverStrength: hydrology.riverStrength,

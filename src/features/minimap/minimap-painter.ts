@@ -60,6 +60,7 @@ export class MinimapPainter {
       this.#lastTerrain = time;
     }
 
+    context.clearRect(0, 0, size, size);
     context.drawImage(this.#terrain, 0, 0);
     this.#drawFires(context, size);
     this.#drawTribes(context, size);
