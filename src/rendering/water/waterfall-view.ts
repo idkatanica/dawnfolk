@@ -20,6 +20,7 @@ import {
   Uint32BufferAttribute,
 } from "three/webgpu";
 import type { Waterfall } from "../../world/water.ts";
+import type { IslandOutline } from "../terrain/island-outline.ts";
 
 const FALL_HEIGHT = 1150;
 const GRAVITY = 9.8;
@@ -120,11 +121,13 @@ export class WaterfallView {
     this.mesh.renderOrder = 3;
   }
 
-  rebuild(waterfalls: readonly Waterfall[]): void {
+  rebuild(waterfalls: readonly Waterfall[], outline: IslandOutline): void {
     const writer: CurtainWriter = { coordinates: [], indices: [], positions: [], progress: [], sides: [] };
 
     for (const waterfall of waterfalls) {
-      addCurtain(writer, waterfall);
+      const [x, z] = outline.atCoast(waterfall.x, waterfall.z);
+
+      addCurtain(writer, { ...waterfall, x, z });
     }
 
     const geometry = new BufferGeometry();
