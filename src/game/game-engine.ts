@@ -116,6 +116,7 @@ export class GameEngine implements EngineHandle {
       grid: mirror.grid,
       heights: mirror.terrain.height,
       lakes: mirror.water.lakes,
+      monuments: mirror.monuments,
       seed: mirror.seed,
     });
 

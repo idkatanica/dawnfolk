@@ -8,6 +8,15 @@ import { WorldLabels } from "./world-labels.tsx";
 
 const PEAK: Landmark = { detail: "1460 m", id: "peak", kind: "peak", lift: 30, name: "Greycrown", x: 40, z: -20 };
 const LAKE: Landmark = { detail: null, id: "lake-3", kind: "lake", lift: 4, name: "Mirror Lake", x: -300, z: 90 };
+const RING: Landmark = {
+  detail: "Stone circle",
+  id: "monument-2",
+  kind: "monument",
+  lift: 9,
+  name: "Whispering Ring",
+  x: 210,
+  z: 65,
+};
 const ON_SCREEN = { left: 240, top: 320 };
 
 describe("world labels", () => {
@@ -147,6 +156,23 @@ describe("world labels", () => {
     await expect.element(places.getByText("Mirror Lake", { exact: true })).toBeVisible();
     expect(placeLabel).toHaveBeenCalledWith(40, -20, 30);
     expect(placeLabel).toHaveBeenCalledWith(-300, 90, 4);
+  });
+
+  it("names the monuments and what they are", async () => {
+    const { placeLabel, renderFrame } = await startTestEngine({ landmarks: [RING] });
+
+    placeLabel.mockReturnValue(ON_SCREEN);
+    showWorld({ tribes: [] });
+
+    const screen = await render(<WorldLabels />);
+
+    renderFrame();
+
+    const places = screen.getByRole("list", { name: "Places" });
+
+    await expect.element(places.getByText("Whispering Ring", { exact: true })).toBeVisible();
+    await expect.element(places.getByText("Stone circle", { exact: true })).toBeVisible();
+    expect(placeLabel).toHaveBeenCalledWith(210, 65, 9);
   });
 
   it("gives way to a tribe banner that would cover a place name", async () => {
