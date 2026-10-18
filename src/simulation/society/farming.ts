@@ -13,6 +13,7 @@ import { isWinter } from "../../content/seasons.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import { aroundPoint } from "../agents/navigation.ts";
 import { NO_BUILDING, PLOT_GROUND, type WorldState } from "../world/world-state.ts";
+import { isDryWay } from "./footprints.ts";
 import type { SocietyContext } from "./society-context.ts";
 import { type Field, knows, type Tribe } from "./tribe.ts";
 import { campPoint } from "./tribe-places.ts";
@@ -60,7 +61,14 @@ function isFarmable(tribe: Tribe, cell: number, context: SocietyContext): boolea
     return false;
   }
 
-  return !tribe.fields.some((field) => field.cell === cell);
+  if (tribe.fields.some((field) => field.cell === cell)) {
+    return false;
+  }
+
+  return isDryWay(world, campPoint(tribe), {
+    x: world.grid.centerX(world.grid.columnOf(cell)),
+    z: world.grid.centerZ(world.grid.rowOf(cell)),
+  });
 }
 
 function besideExistingField(tribe: Tribe, context: SocietyContext): number | null {

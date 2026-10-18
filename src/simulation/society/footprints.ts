@@ -1,4 +1,6 @@
 import type { WorldGrid } from "../../world/world-grid.ts";
+import type { Waypoint } from "../agents/navigation.ts";
+import type { WorldState } from "../world/world-state.ts";
 
 function distanceToCell(grid: WorldGrid, column: number, row: number, x: number, z: number): number {
   const halfCell = grid.cellSize / 2;
@@ -29,4 +31,20 @@ export function footprintCells(grid: WorldGrid, x: number, z: number, radius: nu
   }
 
   return cells;
+}
+
+export function isDryWay(world: WorldState, from: Waypoint, to: Waypoint): boolean {
+  const distance = Math.hypot(to.x - from.x, to.z - from.z);
+  const samples = Math.max(1, Math.ceil(distance / (world.grid.cellSize / 2)));
+
+  for (let sample = 0; sample <= samples; sample += 1) {
+    const share = sample / samples;
+    const cell = world.grid.cellAt(from.x + (to.x - from.x) * share, from.z + (to.z - from.z) * share);
+
+    if (cell >= 0 && world.isWater(cell)) {
+      return false;
+    }
+  }
+
+  return true;
 }

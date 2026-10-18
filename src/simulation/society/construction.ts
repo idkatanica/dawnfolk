@@ -6,7 +6,7 @@ import { NO_BUILDING } from "../world/world-state.ts";
 import { type Building, type BuildingLoss, NO_DEPOSIT } from "./buildings.ts";
 import { type BuildingPlan, buildingPlans } from "./camp-plan.ts";
 import { addFieldIfNeeded } from "./farming.ts";
-import { footprintCells } from "./footprints.ts";
+import { footprintCells, isDryWay } from "./footprints.ts";
 import { assignHomes } from "./housing.ts";
 import { addPlotIfNeeded } from "./plots.ts";
 import type { SocietyContext } from "./society-context.ts";
@@ -119,7 +119,7 @@ function placeBuilding(tribe: Tribe, plan: BuildingPlan, context: SocietyContext
 
     const spot = aroundPoint(plan.origin, distance, angle);
 
-    if (isBuildable(spot, plan.kind, context)) {
+    if (isBuildable(spot, plan.kind, context) && isDryWay(context.world, plan.origin, spot)) {
       return startBuilding(tribe, plan, spot, context);
     }
   }
