@@ -4,7 +4,7 @@ import { FULL_TURN } from "../../shared/math.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot } from "../materials.ts";
 import { MeshBuilder } from "../mesh/mesh-builder.ts";
-import { type MeshData, mergeMeshes } from "../mesh/mesh-data.ts";
+import { type MeshData, mergeMeshes, vertexCount } from "../mesh/mesh-data.ts";
 import { sphere } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { transformOf } from "../mesh/transforms.ts";
@@ -20,6 +20,8 @@ export const PLANT_DETAIL_LEVELS: readonly PlantDetailLevel[] = ["high", "medium
 export const BERRY_PART = 1;
 
 const BERRY_RADIUS = 0.07;
+
+const FOOTPRINT_HEIGHT = 0.3;
 
 const BROADLEAF: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
 const CONIFER: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Needle, hasBarkMarks: false };
@@ -114,4 +116,22 @@ export function buildPlantVariants(species: PlantSpeciesIndex, level: PlantDetai
 
 export function canonicalHeight(species: PlantSpeciesIndex): number {
   return CANONICAL_HEIGHTS[species];
+}
+
+function baseRadius(mesh: MeshData): number {
+  let radius = 0;
+
+  for (let vertex = 0; vertex < vertexCount(mesh); vertex += 1) {
+    const offset = vertex * 3;
+
+    if (mesh.positions[offset + 1] < FOOTPRINT_HEIGHT) {
+      radius = Math.max(radius, Math.hypot(mesh.positions[offset], mesh.positions[offset + 2]));
+    }
+  }
+
+  return radius;
+}
+
+export function footprintRadius(species: PlantSpeciesIndex): number {
+  return buildPlantVariants(species, "low").reduce((widest, mesh) => Math.max(widest, baseRadius(mesh)), 0);
 }

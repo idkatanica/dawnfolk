@@ -1,13 +1,14 @@
 import { Box3, Vector3 } from "three/webgpu";
 import { PLANT_SPECIES, type PlantSpeciesIndex } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import { canonicalHeight, PLANT_VARIANT_COUNT } from "../../models/plants/plant-models.ts";
+import { canonicalHeight, footprintRadius, PLANT_VARIANT_COUNT } from "../../models/plants/plant-models.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 
 export const CHUNK_CELLS = 16;
 export const FLOATS_PER_PLANT = 8;
 export const BUCKET_COUNT = PLANT_SPECIES.length * PLANT_VARIANT_COUNT;
+export const PLANT_SINKING = 0.15;
 
 const NO_CHUNK = -1;
 const EMPTY_BUCKET = new Float32Array(0);
@@ -51,6 +52,7 @@ function variantOf(seed: number): number {
 export class VegetationChunks {
   readonly chunks: VegetationChunk[] = [];
   readonly chunksPerSide: number;
+  readonly #footprints: readonly number[] = PLANT_SPECIES.map((species) => footprintRadius(species.index));
   readonly #mirror: WorldMirror;
   #chunkOfPlant = new Int32Array(0);
 
@@ -191,21 +193,36 @@ export class VegetationChunks {
     const x = vegetation.x[plant];
     const z = vegetation.z[plant];
 
-    const y = this.#mirror.heightAt(x, z);
     const species = vegetation.species[plant];
     const height = vegetation.height[plant];
     const seed = vegetation.seed[plant];
 
+    const scale = height / canonicalHeight(PLANT_SPECIES[species].index);
+
+    const y = this.#groundUnder(x, z, this.#footprints[species] * scale);
+
     target[offset] = x;
-    target[offset + 1] = y - 0.15;
+    target[offset + 1] = y - PLANT_SINKING;
     target[offset + 2] = z;
     target[offset + 3] = vegetation.rotation[plant];
-    target[offset + 4] = height / canonicalHeight(PLANT_SPECIES[species].index);
+    target[offset + 4] = scale;
     target[offset + 5] = (seed * 7.31) % 1;
     target[offset + 6] = vegetation.state[plant];
     target[offset + 7] = vegetation.fruit[plant];
 
     bounds.expandByPoint(corner.set(x - height * 0.5, y - 1, z - height * 0.5));
     bounds.expandByPoint(corner.set(x + height * 0.5, y + height, z + height * 0.5));
+  }
+
+  #groundUnder(x: number, z: number, radius: number): number {
+    const mirror = this.#mirror;
+
+    return Math.min(
+      mirror.heightAt(x, z),
+      mirror.heightAt(x + radius, z),
+      mirror.heightAt(x - radius, z),
+      mirror.heightAt(x, z + radius),
+      mirror.heightAt(x, z - radius)
+    );
   }
 }

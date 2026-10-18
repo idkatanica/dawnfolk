@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { WorldMirror } from "../../game/world-mirror.ts";
 import { Simulation } from "../../simulation/simulation.ts";
-import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
+import { createVegetatedWorld, type TestWorldOptions } from "../../simulation/testing/test-world.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
-import { BUCKET_COUNT, FLOATS_PER_PLANT, VegetationChunks } from "./vegetation-chunks.ts";
+import { BUCKET_COUNT, FLOATS_PER_PLANT, PLANT_SINKING, VegetationChunks } from "./vegetation-chunks.ts";
 
-function createMirror(): WorldMirror {
-  const simulation = new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 } }));
+const SLOPE = 0.6;
+
+function createMirror(overrides: Partial<TestWorldOptions> = {}): WorldMirror {
+  const simulation = new Simulation(
+    createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 }, ...overrides })
+  );
 
   return new WorldMirror(simulation.initialWorld(), 0);
 }
@@ -82,6 +86,26 @@ describe("vegetation chunks", () => {
 
     const [x, y, z] = bucket;
 
-    expect(y).toBeCloseTo(mirror.heightAt(x, z) - 0.15, 3);
+    expect(y).toBeCloseTo(mirror.heightAt(x, z) - PLANT_SINKING, 3);
+  });
+
+  it("sinks plants on a slope until their downhill side touches the ground", () => {
+    const mirror = createMirror({ heightAt: (x) => 100 + x * SLOPE });
+
+    const chunks = new VegetationChunks(mirror);
+
+    chunks.repackDirty();
+
+    const buckets = chunks.chunks.flatMap((chunk) => chunk.buckets.filter((bucket) => bucket.length > 0));
+
+    expect(buckets.length).toBeGreaterThan(0);
+
+    for (const bucket of buckets) {
+      for (let offset = 0; offset < bucket.length; offset += FLOATS_PER_PLANT) {
+        const [x, y, z] = bucket.subarray(offset, offset + 3);
+
+        expect(y).toBeLessThan(mirror.heightAt(x, z) - PLANT_SINKING - 0.05);
+      }
+    }
   });
 });
