@@ -126,6 +126,16 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
   },
 };
 
+export const SNOWFALL_TEMPERATURE = 0.5;
+
 export function isWeatherKind(value: string): value is WeatherKind {
   return Object.hasOwn(WEATHER, value);
+}
+
+export function isSnowfallWeather(kind: WeatherKind): boolean {
+  return kind === "snow" || kind === "blizzard";
+}
+
+export function fallsAsSnow(kind: WeatherKind, temperature: number): boolean {
+  return isSnowfallWeather(kind) || temperature < SNOWFALL_TEMPERATURE;
 }

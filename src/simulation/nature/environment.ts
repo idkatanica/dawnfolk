@@ -1,3 +1,4 @@
+import { isSnowfallWeather } from "../../content/weather.ts";
 import { sunDirection } from "../../shared/astronomy.ts";
 import { clamp } from "../../shared/math.ts";
 import type { Calendar } from "./calendar.ts";
@@ -12,6 +13,7 @@ export interface Environment {
   drought: number;
   hours: number;
   isNight: boolean;
+  isSnowfall: boolean;
   isTimeFrozen: boolean;
   precipitation: number;
   season: number;
@@ -43,6 +45,7 @@ export function describeEnvironment(calendar: Calendar, weather: WeatherSystem):
     drought: droughtLevel(season, state.precipitation, state.kind === "heat"),
     hours: calendar.hours,
     isNight: calendar.isNight,
+    isSnowfall: isSnowfallWeather(state.kind),
     isTimeFrozen: calendar.isTimeFrozen,
     precipitation: state.precipitation,
     season,

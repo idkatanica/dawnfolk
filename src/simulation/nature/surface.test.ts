@@ -6,7 +6,7 @@ import type { WorldState } from "../world/world-state.ts";
 import { ROWS_PER_TICK, type SurfaceConditions, SurfaceSystem } from "./surface.ts";
 
 const TICK_SECONDS = 0.1;
-const DRY_NOON: SurfaceConditions = { airTemperatureOffset: 0, precipitation: 0, sunlight: 0.8 };
+const DRY_NOON: SurfaceConditions = { airTemperatureOffset: 0, isSnowfall: false, precipitation: 0, sunlight: 0.8 };
 
 function runSurface(
   world: WorldState,
@@ -38,7 +38,7 @@ describe("surface", () => {
   it("piles up snow below freezing", () => {
     const world = createTestWorld({ baseTemperature: -8 });
 
-    runSurface(world, 60, { airTemperatureOffset: 0, precipitation: 0.8, sunlight: 0 });
+    runSurface(world, 60, { airTemperatureOffset: 0, isSnowfall: false, precipitation: 0.8, sunlight: 0 });
 
     expect(world.fields.snow[centerCell(world)]).toBeGreaterThan(0.3);
     expect(world.fields.wetness[centerCell(world)]).toBe(0);
@@ -48,12 +48,24 @@ describe("surface", () => {
     const heavyRules = worldRulesSchema.parse({ water: { snowfall: 3 } });
     const normal = createTestWorld({ baseTemperature: -8 });
     const heavy = createTestWorld({ baseTemperature: -8 });
-    const snowing = { airTemperatureOffset: 0, precipitation: 0.5, sunlight: 0 };
+    const snowing = { airTemperatureOffset: 0, isSnowfall: false, precipitation: 0.5, sunlight: 0 };
 
     runSurface(normal, 20, snowing);
     runSurface(heavy, 20, snowing, heavyRules);
 
     expect(heavy.fields.snow[centerCell(heavy)]).toBeGreaterThan(normal.fields.snow[centerCell(normal)] * 2);
+  });
+
+  it("lays snow from snowy weather just above freezing, where rain only wets", () => {
+    const snowy = createTestWorld({ baseTemperature: 2 });
+    const rainy = createTestWorld({ baseTemperature: 2 });
+
+    runSurface(snowy, 60, { airTemperatureOffset: 0, isSnowfall: true, precipitation: 0.8, sunlight: 0 });
+    runSurface(rainy, 60, { airTemperatureOffset: 0, isSnowfall: false, precipitation: 0.8, sunlight: 0 });
+
+    expect(snowy.fields.snow[centerCell(snowy)]).toBeGreaterThan(0.1);
+    expect(rainy.fields.snow[centerCell(rainy)]).toBe(0);
+    expect(rainy.fields.wetness[centerCell(rainy)]).toBeGreaterThan(0.8);
   });
 
   it("melts snow in warm sunshine and wets the ground", () => {
@@ -68,7 +80,7 @@ describe("surface", () => {
   it("soaks the ground in rain and dries it in the sun", () => {
     const world = createTestWorld();
 
-    runSurface(world, 30, { airTemperatureOffset: 0, precipitation: 0.8, sunlight: 0 });
+    runSurface(world, 30, { airTemperatureOffset: 0, isSnowfall: false, precipitation: 0.8, sunlight: 0 });
 
     const wetness = world.fields.wetness[centerCell(world)];
 
@@ -92,7 +104,7 @@ describe("surface", () => {
     const cell = centerCell(world);
 
     floodCells(world, [cell], 4);
-    runSurface(world, 300, { airTemperatureOffset: 0, precipitation: 0, sunlight: 0 });
+    runSurface(world, 300, { airTemperatureOffset: 0, isSnowfall: false, precipitation: 0, sunlight: 0 });
 
     expect(world.fields.snow[cell]).toBeGreaterThan(0.5);
     expect(world.fields.wetness[cell]).toBe(1);
