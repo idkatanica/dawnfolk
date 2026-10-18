@@ -8,10 +8,11 @@ import {
 } from "../../content/plants.ts";
 import { FULL_TURN, wrapAngle } from "../../shared/math.ts";
 import { firstMemberTick, SocietyHarness, settle } from "../testing/test-society.ts";
+import { MONUMENT_GROUND } from "../world/world-state.ts";
 import { findTree } from "./jobs/chop-job.ts";
 import { findBerries } from "./jobs/gather-job.ts";
 import { findGame, HuntJob } from "./jobs/hunt-job.ts";
-import type { Job } from "./jobs/job.ts";
+import { Errand, headTo, type Job } from "./jobs/job.ts";
 import { findStone } from "./jobs/quarry-job.ts";
 import { TendJob } from "./jobs/tend-job.ts";
 import { carriedAmount, pickUp, type Weapon } from "./person.ts";
@@ -316,5 +317,34 @@ describe("fishing", () => {
 
       expect(wetSamples).toEqual([]);
     }
+  });
+});
+
+describe("errands", () => {
+  it("give up rather than work wherever the walker got stuck on the way", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+    const tick = firstMemberTick(harness, settle(harness, 1));
+    const { mover } = tick.person;
+    const { world } = harness;
+
+    const errand = new Errand(5, "chop");
+
+    headTo(tick.person, { x: mover.x + 200, z: mover.z }, harness.context);
+
+    for (const cell of world.grid.cellsInRadius(mover.x, mover.z, 30)) {
+      if (Math.hypot(world.grid.cellCenterX(cell) - mover.x, world.grid.cellCenterZ(cell) - mover.z) > 15) {
+        world.occupancy[cell] = MONUMENT_GROUND;
+      }
+    }
+
+    const progress = new Set<string>();
+
+    for (let elapsed = 0; elapsed < 60; elapsed += tick.seconds) {
+      progress.add(errand.update(tick));
+    }
+
+    expect(progress.has("abandoned")).toBe(true);
+    expect(progress.has("working")).toBe(false);
+    expect(tick.person.pose).not.toBe("chop");
   });
 });

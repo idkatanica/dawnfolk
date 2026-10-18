@@ -1,12 +1,11 @@
 import { plantSpeciesDefinition } from "../../../content/plants.ts";
-import type { Waypoint } from "../../agents/navigation.ts";
 import { carriedFood, isChild, pickUp } from "../person.ts";
 import { ripestFruitTree } from "../plots.ts";
 import { nearestPlant } from "../resources.ts";
 import type { PersonTick } from "../society-context.ts";
 import { learn, markScarce } from "../tribe.ts";
 import { DeliverJob } from "./deliver-job.ts";
-import { Errand, headToWork, type Job, plantTarget } from "./job.ts";
+import { canWorkAt, Errand, headToWork, type Job, plantTarget } from "./job.ts";
 
 const GATHERING_SECONDS = 4;
 const GATHERING_REACH = 0.35;
@@ -54,13 +53,13 @@ function nearestReachableBush(tick: PersonTick, area: SearchArea): number | null
 
   const isRipe = isRipeBush(tick);
 
-  function spotOf(plant: number): Waypoint {
-    return { x: world.vegetation.x[plant], z: world.vegetation.z[plant] };
-  }
-
   return nearestPlant(world, {
     ...area,
-    accepts: (plant) => isRipe(plant) && navigation.isReachable(mover, spotOf(plant)),
+    accepts: (plant) => {
+      const target = plantTarget(world.vegetation, plant, GATHERING_REACH);
+
+      return isRipe(plant) && canWorkAt(world, target, mover) && navigation.isWithinWalk(mover, target);
+    },
   });
 }
 
@@ -91,7 +90,15 @@ class GatherJob implements Job {
   }
 
   update(tick: PersonTick): Job | null {
-    if (this.#errand.update(tick) !== "finished") {
+    const progress = this.#errand.update(tick);
+
+    if (progress === "abandoned") {
+      tick.tribe.claimedPlants.delete(this.claimedPlant);
+
+      return null;
+    }
+
+    if (progress !== "finished") {
       return this;
     }
 
@@ -141,6 +148,13 @@ export function findFruit(tick: PersonTick): PickJob | null {
     return null;
   }
 
+  const { navigation, world } = tick.context;
+  const target = plantTarget(world.vegetation, tree, GATHERING_REACH);
+
+  if (!(canWorkAt(world, target, tick.person.mover) && navigation.isWithinWalk(tick.person.mover, target))) {
+    return null;
+  }
+
   return new PickJob(tick, tree);
 }
 
@@ -159,7 +173,15 @@ class PickJob implements Job {
   }
 
   update(tick: PersonTick): Job | null {
-    if (this.#errand.update(tick) !== "finished") {
+    const progress = this.#errand.update(tick);
+
+    if (progress === "abandoned") {
+      tick.tribe.claimedPlants.delete(this.claimedPlant);
+
+      return null;
+    }
+
+    if (progress !== "finished") {
       return this;
     }
 

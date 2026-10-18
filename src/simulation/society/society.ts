@@ -388,7 +388,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     if (isHopping(person.mover)) {
       keepHopping(tick);
     } else if (isStranded(person.mover, context.world)) {
-      updateMind(tick);
+      dropJob(tribe, person);
       walk(tick, walkSpeed(person));
     } else {
       updateMind(tick);

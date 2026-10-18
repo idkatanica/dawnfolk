@@ -5,7 +5,7 @@ import type { PersonTick } from "../society-context.ts";
 import { learn, markScarce } from "../tribe.ts";
 import { campPoint } from "../tribe-places.ts";
 import { DeliverJob } from "./deliver-job.ts";
-import { Errand, headTo, type Job } from "./job.ts";
+import { Errand, headToBank, type Job } from "./job.ts";
 
 const FISHING_SECONDS = 11;
 const CATCH_CHANCE = 0.7;
@@ -17,7 +17,7 @@ export function findFishingSpot(tick: PersonTick): FishJob | null {
   const { navigation, random, world } = tick.context;
 
   const spot = nearestShore(world, campPoint(tribe), SEARCH_RADIUS, random, (shore) =>
-    navigation.isReachable(person.mover, shore)
+    navigation.isWithinWalk(person.mover, shore)
   );
 
   if (spot === null) {
@@ -36,11 +36,15 @@ class FishJob implements Job {
 
   constructor(tick: PersonTick, spot: ShoreSpot) {
     this.#spot = spot;
-    headTo(tick.person, spot, tick.context);
+    headToBank(tick.person, spot, tick.context);
   }
 
   update(tick: PersonTick): Job | null {
     const progress = this.#errand.update(tick);
+
+    if (progress === "abandoned") {
+      return null;
+    }
 
     if (progress !== "travelling") {
       faceTowards(tick.person.mover, this.#spot.waterX, this.#spot.waterZ);

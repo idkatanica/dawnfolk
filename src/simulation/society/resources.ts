@@ -10,7 +10,6 @@ const QUARRY_SLOPE = 0.9;
 const CLIFF_SLOPE = 1.1;
 const FISHING_DEPTH = 0.6;
 const SHORE_ATTEMPTS = 40;
-const SHORE_REACH = 0.3;
 const ORTHOGONAL_STEPS: readonly (readonly [number, number])[] = [
   [1, 0],
   [-1, 0],
@@ -87,7 +86,7 @@ function ringCells(world: WorldState, centerColumn: number, centerRow: number, r
 function nearerPlantInCell(world: WorldState, cell: number, search: PlantSearch, nearest: NearestPlant): NearestPlant {
   const { fields, vegetation } = world;
 
-  if (fields.fire[cell] > 0 || fields.heat[cell] > HOT_GROUND) {
+  if (fields.fire[cell] > 0 || fields.heat[cell] > HOT_GROUND || world.isWater(cell)) {
     return nearest;
   }
 
@@ -178,7 +177,7 @@ function shoreSpotAt(world: WorldState, x: number, z: number): ShoreSpot | null 
 
   const cell = grid.cellAt(x, z);
 
-  if (cell < 0 || world.isWater(cell)) {
+  if (cell < 0 || !world.isWalkable(cell)) {
     return null;
   }
 
@@ -187,13 +186,11 @@ function shoreSpotAt(world: WorldState, x: number, z: number): ShoreSpot | null 
     const row = grid.rowOf(cell) + rowStep;
 
     if (isFishingWater(world, column, row)) {
-      const reachTowardsWater = grid.cellSize * SHORE_REACH;
-
       return {
         waterX: grid.centerX(column),
         waterZ: grid.centerZ(row),
-        x: grid.cellCenterX(cell) + columnStep * reachTowardsWater,
-        z: grid.cellCenterZ(cell) + rowStep * reachTowardsWater,
+        x: grid.cellCenterX(cell),
+        z: grid.cellCenterZ(cell),
       };
     }
   }

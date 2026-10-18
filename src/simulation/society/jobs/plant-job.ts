@@ -32,7 +32,13 @@ class PlantJob implements Job {
   }
 
   update(tick: PersonTick): Job | null {
-    if (this.#errand.update(tick) !== "finished") {
+    const progress = this.#errand.update(tick);
+
+    if (progress === "abandoned") {
+      return null;
+    }
+
+    if (progress !== "finished") {
       return this;
     }
 
