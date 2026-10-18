@@ -4,9 +4,9 @@ import type { CellRegion } from "../../world/change-tracking.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
 import { GroundWarp } from "./ground-warp.ts";
 import { islandPlinthHeight } from "./island-base-geometry.ts";
-import { type HeightRange, type PatchCorner, PatchGrid } from "./patch-grid.ts";
+import { type PatchContent, type PatchCorner, PatchGrid } from "./patch-grid.ts";
 import { createTerrainMaterial } from "./terrain-material.ts";
-import { PATCH_LEVEL_DISTANCES } from "./terrain-patches.ts";
+import { PATCH_CELLS, PATCH_LEVEL_DISTANCES } from "./terrain-patches.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
 const SKIRT_ALLOWANCE = 220;
@@ -32,7 +32,8 @@ export class TerrainView {
       castsShadow: true,
       edges: "skirted",
       levelDistances: PATCH_LEVEL_DISTANCES,
-      material: this.#material,
+      materials: [this.#material],
+      pieceCells: PATCH_CELLS,
       renderOrder: 0,
     });
   }
@@ -59,7 +60,7 @@ export class TerrainView {
     this.#warp.dispose();
   }
 
-  #measure(corner: PatchCorner): HeightRange {
+  #measure(corner: PatchCorner): PatchContent {
     const { grid, terrain } = this.#mirror;
 
     let lowest = Number.POSITIVE_INFINITY;
@@ -74,6 +75,10 @@ export class TerrainView {
       }
     }
 
-    return { highest, lowest: lowest - SKIRT_ALLOWANCE };
+    return {
+      highest,
+      lowest: lowest - SKIRT_ALLOWANCE,
+      pieces: [{ firstColumn: corner.firstColumn, firstRow: corner.firstRow, material: 0 }],
+    };
   }
 }

@@ -22,19 +22,20 @@ function vertexIndex(writer: GridVertexWriter, column: number, row: number, skir
   return writer.skirts.length - 1;
 }
 
-function borderPath(steps: number, step: number): (readonly [number, number])[] {
+function borderPath(cells: number, step: number): (readonly [number, number])[] {
   const path: (readonly [number, number])[] = [];
+  const steps = cells / step;
 
   for (let index = 0; index < steps; index += 1) {
     path.push([index * step, 0]);
   }
 
   for (let index = 0; index < steps; index += 1) {
-    path.push([PATCH_CELLS, index * step]);
+    path.push([cells, index * step]);
   }
 
   for (let index = steps; index > 0; index -= 1) {
-    path.push([index * step, PATCH_CELLS]);
+    path.push([index * step, cells]);
   }
 
   for (let index = steps; index > 0; index -= 1) {
@@ -54,11 +55,9 @@ function upNormals(count: number): Float32Array {
   return normals;
 }
 
-function addSkirts(writer: GridVertexWriter, indices: number[], step: PatchStep): void {
-  const steps = PATCH_CELLS / step;
-
-  const side = steps + 1;
-  const path = borderPath(steps, step);
+function addSkirts(writer: GridVertexWriter, indices: number[], cells: number, step: PatchStep): void {
+  const side = cells / step + 1;
+  const path = borderPath(cells, step);
 
   for (let index = 0; index < path.length; index += 1) {
     const [startColumn, startRow] = path[index];
@@ -74,10 +73,10 @@ function addSkirts(writer: GridVertexWriter, indices: number[], step: PatchStep)
   }
 }
 
-export function createPatchGeometry(step: PatchStep, edges: PatchEdges): BufferGeometry {
+export function createPatchGeometry(cells: number, step: PatchStep, edges: PatchEdges): BufferGeometry {
   const writer: GridVertexWriter = { cells: [], skirts: [] };
   const indices: number[] = [];
-  const steps = PATCH_CELLS / step;
+  const steps = cells / step;
 
   const side = steps + 1;
 
@@ -101,7 +100,7 @@ export function createPatchGeometry(step: PatchStep, edges: PatchEdges): BufferG
   }
 
   if (edges === "skirted") {
-    addSkirts(writer, indices, step);
+    addSkirts(writer, indices, cells, step);
   }
 
   const geometry = new BufferGeometry();

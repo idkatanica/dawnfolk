@@ -1,13 +1,20 @@
 import type { Group, MeshStandardNodeMaterial, PerspectiveCamera } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { NO_WATER } from "../../world/water.ts";
-import { type HeightRange, type PatchCorner, PatchGrid } from "../terrain/patch-grid.ts";
+import {
+  type HeightRange,
+  type PatchContent,
+  type PatchCorner,
+  PatchGrid,
+  type PatchPiece,
+} from "../terrain/patch-grid.ts";
 import { PATCH_LEVEL_DISTANCES } from "../terrain/terrain-patches.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { createWaterMaterial, WaterLook } from "./water-material.ts";
 
 const NEIGHBOR_MARGIN = 1;
 const WAVE_ALLOWANCE = 4;
+const PIECE_CELLS = 16;
 
 export class WaterView {
   readonly look = new WaterLook();
@@ -22,7 +29,8 @@ export class WaterView {
       castsShadow: false,
       edges: "open",
       levelDistances: PATCH_LEVEL_DISTANCES,
-      material: this.#material,
+      materials: [this.#material],
+      pieceCells: PIECE_CELLS,
       renderOrder: 2,
     });
   }
@@ -44,7 +52,39 @@ export class WaterView {
     this.#material.dispose();
   }
 
-  #measure(corner: PatchCorner): HeightRange | null {
+  #measure(corner: PatchCorner): PatchContent | null {
+    const { firstColumn, firstRow, lastColumn, lastRow } = corner;
+
+    const pieces: PatchPiece[] = [];
+
+    let lowest = Number.POSITIVE_INFINITY;
+    let highest = Number.NEGATIVE_INFINITY;
+
+    for (let row = firstRow; row < lastRow; row += PIECE_CELLS) {
+      for (let column = firstColumn; column < lastColumn; column += PIECE_CELLS) {
+        const range = this.#levelsAround({
+          firstColumn: column,
+          firstRow: row,
+          lastColumn: column + PIECE_CELLS,
+          lastRow: row + PIECE_CELLS,
+        });
+
+        if (range !== null) {
+          pieces.push({ firstColumn: column, firstRow: row, material: 0 });
+          lowest = Math.min(lowest, range.lowest);
+          highest = Math.max(highest, range.highest);
+        }
+      }
+    }
+
+    if (pieces.length === 0) {
+      return null;
+    }
+
+    return { highest: highest + WAVE_ALLOWANCE, lowest: lowest - WAVE_ALLOWANCE, pieces };
+  }
+
+  #levelsAround(corner: PatchCorner): HeightRange | null {
     const { grid, terrain } = this.#mirror;
 
     const firstColumn = Math.max(0, corner.firstColumn - NEIGHBOR_MARGIN);
@@ -70,6 +110,6 @@ export class WaterView {
       return null;
     }
 
-    return { highest: highest + WAVE_ALLOWANCE, lowest: lowest - WAVE_ALLOWANCE };
+    return { highest, lowest };
   }
 }
