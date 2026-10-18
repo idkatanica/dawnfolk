@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { worldRulesSchema } from "../../content/world-rules.ts";
 import { SocietyHarness } from "../testing/test-society.ts";
+import type { Person } from "./person.ts";
 import type { Tribe } from "./tribe.ts";
 
 const MORNING = 0.3;
 const EVENING = 0.9;
+
+function placeOnAxis(person: Person, x: number): void {
+  person.mover.x = x;
+  person.mover.z = 0;
+}
 
 function expectTribe(tribe: Tribe | null): Tribe {
   if (tribe === null) {
@@ -107,7 +113,7 @@ describe("danger", () => {
     const tribe = expectTribe(harness.spawnTribe(4));
 
     for (const cell of harness.world.grid.cellsInRadius(tribe.campX + 40, tribe.campZ, 25)) {
-      harness.world.fields.fire[cell] = 0.6;
+      harness.fire.ignite(cell, 0.6);
     }
 
     harness.run(2);
@@ -122,10 +128,35 @@ describe("danger", () => {
 
     const tribe = expectTribe(harness.spawnTribe(4));
 
+    expect(harness.society.findTribe(tribe.id)).toBe(tribe);
+
     harness.society.damageArea(tribe.campX, tribe.campZ, 200, 5, "blast");
 
     expect(harness.society.population).toBe(0);
     expect(harness.society.tribes()).toHaveLength(0);
+    expect(harness.society.findTribe(tribe.id)).toBeNull();
+  });
+});
+
+describe("people nearby", () => {
+  it("are found nearest first, with ties going to the earlier person", () => {
+    const harness = new SocietyHarness();
+
+    const tribe = expectTribe(harness.spawnTribe(4));
+
+    const [first, second, third, fourth] = harness.society.membersOf(tribe);
+
+    placeOnAxis(first, 10);
+    placeOnAxis(second, -10);
+    placeOnAxis(third, 5);
+    placeOnAxis(fourth, 500);
+    harness.society.kill(third, "age");
+
+    expect(harness.society.nearestPerson(0, 0, 50, () => true)).toBe(first);
+    expect(harness.society.nearestPerson(0, 0, 50, (person) => person !== first)).toBe(second);
+    expect(harness.society.nearestPerson(0, 0, 9, () => true)).toBeNull();
+    expect(harness.society.countNear(0, 0, 50, () => true)).toBe(2);
+    expect(harness.society.countNear(0, 0, 50, (person) => person === second)).toBe(1);
   });
 });
 
