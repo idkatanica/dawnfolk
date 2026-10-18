@@ -47,12 +47,7 @@ function blendedBiome(grid: WorldGrid, terrain: TerrainData, cell: number, seed:
   return terrain.biome[neighbor];
 }
 
-interface PlantingOdds {
-  readonly chancePerCell: number;
-  readonly species: number;
-}
-
-function plantingChance(rule: PlantingOdds, clearing: number, holdsTrees: boolean): number {
+function plantingChance(rule: PlantingRule, clearing: number, holdsTrees: boolean): number {
   if (plantSpeciesDefinition(rule.species).form === "stone") {
     return rule.chancePerCell;
   }
@@ -103,9 +98,10 @@ export function plantInitialVegetation(
       continue;
     }
 
+    const { holdsTrees } = groundDefinition(terrain.ground[cell]);
+
     const temperature = terrain.baseTemperature[cell];
     const clearing = 0.45 + 0.9 * (0.5 + 0.5 * terrain.variation[cell]);
-    const { holdsTrees } = groundDefinition(terrain.ground[cell]);
 
     for (const rule of PLANTING_RULES[biome]) {
       if (canGrowAt(rule, temperature) && random.chance(plantingChance(rule, clearing, holdsTrees))) {

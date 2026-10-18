@@ -43,6 +43,7 @@ describe.each(["round", "square"] as const)("monuments on a %s island", (shape) 
 
   it("sets them on dry, level ground away from water and the coast", () => {
     const { monuments, terrain } = worldOf(shape);
+
     const grid = new WorldGrid(TEST_DIMENSIONS);
 
     for (const monument of monuments) {
@@ -73,8 +74,8 @@ describe.each(["round", "square"] as const)("monuments on a %s island", (shape) 
 
   it("grows nothing on monument ground but the monument itself", () => {
     const { monuments, vegetation } = worldOf(shape);
-    const grid = new WorldGrid(TEST_DIMENSIONS);
 
+    const grid = new WorldGrid(TEST_DIMENSIONS);
     const ground = monumentGround(grid.cellCount, monuments);
 
     let stones = 0;
@@ -84,6 +85,7 @@ describe.each(["round", "square"] as const)("monuments on a %s island", (shape) 
       const isMonument = isMonumentSpecies(vegetation.species[plant]);
 
       expect(ground[cell] === 1, plantSpeciesDefinition(vegetation.species[plant]).name).toBe(isMonument);
+
       stones += isMonument ? 1 : 0;
     }
 

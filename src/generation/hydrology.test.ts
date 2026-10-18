@@ -61,8 +61,8 @@ function waterLevelBeside(grid: WorldGrid, cell: number, carved: Float32Array, w
 describe("river carving", () => {
   it("cuts a channel and lowers the banks beside it to just above the water level there", () => {
     const { carved, grid, result } = carveValley(GENTLE_WALLS);
-    const rises: number[] = [];
 
+    const rises: number[] = [];
     let wetFloorCells = 0;
 
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
@@ -87,8 +87,8 @@ describe("river carving", () => {
 
   it("rises steadily from the river to the untouched valley walls", () => {
     const { carved, grid, uncarved } = carveValley(GENTLE_WALLS);
-    const row = grid.rowAt(-150);
 
+    const row = grid.rowAt(-150);
     const profile = Array.from({ length: 12 }, (_, step) => carved[grid.index(grid.columnAt(5 + step * 10), row)]);
 
     for (let step = 1; step < profile.length; step += 1) {

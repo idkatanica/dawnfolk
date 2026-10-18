@@ -19,6 +19,7 @@ import {
 const TEST_DIMENSIONS = { cellSize: 40, cellsPerSide: 128 };
 const STEEP = 1;
 const CLIFF = Math.tan((55 * Math.PI) / 180);
+
 let world: GeneratedWorld;
 let squareWorld: GeneratedWorld;
 const stages = new Set<string>();
@@ -87,14 +88,15 @@ function cellsAround(grid: WorldGrid, cell: number, innerRadius: number, outerRa
 }
 
 function plantsAboveTheirSlope(generated: GeneratedWorld): string[] {
-  const grid = new WorldGrid(generated.dimensions);
   const { terrain, vegetation } = generated;
+
+  const grid = new WorldGrid(generated.dimensions);
   const misplaced: string[] = [];
 
   for (let plant = 0; plant < vegetation.count; plant += 1) {
-    const cell = grid.cellAt(vegetation.x[plant], vegetation.z[plant]);
     const { name, steepestSlope } = plantSpeciesDefinition(vegetation.species[plant]);
 
+    const cell = grid.cellAt(vegetation.x[plant], vegetation.z[plant]);
     const slope = slopeAt(terrain.height, grid, cell);
 
     if (slope > steepestSlope) {
@@ -341,8 +343,9 @@ describe("world generation", () => {
   });
 
   it("sinks rivers into valleys below the land around them", () => {
-    const grid = new WorldGrid(TEST_DIMENSIONS);
     const { terrain } = world;
+
+    const grid = new WorldGrid(TEST_DIMENSIONS);
     const depths: number[] = [];
 
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
@@ -366,8 +369,9 @@ describe("world generation", () => {
   });
 
   it("lines warm, low river banks with sand and keeps trees off it", () => {
-    const grid = new WorldGrid(TEST_DIMENSIONS);
     const { terrain, vegetation } = world;
+
+    const grid = new WorldGrid(TEST_DIMENSIONS);
     const banks = new Set<number>();
 
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
@@ -403,9 +407,9 @@ describe("world generation", () => {
   });
 
   it("opens glades, sparse stands and riverside meadows in the forests", () => {
-    const grid = new WorldGrid(TEST_DIMENSIONS);
     const { terrain } = world;
 
+    const grid = new WorldGrid(TEST_DIMENSIONS);
     const wooded = Array.from({ length: grid.cellCount }, (_, cell) => cell).filter((cell) => isWooded(terrain, cell));
 
     const densities = wooded.map((cell) => terrain.woodland[cell]);
@@ -429,8 +433,9 @@ describe("world generation", () => {
   });
 
   it("grows no wild plant where the woodland turns it away", () => {
-    const grid = new WorldGrid(TEST_DIMENSIONS);
     const { terrain, vegetation } = world;
+
+    const grid = new WorldGrid(TEST_DIMENSIONS);
 
     for (let plant = 0; plant < vegetation.count; plant += 1) {
       const cell = grid.cellAt(vegetation.x[plant], vegetation.z[plant]);
