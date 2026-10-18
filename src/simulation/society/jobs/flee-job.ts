@@ -31,7 +31,7 @@ export class FleeJob implements Job {
     person.fear = 1;
     person.mover.canWade = true;
     dropCarrying(person);
-    setDestination(person.mover, refuge, tick.context.navigation, false);
+    setDestination(person.mover, refuge, tick.context.navigation, { mayPlanRoute: false });
   }
 
   update(tick: PersonTick): Job | null {
