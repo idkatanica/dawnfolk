@@ -30,6 +30,8 @@ const SHADOW_REACH_STEPS_PER_OCTAVE = 4;
 const WORLD_UP = new Vector3(0, 1, 0);
 const SKY_CLOUD_DRIFT = 0.000_02;
 const SEA_CLOUD_DRIFT = 0.000_004;
+const LEAST_NORMAL_BIAS = 0.4;
+const TEXELS_OF_NORMAL_BIAS = 1.2;
 
 export class Atmosphere {
   readonly group = new Group();
@@ -53,7 +55,7 @@ export class Atmosphere {
     this.sun.castShadow = options.shadowMapSize > 0;
     this.sun.shadow.mapSize.set(options.shadowMapSize, options.shadowMapSize);
     this.sun.shadow.bias = -0.0003;
-    this.sun.shadow.normalBias = 0.4;
+    this.sun.shadow.normalBias = LEAST_NORMAL_BIAS;
 
     this.hemisphere = new HemisphereLight(0xb6_d2_ee, 0x7a_72_5a, 1.2);
 
@@ -162,6 +164,10 @@ export class Atmosphere {
     shadow.near = CELESTIAL_DISTANCE - 3000;
     shadow.far = CELESTIAL_DISTANCE + 3000;
     shadow.updateProjectionMatrix();
+    this.sun.shadow.normalBias = Math.max(
+      LEAST_NORMAL_BIAS,
+      ((reach * 2) / this.sun.shadow.mapSize.x) * TEXELS_OF_NORMAL_BIAS
+    );
   }
 
   #shadowAnchor(focus: Vector3, reach: number): Vector3 {
