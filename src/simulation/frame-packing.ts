@@ -60,6 +60,54 @@ export function packSurfaceRows(world: WorldState, runs: readonly RowRun[]): Pac
   });
 }
 
+export function keepChangedRows(runs: readonly PackedRows[], sent: Uint8Array, bytesPerRow: number): PackedRows[] {
+  const changed: PackedRows[] = [];
+
+  for (const run of runs) {
+    let firstChanged = -1;
+
+    for (let row = 0; row <= run.rowCount; row += 1) {
+      const isChanged = row < run.rowCount && !isRowSent(run, row, sent, bytesPerRow);
+
+      if (isChanged && firstChanged === -1) {
+        firstChanged = row;
+      }
+
+      if (!isChanged && firstChanged !== -1) {
+        changed.push(sliceRows(run, firstChanged, row, bytesPerRow));
+        firstChanged = -1;
+      }
+    }
+  }
+
+  for (const run of changed) {
+    sent.set(run.data, run.firstRow * bytesPerRow);
+  }
+
+  return changed;
+}
+
+function isRowSent(run: PackedRows, row: number, sent: Uint8Array, bytesPerRow: number): boolean {
+  const offset = row * bytesPerRow;
+  const sentOffset = (run.firstRow + row) * bytesPerRow;
+
+  for (let position = 0; position < bytesPerRow; position += 1) {
+    if (run.data[offset + position] !== sent[sentOffset + position]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function sliceRows(run: PackedRows, firstRow: number, endRow: number, bytesPerRow: number): PackedRows {
+  return {
+    data: run.data.slice(firstRow * bytesPerRow, endRow * bytesPerRow),
+    firstRow: run.firstRow + firstRow,
+    rowCount: endRow - firstRow,
+  };
+}
+
 export function packGroundRows(world: WorldState, runs: readonly RowRun[]): PackedRows[] {
   const { cellsPerSide } = world.grid;
 

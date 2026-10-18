@@ -1,9 +1,11 @@
-import type { HeightPatch, InitialWorld, SimulationFrame, SimulationStatistics } from "./frame.ts";
+import { SURFACE_CHANNELS } from "../world/agent-buffers.ts";
+import type { HeightPatch, InitialWorld, PackedRows, SimulationFrame, SimulationStatistics } from "./frame.ts";
 import {
   allRows,
   describeBuilding,
   describeTribe,
   describeWeather,
+  keepChangedRows,
   packAnimals,
   packBurningCells,
   packGroundRows,
@@ -17,6 +19,7 @@ import type { Simulation } from "./simulation.ts";
 
 export class FrameBuilder {
   readonly #simulation: Simulation;
+  #sentSurface: Uint8Array | null = null;
 
   constructor(simulation: Simulation) {
     this.#simulation = simulation;
@@ -40,6 +43,7 @@ export class FrameBuilder {
       groundRows: packGroundRows(world, world.groundChanges.takeRuns()),
       heightPatch: this.#heightPatch(),
       inspection: this.#inspection(),
+      isBusy: simulation.isBusy,
       isPaused: simulation.isPaused,
       notices: simulation.takeNotices(),
       people: packPeople(society.people),
@@ -48,13 +52,25 @@ export class FrameBuilder {
       secondsSinceTick: simulation.secondsSinceTick,
       speed: simulation.speed,
       statistics: this.#statistics(),
-      surfaceRows: packSurfaceRows(world, world.surfaceChanges.takeRuns()),
+      surfaceRows: this.#changedSurfaceRows(),
       tick: simulation.tick,
       tribes: society.tribes().map((tribe) => describeTribe(tribe, society.membersOf(tribe))),
       vegetation: packVegetationChanges(world.vegetation.takeChanges()),
       water: simulation.takeWaterUpdate(),
       weather: describeWeather(simulation.weather, simulation.environment),
     };
+  }
+
+  #changedSurfaceRows(): PackedRows[] {
+    const { world } = this.#simulation;
+
+    const runs = packSurfaceRows(world, world.surfaceChanges.takeRuns());
+
+    if (this.#sentSurface === null) {
+      return runs;
+    }
+
+    return keepChangedRows(runs, this.#sentSurface, world.grid.cellsPerSide * SURFACE_CHANNELS);
   }
 
   initialWorld(): InitialWorld {
@@ -68,6 +84,8 @@ export class FrameBuilder {
 
     const [surface] = packSurfaceRows(world, allRows(world));
     const [ground] = packGroundRows(world, allRows(world));
+
+    this.#sentSurface = surface.data.slice();
 
     return {
       dimensions: { cellSize: world.grid.cellSize, cellsPerSide: world.grid.cellsPerSide },
