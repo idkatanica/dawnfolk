@@ -75,8 +75,13 @@ function columnSections(column: Column, ribs: number): LoftSection[] {
   ];
 }
 
+const STEM_SEAM = 0.6;
+const PAD_SEAM = 0.1;
+const PAD_ROOTING = 0.55;
+
 function addColumn(builder: MeshBuilder, column: Column, detail: CactusDetail): void {
   builder.add(loft(columnSections(column, detail.ribs), detail.segments), {
+    seam: column.radius * STEM_SEAM,
     style: { shade: stemShade(column.height) },
   });
 }
@@ -139,12 +144,10 @@ function saguaro(builder: MeshBuilder, random: RandomSource, detail: CactusDetai
 
     const kept = detail.ribs === 0 ? points.filter((_point, index) => index % 2 === 0) : points;
 
-    builder.add(
-      tube(kept, { hasEndCap: false, hasStartCap: false, radialSegments: Math.max(4, detail.segments - 4) }),
-      {
-        style: { shade: 0.95 },
-      }
-    );
+    builder.add(tube(kept, { hasEndCap: false, radialSegments: Math.max(4, detail.segments - 4) }), {
+      seam: radius * STEM_SEAM,
+      style: { shade: 0.95 },
+    });
   }
 
   if (detail.withFlowers) {
@@ -203,6 +206,7 @@ function barrel(builder: MeshBuilder, random: RandomSource, detail: CactusDetail
     }
 
     builder.add(loft(barrelSections(height, radius, detail.ribs === 0 ? 0 : detail.ribs + 4), detail.segments + 2), {
+      seam: radius * STEM_SEAM,
       style: { shade: stemShade(height) },
       transform: transformOf({ position: position.toArray() }),
     });
@@ -246,7 +250,7 @@ function childPad(parent: Pad, random: RandomSource): Pad {
   const upward = new Vector3(0, 1, 0).applyMatrix4(transformOf({ rotation: [0, turn, tilt] }));
 
   return {
-    center: padRim(parent, rimAngle).addScaledVector(upward, size * PAD_STRETCH * 0.7),
+    center: padRim(parent, rimAngle).addScaledVector(upward, size * PAD_STRETCH * PAD_ROOTING),
     size,
     tilt,
     turn,
@@ -287,6 +291,7 @@ function pricklyPear(builder: MeshBuilder, random: RandomSource, detail: CactusD
 
   for (const pad of pads.slice(0, detail.maximumStems * 2)) {
     builder.add(sphere(1, segments, Math.max(4, Math.floor(segments * 0.6))), {
+      seam: PAD_SEAM,
       style: { shade: stemShade(1.6) },
       transform: padTransform(pad),
     });
