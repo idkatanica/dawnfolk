@@ -7,7 +7,7 @@ import { hasPart } from "../part-mask.ts";
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { measureStride } from "../rig/stride.ts";
-import { meshProblems } from "../testing/mesh-checks.ts";
+import { meshProblems, openEdgeCount } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
 import { posedMesh } from "../testing/moved-mesh.ts";
 import { animalAppearance } from "./animal-appearance.ts";
@@ -54,6 +54,14 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
         const detached = detachedPieces(mesh, 0.01).map((piece) => describePiece(mesh, piece));
 
         expect(detached, `${level} ${species.parts[index + 1].name}`).toEqual([]);
+      }
+    }
+  });
+
+  it("leaves no holes in any part at either level of detail", () => {
+    for (const level of ["high", "low"] as const) {
+      for (const [index, mesh] of buildAnimalParts(kind, level).entries()) {
+        expect(openEdgeCount(mesh), `${level} ${species.parts[index].name}`).toBe(0);
       }
     }
   });

@@ -70,3 +70,36 @@ export function meshProblems(mesh: MeshData): string[] {
 
   return problems;
 }
+
+const EDGE_GRID = 1e4;
+
+function cornerKey(mesh: MeshData, vertex: number): string {
+  const offset = vertex * 3;
+
+  return [mesh.positions[offset], mesh.positions[offset + 1], mesh.positions[offset + 2]]
+    .map((value) => Math.round(value * EDGE_GRID))
+    .join(",");
+}
+
+export function openEdgeCount(mesh: MeshData): number {
+  const uses = new Map<string, number>();
+
+  for (let corner = 0; corner < mesh.indices.length; corner += 3) {
+    for (let side = 0; side < 3; side += 1) {
+      const from = cornerKey(mesh, mesh.indices[corner + side]);
+      const to = cornerKey(mesh, mesh.indices[corner + ((side + 1) % 3)]);
+
+      if (from === to) {
+        continue;
+      }
+
+      const edge = from < to ? `${from}|${to}` : `${to}|${from}`;
+
+      const count = uses.get(edge);
+
+      uses.set(edge, count === undefined ? 1 : count + 1);
+    }
+  }
+
+  return [...uses.values()].filter((count) => count % 2 === 1).length;
+}

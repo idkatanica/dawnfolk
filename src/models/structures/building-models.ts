@@ -235,6 +235,7 @@ function thatchRing(radius: number, bottom: number, top: number, segments: numbe
     { radiusX: radius, radiusZ: radius, ripple: (around) => 1 + 0.03 * Math.sin(around * segments * 3), y: bottom },
     { radiusX: radius * 0.45, radiusZ: radius * 0.45, y: bottom + (top - bottom) * 0.62 },
     { radiusX: 0.05, radiusZ: 0.05, y: top },
+    { radiusX: 0, radiusZ: 0, y: top + 0.02 },
   ];
 }
 

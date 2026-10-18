@@ -4,7 +4,7 @@ import { type MeshData, mergeMeshes, triangleCount, VERTEX_CHANNELS } from "../m
 import { MAXIMUM_PARTS } from "../part-mask.ts";
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
-import { meshProblems } from "../testing/mesh-checks.ts";
+import { meshProblems, openEdgeCount } from "../testing/mesh-checks.ts";
 import {
   describePiece,
   detachedPieces,
@@ -109,6 +109,11 @@ describe("human model", () => {
     expect(body.bounds.minimum[1]).toBeCloseTo(0, 1);
     expect(body.bounds.maximum[1]).toBeGreaterThan(1.7);
     expect(body.bounds.maximum[1]).toBeLessThan(1.8);
+  });
+
+  it("closes the body so no hole opens at a shoulder or a joint", () => {
+    expect(openEdgeCount(highParts[humanPartIndex("body")])).toBe(0);
+    expect(openEdgeCount(lowParts[humanPartIndex("body")])).toBe(0);
   });
 
   it("saves triangles at the low level of detail", () => {
