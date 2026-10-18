@@ -103,7 +103,10 @@ export class BillboardBatch {
   commit(): void {
     this.#geometry.instanceCount = this.#count;
     this.mesh.visible = this.#count > 0;
-    this.#instances.markUpdated(this.#count);
+
+    if (this.#count > 0) {
+      this.#instances.markUpdated(this.#count);
+    }
   }
 
   dispose(): void {

@@ -126,7 +126,10 @@ export class BuildingView {
       for (const batch of this.#batches[kind]) {
         batch.geometry.instanceCount = batch.count;
         batch.mesh.visible = batch.count > 0;
-        batch.instances.markUpdated(batch.count);
+
+        if (batch.count > 0) {
+          batch.instances.markUpdated(batch.count);
+        }
       }
     }
   }

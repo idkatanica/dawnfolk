@@ -2,9 +2,11 @@ import {
   abs,
   cameraPosition,
   dot,
+  Fn,
   float,
   floor,
   fract,
+  If,
   length,
   max,
   mix,
@@ -35,6 +37,7 @@ import {
 const DOME_RADIUS = 30_000;
 const STAR_CELLS_PER_FACE = 150;
 const STAR_SHARE = 0.16;
+const CLOUD_HORIZON = 0.015;
 
 function starHash(seed: Node<"vec3">, salt: number): Node<"float"> {
   const mixed = dot(seed.add(salt * 19.19), vec3(12.9898, 78.233, 37.719));
@@ -72,20 +75,26 @@ export class SkyDome {
   }
 
   #skyColor() {
-    const direction = normalize(positionWorld.sub(cameraPosition));
+    return Fn(() => {
+      const direction = normalize(positionWorld.sub(cameraPosition));
 
-    const height = direction.y;
+      const height = direction.y;
 
-    const sky = mix(this.horizonColor, this.zenithColor, pow(max(height, 0), 0.5));
-    const abyss = mix(this.horizonColor, this.abyssColor, smoothstep(0, 0.45, height.negate()));
+      const sky = mix(this.horizonColor, this.zenithColor, pow(max(height, 0), 0.5));
+      const abyss = mix(this.horizonColor, this.abyssColor, smoothstep(0, 0.45, height.negate()));
 
-    const gradient = mix(abyss, sky, step(0, height));
+      const color = mix(abyss, sky, step(0, height)).toVar();
 
-    const withStars = gradient.add(this.#stars(direction).mul(this.starVisibility).mul(step(0, height)));
+      If(height.greaterThanEqual(0).and(this.starVisibility.greaterThan(0)), () => {
+        color.addAssign(this.#stars(direction).mul(this.starVisibility));
+      });
 
-    const withClouds = this.#clouds(direction, withStars);
+      If(height.greaterThan(CLOUD_HORIZON), () => {
+        color.assign(this.#clouds(direction, color));
+      });
 
-    return withClouds.add(this.#sun(direction)).add(this.#moon(direction));
+      return color.add(this.#sun(direction)).add(this.#moon(direction));
+    })();
   }
 
   #sun(direction: Node<"vec3">) {
@@ -147,7 +156,7 @@ export class SkyDome {
   #clouds(direction: Node<"vec3">, background: Node<"vec3">) {
     const height = max(direction.y, 0);
     const threshold = float(1).sub(this.cloudCover).mul(0.75).add(0.18);
-    const horizonFade = smoothstep(0.015, 0.2, direction.y);
+    const horizonFade = smoothstep(CLOUD_HORIZON, 0.2, direction.y);
     const sunSide = dot(normalize(vec3(direction.x, 0.25, direction.z)), this.sunDirection)
       .mul(0.5)
       .add(0.5);

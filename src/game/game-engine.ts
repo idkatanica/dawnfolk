@@ -1,4 +1,4 @@
-import { PerspectiveCamera, type Vector3, type WebGPURenderer } from "three/webgpu";
+import { Matrix4, PerspectiveCamera, type Vector3, type WebGPURenderer } from "three/webgpu";
 import type { GenerationProgress } from "../generation/world-generator.ts";
 import { type CameraState, GodCamera } from "../rendering/camera/god-camera.ts";
 import { createRenderer, type GraphicsBackend } from "../rendering/create-renderer.ts";
@@ -7,6 +7,7 @@ import { WorldRenderer } from "../rendering/world-renderer.ts";
 import { clamp } from "../shared/math.ts";
 import type { WorldRequest } from "../workers/simulation-worker-api.ts";
 import type { EngineHandle } from "./engine-handle.ts";
+import { FramePacer } from "./frame-pacer.ts";
 import { GameSession } from "./game-session.ts";
 import { EntityPicker } from "./input/entity-picker.ts";
 import { GroundPicker, type ScreenPoint, type ViewportSize } from "./input/ground-picker.ts";
@@ -42,6 +43,7 @@ const FAR_PLANE = 40_000;
 const CURSOR_COLOR = 0xff_ff_ff;
 const PRESSED_CURSOR_COLOR = 0xff_d8_8a;
 const FOLLOW_DISTANCE = 45;
+const ACTIVITY_EVENTS = ["keydown", "pointerdown", "pointermove", "wheel"] as const;
 
 async function createSessionOrRelease(
   renderer: WebGPURenderer,
@@ -67,9 +69,12 @@ export class GameEngine implements EngineHandle {
   readonly quality: QualityLevel;
   readonly session: GameSession;
   readonly #canvas: HTMLCanvasElement;
+  readonly #activity = new AbortController();
+  readonly #cameraPlacement = new Matrix4();
   readonly #entityPicker: EntityPicker;
   readonly #keyboard: KeyboardControls;
   readonly #labels: LabelProjector;
+  readonly #pacer = new FramePacer();
   readonly #pointer: PointerControls;
   readonly #renderListeners = new Set<() => void>();
   readonly #renderer: WebGPURenderer;
@@ -129,6 +134,13 @@ export class GameEngine implements EngineHandle {
     this.#resizeObserver = new ResizeObserver(() => this.#resize());
     this.#resizeObserver.observe(parts.canvas);
     this.#resize();
+
+    for (const type of ACTIVITY_EVENTS) {
+      window.addEventListener(type, () => this.#pacer.markActivity(performance.now()), {
+        passive: true,
+        signal: this.#activity.signal,
+      });
+    }
   }
 
   static async start(options: EngineOptions): Promise<GameEngine> {
@@ -196,6 +208,7 @@ export class GameEngine implements EngineHandle {
 
   dispose(): void {
     this.stop();
+    this.#activity.abort();
     this.#renderListeners.clear();
     this.#pointer.dispose();
     this.#keyboard.dispose();
@@ -206,6 +219,12 @@ export class GameEngine implements EngineHandle {
   }
 
   #frame(time: number): void {
+    if (!this.#pacer.isFrameDue(time, document.hasFocus())) {
+      return;
+    }
+
+    this.#pacer.markRendered(time);
+
     const realSeconds = this.#elapsedSeconds(time);
 
     this.session.update(realSeconds);
@@ -223,6 +242,17 @@ export class GameEngine implements EngineHandle {
 
     for (const listener of this.#renderListeners) {
       listener();
+    }
+
+    this.#noticeCameraMotion(time);
+  }
+
+  #noticeCameraMotion(time: number): void {
+    const placement = this.camera.camera.matrixWorld;
+
+    if (!placement.equals(this.#cameraPlacement)) {
+      this.#cameraPlacement.copy(placement);
+      this.#pacer.markActivity(time);
     }
   }
 
