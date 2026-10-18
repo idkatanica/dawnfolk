@@ -43,6 +43,7 @@ const FAR_PLANE = 40_000;
 const CURSOR_COLOR = 0xff_ff_ff;
 const PRESSED_CURSOR_COLOR = 0xff_d8_8a;
 const FOLLOW_DISTANCE = 45;
+const VIEW_FOCUS_STEP = 50;
 const ACTIVITY_EVENTS = ["keydown", "pointerdown", "pointermove", "wheel"] as const;
 
 async function createSessionOrRelease(
@@ -81,6 +82,8 @@ export class GameEngine implements EngineHandle {
   readonly #resizeObserver: ResizeObserver;
   readonly #world: WorldRenderer;
   #lastFrameTime = Number.NaN;
+  #reportedFocusX = Number.NaN;
+  #reportedFocusZ = Number.NaN;
   #viewport: ViewportSize = { height: 1, width: 1 };
 
   constructor(parts: EngineParts) {
@@ -247,6 +250,19 @@ export class GameEngine implements EngineHandle {
     }
 
     this.#noticeCameraMotion(time);
+    this.#reportViewFocus();
+  }
+
+  #reportViewFocus(): void {
+    const { target } = this.camera;
+
+    if (Math.hypot(target.x - this.#reportedFocusX, target.z - this.#reportedFocusZ) < VIEW_FOCUS_STEP) {
+      return;
+    }
+
+    this.#reportedFocusX = target.x;
+    this.#reportedFocusZ = target.z;
+    this.session.send({ type: "setViewFocus", x: target.x, z: target.z });
   }
 
   #noticeCameraMotion(time: number): void {
