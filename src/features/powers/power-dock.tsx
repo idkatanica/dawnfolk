@@ -31,7 +31,7 @@ function PowerTile({ powerId }: { readonly powerId: PowerId }) {
       <button
         aria-pressed={isSelected}
         className={cn(TILE_CLASS, {
-          "bg-dawn text-white shadow-thumb hover:bg-dawn-strong hover:text-white": isSelected,
+          "bg-dawn text-white hover:bg-dawn-strong hover:text-white": isSelected,
         })}
         onClick={toggle}
         type="button"
@@ -75,7 +75,7 @@ function SelectTile() {
 function CategoryTab({ category }: { readonly category: (typeof DOCK_CATEGORIES)[number] }) {
   return (
     <Tabs.Tab
-      className="h-7 rounded-full px-3 font-semibold text-ink-muted text-xs uppercase tracking-wider outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink data-active:shadow-thumb"
+      className="h-7 rounded-full px-3 font-semibold text-ink-muted text-xs uppercase tracking-wider outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink"
       value={category.id}
     >
       {category.name}

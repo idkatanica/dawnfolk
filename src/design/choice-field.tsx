@@ -23,7 +23,7 @@ const SEGMENTED_LIMIT = 3;
 function SegmentOption({ option }: { readonly option: ChoiceOption }) {
   return (
     <Toggle
-      className="h-8 flex-1 rounded-full px-3 font-medium text-ink-soft text-xs outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-pressed:bg-white data-pressed:text-ink data-pressed:shadow-thumb"
+      className="h-8 flex-1 rounded-full px-3 font-medium text-ink-soft text-xs outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-pressed:bg-white data-pressed:text-ink"
       value={option.value}
     >
       {option.label}
@@ -99,7 +99,7 @@ function ListChoice({ label, onChange, options, value }: ChoiceFieldProps) {
 
       <Select.Portal>
         <Select.Positioner className="z-50 select-none outline-none" sideOffset={6}>
-          <Select.Popup className="min-w-[var(--anchor-width)] origin-[var(--transform-origin)] rounded-2xl bg-white/95 p-1 shadow-island outline-none backdrop-blur-xl transition-[scale,opacity] duration-100 data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
+          <Select.Popup className="min-w-[var(--anchor-width)] origin-[var(--transform-origin)] rounded-2xl bg-white/95 p-1 outline-none backdrop-blur-xl transition-[scale,opacity] duration-100 data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
             <Select.List className="max-h-[var(--available-height)] overflow-y-auto">
               {options.map((option) => (
                 <ListOption key={option.value} option={option} />

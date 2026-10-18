@@ -22,8 +22,8 @@ export function IconButton({ className, icon, isPressed, label, tone = "plain", 
       className={cn(
         "grid pointer-coarse:size-11 size-10 shrink-0 place-items-center rounded-full transition-colors duration-150",
         {
-          "bg-dawn text-white shadow-thumb hover:bg-dawn-strong active:bg-dawn-strong": tone === "accent",
-          "bg-white text-ink shadow-thumb": tone === "plain" && isPressed === true,
+          "bg-dawn text-white hover:bg-dawn-strong active:bg-dawn-strong": tone === "accent",
+          "bg-white text-ink": tone === "plain" && isPressed === true,
           "text-ink-soft hover:bg-veil hover:text-ink active:bg-veil-strong": tone === "plain" && isPressed !== true,
         },
         FOCUS_RING,

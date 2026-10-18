@@ -26,11 +26,7 @@ function TribeCard({ tribe }: { readonly tribe: TribeSummary }) {
         onClick={showTribe}
         type="button"
       >
-        <span
-          aria-hidden="true"
-          className="size-9 shrink-0 rounded-xl shadow-thumb"
-          style={{ backgroundColor: tribe.color }}
-        />
+        <span aria-hidden="true" className="size-9 shrink-0 rounded-xl" style={{ backgroundColor: tribe.color }} />
 
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="truncate font-semibold text-ink text-sm">{tribe.name}</span>

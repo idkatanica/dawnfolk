@@ -31,7 +31,7 @@ function isSettingsTab(value: unknown): value is SettingsTab {
 function SectionTab({ section }: { readonly section: SettingsSection }) {
   return (
     <Tabs.Tab
-      className="h-8 flex-1 rounded-full px-3 font-semibold text-ink-soft text-sm outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink data-active:shadow-thumb"
+      className="h-8 flex-1 rounded-full px-3 font-semibold text-ink-soft text-sm outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink"
       value={section.value}
     >
       {section.label}

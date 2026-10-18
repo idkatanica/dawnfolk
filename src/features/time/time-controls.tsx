@@ -12,7 +12,7 @@ function SpeedOption({ speed }: { readonly speed: number }) {
   return (
     <Toggle
       aria-label={`Speed ${speed} times`}
-      className="tabular h-8 min-w-8 rounded-full px-1.5 font-semibold text-ink-soft text-xs outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-pressed:bg-white data-pressed:text-ink data-pressed:shadow-thumb sm:min-w-9 sm:px-2"
+      className="tabular h-8 min-w-8 rounded-full px-1.5 font-semibold text-ink-soft text-xs outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-pressed:bg-white data-pressed:text-ink sm:min-w-9 sm:px-2"
       value={String(speed)}
     >
       {speed}×

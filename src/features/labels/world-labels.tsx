@@ -72,7 +72,7 @@ function TribeLabel({ isSelected, tribe }: TribeLabelProps) {
       <button
         aria-current={isSelected}
         className={cn(
-          "pointer-events-auto flex items-center gap-2 rounded-full bg-white/55 py-1 pr-3 pl-1.5 text-xs shadow-thumb outline-none ring-1 ring-white/40 backdrop-blur-xl backdrop-saturate-150 transition-colors hover:bg-white/75 focus-visible:ring-2 focus-visible:ring-dawn",
+          "pointer-events-auto flex items-center gap-2 rounded-full bg-white/55 py-1 pr-3 pl-1.5 text-xs outline-none ring-1 ring-white/40 backdrop-blur-xl backdrop-saturate-150 transition-colors hover:bg-white/75 focus-visible:ring-2 focus-visible:ring-dawn",
           { "ring-2 ring-dawn": isSelected }
         )}
         onClick={showTribe}
