@@ -18,7 +18,6 @@ import {
   smoothstep,
   texture,
   textureLoad,
-  time,
   transformNormalToView,
   uint,
   uniform,
@@ -41,7 +40,7 @@ import { clamp as clampNumber } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
-import type { PlantWeather } from "./plant-material.ts";
+import { gustAt, type PlantWeather } from "./plant-material.ts";
 
 const BLADES_PER_CLUMP = 4;
 const BLADE_OUTLINE: readonly (readonly [side: number, along: number])[] = [
@@ -199,12 +198,10 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   const facing = vec2(cos(facingAngle), sin(facingAngle));
   const spread = vec2(cos(spreadAngle), sin(spreadAngle)).mul(spacing.mul(CLUMP_SPREAD));
   const lean = vec2(cos(leanAngle), sin(leanAngle)).mul(bladeRandom(13).mul(0.35));
-  const wave = sin(time.mul(1.9).add(root.x.mul(0.21)).add(root.y.mul(0.17)))
-    .mul(0.5)
-    .add(0.5);
+  const wave = gustAt(weather, root);
   const curve = along.mul(along);
 
-  const bend = lean.add(weather.wind.mul(weather.gust).mul(wave.mul(0.22).add(0.18)));
+  const bend = lean.add(weather.wind.mul(weather.gust).mul(wave.mul(0.28).add(0.14)));
 
   const offset = facing.mul(side.mul(bladeWidth)).add(bend.mul(curve.mul(bladeHeight)));
   const rise = along.mul(bladeHeight).mul(float(1).sub(curve.mul(length(bend)).mul(0.25)));

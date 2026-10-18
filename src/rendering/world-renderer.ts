@@ -1,6 +1,5 @@
 import { Frustum, Matrix4, type PerspectiveCamera, Scene, type Vector3, type WebGPURenderer } from "three/webgpu";
 import type { WorldMirror } from "../game/world-mirror.ts";
-import { clamp } from "../shared/math.ts";
 import type { SimulationEffect } from "../simulation/effects.ts";
 import { AgentDots } from "./agents/agent-dots.ts";
 import type { AgentViewInput } from "./agents/agent-view-input.ts";
@@ -37,6 +36,7 @@ export interface RenderView {
 }
 
 const CLOUD_SEA_DEPTH = 760;
+const WATER_DRIFT = 0.08;
 
 const SELECTION_COLOR = 0xff_f2_c8;
 
@@ -183,8 +183,8 @@ export class WorldRenderer {
       view.realSeconds
     );
 
-    this.#paintWater(wind);
-    this.#blowWind(wind);
+    this.#paintWater(wind, view.realSeconds);
+    this.#vegetation.weather.blow(wind.directionX, wind.directionZ, wind.metersPerSecond, view.realSeconds);
     view.camera.updateMatrixWorld();
     this.#terrain.update(view.camera, this.#quality.terrainDetail);
     this.#water.update(view.camera, this.#quality.terrainDetail, this.#terrain.patchLevels);
@@ -196,14 +196,15 @@ export class WorldRenderer {
     this.#output.render();
   }
 
-  #paintWater(wind: Wind): void {
+  #paintWater(wind: Wind, realSeconds: number): void {
     const { look } = this.#water;
     const { palette } = this.#atmosphere;
 
     look.horizonColor.value.setHex(palette.horizon);
     look.zenithColor.value.setHex(palette.zenith);
     look.daylight.value = this.#atmosphere.daylight;
-    look.windDrift.value.set(wind.directionX, wind.directionZ).multiplyScalar(wind.metersPerSecond * 0.08);
+    look.windTravel.value.x += wind.directionX * wind.metersPerSecond * WATER_DRIFT * realSeconds;
+    look.windTravel.value.y += wind.directionZ * wind.metersPerSecond * WATER_DRIFT * realSeconds;
   }
 
   #updateAgents(view: RenderView): void {
@@ -265,13 +266,6 @@ export class WorldRenderer {
     }
 
     this.#selectionRing.show(inspection.x, inspection.z, SELECTION_RADIUS[inspection.kind], SELECTION_COLOR, 0.9);
-  }
-
-  #blowWind(wind: Wind): void {
-    const { weather } = this.#vegetation;
-
-    weather.gust.value = clamp(wind.metersPerSecond / 7, 0.12, 2);
-    weather.wind.value.set(wind.directionX, wind.directionZ);
   }
 
   dispose(): void {

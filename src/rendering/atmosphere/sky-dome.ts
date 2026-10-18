@@ -152,7 +152,7 @@ export class SkyDome {
       .mul(0.5)
       .add(0.5);
 
-    const projected = direction.xz.div(height.add(0.12)).mul(0.9).add(this.cloudOffset);
+    const projected = direction.xz.div(height.add(0.12)).mul(0.9).sub(this.cloudOffset);
 
     const density = mx_fractal_noise_float(vec3(projected, time.mul(0.004)), 4, 2.1, 0.5)
       .mul(0.5)

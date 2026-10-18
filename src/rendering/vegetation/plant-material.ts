@@ -3,6 +3,7 @@ import {
   bool,
   clamp,
   cos,
+  dot,
   equal,
   Fn,
   float,
@@ -40,9 +41,38 @@ import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 
+const CALM_GUST = 0.12;
+const STRONGEST_GUST = 2;
+const METERS_PER_SECOND_PER_GUST = 7;
+const SLOWEST_GUST_FRONT = 1.5;
+const GUST_FRONT_SPEEDUP = 2;
+
 export class PlantWeather {
   readonly gust = uniform(0.5);
+  readonly gustTravel = uniform(0);
   readonly wind = uniform(new Vector2(1, 0));
+
+  blow(directionX: number, directionZ: number, metersPerSecond: number, realSeconds: number): void {
+    const frontSpeed = Math.max(metersPerSecond, SLOWEST_GUST_FRONT) * GUST_FRONT_SPEEDUP;
+
+    this.gust.value = Math.min(STRONGEST_GUST, Math.max(CALM_GUST, metersPerSecond / METERS_PER_SECOND_PER_GUST));
+    this.gustTravel.value += frontSpeed * realSeconds;
+    this.wind.value.set(directionX, directionZ);
+  }
+}
+
+export function gustAt(weather: PlantWeather, point: Node<"vec2">): Node<"float"> {
+  const front = dot(point, weather.wind).sub(weather.gustTravel);
+  const across = dot(point, vec2(weather.wind.y.negate(), weather.wind.x));
+
+  const rolling = sin(front.mul(0.045).add(sin(across.mul(0.013)).mul(2.2)))
+    .mul(0.5)
+    .add(0.5);
+  const ripple = sin(front.mul(0.19).add(across.mul(0.05)))
+    .mul(0.5)
+    .add(0.5);
+
+  return rolling.mul(0.7).add(ripple.mul(0.3));
 }
 
 export class SpeciesLook {
@@ -126,9 +156,12 @@ export function createPlantMaterial({
   const phase = placement.x.mul(0.047).add(placement.z.mul(0.031));
   const swaySquared = sway.mul(sway);
 
-  const bend = swaySquared
-    .mul(scale.mul(0.55).add(0.25))
-    .mul(sin(time.mul(1.6).add(phase)).mul(0.35).add(0.65).mul(weather.gust));
+  const gusting = gustAt(weather, placement.xz)
+    .mul(0.5)
+    .add(0.35)
+    .add(sin(time.mul(1.6).add(phase)).mul(0.12));
+
+  const bend = swaySquared.mul(scale.mul(0.55).add(0.25)).mul(gusting.mul(weather.gust));
   const shiver = sin(time.mul(9).add(positionLocal.x.mul(3)).add(phase.mul(7)))
     .mul(flutter)
     .mul(0.04)

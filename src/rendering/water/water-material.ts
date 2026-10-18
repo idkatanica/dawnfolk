@@ -46,7 +46,7 @@ const FOAM_NEAR = 250;
 export class WaterLook {
   readonly daylight = uniform(1);
   readonly horizonColor = uniform(new Color(0xcf_e2_f0));
-  readonly windDrift = uniform(new Vector2(0.4, 0.2));
+  readonly windTravel = uniform(new Vector2());
   readonly zenithColor = uniform(new Color(0x4c_8c_d6));
 }
 
@@ -215,13 +215,13 @@ function surfaceNormal(flow: Node<"vec2">, look: WaterLook): Node<"vec3"> {
   const phase = fract(cycle);
   const otherPhase = fract(cycle.add(0.5));
 
-  const drift = look.windDrift.mul(time);
+  const drift = look.windTravel;
   const travel = direction.mul(speed).mul(7);
   const blend = abs(phase.mul(2).sub(1));
   const strength = float(1.1).add(speed.mul(0.6)).mul(calming);
 
-  const pointA = positionWorld.xz.add(drift).sub(travel.mul(phase));
-  const pointB = positionWorld.xz.add(drift).sub(travel.mul(otherPhase)).add(vec2(13.7, 4.1));
+  const pointA = positionWorld.xz.sub(drift).sub(travel.mul(phase));
+  const pointB = positionWorld.xz.sub(drift).sub(travel.mul(otherPhase)).add(vec2(13.7, 4.1));
 
   return normalize(mix(waveNormal(pointA, strength), waveNormal(pointB, strength), blend));
 }
