@@ -10,15 +10,17 @@ const STEEP_WALLS = 2;
 const BANK_FREEBOARD = 0.2;
 const DEEPEST_BANK_LOWERING = 10;
 const UNTOUCHED_DISTANCE = 120;
+const RIDGE_HEIGHT = 10;
+const RIDGE_SPREAD = 2 * 30 * 30;
 
-function carveValley(wallSlope: number) {
+function carveValley(wallSlope: number, ridgeHeight = 0) {
   const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 64 });
 
   const uncarved = Float32Array.from({ length: grid.cellCount }, (_, cell) => {
     const x = grid.cellCenterX(cell);
     const z = grid.cellCenterZ(cell);
 
-    return 100 + Math.abs(x) * wallSlope + (z + grid.halfSize) * 0.05;
+    return 100 + Math.abs(x) * wallSlope + (z + grid.halfSize) * 0.05 + ridgeHeight * Math.exp(-(z * z) / RIDGE_SPREAD);
   });
 
   const carved = Float32Array.from(uncarved);
@@ -122,6 +124,33 @@ describe("river carving", () => {
     for (let step = 1; step < profile.length; step += 1) {
       expect(profile[step] - profile[step - 1]).toBeGreaterThan(0);
       expect(profile[step] - profile[step - 1]).toBeLessThan(STEEP_WALLS * 10 + 5);
+    }
+  });
+
+  it("cuts a gorge through a ridge across the valley instead of lifting the water over it", () => {
+    const { carved, grid, result, uncarved } = carveValley(GENTLE_WALLS, RIDGE_HEIGHT);
+
+    const crossing = result.features.rivers.flatMap((river) => river.points).find((point) => Math.abs(point.z) < 5);
+
+    expect(crossing).toBeDefined();
+
+    if (crossing === undefined) {
+      return;
+    }
+
+    const crest = grid.cellAt(crossing.x, crossing.z);
+    const wall = grid.cellAt(crossing.x + 25, crossing.z);
+
+    expect(uncarved[crest] - result.waterSurface[crest]).toBeGreaterThan(RIDGE_HEIGHT * 0.5);
+    expect(carved[crest]).toBeLessThan(result.waterSurface[crest]);
+    expect(carved[wall] - result.waterSurface[crest]).toBeGreaterThan(5);
+
+    for (const river of result.features.rivers) {
+      const levels = river.points.map((point) => result.waterSurface[grid.cellAt(point.x, point.z)]);
+
+      for (let index = 1; index < levels.length; index += 1) {
+        expect(levels[index]).toBeLessThanOrEqual(levels[index - 1] + 1e-3);
+      }
     }
   });
 });

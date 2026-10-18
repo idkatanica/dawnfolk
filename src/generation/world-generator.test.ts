@@ -4,10 +4,10 @@ import { Ground } from "../content/grounds.ts";
 import { isTreeSpecies, plantSpeciesDefinition } from "../content/plants.ts";
 import { isOnIsland } from "../world/coast.ts";
 import { admitsWildPlant, slopeAt } from "../world/footing.ts";
-import type { IslandShapeKind } from "../world/island-shape.ts";
+import { ISLAND_SHAPES, type IslandShapeKind } from "../world/island-shape.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { sampleHeight } from "../world/terrain-sampling.ts";
-import { hasWater, NO_WATER } from "../world/water.ts";
+import { hasWater, NO_WATER, type River } from "../world/water.ts";
 import { NEIGHBOR_OFFSETS, WorldGrid } from "../world/world-grid.ts";
 import {
   DEFAULT_GENERATION_OPTIONS,
@@ -174,6 +174,57 @@ function bankRises(terrain: TerrainData, grid: WorldGrid): number[] {
   return rises;
 }
 
+function riverPathCells(grid: WorldGrid, river: River): number[] {
+  const cells: number[] = [];
+
+  for (const point of river.points) {
+    const cell = grid.cellAt(point.x, point.z);
+
+    if (cell !== cells.at(-1)) {
+      cells.push(cell);
+    }
+  }
+
+  return cells;
+}
+
+function isLakeWater(terrain: TerrainData, cell: number): boolean {
+  return terrain.riverStrength[cell] === 0 && hasWater(terrain.waterSurface[cell], terrain.height[cell]);
+}
+
+function riverFaults(generated: GeneratedWorld): string[] {
+  const { terrain } = generated;
+
+  const grid = new WorldGrid(generated.dimensions);
+  const faults: string[] = [];
+
+  for (const river of generated.water.rivers) {
+    let level = Number.POSITIVE_INFINITY;
+
+    for (const cell of riverPathCells(grid, river)) {
+      const where = `river ${river.id} at ${grid.cellCenterX(cell)}, ${grid.cellCenterZ(cell)}`;
+
+      if (isLakeWater(terrain, cell)) {
+        continue;
+      }
+
+      if (!isRiverWater(terrain, cell)) {
+        faults.push(`${where} runs dry`);
+
+        continue;
+      }
+
+      if (terrain.waterSurface[cell] > level + 1e-3) {
+        faults.push(`${where} rises by ${(terrain.waterSurface[cell] - level).toFixed(2)}`);
+      }
+
+      level = Math.min(level, terrain.waterSurface[cell]);
+    }
+  }
+
+  return faults;
+}
+
 beforeAll(() => {
   world = generateTestWorld(7);
   squareWorld = generateTestWorld(7, "square");
@@ -248,6 +299,17 @@ describe("world generation", () => {
 
       for (let pointIndex = 1; pointIndex < surfaces.length; pointIndex += 1) {
         expect(surfaces[pointIndex]).toBeLessThanOrEqual(surfaces[pointIndex - 1] + 1e-3);
+      }
+    }
+  });
+
+  it("keeps the water of every river falling from its source to its mouth on several seeds and both shapes", () => {
+    for (const seed of [3, 7, 11, 19]) {
+      for (const shape of ISLAND_SHAPES) {
+        const generated = seed === 7 && shape === "round" ? world : generateTestWorld(seed, shape);
+
+        expect(generated.water.rivers.length).toBeGreaterThan(0);
+        expect(riverFaults(generated)).toEqual([]);
       }
     }
   });
@@ -493,6 +555,12 @@ describe("full-size island rim", () => {
       expect(rises.length).toBeGreaterThan(2000);
       expect(median(rises)).toBeLessThan(0.3);
       expect(quantile(rises, 0.9)).toBeLessThan(0.5);
+    }
+  });
+
+  it("keeps full-size rivers falling all the way to their mouths on both shapes", () => {
+    for (const generated of [fullSize, fullSquare]) {
+      expect(riverFaults(generated)).toEqual([]);
     }
   });
 
