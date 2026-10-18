@@ -175,6 +175,9 @@ export class WorldRenderer {
 
     const wind = windOf(frame.weather);
     const form = this.#precipitationAt(view.focus);
+    const strength = precipitationStrength(frame.weather.precipitation);
+
+    const rainfall = form === "rain" ? strength : 0;
 
     this.#atmosphere.update(
       {
@@ -194,7 +197,7 @@ export class WorldRenderer {
       view.realSeconds
     );
 
-    this.#paintWater(wind, view.realSeconds);
+    this.#paintWater(wind, strength, rainfall, view.realSeconds);
     this.#vegetation.weather.blow(wind.directionX, wind.directionZ, wind.metersPerSecond, view.realSeconds);
     view.camera.updateMatrixWorld();
     this.#terrain.update(view.camera, this.#quality.terrainDetail);
@@ -204,17 +207,19 @@ export class WorldRenderer {
     this.#grass.update(view.camera, view.viewDistance);
     this.#updateAgents(view);
     this.#markSelection();
-    this.#updateEffects(view, wind, form);
+    this.#updateEffects(view, wind, form, rainfall);
     this.#output.render();
   }
 
-  #paintWater(wind: Wind, realSeconds: number): void {
+  #paintWater(wind: Wind, precipitation: number, rainfall: number, realSeconds: number): void {
     const { look } = this.#water;
     const { palette } = this.#atmosphere;
 
     look.horizonColor.value.setHex(palette.horizon);
     look.zenithColor.value.setHex(palette.zenith);
     look.daylight.value = this.#atmosphere.daylight;
+    look.precipitation.value = precipitation;
+    look.rainfall.value = rainfall;
     look.windTravel.value.x += wind.directionX * wind.metersPerSecond * WATER_DRIFT * realSeconds;
     look.windTravel.value.y += wind.directionZ * wind.metersPerSecond * WATER_DRIFT * realSeconds;
   }
@@ -246,7 +251,7 @@ export class WorldRenderer {
     this.#buildings.update(input);
   }
 
-  #updateEffects(view: RenderView, wind: Wind, form: Precipitation): void {
+  #updateEffects(view: RenderView, wind: Wind, form: Precipitation, rainfall: number): void {
     const { weather } = this.#mirror.frame;
     const darkness = 1 - this.#atmosphere.daylight;
 
@@ -260,7 +265,6 @@ export class WorldRenderer {
     this.#effects.update(view.realSeconds);
 
     const brightness = 0.25 + this.#atmosphere.daylight * 0.75;
-    const rainfall = form === "rain" ? precipitationStrength(weather.precipitation) : 0;
 
     this.#splashes.update(rainfall, brightness, {
       camera: view.camera,
