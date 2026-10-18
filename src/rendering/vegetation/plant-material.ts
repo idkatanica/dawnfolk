@@ -1,5 +1,6 @@
 import {
   attribute,
+  cameraPosition,
   clamp,
   dot,
   equal,
@@ -83,6 +84,8 @@ const LEAF_PATTERN_SCALE = 1.9;
 const LEAF_PATTERN_STRENGTH = 0.16;
 const LEAF_BUMP_SCALE = 2.6;
 const LEAF_BUMP_STRENGTH = 0.55;
+const LEAF_DETAIL_FADE_START = 1600;
+const LEAF_DETAIL_FADE_END = 2400;
 const CROWN_FIRE_LIGHT = 0.45;
 const SMOULDER_COLOR = vec3(1, 0.33, 0.06);
 const SMOULDER_STRENGTH = 2.4;
@@ -215,7 +218,10 @@ export function createPlantMaterial({
   const shaded = baseColor.mul(shade).mul(variation);
 
   const vertexColor = varying(mix(shaded, CHARCOAL, charring), "plantColor");
-  const foliageMask = varying(select(isFoliage.and(isDead.not()), float(1), float(0)), "plantFoliage");
+  const leafDetail = float(1).sub(
+    smoothstep(LEAF_DETAIL_FADE_START, LEAF_DETAIL_FADE_END, placement.xyz.distance(cameraPosition))
+  );
+  const foliageMask = varying(select(isFoliage.and(isDead.not()), leafDetail, float(0)), "plantFoliage");
   const snowOnTop = snow.mul(smoothstep(0.25, 0.75, normalWorld.y));
 
   const leafPattern = leafPatternAt(foliageMask);
