@@ -99,11 +99,7 @@ function CategoryPanel({ category }: { readonly category: PowerCategory }) {
 }
 
 function DockDivider() {
-  return (
-    <div aria-hidden="true" className="flex shrink-0 self-stretch px-1">
-      <div className="w-px bg-line" />
-    </div>
-  );
+  return <div aria-hidden="true" className="w-px shrink-0 self-stretch bg-line" />;
 }
 
 function useCategory() {
@@ -125,7 +121,7 @@ export function PowerDock({ className }: { readonly className?: string | undefin
           ))}
         </Tabs.List>
 
-        <div className="scrollbar-none flex gap-1 overflow-x-auto">
+        <div className="scrollbar-none flex gap-2 overflow-x-auto">
           <SelectTile />
 
           <DockDivider />
