@@ -20,6 +20,7 @@ interface CactusDetail {
 }
 
 const CACTUS_DETAILS: Readonly<Record<PlantDetailLevel, CactusDetail>> = {
+  far: { maximumStems: 1, ribs: 0, segments: 4, withFlowers: false },
   high: { maximumStems: 12, ribs: 9, segments: 14, withFlowers: true },
   low: { maximumStems: 2, ribs: 0, segments: 5, withFlowers: false },
   medium: { maximumStems: 6, ribs: 7, segments: 9, withFlowers: true },

@@ -6,7 +6,7 @@ import { isMonumentModel, MONUMENT_HEIGHTS, meshMonument } from "../structures/m
 import { berryClusters } from "./berries.ts";
 import { CACTUS_FORMS, cactusForm, meshCactus } from "./cacti.ts";
 import { isRockModel, meshRock, ROCK_HEIGHTS, ROCK_VARIANT_COUNTS } from "./rocks.ts";
-import { meshTree, type PlantDetailLevel, type TreeLook } from "./tree-mesher.ts";
+import { isDistantLevel, meshTree, type PlantDetailLevel, type TreeLook } from "./tree-mesher.ts";
 import { DESERT_SHRUB_FORM_COUNT, TREE_GENERATORS, TREE_HEIGHTS } from "./tree-species.ts";
 
 const VARIANT_COUNTS: Readonly<Record<PlantSpeciesIndex, number>> = {
@@ -46,7 +46,7 @@ const FORM_PER_VARIANT: ReadonlySet<PlantSpeciesIndex> = new Set([
   PlantSpecies.Pillar,
 ]);
 
-export const PLANT_DETAIL_LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low"];
+export const PLANT_DETAIL_LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low", "far"];
 
 const FOOTPRINT_HEIGHT = 0.3;
 
@@ -100,7 +100,7 @@ function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDe
   const structure = generator(seed, variant);
   const tree = meshTree(structure, look, level);
 
-  if (species !== PlantSpecies.Bush || level === "low") {
+  if (species !== PlantSpecies.Bush || isDistantLevel(level)) {
     return tree;
   }
 

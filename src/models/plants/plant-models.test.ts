@@ -112,6 +112,7 @@ describe.each(SPECIES)("plant species %i", (species) => {
   it("spends fewer triangles further away", () => {
     expect(averageTriangles(species, "medium")).toBeLessThan(averageTriangles(species, "high"));
     expect(averageTriangles(species, "low")).toBeLessThan(averageTriangles(species, "medium"));
+    expect(averageTriangles(species, "far")).toBeLessThanOrEqual(averageTriangles(species, "low"));
   });
 
   it("gives the same model for the same variant", () => {

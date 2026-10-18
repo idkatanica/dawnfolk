@@ -25,7 +25,7 @@ import {
   VegetationChunks,
 } from "./vegetation-chunks.ts";
 
-const LEVEL_DISTANCES: readonly number[] = [160, 600, 4200];
+const LEVEL_DISTANCES: readonly number[] = [160, 600, 1600, 4200];
 const SHADOW_LEVEL_COUNT = 2;
 const HIDDEN = -1;
 
