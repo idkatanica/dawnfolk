@@ -36,11 +36,11 @@ function WideHud() {
       </div>
 
       <div className="relative grid min-h-0 flex-1 items-start justify-between gap-3">
-        <JournalIsland className="col-start-1 row-start-1" />
+        <JournalIsland className="col-start-1" />
 
-        <NoticeFeed className="pointer-events-none absolute inset-x-0 top-0" />
+        <NoticeFeed className="absolute inset-x-0 top-0" />
 
-        <div className="col-start-2 row-start-1 flex min-h-0 flex-col items-end gap-3 self-stretch">
+        <div className="col-start-2 flex min-h-0 flex-col items-end gap-3 self-stretch">
           <InspectorIsland />
 
           <PowerSettings className="mt-auto" />
