@@ -10,6 +10,7 @@ export interface CreatedRenderer {
 
 export async function createRenderer(canvas: HTMLCanvasElement, quality: RenderQuality): Promise<CreatedRenderer> {
   const renderer = new WebGPURenderer({
+    alpha: false,
     antialias: quality.hasAntialias,
     canvas,
     powerPreference: "high-performance",

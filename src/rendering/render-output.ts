@@ -21,7 +21,7 @@ function directOutput(renderer: WebGPURenderer, scene: Scene, camera: Camera): R
 }
 
 function bloomOutput(renderer: WebGPURenderer, scene: Scene, camera: Camera): RenderOutput {
-  const scenePass = pass(scene, camera);
+  const scenePass = pass(scene, camera, { storeMultisampledColorBuffer: false, storeMultisampledDepthBuffer: false });
 
   const sceneColor = scenePass.getTextureNode("output");
 
