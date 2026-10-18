@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
+import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
 import { meshProblems } from "../testing/mesh-checks.ts";
@@ -10,12 +10,14 @@ import {
   BERRY_PART,
   buildPlantVariants,
   canonicalHeight,
+  footprintRadius,
   PLANT_DETAIL_LEVELS,
   plantVariantCount,
 } from "./plant-models.ts";
 import { FOLIAGE_FLUTTER, plantSway } from "./tree-mesher.ts";
 
 const TOUCHING = 0.01;
+const RADIUS_TOLERANCE = 0.2;
 const STORM_PUSH = 2;
 
 const SPECIES: readonly PlantSpeciesIndex[] = PLANT_SPECIES.map((definition) => definition.index);
@@ -32,6 +34,28 @@ const TREES = [
   PlantSpecies.Willow,
 ];
 const MIXED_FORMS: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DeadTree]);
+
+function widestRadius(species: PlantSpeciesIndex): number {
+  let widest = 0;
+
+  for (const mesh of buildPlantVariants(species, "high")) {
+    for (let vertex = 0; vertex < vertexCount(mesh); vertex += 1) {
+      widest = Math.max(widest, Math.hypot(mesh.positions[vertex * 3], mesh.positions[vertex * 3 + 2]));
+    }
+  }
+
+  return widest;
+}
+
+function workingRadius(species: PlantSpeciesIndex): number {
+  const { form } = plantSpeciesDefinition(species);
+
+  if (form === "shrub" || form === "stone") {
+    return widestRadius(species);
+  }
+
+  return footprintRadius(species);
+}
 
 function averageTriangles(species: PlantSpeciesIndex, level: (typeof PLANT_DETAIL_LEVELS)[number]): number {
   const variants = buildPlantVariants(species, level);
@@ -78,6 +102,14 @@ describe.each(SPECIES)("plant species %i", (species) => {
     const [again] = buildPlantVariants(species, "medium");
 
     expect(again.positions).toEqual(first.positions);
+  });
+
+  it("tells the simulation how far it reaches where people work on it", () => {
+    const measured = workingRadius(species) / canonicalHeight(species);
+
+    expect(Math.abs(plantSpeciesDefinition(species).radiusPerMeter - measured)).toBeLessThan(
+      measured * RADIUS_TOLERANCE
+    );
   });
 
   it("keeps every part of every variant attached to the ground", () => {
