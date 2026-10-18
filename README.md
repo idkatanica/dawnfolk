@@ -50,6 +50,9 @@ procedurally generated island rendered with WebGPU.
 - **Ruins of a forgotten people.** Every island hides a handful of weathered megaliths on dry, level ground: stone
   circles, rows of standing stones, dolmens, half-buried stone heads, fallen colonnades with a ruined arch, and
   cairns. People and animals walk around them, and nothing is built or planted where they stand.
+- **Brooks, fords and fallen logs.** People and animals keep out of rivers and lakes. They hop over a brook
+  anywhere, and cross a wider river every half kilometre or so: on a row of stepping stones over shallow water or a
+  fallen, debarked trunk over a narrow stretch. Where nothing leads across, they stay on their own bank.
 - **Tribes with their own lives.** People gather, hunt, fish, farm, chop, quarry, build camps and huts, warm
   themselves at campfires, pray, learn technologies, migrate and split into new tribes. Herds of deer, mammoths and
   ibex graze and flee, ibex up the nearest heights, and wolf packs roam far from people.
@@ -105,13 +108,13 @@ src/
   content/     data registries: grounds, biomes, plants, animals, weather, technologies, buildings, powers,
                world rules — powers and rules are zod schemas with UI metadata
   world/       world grid and the data shared by the simulation and the renderer
-  generation/  relief → erosion → hydrology → climate and biomes → vegetation
+  generation/  relief → erosion → hydrology → climate and biomes → vegetation → river crossings
   simulation/  deterministic fixed-tick simulation in a Web Worker: nature (calendar, weather, fire, embers,
                surface, growth), agents (navigation, movement), fauna, society (people, jobs, tribes,
                buildings, settlement), powers, commands, frames
   workers/     the simulation worker (Comlink)
   game/        main thread: worker connection, world mirror, session, engine loop, input, power tools
-  models/      procedural model engine: mesh builder, rig and clips, people, animals, plants, buildings
+  models/      procedural model engine: mesh builder, rig and clips, people, animals, plants, buildings, crossings
   rendering/   WebGPU renderer: sky, height fog and atmosphere, terrain and water patches, vegetation chunks and
                grass, skinned agents with far markers, buildings, fire glow, flames, smoke and effects, bloom
   design/      design system: glass islands, buttons, fields, meters, tooltips, formatting
