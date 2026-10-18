@@ -4,7 +4,6 @@ import { Tabs } from "@base-ui/react/tabs";
 import { X } from "lucide-react";
 import type { ComponentType } from "react";
 import { IconButton } from "../../design/buttons.tsx";
-import { Island } from "../../design/island.tsx";
 import { type SettingsTab, useInterfaceStore } from "../interface/interface-store.ts";
 import { GraphicsSection } from "./graphics-section.tsx";
 import { TimeSection } from "./time-section.tsx";
@@ -73,7 +72,7 @@ export function SettingsDialog() {
         <Dialog.Backdrop className="fixed inset-0 z-40 bg-ink/18 transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0" />
 
         <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-[min(40rem,calc(100vw-1.5rem))] -translate-x-1/2 -translate-y-1/2 outline-none transition-[scale,opacity] duration-200 ease-glide data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
-          <Island className="w-full">
+          <div className="w-full rounded-[22px] bg-white/55 ring-1 ring-white/40 backdrop-blur-xl backdrop-saturate-150">
             <Tabs.Root
               className="flex max-h-[min(44rem,calc(100dvh-1.5rem))] flex-col gap-3 p-4"
               onValueChange={changeTab}
@@ -111,7 +110,7 @@ export function SettingsDialog() {
                 </ScrollArea.Scrollbar>
               </ScrollArea.Root>
             </Tabs.Root>
-          </Island>
+          </div>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
