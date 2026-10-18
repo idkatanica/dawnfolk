@@ -22,7 +22,7 @@ const TERRAIN_LAPSE_RATE = 6.5 / 1000;
 const LOWEST_EDIT_BELOW_ORIGINAL = 60;
 const WALKABLE_SLOPE = 1.15;
 
-interface SurfaceFields {
+export interface SurfaceFields {
   crop: Float32Array;
   fire: Float32Array;
   fuel: Float32Array;
