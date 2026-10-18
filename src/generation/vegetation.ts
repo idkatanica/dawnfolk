@@ -1,16 +1,23 @@
 import { isBiomeIndex } from "../content/biomes.ts";
 import { groundDefinition } from "../content/grounds.ts";
-import { canGrowAt, isTreeSpecies, PLANTING_RULES, plantSpeciesDefinition } from "../content/plants.ts";
+import {
+  canGrowAt,
+  isTreeSpecies,
+  PLANTING_RULES,
+  type PlantingRule,
+  plantSpeciesDefinition,
+  ROCK_RULES,
+} from "../content/plants.ts";
 import { FULL_TURN, hashToUnit } from "../shared/math.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
 import { isOnIsland } from "../world/coast.ts";
 import { hasRoomToGrow } from "../world/footing.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { isWaterCell, touchesWaterCell } from "../world/terrain-sampling.ts";
-import type { VegetationStore } from "../world/vegetation-store.ts";
+import type { PlantPlacement, VegetationStore } from "../world/vegetation-store.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 
-const INITIAL_PLANT_DAY = -999;
+export const INITIAL_PLANT_DAY = -999;
 const BIOME_BLEND_CELLS = 3;
 
 export function plantHeight(species: number, random: RandomSource, heightScale: number): number {
@@ -57,6 +64,18 @@ function plantingChance(rule: PlantingOdds, clearing: number, holdsTrees: boolea
   return rule.chancePerCell * clearing;
 }
 
+function sow(rule: PlantingRule, random: RandomSource, grid: WorldGrid, cell: number): PlantPlacement {
+  return {
+    bornDay: INITIAL_PLANT_DAY,
+    height: plantHeight(rule.species, random, rule.heightScale),
+    rotation: random.next() * FULL_TURN,
+    seed: random.next(),
+    species: rule.species,
+    x: grid.cellCenterX(cell) + random.between(-0.42, 0.42) * grid.cellSize,
+    z: grid.cellCenterZ(cell) + random.between(-0.42, 0.42) * grid.cellSize,
+  };
+}
+
 export function plantInitialVegetation(
   store: VegetationStore,
   grid: WorldGrid,
@@ -64,6 +83,13 @@ export function plantInitialVegetation(
   seed: number
 ): void {
   const random = createRandom(seed * 3 + 1);
+  const rocks = createRandom(seed * 3 + 2);
+
+  function plantWhereRoom(plant: PlantPlacement): void {
+    if (hasRoomToGrow(terrain, grid, plant.x, plant.z, plant.species)) {
+      store.add(plant);
+    }
+  }
 
   for (let cell = 0; cell < grid.cellCount; cell += 1) {
     if (touchesWaterCell(terrain, grid, cell) || !isOnIsland(terrain.coastDistance, cell)) {
@@ -76,32 +102,19 @@ export function plantInitialVegetation(
       continue;
     }
 
+    const temperature = terrain.baseTemperature[cell];
     const clearing = 0.45 + 0.9 * (0.5 + 0.5 * terrain.variation[cell]);
     const { holdsTrees } = groundDefinition(terrain.ground[cell]);
-    const column = grid.columnOf(cell);
-    const row = grid.rowOf(cell);
 
     for (const rule of PLANTING_RULES[biome]) {
-      if (!canGrowAt(rule, terrain.baseTemperature[cell])) {
-        continue;
+      if (canGrowAt(rule, temperature) && random.chance(plantingChance(rule, clearing, holdsTrees))) {
+        plantWhereRoom(sow(rule, random, grid, cell));
       }
+    }
 
-      if (!random.chance(plantingChance(rule, clearing, holdsTrees))) {
-        continue;
-      }
-
-      const plant = {
-        bornDay: INITIAL_PLANT_DAY,
-        height: plantHeight(rule.species, random, rule.heightScale),
-        rotation: random.next() * FULL_TURN,
-        seed: random.next(),
-        species: rule.species,
-        x: grid.centerX(column) + random.between(-0.42, 0.42) * grid.cellSize,
-        z: grid.centerZ(row) + random.between(-0.42, 0.42) * grid.cellSize,
-      };
-
-      if (hasRoomToGrow(terrain, grid, plant.x, plant.z, rule.species)) {
-        store.add(plant);
+    for (const rule of ROCK_RULES[biome]) {
+      if (canGrowAt(rule, temperature) && rocks.chance(rule.chancePerCell)) {
+        plantWhereRoom(sow(rule, rocks, grid, cell));
       }
     }
   }

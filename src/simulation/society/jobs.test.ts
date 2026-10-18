@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
+import {
+  isRockSpecies,
+  PLANT_SPECIES,
+  PlantSpecies,
+  type PlantSpeciesIndex,
+  plantSpeciesDefinition,
+} from "../../content/plants.ts";
 import { FULL_TURN, wrapAngle } from "../../shared/math.ts";
 import { SocietyHarness } from "../testing/test-society.ts";
 import { findTree } from "./jobs/chop-job.ts";
 import { findBerries } from "./jobs/gather-job.ts";
 import { findGame, HuntJob } from "./jobs/hunt-job.ts";
 import type { Job } from "./jobs/job.ts";
+import { findStone } from "./jobs/quarry-job.ts";
 import { TendJob } from "./jobs/tend-job.ts";
 import { nearestShore } from "./resources.ts";
 import type { PersonTick } from "./society-context.ts";
@@ -14,6 +21,9 @@ import type { Tribe } from "./tribe.ts";
 const MORNING = 0.3;
 const WORK_SPOT_TOLERANCE = 0.35;
 const FACING_TOLERANCE = 0.05;
+const ROCKS: readonly PlantSpeciesIndex[] = PLANT_SPECIES.filter((species) => isRockSpecies(species.index)).map(
+  (species) => species.index
+);
 
 interface WorkPlacement {
   readonly missedBy: number;
@@ -131,6 +141,45 @@ describe("working at plants", () => {
 
     expect(placement.missedBy).toBeLessThan(WORK_SPOT_TOLERANCE);
     expect(placement.turnedAwayBy).toBeLessThan(FACING_TOLERANCE);
+  });
+});
+
+describe("quarrying", () => {
+  it.each(ROCKS)("breaks stone from rock species %i at its edge and passes monuments by", (species) => {
+    const harness = new SocietyHarness({ day: MORNING });
+    const tick = firstMemberTick(harness, settle(harness, 1));
+    const { vegetation } = tick.context.world;
+
+    for (let plant = 0; plant < vegetation.count; plant += 1) {
+      if (isRockSpecies(vegetation.species[plant])) {
+        tick.context.world.removePlant(plant);
+      }
+    }
+
+    tick.context.world.plant({
+      bornDay: 0,
+      height: 3,
+      rotation: 0,
+      seed: 0.1,
+      species: PlantSpecies.Menhir,
+      x: tick.person.mover.x + 4,
+      z: tick.person.mover.z,
+    });
+
+    const rock = plantNear(tick, species, 1.2 * plantSpeciesDefinition(species).heightRange[0]);
+
+    const job = findStone(tick);
+
+    if (job === null) {
+      throw new Error("Expected a rock to quarry");
+    }
+
+    expect(job.kind).toBe("quarry");
+    expect(job.claimedPlant).toBe(rock);
+
+    workUntilPosed(job, tick, "dig");
+
+    expect(placementAt(tick, rock, 0.6).missedBy).toBeLessThan(WORK_SPOT_TOLERANCE);
   });
 });
 
