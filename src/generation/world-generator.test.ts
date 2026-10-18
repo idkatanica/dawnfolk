@@ -225,6 +225,59 @@ function riverFaults(generated: GeneratedWorld): string[] {
   return faults;
 }
 
+function isCoastTaken(terrain: TerrainData, grid: WorldGrid, cell: number): boolean {
+  return grid
+    .cellsInRadius(grid.cellCenterX(cell), grid.cellCenterZ(cell), grid.cellSize * 1.5)
+    .filter((neighbor) => !isOnIsland(terrain.coastDistance, neighbor))
+    .every((neighbor) => terrain.waterSurface[neighbor] !== NO_WATER);
+}
+
+function reachesPastCoast(generated: GeneratedWorld, grid: WorldGrid, mouth: number): boolean {
+  const { terrain } = generated;
+
+  if (generated.shape === "square") {
+    return grid.isOnEdge(mouth);
+  }
+
+  return !isOnIsland(terrain.coastDistance, mouth) || isCoastTaken(terrain, grid, mouth);
+}
+
+function mouthFaults(generated: GeneratedWorld): string[] {
+  const { terrain } = generated;
+
+  const grid = new WorldGrid(generated.dimensions);
+  const faults: string[] = [];
+
+  for (const river of generated.water.rivers.filter((candidate) => candidate.reachesEdge)) {
+    const mouth = riverPathCells(grid, river).at(-1);
+    const end = river.points.at(-1);
+
+    if (mouth === undefined || end === undefined) {
+      continue;
+    }
+
+    const isPastCoast = reachesPastCoast(generated, grid, mouth);
+    const waterfall = generated.water.waterfalls.find((candidate) => candidate.x === end.x && candidate.z === end.z);
+
+    if (!isPastCoast) {
+      faults.push(`river ${river.id} ends inland at ${grid.cellCenterX(mouth)}, ${grid.cellCenterZ(mouth)}`);
+    }
+
+    if (waterfall === undefined || Math.abs(waterfall.top - terrain.waterSurface[mouth]) > 0.1) {
+      faults.push(`river ${river.id} does not meet its waterfall`);
+    }
+  }
+
+  return faults;
+}
+
+function distanceToWaterfall(generated: GeneratedWorld, grid: WorldGrid, cell: number): number {
+  const x = grid.cellCenterX(cell);
+  const z = grid.cellCenterZ(cell);
+
+  return Math.min(...generated.water.waterfalls.map((waterfall) => Math.hypot(waterfall.x - x, waterfall.z - z)));
+}
+
 beforeAll(() => {
   world = generateTestWorld(7);
   squareWorld = generateTestWorld(7, "square");
@@ -314,6 +367,13 @@ describe("world generation", () => {
     }
   });
 
+  it("runs the rivers that leave the island past the coast to the top of their waterfalls", () => {
+    for (const generated of [world, squareWorld, generateTestWorld(11), generateTestWorld(11, "square")]) {
+      expect(generated.water.waterfalls.length).toBeGreaterThan(0);
+      expect(mouthFaults(generated)).toEqual([]);
+    }
+  });
+
   it("lets rivers leave the island as waterfalls", () => {
     const edgeRivers = world.water.rivers.filter((river) => river.reachesEdge);
 
@@ -353,8 +413,8 @@ describe("world generation", () => {
     }
 
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
-      if (!isOnIsland(world.terrain.coastDistance, cell)) {
-        expect(world.terrain.waterSurface[cell]).toBe(NO_WATER);
+      if (!isOnIsland(world.terrain.coastDistance, cell) && world.terrain.waterSurface[cell] !== NO_WATER) {
+        expect(distanceToWaterfall(world, grid, cell)).toBeLessThan(grid.cellSize * 2);
       }
     }
   });
@@ -558,9 +618,10 @@ describe("full-size island rim", () => {
     }
   });
 
-  it("keeps full-size rivers falling all the way to their mouths on both shapes", () => {
+  it("keeps full-size rivers falling all the way to the coast and their waterfalls on both shapes", () => {
     for (const generated of [fullSize, fullSquare]) {
       expect(riverFaults(generated)).toEqual([]);
+      expect(mouthFaults(generated)).toEqual([]);
     }
   });
 

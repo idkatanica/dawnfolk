@@ -460,8 +460,15 @@ function riverPointFor(
   };
 }
 
+interface NeighborCell {
+  readonly cell: number;
+  readonly outwardX: number;
+  readonly outwardZ: number;
+}
+
 interface RiverNetwork {
   readonly basins: DrainageBasins;
+  readonly coastDistance: Float32Array;
   readonly grid: WorldGrid;
   readonly heights: Float32Array;
 }
@@ -471,6 +478,7 @@ function buildRivers(chains: readonly RiverChain[], network: RiverNetwork): Rive
 
   const rivers: River[] = [];
   const surfaces = new Map<number, number>();
+  const claimedPastCoast = new Set<number>();
 
   for (const chain of chains) {
     const cells = [...chain.cells];
@@ -485,6 +493,7 @@ function buildRivers(chains: readonly RiverChain[], network: RiverNetwork): Rive
 
     const points = cells.map((cell) => riverPointFor(cell, heights, basins.network, grid, basins.riverThreshold));
     const lakeId = lakeAtMouth(chain, basins.lakeIds);
+    const reachesEdge = chain.mouthReceiver === NO_CELL && chain.joinsCell === NO_CELL;
 
     if (lakeId >= 0) {
       appendLakeEntry(points, basins.lakes[lakeId], chain.mouthReceiver, grid);
@@ -497,11 +506,13 @@ function buildRivers(chains: readonly RiverChain[], network: RiverNetwork): Rive
       surfaces.set(cell, points[index].surface);
     }
 
-    rivers.push({
-      id: rivers.length,
-      points: smoothRiverPath(points, 2),
-      reachesEdge: chain.mouthReceiver === NO_CELL && chain.joinsCell === NO_CELL,
-    });
+    const smoothed = smoothRiverPath(points, 2);
+
+    if (reachesEdge) {
+      runPastCoast(smoothed, network, claimedPastCoast);
+    }
+
+    rivers.push({ id: rivers.length, points: smoothed, reachesEdge });
   }
 
   return rivers;
@@ -519,6 +530,70 @@ function settleIntoMainRiver(points: RiverPoint[], mainSurface: number | undefin
   }
 
   last.surface = mainSurface;
+}
+
+function offIslandNeighbors(cell: number, grid: WorldGrid, coastDistance: Float32Array): NeighborCell[] {
+  const neighbors: NeighborCell[] = [];
+
+  for (const offset of NEIGHBOR_OFFSETS) {
+    const column = grid.columnOf(cell) + offset.column;
+    const row = grid.rowOf(cell) + offset.row;
+
+    if (grid.contains(column, row) && !isOnIsland(coastDistance, grid.index(column, row))) {
+      neighbors.push({
+        cell: grid.index(column, row),
+        outwardX: offset.column / offset.distance,
+        outwardZ: offset.row / offset.distance,
+      });
+    }
+  }
+
+  return neighbors;
+}
+
+function cellPastCoast(mouthCell: number, network: RiverNetwork, claimed: ReadonlySet<number>): number {
+  const neighbors = offIslandNeighbors(mouthCell, network.grid, network.coastDistance);
+
+  const outwardX = neighbors.reduce((total, neighbor) => total + neighbor.outwardX, 0);
+  const outwardZ = neighbors.reduce((total, neighbor) => total + neighbor.outwardZ, 0);
+
+  let best = NO_CELL;
+  let bestFacing = Number.NEGATIVE_INFINITY;
+
+  for (const neighbor of neighbors) {
+    const facing = neighbor.outwardX * outwardX + neighbor.outwardZ * outwardZ;
+
+    if (facing > bestFacing && !claimed.has(neighbor.cell)) {
+      best = neighbor.cell;
+      bestFacing = facing;
+    }
+  }
+
+  return best;
+}
+
+function runPastCoast(points: RiverPoint[], network: RiverNetwork, claimed: Set<number>): void {
+  const { grid } = network;
+
+  const mouth = points.at(-1);
+
+  if (mouth === undefined) {
+    return;
+  }
+
+  const cell = cellPastCoast(grid.cellAt(mouth.x, mouth.z), network, claimed);
+
+  if (cell === NO_CELL) {
+    return;
+  }
+
+  claimed.add(cell);
+  points.push({
+    ...mouth,
+    surface: mouth.surface - MINIMUM_POINT_DROP,
+    x: grid.cellCenterX(cell),
+    z: grid.cellCenterZ(cell),
+  });
 }
 
 function lakeAtMouth(chain: RiverChain, lakeIds: Int32Array): number {
@@ -638,7 +713,13 @@ function settledOnGround(point: RiverPoint, ground: number): RiverPoint {
   return { ...point, surface: highest };
 }
 
-function carveCell(cell: number, distanceFromCenter: number, sampled: RiverPoint, targets: ChannelTargets): void {
+function carveCell(
+  cell: number,
+  distanceFromCenter: number,
+  sampled: RiverPoint,
+  targets: ChannelTargets,
+  isPastCoast = false
+): void {
   const halfWidth = sampled.width / 2;
   const wetReach = Math.max(halfWidth, targets.grid.cellSize * DIAGONAL_REACH);
 
@@ -646,13 +727,13 @@ function carveCell(cell: number, distanceFromCenter: number, sampled: RiverPoint
     return;
   }
 
-  if (!isOnIsland(targets.coastDistance, cell)) {
+  if (!(isPastCoast || isOnIsland(targets.coastDistance, cell))) {
     return;
   }
 
   const uncarvedHeight = targets.uncarvedHeights[cell];
 
-  const point = settledOnGround(sampled, uncarvedHeight);
+  const point = isPastCoast ? sampled : settledOnGround(sampled, uncarvedHeight);
   const bed = channelBed(distanceFromCenter, point, uncarvedHeight);
   const isUnderWater = distanceFromCenter <= wetReach || bed < point.surface - SHALLOWEST_WATER;
 
@@ -675,12 +756,24 @@ function carveCell(cell: number, distanceFromCenter: number, sampled: RiverPoint
   targets.riverStrength[cell] = Math.max(targets.riverStrength[cell], strength);
 }
 
+function pastCoastSegment(river: River, targets: ChannelTargets): number {
+  const mouth = river.points.at(-1);
+
+  if (mouth === undefined || isOnIsland(targets.coastDistance, targets.grid.cellAt(mouth.x, mouth.z))) {
+    return NO_CELL;
+  }
+
+  return river.points.length - 2;
+}
+
 function carveRivers(rivers: readonly River[], targets: ChannelTargets): void {
   for (const river of rivers) {
+    const coastSegment = pastCoastSegment(river, targets);
+
     for (const [cell, sample] of nearestChannelSamples(river, targets.grid)) {
       const point = interpolatePoint(river.points[sample.segment], river.points[sample.segment + 1], sample.along);
 
-      carveCell(cell, sample.distance, point, targets);
+      carveCell(cell, sample.distance, point, targets, sample.segment === coastSegment);
     }
   }
 }
@@ -1049,7 +1142,7 @@ export function computeHydrology(
 
   const chains = traceRiverChains(basins.network, lakeIds, riverThreshold);
 
-  const rivers = buildRivers(chains, { basins, grid, heights });
+  const rivers = buildRivers(chains, { basins, coastDistance, grid, heights });
   const targets: ChannelTargets = {
     coastDistance,
     grid,
