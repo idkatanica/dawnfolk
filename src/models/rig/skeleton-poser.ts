@@ -129,17 +129,11 @@ export class SkeletonPoser {
     const lift = pose.height - lowest;
 
     for (const matrix of this.#world) {
-      shift(matrix, pose.side, lift, pose.forward);
+      matrix.elements[13] += lift;
     }
 
     for (const matrix of this.#skin) {
-      shift(matrix, pose.side, lift, pose.forward);
+      matrix.elements[13] += lift;
     }
   }
-}
-
-function shift(matrix: Matrix4, x: number, y: number, z: number): void {
-  matrix.elements[12] += x;
-  matrix.elements[13] += y;
-  matrix.elements[14] += z;
 }

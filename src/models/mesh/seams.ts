@@ -30,9 +30,6 @@ interface Nearest {
   readonly normalX: number;
   readonly normalY: number;
   readonly normalZ: number;
-  readonly pointX: number;
-  readonly pointY: number;
-  readonly pointZ: number;
   readonly side: number;
   readonly triangle: number;
 }
@@ -135,11 +132,12 @@ function setWeights(first: number, second: number, third: number): void {
   barycentric[2] = third;
 }
 
-function closestWeights(positions: Float32Array, corner: Uint32Array, offset: number, point: Vector): void {
-  const first = corner[offset] * 3;
-  const second = corner[offset + 1] * 3;
-  const third = corner[offset + 2] * 3;
+function closestWeights(positions: Float32Array, indices: Uint32Array, offset: number, point: Vector): void {
   const [x, y, z] = point;
+
+  const first = indices[offset] * 3;
+  const second = indices[offset + 1] * 3;
+  const third = indices[offset + 2] * 3;
 
   const edgeAX = positions[second] - positions[first];
   const edgeAY = positions[second + 1] - positions[first + 1];
@@ -286,9 +284,6 @@ function nearestOnSurface(
       normalX: normalX / length,
       normalY: normalY / length,
       normalZ: normalZ / length,
-      pointX,
-      pointY,
-      pointZ,
       side: ((x - pointX) * normalX + (y - pointY) * normalY + (z - pointZ) * normalZ) / length,
       triangle: surface.firstTriangle + triangle,
     };
@@ -355,6 +350,7 @@ function collectBlends(
 ): void {
   const { positions } = geometry;
   const { firstVertex, reach, vertexCount } = owner.surface;
+
   const sides = new Map<number, number>();
 
   for (let vertex = firstVertex; vertex < firstVertex + vertexCount; vertex += 1) {

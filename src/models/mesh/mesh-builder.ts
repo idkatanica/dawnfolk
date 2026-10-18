@@ -115,6 +115,7 @@ export class MeshBuilder {
       const normal = new Vector3(mesh.normals[offset], mesh.normals[offset + 1], mesh.normals[offset + 2])
         .applyMatrix3(normalMatrix)
         .normalize();
+
       const point = { along: 0, around: 0, local, normal, position };
 
       this.#pushVertex(position, normal);

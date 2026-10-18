@@ -1,4 +1,4 @@
-import { fractionalPart, lerp, smoothstep } from "../../shared/math.ts";
+import { lerp, smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot } from "../materials.ts";
@@ -6,6 +6,7 @@ import type { MeshBuilder } from "../mesh/mesh-builder.ts";
 import { deformShape, type Shape, type ShapeVertex } from "../mesh/shape.ts";
 import { type LoftSection, loft, panel, sphere, type TubePoint, torus, tube } from "../mesh/shapes.ts";
 import { combine, transformOf } from "../mesh/transforms.ts";
+import { triangleWave } from "../rig/curves.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
 import { forEachSide } from "./human-anatomy.ts";
 import type { HumanDetail } from "./human-detail.ts";
@@ -28,15 +29,15 @@ const HEAD_PROFILE: readonly LoftSection[] = [
   { centerZ: -0.012, radiusX: 0.035, radiusZ: 0.04, y: 1.748 },
 ];
 
-function headSectionAt(y: number): LoftSection {
-  const upperIndex = HEAD_PROFILE.findIndex((section) => section.y >= y);
+function sectionAt(sections: readonly LoftSection[], y: number): LoftSection {
+  const upperIndex = sections.findIndex((section) => section.y >= y);
 
   if (upperIndex <= 0) {
-    return HEAD_PROFILE[Math.max(0, upperIndex)];
+    return sections[0];
   }
 
-  const lower = HEAD_PROFILE[upperIndex - 1];
-  const upper = HEAD_PROFILE[upperIndex];
+  const lower = sections[upperIndex - 1];
+  const upper = sections[upperIndex];
 
   const { centerZ: lowerCenter = 0 } = lower;
   const { centerZ: upperCenter = 0 } = upper;
@@ -65,7 +66,7 @@ function grown(section: LoftSection, offset: number): LoftSection {
 function headShell(detail: HumanDetail, options: ShellOptions): Shape {
   const { bottom, coverage, offset, roughness } = options;
 
-  const bottomSection = headSectionAt(bottom + 0.006);
+  const bottomSection = sectionAt(HEAD_PROFILE, bottom + 0.006);
 
   const { centerZ = 0 } = bottomSection;
 
@@ -75,17 +76,16 @@ function headShell(detail: HumanDetail, options: ShellOptions): Shape {
     ...HEAD_PROFILE.filter((section) => section.y > bottom + 0.012).map((section) => grown(section, offset)),
     { centerZ: -0.012, radiusX: 0, radiusZ: 0, y: HEAD_CROWN + offset },
   ];
-
   const shell = loft(sections, detail.headSegments + 2);
 
   return deformShape(shell, (vertex) => {
+    const { centerZ: axisZ = 0 } = sectionAt(HEAD_PROFILE, Math.min(vertex.y, HEAD_CROWN - 0.01));
+
     const covered = coverage(vertex);
     const texture = roughness * HAIR_NOISE.fractal(vertex.x * 38, vertex.y * 38, vertex.z * 38, { octaves: 2 });
     const tuck = (offset + 0.012) * (1 - covered);
     const alongNormal = texture * covered - tuck * smoothstep(1.6, 1.68, vertex.y);
     const inward = tuck * (1 - smoothstep(1.6, 1.68, vertex.y));
-
-    const { centerZ: axisZ = 0 } = headSectionAt(Math.min(vertex.y, HEAD_CROWN - 0.01));
     const offsetZ = vertex.z - axisZ;
     const distance = Math.max(Math.hypot(vertex.x, offsetZ), 1e-6);
 
@@ -110,7 +110,6 @@ function frontness(vertex: ShapeVertex): number {
 function hairlineCoverage(front: number, side: number): (vertex: ShapeVertex) => number {
   return (vertex) => {
     const amount = frontness(vertex);
-
     const hairline = lerp(side, front, amount ** 1.6);
 
     return smoothstep(hairline - 0.006, hairline + 0.006, vertex.y);
@@ -177,14 +176,14 @@ const LOW_CURTAIN_RINGS: readonly CurtainRing[] = [
 ];
 
 function curtainSection(ring: CurtainRing, strands: number): LoftSection {
-  const head = headSectionAt(Math.max(ring.y, 1.62));
-  const { centerZ = 0 } = head;
+  const { centerZ = 0, radiusX, radiusZ } = sectionAt(HEAD_PROFILE, Math.max(ring.y, 1.62));
+
   const reach = 0.014 - CURTAIN_THICKNESS / 2 + ring.flare;
 
   return {
     centerZ: centerZ - ring.flare * 0.8,
-    radiusX: head.radiusX + reach,
-    radiusZ: head.radiusZ + reach,
+    radiusX: radiusX + reach,
+    radiusZ: radiusZ + reach,
     ripple: (around) => 1 + 0.035 * Math.abs(Math.sin(around * Math.PI * strands)) * smoothstep(1.66, 1.5, ring.y),
     y: ring.y,
   };
@@ -193,7 +192,6 @@ function curtainSection(ring: CurtainRing, strands: number): LoftSection {
 function curtainShape(detail: HumanDetail): Shape {
   const strands = detail.hasFineDetails ? 9 : 5;
   const rings = detail.hasFineDetails ? CURTAIN_RINGS : LOW_CURTAIN_RINGS;
-
   const curtain = panel({
     angularSegments: detail.hasFineDetails ? 18 : 8,
     endAngle: CURTAIN_END,
@@ -207,9 +205,7 @@ function curtainShape(detail: HumanDetail): Shape {
       return [0, 0, 0];
     }
 
-    const tooth = 1 - Math.abs(fractionalPart(vertex.around * strands + 0.5) * 2 - 1);
-
-    return [0, -0.05 * tooth, 0];
+    return [0, -0.05 * triangleWave(vertex.around * strands + 0.5), 0];
   });
 }
 
@@ -324,25 +320,12 @@ const FULL_BEARD_SECTIONS: readonly LoftSection[] = [
 
 const BEARD_TUCK = 0.02;
 
-function centerZAt(sections: readonly LoftSection[], y: number): number {
-  const upperIndex = sections.findIndex((section) => section.y >= y);
-
-  if (upperIndex <= 0) {
-    const { centerZ = 0 } = sections[Math.max(0, upperIndex)];
-
-    return centerZ;
-  }
-
-  const { centerZ: lowerCenter = 0, y: lowerY } = sections[upperIndex - 1];
-  const { centerZ: upperCenter = 0, y: upperY } = sections[upperIndex];
-
-  return lerp(lowerCenter, upperCenter, (y - lowerY) / Math.max(upperY - lowerY, 1e-6));
-}
-
 function beardShell(sections: readonly LoftSection[], detail: HumanDetail): Shape {
   return deformShape(loft(sections, detail.headSegments), (vertex) => {
+    const { centerZ = 0 } = sectionAt(sections, vertex.y);
+
     const tuck = BEARD_TUCK * (1 - beardCoverage(vertex));
-    const offsetZ = vertex.z - centerZAt(sections, vertex.y);
+    const offsetZ = vertex.z - centerZ;
     const distance = Math.hypot(vertex.x, offsetZ);
 
     if (distance === 0) {

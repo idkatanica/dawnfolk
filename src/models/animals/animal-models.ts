@@ -43,6 +43,7 @@ interface AnimalSpecies {
 function uniformBoneScales(skeleton: Skeleton, appearance: AnimalAppearance): Float32Array {
   const scales = new Float32Array(skeleton.bones.length * 3).fill(appearance.size);
   const head = appearance.size * appearance.headScale;
+  const legHeight = appearance.size * appearance.legScale;
 
   scales.fill(head, QuadrupedBone.Head * 3, QuadrupedBone.Head * 3 + 3);
 
@@ -51,7 +52,7 @@ function uniformBoneScales(skeleton: Skeleton, appearance: AnimalAppearance): Fl
       const bones = legBones(end, side);
 
       for (const bone of [bones.upper, bones.lower, bones.hoof]) {
-        scales[bone * 3 + 1] = appearance.size * appearance.legScale;
+        scales[bone * 3 + 1] = legHeight;
       }
     }
   }

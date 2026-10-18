@@ -17,9 +17,10 @@ export function withPart(mask: PartMask, part: number): PartMask {
     throw new RangeError(`Part ${part} does not fit in a part mask`);
   }
 
+  const [low, high] = mask;
+
   const wordIndex = Math.floor(part / PART_MASK_BITS_PER_WORD);
   const bit = part % PART_MASK_BITS_PER_WORD;
-  const [low, high] = mask;
 
   if (wordIndex === 0) {
     return hasBit(low, bit) ? mask : [low + 2 ** bit, high];
@@ -39,9 +40,10 @@ export function maskOf(parts: Iterable<number>): PartMask {
 }
 
 export function hasPart(mask: PartMask, part: number): boolean {
+  const [low, high] = mask;
+
   const wordIndex = Math.floor(part / PART_MASK_BITS_PER_WORD);
   const bit = part % PART_MASK_BITS_PER_WORD;
-  const [low, high] = mask;
 
   return hasBit(wordIndex === 0 ? low : high, bit);
 }

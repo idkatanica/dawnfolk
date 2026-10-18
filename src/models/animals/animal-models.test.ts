@@ -59,7 +59,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
       for (const [index, extra] of extras.entries()) {
         const mesh = mergeMeshes([body, extra]);
 
-        const detached = detachedPieces(mesh, 0.01).map((piece) => describePiece(mesh, piece));
+        const detached = detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece));
 
         expect(detached, `${level} ${species.parts[index + 1].name}`).toEqual([]);
       }

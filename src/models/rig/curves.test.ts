@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { arc, cyclicDistance, degrees, keyframes, pulse } from "./curves.ts";
+import { arc, cyclicDistance, degrees, keyframes, pulse, triangleWave } from "./curves.ts";
 
 describe("animation curves", () => {
   it("converts degrees to radians", () => {
     expect(degrees(180)).toBeCloseTo(Math.PI);
+  });
+
+  it("rises and falls once per cycle in a triangle wave", () => {
+    expect(triangleWave(0)).toBe(0);
+    expect(triangleWave(0.5)).toBe(1);
+    expect(triangleWave(0.25)).toBeCloseTo(0.5);
+    expect(triangleWave(1.75)).toBeCloseTo(0.5);
   });
 
   it("measures distance around the cycle", () => {

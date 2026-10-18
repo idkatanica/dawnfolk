@@ -1,9 +1,10 @@
 import { Vector3 } from "three";
+import { FULL_TURN } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import type { AnimalPose } from "../../world/agent-poses.ts";
 import { MaterialSlot } from "../materials.ts";
-import type { MeshBuilder, SurfacePoint, VertexStyle } from "../mesh/mesh-builder.ts";
+import type { MeshBuilder } from "../mesh/mesh-builder.ts";
 import { deformShape, type Shape, transformShape } from "../mesh/shape.ts";
 import {
   type BodySection,
@@ -20,7 +21,8 @@ import { degrees, wave } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
 import { chainStyle, createChain, rigidStyle } from "../rig/skin-weights.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
-import { bodyStyle, legStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
+import { addLegs, hoofBelow, legPath } from "./quadruped-parts.ts";
+import { bodyStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
 import { LEG_SIDES, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
 const MammothBone = {
@@ -128,7 +130,7 @@ const EAR_SEAM = 0.08;
 const BLEND = 0.2;
 
 function boxy(around: number): number {
-  const angle = around * Math.PI * 2;
+  const angle = around * FULL_TURN;
 
   return (Math.abs(Math.cos(angle)) ** BOXINESS + Math.abs(Math.sin(angle)) ** BOXINESS) ** (-1 / BOXINESS);
 }
@@ -180,12 +182,8 @@ function headShape(segments: number): Shape {
   });
 }
 
-function legPoints(x: number, joints: readonly (readonly [number, number, number])[]): TubePoint[] {
-  return joints.map(([radius, y, z]) => ({ radius, x, y, z }));
-}
-
 const LEGS: Readonly<Record<"front" | "hind", readonly TubePoint[]>> = {
-  front: legPoints(0.45, [
+  front: legPath(0.45, [
     [0.24, 2.25, 0.6],
     [0.37, 1.7, 0.6],
     [0.32, 1.25, 0.6],
@@ -193,7 +191,7 @@ const LEGS: Readonly<Record<"front" | "hind", readonly TubePoint[]>> = {
     [0.28, 0.14, 0.66],
     [0.3, 0, 0.66],
   ]),
-  hind: legPoints(0.48, [
+  hind: legPath(0.48, [
     [0.26, 2.15, -0.98],
     [0.38, 1.66, -0.93],
     [0.31, 1.2, -0.86],
@@ -202,22 +200,6 @@ const LEGS: Readonly<Record<"front" | "hind", readonly TubePoint[]>> = {
     [0.29, 0, -0.98],
   ]),
 };
-
-function footSlot(point: SurfacePoint): number {
-  return point.position.y < 0.05 ? MaterialSlot.Hoof : MaterialSlot.Coat;
-}
-
-function addLegs(builder: MeshBuilder, segments: number): void {
-  for (const side of LEG_SIDES) {
-    const mirror = sideMirror(side);
-
-    for (const end of ["front", "hind"] as const) {
-      const style: VertexStyle = { ...legStyle(MAMMOTH_FRAME, end, side, BLEND), slot: footSlot };
-
-      builder.add(tube(LEGS[end], { radialSegments: segments }), { seam: LEG_SEAM, style, transform: mirror });
-    }
-  }
-}
 
 const TRUNK_STYLE = chainStyle(
   createChain(
@@ -333,7 +315,14 @@ export function addMammothBody(builder: MeshBuilder, segments: number): void {
     style: { ...bodyStyle(MAMMOTH_FRAME, 0.5), slot: MaterialSlot.Coat },
   });
   addHead(builder, segments);
-  addLegs(builder, segments);
+  addLegs(builder, {
+    blend: BLEND,
+    frame: MAMMOTH_FRAME,
+    paths: LEGS,
+    seam: LEG_SEAM,
+    segments,
+    slot: hoofBelow(0.05),
+  });
   builder.add(tube(TAIL, { radialSegments: Math.max(5, segments - 4) }), {
     seam: TAIL_SEAM,
     style: { ...tailStyle(MAMMOTH_FRAME, 0.15), slot: MaterialSlot.Coat },

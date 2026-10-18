@@ -46,9 +46,7 @@ function signedDistance(joint: ChainJoint, x: number, y: number, z: number): num
 
 export function chainBlend(chain: WeightChain, x: number, y: number, z: number): BoneBlend {
   const distances = chain.joints.map((joint) => signedDistance(joint, x, y, z));
-
   const segment = distances.filter((distance) => distance > 0).length;
-
   const passed = segment - 1;
 
   if (passed >= 0 && distances[passed] < chain.joints[passed].blend) {

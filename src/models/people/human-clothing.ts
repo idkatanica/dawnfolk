@@ -1,18 +1,14 @@
-import { fractionalPart } from "../../shared/math.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { type MeshBuilder, resolveChannel, type SurfacePoint, type VertexStyle } from "../mesh/mesh-builder.ts";
 import { deformShape, type Shape, type ShapeVertex } from "../mesh/shape.ts";
 import { type LoftSection, loft, panel, sphere, torus, tube } from "../mesh/shapes.ts";
 import { combine, transformOf } from "../mesh/transforms.ts";
+import { triangleWave } from "../rig/curves.ts";
 import { FOOT_SECTIONS, footTransform, forEachSide } from "./human-anatomy.ts";
 import type { HumanDetail } from "./human-detail.ts";
 import { FLEXIBLE_TORSO_STYLE, legStyle, skirtStyle } from "./human-rigging.ts";
 
 const WAIST_LINE = 0.95;
-
-function triangleWave(value: number): number {
-  return 1 - Math.abs(fractionalPart(value) * 2 - 1);
-}
 
 function jaggedEdge(shape: Shape, isEdge: (vertex: ShapeVertex) => boolean, teeth: number, depth: number): Shape {
   return deformShape(shape, (vertex) => {

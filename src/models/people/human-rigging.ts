@@ -66,7 +66,6 @@ function limbInfluence(point: SurfacePoint): TorsoInfluence {
 
   const side = sideOf(point);
   const bones = sideBones(side);
-
   const shoulderWeight = 0.35 * smoothstep(0.13, 0.2, Math.abs(x)) * smoothstep(1.3, 1.41, y);
   const hipWeight = 0.3 * smoothstep(0.93, 0.85, y) * smoothstep(0.02, 0.08, Math.abs(x));
 

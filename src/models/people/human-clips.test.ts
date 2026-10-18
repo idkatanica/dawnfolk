@@ -13,11 +13,11 @@ const MOTION: MotionStyle = { armSwing: 1, posture: 0, stride: 1 };
 
 const ADULT: HumanClipContext = { ageGroup: "adult", carried: "nothing", motion: MOTION };
 
-function posed(clip: PersonPose, phase: number, context: HumanClipContext = ADULT): SkeletonPoser {
+function posed(clip: PersonPose, phase: number): SkeletonPoser {
   const poser = new SkeletonPoser(HUMAN_SKELETON);
   const pose = new Pose(HUMAN_SKELETON.bones.length);
 
-  applyHumanClip(pose, clip, phase, context);
+  applyHumanClip(pose, clip, phase, ADULT);
   poser.pose(pose, uniformScales(HUMAN_SKELETON));
 
   return poser;
@@ -91,7 +91,6 @@ describe("human clips", () => {
   it("leaves the ground in the middle of a jump", () => {
     const poser = posed("play", 0.48);
     const point = new Vector3();
-
     const lowest = Math.min(
       ...HUMAN_SKELETON.footContacts.map(
         (contact) => poser.skinPoint(contact.bone, point.set(...contact.position), point).y

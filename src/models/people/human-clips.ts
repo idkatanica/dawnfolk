@@ -6,7 +6,7 @@ import type { MotionStyle } from "./appearance.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
 import { HumanBone, otherSide, SIDES, type Side } from "./human-skeleton.ts";
 
-export type HumanTool = "axe" | "basket" | "diggingStick" | "hammerStone" | "spear";
+type HumanTool = "axe" | "basket" | "diggingStick" | "hammerStone" | "spear";
 
 export interface HumanClipContext {
   readonly ageGroup: AgeGroup;
