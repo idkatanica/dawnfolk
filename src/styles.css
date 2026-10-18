@@ -18,6 +18,7 @@
   --max-height-dialog-body: min(34rem, calc(100dvh - 12rem));
   --max-height-journal: min(28rem, 55vh);
 
+  --color-pine: #193a32;
   --color-sky: #dbe7f1;
   --color-ink: #1d2733;
   --color-ink-soft: #46546a;

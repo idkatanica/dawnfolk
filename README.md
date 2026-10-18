@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/logo-dark.svg">
+    <img src=".github/logo.svg" alt="" width="96" height="96">
+  </picture>
+</p>
+
 <h1 align="center">Dawnfolk</h1>
 
 <p align="center">A god game about the first tribes on a floating island.</p>
