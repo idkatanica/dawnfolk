@@ -2,9 +2,11 @@ import { Select } from "@base-ui/react/select";
 import { Toggle } from "@base-ui/react/toggle";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { Check, ChevronsUpDown } from "lucide-react";
+import type { ReactNode } from "react";
 import { cn } from "./cn.ts";
 
 export interface ChoiceOption {
+  readonly icon?: ReactNode;
   readonly label: string;
   readonly value: string;
 }
@@ -23,9 +25,11 @@ const SEGMENTED_LIMIT = 3;
 function SegmentOption({ option }: { readonly option: ChoiceOption }) {
   return (
     <Toggle
-      className="h-8 flex-1 rounded-full px-3 font-medium text-ink-soft text-xs outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-pressed:bg-white data-pressed:text-ink"
+      className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full px-3 font-medium text-ink-soft text-xs outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-pressed:bg-white data-pressed:text-ink"
       value={option.value}
     >
+      {option.icon}
+
       {option.label}
     </Toggle>
   );

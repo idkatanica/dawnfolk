@@ -121,6 +121,18 @@ describe("graphics section", () => {
     expect(useInterfaceStore.getState().isSettingsOpen).toBe(false);
   });
 
+  it("grows a new world with a new name and shape", async () => {
+    useWorldStore.setState({ seed: 7 });
+
+    const screen = await render(<GraphicsSection />);
+
+    await screen.getByRole("textbox", { name: "Name" }).fill("Old Ford");
+    await screen.getByRole("button", { name: "Square" }).click();
+    await screen.getByRole("button", { name: "Create" }).click();
+
+    expect(useLaunchStore.getState().launch).toMatchObject({ name: "Old Ford", seed: 7, shape: "square" });
+  });
+
   it("grows a new world from the chosen seed", async () => {
     useWorldStore.setState({ seed: 7 });
 

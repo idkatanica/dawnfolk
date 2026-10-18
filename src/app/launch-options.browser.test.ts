@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { LARGEST_SEED, randomSeed, readLaunchOptions } from "./launch-options.ts";
+import { choosesWorld, LARGEST_SEED, randomSeed, readLaunchOptions } from "./launch-options.ts";
 import { storeQuality } from "./preferences.ts";
 
 const QUALITY_KEY = "dawnfolk.quality";
@@ -21,9 +21,38 @@ describe("launch options", () => {
       camera: { distance: 240, pitch: 0.6, targetX: -187, targetZ: 398, yaw: 1.2 },
       hours: 10.5,
       isPaused: true,
+      name: "Duskcrest",
       quality: "high",
       seed: 7,
+      shape: "round",
     });
+  });
+
+  it("reads the world name and shape from the address", () => {
+    const options = readLaunchOptions("?seed=7&name=%20Old%20Ford%20&shape=square");
+
+    expect(options.name).toBe("Old Ford");
+    expect(options.shape).toBe("square");
+  });
+
+  it("names a world after its seed until it is given a name", () => {
+    expect(readLaunchOptions("?seed=7").name).toBe(readLaunchOptions("?seed=7").name);
+    expect(readLaunchOptions("?seed=7").name).not.toBe(readLaunchOptions("?seed=8").name);
+  });
+
+  it("ignores an unknown shape and a name that is too long", () => {
+    silenceWarnings();
+
+    const options = readLaunchOptions(`?seed=7&shape=triangle&name=${"a".repeat(40)}`);
+
+    expect(options.shape).toBe("round");
+    expect(options.name).toBe(readLaunchOptions("?seed=7").name);
+  });
+
+  it("asks for a world only when the address names no seed", () => {
+    expect(choosesWorld("?seed=7")).toBe(true);
+    expect(choosesWorld("?quality=high")).toBe(false);
+    expect(choosesWorld("")).toBe(false);
   });
 
   it("keeps the island running unless it is paused explicitly", () => {

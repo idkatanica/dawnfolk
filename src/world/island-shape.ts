@@ -7,6 +7,10 @@ export const ISLAND_SHAPES = ["round", "square"] as const;
 
 export type IslandShapeKind = (typeof ISLAND_SHAPES)[number];
 
+export function isIslandShapeKind(value: string): value is IslandShapeKind {
+  return ISLAND_SHAPES.some((shape) => shape === value);
+}
+
 const MEAN_REACH = 0.915;
 const SHORTEST_REACH = 0.74;
 const LONGEST_REACH = 0.972;
