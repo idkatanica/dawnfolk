@@ -2,7 +2,7 @@ import { groundDefinition } from "../../content/grounds.ts";
 import type { GeneratedWorld } from "../../generation/world-generator.ts";
 import { clamp } from "../../shared/math.ts";
 import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../world/change-tracking.ts";
-import { isOnIsland } from "../../world/coast.ts";
+import { hasRoomFromCoast, isOnIsland } from "../../world/coast.ts";
 import type { IslandShapeKind } from "../../world/island-shape.ts";
 import type { TerrainData } from "../../world/terrain-data.ts";
 import {
@@ -12,7 +12,7 @@ import {
   sampleSurface,
   touchesWaterCell,
 } from "../../world/terrain-sampling.ts";
-import type { PlantPlacement, VegetationStore } from "../../world/vegetation-store.ts";
+import { NO_PLANT, type PlantPlacement, type VegetationStore } from "../../world/vegetation-store.ts";
 import { NO_WATER, type WaterFeatures } from "../../world/water.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
 
@@ -196,6 +196,10 @@ export class WorldState {
   }
 
   plant(placement: PlantPlacement): number {
+    if (!hasRoomFromCoast(this.terrain.coastDistance, this.grid, placement.x, placement.z)) {
+      return NO_PLANT;
+    }
+
     const index = this.vegetation.add(placement);
 
     if (index >= 0) {

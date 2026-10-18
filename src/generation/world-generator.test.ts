@@ -5,6 +5,7 @@ import { isTreeSpecies } from "../content/plants.ts";
 import { isOnIsland } from "../world/coast.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
+import { sampleHeight } from "../world/terrain-sampling.ts";
 import { hasWater, NO_WATER } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 import {
@@ -188,6 +189,17 @@ describe("world generation", () => {
 
     for (const waterfall of world.water.waterfalls) {
       expect(Math.hypot(waterfall.directionX, waterfall.directionZ)).toBeCloseTo(1);
+    }
+  });
+
+  it("keeps every plant clear of the coast so none hangs over the edge", () => {
+    const grid = new WorldGrid(TEST_DIMENSIONS);
+
+    for (let plant = 0; plant < world.vegetation.count; plant += 1) {
+      const x = world.vegetation.x[plant];
+      const z = world.vegetation.z[plant];
+
+      expect(sampleHeight(world.terrain.coastDistance, grid, x, z)).toBeGreaterThan(6);
     }
   });
 

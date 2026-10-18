@@ -30,6 +30,21 @@ describe("world state", () => {
     expect(world.isWalkable(cell)).toBe(false);
   });
 
+  it("plants nothing within a few metres of the coast", () => {
+    const world = createTestWorld();
+
+    const cell = centerCell(world);
+    const x = world.grid.cellCenterX(cell);
+    const z = world.grid.cellCenterZ(cell);
+    const placement = { bornDay: 0, height: 8, rotation: 0, seed: 0.5, species: 0, x, z };
+
+    expect(world.plant(placement)).toBeGreaterThanOrEqual(0);
+
+    world.terrain.coastDistance.fill(3);
+
+    expect(world.plant(placement)).toBe(-1);
+  });
+
   it("keeps everything beyond the coast off the island", () => {
     const world = createTestWorld();
 
