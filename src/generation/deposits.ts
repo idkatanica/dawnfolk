@@ -184,16 +184,14 @@ export function planDeposits(grid: WorldGrid, terrain: TerrainData, seed: number
   const planner: DepositPlanner = { grid, placed: [], random: createRandom(seed * 13 + 29), reserved, terrain };
 
   const hill = hillHeight(planner);
+  const candidates = DEPOSIT_KINDS.map((kind) => ({ cells: candidateCells(planner, kind, hill), kind }));
+  const rounds = Math.max(...DEPOSIT_KINDS.map((kind) => DEPOSITS[kind].countPerIsland));
 
-  for (const kind of DEPOSIT_KINDS) {
-    const candidates = candidateCells(planner, kind, hill);
-
-    if (candidates.length === 0) {
-      continue;
-    }
-
-    for (let count = 0; count < DEPOSITS[kind].countPerIsland; count += 1) {
-      placeDeposit(planner, kind, candidates);
+  for (let round = 0; round < rounds; round += 1) {
+    for (const { cells, kind } of candidates) {
+      if (cells.length > 0 && round < DEPOSITS[kind].countPerIsland) {
+        placeDeposit(planner, kind, cells);
+      }
     }
   }
 
