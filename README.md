@@ -33,13 +33,6 @@
 Shape the land, call rain, fire and lightning, and watch small tribes gather, build, learn and survive on a
 procedurally generated island rendered with WebGPU.
 
-<table>
-  <tr>
-    <td><img src=".github/screenshots/shore.jpg" alt="The Bear Clan camp on the shore of Moon Lake"></td>
-    <td width="24%"><img src=".github/screenshots/phone.jpg" alt="The phone layout"></td>
-  </tr>
-</table>
-
 ## Features
 
 - **A living island.** Every world is generated from a seed: relief, erosion, rivers, lakes, waterfalls off the
