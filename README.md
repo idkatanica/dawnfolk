@@ -62,7 +62,9 @@ procedurally generated island rendered with WebGPU.
   dead snags, four kinds of cactus and desert shrubs; boulders, flat slabs, crags, scree, mossy forest rocks,
   layered sandstone and frosted rocks, all of which people quarry for stone.
 - **Map labels.** Tribe banners with population and era float over their camps (click one to fly there), and the
-  highest peak, the largest lakes and every ruin carry names drawn from the seed.
+  highest peak, the largest lakes and every ruin carry names drawn from the seed. From afar, people show as outlined
+  markers in their tribe's colour and herds as one marker each, wolves as red warning triangles, on the island and the
+  minimap alike; forests never hide them.
 - **Glass islands UI.** Every panel floats on its own island of refracting glass
   ([`@svidskiy/glass-surface`](https://github.com/svidskiy/glass-surface)), with a compact layout for phones.
 
@@ -111,7 +113,7 @@ src/
   game/        main thread: worker connection, world mirror, session, engine loop, input, power tools
   models/      procedural model engine: mesh builder, rig and clips, people, animals, plants, buildings
   rendering/   WebGPU renderer: sky, height fog and atmosphere, terrain and water patches, vegetation chunks and
-               grass, skinned agents with far dots, buildings, fire glow, flames, smoke and effects, bloom
+               grass, skinned agents with far markers, buildings, fire glow, flames, smoke and effects, bloom
   design/      design system: glass islands, buttons, fields, meters, tooltips, formatting
   features/    UI features with their stores: time, powers, inspector, journal, minimap, map labels, notices,
                settings
