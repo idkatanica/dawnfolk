@@ -2,7 +2,7 @@ import { Box3, Vector3 } from "three/webgpu";
 import { isMonumentSpecies, PLANT_SPECIES, type PlantSpeciesIndex } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { canonicalHeight, farVariantOf, footprintRadius, plantVariantCount } from "../../models/plants/plant-models.ts";
-import type { PlantDetailLevel } from "../../models/plants/tree-mesher.ts";
+import { isDistantLevel, type PlantDetailLevel } from "../../models/plants/tree-mesher.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 
@@ -43,7 +43,7 @@ function bucketOf(species: number, seed: number): number {
 }
 
 export function bucketGroups(level: PlantDetailLevel): number[][] {
-  if (level !== "low") {
+  if (!isDistantLevel(level)) {
     return PLANT_BUCKETS.map((_bucket, index) => [index]);
   }
 

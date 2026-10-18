@@ -7,7 +7,7 @@ import type { TreeStructure } from "./tree-structure.ts";
 
 const TOUCHING = 0.01;
 
-const LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low"];
+const LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low", "far"];
 
 const LOOK: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
 

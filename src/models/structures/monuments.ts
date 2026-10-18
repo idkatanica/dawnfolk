@@ -8,7 +8,7 @@ import type { MeshData } from "../mesh/mesh-data.ts";
 import { deformShape, facetShape, type Shape } from "../mesh/shape.ts";
 import { box, type LoftSection, loft } from "../mesh/shapes.ts";
 import { type Triple, transformOf } from "../mesh/transforms.ts";
-import type { PlantDetailLevel } from "../plants/tree-mesher.ts";
+import { isDistantLevel, type PlantDetailLevel } from "../plants/tree-mesher.ts";
 import { type ChiselOptions, chiseledStone, groundShade, STONE_NOISE, weatheredSlot } from "../stones.ts";
 
 export const MONUMENT_HEIGHTS = {
@@ -20,9 +20,9 @@ export const MONUMENT_HEIGHTS = {
   [PlantSpecies.Pillar]: 4.4,
 } as const satisfies Readonly<Record<MonumentPiece, number>>;
 
-const STONE_SEGMENTS: Readonly<Record<PlantDetailLevel, number>> = { high: 12, low: 5, medium: 8 };
-const HEAD_SEGMENTS: Readonly<Record<PlantDetailLevel, number>> = { high: 14, low: 6, medium: 9 };
-const DRUM_SEGMENTS: Readonly<Record<PlantDetailLevel, number>> = { high: 24, low: 6, medium: 12 };
+const STONE_SEGMENTS: Readonly<Record<PlantDetailLevel, number>> = { far: 4, high: 12, low: 5, medium: 8 };
+const HEAD_SEGMENTS: Readonly<Record<PlantDetailLevel, number>> = { far: 6, high: 14, low: 6, medium: 9 };
+const DRUM_SEGMENTS: Readonly<Record<PlantDetailLevel, number>> = { far: 5, high: 24, low: 6, medium: 12 };
 const DRESSED_DETAIL = 2;
 const FLUTES = 12;
 const HALF_TURN = Math.PI;
@@ -293,7 +293,7 @@ function noseShape(context: MonumentContext): Shape {
     { radiusX: 0, radiusZ: 0, y: 3.38 },
   ];
 
-  return facetShape(loft(sections, context.level === "low" ? 3 : 4));
+  return facetShape(loft(sections, isDistantLevel(context.level) ? 3 : 4));
 }
 
 function addHead(context: MonumentContext, placement: Placement): void {
@@ -317,7 +317,7 @@ function addHead(context: MonumentContext, placement: Placement): void {
     );
   }
 
-  if (level !== "low") {
+  if (!isDistantLevel(level)) {
     addPiece(
       carving,
       hewnBox(context.random, { depth: 0.42, height: 0.32, width: 1.9 }),
@@ -587,7 +587,7 @@ function farArch(context: MonumentContext, form: PieceForm<typeof PlantSpecies.A
 function arch(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Arch>): void {
   const { random } = context;
 
-  if (context.level === "low") {
+  if (isDistantLevel(context.level)) {
     farArch(context, form);
 
     return;
@@ -689,7 +689,7 @@ function cairn(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Cai
       );
     }
 
-    const stones = level === "low" ? Math.ceil(ring.stones / 2) : ring.stones;
+    const stones = isDistantLevel(level) ? Math.ceil(ring.stones / 2) : ring.stones;
 
     for (let stone = 0; stone < stones; stone += 1) {
       const angle = (stone / stones) * FULL_TURN + random.signed() * 0.2;

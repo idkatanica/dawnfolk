@@ -223,7 +223,7 @@ export class WorldRenderer {
     this.#terrain.update(view.camera, this.#quality.terrainDetail);
     this.#islandBase.followPatchLevels(this.#terrain.patchLevels);
     this.#water.update(view.camera, this.#quality.terrainDetail, this.#terrain.patchLevels);
-    this.#vegetation.update(view.camera, this.#quality.vegetationDetail, frame.calendar.season);
+    this.#vegetation.update(view.camera, this.#atmosphere.sun, this.#quality.vegetationDetail, frame.calendar.season);
     this.#grass.update(view.camera, view.viewDistance);
     this.#updateAgents(view);
     this.#markSelection();
