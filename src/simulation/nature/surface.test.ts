@@ -42,6 +42,7 @@ function referenceCell(world: WorldState, cell: number, step: ReferenceStep): vo
       temperature < -2
         ? Math.min(1, fields.snow[cell] + 0.002 * step.seconds)
         : Math.max(0, fields.snow[cell] - 0.004 * step.seconds * Math.max(1, temperature));
+    fields.scorch[cell] = Math.max(0, fields.scorch[cell] - 0.22 * step.days);
 
     return;
   }
@@ -83,12 +84,14 @@ function referenceCell(world: WorldState, cell: number, step: ReferenceStep): vo
 
   const { fuel } = groundDefinition(terrain.ground[cell]);
 
+  const growthRate = temperature > 3 ? 1 : 0.2;
+
   if (fields.fuel[cell] < fuel) {
-    fields.fuel[cell] = Math.min(fuel, fields.fuel[cell] + fuel * 0.35 * step.days * (temperature > 3 ? 1 : 0.2));
+    fields.fuel[cell] = Math.min(fuel, fields.fuel[cell] + fuel * 0.35 * step.days * growthRate);
   }
 
   if (fields.scorch[cell] > 0) {
-    fields.scorch[cell] = Math.max(0, fields.scorch[cell] - 0.22 * step.days);
+    fields.scorch[cell] = Math.max(0, fields.scorch[cell] - 0.22 * step.days * growthRate);
   }
 }
 
@@ -314,5 +317,19 @@ describe("surface", () => {
     expect(world.fields.fuel[cell]).toBeGreaterThan(0.2);
     expect(world.fields.fuel[cell]).toBeLessThanOrEqual(groundDefinition(Ground.Meadow).fuel);
     expect(world.fields.scorch[cell]).toBeLessThan(1);
+  });
+
+  it("keeps the ash longer while the ground is cold", () => {
+    const warm = createTestWorld();
+    const cold = createTestWorld({ baseTemperature: -5 });
+
+    for (const world of [warm, cold]) {
+      world.fields.fuel[centerCell(world)] = 0;
+      world.fields.scorch[centerCell(world)] = 1;
+      runSurface(world, 480, DRY_NOON);
+    }
+
+    expect(warm.fields.scorch[centerCell(warm)]).toBeLessThan(0.65);
+    expect(cold.fields.scorch[centerCell(cold)]).toBeGreaterThan(0.9);
   });
 });

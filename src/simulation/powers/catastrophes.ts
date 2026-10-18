@@ -250,6 +250,7 @@ function flatten(cell: number, blast: Blast, remoteness: number, services: Power
 
   world.fields.scorch[cell] = Math.max(world.fields.scorch[cell], lerp(0.85, 0.35, remoteness));
   world.fields.snow[cell] = 0;
+  world.markDisturbed(cell, environment.day);
 }
 
 function plantsIn(world: WorldState, cell: number): number[] {
@@ -364,6 +365,7 @@ function vaporize(cell: number, services: PowerServices): void {
   fields.wetness[cell] = 0;
   fields.snow[cell] = 0;
   services.world.clearPlants(cell, true);
+  services.world.markDisturbed(cell, services.environment.day);
 }
 
 interface Quake {
@@ -408,6 +410,7 @@ function toppleTrees(cell: number, services: PowerServices): void {
   for (const plant of plantsIn(world, cell)) {
     if (isTreeSpecies(vegetation.species[plant])) {
       world.fellPlant(plant, environment.day, hashToUnit(vegetation.seed[plant] * 31, cell) * FULL_TURN);
+      world.markDisturbed(cell, environment.day);
     }
   }
 }

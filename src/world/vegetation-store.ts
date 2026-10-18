@@ -163,6 +163,15 @@ export class VegetationStore {
     this.#kill(index, day, PlantState.Fallen);
   }
 
+  setHeight(index: number, height: number): void {
+    if (this.state[index] !== PlantState.Alive || this.height[index] === height) {
+      return;
+    }
+
+    this.height[index] = height;
+    this.#changed.add(index);
+  }
+
   reshape(index: number, seed: number, rotation: number): void {
     if (this.state[index] !== PlantState.Alive) {
       return;

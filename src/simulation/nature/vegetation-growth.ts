@@ -7,6 +7,8 @@ import { plantHeight } from "../../generation/vegetation.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { NO_BUILDING, type WorldState } from "../world/world-state.ts";
+import { Nursery } from "./nursery.ts";
+import { Succession, TREE_GROWING_DAYS } from "./succession.ts";
 
 export const SNAG_LIFETIME_DAYS = 4;
 
@@ -48,12 +50,16 @@ function berryChange(season: number, days: number, rules: WorldRules): number {
 }
 
 export class VegetationGrowthSystem {
+  readonly #nursery: Nursery;
+  readonly #succession: Succession;
   readonly #world: WorldState;
   #berryDays = 0;
   #visitBudget = 0;
 
   constructor(world: WorldState) {
     this.#world = world;
+    this.#nursery = new Nursery(world);
+    this.#succession = new Succession(world, this.#nursery);
   }
 
   update(days: number, conditions: GrowthConditions, rules: WorldRules, random: RandomSource): void {
@@ -82,6 +88,8 @@ export class VegetationGrowthSystem {
       return;
     }
 
+    this.#nursery.grow(days * multiplier);
+    this.#succession.update(days, conditions.day, multiplier);
     this.#visitBudget += days * REGROWTH_VISITS_PER_DAY * multiplier;
 
     while (this.#visitBudget >= 1) {
@@ -117,15 +125,18 @@ export class VegetationGrowthSystem {
       return;
     }
 
-    world.plant({
-      bornDay: day,
-      height: plantHeight(species, random, 1),
-      rotation: random.next() * FULL_TURN,
-      seed: random.next(),
-      species,
-      x: grid.cellCenterX(cell) + random.between(-0.35, 0.35) * grid.cellSize,
-      z: grid.cellCenterZ(cell) + random.between(-0.35, 0.35) * grid.cellSize,
-    });
+    this.#nursery.plant(
+      {
+        bornDay: day,
+        height: plantHeight(species, random, 1),
+        rotation: random.next() * FULL_TURN,
+        seed: random.next(),
+        species,
+        x: grid.cellCenterX(cell) + random.between(-0.35, 0.35) * grid.cellSize,
+        z: grid.cellCenterZ(cell) + random.between(-0.35, 0.35) * grid.cellSize,
+      },
+      TREE_GROWING_DAYS
+    );
   }
 
   #canSprout(cell: number, random: RandomSource): boolean {
@@ -136,7 +147,7 @@ export class VegetationGrowthSystem {
       return false;
     }
 
-    if (world.occupancy[cell] !== NO_BUILDING || world.isBurning(cell)) {
+    if (world.occupancy[cell] !== NO_BUILDING || world.isBurning(cell) || world.recovering.has(cell)) {
       return false;
     }
 
