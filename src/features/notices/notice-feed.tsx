@@ -15,11 +15,7 @@ function useDismissLater(id: number): void {
 }
 
 function NoticeIcon({ notice }: { readonly notice: WorldNotice }) {
-  if (notice.category === "notice") {
-    return <Info aria-hidden="true" className="shrink-0 text-ink-soft" size={16} />;
-  }
-
-  const Icon = CHRONICLE_ICONS[notice.category];
+  const Icon = notice.category === "notice" ? Info : CHRONICLE_ICONS[notice.category];
 
   return <Icon aria-hidden="true" className="shrink-0 text-ink-soft" size={16} />;
 }

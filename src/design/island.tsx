@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "./cn.ts";
 import { useIsTouch } from "./use-media-query.ts";
 
-export const ISLAND_RADIUS = 22;
+const ISLAND_RADIUS = 22;
 
 const REFRACTING_GLASS: Partial<GlassSurfaceOptions> = {
   backgroundOpacity: 0.5,
@@ -20,16 +20,21 @@ const FROSTED_GLASS: Partial<GlassSurfaceOptions> = { ...REFRACTING_GLASS, backg
 export interface IslandProps {
   readonly children: ReactNode;
   readonly className?: string | undefined;
-  readonly radius?: number | undefined;
 }
 
-export function Island({ children, className, radius = ISLAND_RADIUS }: IslandProps) {
+export function Island({ children, className }: IslandProps) {
   const isTouch = useIsTouch();
 
   const glass = isTouch ? FROSTED_GLASS : REFRACTING_GLASS;
 
   return (
-    <GlassSurface {...glass} borderRadius={radius} className={cn("island", className)} height="auto" width="auto">
+    <GlassSurface
+      {...glass}
+      borderRadius={ISLAND_RADIUS}
+      className={cn("island", className)}
+      height="auto"
+      width="auto"
+    >
       {children}
     </GlassSurface>
   );

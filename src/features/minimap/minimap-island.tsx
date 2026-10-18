@@ -1,6 +1,5 @@
 import { type PointerEvent, type RefObject, useEffect, useRef } from "react";
 import { useEngine } from "../../app/use-engine.ts";
-import { cn } from "../../design/cn.ts";
 import { Island } from "../../design/island.tsx";
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
@@ -81,7 +80,7 @@ export function MinimapIsland({ className }: { readonly className?: string | und
   }
 
   return (
-    <Island className={cn(className)}>
+    <Island className={className}>
       <div className="p-1.5">
         <MinimapCanvas engine={engine} />
       </div>

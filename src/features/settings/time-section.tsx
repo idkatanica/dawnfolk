@@ -4,8 +4,7 @@ import { ChoiceField } from "../../design/choice-field.tsx";
 import { formatClock, formatParameterValue } from "../../design/format.ts";
 import { RangeField } from "../../design/range-field.tsx";
 import { ToggleField } from "../../design/toggle-field.tsx";
-import type { CalendarView } from "../../simulation/nature/calendar.ts";
-import { MAXIMUM_DAY_SECONDS, MINIMUM_DAY_SECONDS } from "../../simulation/nature/calendar.ts";
+import { type CalendarView, MAXIMUM_DAY_SECONDS, MINIMUM_DAY_SECONDS } from "../../simulation/nature/calendar.ts";
 import { useWorldStore } from "../world/world-store.ts";
 
 const SEASON_OPTIONS = SEASONS.map((season, index) => ({ label: season, value: String(index) }));

@@ -12,19 +12,18 @@ import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
 import { createSimulationWorkerApi, DEFAULT_WORLD_REQUEST } from "../../workers/simulation-worker-api.ts";
 
-export interface TestEngine {
+interface TestEngine {
   readonly clearSelection: Mock<() => void>;
   readonly engine: EngineHandle;
   readonly focusOn: Mock<(x: number, z: number, distance?: number | null) => void>;
   readonly followSelection: Mock<() => void>;
   readonly placeLabel: Mock<(x: number, z: number, lift: number) => LabelPlacement | null>;
   readonly renderFrame: () => void;
-  readonly selectPower: Mock<(selection: PowerSelection | null) => void>;
   readonly send: MockInstance<(command: SimulationCommand) => void>;
   readonly stopFollowing: Mock<() => void>;
 }
 
-export interface TestEngineOptions {
+interface TestEngineOptions {
   readonly cameraDistance?: number;
   readonly landmarks?: readonly Landmark[];
 }
@@ -50,7 +49,6 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
   const focusOn = vi.fn<(x: number, z: number, distance?: number | null) => void>();
   const followSelection = vi.fn<() => void>();
   const placeLabel = vi.fn<(x: number, z: number, lift: number) => LabelPlacement | null>(() => null);
-  const selectPower = vi.fn<(selection: PowerSelection | null) => void>();
   const stopFollowing = vi.fn<() => void>();
 
   const subscribeToRenders = (listener: () => void) => {
@@ -75,7 +73,7 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
     landmarks,
     placeLabel,
     quality: "medium",
-    selectPower,
+    selectPower: vi.fn<(selection: PowerSelection | null) => void>(),
     session,
     stopFollowing,
     subscribeToRenders,
@@ -90,7 +88,6 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
     followSelection,
     placeLabel,
     renderFrame,
-    selectPower,
     send,
     stopFollowing,
   };

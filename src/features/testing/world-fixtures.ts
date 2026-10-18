@@ -166,7 +166,7 @@ export function createChronicleEntry(overrides: Partial<ChronicleEntry> = {}): C
   };
 }
 
-export function createSnapshot(overrides: Partial<WorldSnapshot> = {}): WorldSnapshot {
+function createSnapshot(overrides: Partial<WorldSnapshot> = {}): WorldSnapshot {
   return {
     calendar: createCalendar(),
     inspection: null,

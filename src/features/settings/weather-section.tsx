@@ -65,6 +65,7 @@ function useWeatherControls(weather: WeatherView) {
 
 function WeatherControls({ weather }: { readonly weather: WeatherView }) {
   const { changeDirection, changeSpeed, changeTemperature, changeWeather, wind } = useWeatherControls(weather);
+
   const choice = weather.isAutomatic ? AUTOMATIC : weather.kind;
 
   return (

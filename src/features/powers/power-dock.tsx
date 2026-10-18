@@ -23,6 +23,7 @@ function usePowerSelection(powerId: PowerId) {
 
 function PowerTile({ powerId }: { readonly powerId: PowerId }) {
   const { isSelected, toggle } = usePowerSelection(powerId);
+
   const power = POWERS[powerId];
   const Icon = POWER_ICONS[powerId];
 
@@ -105,17 +106,15 @@ function useCategory() {
   const category = usePowerStore((state) => state.category);
   const setCategory = usePowerStore((state) => state.setCategory);
 
-  const changeCategory = (next: PowerCategory) => setCategory(next);
-
-  return { category, changeCategory };
+  return { category, setCategory };
 }
 
 export function PowerDock({ className }: { readonly className?: string | undefined }) {
-  const { category, changeCategory } = useCategory();
+  const { category, setCategory } = useCategory();
 
   return (
     <Island className={cn("max-w-full", className)}>
-      <Tabs.Root className="flex flex-col gap-2 p-2" onValueChange={changeCategory} value={category}>
+      <Tabs.Root className="flex flex-col gap-2 p-2" onValueChange={setCategory} value={category}>
         <Tabs.List aria-label="Kinds of powers" className="flex items-center justify-center gap-1">
           {DOCK_CATEGORIES.map((entry) => (
             <CategoryTab category={entry} key={entry.id} />

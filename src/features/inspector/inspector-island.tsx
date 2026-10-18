@@ -126,6 +126,7 @@ function FollowButton({ inspection }: { readonly inspection: Inspection }) {
 
 function InspectorContent({ inspection }: { readonly inspection: Inspection }) {
   const { close } = useInspectorActions();
+
   const Icon = KIND_ICONS[inspection.kind];
 
   return (
