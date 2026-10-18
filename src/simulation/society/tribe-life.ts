@@ -33,7 +33,7 @@ const FOOD_PER_PERSON_FOR_BIRTHS = 2.5;
 const MAXIMUM_MOTHERS_COUNTED = 4;
 const BIRTHPLACE_SEARCH_RADIUS = 30;
 
-export interface TribeTick {
+interface TribeTick {
   context: SocietyContext;
   days: number;
   members: readonly Person[];

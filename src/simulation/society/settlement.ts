@@ -2,7 +2,7 @@ import { Biome } from "../../content/biomes.ts";
 import { plantSpeciesDefinition } from "../../content/plants.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
-import type { Waypoint } from "../agents/navigation.ts";
+import { aroundPoint, type Waypoint } from "../agents/navigation.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { dropJob } from "./decisions.ts";
 import { isChild, isElder, type Person } from "./person.ts";
@@ -40,7 +40,7 @@ export interface SettlementServices {
   tribes: () => readonly Tribe[];
 }
 
-export interface SiteSearch {
+interface SiteSearch {
   excluded: Tribe | null;
   isNearOrigin: boolean;
   minimumNeighborDistance: number;
@@ -181,6 +181,7 @@ function neighborScore(point: Waypoint, search: SiteSearch, tribes: readonly Tri
 
 export function findCampSite(search: SiteSearch, context: SocietyContext, tribes: readonly Tribe[]): Waypoint | null {
   const { random } = context;
+
   const innerShare = search.isNearOrigin ? 0.15 : 0.35;
   const nearnessWeight = search.isNearOrigin ? 2 : 0;
 
@@ -191,7 +192,7 @@ export function findCampSite(search: SiteSearch, context: SocietyContext, tribes
     const angle = random.next() * FULL_TURN;
     const distance = innerShare * search.radius + random.next() * search.radius * (1 - innerShare);
 
-    const point = { x: search.origin.x + Math.cos(angle) * distance, z: search.origin.z + Math.sin(angle) * distance };
+    const point = aroundPoint(search.origin, distance, angle);
 
     const score = scoreSite(point, search, context, tribes) - (distance / search.radius) * nearnessWeight;
 

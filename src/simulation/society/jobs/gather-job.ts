@@ -57,7 +57,7 @@ export function findBerries(tick: PersonTick): GatherJob | null {
   return new GatherJob(tick, bush);
 }
 
-export class GatherJob implements Job {
+class GatherJob implements Job {
   readonly claimedPlant: number;
   readonly kind = "gather";
   readonly #errand = new Errand(GATHERING_SECONDS, "gather");

@@ -3,9 +3,9 @@ import type { PersonTick } from "../society-context.ts";
 import { sleepingSpot } from "../tribe-places.ts";
 import { headTo, type Job, standStill, walk } from "./job.ts";
 
-type SleepPhase = "asleep" | "travel";
-
 const WAKING_HOUR = 12;
+
+type SleepPhase = "asleep" | "travel";
 
 export class SleepJob implements Job {
   readonly kind = "sleep";

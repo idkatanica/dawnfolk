@@ -92,11 +92,7 @@ export function standStill(person: Person, pose: PersonPose): void {
   stopMoving(person.mover);
 }
 
-export function aroundPoint(center: Waypoint, distance: number, angle: number): Waypoint {
-  return { x: center.x + Math.cos(angle) * distance, z: center.z + Math.sin(angle) * distance };
-}
-
-export type ErrandProgress = "finished" | "travelling" | "working";
+type ErrandProgress = "finished" | "travelling" | "working";
 
 type ErrandPhase = "travel" | "work";
 

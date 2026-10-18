@@ -25,7 +25,7 @@ export function findFishingSpot(tick: PersonTick): FishJob | null {
   return new FishJob(tick, spot);
 }
 
-export class FishJob implements Job {
+class FishJob implements Job {
   readonly kind = "fish";
   readonly #errand = new Errand(FISHING_SECONDS, "fish");
   readonly #spot: ShoreSpot;

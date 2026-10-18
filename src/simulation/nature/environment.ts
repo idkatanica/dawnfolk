@@ -33,7 +33,7 @@ export function describeEnvironment(calendar: Calendar, weather: WeatherSystem):
   const { state } = weather;
 
   const wind = weather.windVector();
-  const sun = sunDirection(calendar.hours, calendar.season);
+  const sun = sunDirection(calendar.hours, season);
 
   const airTemperatureOffset =
     calendar.seasonalTemperatureOffset() + calendar.diurnalTemperatureOffset() + weather.airTemperatureOffset;

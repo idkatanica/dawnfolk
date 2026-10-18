@@ -1,7 +1,8 @@
 import { FULL_TURN } from "../../../shared/math.ts";
+import { aroundPoint } from "../../agents/navigation.ts";
 import { type Person, runSpeed, walkSpeed } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
-import { aroundPoint, headTo, type Job, standStill, walk } from "./job.ts";
+import { headTo, type Job, standStill, walk } from "./job.ts";
 
 type WanderKind = "idle" | "play";
 

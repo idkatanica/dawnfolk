@@ -28,6 +28,7 @@ const DEFAULT_TEMPERATURE = 10;
 
 export function updateNeeds(tick: PersonTick, days: number): DeathCause | null {
   const { person } = tick;
+
   const needSeconds = tick.context.environment.isTimeFrozen ? 0 : tick.seconds;
 
   const isAsleep = person.pose === "sleep";
@@ -48,6 +49,7 @@ export function updateNeeds(tick: PersonTick, days: number): DeathCause | null {
 
 function updateWarmth(tick: PersonTick, days: number, isAsleep: boolean): void {
   const { person } = tick;
+
   const isComforted = isNearCampfire(tick) || isSleepingAtHome(tick, isAsleep);
   const coldness = coldnessAt(tick);
 
@@ -62,6 +64,7 @@ function updateWarmth(tick: PersonTick, days: number, isAsleep: boolean): void {
 
 function coldnessAt(tick: PersonTick): number {
   const { environment } = tick.context;
+
   const temperature = temperatureAround(tick);
 
   const wetness = environment.precipitation > WET_WEATHER ? WET_COLD_FACTOR : 1;

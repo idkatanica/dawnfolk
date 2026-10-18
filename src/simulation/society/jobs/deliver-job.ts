@@ -32,6 +32,7 @@ export class DeliverJob implements Job {
 
 function deliveryPoint(tick: PersonTick): Waypoint {
   const { random } = tick.context;
+
   const storehouse = completedBuilding(tick.context.buildings, tick.tribe.buildings.storehouseId);
 
   if (storehouse === null) {

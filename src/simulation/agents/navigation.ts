@@ -17,6 +17,10 @@ export interface Waypoint {
   z: number;
 }
 
+export function aroundPoint(center: Waypoint, distance: number, angle: number): Waypoint {
+  return { x: center.x + Math.cos(angle) * distance, z: center.z + Math.sin(angle) * distance };
+}
+
 export class NavigationGrid {
   readonly #cameFrom: Int32Array;
   readonly #closedInSearch: Int32Array;

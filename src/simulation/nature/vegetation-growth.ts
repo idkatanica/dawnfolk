@@ -108,8 +108,9 @@ export class VegetationGrowthSystem {
       return;
     }
 
-    const species = random.pick(candidates);
     const { grid } = world;
+
+    const species = random.pick(candidates);
 
     world.plant({
       bornDay: day,

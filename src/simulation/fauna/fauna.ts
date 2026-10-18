@@ -5,7 +5,7 @@ import { clamp, distanceSquared, FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import type { AnimalPose } from "../../world/agent-poses.ts";
 import { createMover, hasArrived, type Mover, moveAlong, setDestination, stopMoving } from "../agents/movement.ts";
-import type { NavigationGrid, Waypoint } from "../agents/navigation.ts";
+import { aroundPoint, type NavigationGrid, type Waypoint } from "../agents/navigation.ts";
 import type { IdentifierSource } from "../identifiers.ts";
 import type { WorldState } from "../world/world-state.ts";
 
@@ -304,11 +304,10 @@ export class FaunaSystem {
       const angle = random.next() * FULL_TURN;
       const distance = random.between(80, 340);
 
-      const x = from.x + Math.cos(angle) * distance;
-      const z = from.z + Math.sin(angle) * distance;
+      const pasture = aroundPoint(from, distance, angle);
 
-      if (this.#isOpenPasture(x, z, kind, attempt >= 6)) {
-        return { x, z };
+      if (this.#isOpenPasture(pasture.x, pasture.z, kind, attempt >= 6)) {
+        return pasture;
       }
     }
 

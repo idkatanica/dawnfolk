@@ -115,20 +115,14 @@ export class Calendar {
     return seasonTemperatureOffset(this.season);
   }
 
-  saveState(): CalendarState {
-    return {
-      day: this.day,
-      daySeconds: this.daySeconds,
-      daysPerSeason: this.daysPerSeason,
-      isTimeFrozen: this.isTimeFrozen,
-    };
-  }
-
   view(): CalendarView {
     return {
-      ...this.saveState(),
+      day: this.day,
       dayOfSeason: this.dayOfSeason,
+      daySeconds: this.daySeconds,
+      daysPerSeason: this.daysPerSeason,
       hours: this.hours,
+      isTimeFrozen: this.isTimeFrozen,
       season: this.season,
       seasonName: seasonName(this.season),
       year: this.year,

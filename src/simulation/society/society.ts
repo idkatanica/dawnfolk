@@ -32,13 +32,13 @@ const DEATH_MESSAGES: Readonly<Record<DeathCause, string>> = {
   mammoth: "was trampled by a mammoth",
 };
 
-export interface SocietyDependencies {
+interface SocietyDependencies {
   buildings: BuildingSystem;
   chronicle: Chronicle;
   identifiers: IdentifierSource;
 }
 
-export interface TribeArrival {
+interface TribeArrival {
   context: SocietyContext;
   people: number;
   technologies: readonly TechnologyId[];
@@ -272,6 +272,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
 
   #newcomer(tribe: Tribe, site: Waypoint, member: number, arrival: TribeArrival): Person {
     const { random, world } = arrival.context;
+
     const isFemale = member % 2 === 1;
     const isGrownUp = member < arrival.people - 2;
 
@@ -361,9 +362,11 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
   #removeRemains(seconds: number): void {
     const hasExpired = this.#people.some((person) => !person.isAlive && person.deathSeconds + seconds > CORPSE_SECONDS);
 
-    if (hasExpired) {
-      this.#people = this.#people.filter((person) => person.isAlive || person.deathSeconds <= CORPSE_SECONDS);
+    if (!hasExpired) {
+      return;
     }
+
+    this.#people = this.#people.filter((person) => person.isAlive || person.deathSeconds <= CORPSE_SECONDS);
   }
 }
 
