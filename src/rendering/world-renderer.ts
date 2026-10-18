@@ -1,7 +1,16 @@
-import { Frustum, Matrix4, type PerspectiveCamera, Scene, type Vector3, type WebGPURenderer } from "three/webgpu";
+import {
+  Frustum,
+  Matrix4,
+  type PerspectiveCamera,
+  Scene,
+  Vector2,
+  type Vector3,
+  type WebGPURenderer,
+} from "three/webgpu";
 import type { WorldMirror } from "../game/world-mirror.ts";
+import { lerp } from "../shared/math.ts";
 import type { SimulationEffect } from "../simulation/effects.ts";
-import { AgentDots } from "./agents/agent-dots.ts";
+import { AgentMarkers } from "./agents/agent-markers.ts";
 import type { AgentViewInput } from "./agents/agent-view-input.ts";
 import { AnimalView } from "./agents/animal-view.ts";
 import { PeopleView } from "./agents/people-view.ts";
@@ -46,6 +55,7 @@ const CLOUD_SEA_DEPTH = 760;
 const WATER_DRIFT = 0.08;
 
 const SELECTION_COLOR = 0xff_f2_c8;
+const NIGHT_MARKER_BRIGHTNESS = 0.8;
 
 const SELECTION_RADIUS: Readonly<Record<"animal" | "building" | "cell" | "person", number>> = {
   animal: 2.6,
@@ -72,13 +82,13 @@ export class WorldRenderer {
   readonly #axes = new CameraAxes();
   readonly #buildings = new BuildingView();
   readonly #changes: WorldChangeReader;
-  readonly #dots: AgentDots;
   readonly #effects: EffectView;
   readonly #fire: FireView;
   readonly #fireGlow: FireGlow;
   readonly #frustum = new Frustum();
   readonly #grass: GrassField;
   readonly #islandBase: IslandBase;
+  readonly #markers: AgentMarkers;
   readonly #matrix = new Matrix4();
   readonly #mirror: WorldMirror;
   readonly #output: RenderOutput;
@@ -91,6 +101,7 @@ export class WorldRenderer {
   readonly #textures: TerrainTextures;
   readonly #understory: UnderstoryField;
   readonly #vegetation: VegetationView;
+  readonly #viewport = new Vector2();
   readonly #water: WaterView;
   readonly #waterfalls = new WaterfallView();
   readonly #weather: WeatherParticles;
@@ -120,7 +131,7 @@ export class WorldRenderer {
     this.cursor = new GroundRing(this.#textures, mirror.grid);
     this.#selectionRing = new GroundRing(this.#textures, mirror.grid);
     this.#fire = new FireView({ axes: this.#axes, chunks: this.#vegetation.chunks });
-    this.#dots = new AgentDots(this.#axes);
+    this.#markers = new AgentMarkers(this.#axes, mirror);
     this.#weather = new WeatherParticles(this.#axes, this.#textures, mirror.grid);
     this.#splashes = new RainSplashes(this.#axes, this.#textures, mirror.grid);
 
@@ -145,7 +156,7 @@ export class WorldRenderer {
       this.#grass.mesh,
       this.#people.group,
       this.#animals.group,
-      this.#dots.mesh,
+      this.#markers.group,
       this.#buildings.group,
       this.cursor.mesh,
       this.#selectionRing.mesh,
@@ -229,7 +240,7 @@ export class WorldRenderer {
     this.#selectionRing.dispose();
     this.#people.dispose();
     this.#animals.dispose();
-    this.#dots.dispose();
+    this.#markers.dispose();
     this.#buildings.dispose();
     this.#vegetation.dispose();
     this.#grass.dispose();
@@ -269,18 +280,19 @@ export class WorldRenderer {
     const input: AgentViewInput = {
       camera,
       detail: this.#quality.agentDetail,
-      dots: this.#dots,
       frustum: this.#frustum,
       gameSeconds: frame.isPaused ? 0 : view.realSeconds * frame.speed,
+      markers: this.#markers,
       mirror,
       realSeconds: view.realSeconds,
       secondsSinceTick: mirror.gameSecondsSinceTick(view.now),
     };
 
-    this.#dots.begin();
+    this.#markers.brightness.value = lerp(NIGHT_MARKER_BRIGHTNESS, 1, this.#atmosphere.daylight);
+    this.#markers.begin(camera, this.#frustum, this.#renderer.getSize(this.#viewport).y);
     this.#people.update(input);
     this.#animals.update(input);
-    this.#dots.commit();
+    this.#markers.commit();
     this.#buildings.update(input);
   }
 

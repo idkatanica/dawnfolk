@@ -5,9 +5,11 @@ import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
 import { PersonField } from "../../world/agent-buffers.ts";
 import { CameraAxes } from "../effects/billboards.ts";
-import { AgentDots } from "./agent-dots.ts";
+import { AgentMarkers } from "./agent-markers.ts";
 import type { AgentViewInput } from "./agent-view-input.ts";
 import { PeopleView } from "./people-view.ts";
+
+const VIEWPORT_HEIGHT = 900;
 
 function createPopulatedMirror(): WorldMirror {
   const simulation = new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 96 } }));
@@ -37,9 +39,9 @@ function inputFrom(mirror: WorldMirror, height: number): AgentViewInput {
   return {
     camera,
     detail: 1,
-    dots: new AgentDots(new CameraAxes()),
     frustum,
     gameSeconds: 0,
+    markers: new AgentMarkers(new CameraAxes(), mirror),
     mirror,
     realSeconds: 0,
     secondsSinceTick: 0,
@@ -49,15 +51,15 @@ function inputFrom(mirror: WorldMirror, height: number): AgentViewInput {
 function drawPeople(input: AgentViewInput): PeopleView {
   const people = new PeopleView();
 
-  input.dots.begin();
+  input.markers.begin(input.camera, input.frustum, VIEWPORT_HEIGHT);
   people.update(input);
-  input.dots.commit();
+  input.markers.commit();
 
   return people;
 }
 
 describe("people view", () => {
-  it("marks people that are too far to draw with dots", () => {
+  it("marks people that are too far to draw with markers", () => {
     const mirror = createPopulatedMirror();
 
     const input = inputFrom(mirror, 2200);
@@ -65,10 +67,10 @@ describe("people view", () => {
     const people = drawPeople(input);
 
     expect(people.figureCount).toBe(0);
-    expect(input.dots.count).toBeGreaterThan(0);
+    expect(input.markers.count).toBeGreaterThan(0);
   });
 
-  it("draws nearby people as figures without dots", () => {
+  it("draws nearby people as figures without markers", () => {
     const mirror = createPopulatedMirror();
 
     const input = inputFrom(mirror, 30);
@@ -76,6 +78,6 @@ describe("people view", () => {
     const people = drawPeople(input);
 
     expect(people.figureCount).toBeGreaterThan(0);
-    expect(input.dots.count).toBe(0);
+    expect(input.markers.count).toBe(0);
   });
 });
