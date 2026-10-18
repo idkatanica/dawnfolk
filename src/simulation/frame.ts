@@ -47,7 +47,6 @@ export interface BuildingView {
   fuel: number;
   health: number;
   id: number;
-  isBurning: boolean;
   kind: BuildingKind;
   progress: number;
   rotation: number;

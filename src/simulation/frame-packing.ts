@@ -257,7 +257,6 @@ export function describeBuilding(building: Building): BuildingView {
     fuel: building.fuel,
     health: building.health / BUILDINGS[building.kind].health,
     id: building.id,
-    isBurning: building.burningSeconds > 0,
     kind: building.kind,
     progress: building.progress,
     rotation: building.rotation,

@@ -393,7 +393,6 @@ export class Simulation {
       rules: DEFAULT_WORLD_RULES,
       schedule: (delaySeconds, run) => this.schedule(delaySeconds, run),
       society: this.society,
-      weather: this.weather,
       world: this.world,
     };
   }

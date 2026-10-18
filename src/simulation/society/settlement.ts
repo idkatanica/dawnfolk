@@ -8,7 +8,7 @@ import { dropJob } from "./decisions.ts";
 import { isChild, isElder, type Person } from "./person.ts";
 import type { SocietyContext } from "./society-context.ts";
 import { isWorthLookingFor, type Tribe } from "./tribe.ts";
-import { campfireOf } from "./tribe-places.ts";
+import { campfireOf, campPoint } from "./tribe-places.ts";
 
 const UNSUITABLE = Number.NEGATIVE_INFINITY;
 const CAMP_SLOPE = 0.22;
@@ -258,11 +258,7 @@ export function considerMoving(
     return;
   }
 
-  const site = findCampSite(
-    siteSearchNear({ x: tribe.campX, z: tribe.campZ }, MOVE_SEARCH_RADIUS, tribe),
-    context,
-    services.tribes()
-  );
+  const site = findCampSite(siteSearchNear(campPoint(tribe), MOVE_SEARCH_RADIUS, tribe), context, services.tribes());
 
   if (site !== null) {
     moveCamp(tribe, members, site, reason, context);
@@ -354,7 +350,7 @@ export function considerSplit(
   }
 
   const search: SiteSearch = {
-    ...siteSearchNear({ x: tribe.campX, z: tribe.campZ }, SPLIT_SEARCH_RADIUS, tribe),
+    ...siteSearchNear(campPoint(tribe), SPLIT_SEARCH_RADIUS, tribe),
     minimumNeighborDistance: SPLIT_NEIGHBOR_DISTANCE,
   };
   const settlers = chooseSettlers(members);

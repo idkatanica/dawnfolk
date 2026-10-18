@@ -4,8 +4,8 @@ import { DEFAULT_WORLD_RULES, type WorldRules, worldRulesSchema } from "../../co
 import { createRandom } from "../../shared/random.ts";
 import { DEFAULT_WEATHER, pickSeasonalWeather, WeatherSystem, type WeatherTick } from "./weather.ts";
 
-function tickOf(elapsedSeconds: number, season = 0.5): WeatherTick {
-  return { day: 1, elapsedDays: elapsedSeconds / 240, elapsedSeconds, season };
+function tickOf(elapsedSeconds: number): WeatherTick {
+  return { day: 1, elapsedDays: elapsedSeconds / 240, elapsedSeconds, season: 0.5 };
 }
 
 function runFor(weather: WeatherSystem, seconds: number, rules: WorldRules = DEFAULT_WORLD_RULES): number {

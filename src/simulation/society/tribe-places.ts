@@ -7,7 +7,7 @@ import type { Tribe } from "./tribe.ts";
 
 const GOLDEN_ANGLE = 2.399;
 
-function campPoint(tribe: Tribe): Waypoint {
+export function campPoint(tribe: Tribe): Waypoint {
   return { x: tribe.campX, z: tribe.campZ };
 }
 

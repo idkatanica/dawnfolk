@@ -24,9 +24,9 @@ export class SleepJob implements Job {
       return this;
     }
 
-    standStill(tick.person, "sleep");
-
     const { environment } = tick.context;
+
+    standStill(tick.person, "sleep");
 
     if (environment.isNight || environment.hours >= WAKING_HOUR) {
       return this;

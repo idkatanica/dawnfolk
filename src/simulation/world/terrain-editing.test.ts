@@ -10,10 +10,11 @@ import {
   shakeTerrain,
   smoothTerrain,
 } from "./terrain-editing.ts";
+import type { WorldState } from "./world-state.ts";
 
 const BRUSH = { radius: 60, x: 5, z: 5 };
 
-function heightAtCellCenter(world: ReturnType<typeof createTestWorld>, x: number, z: number): number {
+function heightAtCellCenter(world: WorldState, x: number, z: number): number {
   return world.terrain.height[world.grid.cellAt(x, z)];
 }
 

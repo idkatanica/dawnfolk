@@ -3,10 +3,12 @@ import { createRandom } from "../../shared/random.ts";
 import { IdentifierSource } from "../identifiers.ts";
 import { FireSystem } from "../nature/fire.ts";
 import { createTestWorld } from "../testing/test-world.ts";
-import { NO_BUILDING, type WorldState } from "../world/world-state.ts";
+import { NO_BUILDING } from "../world/world-state.ts";
 import { BuildingSystem, type BuildingTick, isCampfireLit } from "./buildings.ts";
 
-function createBuildings(world: WorldState = createTestWorld()) {
+function createBuildings() {
+  const world = createTestWorld();
+
   return { buildings: new BuildingSystem(world, new IdentifierSource()), fire: new FireSystem(world), world };
 }
 

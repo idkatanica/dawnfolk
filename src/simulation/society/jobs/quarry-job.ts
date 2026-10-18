@@ -74,8 +74,8 @@ class BoulderJob implements Job {
     }
 
     const { people, world } = tick.context;
-    const boulder = this.claimedPlant;
 
+    const boulder = this.claimedPlant;
     const uses = previousUses(people.quarryUses, boulder) + 1;
 
     tick.tribe.claimedPlants.delete(boulder);

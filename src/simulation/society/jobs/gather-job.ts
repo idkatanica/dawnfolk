@@ -85,6 +85,7 @@ class GatherJob implements Job {
 
   #pick(tick: PersonTick): void {
     const { vegetation } = tick.context.world;
+
     const bush = this.claimedPlant;
 
     if (!vegetation.isAlive(bush) || vegetation.fruit[bush] <= PICKABLE_FRUIT) {

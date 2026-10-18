@@ -2,6 +2,7 @@ import { FULL_TURN } from "../../../shared/math.ts";
 import { aroundPoint } from "../../agents/navigation.ts";
 import { type Person, runSpeed, walkSpeed } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
+import { campPoint } from "../tribe-places.ts";
 import { headTo, type Job, standStill, walk } from "./job.ts";
 
 type WanderKind = "idle" | "play";
@@ -23,7 +24,7 @@ export class WanderJob implements Job {
     const [nearest, farthest] = WANDER_RANGES[kind];
 
     const destination = aroundPoint(
-      { x: tick.tribe.campX, z: tick.tribe.campZ },
+      campPoint(tick.tribe),
       random.between(nearest, farthest),
       random.next() * FULL_TURN
     );

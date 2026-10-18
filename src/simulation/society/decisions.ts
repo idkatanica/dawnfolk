@@ -28,9 +28,9 @@ const MEAL_SPREAD = 4;
 const NIGHT_JOBS: ReadonlySet<JobKind> = new Set(["eat", "sleep", "warm"]);
 
 export function updateMind(tick: PersonTick): void {
-  reactToDanger(tick);
-
   const { person } = tick;
+
+  reactToDanger(tick);
 
   if (person.job === null) {
     assignJob(tick, decideJob(tick));
