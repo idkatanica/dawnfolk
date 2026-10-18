@@ -223,9 +223,41 @@ export function updateMigration(tribe: Tribe, members: readonly Person[], contex
 
   const isLongOverdue = context.environment.day - tribe.migrationStartDay > LONGEST_MIGRATION_DAYS;
 
-  if (arrived.length >= members.length * SETTLED_SHARE || isLongOverdue) {
+  if (arrived.length >= members.length * SETTLED_SHARE) {
     tribe.isMigrating = false;
+
+    return;
   }
+
+  if (isLongOverdue) {
+    tribe.isMigrating = false;
+    settleWhereTheyStand(tribe, members);
+  }
+}
+
+function settleWhereTheyStand(tribe: Tribe, members: readonly Person[]): void {
+  if (members.length === 0) {
+    return;
+  }
+
+  const centerX = members.reduce((sum, person) => sum + person.mover.x, 0) / members.length;
+  const centerZ = members.reduce((sum, person) => sum + person.mover.z, 0) / members.length;
+
+  const [nearest] = [...members].sort(
+    (first, second) =>
+      Math.hypot(first.mover.x - centerX, first.mover.z - centerZ) -
+      Math.hypot(second.mover.x - centerX, second.mover.z - centerZ)
+  );
+
+  if (
+    nearest === undefined ||
+    Math.hypot(nearest.mover.x - tribe.campX, nearest.mover.z - tribe.campZ) < SETTLED_DISTANCE
+  ) {
+    return;
+  }
+
+  tribe.campX = nearest.mover.x;
+  tribe.campZ = nearest.mover.z;
 }
 
 function reasonToMove(tribe: Tribe, context: SocietyContext): string | null {

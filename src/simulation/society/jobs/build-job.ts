@@ -11,14 +11,15 @@ import { headTo, type Job, standStill, walk } from "./job.ts";
 type BuildPhase = "travel" | "work";
 
 const EXPEDITION_DISTANCE = 220;
-const LAST_SEASON_FOR_EXPEDITIONS = 2.8;
+const FIRST_SEASON_FOR_EXPEDITIONS = 0.3;
+const LAST_SEASON_FOR_EXPEDITIONS = 2.4;
 
 export function isFarSite(tribe: Tribe, site: Building): boolean {
   return Math.hypot(site.x - tribe.campX, site.z - tribe.campZ) > EXPEDITION_DISTANCE;
 }
 
 export function isExpeditionSeason(season: number): boolean {
-  return season < LAST_SEASON_FOR_EXPEDITIONS;
+  return season >= FIRST_SEASON_FOR_EXPEDITIONS && season < LAST_SEASON_FOR_EXPEDITIONS;
 }
 
 export class BuildJob implements Job {

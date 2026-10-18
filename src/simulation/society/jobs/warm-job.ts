@@ -1,21 +1,20 @@
 import { FULL_TURN } from "../../../shared/math.ts";
 import { aroundPoint } from "../../agents/navigation.ts";
-import type { Building } from "../buildings.ts";
 import type { PersonTick } from "../society-context.ts";
+import type { WarmPlace } from "../warmth.ts";
 import { Errand, headTo, type Job } from "./job.ts";
 
 const WARMING_SECONDS = 18;
 const WARM_ENOUGH = 0.95;
-const FIRESIDE_DISTANCE = 5;
 
 export class WarmJob implements Job {
   readonly kind = "warm";
   readonly #errand: Errand;
 
-  constructor(tick: PersonTick, campfire: Building) {
-    const seat = aroundPoint(campfire, FIRESIDE_DISTANCE, tick.context.random.next() * FULL_TURN);
+  constructor(tick: PersonTick, place: WarmPlace) {
+    const seat = aroundPoint(place.building, place.seat, tick.context.random.next() * FULL_TURN);
 
-    this.#errand = new Errand(WARMING_SECONDS, "sit", campfire);
+    this.#errand = new Errand(WARMING_SECONDS, "sit", place.building);
     headTo(tick.person, seat, tick.context);
   }
 

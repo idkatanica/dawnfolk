@@ -26,6 +26,16 @@ const HEAVY_WORK: ReadonlySet<JobKind> = new Set(["chop", "hunt", "mine", "quarr
 const CRAFTING_WOOD = 8;
 const FIELD_TASK_WEIGHTS: Readonly<Record<FieldTask | "none", number>> = { harvest: 3.6, none: 0, sow: 2.6, tend: 1 };
 const MASONRY_STONE = 24;
+const FIRE_WOOD = 4;
+const LARGEST_BUILDING_PARTY = 4;
+const COLD_SEASON_FIRE_WOOD = 12;
+const AUTUMN = 2;
+
+function expeditionBuilders(tick: PersonTick): number {
+  return tick.context.people
+    .membersOf(tick.tribe)
+    .filter((member) => member.job !== null && member.job.kind === "build" && member.job.isExpedition === true).length;
+}
 
 function constructionSite(tick: PersonTick): Building | null {
   return tick.context.buildings.find(tick.tribe.buildings.constructionSiteId);
@@ -41,10 +51,18 @@ function fieldTaskOf(tick: PersonTick, field: Field): FieldTask | "none" {
   return task;
 }
 
+function fireWoodReserve(season: number): number {
+  if (season >= AUTUMN) {
+    return COLD_SEASON_FIRE_WOOD;
+  }
+
+  return FIRE_WOOD;
+}
+
 function woodNeed(tick: PersonTick): number {
   const { tribe } = tick;
 
-  const fireWood = knows(tribe, "fire") ? 4 : 0;
+  const fireWood = knows(tribe, "fire") ? fireWoodReserve(tick.context.environment.season) : 0;
   const craftWood = knows(tribe, "pottery") ? CRAFTING_WOOD : 0;
 
   const wanted = 6 + constructionNeed(tribe, tick.context, "wood") + fireWood + craftWood;
@@ -79,7 +97,11 @@ const WORK_OPTIONS: readonly WorkOption[] = [
         return 0;
       }
 
-      if (isFarSite(tick.tribe, site) && !isExpeditionSeason(tick.context.environment.season)) {
+      if (!isFarSite(tick.tribe, site)) {
+        return 6;
+      }
+
+      if (!isExpeditionSeason(tick.context.environment.season) || expeditionBuilders(tick) >= LARGEST_BUILDING_PARTY) {
         return 0;
       }
 

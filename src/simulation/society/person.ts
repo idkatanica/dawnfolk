@@ -54,6 +54,7 @@ export interface Person {
   pose: PersonPose;
   rethinkSeconds: number;
   speed: number;
+  strandedDay: number;
   tribeId: number;
   warmth: number;
   weapon: Weapon | null;
@@ -93,6 +94,7 @@ export function createPerson(birth: PersonBirth, random: RandomSource): Person {
     pose: "idle",
     rethinkSeconds: random.next() * 2,
     speed: 0,
+    strandedDay: Number.NEGATIVE_INFINITY,
     tribeId: birth.tribeId,
     warmth: 1,
     weapon: null,

@@ -1,20 +1,14 @@
 import { clamp } from "../../shared/math.ts";
 import { type DeathCause, isChild, NEED_SECONDS, type Person, YEARS_PER_DAY } from "./person.ts";
 import type { PersonTick } from "./society-context.ts";
-import { completedBuilding, litCampfireOf } from "./tribe-places.ts";
+import { chillPerDay, isSheltered } from "./warmth.ts";
 
 const CHILD_HUNGER_RATE = 0.75;
 const ADULT_HUNGER_RATE = 0.95;
 const SLEEP_RECOVERY_PER_DAY = 2.8;
 const TIREDNESS_PER_DAY = 1;
-const COMFORTABLE_TEMPERATURE = 9;
-const WET_COLD_FACTOR = 1.4;
-const WET_WEATHER = 0.3;
-const CHILL_RATE = 0.11;
 const FIRESIDE_WARMING = 3;
 const NATURAL_WARMING = 1;
-const FIRESIDE_RADIUS = 15;
-const SHELTER_RADIUS = 6;
 const STARVING = 0.95;
 const STARVATION_DAMAGE = 0.9;
 const FREEZING = 0.06;
@@ -24,7 +18,6 @@ const WARM_ENOUGH = 0.3;
 const HEALING_PER_DAY = 0.5;
 const BURNING_GROUND = 0.2;
 const BURN_DAMAGE_PER_SECOND = 0.12;
-const DEFAULT_TEMPERATURE = 10;
 
 export function updateNeeds(tick: PersonTick, days: number): DeathCause | null {
   const { person } = tick;
@@ -50,58 +43,21 @@ export function updateNeeds(tick: PersonTick, days: number): DeathCause | null {
 function updateWarmth(tick: PersonTick, days: number, isAsleep: boolean): void {
   const { person } = tick;
 
-  const isComforted = isNearCampfire(tick) || isSleepingAtHome(tick, isAsleep);
-  const coldness = coldnessAt(tick);
+  const chill = chillPerDay(tick);
 
-  if (coldness > 0 && !isComforted) {
-    person.warmth = Math.max(0, person.warmth - days * coldness * CHILL_RATE);
+  if (chill <= 0) {
+    person.warmth = Math.min(1, person.warmth + days * NATURAL_WARMING);
 
     return;
   }
 
-  person.warmth = Math.min(1, person.warmth + days * (isComforted ? FIRESIDE_WARMING : NATURAL_WARMING));
-}
+  if (isSheltered(tick, isAsleep)) {
+    person.warmth = Math.min(1, person.warmth + days * FIRESIDE_WARMING);
 
-function coldnessAt(tick: PersonTick): number {
-  const { environment } = tick.context;
-
-  const temperature = temperatureAround(tick);
-
-  const wetness = environment.precipitation > WET_WEATHER ? WET_COLD_FACTOR : 1;
-
-  return Math.max(0, COMFORTABLE_TEMPERATURE - temperature) * wetness;
-}
-
-function temperatureAround(tick: PersonTick): number {
-  const { environment, world } = tick.context;
-
-  const cell = world.grid.cellAt(tick.person.mover.x, tick.person.mover.z);
-
-  if (cell < 0) {
-    return DEFAULT_TEMPERATURE;
+    return;
   }
 
-  return world.temperature(cell, environment.airTemperatureOffset);
-}
-
-function isNearCampfire(tick: PersonTick): boolean {
-  const campfire = litCampfireOf(tick.tribe, tick.context.buildings);
-
-  if (campfire === null) {
-    return false;
-  }
-
-  return Math.hypot(tick.person.mover.x - campfire.x, tick.person.mover.z - campfire.z) < FIRESIDE_RADIUS;
-}
-
-function isSleepingAtHome(tick: PersonTick, isAsleep: boolean): boolean {
-  const home = completedBuilding(tick.context.buildings, tick.person.homeId);
-
-  if (!isAsleep || home === null) {
-    return false;
-  }
-
-  return Math.hypot(tick.person.mover.x - home.x, tick.person.mover.z - home.z) < SHELTER_RADIUS;
+  person.warmth = Math.max(0, person.warmth - days * chill);
 }
 
 function updateHealth(person: Person, needSeconds: number, days: number): void {
