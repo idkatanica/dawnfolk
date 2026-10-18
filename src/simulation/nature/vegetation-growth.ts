@@ -1,4 +1,5 @@
 import { Biome, isBiomeIndex } from "../../content/biomes.ts";
+import { groundDefinition } from "../../content/grounds.ts";
 import { plantSpeciesDefinition, regrowingSpecies } from "../../content/plants.ts";
 import { isGrowingSeason } from "../../content/seasons.ts";
 import type { WorldRules } from "../../content/world-rules.ts";
@@ -136,6 +137,10 @@ export class VegetationGrowthSystem {
     }
 
     if (world.fields.scorch[cell] > SCORCH_BLOCKING_REGROWTH || world.vegetation.countTreesInCell(cell) > 0) {
+      return false;
+    }
+
+    if (!groundDefinition(world.terrain.ground[cell]).holdsTrees) {
       return false;
     }
 

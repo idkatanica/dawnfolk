@@ -106,6 +106,14 @@ describe("regrowth", () => {
     expect(frozen.vegetation.aliveCount).toBe(0);
   });
 
+  it("keeps trees off sandy banks", () => {
+    const world = createTestWorld({ biome: Biome.Forest, ground: Ground.Sand });
+
+    growFor(world, { days: 2, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
+
+    expect(world.vegetation.aliveCount).toBe(0);
+  });
+
   it("does not sprout on scorched ground", () => {
     const world = createTestWorld({ biome: Biome.Forest, ground: Ground.Forest });
 
