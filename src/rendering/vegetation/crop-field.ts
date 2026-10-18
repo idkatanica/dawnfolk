@@ -33,9 +33,11 @@ import type { MeshData } from "../../models/mesh/mesh-data.ts";
 import {
   buildCropModel,
   buildFenceModel,
+  buildFurrowModel,
   CROP_DETAIL_LEVELS,
   CROP_HEAD_PART,
   type CropDetailLevel,
+  FURROW_RIDGE_TOP,
 } from "../../models/plants/crop-models.ts";
 import { FULL_TURN, hashToUnit } from "../../shared/math.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
@@ -102,6 +104,7 @@ interface InstanceBatch {
 interface FieldCell {
   readonly bounds: Sphere;
   fences: Float32Array;
+  furrows: Float32Array;
   kind: number;
   level: number;
   plants: Float32Array;
@@ -213,6 +216,7 @@ export class CropField {
   readonly #cells = new Map<number, FieldCell>();
   readonly #cropBatches: readonly (readonly InstanceBatch[])[];
   readonly #fenceBatches: readonly InstanceBatch[];
+  readonly #furrowBatches: readonly InstanceBatch[];
   readonly #frustum = new Frustum();
   readonly #matrix = new Matrix4();
   readonly #mirror: WorldMirror;
@@ -232,6 +236,10 @@ export class CropField {
 
     this.#fenceBatches = CROP_DETAIL_LEVELS.map((level: CropDetailLevel) =>
       this.#createBatch(buildFenceModel(mirror.grid.cellSize, level), fenceMaterial, FENCE_FIELDS, true)
+    );
+
+    this.#furrowBatches = CROP_DETAIL_LEVELS.map(() =>
+      this.#createBatch(buildFurrowModel(mirror.grid.cellSize), fenceMaterial, FENCE_FIELDS, false)
     );
 
     this.#scanRows(0, mirror.grid.cellsPerSide - 1, false);
@@ -278,7 +286,7 @@ export class CropField {
   }
 
   dispose(): void {
-    for (const batch of [...this.#cropBatches.flat(), ...this.#fenceBatches]) {
+    for (const batch of [...this.#cropBatches.flat(), ...this.#fenceBatches, ...this.#furrowBatches]) {
       batch.geometry.dispose();
     }
   }
@@ -345,7 +353,7 @@ export class CropField {
     const code = this.#groundAt(column, row, GroundChannel.CropKind);
     const kind = cropOfCode(code);
 
-    const isShown = this.#isFarm(column, row) && (kind !== null || isFencedCode(code));
+    const isShown = this.#isFarm(column, row);
 
     if (!isShown) {
       if (this.#cells.delete(cell)) {
@@ -408,6 +416,7 @@ export class CropField {
     return {
       bounds: new Sphere(center, grid.cellSize * CELL_RADIUS_SHARE + 1),
       fences: this.#fenceInstances(sides),
+      furrows: this.#furrowInstances(column, row),
       kind: kind === null ? HIDDEN : CROP_KINDS.indexOf(kind),
       level: HIDDEN,
       plants: kind === null ? new Float32Array(0) : this.#plantInstances(column, row, kind, growth),
@@ -423,8 +432,7 @@ export class CropField {
     const cell = grid.index(column, row);
     const kindIndex = CROP_KINDS.indexOf(kind);
 
-    const isAlongX =
-      hashToUnit(Math.floor(column / ORIENTATION_BLOCK), Math.floor(row / ORIENTATION_BLOCK), ORIENTATION_SALT) < 0.5;
+    const isAlongX = areRowsAlongX(column, row);
     const rows = Math.floor((half * 2) / ROW_SPACING) + 1;
     const perRow = Math.floor((half * 2) / spacing) + 1;
     const data = new Float32Array(rows * perRow * FLOATS_PER_PLANT);
@@ -443,7 +451,7 @@ export class CropField {
         data.set(
           [
             x,
-            this.#mirror.heightAt(x, z) - CROP_SINK,
+            this.#mirror.heightAt(x, z) + FURROW_RIDGE_TOP - CROP_SINK,
             z,
             hashToUnit(cell, line + 0.75, plant) * FULL_TURN,
             growth,
@@ -455,6 +463,43 @@ export class CropField {
         );
         offset += FLOATS_PER_PLANT;
       }
+    }
+
+    return data;
+  }
+
+  #furrowInstances(column: number, row: number): Float32Array {
+    const { grid } = this.#mirror;
+
+    const half = grid.cellSize / 2;
+    const inner = half - FIELD_MARGIN;
+    const isAlongX = areRowsAlongX(column, row);
+    const rows = Math.floor((inner * 2) / ROW_SPACING) + 1;
+    const centerX = grid.centerX(column);
+    const centerZ = grid.centerZ(row);
+    const data = new Float32Array(rows * FLOATS_PER_FENCE);
+
+    for (let line = 0; line < rows; line += 1) {
+      const across = -inner + line * ROW_SPACING;
+
+      const fromX = isAlongX ? centerX - half : centerX + across;
+      const fromZ = isAlongX ? centerZ + across : centerZ - half;
+      const toX = isAlongX ? centerX + half : centerX + across;
+      const toZ = isAlongX ? centerZ + across : centerZ + half;
+
+      data.set(
+        [
+          fromX,
+          fromZ,
+          this.#mirror.heightAt(fromX, fromZ),
+          Math.atan2(-(toZ - fromZ), toX - fromX),
+          this.#mirror.heightAt(toX, toZ),
+          0,
+          0,
+          0,
+        ],
+        line * FLOATS_PER_FENCE
+      );
     }
 
     return data;
@@ -509,7 +554,23 @@ export class CropField {
         FLOATS_PER_FENCE
       );
     }
+
+    for (const [level, batch] of this.#furrowBatches.entries()) {
+      const sources = fields.filter((field) => field.level === level);
+
+      fill(
+        batch,
+        sources.map((field) => field.furrows),
+        FLOATS_PER_FENCE
+      );
+    }
   }
+}
+
+function areRowsAlongX(column: number, row: number): boolean {
+  return (
+    hashToUnit(Math.floor(column / ORIENTATION_BLOCK), Math.floor(row / ORIENTATION_BLOCK), ORIENTATION_SALT) < 0.5
+  );
 }
 
 function fill(batch: InstanceBatch, sources: readonly Float32Array[], stride: number): void {

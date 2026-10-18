@@ -4,8 +4,8 @@ import { FULL_TURN, hashToUnit, saturate } from "../../shared/math.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { MeshBuilder, type VertexStyle } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
-import type { Shape } from "../mesh/shape.ts";
-import { cylinder, lathe, type TubePoint, tube } from "../mesh/shapes.ts";
+import { deformShape, type Shape } from "../mesh/shape.ts";
+import { box, cylinder, lathe, type TubePoint, tube } from "../mesh/shapes.ts";
 import { segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
 
 export type CropDetailLevel = "high" | "low";
@@ -32,6 +32,13 @@ const FENCE_POST_SINK = 0.25;
 const FENCE_POST_TOP = 0.95;
 const FENCE_RAIL_RADIUS = 0.035;
 const FENCE_RAIL_HEIGHTS: readonly number[] = [0.42, 0.8];
+const FURROW_WIDTH = 0.9;
+const FURROW_TOP_SHARE = 0.4;
+const FURROW_HEIGHT = 0.16;
+const FURROW_SINK = 0.07;
+
+export const FURROW_RIDGE_TOP = FURROW_HEIGHT - FURROW_SINK;
+const FURROW_END_GAP = 0.3;
 
 interface LeafPlacement {
   readonly angle: number;
@@ -346,6 +353,24 @@ export function buildFenceModel(length: number, level: CropDetailLevel): MeshDat
       { style: { shade: 0.92 }, transform: segmentTransform([0, height, 0], [length, height, 0]) }
     );
   }
+
+  return builder.build();
+}
+
+export function buildFurrowModel(length: number): MeshData {
+  const builder = new MeshBuilder({ slot: MaterialSlot.Bark });
+  const ridge = length - FURROW_END_GAP * 2;
+
+  const shape = deformShape(box(ridge, FURROW_HEIGHT, FURROW_WIDTH), (vertex) => [
+    0,
+    0,
+    vertex.y > 0 ? -vertex.z * (1 - FURROW_TOP_SHARE) : 0,
+  ]);
+
+  builder.add(shape, {
+    style: { shade: (point) => (point.normal.y > 0.5 ? 1 : 0.82) },
+    transform: transformOf({ position: [length / 2, FURROW_HEIGHT / 2 - FURROW_SINK, 0] }),
+  });
 
   return builder.build();
 }
