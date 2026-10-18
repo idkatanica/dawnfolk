@@ -68,7 +68,6 @@ export class PeopleView {
   readonly #blendedPose = new Pose(HUMAN_BONE_COUNT);
   readonly #bounds = new Sphere(new Vector3(), BOUNDING_RADIUS);
   readonly #palette = new AgentPalette(paletteWidth(PERSON_LAYOUT));
-  #uploadedRows = 0;
   readonly #pose = new Pose(HUMAN_BONE_COUNT);
   readonly #poser = new SkeletonPoser(HUMAN_SKELETON);
   readonly #previousPose = new Pose(HUMAN_BONE_COUNT);
@@ -77,6 +76,7 @@ export class PeopleView {
   readonly #tribes = new Map<number, TribeLook>();
   readonly #visuals = new Map<number, PersonVisual>();
   #figureCount = 0;
+  #uploadedRows = 0;
 
   constructor() {
     const material = createSkinnedMaterial(this.#palette, PERSON_LAYOUT);
@@ -100,9 +100,8 @@ export class PeopleView {
 
   update(input: AgentViewInput): void {
     const { frame } = input.mirror;
-    const seen = this.#seen;
 
-    seen.clear();
+    this.#seen.clear();
     this.#rememberTribes(frame.tribes);
     this.#batches.begin();
 
@@ -111,9 +110,7 @@ export class PeopleView {
     for (let person = 0; person < frame.personCount; person += 1) {
       const offset = person * PERSON_STRIDE;
 
-      const id = frame.people[offset + PersonField.Id];
-
-      seen.add(id);
+      this.#seen.add(frame.people[offset + PersonField.Id]);
 
       if (this.#drawPerson(input, offset, rows)) {
         rows += 1;
@@ -121,8 +118,9 @@ export class PeopleView {
     }
 
     this.#figureCount = rows;
-    this.#forgetMissing(seen);
+    this.#forgetMissing();
     this.#batches.commit();
+
     if (rows > 0 || this.#uploadedRows > 0) {
       this.#palette.upload();
     }
@@ -221,6 +219,7 @@ export class PeopleView {
 
   #writeRoot(row: number, x: number, y: number, z: number, heading: number): void {
     const { data } = this.#palette;
+
     const offset = this.#palette.texelOffset(row, rootTexel(PERSON_LAYOUT));
 
     data[offset] = x;
@@ -260,14 +259,12 @@ export class PeopleView {
       tribe: this.#tribeLook(tribeId),
     });
 
-    const motion = this.#motionFor(existing, people, offset);
-
     const visual: PersonVisual = {
       appearance,
       appearanceKey: key,
       baseParts: appearanceParts(appearance).map((part) => humanPartIndex(part)),
       colors: colorsOf(appearance),
-      motion,
+      motion: this.#motionFor(existing, people, offset),
       scales: humanBoneScales(appearance.body),
     };
 
@@ -306,9 +303,9 @@ export class PeopleView {
     }
   }
 
-  #forgetMissing(seen: ReadonlySet<number>): void {
+  #forgetMissing(): void {
     for (const id of this.#visuals.keys()) {
-      if (!seen.has(id)) {
+      if (!this.#seen.has(id)) {
         this.#visuals.delete(id);
       }
     }

@@ -79,6 +79,10 @@ export class GodCamera {
     return { ...this.#current };
   }
 
+  get target(): Vector3 {
+    return this.#targetCopy.copy(this.#target);
+  }
+
   groundFootprint(reach: number): GroundPoint[] {
     const { camera } = this;
 
@@ -89,10 +93,6 @@ export class GodCamera {
 
       return groundPointAlong(camera.position, direction, this.#targetHeight, reach);
     });
-  }
-
-  get target(): Vector3 {
-    return this.#targetCopy.copy(this.#target);
   }
 
   jumpTo(state: Partial<CameraState>): void {
@@ -141,6 +141,7 @@ export class GodCamera {
     this.#follow = null;
 
     const { yaw } = this.#current;
+
     const metersPerPixel = (2 * this.#goal.distance * Math.tan((this.camera.fov * Math.PI) / 360)) / viewportHeight;
     const slant = Math.max(0.35, Math.sin(this.#current.pitch) * 0.6 + 0.4);
 

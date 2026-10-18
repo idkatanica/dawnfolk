@@ -324,6 +324,7 @@ export class Blessing implements ActiveEffect {
     this.#age += seconds;
 
     const [red, green, blue] = BLESSING_COLORS[this.#effect.style];
+
     const fade = smoothstep(0, 0.3, this.#age) * (1 - smoothstep(1.8, BLESSING_SECONDS, this.#age));
 
     for (let sparkle = 0; sparkle < SPARKLES; sparkle += 1) {

@@ -37,7 +37,7 @@ import {
   type Vector3,
 } from "three/webgpu";
 import { fallsAsSnow, type WeatherKind } from "../../content/weather.ts";
-import { clamp as clampNumber } from "../../shared/math.ts";
+import { fractionalPart, saturate } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
@@ -73,7 +73,7 @@ export function precipitationOf(kind: WeatherKind, temperature: number): Precipi
 }
 
 export function precipitationStrength(precipitation: number): number {
-  return clampNumber((precipitation - LIGHTEST_PRECIPITATION) / (1 - LIGHTEST_PRECIPITATION), 0, 1);
+  return saturate((precipitation - LIGHTEST_PRECIPITATION) / (1 - LIGHTEST_PRECIPITATION));
 }
 
 interface PrecipitationLook {
@@ -116,14 +116,14 @@ const LOOKS: Readonly<Record<Precipitation, PrecipitationLook>> = {
   },
 };
 
-export interface WeatherView {
+interface WeatherView {
   readonly camera: PerspectiveCamera;
   readonly focus: Vector3;
   readonly realSeconds: number;
   readonly viewDistance: number;
 }
 
-export interface Precipitating {
+interface Precipitating {
   readonly brightness: number;
   readonly form: Precipitation;
   readonly precipitation: number;
@@ -338,7 +338,7 @@ export class WeatherParticles {
     const uniforms = this.#uniforms;
 
     uniforms.fallen.value = this.#fallen;
-    uniforms.driftShare.value.set(this.#drift.x - Math.floor(this.#drift.x), this.#drift.y - Math.floor(this.#drift.y));
+    uniforms.driftShare.value.set(fractionalPart(this.#drift.x), fractionalPart(this.#drift.y));
     uniforms.focus.value.set(view.focus.x, view.focus.z);
     uniforms.span.value = span;
     uniforms.reach.value = span / 2;

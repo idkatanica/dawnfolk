@@ -13,7 +13,15 @@ import {
   varying,
   vec3,
 } from "three/tsl";
-import { Color, Group, Mesh, MeshStandardNodeMaterial, Sphere, Vector3 } from "three/webgpu";
+import {
+  Color,
+  Group,
+  type InstancedBufferGeometry,
+  Mesh,
+  MeshStandardNodeMaterial,
+  Sphere,
+  Vector3,
+} from "three/webgpu";
 import { BUILDING_KINDS, BUILDINGS, type BuildingKind } from "../../content/buildings.ts";
 import { MaterialSlot } from "../../models/materials.ts";
 import { buildBuildingModel, GLOW_PART } from "../../models/structures/building-models.ts";
@@ -40,7 +48,7 @@ const FLOATS_PER_BUILDING = 12;
 
 interface BuildingBatch {
   count: number;
-  readonly geometry: ReturnType<typeof geometryFromMeshData>;
+  readonly geometry: InstancedBufferGeometry;
   readonly instances: InterleavedInstances;
   readonly mesh: Mesh;
 }

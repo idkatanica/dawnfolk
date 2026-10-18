@@ -61,16 +61,16 @@ function overlaps(region: CellRegion, corner: PatchCorner): boolean {
 
 export class PatchGrid {
   readonly group = new Group();
+  readonly #chosenLevels: Int8Array;
   readonly #counts: number[];
   readonly #frustum = new Frustum();
-  readonly #chosenLevels: Int8Array;
-  readonly #previousLevels: Int8Array;
   readonly #grid: WorldGrid;
   readonly #levelDistances: readonly number[];
   readonly #levels: readonly PatchLevel[];
   readonly #matrix = new Matrix4();
   readonly #measure: PatchMeasure;
   readonly #patches: Patch[] = [];
+  readonly #previousLevels: Int8Array;
 
   constructor(grid: WorldGrid, measure: PatchMeasure, options: PatchGridOptions) {
     const patchesPerSide = Math.ceil(grid.cellsPerSide / PATCH_CELLS);

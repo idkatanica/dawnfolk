@@ -54,6 +54,7 @@ function cellTexture(data: Float32Array | Uint8Array, size: number, type: Textur
 
 function lushnessData(mirror: WorldMirror): Float32Array {
   const { moisture, variation } = mirror.terrain;
+
   const data = new Float32Array(mirror.grid.cellCount * 2);
 
   for (let cell = 0; cell < mirror.grid.cellCount; cell += 1) {

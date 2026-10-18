@@ -54,6 +54,7 @@ export class HumanStrides {
 
   #strideScale(appearance: PersonAppearance): number {
     const { body, motion } = appearance;
+
     const ageFactor = appearance.ageGroup === "elder" ? ELDER_STRIDE : 1;
 
     return body.height * body.legLength * motion.stride * ageFactor;

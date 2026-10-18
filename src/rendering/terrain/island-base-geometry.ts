@@ -40,7 +40,7 @@ interface BaseOutline {
   readonly undersideRadius: number;
 }
 
-export interface IslandBaseGeometry {
+interface IslandBaseGeometry {
   readonly cliff: BufferGeometry;
   readonly plinth: number;
   readonly underside: BufferGeometry;
@@ -252,7 +252,6 @@ function buildUnderside(outline: BaseOutline): BufferGeometry {
   const tip = positions.length / 3;
 
   positions.push(0, outline.plinth - UNDERSIDE_DEPTH * 1.12, 0);
-
   pushStitch(indices, outline.points.length, stride, rings.length);
   pushStrips(indices, coarsePoints.length, rings.length, outline.points.length);
 
