@@ -64,6 +64,7 @@ export class PatchGrid {
   readonly #counts: number[];
   readonly #frustum = new Frustum();
   readonly #chosenLevels: Int8Array;
+  readonly #previousLevels: Int8Array;
   readonly #grid: WorldGrid;
   readonly #levelDistances: readonly number[];
   readonly #levels: readonly PatchLevel[];
@@ -82,6 +83,7 @@ export class PatchGrid {
     this.#levels = PATCH_STEPS.map((step) => this.#createLevel(step, patchCount, options));
     this.#counts = this.#levels.map(() => 0);
     this.#chosenLevels = new Int8Array(patchCount).fill(NO_LEVEL);
+    this.#previousLevels = new Int8Array(patchCount).fill(NO_LEVEL);
 
     for (let row = 0; row < patchesPerSide; row += 1) {
       for (let column = 0; column < patchesPerSide; column += 1) {
@@ -103,6 +105,7 @@ export class PatchGrid {
   }
 
   update(camera: PerspectiveCamera, detail: number, sharedLevels?: Readonly<Int8Array>): void {
+    this.#previousLevels.set(this.#chosenLevels);
     this.#counts.fill(0);
     this.#chosenLevels.fill(NO_LEVEL);
     this.#frustum.setFromProjectionMatrix(
@@ -126,10 +129,15 @@ export class PatchGrid {
       this.#counts[level] = slot + 1;
     }
 
+    const hasChanged = this.#chosenLevels.some((level, index) => level !== this.#previousLevels[index]);
+
     for (const [index, level] of this.#levels.entries()) {
       level.geometry.instanceCount = this.#counts[index];
       level.mesh.visible = this.#counts[index] > 0;
-      level.origins.needsUpdate = true;
+
+      if (hasChanged) {
+        level.origins.needsUpdate = true;
+      }
     }
   }
 

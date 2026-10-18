@@ -91,6 +91,7 @@ export class AnimalView {
   readonly #bounds = new Sphere(new Vector3(), BOUNDING_RADIUS);
   readonly #kinds: Readonly<Record<AnimalKind, AnimalKindView>>;
   readonly #palette = new AgentPalette(paletteWidth(ANIMAL_LAYOUT));
+  #uploadedRows = 0;
   readonly #pose = new Pose(MAMMOTH_BONE_COUNT);
   readonly #previousPose = new Pose(MAMMOTH_BONE_COUNT);
   readonly #seen = new Set<number>();
@@ -137,7 +138,11 @@ export class AnimalView {
       this.#kinds[kind].batches.commit();
     }
 
-    this.#palette.upload();
+    if (rows > 0 || this.#uploadedRows > 0) {
+      this.#palette.upload();
+    }
+
+    this.#uploadedRows = rows;
   }
 
   dispose(): void {

@@ -67,6 +67,7 @@ export class PeopleView {
   readonly #blendedPose = new Pose(HUMAN_BONE_COUNT);
   readonly #bounds = new Sphere(new Vector3(), BOUNDING_RADIUS);
   readonly #palette = new AgentPalette(paletteWidth(PERSON_LAYOUT));
+  #uploadedRows = 0;
   readonly #pose = new Pose(HUMAN_BONE_COUNT);
   readonly #poser = new SkeletonPoser(HUMAN_SKELETON);
   readonly #previousPose = new Pose(HUMAN_BONE_COUNT);
@@ -121,7 +122,11 @@ export class PeopleView {
     this.#figureCount = rows;
     this.#forgetMissing(seen);
     this.#batches.commit();
-    this.#palette.upload();
+    if (rows > 0 || this.#uploadedRows > 0) {
+      this.#palette.upload();
+    }
+
+    this.#uploadedRows = rows;
   }
 
   dispose(): void {
