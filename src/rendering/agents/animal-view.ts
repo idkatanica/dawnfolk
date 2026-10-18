@@ -171,11 +171,13 @@ export class AnimalView {
   }
 
   #createKindView(kind: AnimalKind, material: MeshStandardNodeMaterial): AnimalKindView {
+    const farParts = buildAnimalParts(kind, "far");
+
     const batches = new PartBatches(
       [
-        { castsShadow: true, parts: buildAnimalParts(kind, "high") },
-        { castsShadow: false, parts: buildAnimalParts(kind, "low") },
-        { castsShadow: false, parts: buildAnimalParts(kind, "far") },
+        { parts: buildAnimalParts(kind, "high"), shadowParts: farParts },
+        { parts: buildAnimalParts(kind, "low"), shadowParts: null },
+        { parts: farParts, shadowParts: null },
       ],
       material
     );

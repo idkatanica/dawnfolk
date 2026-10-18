@@ -97,11 +97,13 @@ export class PeopleView {
   constructor() {
     const material = createSkinnedMaterial(this.#palette, PERSON_LAYOUT);
 
+    const farParts = buildHumanParts(HUMAN_DETAILS.far);
+
     this.#batches = new PartBatches(
       [
-        { castsShadow: true, parts: buildHumanParts(HUMAN_DETAILS.high) },
-        { castsShadow: false, parts: buildHumanParts(HUMAN_DETAILS.low) },
-        { castsShadow: false, parts: buildHumanParts(HUMAN_DETAILS.far) },
+        { parts: buildHumanParts(HUMAN_DETAILS.high), shadowParts: farParts },
+        { parts: buildHumanParts(HUMAN_DETAILS.low), shadowParts: null },
+        { parts: farParts, shadowParts: null },
       ],
       material
     );

@@ -2,6 +2,7 @@ import { fog, uniform } from "three/tsl";
 import { Color, DirectionalLight, Group, HemisphereLight, type Scene, Vector3 } from "three/webgpu";
 import { type Direction, moonDirection, sunDirection } from "../../shared/astronomy.ts";
 import { clamp, lerp, saturate, smoothstep } from "../../shared/math.ts";
+import { SHADOW_ONLY_LAYER } from "../shadow-only-layer.ts";
 import { CloudSea } from "./cloud-sea.ts";
 import { fogShapeFor, HeightFog } from "./height-fog.ts";
 import { SkyDome } from "./sky-dome.ts";
@@ -56,6 +57,7 @@ export class Atmosphere {
     this.sun.shadow.mapSize.set(options.shadowMapSize, options.shadowMapSize);
     this.sun.shadow.bias = -0.0003;
     this.sun.shadow.normalBias = LEAST_NORMAL_BIAS;
+    this.sun.shadow.camera.layers.enable(SHADOW_ONLY_LAYER);
 
     this.hemisphere = new HemisphereLight(0xb6_d2_ee, 0x7a_72_5a, 1.2);
 
