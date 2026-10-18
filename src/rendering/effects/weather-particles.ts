@@ -7,15 +7,18 @@ import {
   distance,
   dot,
   float,
-  fract,
-  hash,
-  instanceIndex,
+  floor,
+  ivec2,
   length,
+  max,
   mix,
   normalize,
+  select,
   sin,
   smoothstep,
+  textureLoad,
   time,
+  uint,
   uniform,
   varying,
   vec2,
@@ -24,26 +27,40 @@ import {
 import {
   Color,
   Float32BufferAttribute,
+  Group,
   InstancedBufferGeometry,
   Mesh,
   MeshBasicNodeMaterial,
   type PerspectiveCamera,
   Uint16BufferAttribute,
   Vector2,
-  Vector3,
+  type Vector3,
 } from "three/webgpu";
 import { fallsAsSnow, type WeatherKind } from "../../content/weather.ts";
 import { clamp as clampNumber } from "../../shared/math.ts";
+import type { WorldGrid } from "../../world/world-grid.ts";
+import { sampleHeightNode } from "../terrain/height-sampling.ts";
+import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import type { CameraAxes } from "./billboards.ts";
+import { type LatticeArea, LatticeCover, latticeElement, scramble, unitHash } from "./precipitation-lattice.ts";
 
 const NEAREST_SPAN = 70;
 const SPAN_PER_DISTANCE = 1.6;
-const HEIGHT_PER_SPAN = 0.45;
-const NATURAL_SPAN = 96;
-const SHARE_BELOW_FOCUS = 0.25;
-const MAXIMUM_DROPS = 20_000;
+const NATURAL_VIEW = 60;
+const NATURAL_SPAN = NATURAL_VIEW * SPAN_PER_DISTANCE;
+const TILE_SIZE = 12;
+const COLUMN_HEIGHT = 43;
+const DROPS_PER_TILE = 312;
+const RANGE_FADE_START = 0.72;
 const LIGHTEST_PRECIPITATION = 0.04;
-const RANDOMS_PER_DROP = 4;
+const FAINTEST_DROP = 0.002;
+const CYCLES = 256;
+const SALT_OCTAVE = 0x9e_37_79_b9;
+const SALT_PHASE = 0x3c_6e_f3_72;
+const SALT_VARIETY = 0xa5_4f_f5_3a;
+const SALT_CYCLE = 0x51_0e_52_7f;
+const SALT_ACROSS = 0x9b_05_68_8c;
+const SALT_ALONG = 0x1f_83_d9_ab;
 
 export type Precipitation = "rain" | "snow";
 
@@ -61,7 +78,6 @@ export function precipitationStrength(precipitation: number): number {
 
 interface PrecipitationLook {
   readonly color: number;
-  readonly countShare: number;
   readonly fallSpeed: number;
   readonly longest: number;
   readonly opacity: number;
@@ -76,7 +92,6 @@ interface PrecipitationLook {
 const LOOKS: Readonly<Record<Precipitation, PrecipitationLook>> = {
   rain: {
     color: 0xc8_d2_de,
-    countShare: 1,
     fallSpeed: 26,
     longest: 0.04,
     opacity: 0.5,
@@ -89,7 +104,6 @@ const LOOKS: Readonly<Record<Precipitation, PrecipitationLook>> = {
   },
   snow: {
     color: 0xff_ff_ff,
-    countShare: 1,
     fallSpeed: 2.6,
     longest: 0.011,
     opacity: 0.9,
@@ -117,6 +131,32 @@ export interface Precipitating {
   readonly windZ: number;
 }
 
+class DropUniforms {
+  readonly color = uniform(new Color());
+  readonly driftShare = uniform(new Vector2());
+  readonly fallen = uniform(0);
+  readonly focus = uniform(new Vector2());
+  readonly isSnow = uniform(0);
+  readonly longest = uniform(LOOKS.rain.longest);
+  readonly opacity = uniform(LOOKS.rain.opacity);
+  readonly reach = uniform(NEAREST_SPAN / 2);
+  readonly shortest = uniform(LOOKS.rain.shortest);
+  readonly size = uniform(LOOKS.rain.size);
+  readonly slant = uniform(new Vector2());
+  readonly span = uniform(NEAREST_SPAN);
+  readonly sway = uniform(0);
+  readonly thickest = uniform(LOOKS.rain.thickest);
+  readonly thinnest = uniform(LOOKS.rain.thinnest);
+  readonly viewportSpan = uniform(1);
+}
+
+interface DropSources {
+  readonly axes: CameraAxes;
+  readonly grid: WorldGrid;
+  readonly textures: TerrainTextures;
+  readonly uniforms: DropUniforms;
+}
+
 function createDropGeometry(): InstancedBufferGeometry {
   const geometry = new InstancedBufferGeometry();
 
@@ -128,80 +168,98 @@ function createDropGeometry(): InstancedBufferGeometry {
   return geometry;
 }
 
-export class WeatherParticles {
+class DropOctave {
   readonly mesh: Mesh;
-  readonly #anchor = uniform(new Vector3());
-  readonly #color = uniform(new Color());
-  readonly #drift = uniform(new Vector2());
-  readonly #fallen = uniform(0);
+  readonly #cover = new LatticeCover();
   readonly #geometry = createDropGeometry();
-  readonly #height = uniform(NEAREST_SPAN * HEIGHT_PER_SPAN);
-  readonly #isSnow = uniform(0);
-  readonly #longest = uniform(LOOKS.rain.longest);
-  readonly #opacity = uniform(LOOKS.rain.opacity);
+  readonly #level = uniform(0);
+  readonly #material = new MeshBasicNodeMaterial({ depthWrite: false, fog: false, transparent: true });
   readonly #scale = uniform(1);
-  readonly #shortest = uniform(LOOKS.rain.shortest);
-  readonly #size = uniform(LOOKS.rain.size);
-  readonly #slant = uniform(new Vector2());
-  readonly #span = uniform(NEAREST_SPAN);
-  readonly #sway = uniform(0);
-  readonly #thickest = uniform(LOOKS.rain.thickest);
-  readonly #thinnest = uniform(LOOKS.rain.thinnest);
-  readonly #viewportSpan = uniform(1);
 
-  constructor(axes: CameraAxes) {
-    const material = new MeshBasicNodeMaterial({ depthWrite: false, fog: false, transparent: true });
+  constructor({ axes, grid, textures, uniforms }: DropSources) {
+    const material = this.#material;
     const corner = attribute("dropCorner", "vec2");
-    const first = instanceIndex.mul(RANDOMS_PER_DROP);
-    const random = (salt: number) => hash(first.add(salt));
+    const last = grid.cellsPerSide - 1;
+    const scale = this.#scale;
 
-    const span = this.#span;
-    const height = this.#height;
+    const element = latticeElement(this.#cover, uint(this.#level).mul(SALT_OCTAVE));
 
-    const spread = vec2(random(0), random(1));
-    const phase = random(2);
-    const variety = random(3);
+    const phase = unitHash(element.seed, SALT_PHASE);
+    const variety = unitHash(element.seed, SALT_VARIETY);
+    const tileSize = scale.mul(TILE_SIZE);
+    const columnHeight = scale.mul(COLUMN_HEIGHT);
 
-    const around = fract(spread.add(this.#drift).sub(this.#anchor.xz.div(span)).add(0.5)).sub(0.5);
-    const fall = fract(phase.add(this.#fallen));
+    const progress = phase.add(uniforms.fallen);
+
+    const cycle = floor(progress);
+
+    const fall = progress.sub(cycle);
+    const cycleSeed = scramble(
+      element.seed.add(
+        uint(cycle)
+          .bitAnd(CYCLES - 1)
+          .mul(SALT_CYCLE)
+      )
+    );
+
+    const spread = vec2(unitHash(cycleSeed, SALT_ACROSS), unitHash(cycleSeed, SALT_ALONG));
+    const height = columnHeight.mul(float(1).sub(fall));
     const swirl = vec2(sin(time.mul(0.9).add(phase.mul(40))), cos(time.mul(0.7).add(variety.mul(30))));
 
-    const offset = around.mul(span).add(swirl.mul(this.#sway));
-    const altitude = float(1).sub(fall).sub(SHARE_BELOW_FOCUS).mul(height);
+    const place = element.tile.add(spread).add(uniforms.driftShare).mul(tileSize);
+    const wander = swirl.mul(uniforms.sway).mul(scale);
 
-    const center = vec3(this.#anchor.x.add(offset.x), this.#anchor.y.add(altitude), this.#anchor.z.add(offset.y));
+    const landing = place.add(uniforms.slant.mul(height));
 
-    const viewportMeters = distance(center, cameraPosition).mul(this.#viewportSpan);
-    const natural = this.#size.mul(this.#scale).mul(variety.mul(0.6).add(0.7));
-    const streakAxis = normalize(vec3(this.#slant.x.negate(), 1, this.#slant.y.negate()));
+    const cell = ivec2(clamp(floor(landing.add(grid.halfSize).div(grid.cellSize)), vec2(0, 0), vec2(last, last)));
+
+    const surface = max(sampleHeightNode(textures.height, grid, landing), textureLoad(textures.water, cell).x);
+
+    const center = vec3(place.x.add(wander.x), surface.add(height), place.y.add(wander.y));
+
+    const viewportMeters = distance(center, cameraPosition).mul(uniforms.viewportSpan);
+    const natural = uniforms.size.mul(scale).mul(variety.mul(0.6).add(0.7));
+    const streakAxis = normalize(vec3(uniforms.slant.x.negate(), 1, uniforms.slant.y.negate()));
+    const isOnIsland = max(abs(landing.x), abs(landing.y)).lessThan(grid.halfSize);
 
     const streakLength = clamp(
-      natural.mul(mix(float(60), float(1), this.#isSnow)),
-      viewportMeters.mul(this.#shortest),
-      viewportMeters.mul(this.#longest)
+      natural.mul(mix(float(60), float(1), uniforms.isSnow)),
+      viewportMeters.mul(uniforms.shortest),
+      viewportMeters.mul(uniforms.longest)
     );
-    const width = clamp(natural, viewportMeters.mul(this.#thinnest), viewportMeters.mul(this.#thickest));
-    const axis = normalize(mix(streakAxis, axes.up, this.#isSnow));
+    const width = clamp(natural, viewportMeters.mul(uniforms.thinnest), viewportMeters.mul(uniforms.thickest));
+    const axis = normalize(mix(streakAxis, axes.up, uniforms.isSnow));
 
     const side = normalize(axes.right.sub(axis.mul(dot(axes.right, axis))));
 
-    material.positionNode = center
-      .add(side.mul(corner.x.mul(width)))
-      .add(axis.mul(corner.y.sub(0.5).mul(mix(streakLength, width, this.#isSnow))));
+    const slabFade = smoothstep(0, 0.12, fall);
+    const rangeFade = smoothstep(
+      uniforms.reach,
+      uniforms.reach.mul(RANGE_FADE_START),
+      length(place.sub(uniforms.focus))
+    );
+    const lensFade = smoothstep(uniforms.span.mul(0.015), uniforms.span.mul(0.05), distance(center, cameraPosition));
 
-    const slabFade = smoothstep(0, 0.12, fall).mul(smoothstep(1, 0.85, fall));
-    const rangeFade = smoothstep(0.5, 0.36, length(around));
-    const lensFade = smoothstep(span.mul(0.015), span.mul(0.05), distance(center, cameraPosition));
+    const visibility = element.presence
+      .mul(slabFade)
+      .mul(rangeFade)
+      .mul(lensFade)
+      .mul(select(isOnIsland, float(1), float(0)));
+
+    const extent = select(visibility.greaterThan(FAINTEST_DROP), float(1), float(0));
+    const rise = corner.y.sub(uniforms.isSnow.mul(0.5)).mul(mix(streakLength, width, uniforms.isSnow));
+
+    material.positionNode = center.add(side.mul(corner.x.mul(width).mul(extent))).add(axis.mul(rise.mul(extent)));
 
     const shape = varying(corner, "dropCorner");
-    const fade = varying(slabFade.mul(rangeFade).mul(lensFade), "dropFade");
+    const fade = varying(visibility, "dropFade");
 
     const across = smoothstep(0.5, 0.15, abs(shape.x));
     const streak = across.mul(smoothstep(0, 0.15, shape.y)).mul(smoothstep(1, 0.35, shape.y));
     const flake = smoothstep(0.5, 0.2, length(vec2(shape.x, shape.y.sub(0.5))));
 
-    material.colorNode = this.#color;
-    material.opacityNode = mix(streak, flake, this.#isSnow).mul(fade).mul(this.#opacity);
+    material.colorNode = uniforms.color;
+    material.opacityNode = mix(streak, flake, uniforms.isSnow).mul(fade).mul(uniforms.opacity);
 
     this.mesh = new Mesh(this.#geometry, material);
     this.mesh.frustumCulled = false;
@@ -209,50 +267,96 @@ export class WeatherParticles {
     this.mesh.visible = false;
   }
 
-  update(weather: Precipitating, view: WeatherView): void {
-    const strength = precipitationStrength(weather.precipitation);
-    const look = LOOKS[weather.form];
+  cover(level: number, shown: number, area: LatticeArea, drift: Vector2): void {
+    const scale = 2 ** level;
 
-    const count = Math.round(strength * MAXIMUM_DROPS * look.countShare);
-
-    this.#geometry.instanceCount = count;
-    this.mesh.visible = count > 0;
-
-    if (count === 0) {
-      return;
-    }
-
-    const span = Math.max(NEAREST_SPAN, view.viewDistance * SPAN_PER_DISTANCE);
-    const scale = Math.max(1, span / NATURAL_SPAN);
-    const height = span * HEIGHT_PER_SPAN;
-    const seconds = view.realSeconds;
-
-    const driftX = weather.windX * look.windShare * scale;
-    const driftZ = weather.windZ * look.windShare * scale;
-
-    this.#anchor.value.copy(view.focus);
-    this.#span.value = span;
-    this.#height.value = height;
+    this.#level.value = level;
     this.#scale.value = scale;
-    this.#fallen.value = (this.#fallen.value + (look.fallSpeed * scale * seconds) / height) % 1;
-    this.#drift.value.set(
-      (this.#drift.value.x + (driftX * seconds) / span) % 1,
-      (this.#drift.value.y + (driftZ * seconds) / span) % 1
-    );
-    this.#slant.value.set(driftX / (look.fallSpeed * scale), driftZ / (look.fallSpeed * scale));
-    this.#viewportSpan.value = 2 * Math.tan((view.camera.fov * Math.PI) / 360);
-    this.#isSnow.value = weather.form === "snow" ? 1 : 0;
-    this.#color.value.setHex(look.color).multiplyScalar(weather.brightness);
-    this.#opacity.value = look.opacity * (0.55 + strength * 0.45);
-    this.#size.value = look.size;
-    this.#sway.value = look.sway * scale;
-    this.#shortest.value = look.shortest;
-    this.#longest.value = look.longest;
-    this.#thinnest.value = look.thinnest;
-    this.#thickest.value = look.thickest;
+    this.#cover.cover(area, TILE_SIZE * scale, shown, drift);
+    this.#geometry.instanceCount = this.#cover.count;
+    this.mesh.visible = this.#cover.count > 0;
+  }
+
+  hide(): void {
+    this.#geometry.instanceCount = 0;
+    this.mesh.visible = false;
   }
 
   dispose(): void {
     this.#geometry.dispose();
+    this.#material.dispose();
+  }
+}
+
+export class WeatherParticles {
+  readonly group = new Group();
+  readonly #coarse: DropOctave;
+  readonly #drift = new Vector2();
+  readonly #fine: DropOctave;
+  readonly #halfSize: number;
+  readonly #uniforms = new DropUniforms();
+  #fallen = 0;
+
+  constructor(axes: CameraAxes, textures: TerrainTextures, grid: WorldGrid) {
+    const sources = { axes, grid, textures, uniforms: this.#uniforms };
+
+    this.#fine = new DropOctave(sources);
+    this.#coarse = new DropOctave(sources);
+    this.#halfSize = grid.halfSize;
+    this.group.add(this.#fine.mesh, this.#coarse.mesh);
+  }
+
+  update(weather: Precipitating, view: WeatherView): void {
+    const strength = precipitationStrength(weather.precipitation);
+
+    if (strength <= 0) {
+      this.#fine.hide();
+      this.#coarse.hide();
+
+      return;
+    }
+
+    const look = LOOKS[weather.form];
+    const seconds = view.realSeconds;
+    const span = Math.max(NEAREST_SPAN, view.viewDistance * SPAN_PER_DISTANCE);
+    const octave = Math.log2(Math.max(1, view.viewDistance / NATURAL_VIEW));
+    const windX = weather.windX * look.windShare;
+    const windZ = weather.windZ * look.windShare;
+
+    const finer = Math.floor(octave);
+    const perTile = DROPS_PER_TILE * strength * Math.max(1, (NATURAL_SPAN / span) ** 2);
+    const area = { centerX: view.focus.x, centerZ: view.focus.z, halfSize: this.#halfSize, radius: span / 2 };
+
+    const blend = octave - finer;
+
+    this.#fallen = (this.#fallen + (look.fallSpeed * seconds) / COLUMN_HEIGHT) % CYCLES;
+    this.#drift.x += (windX * seconds) / TILE_SIZE;
+    this.#drift.y += (windZ * seconds) / TILE_SIZE;
+    this.#fine.cover(finer, perTile * (4 ** -blend - blend / 4), area, this.#drift);
+    this.#coarse.cover(finer + 1, perTile * blend, area, this.#drift);
+
+    const uniforms = this.#uniforms;
+
+    uniforms.fallen.value = this.#fallen;
+    uniforms.driftShare.value.set(this.#drift.x - Math.floor(this.#drift.x), this.#drift.y - Math.floor(this.#drift.y));
+    uniforms.focus.value.set(view.focus.x, view.focus.z);
+    uniforms.span.value = span;
+    uniforms.reach.value = span / 2;
+    uniforms.slant.value.set(windX / look.fallSpeed, windZ / look.fallSpeed);
+    uniforms.viewportSpan.value = 2 * Math.tan((view.camera.fov * Math.PI) / 360);
+    uniforms.isSnow.value = weather.form === "snow" ? 1 : 0;
+    uniforms.color.value.setHex(look.color).multiplyScalar(weather.brightness);
+    uniforms.opacity.value = look.opacity * (0.55 + strength * 0.45);
+    uniforms.size.value = look.size;
+    uniforms.sway.value = look.sway;
+    uniforms.shortest.value = look.shortest;
+    uniforms.longest.value = look.longest;
+    uniforms.thinnest.value = look.thinnest;
+    uniforms.thickest.value = look.thickest;
+  }
+
+  dispose(): void {
+    this.#fine.dispose();
+    this.#coarse.dispose();
   }
 }
