@@ -23,6 +23,8 @@ interface HumanClip {
 }
 
 const STRIDE_TIMING: ClipTiming = { kind: "stride" };
+const LEAP_STRIDE = 1.45;
+const LEAP_LIFT = 0.24;
 
 function seconds(cycleSeconds: number): ClipTiming {
   return { cycleSeconds, kind: "seconds" };
@@ -168,6 +170,17 @@ function run(pose: Pose, phase: number, context: HumanClipContext): void {
   bendTrunk(pose, HumanBone.Chest, { forward: degrees(4), turnLeft: degrees(5) * cosineWave(phase) });
   bendTrunk(pose, HumanBone.Head, { forward: -degrees(6) });
   pose.height = 0.05 * Math.max(0, wave(phase * 2, -0.05));
+}
+
+function leap(pose: Pose, phase: number, context: HumanClipContext): void {
+  run(pose, phase, { ...context, motion: { ...context.motion, stride: context.motion.stride * LEAP_STRIDE } });
+
+  for (const side of SIDES) {
+    swingArm(pose, side, { forward: degrees(30), outward: degrees(24) });
+  }
+
+  bendTrunk(pose, HumanBone.Spine, { forward: degrees(10) });
+  pose.height = LEAP_LIFT * Math.abs(wave(phase));
 }
 
 function idle(pose: Pose, phase: number, context: HumanClipContext): void {
@@ -579,6 +592,7 @@ export const HUMAN_CLIPS: Readonly<Record<PersonPose, HumanClip>> = {
   fish: { apply: fish, timing: seconds(3.4), tool: "spear" },
   gather: { apply: gather, timing: seconds(2.2), tool: "basket" },
   idle: { apply: idle, timing: seconds(5.5), tool: null },
+  leap: { apply: leap, timing: STRIDE_TIMING, tool: null },
   mine: { apply: mine, timing: seconds(1.3), tool: "pickaxe" },
   play: { apply: play, timing: seconds(0.95), tool: null },
   pray: { apply: pray, timing: seconds(4.8), tool: null },

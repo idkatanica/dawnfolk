@@ -4,6 +4,7 @@ import { Ground, type GroundIndex } from "../../content/grounds.ts";
 import { type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import { plantInitialVegetation } from "../../generation/vegetation.ts";
 import type { GeneratedWorld } from "../../generation/world-generator.ts";
+import type { Crossing, Ford } from "../../world/crossings.ts";
 import type { Deposit } from "../../world/deposits.ts";
 import type { Monument } from "../../world/monuments.ts";
 import { createTerrainData } from "../../world/terrain-data.ts";
@@ -15,6 +16,7 @@ import { WorldState } from "../world/world-state.ts";
 export interface TestWorldOptions {
   baseTemperature: number;
   biome: BiomeIndex;
+  crossings: readonly Crossing[];
   deposits: readonly Deposit[];
   dimensions: GridDimensions;
   ground: GroundIndex;
@@ -25,6 +27,7 @@ export interface TestWorldOptions {
 const DEFAULT_TEST_WORLD: TestWorldOptions = {
   baseTemperature: 15,
   biome: Biome.Meadow,
+  crossings: [],
   deposits: [],
   dimensions: { cellSize: 10, cellsPerSide: 64 },
   ground: Ground.Meadow,
@@ -49,7 +52,7 @@ function createTestGeneratedWorld(overrides: Partial<TestWorldOptions>): Generat
   terrain.waterSurface.fill(NO_WATER);
 
   return {
-    crossings: [],
+    crossings: options.crossings,
     deposits: options.deposits,
     dimensions: options.dimensions,
     monuments: options.monuments,
@@ -89,6 +92,34 @@ export function plantInCell(world: WorldState, cell: number, species: PlantSpeci
 export function floodCells(world: WorldState, cells: readonly number[], depth: number): void {
   for (const cell of cells) {
     world.terrain.waterSurface[cell] = world.terrain.height[cell] + depth;
+  }
+}
+
+export function fordAcross(fromX: number, toX: number, z: number): Ford {
+  return { endX: toX, endZ: z, id: 0, kind: "ford", seed: 0.3, startX: fromX, startZ: z };
+}
+
+export function floodStrip(world: WorldState, halfWidth: number, depth: number): void {
+  const { grid } = world;
+
+  const cells = grid.cellsInRadius(0, 0, grid.worldSize).filter((cell) => Math.abs(grid.cellCenterX(cell)) < halfWidth);
+
+  floodCells(world, cells, depth);
+}
+
+export function riverStrip(world: WorldState, fromX: number, toX: number, strength: number): void {
+  const { grid } = world;
+
+  const cells = grid.cellsInRadius(0, 0, grid.worldSize).filter((cell) => {
+    const x = grid.cellCenterX(cell);
+
+    return x > fromX && x < toX;
+  });
+
+  floodCells(world, cells, 0.8);
+
+  for (const cell of cells) {
+    world.terrain.riverStrength[cell] = strength;
   }
 }
 

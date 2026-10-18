@@ -5,6 +5,7 @@ import type { ToolMaterial } from "../content/weapons.ts";
 import type { WeatherKind } from "../content/weather.ts";
 import type { WorldRules } from "../content/world-rules.ts";
 import type { CellRegion } from "../world/change-tracking.ts";
+import type { Crossing } from "../world/crossings.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import type { Monument } from "../world/monuments.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
@@ -42,6 +43,7 @@ export interface VegetationPatch {
 }
 
 export interface WaterUpdate {
+  crossings: readonly Crossing[];
   features: WaterFeatures;
   riverStrength: Uint8Array;
   waterSurface: Float32Array;
@@ -189,6 +191,7 @@ export interface SimulationFrame {
 export type TerrainSnapshot = Omit<TerrainData, "carving" | "dryness" | "woodland">;
 
 export interface InitialWorld {
+  crossings: readonly Crossing[];
   dimensions: GridDimensions;
   frame: SimulationFrame;
   ground: Uint8Array;

@@ -1,19 +1,12 @@
-import { clamp } from "../../shared/math.ts";
-import { MinHeap } from "../../shared/min-heap.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { WorldState } from "../world/world-state.ts";
+import { LandAreas, NO_REGION } from "./land-areas.ts";
 import { nearestWalkableSpot, pointInsideCell } from "./walkable-ground.ts";
 
-const NODE_SIZE = 40;
-const LINE_SAMPLE_SPACING = 7;
-const STEEP_SLOPE = 0.9;
-const MODERATE_SLOPE = 0.55;
-const IMPASSABLE_WATER_SHARE = 0.45;
-const IMPASSABLE_STEEP_SHARE = 0.7;
-const SEARCH_LIMIT = 6000;
-const DIAGONAL_HEURISTIC = Math.SQRT2 - 1;
 const LANDING_SEARCH_RADIUS = 120;
 const NO_SHORE = 65_535;
+const DETOUR_FACTOR = 1.5;
+const DETOUR_SLACK = 80;
 
 export interface Waypoint {
   x: number;
@@ -25,33 +18,17 @@ export function aroundPoint(center: Waypoint, distance: number, angle: number): 
 }
 
 export class NavigationGrid {
-  readonly #cameFrom: Int32Array;
-  readonly #closedInSearch: Int32Array;
-  readonly #heap: MinHeap;
-  readonly #nodeCost: Float32Array;
-  readonly #nodesPerSide: number;
-  readonly #pathCost: Float32Array;
-  readonly #seenInSearch: Int32Array;
+  readonly #areas: LandAreas;
   readonly #shoreQueue: Int32Array;
   readonly #shoreSteps: Uint16Array;
   readonly #leadsToSteepShore: Uint8Array;
   readonly #world: WorldState;
   #builtHeightVersion = -1;
   #builtWaterVersion = -1;
-  #searchNumber = 0;
 
   constructor(world: WorldState) {
     this.#world = world;
-    this.#nodesPerSide = Math.ceil(world.grid.worldSize / NODE_SIZE);
-
-    const nodeCount = this.#nodesPerSide * this.#nodesPerSide;
-
-    this.#nodeCost = new Float32Array(nodeCount);
-    this.#pathCost = new Float32Array(nodeCount);
-    this.#cameFrom = new Int32Array(nodeCount);
-    this.#seenInSearch = new Int32Array(nodeCount);
-    this.#closedInSearch = new Int32Array(nodeCount);
-    this.#heap = new MinHeap(nodeCount);
+    this.#areas = new LandAreas(world);
     this.#shoreQueue = new Int32Array(world.grid.cellCount);
     this.#shoreSteps = new Uint16Array(world.grid.cellCount);
     this.#leadsToSteepShore = new Uint8Array(world.grid.cellCount);
@@ -59,10 +36,7 @@ export class NavigationGrid {
   }
 
   rebuild(): void {
-    for (let node = 0; node < this.#nodeCost.length; node += 1) {
-      this.#nodeCost[node] = this.#measureNodeCost(node);
-    }
-
+    this.#areas.rebuild();
     this.#measureShores();
 
     this.#builtHeightVersion = this.#world.heightVersion;
@@ -85,16 +59,42 @@ export class NavigationGrid {
     return this.#world.isWalkableAt(x, z);
   }
 
-  landingSpot(point: Waypoint, wadingDepth: number): Waypoint {
+  landingSpot(point: Waypoint): Waypoint {
     const world = this.#world;
 
     const cell = world.grid.cellAt(point.x, point.z);
 
-    if (cell < 0 || !world.isWater(cell) || world.waterDepth(cell) < wadingDepth) {
+    if (cell < 0 || !world.isWater(cell)) {
       return point;
     }
 
     return nearestWalkableSpot(world, point, LANDING_SEARCH_RADIUS);
+  }
+
+  isReachable(from: Waypoint, to: Waypoint): boolean {
+    const region = this.#areas.regionNear(from);
+
+    return region !== NO_REGION && region === this.#areas.regionNear(to);
+  }
+
+  walkLength(from: Waypoint, to: Waypoint): number {
+    return this.#areas.walkLength(from, to);
+  }
+
+  isWithinWalk(from: Waypoint, to: Waypoint): boolean {
+    const straight = Math.hypot(to.x - from.x, to.z - from.z);
+
+    return this.#areas.walkLength(from, to) <= straight * DETOUR_FACTOR + DETOUR_SLACK;
+  }
+
+  reachableSpot(from: Waypoint, to: Waypoint): Waypoint {
+    const region = this.#areas.regionNear(from);
+
+    if (region === NO_REGION || region === this.#areas.regionNear(to)) {
+      return to;
+    }
+
+    return this.#areas.nearestInRegion(to, region, from);
   }
 
   stepAshore(x: number, z: number): Waypoint | null {
@@ -119,56 +119,16 @@ export class NavigationGrid {
     return this.#nearestStepAshore(cell, x, z);
   }
 
+  isClear(from: Waypoint, to: Waypoint): boolean {
+    return this.#areas.isClear(from, to);
+  }
+
   findPath(from: Waypoint, to: Waypoint): Waypoint[] | null {
-    if (this.#hasClearLine(from.x, from.z, to.x, to.z)) {
+    if (this.#areas.isClear(from, to)) {
       return [{ x: to.x, z: to.z }];
     }
 
-    const start = this.#nodeAt(from.x, from.z);
-    const goal = this.#nodeAt(to.x, to.z);
-
-    if (!Number.isFinite(this.#nodeCost[goal])) {
-      return null;
-    }
-
-    if (!this.#runSearch(start, goal)) {
-      return null;
-    }
-
-    const route = this.#reconstruct(start, goal);
-
-    route[route.length - 1] = { x: to.x, z: to.z };
-
-    return this.#straighten(from, route);
-  }
-
-  #measureNodeCost(node: number): number {
-    const world = this.#world;
-    const cellsPerNode = Math.max(1, Math.round(NODE_SIZE / world.grid.cellSize));
-
-    const firstColumn = (node % this.#nodesPerSide) * cellsPerNode;
-    const firstRow = Math.floor(node / this.#nodesPerSide) * cellsPerNode;
-    const step = Math.max(1, Math.floor(cellsPerNode / 2));
-
-    let samples = 0;
-    let waterSamples = 0;
-    let steepness = 0;
-
-    for (let row = firstRow; row < firstRow + cellsPerNode; row += step) {
-      for (let column = firstColumn; column < firstColumn + cellsPerNode; column += step) {
-        if (!world.grid.contains(column, row)) {
-          continue;
-        }
-
-        const cell = world.grid.index(column, row);
-
-        samples += 1;
-        waterSamples += world.isWater(cell) || !world.isOnIsland(cell) ? 1 : 0;
-        steepness += slopePenalty(world.slope(cell));
-      }
-    }
-
-    return costFromShares(waterSamples / Math.max(1, samples), steepness / Math.max(1, samples));
+    return this.#areas.route(from, to);
   }
 
   #measureShores(): void {
@@ -282,178 +242,8 @@ export class NavigationGrid {
 
     return landing;
   }
-
-  #nodeAt(x: number, z: number): number {
-    const { halfSize } = this.#world.grid;
-
-    const lastNode = this.#nodesPerSide - 1;
-
-    const column = clamp(Math.floor((x + halfSize) / NODE_SIZE), 0, lastNode);
-    const row = clamp(Math.floor((z + halfSize) / NODE_SIZE), 0, lastNode);
-
-    return row * this.#nodesPerSide + column;
-  }
-
-  #nodeCenter(node: number): Waypoint {
-    const { halfSize } = this.#world.grid;
-
-    return {
-      x: -halfSize + ((node % this.#nodesPerSide) + 0.5) * NODE_SIZE,
-      z: -halfSize + (Math.floor(node / this.#nodesPerSide) + 0.5) * NODE_SIZE,
-    };
-  }
-
-  #heuristic(node: number, goal: number): number {
-    const columnDistance = Math.abs((node % this.#nodesPerSide) - (goal % this.#nodesPerSide));
-    const rowDistance = Math.abs(Math.floor(node / this.#nodesPerSide) - Math.floor(goal / this.#nodesPerSide));
-
-    return Math.max(columnDistance, rowDistance) + DIAGONAL_HEURISTIC * Math.min(columnDistance, rowDistance);
-  }
-
-  #runSearch(start: number, goal: number): boolean {
-    this.#searchNumber += 1;
-
-    const search = this.#searchNumber;
-
-    this.#heap.clear();
-    this.#pathCost[start] = 0;
-    this.#seenInSearch[start] = search;
-    this.#cameFrom[start] = -1;
-    this.#heap.push(start, this.#heuristic(start, goal));
-
-    for (let expanded = 0; this.#heap.size > 0 && expanded < SEARCH_LIMIT; expanded += 1) {
-      const node = this.#heap.pop();
-
-      if (node === goal) {
-        return true;
-      }
-
-      if (this.#closedInSearch[node] !== search) {
-        this.#closedInSearch[node] = search;
-        this.#expand(node, goal, search);
-      }
-    }
-
-    return false;
-  }
-
-  #expand(node: number, goal: number, search: number): void {
-    const column = node % this.#nodesPerSide;
-    const row = Math.floor(node / this.#nodesPerSide);
-
-    for (const offset of NEIGHBOR_OFFSETS) {
-      const neighborColumn = column + offset.column;
-      const neighborRow = row + offset.row;
-
-      if (!this.#containsNode(neighborColumn, neighborRow)) {
-        continue;
-      }
-
-      const neighbor = neighborRow * this.#nodesPerSide + neighborColumn;
-
-      const cost = this.#nodeCost[neighbor];
-
-      if (!Number.isFinite(cost) || this.#closedInSearch[neighbor] === search) {
-        continue;
-      }
-
-      const pathCost = this.#pathCost[node] + cost * offset.distance;
-
-      if (this.#seenInSearch[neighbor] !== search || pathCost < this.#pathCost[neighbor]) {
-        this.#seenInSearch[neighbor] = search;
-        this.#pathCost[neighbor] = pathCost;
-        this.#cameFrom[neighbor] = node;
-        this.#heap.push(neighbor, pathCost + this.#heuristic(neighbor, goal));
-      }
-    }
-  }
-
-  #containsNode(column: number, row: number): boolean {
-    return column >= 0 && row >= 0 && column < this.#nodesPerSide && row < this.#nodesPerSide;
-  }
-
-  #reconstruct(start: number, goal: number): Waypoint[] {
-    const route: Waypoint[] = [];
-
-    for (let node = goal; node !== -1 && node !== start; node = this.#cameFrom[node]) {
-      route.push(this.#dryNodeCenter(node));
-    }
-
-    if (route.length === 0) {
-      route.push(this.#dryNodeCenter(goal));
-    }
-
-    return route.reverse();
-  }
-
-  #dryNodeCenter(node: number): Waypoint {
-    return nearestWalkableSpot(this.#world, this.#nodeCenter(node), NODE_SIZE / 2);
-  }
-
-  #straighten(from: Waypoint, route: readonly Waypoint[]): Waypoint[] {
-    const straightened: Waypoint[] = [];
-
-    let current = from;
-    let next = 0;
-
-    while (next < route.length) {
-      const farthest = this.#farthestVisible(current, route, next);
-
-      straightened.push(route[farthest]);
-      current = route[farthest];
-      next = farthest + 1;
-    }
-
-    return straightened;
-  }
-
-  #farthestVisible(from: Waypoint, route: readonly Waypoint[], first: number): number {
-    for (let candidate = route.length - 1; candidate > first; candidate -= 1) {
-      if (this.#hasClearLine(from.x, from.z, route[candidate].x, route[candidate].z)) {
-        return candidate;
-      }
-    }
-
-    return first;
-  }
-
-  #hasClearLine(fromX: number, fromZ: number, toX: number, toZ: number): boolean {
-    const length = Math.hypot(toX - fromX, toZ - fromZ);
-
-    const samples = Math.ceil(length / LINE_SAMPLE_SPACING);
-
-    for (let sample = 1; sample <= samples; sample += 1) {
-      const amount = sample / samples;
-
-      if (!this.isPassable(fromX + (toX - fromX) * amount, fromZ + (toZ - fromZ) * amount)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
 }
 
 function isDryLand(world: WorldState, cell: number): boolean {
   return world.isOnIsland(cell) && !world.isWater(cell);
-}
-
-function slopePenalty(slope: number): number {
-  if (slope > STEEP_SLOPE) {
-    return 1;
-  }
-
-  if (slope > MODERATE_SLOPE) {
-    return 0.4;
-  }
-
-  return 0;
-}
-
-function costFromShares(waterShare: number, steepShare: number): number {
-  if (waterShare > IMPASSABLE_WATER_SHARE || steepShare > IMPASSABLE_STEEP_SHARE) {
-    return Number.POSITIVE_INFINITY;
-  }
-
-  return 1 + steepShare * 6 + waterShare * 4;
 }

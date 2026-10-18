@@ -1,3 +1,4 @@
+import { HOP_REACH } from "../../../world/brooks.ts";
 import { setDestination } from "../../agents/movement.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
 import type { WorldState } from "../../world/world-state.ts";
@@ -9,11 +10,15 @@ export const DANGER_AWARENESS = 70;
 
 const FLEE_OFFSETS: readonly number[] = [0, 0.5, -0.5, 1, -1, 1.6, -1.6];
 const FLEE_DISTANCE = 150;
+const RUN_STEP = 5;
+const OPEN_RUN_WEIGHT = 2;
+const CORNERED_RUN = 90;
 const LOOKAHEAD_STEP = 38;
 const LOOKAHEAD_STEPS = 4;
 const HOT_GROUND = 0.03;
 const BURNT_OUT = 0.8;
 const STEEP = 1;
+const NOT_WET = -1;
 
 export class FleeJob implements Job {
   readonly kind = "flee";
@@ -21,16 +26,18 @@ export class FleeJob implements Job {
   constructor(tick: PersonTick, danger: Waypoint) {
     const { person } = tick;
 
-    const heading = safestHeading(tick.context.world, person.mover, danger);
+    const flight = safestFlight(tick.context.world, person.mover, danger);
+
+    const isCornered = flight.reach < CORNERED_RUN;
+    const reach = isCornered ? FLEE_DISTANCE : flight.reach;
 
     const refuge = {
-      x: person.mover.x + Math.sin(heading) * FLEE_DISTANCE,
-      z: person.mover.z + Math.cos(heading) * FLEE_DISTANCE,
+      x: person.mover.x + Math.sin(flight.heading) * reach,
+      z: person.mover.z + Math.cos(flight.heading) * reach,
     };
 
-    person.mover.canWade = true;
     dropCarrying(person);
-    setDestination(person.mover, refuge, tick.context.navigation, { mayPlanRoute: false });
+    setDestination(person.mover, refuge, tick.context.navigation, { mayPlanRoute: isCornered });
   }
 
   update(tick: PersonTick): Job | null {
@@ -44,30 +51,62 @@ export class FleeJob implements Job {
       return new FleeJob(tick, danger);
     }
 
-    tick.person.mover.canWade = false;
-
     return null;
   }
 }
 
-function safestHeading(world: WorldState, from: Waypoint, danger: Waypoint): number {
+interface Flight {
+  readonly heading: number;
+  readonly reach: number;
+}
+
+function safestFlight(world: WorldState, from: Waypoint, danger: Waypoint): Flight {
   const away = Math.atan2(from.x - danger.x, from.z - danger.z);
 
   let bestScore = Number.NEGATIVE_INFINITY;
-  let bestHeading = away;
+  let best: Flight = { heading: away, reach: 0 };
 
   for (const offset of FLEE_OFFSETS) {
     const heading = away + offset;
+    const reach = openRun(world, from, heading);
 
-    const score = routeScore(world, from, heading) - Math.abs(offset) * 0.8;
+    const score = routeScore(world, from, heading) - Math.abs(offset) * 0.8 + (reach / FLEE_DISTANCE) * OPEN_RUN_WEIGHT;
 
     if (score > bestScore) {
       bestScore = score;
-      bestHeading = heading;
+      best = { heading, reach };
     }
   }
 
-  return bestHeading;
+  return best;
+}
+
+function openRun(world: WorldState, from: Waypoint, heading: number): number {
+  let reach = 0;
+  let wetFrom = NOT_WET;
+
+  for (let distance = RUN_STEP; distance <= FLEE_DISTANCE; distance += RUN_STEP) {
+    const cell = world.grid.cellAt(from.x + Math.sin(heading) * distance, from.z + Math.cos(heading) * distance);
+
+    if (cell >= 0 && world.isBrook(cell)) {
+      wetFrom = wetFrom === NOT_WET ? distance : wetFrom;
+
+      if (distance - wetFrom > HOP_REACH) {
+        return reach;
+      }
+
+      continue;
+    }
+
+    if (!world.isWalkable(cell)) {
+      return reach;
+    }
+
+    wetFrom = NOT_WET;
+    reach = distance;
+  }
+
+  return reach;
 }
 
 function routeScore(world: WorldState, from: Waypoint, heading: number): number {
@@ -100,8 +139,10 @@ function cellScore(world: WorldState, cell: number): number {
     score -= 1.5;
   }
 
-  if (world.isWater(cell)) {
-    score += world.waterDepth(cell) < 1 ? 1 : 0.2;
+  if (world.isBrook(cell)) {
+    score += 1;
+  } else if (world.isWater(cell)) {
+    score -= 4;
   } else if (fields.scorch[cell] > BURNT_OUT) {
     score += 0.6;
   }

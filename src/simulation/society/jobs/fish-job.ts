@@ -13,9 +13,12 @@ const FISH_PER_CATCH = 3;
 const SEARCH_RADIUS = 320;
 
 export function findFishingSpot(tick: PersonTick): FishJob | null {
-  const { tribe } = tick;
+  const { person, tribe } = tick;
+  const { navigation, random, world } = tick.context;
 
-  const spot = nearestShore(tick.context.world, campPoint(tribe), SEARCH_RADIUS, tick.context.random);
+  const spot = nearestShore(world, campPoint(tribe), SEARCH_RADIUS, random, (shore) =>
+    navigation.isReachable(person.mover, shore)
+  );
 
   if (spot === null) {
     markScarce(tribe, "fish", tick.context.environment.day);

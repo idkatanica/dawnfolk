@@ -1,4 +1,5 @@
 import { plantSpeciesDefinition } from "../../../content/plants.ts";
+import type { Waypoint } from "../../agents/navigation.ts";
 import { carriedFood, isChild, pickUp } from "../person.ts";
 import { ripestFruitTree } from "../plots.ts";
 import { nearestPlant } from "../resources.ts";
@@ -47,8 +48,24 @@ function gatheringArea(tick: PersonTick): SearchArea {
   return { radius: ADULT_SEARCH_RADIUS, x: person.mover.x, z: person.mover.z };
 }
 
+function nearestReachableBush(tick: PersonTick, area: SearchArea): number | null {
+  const { navigation, world } = tick.context;
+  const { mover } = tick.person;
+
+  const isRipe = isRipeBush(tick);
+
+  function spotOf(plant: number): Waypoint {
+    return { x: world.vegetation.x[plant], z: world.vegetation.z[plant] };
+  }
+
+  return nearestPlant(world, {
+    ...area,
+    accepts: (plant) => isRipe(plant) && navigation.isReachable(mover, spotOf(plant)),
+  });
+}
+
 export function findBerries(tick: PersonTick): GatherJob | null {
-  const bush = nearestPlant(tick.context.world, { ...gatheringArea(tick), accepts: isRipeBush(tick) });
+  const bush = nearestReachableBush(tick, gatheringArea(tick));
 
   if (bush === null) {
     markScarce(tick.tribe, "berries", tick.context.environment.day);
@@ -108,12 +125,7 @@ function nextStep(tick: PersonTick): Job {
 
   const { mover } = tick.person;
 
-  const nextBush = nearestPlant(tick.context.world, {
-    accepts: isRipeBush(tick),
-    radius: NEXT_BUSH_RADIUS,
-    x: mover.x,
-    z: mover.z,
-  });
+  const nextBush = nearestReachableBush(tick, { radius: NEXT_BUSH_RADIUS, x: mover.x, z: mover.z });
 
   if (nextBush === null) {
     return new DeliverJob(tick);

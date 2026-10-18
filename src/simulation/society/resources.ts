@@ -156,7 +156,8 @@ export function nearestShore(
   world: WorldState,
   origin: Waypoint,
   radius: number,
-  random: RandomSource
+  random: RandomSource,
+  accepts: (spot: ShoreSpot) => boolean = () => true
 ): ShoreSpot | null {
   for (let attempt = 0; attempt < SHORE_ATTEMPTS; attempt += 1) {
     const angle = random.next() * FULL_TURN;
@@ -164,7 +165,7 @@ export function nearestShore(
 
     const spot = shoreSpotAt(world, origin.x + Math.cos(angle) * distance, origin.z + Math.sin(angle) * distance);
 
-    if (spot !== null) {
+    if (spot !== null && accepts(spot)) {
       return spot;
     }
   }

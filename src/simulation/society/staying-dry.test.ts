@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { Ground } from "../../content/grounds.ts";
 import { SocietyHarness, settle, tickFor } from "../testing/test-society.ts";
-import { floodCells } from "../testing/test-world.ts";
+import { floodCells, floodStrip } from "../testing/test-world.ts";
 import { assignJob } from "./decisions.ts";
+import { findFishingSpot } from "./jobs/fish-job.ts";
 import { FleeJob } from "./jobs/flee-job.ts";
 import { WanderJob } from "./jobs/wander-job.ts";
 import type { Person } from "./person.ts";
@@ -106,7 +107,7 @@ describe("staying dry", () => {
     }
   });
 
-  it("stops wading when the flight is replaced by another job", () => {
+  it("runs from danger along the shore rather than into the water", () => {
     const harness = createStripHarness();
 
     const tribe = settle(harness, 4);
@@ -115,31 +116,17 @@ describe("staying dry", () => {
 
     const tick = tickFor(harness, person, tribe);
 
-    assignJob(tick, new FleeJob(tick, { x: person.mover.x, z: person.mover.z + 20 }));
+    person.mover.x = STRIP_HALF_WIDTH - 2;
+    assignJob(tick, new FleeJob(tick, { x: person.mover.x - 30, z: person.mover.z }));
 
-    expect(person.mover.canWade).toBe(true);
+    let wasInWater = false;
 
-    assignJob(tick, new WanderJob("idle", tick));
+    for (let step = 0; step < 200 && person.job !== null; step += 1) {
+      person.job = person.job.update(tick);
+      wasInWater = wasInWater || harness.world.isWaterAt(person.mover.x, person.mover.z);
+    }
 
-    expect(person.mover.canWade).toBe(false);
-  });
-
-  it("stops wading when a fleeing person joins another tribe", () => {
-    const harness = createStripHarness();
-
-    const tribe = settle(harness, 4);
-
-    const offshoot = harness.society.createTribe(tribe.campX, tribe.campZ + 200);
-
-    const [person] = harness.society.membersOf(tribe);
-
-    const tick = tickFor(harness, person, tribe);
-
-    assignJob(tick, new FleeJob(tick, { x: person.mover.x, z: person.mover.z + 20 }));
-    harness.society.moveToTribe(person, tribe, offshoot);
-
-    expect(person.job).toBeNull();
-    expect(person.mover.canWade).toBe(false);
+    expect(wasInWater).toBe(false);
   });
 
   it("walks people out of water that rose around them", () => {
@@ -172,5 +159,46 @@ describe("staying dry", () => {
     harness.step();
 
     expect(tribe.fields.map((field) => field.cell)).toEqual([dry]);
+  });
+
+  it("fishes from the bank and never from the water", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+
+    floodStrip(harness.world, 20, 2);
+    harness.navigation.rebuild();
+
+    const tribe = settle(harness, 4);
+
+    const [fisher] = harness.society.membersOf(tribe);
+
+    const tick = tickFor(harness, fisher, tribe);
+    const job = Array.from({ length: 6 }, () => findFishingSpot(tick)).find((found) => found !== null);
+
+    if (job === undefined || job === null) {
+      throw new Error("Expected a fishing spot by the river");
+    }
+
+    assignJob(tick, job);
+
+    let fishingSpots = 0;
+    let wasInWater = false;
+
+    for (let step = 0; step < 900 && fisher.job !== null; step += 1) {
+      fisher.job = fisher.job.update(tick);
+
+      const { x, z } = fisher.mover;
+
+      wasInWater = wasInWater || harness.world.isWaterAt(x, z);
+
+      if (fisher.pose === "fish") {
+        const isOnBank = harness.world.grid.cellsInRadius(x, z, 8).some((cell) => harness.world.isWater(cell));
+
+        expect(harness.world.isWalkableAt(x, z) && isOnBank).toBe(true);
+        fishingSpots += 1;
+      }
+    }
+
+    expect(fishingSpots).toBeGreaterThan(0);
+    expect(wasInWater).toBe(false);
   });
 });
