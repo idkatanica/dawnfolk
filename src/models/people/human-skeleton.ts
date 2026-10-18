@@ -21,7 +21,7 @@ export const HumanBone = {
   UpperArmRight: 8,
 } as const;
 
-export type HumanBoneIndex = (typeof HumanBone)[keyof typeof HumanBone];
+type HumanBoneIndex = (typeof HumanBone)[keyof typeof HumanBone];
 
 export const HUMAN_BONE_COUNT = 17;
 
@@ -51,7 +51,7 @@ export function onSide(point: Triple, side: Side): Triple {
   return [point[0] * side, point[1], point[2]];
 }
 
-export interface SideBones {
+interface SideBones {
   readonly foot: HumanBoneIndex;
   readonly forearm: HumanBoneIndex;
   readonly hand: HumanBoneIndex;

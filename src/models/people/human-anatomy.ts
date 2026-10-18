@@ -178,7 +178,7 @@ function addFace(builder: MeshBuilder, detail: HumanDetail): void {
   });
 }
 
-export function addHead(builder: MeshBuilder, detail: HumanDetail): void {
+function addHead(builder: MeshBuilder, detail: HumanDetail): void {
   builder.add(loft(HEAD_SECTIONS, detail.headSegments), { style: { ...rigidStyle(HumanBone.Head), ...SKIN } });
   builder.add(
     tube(
@@ -224,7 +224,7 @@ function addArms(builder: MeshBuilder, detail: HumanDetail): void {
   });
 }
 
-export function addLegs(builder: MeshBuilder, detail: HumanDetail): void {
+function addLegs(builder: MeshBuilder, detail: HumanDetail): void {
   forEachSide((side, mirror) => {
     const style = { ...legStyle(side), ...SKIN };
 

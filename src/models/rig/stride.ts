@@ -3,9 +3,9 @@ import type { Pose } from "./pose.ts";
 import type { Skeleton } from "./skeleton.ts";
 import type { SkeletonPoser } from "./skeleton-poser.ts";
 
-export type PoseSampler = (pose: Pose, phase: number) => void;
+type PoseSampler = (pose: Pose, phase: number) => void;
 
-export interface StrideMeasurement {
+interface StrideMeasurement {
   readonly pose: Pose;
   readonly poser: SkeletonPoser;
   readonly sample: PoseSampler;

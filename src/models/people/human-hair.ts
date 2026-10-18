@@ -1,5 +1,5 @@
 import { lerp, smoothstep } from "../../shared/math.ts";
-import { createVolumeNoise, type VolumeNoise } from "../../shared/noise.ts";
+import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder } from "../mesh/mesh-builder.ts";
@@ -16,7 +16,7 @@ const HEAD_CROWN = 1.753;
 
 const HAIR = { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Hair };
 
-const HAIR_NOISE: VolumeNoise = createVolumeNoise(createRandom(911));
+const HAIR_NOISE = createVolumeNoise(createRandom(911));
 
 const HEAD_PROFILE: readonly LoftSection[] = [
   { centerZ: 0.03, radiusX: 0.062, radiusZ: 0.07, y: 1.545 },
@@ -208,7 +208,7 @@ export function addBraids(builder: MeshBuilder, detail: HumanDetail): void {
   forEachSide((_side, mirror) => {
     builder.add(tube(braid, { radialSegments: Math.max(5, detail.limbSegments - 2) }), { style, transform: mirror });
     builder.add(torus(0.016, 0.006, 10, 4), {
-      style: { ...headToChestStyle(1.58, 1.42), slot: MaterialSlot.Accent },
+      style: { ...style, slot: MaterialSlot.Accent },
       transform: combine(mirror, transformOf({ position: [0.12, 1.325, 0.088], rotation: [0.3, 0, 0] })),
     });
   });

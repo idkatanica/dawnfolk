@@ -65,6 +65,12 @@ function connectRings(writer: ShapeWriter, lower: Ring, upper: Ring): void {
   }
 }
 
+function connectRingChain(writer: ShapeWriter, rings: readonly Ring[]): void {
+  for (let index = 1; index < rings.length; index += 1) {
+    connectRings(writer, rings[index - 1], rings[index]);
+  }
+}
+
 function capRing(writer: ShapeWriter, center: number, ring: Ring, isFacingForward: boolean): void {
   for (let segment = 0; segment < ring.length; segment += 1) {
     const next = (segment + 1) % ring.length;
@@ -105,8 +111,10 @@ function profileNormal(profile: readonly ProfilePoint[], index: number): Profile
   return { radial: tangentVertical / length, vertical: -tangentRadial / length };
 }
 
-function longest(lengths: readonly number[]): number {
-  return lengths.reduce((maximum, length) => Math.max(maximum, length), 0);
+function totalLengthOf(lengths: readonly number[]): number {
+  const longest = lengths.reduce((maximum, length) => Math.max(maximum, length), 0);
+
+  return Math.max(longest, POLE_RADIUS);
 }
 
 function profileLengths(profile: readonly ProfilePoint[]): number[] {
@@ -130,7 +138,7 @@ export function lathe(profile: readonly ProfilePoint[], segments: number): Shape
   const lengths = profileLengths(profile);
   const rings: Ring[] = [];
 
-  const totalLength = Math.max(longest(lengths), POLE_RADIUS);
+  const totalLength = totalLengthOf(lengths);
 
   for (const [index, point] of profile.entries()) {
     const normal = profileNormal(profile, index);
@@ -139,9 +147,7 @@ export function lathe(profile: readonly ProfilePoint[], segments: number): Shape
     rings.push(latheRing(writer, point, normal, along, segments));
   }
 
-  for (let index = 1; index < rings.length; index += 1) {
-    connectRings(writer, rings[index - 1], rings[index]);
-  }
+  connectRingChain(writer, rings);
 
   return writer.finish();
 }
@@ -252,15 +258,13 @@ export function loft(sections: readonly LoftSection[], segments: number): Shape 
   const lengths = sectionLengths(sections);
   const rings: Ring[] = [];
 
-  const totalLength = Math.max(longest(lengths), POLE_RADIUS);
+  const totalLength = totalLengthOf(lengths);
 
   for (const [index, section] of sections.entries()) {
     rings.push(loftRing(writer, section, lengths[index] / totalLength, segments));
   }
 
-  for (let index = 1; index < rings.length; index += 1) {
-    connectRings(writer, rings[index - 1], rings[index]);
-  }
+  connectRingChain(writer, rings);
 
   const shape = writer.finish();
 
@@ -315,7 +319,7 @@ export function panel(options: PanelOptions): Shape {
   const writer = new ShapeWriter();
   const lengths = sectionLengths(sections);
 
-  const totalLength = Math.max(longest(lengths), POLE_RADIUS);
+  const totalLength = totalLengthOf(lengths);
 
   const outer = sections.map((section, index) =>
     panelRow(writer, section, options, lengths[index] / totalLength, thickness / 2)
@@ -380,9 +384,7 @@ export function cylinder(options: CylinderOptions): Shape {
     rings.push(latheRing(writer, point, { radial: slope.x, vertical: slope.y }, amount, radialSegments));
   }
 
-  for (let level = 1; level < rings.length; level += 1) {
-    connectRings(writer, rings[level - 1], rings[level]);
-  }
+  connectRingChain(writer, rings);
 
   if (hasBottomCap && radiusBottom > POLE_RADIUS) {
     addFlatCap(writer, radiusBottom, 0, radialSegments, false);
@@ -679,7 +681,7 @@ export function tube(points: readonly TubePoint[], options: TubeOptions = {}): S
   const frames = transportFrames(tubeTangents(centers));
   const lengths = arcLengths(centers);
 
-  const totalLength = Math.max(longest(lengths), POLE_RADIUS);
+  const totalLength = totalLengthOf(lengths);
 
   for (const [index, point] of points.entries()) {
     const radiusSlope = tubeRadiusSlope(points, lengths, index);
@@ -697,9 +699,7 @@ export function tube(points: readonly TubePoint[], options: TubeOptions = {}): S
     );
   }
 
-  for (let index = 1; index < rings.length; index += 1) {
-    connectRings(writer, rings[index - 1], rings[index]);
-  }
+  connectRingChain(writer, rings);
 
   const lastIndex = points.length - 1;
 

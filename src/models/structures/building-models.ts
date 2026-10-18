@@ -1,6 +1,6 @@
 import { Vector3 } from "three";
 import type { BuildingKind } from "../../content/buildings.ts";
-import { clamp, fractionalPart, lerp, smoothstep } from "../../shared/math.ts";
+import { clamp, FULL_TURN, fractionalPart, lerp, smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom, type RandomSource } from "../../shared/random.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
@@ -95,7 +95,7 @@ function campfire(context: StructureContext): void {
   const stones = context.level === "high" ? 10 : 6;
 
   for (let stone = 0; stone < stones; stone += 1) {
-    const angle = (stone / stones) * Math.PI * 2 + random.signed() * 0.15;
+    const angle = (stone / stones) * FULL_TURN + random.signed() * 0.15;
 
     addStone(
       context,
@@ -113,7 +113,7 @@ function campfire(context: StructureContext): void {
   const logs = 5;
 
   for (let log = 0; log < logs; log += 1) {
-    const angle = (log / logs) * Math.PI * 2 + random.signed() * 0.2;
+    const angle = (log / logs) * FULL_TURN + random.signed() * 0.2;
 
     addLog(
       context,
@@ -157,7 +157,7 @@ function addTentPole(context: StructureContext, angle: number, order: number): v
 }
 
 function addTentDoor(context: StructureContext, sides: number): void {
-  const facet = (Math.PI * 2) / sides;
+  const facet = FULL_TURN / sides;
   const startAngle = TENT_DOOR_ANGLE - TENT_DOOR_HALF_ANGLE;
   const endAngle = TENT_DOOR_ANGLE + TENT_DOOR_HALF_ANGLE;
 
@@ -191,7 +191,7 @@ function tent(context: StructureContext): void {
   const poles = level === "high" ? 7 : 4;
   const rings = level === "high" ? 12 : 5;
 
-  const spacing = (Math.PI * 2) / poles;
+  const spacing = FULL_TURN / poles;
   const sides = poles * 2;
 
   const firstPole = TENT_DOOR_ANGLE + spacing / 2;
@@ -457,7 +457,7 @@ function totem(context: StructureContext): void {
   const segments = level === "high" ? 12 : 6;
 
   for (let stone = 0; stone < 5; stone += 1) {
-    const angle = (stone / 5) * Math.PI * 2;
+    const angle = (stone / 5) * FULL_TURN;
 
     addStone(context, [Math.cos(angle) * 0.42, 0.1, Math.sin(angle) * 0.42], 0.17, 0.05);
   }

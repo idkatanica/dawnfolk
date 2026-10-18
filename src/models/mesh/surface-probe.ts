@@ -115,5 +115,5 @@ export function surfaceTransform(hit: SurfaceHit, depth = 0): Matrix4 {
 
   const tip = base.clone().add(hit.normal);
 
-  return segmentTransform([base.x, base.y, base.z], [tip.x, tip.y, tip.z]);
+  return segmentTransform(base.toArray(), tip.toArray());
 }

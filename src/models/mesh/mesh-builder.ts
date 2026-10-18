@@ -29,7 +29,7 @@ interface Placement {
 
 const IDENTITY = new Matrix4();
 
-function resolveChannel(value: ChannelValue | undefined, fallback: number, point: SurfacePoint): number {
+export function resolveChannel(value: ChannelValue | undefined, fallback: number, point: SurfacePoint): number {
   if (value === undefined) {
     return fallback;
   }

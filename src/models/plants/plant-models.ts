@@ -1,5 +1,6 @@
 import { Vector3 } from "three";
 import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
+import { FULL_TURN } from "../../shared/math.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot } from "../materials.ts";
 import { MeshBuilder } from "../mesh/mesh-builder.ts";
@@ -56,7 +57,7 @@ function berries(
 
   for (let berry = 0; berry < count; berry += 1) {
     const host = random.pick(blobs);
-    const angle = random.next() * Math.PI * 2;
+    const angle = random.next() * FULL_TURN;
     const height = random.between(-0.2, 0.9);
 
     const horizontal = Math.sqrt(1 - height * height);

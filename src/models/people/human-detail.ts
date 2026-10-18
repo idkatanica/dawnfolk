@@ -1,4 +1,4 @@
-export type HumanDetailLevel = "high" | "low";
+type HumanDetailLevel = "high" | "low";
 
 export interface HumanDetail {
   readonly hasFineDetails: boolean;

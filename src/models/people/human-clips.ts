@@ -14,9 +14,9 @@ export interface HumanClipContext {
   readonly motion: MotionStyle;
 }
 
-export type ClipTiming = { readonly kind: "seconds"; readonly cycleSeconds: number } | { readonly kind: "stride" };
+type ClipTiming = { readonly kind: "seconds"; readonly cycleSeconds: number } | { readonly kind: "stride" };
 
-export interface HumanClip {
+interface HumanClip {
   readonly apply: (pose: Pose, phase: number, context: HumanClipContext) => void;
   readonly timing: ClipTiming;
   readonly tool: HumanTool | null;

@@ -2,7 +2,7 @@ import { smoothstep } from "../../shared/math.ts";
 import type { SurfacePoint, VertexStyle } from "../mesh/mesh-builder.ts";
 import type { Triple } from "../mesh/transforms.ts";
 
-export interface ChainJoint {
+interface ChainJoint {
   readonly axis: Triple;
   readonly blend: number;
   readonly position: Triple;

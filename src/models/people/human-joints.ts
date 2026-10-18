@@ -1,15 +1,15 @@
 import type { Pose } from "../rig/pose.ts";
 import { HumanBone, type Side, sideBones } from "./human-skeleton.ts";
 
-export type TrunkBone = typeof HumanBone.Chest | typeof HumanBone.Head | typeof HumanBone.Neck | typeof HumanBone.Spine;
+type TrunkBone = typeof HumanBone.Chest | typeof HumanBone.Head | typeof HumanBone.Neck | typeof HumanBone.Spine;
 
-export interface TrunkMotion {
+interface TrunkMotion {
   readonly forward?: number;
   readonly toLeft?: number;
   readonly turnLeft?: number;
 }
 
-export interface LimbMotion {
+interface LimbMotion {
   readonly forward?: number;
   readonly outward?: number;
   readonly twist?: number;
@@ -29,16 +29,18 @@ export function bendTrunk(pose: Pose, bone: TrunkBone, motion: TrunkMotion): voi
   rotateTrunk(pose, bone, motion);
 }
 
-export function swingArm(pose: Pose, side: Side, motion: LimbMotion): void {
+function swingLimb(pose: Pose, bone: number, side: Side, motion: LimbMotion): void {
   const { forward = 0, outward = 0, twist = 0 } = motion;
 
-  pose.rotate(sideBones(side).upperArm, -forward, side * outward, side * twist);
+  pose.rotate(bone, -forward, side * outward, side * twist);
+}
+
+export function swingArm(pose: Pose, side: Side, motion: LimbMotion): void {
+  swingLimb(pose, sideBones(side).upperArm, side, motion);
 }
 
 export function swingLeg(pose: Pose, side: Side, motion: LimbMotion): void {
-  const { forward = 0, outward = 0, twist = 0 } = motion;
-
-  pose.rotate(sideBones(side).thigh, -forward, side * outward, side * twist);
+  swingLimb(pose, sideBones(side).thigh, side, motion);
 }
 
 export function bendElbow(pose: Pose, side: Side, flex: number): void {
