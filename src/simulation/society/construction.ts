@@ -12,7 +12,6 @@ const MAXIMUM_SHELTERS = 12;
 const MAXIMUM_FIELDS = 10;
 const PLACEMENT_ATTEMPTS = 30;
 const FIELD_ATTEMPTS = 40;
-const BUILDING_SLOPE = 0.45;
 const FIELD_SLOPE = 0.3;
 const FERTILE_GROUND = 0.4;
 const CAMPFIRE_SPACING = 4;
@@ -157,7 +156,11 @@ function isBuildable(spot: Waypoint, kind: BuildingKind, context: SocietyContext
 
   const cell = world.grid.cellAt(spot.x, spot.z);
 
-  if (!world.isWalkable(cell) || world.slope(cell) > BUILDING_SLOPE || world.occupancy[cell] !== NO_BUILDING) {
+  if (!world.isWalkable(cell) || world.occupancy[cell] !== NO_BUILDING) {
+    return false;
+  }
+
+  if (world.slope(cell) > BUILDINGS[kind].steepestSlope) {
     return false;
   }
 

@@ -3,6 +3,7 @@ import type { GeneratedWorld } from "../../generation/world-generator.ts";
 import { clamp } from "../../shared/math.ts";
 import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../world/change-tracking.ts";
 import { hasRoomFromCoast, isOnIsland } from "../../world/coast.ts";
+import { canStandOn, isOpenGround, slopeAt } from "../../world/footing.ts";
 import type { IslandShapeKind } from "../../world/island-shape.ts";
 import type { TerrainData } from "../../world/terrain-data.ts";
 import {
@@ -125,18 +126,15 @@ export class WorldState {
   }
 
   slope(cell: number): number {
-    const { cellsPerSide, cellSize } = this.grid;
+    return slopeAt(this.terrain.height, this.grid, cell);
+  }
 
-    const column = this.grid.columnOf(cell);
-    const row = this.grid.rowOf(cell);
-    const heights = this.terrain.height;
+  isOpenGround(cell: number): boolean {
+    return isOpenGround(this.terrain, this.grid, cell);
+  }
 
-    const east = heights[row * cellsPerSide + Math.min(cellsPerSide - 1, column + 1)];
-    const west = heights[row * cellsPerSide + Math.max(0, column - 1)];
-    const south = heights[Math.min(cellsPerSide - 1, row + 1) * cellsPerSide + column];
-    const north = heights[Math.max(0, row - 1) * cellsPerSide + column];
-
-    return Math.hypot((east - west) / (2 * cellSize), (south - north) / (2 * cellSize));
+  canPlace(cell: number, steepestSlope: number): boolean {
+    return canStandOn(this.terrain, this.grid, cell, steepestSlope) && this.occupancy[cell] === NO_BUILDING;
   }
 
   temperature(cell: number, airTemperatureOffset: number): number {

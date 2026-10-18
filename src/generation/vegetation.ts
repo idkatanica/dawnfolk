@@ -4,6 +4,7 @@ import { canGrowAt, isTreeSpecies, PLANTING_RULES, plantSpeciesDefinition } from
 import { FULL_TURN, hashToUnit } from "../shared/math.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
 import { hasRoomFromCoast, isOnIsland } from "../world/coast.ts";
+import { canStandOn } from "../world/footing.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { isWaterCell, touchesWaterCell } from "../world/terrain-sampling.ts";
 import type { VegetationStore } from "../world/vegetation-store.ts";
@@ -75,7 +76,6 @@ export function plantInitialVegetation(
       continue;
     }
 
-    const isOnEdge = grid.isOnEdge(cell);
     const clearing = 0.45 + 0.9 * (0.5 + 0.5 * terrain.variation[cell]);
     const { holdsTrees } = groundDefinition(terrain.ground[cell]);
     const column = grid.columnOf(cell);
@@ -90,6 +90,8 @@ export function plantInitialVegetation(
         continue;
       }
 
+      const { steepestSlope } = plantSpeciesDefinition(rule.species);
+
       const plant = {
         bornDay: INITIAL_PLANT_DAY,
         height: plantHeight(rule.species, random, rule.heightScale),
@@ -100,7 +102,10 @@ export function plantInitialVegetation(
         z: grid.centerZ(row) + random.between(-0.42, 0.42) * grid.cellSize,
       };
 
-      if (!isOnEdge && hasRoomFromCoast(terrain.coastDistance, grid, plant.x, plant.z)) {
+      if (
+        canStandOn(terrain, grid, cell, steepestSlope) &&
+        hasRoomFromCoast(terrain.coastDistance, grid, plant.x, plant.z)
+      ) {
         store.add(plant);
       }
     }

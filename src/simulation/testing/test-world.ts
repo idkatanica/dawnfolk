@@ -1,6 +1,6 @@
 import { Biome, type BiomeIndex } from "../../content/biomes.ts";
 import { Ground, type GroundIndex } from "../../content/grounds.ts";
-import type { PlantSpeciesIndex } from "../../content/plants.ts";
+import { type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import { plantInitialVegetation } from "../../generation/vegetation.ts";
 import type { GeneratedWorld } from "../../generation/world-generator.ts";
 import { createTerrainData } from "../../world/terrain-data.ts";
@@ -84,4 +84,29 @@ export function floodCells(world: WorldState, cells: readonly number[], depth: n
 
 export function centerCell(world: WorldState): number {
   return world.grid.cellAt(0, 0);
+}
+
+export function steepeningRamp(steepestSlope: number, halfSize: number): (x: number) => number {
+  return (x) => {
+    const fromWest = x + halfSize;
+
+    return 100 + (steepestSlope * fromWest * fromWest) / (4 * halfSize);
+  };
+}
+
+export function plantsTooSteep(world: WorldState): string[] {
+  const { vegetation } = world;
+  const misplaced: string[] = [];
+
+  for (let plant = 0; plant < vegetation.count; plant += 1) {
+    const { name, steepestSlope } = plantSpeciesDefinition(vegetation.species[plant]);
+
+    const slope = world.slope(vegetation.cell[plant]);
+
+    if (vegetation.isAlive(plant) && slope > steepestSlope) {
+      misplaced.push(`${name} on slope ${slope.toFixed(2)}`);
+    }
+  }
+
+  return misplaced;
 }

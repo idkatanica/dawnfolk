@@ -1,6 +1,6 @@
 import { Biome } from "../../content/biomes.ts";
 import { Ground, type GroundIndex, groundDefinition } from "../../content/grounds.ts";
-import { PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
+import { PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import type { PowerParameters } from "../../content/powers.ts";
 import { plantHeight } from "../../generation/vegetation.ts";
 import { FULL_TURN } from "../../shared/math.ts";
@@ -122,11 +122,7 @@ function speciesFor(choice: ForestSpecies, temperature: number, random: RandomSo
 }
 
 function canPlantIn(world: WorldState, cell: number): boolean {
-  if (world.grid.isOnEdge(cell) || !world.isOnIsland(cell) || world.touchesWater(cell)) {
-    return false;
-  }
-
-  if (world.occupancy[cell] !== NO_BUILDING) {
+  if (!world.isOpenGround(cell) || world.occupancy[cell] !== NO_BUILDING) {
     return false;
   }
 
@@ -170,8 +166,14 @@ export const forestPower: PowerHandler<"forest"> = {
 
       const chance = target.seconds * PLANTING_PER_SECOND * brushFalloff(distance, parameters.radius) * density;
 
-      if (random.chance(chance)) {
-        plantTree(cell, speciesFor(parameters.species, world.terrain.baseTemperature[cell], random), services);
+      if (!random.chance(chance)) {
+        continue;
+      }
+
+      const species = speciesFor(parameters.species, world.terrain.baseTemperature[cell], random);
+
+      if (world.canPlace(cell, plantSpeciesDefinition(species).steepestSlope)) {
+        plantTree(cell, species, services);
       }
     }
 

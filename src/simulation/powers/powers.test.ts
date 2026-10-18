@@ -3,7 +3,7 @@ import { Ground } from "../../content/grounds.ts";
 import { PlantSpecies } from "../../content/plants.ts";
 import { POWER_ORDER, POWERS } from "../../content/powers.ts";
 import { Simulation } from "../simulation.ts";
-import { createVegetatedWorld } from "../testing/test-world.ts";
+import { createVegetatedWorld, plantsTooSteep, steepeningRamp } from "../testing/test-world.ts";
 import { POWER_HANDLERS, parsePowerParameters } from "./power-registry.ts";
 
 function createSimulation(baseTemperature = 15): Simulation {
@@ -149,6 +149,28 @@ describe("land", () => {
     }
 
     expect(simulation.world.vegetation.aliveCount).toBeGreaterThan(before + 20);
+  });
+
+  it("forest plants every tree only on ground gentle enough for it", () => {
+    const simulation = new Simulation(
+      createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 96 }, heightAt: steepeningRamp(1.4, 480) })
+    );
+    const { vegetation } = simulation.world;
+
+    const before = vegetation.aliveCount;
+
+    for (const x of [-300, -100, 100, 300]) {
+      simulation.beginStroke("forest", x, 0, { density: 100, radius: 120, species: "climate" });
+
+      for (let step = 0; step < 40; step += 1) {
+        simulation.advance(0.05);
+      }
+
+      simulation.endStroke();
+    }
+
+    expect(vegetation.aliveCount).toBeGreaterThan(before + 100);
+    expect(plantsTooSteep(simulation.world)).toEqual([]);
   });
 
   it("forest suited to a hot climate grows acacias and palms", () => {
