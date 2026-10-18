@@ -1,6 +1,13 @@
+import type { ResourceKind } from "../../content/resources.ts";
 import { DEFAULT_WORLD_RULES } from "../../content/world-rules.ts";
 import type { ChronicleEntry } from "../../simulation/chronicle.ts";
-import type { SimulationFrame, SimulationStatistics, TribeSummary, WeatherView } from "../../simulation/frame.ts";
+import type {
+  SimulationFrame,
+  SimulationStatistics,
+  StockView,
+  TribeSummary,
+  WeatherView,
+} from "../../simulation/frame.ts";
 import type {
   AnimalInspection,
   BuildingInspection,
@@ -58,26 +65,59 @@ export function createStatistics(overrides: Partial<SimulationStatistics> = {}):
   };
 }
 
+export function createStock(overrides: Partial<Record<ResourceKind, number>> = {}): StockView {
+  const stock: Record<ResourceKind, number> = {
+    arrows: 0,
+    berries: 0,
+    bows: 0,
+    bronze: 0,
+    clay: 0,
+    copper: 0,
+    copperOre: 0,
+    fish: 0,
+    fruit: 0,
+    grain: 0,
+    iron: 0,
+    ironOre: 0,
+    linen: 0,
+    meat: 0,
+    pottery: 0,
+    spears: 0,
+    stone: 0,
+    tinOre: 0,
+    vegetables: 0,
+    wood: 0,
+  };
+
+  return { ...stock, ...overrides };
+}
+
 export function createTribe(overrides: Partial<TribeSummary> = {}): TribeSummary {
   return {
+    armory: "stone",
     births: 2,
+    buildings: [],
     campX: -851,
     campZ: 616,
     children: 3,
     color: "#c8553d",
     deaths: 1,
+    era: { count: 6, index: 0, name: "Wanderers", nextName: "Stone Age" },
     eraName: "Wanderers",
     faith: 40,
+    farmland: { crops: [], fields: 0, orchardTrees: 0, woodlotTrees: 0 },
     foundedDay: 0,
     furColor: "#7a5638",
+    goal: { isBlocked: false, need: null, progress: 0.5, technologyName: "Fire making" },
     id: 1,
     isMigrating: false,
     knowledge: 30,
     name: "Bear Clan",
     nextTechnology: { cost: 60, name: "Fire making" },
     population: 7,
-    stock: { food: 12.4, stone: 3, wood: 8.6 },
+    stock: createStock({ berries: 10.4, stone: 3, wood: 8.6 }),
     technologies: ["Gathering"],
+    tools: "stone",
     ...overrides,
   };
 }

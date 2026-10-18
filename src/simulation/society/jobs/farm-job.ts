@@ -1,29 +1,38 @@
-import { pickUpFood } from "../person.ts";
+import { CROPS } from "../../../content/crops.ts";
+import { fieldTask, sowField } from "../farming.ts";
+import { pickUp } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
+import { workSeconds } from "../tools.ts";
 import { type Field, learn } from "../tribe.ts";
 import { DeliverJob } from "./deliver-job.ts";
 import { Errand, headTo, type Job } from "./job.ts";
 
 const FARMING_SECONDS = 9;
-const HARVEST_FOOD = 14;
 const TENDING_PER_VISIT = 0.5;
-const HARVEST_SEASON_START = 1.6;
-const HARVEST_SEASON_END = 3;
-
-export function isHarvestTime(field: Field, season: number): boolean {
-  return field.growth >= 1 && season >= HARVEST_SEASON_START && season < HARVEST_SEASON_END;
-}
+const FENCED_YIELD = 1.25;
+const FIELD_SPREAD = 0.35;
 
 export class FarmJob implements Job {
   readonly kind = "farm";
-  readonly #errand = new Errand(FARMING_SECONDS, "dig");
+  readonly #errand: Errand;
   readonly #field: Field;
 
   constructor(tick: PersonTick, field: Field) {
     const { grid } = tick.context.world;
+    const { random } = tick.context;
+
+    const spread = grid.cellSize * FIELD_SPREAD;
 
     this.#field = field;
-    headTo(tick.person, { x: grid.cellCenterX(field.cell), z: grid.cellCenterZ(field.cell) }, tick.context);
+    this.#errand = new Errand(workSeconds(tick.tribe, FARMING_SECONDS), "dig");
+    headTo(
+      tick.person,
+      {
+        x: grid.cellCenterX(field.cell) + random.signed() * spread,
+        z: grid.cellCenterZ(field.cell) + random.signed() * spread,
+      },
+      tick.context
+    );
   }
 
   update(tick: PersonTick): Job | null {
@@ -32,6 +41,7 @@ export class FarmJob implements Job {
     }
 
     const field = this.#field;
+    const { season } = tick.context.environment;
 
     if (!tick.tribe.fields.includes(field)) {
       return null;
@@ -39,18 +49,35 @@ export class FarmJob implements Job {
 
     learn(tick.tribe, 0.4, tick.context.rules);
 
-    if (!isHarvestTime(field, tick.context.environment.season)) {
+    const task = fieldTask(tick.tribe, field, season);
+
+    if (task === "sow") {
+      sowField(tick.tribe, field, season);
+
+      return null;
+    }
+
+    if (task !== "harvest") {
       field.tending = Math.min(1, field.tending + TENDING_PER_VISIT);
 
       return null;
     }
 
+    return this.#harvest(tick, field);
+  }
+
+  #harvest(tick: PersonTick, field: Field): Job {
+    const crop = CROPS[field.crop];
+
+    const amount = crop.yield * (field.isFenced ? FENCED_YIELD : 1);
+
     field.growth = 0;
+    field.isSown = false;
     tick.context.world.setCrop(field.cell, 0);
-    pickUpFood(tick.person, HARVEST_FOOD, "crops");
+    pickUp(tick.person, crop.produce, amount, "crops");
     tick.context.chronicle.record({
       category: "food",
-      text: `${tick.tribe.name} brought in the harvest`,
+      text: `${tick.tribe.name} brought in the ${crop.name.toLowerCase()}`,
       tribeId: tick.tribe.id,
       x: tick.person.mover.x,
       z: tick.person.mover.z,

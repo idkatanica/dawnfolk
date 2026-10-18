@@ -1,5 +1,15 @@
 type BlessingStyle = "abundance" | "healing" | "inspiration";
 
+export interface ArrowEffect {
+  durationSeconds: number;
+  fromX: number;
+  fromZ: number;
+  isHit: boolean;
+  kind: "arrow";
+  toX: number;
+  toZ: number;
+}
+
 export interface BlessingEffect {
   kind: "blessing";
   radius: number;
@@ -53,6 +63,7 @@ export interface MeteorEffect {
 }
 
 export type SimulationEffect =
+  | ArrowEffect
   | BlessingEffect
   | EarthquakeEffect
   | EmberEffect

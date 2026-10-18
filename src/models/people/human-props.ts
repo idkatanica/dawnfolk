@@ -183,7 +183,7 @@ export function addAxe(builder: MeshBuilder, detail: HumanDetail): void {
     inRightHand(MaterialSlot.Wood)
   );
   builder.add(box(0.034, 0.13, 0.085), {
-    style: inRightHand(MaterialSlot.Stone),
+    style: inRightHand(MaterialSlot.Metal),
     transform: transformOf({ position: [x, y - 0.04, z + 0.46], rotation: [0.12, 0, 0] }),
   });
   builder.add(ring(detail, 0.022, 0.007, 8), {
@@ -202,7 +202,7 @@ export function addSpear(builder: MeshBuilder, detail: HumanDetail): void {
     inRightHand(MaterialSlot.Wood)
   );
   builder.add(cone(0.026, 0.13, trimSegments(detail, 5)), {
-    style: inRightHand(MaterialSlot.Stone),
+    style: inRightHand(MaterialSlot.Metal),
     transform: transformOf({ position: [x, y, z + 1.11], rotation: [Math.PI / 2, 0, 0], scale: [1, 1, 0.55] }),
   });
   builder.add(ring(detail, 0.018, 0.006, 8), {
@@ -221,7 +221,7 @@ export function addDiggingStick(builder: MeshBuilder, detail: HumanDetail): void
     inRightHand(MaterialSlot.Wood)
   );
   builder.add(cone(0.018, 0.09, trimSegments(detail, 6)), {
-    style: inRightHand(MaterialSlot.Wood),
+    style: inRightHand(MaterialSlot.Metal),
     transform: transformOf({ position: [x, y - 0.62, z + 0.02], rotation: [Math.PI, 0, 0] }),
   });
 }

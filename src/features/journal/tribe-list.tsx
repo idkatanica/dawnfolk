@@ -1,7 +1,17 @@
-import { Footprints } from "lucide-react";
+import { Footprints, type LucideIcon, Pickaxe } from "lucide-react";
+import { FOOD_KINDS, RESOURCES, type ResourceKind } from "../../content/resources.ts";
 import type { TribeSummary } from "../../simulation/frame.ts";
+import { RESOURCE_ICONS } from "../tribes/tribe-icons.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { useShowTribe } from "./use-focus-camera.ts";
+
+const SHOWN_METALS: readonly ResourceKind[] = ["iron", "bronze", "copper"];
+
+interface StockHighlight {
+  readonly amount: number;
+  readonly icon: LucideIcon;
+  readonly name: string;
+}
 
 function MigrationMark({ tribe }: { readonly tribe: TribeSummary }) {
   if (!tribe.isMigrating) {
@@ -12,6 +22,60 @@ function MigrationMark({ tribe }: { readonly tribe: TribeSummary }) {
     <span className="flex items-center gap-1 text-ink-muted text-xs">
       <Footprints aria-hidden="true" size={12} />
       On the move
+    </span>
+  );
+}
+
+function GoalMark({ tribe }: { readonly tribe: TribeSummary }) {
+  const { goal } = tribe;
+
+  if (goal === null || !goal.isBlocked || goal.need === null) {
+    return null;
+  }
+
+  return (
+    <span className="flex items-center gap-1 text-dawn-strong text-xs">
+      <Pickaxe aria-hidden="true" size={12} />
+      {`Needs ${goal.need}`}
+    </span>
+  );
+}
+
+function highlights(tribe: TribeSummary): StockHighlight[] {
+  const { stock } = tribe;
+
+  const food = FOOD_KINDS.reduce((total, kind) => total + stock[kind], 0);
+  const metal = SHOWN_METALS.find((kind) => stock[kind] >= 1);
+
+  const shown: StockHighlight[] = [
+    { amount: food, icon: RESOURCE_ICONS.grain, name: "Food" },
+    { amount: stock.wood, icon: RESOURCE_ICONS.wood, name: RESOURCES.wood.name },
+    { amount: stock.stone, icon: RESOURCE_ICONS.stone, name: RESOURCES.stone.name },
+  ];
+
+  if (metal !== undefined) {
+    shown.push({ amount: stock[metal], icon: RESOURCE_ICONS[metal], name: RESOURCES[metal].name });
+  }
+
+  return shown;
+}
+
+function StockLine({ tribe }: { readonly tribe: TribeSummary }) {
+  return (
+    <span className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-ink-muted text-xs">
+      {highlights(tribe).map((highlight) => {
+        const Icon = highlight.icon;
+
+        return (
+          <span className="flex items-center gap-1 tabular-nums" key={highlight.name} title={highlight.name}>
+            <Icon aria-hidden="true" size={12} />
+
+            <span className="sr-only">{highlight.name}</span>
+
+            <span>{Math.round(highlight.amount)}</span>
+          </span>
+        );
+      })}
     </span>
   );
 }
@@ -32,6 +96,10 @@ function TribeCard({ tribe }: { readonly tribe: TribeSummary }) {
           <span className="truncate font-semibold text-ink text-sm">{tribe.name}</span>
 
           <span className="truncate text-ink-muted text-xs">{tribe.eraName}</span>
+
+          <StockLine tribe={tribe} />
+
+          <GoalMark tribe={tribe} />
 
           <MigrationMark tribe={tribe} />
         </span>

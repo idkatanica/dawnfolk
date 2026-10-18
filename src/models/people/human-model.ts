@@ -1,8 +1,11 @@
+import type { WeaponKind } from "../../content/weapons.ts";
 import type { CarriedItem, PersonPose } from "../../world/agent-poses.ts";
 import { MeshBuilder } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
 import { maskOf, type PartMask } from "../part-mask.ts";
 import type { HairStyle, PersonAppearance } from "./appearance.ts";
+import { addCarriedClay, addCarriedFruit, addCarriedOre } from "./carried-props.ts";
+import { addBrooch, addBuckle, addHelmet, addTorc } from "./era-props.ts";
 import { addBody, addChildTorso, addFemaleTorso, addMaleTorso } from "./human-anatomy.ts";
 import { HUMAN_CLIPS } from "./human-clips.ts";
 import { addBoots, addCape, addCloak, addDress, addLoincloth, addTunic, addWrap } from "./human-clothing.ts";
@@ -36,6 +39,7 @@ import {
   addSpear,
   addToolBasket,
 } from "./human-props.ts";
+import { addBow, addDrawnBow, addPickaxe, addQuiver } from "./weapon-props.ts";
 
 export const HUMAN_PARTS = [
   "body",
@@ -74,6 +78,17 @@ export const HUMAN_PARTS = [
   "carriedMeat",
   "carriedFish",
   "carriedCrops",
+  "bow",
+  "drawnBow",
+  "quiver",
+  "pickaxe",
+  "carriedOre",
+  "carriedClay",
+  "carriedFruit",
+  "torc",
+  "helmet",
+  "brooch",
+  "buckle",
 ] as const;
 
 export type HumanPart = (typeof HUMAN_PARTS)[number];
@@ -88,15 +103,22 @@ const PART_BUILDERS: Readonly<Record<HumanPart, PartBuilder>> = {
   beardShort: addShortBeard,
   body: addBody,
   boots: addBoots,
+  bow: addBow,
+  brooch: addBrooch,
+  buckle: addBuckle,
   cape: addCape,
   carriedBerries: addCarriedBerries,
+  carriedClay: addCarriedClay,
   carriedCrops: addCarriedCrops,
   carriedFish: addCarriedFish,
+  carriedFruit: addCarriedFruit,
   carriedMeat: addCarriedMeat,
+  carriedOre: addCarriedOre,
   carriedStone: addCarriedStone,
   carriedWood: addCarriedWood,
   cloak: addCloak,
   diggingStick: addDiggingStick,
+  drawnBow: addDrawnBow,
   dress: addDress,
   feather: addFeather,
   hairBraids: addBraids,
@@ -108,10 +130,14 @@ const PART_BUILDERS: Readonly<Record<HumanPart, PartBuilder>> = {
   hairWild: addWildHair,
   hammerStone: addHammerStone,
   headband: addHeadband,
+  helmet: addHelmet,
   loincloth: addLoincloth,
   necklace: addNecklace,
   paint: addPaint,
+  pickaxe: addPickaxe,
+  quiver: addQuiver,
   spear: addSpear,
+  torc: addTorc,
   torsoChild: addChildTorso,
   torsoFemale: addFemaleTorso,
   torsoMale: addMaleTorso,
@@ -146,13 +172,18 @@ const HAIR_PARTS: Readonly<Record<HairStyle, HumanPart | null>> = {
 
 const CARRIED_PARTS: Readonly<Record<CarriedItem, HumanPart | null>> = {
   berries: "carriedBerries",
+  clay: "carriedClay",
   crops: "carriedCrops",
   fish: "carriedFish",
+  fruit: "carriedFruit",
   meat: "carriedMeat",
   nothing: null,
+  ore: "carriedOre",
   stone: "carriedStone",
   wood: "carriedWood",
 };
+
+const ARMED_POSES: ReadonlySet<PersonPose> = new Set(["idle", "run", "walk"]);
 
 function torsoPart(appearance: PersonAppearance): HumanPart {
   if (appearance.ageGroup === "child") {
@@ -195,7 +226,23 @@ export function appearanceParts(appearance: PersonAppearance): HumanPart[] {
   return parts.filter((part) => part !== null);
 }
 
-export function activityParts(pose: PersonPose, carried: CarriedItem): HumanPart[] {
+function weaponParts(pose: PersonPose, weapon: WeaponKind | null): HumanPart[] {
+  if (pose === "shoot") {
+    return ["quiver"];
+  }
+
+  if (weapon === null || !ARMED_POSES.has(pose)) {
+    return [];
+  }
+
+  if (weapon === "bow") {
+    return ["bow", "quiver"];
+  }
+
+  return ["spear"];
+}
+
+export function activityParts(pose: PersonPose, carried: CarriedItem, weapon: WeaponKind | null = null): HumanPart[] {
   const { tool } = HUMAN_CLIPS[pose];
 
   const carriedPart = CARRIED_PARTS[carried];
@@ -208,6 +255,8 @@ export function activityParts(pose: PersonPose, carried: CarriedItem): HumanPart
   if (pose === "carry" && carriedPart !== null) {
     parts.push(carriedPart);
   }
+
+  parts.push(...weaponParts(pose, weapon));
 
   return parts;
 }

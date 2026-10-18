@@ -1,8 +1,11 @@
-import { Flame } from "lucide-react";
+import { Flame, Pickaxe } from "lucide-react";
+import type { ReactNode } from "react";
+import { TOOL_MATERIAL_DEFINITIONS } from "../../content/weapons.ts";
 import { cn } from "../../design/cn.ts";
 import { FactList } from "../../design/fact-list.tsx";
 import { formatPercent } from "../../design/format.ts";
 import { MeterBar } from "../../design/meter-bar.tsx";
+import type { EraView, GoalView } from "../../simulation/frame.ts";
 import type {
   AnimalInspection,
   BuildingInspection,
@@ -11,6 +14,8 @@ import type {
   PlantDescription,
   TribeInspection,
 } from "../../simulation/inspection.ts";
+import { BuildingList } from "../tribes/building-list.tsx";
+import { StockList } from "../tribes/stock-list.tsx";
 
 const LIT_FUEL = 0.02;
 
@@ -145,17 +150,78 @@ export function CellDetails({ cell }: { readonly cell: CellInspection }) {
   );
 }
 
-function NextDiscovery({ tribe }: { readonly tribe: TribeInspection }) {
-  const { knowledge, nextTechnology } = tribe.summary;
+function GoalNeed({ goal }: { readonly goal: GoalView }) {
+  if (!goal.isBlocked || goal.need === null) {
+    return null;
+  }
 
-  if (nextTechnology === null) {
+  return (
+    <p className="flex items-center gap-1.5 font-medium text-dawn-strong text-xs">
+      <Pickaxe aria-hidden="true" size={14} />
+      {`Needs ${goal.need}`}
+    </p>
+  );
+}
+
+function NextDiscovery({ tribe }: { readonly tribe: TribeInspection }) {
+  const { goal } = tribe.summary;
+
+  if (goal === null) {
     return <p className="text-ink-muted text-xs">Every discovery is made.</p>;
   }
 
-  const progress = Math.min(1, knowledge / nextTechnology.cost);
-
   return (
-    <MeterBar label={`Next: ${nextTechnology.name}`} tone="lake" value={progress} valueText={formatPercent(progress)} />
+    <div className="flex flex-col gap-1.5">
+      <MeterBar
+        label={`Next: ${goal.technologyName}`}
+        tone="lake"
+        value={goal.progress}
+        valueText={formatPercent(goal.progress)}
+      />
+
+      <GoalNeed goal={goal} />
+    </div>
+  );
+}
+
+function EraSteps({ era }: { readonly era: EraView }) {
+  return (
+    <div className="flex items-center gap-2">
+      <ol aria-label={`Era ${era.index + 1} of ${era.count}`} className="flex flex-1 gap-1">
+        {Array.from({ length: era.count }, (_, step) => (
+          <li
+            className={cn("h-1.5 flex-1 rounded-full", step <= era.index ? "bg-gold" : "bg-ink/10")}
+            key={`era-${String(step)}`}
+          />
+        ))}
+      </ol>
+
+      <span className="text-ink-muted text-xs">{era.nextName === null ? "Last era" : `Next: ${era.nextName}`}</span>
+    </div>
+  );
+}
+
+function landFacts(summary: TribeInspection["summary"]) {
+  const { farmland } = summary;
+
+  const crops = farmland.crops.map((crop) => `${crop.name} ${crop.count}`).join(" · ");
+
+  const facts = [
+    { label: "Fields", value: crops.length > 0 ? `${farmland.fields} (${crops})` : String(farmland.fields) },
+    { label: "Orchard trees", value: farmland.orchardTrees },
+    { label: "Woodlot trees", value: farmland.woodlotTrees },
+  ];
+
+  return facts.filter((fact) => fact.value !== 0 && fact.value !== "0");
+}
+
+function Section({ children, title }: { readonly children: ReactNode; readonly title: string }) {
+  return (
+    <section aria-label={title} className="flex flex-col gap-1.5">
+      <h3 className="font-semibold text-ink-soft text-xs">{title}</h3>
+
+      {children}
+    </section>
   );
 }
 
@@ -166,14 +232,18 @@ export function TribeDetails({ tribe }: { readonly tribe: TribeInspection }) {
     { label: "Era", value: summary.eraName },
     { label: "People", value: `${summary.population} (${summary.children} children)` },
     { label: "Births · deaths", value: `${summary.births} · ${summary.deaths}` },
-    { label: "Food", value: Math.round(summary.stock.food) },
-    { label: "Wood", value: Math.round(summary.stock.wood) },
-    { label: "Stone", value: Math.round(summary.stock.stone) },
+    { label: "Tools", value: TOOL_MATERIAL_DEFINITIONS[summary.tools].name },
   ];
+
+  const land = landFacts(summary);
 
   return (
     <div className="flex flex-col gap-3">
       <FactList facts={facts} />
+
+      <EraSteps era={summary.era} />
+
+      <NextDiscovery tribe={tribe} />
 
       <MeterBar
         label="Faith"
@@ -182,7 +252,19 @@ export function TribeDetails({ tribe }: { readonly tribe: TribeInspection }) {
         valueText={String(Math.round(summary.faith))}
       />
 
-      <NextDiscovery tribe={tribe} />
+      <Section title="Stores">
+        <StockList stock={summary.stock} />
+      </Section>
+
+      <Section title="Buildings">
+        <BuildingList buildings={summary.buildings} />
+      </Section>
+
+      {land.length > 0 ? (
+        <Section title="Land">
+          <FactList facts={land} />
+        </Section>
+      ) : null}
 
       <div className="flex flex-wrap gap-1.5">
         {summary.technologies.map((name) => (

@@ -1,5 +1,6 @@
 import { lerp } from "../shared/math.ts";
 import { Biome, type BiomeIndex } from "./biomes.ts";
+import { CULTIVATED_PLANT_SPECIES, CultivatedSpecies } from "./cultivated-plants.ts";
 
 export const PlantSpecies = {
   Acacia: 10,
@@ -28,13 +29,14 @@ export const PlantSpecies = {
   Slab: 14,
   Spruce: 0,
   Willow: 4,
+  ...CultivatedSpecies,
 } as const;
 
 export type PlantSpeciesIndex = (typeof PlantSpecies)[keyof typeof PlantSpecies];
 
 type PlantForm = "broadleaf" | "conifer" | "deadwood" | "monument" | "shrub" | "succulent" | "stone";
 
-interface PlantSpeciesDefinition {
+export interface PlantSpeciesDefinition {
   canopyFuel: number;
   form: PlantForm;
   givesBerries: boolean;
@@ -333,6 +335,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     steepestSlope: 0.35,
     wood: 0,
   },
+  ...CULTIVATED_PLANT_SPECIES,
 ];
 
 export function plantSpeciesDefinition(index: number): PlantSpeciesDefinition {

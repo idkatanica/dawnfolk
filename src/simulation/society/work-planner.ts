@@ -1,10 +1,11 @@
-import { BUILDINGS } from "../../content/buildings.ts";
 import { isWinter } from "../../content/seasons.ts";
 import type { Building } from "./buildings.ts";
-import { plannedBuilding } from "./construction.ts";
-import { BuildJob } from "./jobs/build-job.ts";
+import { constructionNeed } from "./construction.ts";
+import { ERA_WORK_OPTIONS } from "./era-work.ts";
+import { type FieldTask, fieldTask, neediestField } from "./farming.ts";
+import { BuildJob, isExpeditionSeason, isFarSite } from "./jobs/build-job.ts";
 import { findTree } from "./jobs/chop-job.ts";
-import { FarmJob, isHarvestTime } from "./jobs/farm-job.ts";
+import { FarmJob } from "./jobs/farm-job.ts";
 import { findFishingSpot } from "./jobs/fish-job.ts";
 import { findBerries } from "./jobs/gather-job.ts";
 import { findGame } from "./jobs/hunt-job.ts";
@@ -14,93 +15,67 @@ import { findStone } from "./jobs/quarry-job.ts";
 import { TendJob } from "./jobs/tend-job.ts";
 import { isElder } from "./person.ts";
 import type { PersonTick } from "./society-context.ts";
-import { type Field, isWorthLookingFor, knows, type ScarceResource, type Tribe } from "./tribe.ts";
+import { type Field, knows } from "./tribe.ts";
 import { completedBuilding } from "./tribe-places.ts";
+import { hasWeaponsToHunt } from "./weapons.ts";
+import { foodNeed, isWorthIt, type WorkOption } from "./work-needs.ts";
 
 const LOW_CAMPFIRE_FUEL = 0.45;
 const ELDER_HEAVY_WORK = 0.25;
-const PRE_WINTER_SEASON = 1.6;
-const HEAVY_WORK: ReadonlySet<JobKind> = new Set(["chop", "hunt", "quarry"]);
+const HEAVY_WORK: ReadonlySet<JobKind> = new Set(["chop", "hunt", "mine", "quarry"]);
+const CRAFTING_WOOD = 8;
+const FIELD_TASK_WEIGHTS: Readonly<Record<FieldTask | "none", number>> = { harvest: 3.6, none: 0, sow: 2.6, tend: 1 };
+const MASONRY_STONE = 24;
+const FIRE_WOOD = 4;
+const LARGEST_BUILDING_PARTY = 4;
+const COLD_SEASON_FIRE_WOOD = 12;
+const AUTUMN = 2;
 
-interface WorkOption {
-  kind: JobKind;
-  start: (tick: PersonTick) => Job | null;
-  weight: (tick: PersonTick) => number;
-}
-
-function foodNeed(tick: PersonTick): number {
-  const { season } = tick.context.environment;
-  const { tribe } = tick;
-
-  const daysOfFood = season >= PRE_WINTER_SEASON ? 7 : 4;
-
-  const target = tribe.memberIds.length * daysOfFood + 6;
-
-  return Math.max(0.15, 1 - tribe.stock.food / target);
+function expeditionBuilders(tick: PersonTick): number {
+  return tick.context.people
+    .membersOf(tick.tribe)
+    .filter((member) => member.job !== null && member.job.kind === "build" && member.job.isExpedition === true).length;
 }
 
 function constructionSite(tick: PersonTick): Building | null {
   return tick.context.buildings.find(tick.tribe.buildings.constructionSiteId);
 }
 
-function constructionCost(tick: PersonTick, material: "stone" | "wood"): number {
-  const site = constructionSite(tick);
+function fieldTaskOf(tick: PersonTick, field: Field): FieldTask | "none" {
+  const task = fieldTask(tick.tribe, field, tick.context.environment.season);
 
-  if (site !== null) {
-    return BUILDINGS[site.kind][material];
+  if (task === null) {
+    return "none";
   }
 
-  const planned = plannedBuilding(tick.tribe, tick.context);
+  return task;
+}
 
-  if (planned === null) {
-    return 0;
+function fireWoodReserve(season: number): number {
+  if (season >= AUTUMN) {
+    return COLD_SEASON_FIRE_WOOD;
   }
 
-  return BUILDINGS[planned][material];
+  return FIRE_WOOD;
 }
 
 function woodNeed(tick: PersonTick): number {
-  const fireWood = knows(tick.tribe, "fire") ? 4 : 0;
+  const { tribe } = tick;
 
-  const wanted = 6 + constructionCost(tick, "wood") + fireWood;
+  const fireWood = knows(tribe, "fire") ? fireWoodReserve(tick.context.environment.season) : 0;
+  const craftWood = knows(tribe, "pottery") ? CRAFTING_WOOD : 0;
 
-  return Math.max(0.1, 1 - tick.tribe.stock.wood / wanted);
-}
+  const wanted = 6 + constructionNeed(tribe, tick.context, "wood") + fireWood + craftWood;
 
-function plannedTotemStone(tribe: Tribe): number {
-  if (!knows(tribe, "totem") || tribe.buildings.totemId !== null) {
-    return 0;
-  }
-
-  return 2;
+  return Math.max(0.1, 1 - tribe.stock.wood / wanted);
 }
 
 function stoneWanted(tick: PersonTick): number {
   const { tribe } = tick;
 
-  const hasTents = tribe.buildings.shelterIds.some((id) => tick.context.buildings.find(id)?.kind === "tent");
+  const reserve = knows(tribe, "masonry") ? MASONRY_STONE : 4;
 
-  return constructionCost(tick, "stone") + (hasTents ? 4 : 0) + plannedTotemStone(tribe) + 2;
-}
-
-function isWorthIt(tick: PersonTick, resource: ScarceResource, patience: number): boolean {
-  return isWorthLookingFor(tick.tribe, resource, tick.context.environment.day, patience);
-}
-
-function neediestField(tribe: Tribe, season: number): Field | null {
-  let neediest: Field | null = null;
-  let neediestScore = Number.POSITIVE_INFINITY;
-
-  for (const field of tribe.fields) {
-    const score = field.tending - (isHarvestTime(field, season) ? 2 : 0);
-
-    if (score < neediestScore) {
-      neediest = field;
-      neediestScore = score;
-    }
-  }
-
-  return neediest;
+  return constructionNeed(tribe, tick.context, "stone") + reserve + 2;
 }
 
 const WORK_OPTIONS: readonly WorkOption[] = [
@@ -115,7 +90,23 @@ const WORK_OPTIONS: readonly WorkOption[] = [
 
       return new BuildJob(tick, site);
     },
-    weight: (tick) => (constructionSite(tick) === null ? 0 : 6),
+    weight: (tick) => {
+      const site = constructionSite(tick);
+
+      if (site === null) {
+        return 0;
+      }
+
+      if (!isFarSite(tick.tribe, site)) {
+        return 6;
+      }
+
+      if (!isExpeditionSeason(tick.context.environment.season) || expeditionBuilders(tick) >= LARGEST_BUILDING_PARTY) {
+        return 0;
+      }
+
+      return 6;
+    },
   },
   {
     kind: "tend",
@@ -153,7 +144,9 @@ const WORK_OPTIONS: readonly WorkOption[] = [
     kind: "hunt",
     start: findGame,
     weight: (tick) => {
-      if (!(knows(tick.tribe, "spear") && isWorthIt(tick, "game", 0.4))) {
+      const isArmed = tick.person.weapon !== null || hasWeaponsToHunt(tick.tribe);
+
+      if (!(knows(tick.tribe, "spear") && isArmed && isWorthIt(tick, "game", 0.4))) {
         return 0;
       }
 
@@ -183,11 +176,15 @@ const WORK_OPTIONS: readonly WorkOption[] = [
       return new FarmJob(tick, field);
     },
     weight: (tick) => {
-      if (tick.tribe.fields.length === 0 || isWinter(tick.context.environment.season)) {
+      const { season } = tick.context.environment;
+
+      const field = neediestField(tick.tribe, season);
+
+      if (field === null) {
         return 0;
       }
 
-      return 2.5;
+      return FIELD_TASK_WEIGHTS[fieldTaskOf(tick, field)];
     },
   },
   {
@@ -198,7 +195,7 @@ const WORK_OPTIONS: readonly WorkOption[] = [
         return 0;
       }
 
-      return 2.5 * woodNeed(tick);
+      return 3.4 * woodNeed(tick);
     },
   },
   {
@@ -211,7 +208,7 @@ const WORK_OPTIONS: readonly WorkOption[] = [
         return 0;
       }
 
-      return 1.6 * (1 - tick.tribe.stock.stone / wanted);
+      return 2.2 * (1 - tick.tribe.stock.stone / wanted);
     },
   },
   {
@@ -233,6 +230,7 @@ const WORK_OPTIONS: readonly WorkOption[] = [
       return isElder(tick.person) ? 2 : 0.4;
     },
   },
+  ...ERA_WORK_OPTIONS,
 ];
 
 function adjustedWeight(option: WorkOption, tick: PersonTick): number {

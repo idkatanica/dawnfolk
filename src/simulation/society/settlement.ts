@@ -1,12 +1,18 @@
 import { Biome } from "../../content/biomes.ts";
+import { DEPOSITS } from "../../content/deposits.ts";
 import { isLivingTreeSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
 import { aroundPoint, type Waypoint } from "../agents/navigation.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { dropJob } from "./decisions.ts";
+import { abandonFields } from "./farming.ts";
 import { isChild, isElder, type Person } from "./person.ts";
+import { abandonPlots } from "./plots.ts";
+import { syncEra } from "./progress.ts";
+import { prospectingMove } from "./prospecting.ts";
 import type { SocietyContext } from "./society-context.ts";
+import { shareFood, totalFood } from "./stock.ts";
 import { isWorthLookingFor, type Tribe } from "./tribe.ts";
 import { campfireOf, campPoint } from "./tribe-places.ts";
 
@@ -33,6 +39,7 @@ const SETTLED_DISTANCE = 60;
 const SETTLED_SHARE = 0.7;
 const LONGEST_MIGRATION_DAYS = 1.5;
 const BURNT_CAMP = 0.8;
+const PROSPECTING_SHARE = 0.5;
 
 export interface SettlementServices {
   createTribe: (campX: number, campZ: number) => Tribe;
@@ -216,9 +223,41 @@ export function updateMigration(tribe: Tribe, members: readonly Person[], contex
 
   const isLongOverdue = context.environment.day - tribe.migrationStartDay > LONGEST_MIGRATION_DAYS;
 
-  if (arrived.length >= members.length * SETTLED_SHARE || isLongOverdue) {
+  if (arrived.length >= members.length * SETTLED_SHARE) {
     tribe.isMigrating = false;
+
+    return;
   }
+
+  if (isLongOverdue) {
+    tribe.isMigrating = false;
+    settleWhereTheyStand(tribe, members);
+  }
+}
+
+function settleWhereTheyStand(tribe: Tribe, members: readonly Person[]): void {
+  if (members.length === 0) {
+    return;
+  }
+
+  const centerX = members.reduce((sum, person) => sum + person.mover.x, 0) / members.length;
+  const centerZ = members.reduce((sum, person) => sum + person.mover.z, 0) / members.length;
+
+  const [nearest] = [...members].sort(
+    (first, second) =>
+      Math.hypot(first.mover.x - centerX, first.mover.z - centerZ) -
+      Math.hypot(second.mover.x - centerX, second.mover.z - centerZ)
+  );
+
+  if (
+    nearest === undefined ||
+    Math.hypot(nearest.mover.x - tribe.campX, nearest.mover.z - tribe.campZ) < SETTLED_DISTANCE
+  ) {
+    return;
+  }
+
+  tribe.campX = nearest.mover.x;
+  tribe.campZ = nearest.mover.z;
 }
 
 function reasonToMove(tribe: Tribe, context: SocietyContext): string | null {
@@ -235,7 +274,7 @@ function reasonToMove(tribe: Tribe, context: SocietyContext): string | null {
   }
 
   const isStarving =
-    tribe.stock.food < 1 &&
+    totalFood(tribe.stock) < 1 &&
     !isWorthLookingFor(tribe, "berries", environment.day, 0.6) &&
     !isWorthLookingFor(tribe, "game", environment.day, 0.6);
 
@@ -255,6 +294,8 @@ export function considerMoving(
   const reason = reasonToMove(tribe, context);
 
   if (reason === null) {
+    prospect(tribe, members, context, services);
+
     return;
   }
 
@@ -263,6 +304,37 @@ export function considerMoving(
   if (site !== null) {
     moveCamp(tribe, members, site, reason, context);
   }
+}
+
+function prospect(
+  tribe: Tribe,
+  members: readonly Person[],
+  context: SocietyContext,
+  services: SettlementServices
+): void {
+  const move = prospectingMove(tribe, context);
+
+  if (move === null) {
+    return;
+  }
+
+  const search: SiteSearch = {
+    excluded: tribe,
+    isNearOrigin: true,
+    minimumNeighborDistance: DEFAULT_NEIGHBOR_DISTANCE,
+    origin: move.origin,
+    radius: DEPOSITS[move.kind].reach * PROSPECTING_SHARE,
+  };
+
+  const site = findCampSite(search, context, services.tribes());
+
+  if (site === null) {
+    tribe.migrationStartDay = context.environment.day;
+
+    return;
+  }
+
+  moveCamp(tribe, members, site, move.reason, context);
 }
 
 function moveCamp(
@@ -280,7 +352,8 @@ function moveCamp(
   tribe.campZ = site.z;
   tribe.isMigrating = true;
   tribe.migrationStartDay = context.environment.day;
-  tribe.fields = [];
+  abandonFields(tribe, context.world);
+  abandonPlots(tribe, context.world);
   tribe.claimedPlants.clear();
 
   for (const person of members) {
@@ -379,18 +452,21 @@ export function considerSplit(
 }
 
 function shareWithOffshoot(tribe: Tribe, offshoot: Tribe, context: SocietyContext): void {
-  const food = Math.floor(tribe.stock.food * 0.35);
   const wood = Math.floor(tribe.stock.wood * 0.3);
+  const spears = Math.floor(tribe.stock.spears * 0.4);
 
   for (const technology of tribe.technologies) {
     offshoot.technologies.add(technology);
   }
 
+  syncEra(offshoot);
+  offshoot.stock = shareFood(tribe.stock, 0.35);
   offshoot.knowledge = tribe.knowledge * 0.5;
-  offshoot.stock.food = food;
+  offshoot.tools = tribe.tools;
   offshoot.stock.wood = wood;
+  offshoot.stock.spears = spears;
   offshoot.isMigrating = true;
   offshoot.migrationStartDay = context.environment.day;
-  tribe.stock.food -= food;
   tribe.stock.wood -= wood;
+  tribe.stock.spears -= spears;
 }

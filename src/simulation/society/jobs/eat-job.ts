@@ -1,6 +1,7 @@
 import type { Waypoint } from "../../agents/navigation.ts";
-import type { Person } from "../person.ts";
+import { carriedFood, type Person } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
+import { takeFood, totalFood } from "../stock.ts";
 import type { Tribe } from "../tribe.ts";
 import { hasLitCampfire } from "../tribe-places.ts";
 import { Errand, headTo, type Job } from "./job.ts";
@@ -30,6 +31,10 @@ export class EatJob implements Job {
   }
 }
 
+export function eatProvisions(person: Person, tribe: Tribe): void {
+  eatMeal(person, tribe, false);
+}
+
 function eatMeal(person: Person, tribe: Tribe, isCooked: boolean): void {
   if (!takeFoodPortion(person, tribe)) {
     return;
@@ -41,17 +46,17 @@ function eatMeal(person: Person, tribe: Tribe, isCooked: boolean): void {
 }
 
 function takeFoodPortion(person: Person, tribe: Tribe): boolean {
-  if (person.carrying.food >= 1) {
-    person.carrying.food -= 1;
+  if (carriedFood(person) >= 1) {
+    person.carrying.amount -= 1;
 
     return true;
   }
 
-  if (tribe.stock.food < 1) {
+  if (totalFood(tribe.stock) < 1) {
     return false;
   }
 
-  tribe.stock.food -= 1;
+  takeFood(tribe.stock, 1);
 
   return true;
 }

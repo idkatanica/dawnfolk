@@ -1,8 +1,10 @@
 import { Biome, type BiomeIndex } from "../../content/biomes.ts";
+import type { DepositKind } from "../../content/deposits.ts";
 import { Ground, type GroundIndex } from "../../content/grounds.ts";
 import { type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import { plantInitialVegetation } from "../../generation/vegetation.ts";
 import type { GeneratedWorld } from "../../generation/world-generator.ts";
+import type { Deposit } from "../../world/deposits.ts";
 import type { Monument } from "../../world/monuments.ts";
 import { createTerrainData } from "../../world/terrain-data.ts";
 import { VegetationStore } from "../../world/vegetation-store.ts";
@@ -13,6 +15,7 @@ import { WorldState } from "../world/world-state.ts";
 export interface TestWorldOptions {
   baseTemperature: number;
   biome: BiomeIndex;
+  deposits: readonly Deposit[];
   dimensions: GridDimensions;
   ground: GroundIndex;
   heightAt: (x: number, z: number) => number;
@@ -22,6 +25,7 @@ export interface TestWorldOptions {
 const DEFAULT_TEST_WORLD: TestWorldOptions = {
   baseTemperature: 15,
   biome: Biome.Meadow,
+  deposits: [],
   dimensions: { cellSize: 10, cellsPerSide: 64 },
   ground: Ground.Meadow,
   heightAt: () => 100,
@@ -45,6 +49,7 @@ function createTestGeneratedWorld(overrides: Partial<TestWorldOptions>): Generat
   terrain.waterSurface.fill(NO_WATER);
 
   return {
+    deposits: options.deposits,
     dimensions: options.dimensions,
     monuments: options.monuments,
     seed: 1,
@@ -118,4 +123,8 @@ export function plantsTooSteep(world: WorldState): string[] {
   }
 
   return misplaced;
+}
+
+export function depositAround(grid: WorldGrid, kind: DepositKind, x: number, z: number): Deposit {
+  return { cells: grid.cellsInRadius(x, z, 25), id: 0, kind, x, z };
 }

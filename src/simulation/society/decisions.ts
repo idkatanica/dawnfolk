@@ -1,17 +1,23 @@
 import { isWinter } from "../../content/seasons.ts";
-import { EatJob } from "./jobs/eat-job.ts";
+import type { Waypoint } from "../agents/navigation.ts";
+import { isExpeditionSeason } from "./jobs/build-job.ts";
+import { DeliverJob } from "./jobs/deliver-job.ts";
+import { EatJob, eatProvisions } from "./jobs/eat-job.ts";
 import { DANGER_AWARENESS, FleeJob } from "./jobs/flee-job.ts";
 import { findBerries } from "./jobs/gather-job.ts";
+import { HomewardJob } from "./jobs/homeward-job.ts";
 import type { Job, JobKind } from "./jobs/job.ts";
 import { MigrateJob } from "./jobs/migrate-job.ts";
 import { SleepJob } from "./jobs/sleep-job.ts";
 import { WanderJob } from "./jobs/wander-job.ts";
 import { WarmJob } from "./jobs/warm-job.ts";
 import { isStandingInFire } from "./needs.ts";
-import { isChild, type Person } from "./person.ts";
+import { carriedFood, isCarryingAnything, isChild, type Person } from "./person.ts";
 import type { PersonTick } from "./society-context.ts";
+import { totalFood } from "./stock.ts";
 import { isWorthLookingFor, type Tribe } from "./tribe.ts";
-import { hasLitCampfire, litCampfireOf, nearCamp } from "./tribe-places.ts";
+import { nearCamp } from "./tribe-places.ts";
+import { isWithinReach, nearestWarmPlace, warmthOnArrival } from "./warmth.ts";
 import { chooseWork } from "./work-planner.ts";
 
 const RETHINK_SECONDS = 5;
@@ -25,7 +31,10 @@ const FREEZING = 0.3;
 const CHILLY = 0.45;
 const GATHERING_AGE = 7;
 const MEAL_SPREAD = 4;
-const NIGHT_JOBS: ReadonlySet<JobKind> = new Set(["eat", "sleep", "warm"]);
+const PACKED_MEAL_DISTANCE = 90;
+const HOMEWARD_DISTANCE = 220;
+const STRANDED_RETRY_DAYS = 1;
+const NIGHT_JOBS: ReadonlySet<JobKind> = new Set(["clay", "deliver", "eat", "mine", "sleep", "warm"]);
 
 export function updateMind(tick: PersonTick): void {
   const { person } = tick;
@@ -46,9 +55,17 @@ export function updateMind(tick: PersonTick): void {
 
   person.rethinkSeconds = RETHINK_SECONDS + tick.context.random.next() * RETHINK_VARIATION;
 
+  if (isOnTheRoad(person.job) && isStarving(tick)) {
+    eatProvisions(person, tick.tribe);
+  }
+
   if (shouldInterrupt(tick, person.job)) {
     assignJob(tick, decideJob(tick));
   }
+}
+
+function isOnTheRoad(job: Job): boolean {
+  return job.isExpedition === true || job.kind === "deliver";
 }
 
 export function assignJob(tick: PersonTick, job: Job): void {
@@ -107,7 +124,7 @@ function fleeFrom(tick: PersonTick, radius: number): void {
 }
 
 function hasFood(tick: PersonTick): boolean {
-  return tick.tribe.stock.food >= 1 || tick.person.carrying.food >= 1;
+  return totalFood(tick.tribe.stock) >= 1 || carriedFood(tick.person) >= 1;
 }
 
 function isStarving(tick: PersonTick): boolean {
@@ -115,7 +132,6 @@ function isStarving(tick: PersonTick): boolean {
 }
 
 function shouldInterrupt(tick: PersonTick, job: Job): boolean {
-  const { person } = tick;
   const { environment } = tick.context;
 
   if (job.kind === "flee") {
@@ -130,11 +146,29 @@ function shouldInterrupt(tick: PersonTick, job: Job): boolean {
     return true;
   }
 
-  if (environment.isNight && !NIGHT_JOBS.has(job.kind)) {
+  if (environment.isNight && !NIGHT_JOBS.has(job.kind) && job.isExpedition !== true) {
     return true;
   }
 
-  return person.warmth < FREEZING && job.kind !== "warm" && hasLitCampfire(tick.tribe, tick.context.buildings);
+  if (job.isExpedition === true && !isExpeditionSeason(environment.season)) {
+    return true;
+  }
+
+  if (job.kind === "eat" || job.kind === "warm") {
+    return false;
+  }
+
+  return isFreezingOnTheWay(tick, FREEZING);
+}
+
+function isFreezingOnTheWay(tick: PersonTick, threshold: number): boolean {
+  const place = nearestWarmPlace(tick);
+
+  if (place === null || isWithinReach(tick, place)) {
+    return false;
+  }
+
+  return warmthOnArrival(tick, place) < threshold;
 }
 
 export function decideJob(tick: PersonTick): Job {
@@ -146,7 +180,15 @@ export function decideJob(tick: PersonTick): Job {
   }
 
   if (isStarving(tick)) {
-    return new EatJob(tick, nearCamp(tribe, MEAL_SPREAD, tick.context.random));
+    return new EatJob(tick, mealPlace(tick));
+  }
+
+  if (isCarryingAnything(person) && carriedFood(person) <= 0) {
+    return new DeliverJob(tick);
+  }
+
+  if (isAwayOutOfSeason(tick)) {
+    return new HomewardJob(tick);
   }
 
   if (environment.isNight) {
@@ -154,7 +196,11 @@ export function decideJob(tick: PersonTick): Job {
   }
 
   if (person.hunger > HUNGRY && hasFood(tick)) {
-    return new EatJob(tick, nearCamp(tribe, MEAL_SPREAD, tick.context.random));
+    return new EatJob(tick, mealPlace(tick));
+  }
+
+  if (isCarryingAnything(person)) {
+    return new DeliverJob(tick);
   }
 
   const warming = warmingJob(tick);
@@ -170,24 +216,48 @@ export function decideJob(tick: PersonTick): Job {
   return adultActivity(tick);
 }
 
-function nightJob(tick: PersonTick): Job {
-  const campfire = litCampfireOf(tick.tribe, tick.context.buildings);
+function isAwayOutOfSeason(tick: PersonTick): boolean {
+  const { mover } = tick.person;
+  const { tribe } = tick;
 
-  if (campfire === null || tick.person.warmth >= FREEZING) {
+  const { day, season } = tick.context.environment;
+
+  if (isExpeditionSeason(season) || day - tick.person.strandedDay < STRANDED_RETRY_DAYS) {
+    return false;
+  }
+
+  return Math.hypot(mover.x - tribe.campX, mover.z - tribe.campZ) > HOMEWARD_DISTANCE;
+}
+
+function mealPlace(tick: PersonTick): Waypoint {
+  const { mover } = tick.person;
+  const { tribe } = tick;
+
+  if (Math.hypot(mover.x - tribe.campX, mover.z - tribe.campZ) > PACKED_MEAL_DISTANCE) {
+    return { x: mover.x, z: mover.z };
+  }
+
+  return nearCamp(tribe, MEAL_SPREAD, tick.context.random);
+}
+
+function nightJob(tick: PersonTick): Job {
+  const place = nearestWarmPlace(tick);
+
+  if (place === null || warmthOnArrival(tick, place) >= FREEZING) {
     return new SleepJob(tick);
   }
 
-  return new WarmJob(tick, campfire);
+  return new WarmJob(tick, place);
 }
 
 function warmingJob(tick: PersonTick): Job | null {
-  const campfire = litCampfireOf(tick.tribe, tick.context.buildings);
+  const place = nearestWarmPlace(tick);
 
-  if (campfire === null || tick.person.warmth >= CHILLY) {
+  if (place === null || isWithinReach(tick, place) || warmthOnArrival(tick, place) >= CHILLY) {
     return null;
   }
 
-  return new WarmJob(tick, campfire);
+  return new WarmJob(tick, place);
 }
 
 function migrationJob(tick: PersonTick): Job {

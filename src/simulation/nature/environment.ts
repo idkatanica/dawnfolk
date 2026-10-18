@@ -10,6 +10,7 @@ const SUMMER_PEAK_SEASON = 1.6;
 export interface Environment {
   airTemperatureOffset: number;
   day: number;
+  daySeconds: number;
   drought: number;
   hours: number;
   isNight: boolean;
@@ -43,6 +44,7 @@ export function describeEnvironment(calendar: Calendar, weather: WeatherSystem):
   return {
     airTemperatureOffset,
     day: calendar.day,
+    daySeconds: calendar.daySeconds,
     drought: droughtLevel(season, state.precipitation, state.kind === "heat"),
     hours: calendar.hours,
     isNight: calendar.isNight,

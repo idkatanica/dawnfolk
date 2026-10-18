@@ -22,6 +22,11 @@ import {
 } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
+import { palisadeSegment, stoneWallSegment } from "./enclosures.ts";
+import { longhouse, stoneHouse } from "./era-dwellings.ts";
+import { forge, granary, kiln, smelter, workshop } from "./era-workplaces.ts";
+import { MINE_SCALE, mine } from "./mine-model.ts";
+import { scaledMesh } from "./structure-parts.ts";
 
 type BuildingDetailLevel = "high" | "low";
 
@@ -631,16 +636,45 @@ function totemSlot(point: SurfacePoint, bottom: number, height: number): Materia
 
 const BUILDERS: Readonly<Record<BuildingKind, (context: StructureContext) => void>> = {
   campfire,
+  forge,
+  granary,
   hut,
+  kiln,
+  longhouse,
+  mine,
+  palisade: palisadeSegment,
+  smelter,
+  stoneHouse,
+  stoneWall: stoneWallSegment,
   storehouse,
   tent,
   totem,
+  workshop,
 };
+
+const BUILDING_SCALES: Readonly<Partial<Record<BuildingKind, number>>> = {
+  campfire: 1.15,
+  hut: 1.4,
+  mine: MINE_SCALE,
+  storehouse: 1.25,
+  tent: 1.55,
+  totem: 1.2,
+};
+
+export function buildingScale(kind: BuildingKind): number {
+  const scale = BUILDING_SCALES[kind];
+
+  if (scale === undefined) {
+    return 1;
+  }
+
+  return scale;
+}
 
 export function buildBuildingModel(kind: BuildingKind, level: BuildingDetailLevel): MeshData {
   const builder = new MeshBuilder();
 
   BUILDERS[kind]({ builder, level, random: createRandom(kind.length * 31 + 7) });
 
-  return builder.build();
+  return scaledMesh(builder.build(), buildingScale(kind));
 }

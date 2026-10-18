@@ -1,11 +1,15 @@
 import { isTreeSpecies, plantSpeciesDefinition } from "../../../content/plants.ts";
+import { pickUp } from "../person.ts";
+import { isProtectedPlant } from "../plots.ts";
 import { nearestPlant } from "../resources.ts";
 import type { PersonTick } from "../society-context.ts";
+import { workSeconds } from "../tools.ts";
 import { learn, markScarce } from "../tribe.ts";
 import { DeliverJob } from "./deliver-job.ts";
 import { Errand, headToWork, type Job, plantTarget } from "./job.ts";
 
 const CHOPPING_SECONDS = 7;
+const FELLING_YIELD = 2;
 const AXE_REACH = 0.75;
 const SEARCH_RADIUS = 320;
 
@@ -13,9 +17,14 @@ export function findTree(tick: PersonTick): ChopJob | null {
   const { person, tribe } = tick;
   const { vegetation } = tick.context.world;
 
+  const { day } = tick.context.environment;
+
   const tree = nearestPlant(tick.context.world, {
     accepts: (plant) =>
-      vegetation.isAlive(plant) && isTreeSpecies(vegetation.species[plant]) && !tribe.claimedPlants.has(plant),
+      vegetation.isAlive(plant) &&
+      isTreeSpecies(vegetation.species[plant]) &&
+      !tribe.claimedPlants.has(plant) &&
+      !isProtectedPlant(tribe, plant, vegetation.species[plant], day),
     radius: SEARCH_RADIUS,
     x: (tribe.campX + person.mover.x) / 2,
     z: (tribe.campZ + person.mover.z) / 2,
@@ -39,7 +48,7 @@ class ChopJob implements Job {
     const target = plantTarget(tick.context.world.vegetation, tree, AXE_REACH);
 
     this.claimedPlant = tree;
-    this.#errand = new Errand(CHOPPING_SECONDS, "chop", target);
+    this.#errand = new Errand(workSeconds(tick.tribe, CHOPPING_SECONDS), "chop", target);
     tick.tribe.claimedPlants.add(tree);
     headToWork(tick.person, target, tick.context);
   }
@@ -60,7 +69,7 @@ class ChopJob implements Job {
     }
 
     tick.tribe.claimedPlants.delete(tree);
-    tick.person.carrying.wood += plantSpeciesDefinition(world.vegetation.species[tree]).wood;
+    pickUp(tick.person, "wood", plantSpeciesDefinition(world.vegetation.species[tree]).wood * FELLING_YIELD, "wood");
     world.removePlant(tree);
     learn(tick.tribe, 0.4, tick.context.rules);
 

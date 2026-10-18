@@ -1,9 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { TechnologyId } from "../content/technologies.ts";
 import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../world/agent-buffers.ts";
 import { Simulation, TICK_SECONDS } from "./simulation.ts";
 import { createVegetatedWorld } from "./testing/test-world.ts";
 
 const WORLD_OPTIONS = { dimensions: { cellSize: 10, cellsPerSide: 96 } };
+const ADVANCED: readonly TechnologyId[] = [
+  "fire",
+  "shelter",
+  "spear",
+  "storage",
+  "archery",
+  "huts",
+  "pottery",
+  "farming",
+];
 
 function createSimulation(): Simulation {
   const simulation = new Simulation(createVegetatedWorld(WORLD_OPTIONS));
@@ -224,5 +235,32 @@ describe("determinism", () => {
     second.runTicks(300);
 
     expect(first.advance(0).people).toEqual(second.advance(0).people);
+  });
+
+  it("replays the economy of advanced tribes the same way", () => {
+    const runs = [createSimulation(), createSimulation()].map((simulation) => {
+      simulation.populate();
+
+      for (const tribe of simulation.society.tribes()) {
+        for (const technology of ADVANCED) {
+          tribe.technologies.add(technology);
+        }
+
+        tribe.stock.wood = 80;
+        tribe.stock.stone = 40;
+        tribe.stock.clay = 20;
+      }
+
+      simulation.runTicks(4000);
+
+      return simulation.advance(0);
+    });
+
+    const [first, second] = runs;
+
+    expect(first.people).toEqual(second.people);
+    expect(first.tribes).toEqual(second.tribes);
+    expect(first.buildings).toEqual(second.buildings);
+    expect(first.buildings.length).toBeGreaterThan(2);
   });
 });

@@ -1,5 +1,8 @@
+import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
+import { WEAPON_KINDS } from "../../content/weapons.ts";
 import { CARRIED_ITEMS, PERSON_POSES } from "../../world/agent-poses.ts";
+import { MaterialSlot } from "../materials.ts";
 import { type MeshData, mergeMeshes, triangleCount, VERTEX_CHANNELS } from "../mesh/mesh-data.ts";
 import { MAXIMUM_PARTS } from "../part-mask.ts";
 import { Pose } from "../rig/pose.ts";
@@ -184,6 +187,7 @@ const OUTFITS: readonly (readonly HumanPart[])[] = [
   ["hairBraids", "hairBun", "dress", "cloak", "paint"],
   ["hairPonytail", "hairWild", "beardShort", "wrap", "loincloth"],
   ["hairShort", "hairFringe"],
+  ["hairShort", "tunic", "cape", "boots", "torc", "brooch", "buckle", "helmet"],
 ];
 
 describe("moving parts", () => {
@@ -281,10 +285,75 @@ describe("visible parts", () => {
     expect(activityParts("carry", "wood")).toEqual(["carriedWood"]);
     expect(activityParts("walk", "wood")).toEqual([]);
     expect(activityParts("fish", "fish")).toEqual(["spear"]);
+    expect(activityParts("mine", "nothing")).toEqual(["pickaxe"]);
+    expect(activityParts("carry", "ore")).toEqual(["carriedOre"]);
+  });
+
+  it("arms hunters with the weapon they carry", () => {
+    expect(activityParts("walk", "nothing", "bow")).toEqual(["bow", "quiver"]);
+    expect(activityParts("run", "nothing", "spear")).toEqual(["spear"]);
+    expect(activityParts("shoot", "nothing", "bow")).toEqual(["drawnBow", "quiver"]);
+    expect(activityParts("throw", "nothing", "spear")).toEqual(["spear"]);
+    expect(activityParts("eat", "nothing", "bow")).toEqual([]);
   });
 
   it("packs visible parts into the instance mask", () => {
     expect(humanPartMask(["body"])).toEqual([1, 0]);
     expect(humanPartMask(["body", "carriedCrops"])).toEqual([1, 2 ** (HUMAN_PARTS.indexOf("carriedCrops") - 24)]);
+  });
+});
+
+describe("weapons in hand", () => {
+  const hunter = personAppearance({ age: 30, era: 5, isFemale: false, seed: 0.37, tribe: TRIBE });
+  const poser = new SkeletonPoser(HUMAN_SKELETON);
+  const pose = new Pose(HUMAN_SKELETON.bones.length);
+
+  function posedParts(clip: (typeof PERSON_POSES)[number], phase: number, names: readonly HumanPart[]): MeshData {
+    applyHumanClip(pose, clip, phase, { ageGroup: hunter.ageGroup, carried: "nothing", motion: hunter.motion });
+    poser.pose(pose, humanBoneScales(hunter.body));
+
+    return posedMesh(mergeMeshes(names.map((name) => highParts[humanPartIndex(name)])), poser);
+  }
+
+  it.each(["walk", "run", "idle"] as const)("keeps the bow, the quiver and the spear on a hunter to %s", (clip) => {
+    const body = bodyPartsOf(hunter);
+
+    for (const weapon of WEAPON_KINDS) {
+      for (const phase of [0.1, 0.45, 0.8]) {
+        const names = [...body, ...activityParts(clip, "nothing", weapon)];
+        const mesh = posedParts(clip, phase, names);
+        const loose = detachedPieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body))).map((piece) =>
+          describePiece(mesh, piece)
+        );
+
+        expect(loose, `${weapon} ${phase}`).toEqual([]);
+      }
+    }
+  });
+
+  it("points the nocked arrow past the bow towards the target at full draw", () => {
+    const mesh = posedParts("shoot", 0.5, ["drawnBow"]);
+    const bowHand = poser.jointPosition(HumanBone.HandLeft, new Vector3());
+    const arrowhead = Array.from({ length: mesh.positions.length / 3 }, (_, vertex) => vertex).filter(
+      (vertex) => mesh.channels.slot[vertex] === MaterialSlot.Metal
+    );
+    const farthest = Math.max(...arrowhead.map((vertex) => mesh.positions[vertex * 3 + 2]));
+
+    expect(arrowhead.length).toBeGreaterThan(0);
+    expect(farthest).toBeGreaterThan(bowHand.z + 0.05);
+  });
+
+  it("stretches the bow string from the bow tips to the drawing hand", () => {
+    const mesh = posedParts("shoot", 0.5, ["drawnBow"]);
+    const drawHand = poser.jointPosition(HumanBone.HandRight, new Vector3());
+    const string = Array.from({ length: mesh.positions.length / 3 }, (_, vertex) => vertex).filter(
+      (vertex) => mesh.channels.slot[vertex] === MaterialSlot.Rope && mesh.channels.boneWeight[vertex] === 1
+    );
+    const nearest = Math.min(
+      ...string.map((vertex) => new Vector3().fromArray(mesh.positions, vertex * 3).distanceTo(drawHand))
+    );
+
+    expect(string.length).toBeGreaterThan(0);
+    expect(nearest).toBeLessThan(0.15);
   });
 });

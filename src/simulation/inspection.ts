@@ -132,6 +132,12 @@ function personActivity(person: Person): string {
     return JOB_LABELS.idle;
   }
 
+  const { label } = person.job;
+
+  if (label !== undefined) {
+    return label;
+  }
+
   return JOB_LABELS[person.job.kind];
 }
 
@@ -254,5 +260,5 @@ function inspectTribe(id: number, sources: InspectionSources): TribeInspection |
     return null;
   }
 
-  return { kind: "tribe", summary: describeTribe(tribe, sources.society.membersOf(tribe)) };
+  return { kind: "tribe", summary: describeTribe(tribe, sources.society.membersOf(tribe), sources) };
 }

@@ -1,4 +1,5 @@
 import { fractionalPart, lerp, smoothstep } from "../shared/math.ts";
+import { DEPOSIT_GROUNDS, DepositGround } from "./deposit-grounds.ts";
 import { SEASON_COUNT } from "./seasons.ts";
 
 export const Ground = {
@@ -14,13 +15,14 @@ export const Ground = {
   Steppe: 1,
   Swamp: 8,
   Tundra: 7,
+  ...DepositGround,
 } as const;
 
 export type GroundIndex = (typeof Ground)[keyof typeof Ground];
 
 export type Color = readonly [number, number, number];
 
-interface GroundDefinition {
+export interface GroundDefinition {
   fertility: number;
   flammability: number;
   fuel: number;
@@ -225,6 +227,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     ],
     walkSpeed: 0.75,
   },
+  ...DEPOSIT_GROUNDS,
 ];
 
 export function groundDefinition(index: number): GroundDefinition {

@@ -4,6 +4,7 @@ export type ChronicleCategory =
   | "building"
   | "death"
   | "discovery"
+  | "era"
   | "fire"
   | "food"
   | "gift"

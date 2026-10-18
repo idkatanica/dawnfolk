@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { PlantSpecies } from "../../content/plants.ts";
 import { firstMemberTick, SocietyHarness, settle } from "../testing/test-society.ts";
 import { plantInCell } from "../testing/test-world.ts";
-import { canAfford, housingCapacity, planConstruction } from "./construction.ts";
+import { canAfford, planConstruction } from "./construction.ts";
 import { decideJob } from "./decisions.ts";
+import { housingCapacity } from "./housing.ts";
 import { findCampSite, scoreSite, siteSearchNear } from "./settlement.ts";
 import { chooseWork } from "./work-planner.ts";
 
@@ -103,7 +104,7 @@ describe("work planning", () => {
 
     const chosen = Array.from({ length: 40 }, () => chooseWork(tick)?.kind);
 
-    expect(tribe.buildings.constructionSiteId).toBeNull();
+    expect(harness.buildings.find(tribe.buildings.constructionSiteId)?.kind).not.toBe("hut");
     expect(chosen).toContain("quarry");
   });
 
@@ -115,7 +116,7 @@ describe("work planning", () => {
     const tick = firstMemberTick(harness, tribe);
 
     tick.person.hunger = 0.9;
-    tribe.stock.food = 5;
+    tribe.stock.berries = 5;
 
     expect(decideJob(tick).kind).toBe("eat");
   });
@@ -127,7 +128,7 @@ describe("work planning", () => {
 
     const [person] = harness.society.membersOf(tribe);
 
-    tribe.stock.food = 20;
+    tribe.stock.berries = 20;
     harness.run(20);
     person.hunger = 0.9;
     harness.run(30);
@@ -145,7 +146,7 @@ describe("work planning", () => {
     const tick = firstMemberTick(harness, tribe);
 
     tick.person.hunger = 0.8;
-    tribe.stock.food = 5;
+    tribe.stock.berries = 5;
 
     expect(decideJob(tick).kind).toBe("eat");
   });

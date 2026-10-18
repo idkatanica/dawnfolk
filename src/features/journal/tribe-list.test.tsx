@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
-import { createTribe, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { createStock, createTribe, resetWorld, showWorld } from "../testing/world-fixtures.ts";
 import { TribeList } from "./tribe-list.tsx";
 
 const EMPTY_ISLAND = "No tribes live on the island. Bring one with the Tribe power.";
@@ -30,7 +30,7 @@ describe("tribe list", () => {
     showWorld({
       tribes: [
         createTribe({ eraName: "Wanderers", id: 1, name: "Bear Clan", population: 7 }),
-        createTribe({ eraName: "Hunters", id: 2, name: "Wolf Clan", population: 12 }),
+        createTribe({ eraName: "Bronze Age", id: 2, name: "Wolf Clan", population: 12 }),
       ],
     });
 
@@ -42,8 +42,41 @@ describe("tribe list", () => {
     expect(screen.getByRole("listitem").elements()).toHaveLength(2);
     await expect.element(bearClan.getByText("Wanderers", { exact: true })).toBeVisible();
     await expect.element(bearClan.getByText("7", { exact: true })).toBeVisible();
-    await expect.element(wolfClan.getByText("Hunters", { exact: true })).toBeVisible();
+    await expect.element(wolfClan.getByText("Bronze Age", { exact: true })).toBeVisible();
     await expect.element(wolfClan.getByText("12", { exact: true })).toBeVisible();
+  });
+
+  it("shows the stores of food, wood, stone and the best metal of each tribe", async () => {
+    showWorld({
+      tribes: [
+        createTribe({ id: 1, name: "Bear Clan", stock: createStock({ bronze: 6, fish: 5, grain: 20, wood: 14 }) }),
+      ],
+    });
+
+    const screen = await render(<TribeList />);
+
+    const bearClan = screen.getByRole("button", { exact: false, name: "Bear Clan" });
+
+    await expect.element(bearClan.getByText("25", { exact: true })).toBeVisible();
+    await expect.element(bearClan.getByText("14", { exact: true })).toBeVisible();
+    await expect.element(bearClan.getByText("Bronze", { exact: true })).toBeInTheDocument();
+    await expect.element(bearClan.getByText("6", { exact: true })).toBeVisible();
+  });
+
+  it("names the ore a tribe still has to find", async () => {
+    showWorld({
+      tribes: [
+        createTribe({
+          goal: { isBlocked: true, need: "6 copper ore", progress: 1, technologyName: "Copper smelting" },
+          id: 1,
+          name: "Bear Clan",
+        }),
+      ],
+    });
+
+    const screen = await render(<TribeList />);
+
+    await expect.element(screen.getByText("Needs 6 copper ore", { exact: true })).toBeVisible();
   });
 
   it("marks the tribes that are on the move", async () => {

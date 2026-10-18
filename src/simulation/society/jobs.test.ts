@@ -14,10 +14,12 @@ import { findGame, HuntJob } from "./jobs/hunt-job.ts";
 import type { Job } from "./jobs/job.ts";
 import { findStone } from "./jobs/quarry-job.ts";
 import { TendJob } from "./jobs/tend-job.ts";
+import { carriedAmount, pickUp, type Weapon } from "./person.ts";
 import { nearestShore } from "./resources.ts";
 import type { PersonTick } from "./society-context.ts";
 
 const MORNING = 0.3;
+const STONE_SPEAR: Weapon = { kind: "spear", material: "stone" };
 const WORK_SPOT_TOLERANCE = 0.35;
 const FACING_TOLERANCE = 0.05;
 const ROCKS: readonly PlantSpeciesIndex[] = PLANT_SPECIES.filter((species) => isRockSpecies(species.index)).map(
@@ -160,7 +162,7 @@ describe("quarrying", () => {
     expect(job.kind).toBe("quarry");
     expect(job.claimedPlant).toBe(rock);
 
-    workUntilPosed(job, tick, "dig");
+    workUntilPosed(job, tick, "mine");
 
     expect(placementAt(tick, rock, 0.6).missedBy).toBeLessThan(WORK_SPOT_TOLERANCE);
   });
@@ -182,12 +184,12 @@ describe("feeding the campfire", () => {
     campfire.progress = 1;
     campfire.fuel = 0.2;
     tribe.stock.wood = 5;
-    tick.person.carrying.wood = 3;
+    pickUp(tick.person, "wood", 3, "wood");
 
     expect(runToCompletion(new TendJob(tick, campfire), tick, 60)).toBe(true);
     expect(campfire.fuel).toBeCloseTo(0.65);
     expect(tribe.stock.wood).toBe(4);
-    expect(tick.person.carrying.wood).toBe(3);
+    expect(carriedAmount(tick.person, "wood")).toBe(3);
   });
 });
 
@@ -221,7 +223,7 @@ describe("hunting mammoths", () => {
         break;
       }
 
-      runToCompletion(new HuntJob(tick, mammoth), tick, 60);
+      runToCompletion(new HuntJob(tick, mammoth, STONE_SPEAR), tick, 60);
     }
 
     expect(tick.person.isAlive).toBe(false);
@@ -240,6 +242,7 @@ describe("choosing game", () => {
 
     const tick = firstMemberTick(harness, tribe);
 
+    tribe.stock.spears = 2;
     harness.fauna.spawnHerd("wolf", tribe.campX + 30, tribe.campZ, 3, harness.random);
 
     expect(findGame(tick)).toBeNull();
@@ -276,7 +279,7 @@ describe("choosing game", () => {
         break;
       }
 
-      runToCompletion(new HuntJob(tick, ibex), tick, 30);
+      runToCompletion(new HuntJob(tick, ibex, STONE_SPEAR), tick, 30);
     }
 
     expect(ibex.isAlive).toBe(false);

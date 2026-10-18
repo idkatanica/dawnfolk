@@ -9,7 +9,7 @@ type BeardStyle = "full" | "none" | "short";
 
 type Outfit = "dress" | "loincloth" | "tunic" | "wrap";
 
-type Accessory = "armband" | "feather" | "headband" | "necklace" | "paint";
+type Accessory = "armband" | "brooch" | "buckle" | "feather" | "headband" | "helmet" | "necklace" | "paint" | "torc";
 
 export interface BodyShape {
   readonly build: number;
@@ -57,6 +57,7 @@ export interface TribeLook {
 
 export interface AppearanceInput {
   readonly age: number;
+  readonly era?: number;
   readonly isFemale: boolean;
   readonly seed: number;
   readonly tribe: TribeLook;
@@ -73,6 +74,16 @@ const HAIR_COLORS: readonly number[] = [0x1c_17_14, 0x2e_21_19, 0x4a_33_22, 0x6a
 const ELDER_HAIR: readonly number[] = [0x8f_8a_84, 0xb3_ae_a6, 0xd8_d4_cc];
 
 const HIDE_TONES: readonly number[] = [0x7a_55_36, 0x8e_64_40, 0xa5_77_4f, 0xb4_8a_5a];
+
+const LINEN_TONES: readonly number[] = [0xdc_d3_bc, 0xcf_c5_a8, 0xe6_df_ce, 0xc2_b8_9e];
+
+const DYES: readonly number[] = [0xa8_46_3a, 0x4a_6a_9a, 0xc8_a8_4a, 0x5e_7a_48];
+
+const ERA_SALT = 7919;
+const NEOLITHIC = 2;
+const COPPER_AGE = 3;
+const BRONZE_AGE = 4;
+const IRON_AGE = 5;
 
 interface WeightedChoice<Value> {
   readonly value: Value;
@@ -294,6 +305,102 @@ function clothingColors(random: RandomSource, tribe: TribeLook): Pick<Appearance
   return { fur, hide };
 }
 
+interface EraRolls {
+  readonly boots: number;
+  readonly brooch: number;
+  readonly buckle: number;
+  readonly cape: number;
+  readonly dye: number;
+  readonly dyeChoice: number;
+  readonly helmet: number;
+  readonly linen: number;
+  readonly linenTone: number;
+  readonly torc: number;
+}
+
+function eraRolls(seed: number): EraRolls {
+  const random = createRandom(Math.floor(seed * 2_147_483_647) + ERA_SALT);
+
+  return {
+    boots: random.next(),
+    brooch: random.next(),
+    buckle: random.next(),
+    cape: random.next(),
+    dye: random.next(),
+    dyeChoice: random.next(),
+    helmet: random.next(),
+    linen: random.next(),
+    linenTone: random.next(),
+    torc: random.next(),
+  };
+}
+
+function clothColor(rolls: EraRolls, era: number): number {
+  const linen = colorFromPalette(LINEN_TONES, rolls.linenTone);
+
+  if (era < BRONZE_AGE || rolls.dye > 0.35) {
+    return linen;
+  }
+
+  return mixColors(linen, colorFromPalette(DYES, rolls.dyeChoice), 0.55);
+}
+
+function eraColors(appearance: PersonAppearance, rolls: EraRolls, era: number): AppearanceColors {
+  const { colors } = appearance;
+
+  if (rolls.linen > 0.5) {
+    return colors;
+  }
+
+  const cloth = clothColor(rolls, era);
+
+  return { ...colors, fur: appearance.outfit === "tunic" ? cloth : colors.fur, hide: cloth };
+}
+
+function eraAccessories(appearance: PersonAppearance, rolls: EraRolls, era: number, hasCape: boolean): Set<Accessory> {
+  const isAdult = appearance.ageGroup !== "child";
+  const details = new Set(appearance.accessories);
+
+  if (era >= COPPER_AGE && isAdult && rolls.torc < (appearance.isFemale ? 0.28 : 0.4)) {
+    details.add("torc");
+  }
+
+  if (era >= BRONZE_AGE && isAdult && rolls.buckle < 0.5) {
+    details.add("buckle");
+  }
+
+  if (era >= BRONZE_AGE && (hasCape || appearance.hasCloak) && rolls.brooch < 0.7) {
+    details.add("brooch");
+  }
+
+  if (era >= IRON_AGE && isAdult && !appearance.isFemale && rolls.helmet < 0.4) {
+    details.add("helmet");
+    details.delete("headband");
+    details.delete("feather");
+  }
+
+  return details;
+}
+
+function withEraDetails(appearance: PersonAppearance, era: number, seed: number): PersonAppearance {
+  if (era < NEOLITHIC) {
+    return appearance;
+  }
+
+  const rolls = eraRolls(seed);
+
+  const wearsCape = era >= BRONZE_AGE && appearance.ageGroup !== "child" && rolls.cape < 0.3;
+  const hasCape = appearance.hasCape || wearsCape;
+
+  return {
+    ...appearance,
+    accessories: eraAccessories(appearance, rolls, era, hasCape),
+    colors: eraColors(appearance, rolls, era),
+    hasBoots: appearance.hasBoots || (era >= IRON_AGE && rolls.boots < 0.6),
+    hasCape,
+  };
+}
+
 export function personAppearance(input: AppearanceInput): PersonAppearance {
   const random = createRandom(Math.floor(input.seed * 2_147_483_647) + 1);
   const ageGroup = ageGroupOf(input.age);
@@ -304,7 +411,7 @@ export function personAppearance(input: AppearanceInput): PersonAppearance {
   const skin = colorFromPalette(SKIN_TONES, skinDarkness);
   const hair = mixColors(hairColor(random, ageGroup, skinDarkness), ELDER_HAIR[1], elderGrey * 0.3);
 
-  return {
+  const appearance: PersonAppearance = {
     accessories: accessories(random, ageGroup),
     ageGroup,
     beard: beardStyle(random, ageGroup, input.isFemale),
@@ -318,4 +425,6 @@ export function personAppearance(input: AppearanceInput): PersonAppearance {
     motion: motionStyle(random, ageGroup),
     outfit: outfit(random, ageGroup, input.isFemale),
   };
+
+  return withEraDetails(appearance, input.era === undefined ? 0 : input.era, input.seed);
 }

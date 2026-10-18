@@ -1,5 +1,5 @@
 import { faceTowards } from "../../agents/movement.ts";
-import { pickUpFood } from "../person.ts";
+import { carriedFood, pickUp } from "../person.ts";
 import { nearestShore, type ShoreSpot } from "../resources.ts";
 import type { PersonTick } from "../society-context.ts";
 import { learn, markScarce } from "../tribe.ts";
@@ -48,12 +48,12 @@ class FishJob implements Job {
     }
 
     if (tick.context.random.chance(CATCH_CHANCE)) {
-      pickUpFood(tick.person, FISH_PER_CATCH, "fish");
+      pickUp(tick.person, "fish", FISH_PER_CATCH, "fish");
     }
 
     learn(tick.tribe, 0.5, tick.context.rules);
 
-    if (tick.person.carrying.food >= FISH_PER_CATCH) {
+    if (carriedFood(tick.person) >= FISH_PER_CATCH) {
       return new DeliverJob(tick);
     }
 

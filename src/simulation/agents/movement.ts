@@ -154,7 +154,6 @@ export function moveAlong(
   if (distanceLeft < arrivalDistance) {
     mover.pathIndex += 1;
     stopMoving(mover);
-    forgetReplans(mover);
 
     return hasArrived(mover);
   }

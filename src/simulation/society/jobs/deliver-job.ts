@@ -1,7 +1,7 @@
 import type { Waypoint } from "../../agents/navigation.ts";
-import { dropCarrying, walkSpeed } from "../person.ts";
+import { dropCarrying, isCarryingAnything, walkSpeed } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
-import type { Tribe } from "../tribe.ts";
+import { addToStock } from "../stock.ts";
 import { completedBuilding, nearCamp } from "../tribe-places.ts";
 import { headTo, type Job, walk } from "./job.ts";
 
@@ -18,7 +18,7 @@ export class DeliverJob implements Job {
   update(tick: PersonTick): Job | null {
     const { carrying } = tick.person;
 
-    const isHeavy = carrying.wood + carrying.stone > HEAVY_LOAD;
+    const isHeavy = isCarryingAnything(tick.person) && carrying.item !== "berries" && carrying.amount > HEAVY_LOAD;
 
     if (!walk(tick, walkSpeed(tick.person) * (isHeavy ? HEAVY_LOAD_SPEED : 1))) {
       return this;
@@ -43,12 +43,11 @@ function deliveryPoint(tick: PersonTick): Waypoint {
 }
 
 function storeCarrying(tick: PersonTick): void {
-  addToStock(tick.tribe, tick.person.carrying);
-  dropCarrying(tick.person);
-}
+  const { amount, resource } = tick.person.carrying;
 
-function addToStock(tribe: Tribe, carrying: { food: number; stone: number; wood: number }): void {
-  tribe.stock.food += carrying.food;
-  tribe.stock.stone += carrying.stone;
-  tribe.stock.wood += carrying.wood;
+  if (resource !== null) {
+    addToStock(tick.tribe.stock, resource, amount);
+  }
+
+  dropCarrying(tick.person);
 }
