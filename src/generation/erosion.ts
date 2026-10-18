@@ -1,4 +1,4 @@
-import { lerp } from "../shared/math.ts";
+import { clamp, lerp } from "../shared/math.ts";
 import type { RandomSource } from "../shared/random.ts";
 
 interface HydraulicErosionOptions {
@@ -61,14 +61,16 @@ function createBrush(radius: number, size: number): ErosionBrush {
     for (let column = -radius; column <= radius; column += 1) {
       const distanceFromCenter = Math.sqrt(column * column + row * row);
 
-      if (distanceFromCenter <= radius) {
-        const weight = 1 - distanceFromCenter / radius;
-
-        columns.push(column);
-        rows.push(row);
-        weights.push(weight);
-        weightSum += weight;
+      if (distanceFromCenter > radius) {
+        continue;
       }
+
+      const weight = 1 - distanceFromCenter / radius;
+
+      columns.push(column);
+      rows.push(row);
+      weights.push(weight);
+      weightSum += weight;
     }
   }
 
@@ -179,6 +181,7 @@ function simulateDroplet(
   sample: SurfaceSample
 ): void {
   const { brush, map, size } = terrain;
+
   const limit = size - 2;
 
   let directionX = 0;
@@ -281,7 +284,7 @@ function downsample(heights: Float32Array, size: number, factor: number): Float3
 }
 
 function coarseCoordinate(fine: number, factor: number, coarseSize: number): number {
-  return Math.min(Math.max((fine - (factor - 1) / 2) / factor, 0), coarseSize - 1);
+  return clamp((fine - (factor - 1) / 2) / factor, 0, coarseSize - 1);
 }
 
 function addUpsampledChange(
@@ -336,11 +339,14 @@ export function erodeAcrossScales(
 ): void {
   for (const [index, scale] of scales.entries()) {
     const coarseSize = size / scale.factor;
-    const report = (progress: number) => onProgress((index + progress) / scales.length);
     const options = {
       ...DEFAULT_HYDRAULIC_EROSION,
       dropletCount: Math.round(coarseSize * coarseSize * scale.dropletsPerCell),
     };
+
+    function report(progress: number): void {
+      onProgress((index + progress) / scales.length);
+    }
 
     if (scale.factor === 1) {
       erodeHydraulically(heights, resistance, random, options, report);
@@ -374,6 +380,7 @@ interface SlopeRelaxation {
 
 function shedExcess(relaxation: SlopeRelaxation, column: number, row: number): boolean {
   const { change, heights, neighborhood, size } = relaxation;
+
   const cell = row * size + column;
   const height = heights[cell];
   const allowedDrop = relaxation.talus[cell] * relaxation.cellSize;

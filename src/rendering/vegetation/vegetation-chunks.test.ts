@@ -45,7 +45,6 @@ function alivePlantCount(mirror: WorldMirror): number {
 describe("vegetation chunks", () => {
   it("packs every standing plant once", () => {
     const mirror = createMirror();
-
     const chunks = new VegetationChunks(mirror);
 
     chunks.repackDirty();
@@ -66,7 +65,6 @@ describe("vegetation chunks", () => {
 
   it("drops removed plants after a change", () => {
     const mirror = createMirror();
-
     const chunks = new VegetationChunks(mirror);
 
     chunks.repackDirty();
@@ -79,13 +77,11 @@ describe("vegetation chunks", () => {
 
   it("places plants on the ground", () => {
     const mirror = createMirror();
-
     const chunks = new VegetationChunks(mirror);
 
     chunks.repackDirty();
 
     const chunk = chunks.chunks.find((candidate) => candidate.plants.size > 0);
-
     const bucket = chunk?.buckets.find((candidate) => candidate.length > 0);
 
     if (bucket === undefined) {
@@ -99,7 +95,6 @@ describe("vegetation chunks", () => {
 
   it("sinks plants on a slope until their downhill side touches the ground", () => {
     const mirror = createMirror({ heightAt: (x) => 100 + x * SLOPE });
-
     const chunks = new VegetationChunks(mirror);
 
     chunks.repackDirty();

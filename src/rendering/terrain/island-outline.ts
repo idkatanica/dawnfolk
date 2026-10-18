@@ -80,9 +80,7 @@ function coastAngle(index: number): number {
 
 function radiusAt(radii: Float32Array, angle: number): number {
   const sample = ((((angle / FULL_TURN) % 1) + 1) % 1) * radii.length;
-
   const index = Math.floor(sample);
-
   const following = (index + 1) % radii.length;
 
   return radii[index] + (radii[following] - radii[index]) * (sample - index);
@@ -90,7 +88,6 @@ function radiusAt(radii: Float32Array, angle: number): number {
 
 function latticeLinesAt(grid: WorldGrid, radii: Float32Array, angle: number): LatticeLines {
   const radius = radiusAt(radii, angle);
-
   const column = (Math.cos(angle) * radius + grid.halfSize) / grid.cellSize - 0.5;
   const row = (Math.sin(angle) * radius + grid.halfSize) / grid.cellSize - 0.5;
 
@@ -124,7 +121,6 @@ function latticeCrossings(grid: WorldGrid, radii: Float32Array): number[] {
   for (let step = 1; step <= WALK_STEPS; step += 1) {
     const from = ((step - 1) / WALK_STEPS) * FULL_TURN;
     const to = (step / WALK_STEPS) * FULL_TURN;
-
     const current = latticeLinesAt(grid, radii, to);
 
     for (const [family, line] of current.entries()) {
@@ -188,17 +184,15 @@ export class IslandOutline {
     return [Math.cos(angle) * radius, Math.sin(angle) * radius];
   }
 
-  insideNode(point: Node<"vec2">, margin: number): Node<"bool"> {
+  insideNode(point: Node<"vec2">): Node<"bool"> {
     if (this.#texture === null) {
       const { cellSize, halfSize } = this.#grid;
 
-      return max(abs(point.x), abs(point.y)).lessThan(halfSize - cellSize / 2 - margin);
+      return max(abs(point.x), abs(point.y)).lessThan(halfSize - cellSize / 2);
     }
 
     const sample = fract(atan(point.y, point.x).div(FULL_TURN)).mul(COAST_SAMPLES);
-
     const index = floor(sample);
-
     const following = index.add(1).mod(COAST_SAMPLES);
     const radius = mix(
       textureLoad(this.#texture, ivec2(vec2(index, 0))).x,
@@ -206,7 +200,7 @@ export class IslandOutline {
       sample.sub(index)
     );
 
-    return length(point).lessThan(radius.sub(margin));
+    return length(point).lessThan(radius);
   }
 
   dispose(): void {

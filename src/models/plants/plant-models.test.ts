@@ -14,7 +14,7 @@ import {
   PLANT_DETAIL_LEVELS,
   plantVariantCount,
 } from "./plant-models.ts";
-import { FOLIAGE_FLUTTER, plantSway } from "./tree-mesher.ts";
+import { FOLIAGE_FLUTTER, type PlantDetailLevel, plantSway } from "./tree-mesher.ts";
 
 const TOUCHING = 0.01;
 const RADIUS_TOLERANCE = 0.2;
@@ -69,7 +69,7 @@ function workingRadius(species: PlantSpeciesIndex): number {
   return footprintRadius(species);
 }
 
-function averageTriangles(species: PlantSpeciesIndex, level: (typeof PLANT_DETAIL_LEVELS)[number]): number {
+function averageTriangles(species: PlantSpeciesIndex, level: PlantDetailLevel): number {
   const variants = buildPlantVariants(species, level);
 
   return variants.reduce((sum, mesh) => sum + triangleCount(mesh), 0) / variants.length;
@@ -91,7 +91,6 @@ describe.each(SPECIES)("plant species %i", (species) => {
   it("stands on the ground at about its canonical height", () => {
     const height = canonicalHeight(species);
     const shortest = shortestVariantShare(species);
-
     const variants = buildPlantVariants(species, "high");
 
     for (const mesh of variants) {
@@ -146,7 +145,6 @@ describe.each(SPECIES)("plant species %i", (species) => {
     for (const level of PLANT_DETAIL_LEVELS) {
       for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
         const bent = windBentMesh(mesh, STORM_PUSH);
-
         const detached = detachedPieces(bent, TOUCHING).map((piece) => describePiece(bent, piece));
 
         expect(detached, `${level} variant ${variant}`).toEqual([]);
@@ -173,7 +171,6 @@ describe("tree details", () => {
 
     const foliage = vertices.filter(isFoliage);
     const wood = vertices.filter((vertex) => !isFoliage(vertex));
-
     const foot = wood.filter((vertex) => mesh.positions[vertex * 3 + 1] < canonicalHeight(species) / 3);
 
     function averageSway(group: readonly number[]): number {
@@ -195,7 +192,6 @@ describe("tree details", () => {
 
         for (const piece of foliage) {
           const top = highestVertex(willow, piece.vertices);
-
           const crownSway = plantSway(willow.positions[top * 3 + 1], canonicalHeight(PlantSpecies.Willow));
 
           expect(willow.channels.sway[top], level).toBeCloseTo(crownSway, 2);
@@ -208,7 +204,6 @@ describe("tree details", () => {
     for (const level of ["high", "medium"] as const) {
       for (const bush of buildPlantVariants(PlantSpecies.Bush, level)) {
         const vertices = Array.from({ length: vertexCount(bush) }, (_, vertex) => vertex);
-
         const berries = vertices.filter((vertex) => bush.channels.part[vertex] === BERRY_PART);
 
         expect(berries.length).toBeGreaterThan(0);

@@ -77,9 +77,7 @@ function wrapSeason(season: number): number {
   return ((season % SEASON_COUNT) + SEASON_COUNT) % SEASON_COUNT;
 }
 
-function interpolate(from: FoliageKey, to: FoliageKey, season: number, span: number): FoliageLook {
-  const offset = wrapSeason(season - from.season);
-
+function interpolate(from: FoliageKey, to: FoliageKey, offset: number, span: number): FoliageLook {
   const amount = span <= 0 ? 0 : offset / span;
 
   return { color: mixColors(from.color, to.color, amount), coverage: lerp(from.coverage, to.coverage, amount) };
@@ -91,11 +89,11 @@ export function foliageLook(species: PlantSpeciesIndex, season: number): Foliage
 
   for (const [index, key] of keys.entries()) {
     const next = keys[(index + 1) % keys.length];
-
     const span = wrapSeason(next.season - key.season);
+    const offset = wrapSeason(current - key.season);
 
-    if (wrapSeason(current - key.season) <= span) {
-      return interpolate(key, next, current, span);
+    if (offset <= span) {
+      return interpolate(key, next, offset, span);
     }
   }
 

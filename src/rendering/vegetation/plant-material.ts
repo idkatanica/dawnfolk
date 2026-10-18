@@ -33,6 +33,7 @@ import {
 import { Color, MeshStandardNodeMaterial, type Node, Vector2 } from "three/webgpu";
 import { MaterialSlot } from "../../models/materials.ts";
 import { BERRY_PART } from "../../models/plants/plant-models.ts";
+import { clamp as clampNumber } from "../../shared/math.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
@@ -53,7 +54,7 @@ export class PlantWeather {
   blow(directionX: number, directionZ: number, metersPerSecond: number, realSeconds: number): void {
     const frontSpeed = Math.max(metersPerSecond, SLOWEST_GUST_FRONT) * GUST_FRONT_SPEEDUP;
 
-    this.gust.value = Math.min(STRONGEST_GUST, Math.max(CALM_GUST, metersPerSecond / METERS_PER_SECOND_PER_GUST));
+    this.gust.value = clampNumber(metersPerSecond / METERS_PER_SECOND_PER_GUST, CALM_GUST, STRONGEST_GUST);
     this.gustTravel.value += frontSpeed * realSeconds;
     this.wind.value.set(directionX, directionZ);
   }
@@ -160,7 +161,6 @@ export function createPlantMaterial({
   const hasBerry = fruit.greaterThan(berryChance).and(hasFoliage);
 
   const keep = select(isFoliage, hasFoliage, select(isBerry, hasBerry, isBlossom.not().or(isBurnt.not())));
-
   const local = positionLocal.mul(scale).mul(select(keep, float(1), float(0)));
 
   const phase = placement.x.mul(0.047).add(placement.z.mul(0.031));
@@ -188,9 +188,7 @@ export function createPlantMaterial({
   })();
 
   const last = grid.cellsPerSide - 1;
-
   const cell = clamp(placement.xz.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
-
   const surface = textureLoad(textures.surface, ivec2(cell));
 
   const snow = varying(smoothstep(0.1, 0.45, surface.r), "plantSnow");

@@ -245,6 +245,7 @@ function riverBankWidth(strength: number): number {
 
 function markRiverBank(inputs: ClimateInputs, slopes: Float32Array, banks: Uint8Array, source: number): void {
   const { grid, heights, waterSurface } = inputs;
+
   const width = riverBankWidth(inputs.riverStrength[source]);
   const column = grid.columnOf(source);
   const row = grid.rowOf(source);
@@ -271,6 +272,7 @@ function markRiverBank(inputs: ClimateInputs, slopes: Float32Array, banks: Uint8
 
 function findRiverBanks(inputs: ClimateInputs, slopes: Float32Array): Uint8Array {
   const { heights, riverStrength, waterSurface } = inputs;
+
   const banks = new Uint8Array(heights.length);
 
   for (const [cell, strength] of riverStrength.entries()) {
@@ -360,8 +362,8 @@ function groundFor(biome: BiomeIndex, cell: CellClimate, waterLevel: number): Gr
 
 export function buildClimate(inputs: ClimateInputs): ClimateResult {
   const { grid, heights, waterSurface } = inputs;
-  const noise = createNoiseSampler(createRandom(inputs.seed * 13 + 5));
 
+  const noise = createNoiseSampler(createRandom(inputs.seed * 13 + 5));
   const waterDistance = distanceToWater(grid, waterSurface, heights);
   const slopes = measureSlopes(grid, heights);
   const riverBanks = findRiverBanks(inputs, slopes.slope);

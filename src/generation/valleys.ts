@@ -74,6 +74,7 @@ function cellsBelowLakes({ lakeIds, network }: DrainageBasins): Float32Array {
 
 function stampValley(carving: ValleyCarving, cell: number, floor: number, shape: ValleyShape): void {
   const { grid, heights, original } = carving;
+
   const reach = Math.ceil(shape.halfWidth / grid.cellSize);
   const column = grid.columnOf(cell);
   const row = grid.rowOf(cell);
@@ -123,6 +124,7 @@ function widestAlongRows(levels: Float32Array, size: number, reach: number): Flo
 
 function protectLakeRims(carving: ValleyCarving, basins: DrainageBasins): void {
   const { grid, heights, original } = carving;
+
   const levels = new Float32Array(grid.cellCount).fill(Number.NEGATIVE_INFINITY);
   const reach = Math.ceil(WIDEST_HALF_WIDTH / grid.cellSize);
 

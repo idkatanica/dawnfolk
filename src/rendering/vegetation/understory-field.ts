@@ -60,8 +60,8 @@ export class UnderstoryField {
 
   heightsChanged(region: CellRegion): void {
     const { grid } = this.#mirror;
-    const last = grid.cellsPerSide - 1;
 
+    const last = grid.cellsPerSide - 1;
     const firstColumn = Math.max(0, region.firstColumn - 1);
     const lastColumn = Math.min(last, region.lastColumn + 1);
     const firstRow = Math.max(0, region.firstRow - 1);

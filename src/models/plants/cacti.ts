@@ -5,7 +5,7 @@ import { MaterialSlot } from "../materials.ts";
 import { MeshBuilder, type SurfacePoint } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
 import { type LoftSection, loft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
-import { combine, transformOf } from "../mesh/transforms.ts";
+import { transformOf } from "../mesh/transforms.ts";
 import type { PlantDetailLevel } from "./tree-mesher.ts";
 
 export const CACTUS_FORMS = ["saguaro", "organPipe", "barrel", "pricklyPear"] as const;
@@ -50,6 +50,7 @@ interface Column {
 
 function columnSections(column: Column, ribs: number): LoftSection[] {
   const { height, leanX, leanZ, radius, x, z } = column;
+
   const ripple = ribbed(ribs);
 
   function at(amount: number, scale: number): LoftSection {
@@ -104,7 +105,6 @@ function saguaroArm(start: number, angle: number, trunkRadius: number, random: R
   const reach = random.between(0.45, 0.7);
   const rise = random.between(0.8, 1.5);
   const radius = trunkRadius * random.between(0.58, 0.68);
-
   const outward = new Vector3(Math.cos(angle), 0, Math.sin(angle));
 
   function point(distance: number, lift: number, scale: number): TubePoint {
@@ -139,9 +139,7 @@ function saguaro(builder: MeshBuilder, random: RandomSource, detail: CactusDetai
 
   for (let arm = 0; arm < arms; arm += 1) {
     const angle = firstAngle + (arm / arms) * FULL_TURN + random.signed() * 0.4;
-
     const points = saguaroArm(random.between(1.2, 2.3), angle, radius, random);
-
     const kept = detail.ribs === 0 ? points.filter((_point, index) => index % 2 === 0) : points;
 
     builder.add(tube(kept, { hasEndCap: false, radialSegments: Math.max(4, detail.segments - 4) }), {
@@ -198,7 +196,6 @@ function barrel(builder: MeshBuilder, random: RandomSource, detail: CactusDetail
     const radius = height * random.between(0.38, 0.46);
     const angle = random.next() * FULL_TURN;
     const offset = index === 0 ? 0 : random.between(0.5, 0.7);
-
     const position = new Vector3(Math.cos(angle) * offset, 0, Math.sin(angle) * offset);
 
     if (index >= detail.maximumStems) {
@@ -228,10 +225,11 @@ const PAD_THICKNESS = 0.3;
 const PAD_STRETCH = 1.3;
 
 function padTransform(pad: Pad) {
-  return combine(
-    transformOf({ position: pad.center.toArray(), rotation: [0, pad.turn, pad.tilt] }),
-    transformOf({ scale: [pad.size, pad.size * PAD_STRETCH, pad.size * PAD_THICKNESS] })
-  );
+  return transformOf({
+    position: pad.center.toArray(),
+    rotation: [0, pad.turn, pad.tilt],
+    scale: [pad.size, pad.size * PAD_STRETCH, pad.size * PAD_THICKNESS],
+  });
 }
 
 function padRim(pad: Pad, angle: number): Vector3 {
@@ -243,10 +241,8 @@ function padRim(pad: Pad, angle: number): Vector3 {
 function childPad(parent: Pad, random: RandomSource): Pad {
   const rimAngle = random.signed() * 1.25;
   const size = parent.size * random.between(0.78, 0.92);
-
   const tilt = parent.tilt - rimAngle * 0.9;
   const turn = parent.turn + random.signed() * 0.7;
-
   const upward = new Vector3(0, 1, 0).applyMatrix4(transformOf({ rotation: [0, turn, tilt] }));
 
   return {

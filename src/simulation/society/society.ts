@@ -209,7 +209,6 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
       const distance = Math.hypot(person.mover.x - x, person.mover.z - z);
 
       person.health -= damage * (1 - distance / radius);
-      person.fear = 1;
 
       if (person.health <= 0) {
         this.kill(person, cause);

@@ -82,6 +82,7 @@ function shuffled(cells: number[], random: RandomSource): number[] {
 
 function feedingCells(basins: DrainageBasins, siting: LakeSiting): number[] {
   const { grid } = siting;
+
   const lakeFeed = DEFAULT_HYDROLOGY.lakeMinimumCatchmentArea / (grid.cellSize * grid.cellSize);
   const candidates: number[] = [];
 
@@ -98,6 +99,7 @@ function feedingCells(basins: DrainageBasins, siting: LakeSiting): number[] {
 
 function chooseSites(heights: Float32Array, basins: DrainageBasins, siting: LakeSiting): LakeSite[] {
   const { grid } = siting;
+
   const cellArea = grid.cellSize * grid.cellSize;
   const ponds: Pond[] = basins.lakes.map((lake) => ({
     radius: Math.sqrt((lake.cellCount * cellArea) / Math.PI) + LAKE_CLEARANCE,

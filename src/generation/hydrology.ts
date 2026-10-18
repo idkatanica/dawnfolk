@@ -57,7 +57,7 @@ interface HydrologyResult {
   waterSurface: Float32Array;
 }
 
-export interface DrainageNetwork {
+interface DrainageNetwork {
   accumulation: Float32Array;
   filled: Float32Array;
   order: Int32Array;
@@ -118,10 +118,12 @@ function fillDepressions(heights: Float32Array, grid: WorldGrid, coastDistance: 
   const heap = new MinHeap(size * 16);
 
   function seedCell(cellIndex: number): void {
-    if (closed[cellIndex] === 0 && isOnIsland(coastDistance, cellIndex)) {
-      closed[cellIndex] = 1;
-      heap.push(cellIndex, filled[cellIndex]);
+    if (closed[cellIndex] === 1 || !isOnIsland(coastDistance, cellIndex)) {
+      return;
     }
+
+    closed[cellIndex] = 1;
+    heap.push(cellIndex, filled[cellIndex]);
   }
 
   for (let position = 0; position < size; position += 1) {
@@ -348,11 +350,11 @@ function largestByAccumulation(cells: readonly number[], accumulation: Float32Ar
   return best;
 }
 
-function traceRiverChains(network: DrainageNetwork, lakeIds: Int32Array, options: CellThresholds): RiverChain[] {
+function traceRiverChains(network: DrainageNetwork, lakeIds: Int32Array, riverThreshold: number): RiverChain[] {
   const isRiver = new Uint8Array(lakeIds.length);
 
   for (const [cell, accumulation] of network.accumulation.entries()) {
-    if (accumulation >= options.riverThreshold && lakeIds[cell] === NO_CELL) {
+    if (accumulation >= riverThreshold && lakeIds[cell] === NO_CELL) {
       isRiver[cell] = 1;
     }
   }
@@ -516,6 +518,7 @@ interface ChannelTargets {
 
 function carveSegment(start: RiverPoint, end: RiverPoint, targets: ChannelTargets): void {
   const { grid } = targets;
+
   const segmentX = end.x - start.x;
   const segmentZ = end.z - start.z;
 
@@ -652,6 +655,7 @@ function isDryLand(cell: number, targets: ChannelTargets): boolean {
 
 function waterLevelBeside(cell: number, targets: ChannelTargets): number {
   const { grid, heights, riverStrength, waterSurface } = targets;
+
   const column = grid.columnOf(cell);
   const row = grid.rowOf(cell);
 
@@ -686,6 +690,7 @@ function waterLevelBeside(cell: number, targets: ChannelTargets): number {
 
 function startBankLowering(targets: ChannelTargets): BankLowering {
   const { grid, uncarvedHeights } = targets;
+
   const lowering: BankLowering = {
     cuts: new Float32Array(grid.cellCount),
     floors: new Float32Array(grid.cellCount).fill(Number.NEGATIVE_INFINITY),
@@ -723,6 +728,7 @@ function startBankLowering(targets: ChannelTargets): BankLowering {
 function spreadBankLowering(lowering: BankLowering, targets: ChannelTargets): void {
   const { cuts, floors, heap, isBesideWater } = lowering;
   const { grid } = targets;
+
   const settled = new Uint8Array(grid.cellCount);
 
   while (heap.size > 0) {
@@ -765,6 +771,7 @@ function spreadBankLowering(lowering: BankLowering, targets: ChannelTargets): vo
 
 function lowerBanks(targets: ChannelTargets): void {
   const { heights, uncarvedHeights } = targets;
+
   const lowering = startBankLowering(targets);
 
   spreadBankLowering(lowering, targets);
@@ -809,20 +816,26 @@ export function computeHydrology(
   coastDistance: Float32Array,
   options: HydrologyOptions = DEFAULT_HYDROLOGY
 ): HydrologyResult {
-  const thresholds = toCellThresholds(options, grid);
-  const { lakeIds, lakes, network, waterSurface } = analyzeDrainage(heights, grid, dryness, coastDistance, options);
+  const { lakeIds, lakes, network, riverThreshold, waterSurface } = analyzeDrainage(
+    heights,
+    grid,
+    dryness,
+    coastDistance,
+    options
+  );
+
   const riverStrength = new Uint8Array(grid.cellCount);
 
-  const chains = traceRiverChains(network, lakeIds, thresholds);
+  const chains = traceRiverChains(network, lakeIds, riverThreshold);
 
-  const rivers = buildRivers(chains, heights, network, grid, lakes, lakeIds, thresholds.riverThreshold);
+  const rivers = buildRivers(chains, heights, network, grid, lakes, lakeIds, riverThreshold);
   const targets: ChannelTargets = {
     coastDistance,
     grid,
     heights,
     lakeIds,
     riverStrength,
-    threshold: thresholds.riverThreshold,
+    threshold: riverThreshold,
     uncarvedHeights: Float32Array.from(heights),
     waterSurface,
   };

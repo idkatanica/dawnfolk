@@ -33,16 +33,16 @@ function waterDistances(terrain: TerrainData, grid: WorldGrid): Float32Array {
   }
 
   function relax(cell: number, column: number, row: number, cost: number): void {
-    if (column < 0 || row < 0 || column >= size || row >= size) {
+    if (!grid.contains(column, row)) {
       return;
     }
 
-    distances[cell] = Math.min(distances[cell], distances[row * size + column] + cost);
+    distances[cell] = Math.min(distances[cell], distances[grid.index(column, row)] + cost);
   }
 
   for (let row = 0; row < size; row += 1) {
     for (let column = 0; column < size; column += 1) {
-      const cell = row * size + column;
+      const cell = grid.index(column, row);
 
       relax(cell, column - 1, row, 1);
       relax(cell, column, row - 1, 1);
@@ -53,7 +53,7 @@ function waterDistances(terrain: TerrainData, grid: WorldGrid): Float32Array {
 
   for (let row = size - 1; row >= 0; row -= 1) {
     for (let column = size - 1; column >= 0; column -= 1) {
-      const cell = row * size + column;
+      const cell = grid.index(column, row);
 
       relax(cell, column + 1, row, 1);
       relax(cell, column, row + 1, 1);

@@ -153,7 +153,7 @@ export function createTerrainMaterial({
   material.positionNode = terrainPosition(textures, grid, plinth);
 
   if (textures.outline.hasCoast) {
-    material.maskNode = textures.outline.insideNode(positionWorld.xz, 0);
+    material.maskNode = textures.outline.insideNode(positionWorld.xz);
   }
 
   const mapCoordinates = warpedMapCoordinates(warp, grid);

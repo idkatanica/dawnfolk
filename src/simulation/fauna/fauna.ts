@@ -143,12 +143,14 @@ export class FaunaSystem {
 
       const kind = this.#suitableKind(x, z, random);
 
-      if (kind !== null) {
-        const [smallest, largest] = ANIMALS[kind].herdSizeRange;
-
-        this.spawnHerd(kind, x, z, random.integer(smallest, largest + 1), random);
-        created += 1;
+      if (kind === null) {
+        continue;
       }
+
+      const [smallest, largest] = ANIMALS[kind].herdSizeRange;
+
+      this.spawnHerd(kind, x, z, random.integer(smallest, largest + 1), random);
+      created += 1;
     }
 
     return created;

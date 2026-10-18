@@ -52,7 +52,7 @@ export function paintMinimapTerrain(mirror: WorldMirror, size: number): ImageDat
   const { frame, grid, terrain } = mirror;
 
   const image = new ImageData(size, size);
-  const palette = GROUNDS.map((_, index) => seasonalGroundColor(index, frame.calendar.season, 0));
+  const palette = GROUNDS.map((_, index) => seasonalGroundColor(index, frame.calendar.season));
   const last = grid.cellsPerSide - 1;
 
   for (let pixelRow = 0; pixelRow < size; pixelRow += 1) {

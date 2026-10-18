@@ -46,7 +46,7 @@ interface Layout {
   readonly pieces: readonly LaidPiece[];
 }
 
-export interface MonumentPlan {
+interface MonumentPlan {
   readonly ground: Uint8Array;
   readonly monuments: readonly Monument[];
   readonly pieces: readonly PlantPlacement[];
@@ -377,8 +377,8 @@ function prominence(planner: Planner, site: Site): number {
 
 function settingScore(planner: Planner, kind: MonumentKind, site: Site, cells: readonly number[]): number {
   const { grid, terrain } = planner;
-  const cell = grid.cellAt(site.x, site.z);
 
+  const cell = grid.cellAt(site.x, site.z);
   const meanSlope = cells.reduce((total, other) => total + slopeAt(terrain.height, grid, other), 0) / cells.length;
   const flatness = (MONUMENT_SLOPE - meanSlope) * 6;
 
@@ -405,8 +405,8 @@ interface Choice {
 
 function judge(planner: Planner, kind: MonumentKind, layout: Layout, site: Site): Choice | null {
   const { grid, terrain } = planner;
-  const cell = grid.cellAt(site.x, site.z);
 
+  const cell = grid.cellAt(site.x, site.z);
   const isFittingLand = MONUMENTS[kind].biomes.some((biome) => biome === terrain.biome[cell]);
 
   if (!(isFittingLand && canStandOn(terrain, grid, cell, MONUMENT_SLOPE))) {
@@ -466,8 +466,9 @@ export function planMonuments(grid: WorldGrid, terrain: TerrainData, seed: numbe
   const namesUsed = new Set<string>();
 
   for (const kind of [...MONUMENT_KINDS, ...extras]) {
-    const layout = LAYOUTS[kind](random);
     const { names } = MONUMENTS[kind];
+
+    const layout = LAYOUTS[kind](random);
     const firstName = random.integer(0, names.length);
 
     const choice = bestSite(planner, kind, layout, random);

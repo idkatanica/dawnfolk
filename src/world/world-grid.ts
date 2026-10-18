@@ -29,7 +29,7 @@ export class WorldGrid {
   readonly halfSize: number;
   readonly worldSize: number;
 
-  constructor(dimensions: GridDimensions = DEFAULT_GRID_DIMENSIONS) {
+  constructor(dimensions: GridDimensions) {
     this.cellsPerSide = dimensions.cellsPerSide;
     this.cellSize = dimensions.cellSize;
     this.cellCount = dimensions.cellsPerSide * dimensions.cellsPerSide;
@@ -107,17 +107,16 @@ export class WorldGrid {
     const deltaZ = toZ - fromZ;
     const stepColumn = Math.sign(deltaX);
     const stepRow = Math.sign(deltaZ);
+    const strideX = deltaX === 0 ? Number.POSITIVE_INFINITY : this.cellSize / Math.abs(deltaX);
+    const strideZ = deltaZ === 0 ? Number.POSITIVE_INFINITY : this.cellSize / Math.abs(deltaZ);
     const lastColumn = this.columnAt(toX);
     const lastRow = this.rowAt(toZ);
+    const cells: number[] = [];
 
     let column = this.columnAt(fromX);
     let row = this.rowAt(fromZ);
     let crossingX = this.#firstCrossing(fromX, deltaX, column, stepColumn);
     let crossingZ = this.#firstCrossing(fromZ, deltaZ, row, stepRow);
-
-    const strideX = deltaX === 0 ? Number.POSITIVE_INFINITY : this.cellSize / Math.abs(deltaX);
-    const strideZ = deltaZ === 0 ? Number.POSITIVE_INFINITY : this.cellSize / Math.abs(deltaZ);
-    const cells: number[] = [];
 
     while (this.contains(column, row)) {
       cells.push(this.index(column, row));

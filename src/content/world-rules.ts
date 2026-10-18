@@ -28,7 +28,7 @@ export const worldRulesSchema = z.object({
   nature: z
     .object({
       animalBirthRate: multiplier("Animal births", "How fast herds grow in spring.", 3, 0),
-      berryGrowth: multiplier("Berries", "How fast bushes bear fruit.", 3),
+      berryGrowth: multiplier("Berries", "How fast bushes bear fruit."),
       forestRegrowth: multiplier("Forest regrowth", "How quickly forests return to open and burnt land.", 3, 0),
     })
     .prefault({})

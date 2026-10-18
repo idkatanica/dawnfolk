@@ -106,9 +106,7 @@ describe("snags", () => {
     const world = createTestWorld();
 
     const cell = centerCell(world);
-
     const tree = plantInCell(world, cell, PlantSpecies.Oak);
-
     const withoutRegrowth = worldRulesSchema.parse({ nature: { forestRegrowth: 0 } });
 
     world.vegetation.burnTreesInCell(cell, 10);

@@ -149,9 +149,10 @@ export function generateWorld(
   onProgress: (progress: GenerationProgress) => void = () => undefined
 ): GeneratedWorld {
   const grid = new WorldGrid(options.dimensions);
-
   const size = grid.cellsPerSide;
+
   const { coastDistance, dryness, heights, relief } = buildRelief(grid, seed, options.shape, onProgress);
+
   const talus = talusSlopes(heights, dryness);
 
   relaxSlopes(heights, size, grid.cellSize, talus, ROUGH_RELAXATION_ITERATIONS);

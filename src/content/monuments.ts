@@ -20,7 +20,7 @@ export const PIECE_FORMS = {
 
 export type PieceForm<Piece extends MonumentPiece> = (typeof PIECE_FORMS)[Piece][number];
 
-export function pieceFormIndex<Piece extends MonumentPiece>(piece: Piece, form: PieceForm<Piece>): number {
+function pieceFormIndex<Piece extends MonumentPiece>(piece: Piece, form: PieceForm<Piece>): number {
   const forms: readonly string[] = PIECE_FORMS[piece];
 
   return forms.indexOf(form);

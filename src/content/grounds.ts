@@ -1,4 +1,4 @@
-import { lerp, saturate, smoothstep } from "../shared/math.ts";
+import { fractionalPart, lerp, smoothstep } from "../shared/math.ts";
 import { SEASON_COUNT } from "./seasons.ts";
 
 export const Ground = {
@@ -237,20 +237,17 @@ export function groundDefinition(index: number): GroundDefinition {
   return definition;
 }
 
-export function seasonalGroundColor(index: number, season: number, variation: number): Color {
+export function seasonalGroundColor(index: number, season: number): Color {
   const { seasonalColors } = groundDefinition(index);
 
   const seasonIndex = Math.floor(season) % SEASON_COUNT;
-  const progress = season - Math.floor(season);
-  const brightness = 1 + variation * 0.09;
-
   const current = seasonalColors[seasonIndex];
   const following = seasonalColors[(seasonIndex + 1) % SEASON_COUNT];
-  const blend = smoothstep(0.55, 1, progress);
+  const blend = smoothstep(0.55, 1, fractionalPart(season));
 
   return [
-    saturate(lerp(current[0], following[0], blend) * brightness),
-    saturate(lerp(current[1], following[1], blend) * brightness),
-    saturate(lerp(current[2], following[2], blend) * brightness),
+    lerp(current[0], following[0], blend),
+    lerp(current[1], following[1], blend),
+    lerp(current[2], following[2], blend),
   ];
 }

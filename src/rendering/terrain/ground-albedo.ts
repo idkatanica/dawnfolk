@@ -117,7 +117,7 @@ export class GroundAlbedo {
     const previousTarget = renderer.getRenderTarget();
 
     for (const [index, color] of this.#palette.entries()) {
-      const [red, green, blue] = seasonalGroundColor(index, season, 0);
+      const [red, green, blue] = seasonalGroundColor(index, season);
 
       color.set(red, green, blue, GROUNDS[index].grass);
     }

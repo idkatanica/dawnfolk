@@ -36,7 +36,7 @@ import {
   Vector2,
   Vector3,
 } from "three/webgpu";
-import { clamp as clampNumber, FULL_TURN, saturate } from "../../shared/math.ts";
+import { clamp as clampNumber, FULL_TURN, inverseLerp, saturate } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
@@ -99,7 +99,6 @@ interface GrassUniforms {
 function createClumpGeometry(clumpCount: number): InstancedBufferGeometry {
   const vertexCount = BLADES_PER_CLUMP * BLADE_OUTLINE.length;
   const indices: number[] = [];
-
   const shape = new Float32Array(vertexCount * 3);
   const normals = new Float32Array(vertexCount * 3);
 
@@ -133,16 +132,14 @@ function spacingFor(viewDistance: number): number {
 }
 
 function presenceFor(viewDistance: number): number {
-  const amount = (viewDistance - FADE_START_DISTANCE) / (FADE_END_DISTANCE - FADE_START_DISTANCE);
-
-  return 1 - saturate(amount);
+  return 1 - saturate(inverseLerp(FADE_START_DISTANCE, FADE_END_DISTANCE, viewDistance));
 }
 
 function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms): MeshStandardNodeMaterial {
   const { clumpsPerSide, grid, textures, understory, weather } = options;
   const { center, presence, spacing } = uniforms;
-  const material = new MeshStandardNodeMaterial({ side: DoubleSide });
 
+  const material = new MeshStandardNodeMaterial({ side: DoubleSide });
   const last = grid.cellsPerSide - 1;
   const perSide = float(clumpsPerSide);
   const instance = float(instanceIndex);
@@ -183,7 +180,7 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   const nearestWater = max(max(waterAt(0, 0), waterAt(1, 0)), max(waterAt(0, 1), waterAt(1, 1)));
 
   const isDry = nearestWater.lessThan(height.add(DRY_MARGIN));
-  const isOnIsland = textures.outline.insideNode(root, 0);
+  const isOnIsland = textures.outline.insideNode(root);
   const reach = length(root.sub(center)).div(perSide.mul(spacing).mul(0.5));
 
   const cover = ground.a
@@ -223,7 +220,6 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   )();
 
   const shadedGround = ground.rgb.mul(mix(float(0.68), float(1.22), along)).mul(tint);
-
   const bladeColor = mix(shadedGround, shadedGround.mul(vec3(1.08, 1.1, 0.82)), curve);
 
   material.colorNode = varying(mix(ground.rgb, bladeColor, growth), "grassColor");
@@ -262,7 +258,6 @@ export class GrassField {
 
     const radius = (this.#clumpsPerSide * spacing) / 2;
     const ahead = Math.hypot(this.#forward.x, this.#forward.z);
-
     const shift = radius * AHEAD_REACH * Math.min(1, ahead / LEVEL_LOOK);
 
     this.mesh.visible = presence > 0;

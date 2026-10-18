@@ -4,7 +4,13 @@ import { PlantSpecies } from "../../content/plants.ts";
 import { POWER_ORDER, POWERS } from "../../content/powers.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
 import { Simulation } from "../simulation.ts";
-import { createVegetatedWorld, monumentAround, plantsTooSteep, steepeningRamp } from "../testing/test-world.ts";
+import {
+  centerCell,
+  createVegetatedWorld,
+  monumentAround,
+  plantsTooSteep,
+  steepeningRamp,
+} from "../testing/test-world.ts";
 import { POWER_HANDLERS, parsePowerParameters } from "./power-registry.ts";
 
 function createSimulation(baseTemperature = 15): Simulation {
@@ -19,10 +25,6 @@ function brush(simulation: Simulation, powerId: Parameters<Simulation["beginStro
   }
 
   simulation.endStroke();
-}
-
-function centerCell(simulation: Simulation): number {
-  return simulation.world.grid.cellAt(0, 0);
 }
 
 describe("power registry", () => {
@@ -46,7 +48,7 @@ describe("elements", () => {
     brush(simulation, "rain", 4);
 
     expect(simulation.fire.burningCount).toBe(0);
-    expect(simulation.world.fields.wetness[centerCell(simulation)]).toBeGreaterThan(0.5);
+    expect(simulation.world.fields.wetness[centerCell(simulation.world)]).toBeGreaterThan(0.5);
   });
 
   it("snow covers the ground", () => {
@@ -54,7 +56,7 @@ describe("elements", () => {
 
     brush(simulation, "snow", 1);
 
-    expect(simulation.world.fields.snow[centerCell(simulation)]).toBeGreaterThan(0.3);
+    expect(simulation.world.fields.snow[centerCell(simulation.world)]).toBeGreaterThan(0.3);
   });
 
   it("lightning strikes, scorches and starts a fire", () => {
@@ -72,7 +74,7 @@ describe("elements", () => {
     simulation.fauna.spawnHerd("deer", 20, 0, 3, simulation.random);
     simulation.usePower("explosion", 0, 0, {});
 
-    expect(simulation.world.terrain.height[centerCell(simulation)]).toBeLessThan(95);
+    expect(simulation.world.terrain.height[centerCell(simulation.world)]).toBeLessThan(95);
     expect(simulation.fauna.livingCount).toBe(0);
   });
 
@@ -122,10 +124,10 @@ describe("land", () => {
   it("smooth softens a spike", () => {
     const simulation = createSimulation();
 
-    simulation.world.setHeight(centerCell(simulation), 180);
+    simulation.world.setHeight(centerCell(simulation.world), 180);
     brush(simulation, "smooth", 1);
 
-    expect(simulation.world.terrain.height[centerCell(simulation)]).toBeLessThan(120);
+    expect(simulation.world.terrain.height[centerCell(simulation.world)]).toBeLessThan(120);
   });
 
   it("paint changes the ground and clears plants from rock", () => {
@@ -134,8 +136,8 @@ describe("land", () => {
     simulation.beginStroke("paint", 0, 0, { material: "rock", radius: 40 });
     simulation.endStroke();
 
-    expect(simulation.world.terrain.ground[centerCell(simulation)]).toBe(Ground.Rock);
-    expect(simulation.world.vegetation.hasPlantsInCell(centerCell(simulation))).toBe(false);
+    expect(simulation.world.terrain.ground[centerCell(simulation.world)]).toBe(Ground.Rock);
+    expect(simulation.world.vegetation.hasPlantsInCell(centerCell(simulation.world))).toBe(false);
   });
 
   it("forest plants the chosen trees", () => {
