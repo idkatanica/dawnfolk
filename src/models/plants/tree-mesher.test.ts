@@ -74,6 +74,25 @@ const WEEPING: TreeStructure = {
   ],
 };
 
+const FROND_TREE: TreeStructure = {
+  ...TREE,
+  foliage: [
+    { center: [0, 7.2, 0], kind: "blob", radius: 0.6, squash: 0.8, tint: 0 },
+    {
+      kind: "frond",
+      points: [
+        { radius: 0.1, x: 0, y: 7.1, z: 0 },
+        { radius: 0.5, x: 1.5, y: 7.6, z: 0 },
+        { radius: 0.4, x: 3, y: 7.2, z: 0 },
+        { radius: 0, x: 4, y: 6.2, z: 0 },
+      ],
+      tint: 0,
+    },
+  ],
+};
+
+const BARE: TreeStructure = { ...TREE, foliage: [] };
+
 function heightOf(mesh: MeshData, vertex: number): number {
   return mesh.positions[vertex * 3 + 1];
 }
@@ -112,5 +131,29 @@ describe("tree mesher", () => {
 
     expect(mesh.channels.sway[root]).toBeCloseTo(plantSway(heightOf(mesh, root), TREE.height), 2);
     expect(mesh.channels.sway[tip]).toBeCloseTo(1, 5);
+  });
+
+  it.each(LEVELS)("grows fronds out of the crown on both faces at %s detail", (level) => {
+    const mesh = meshTree(FROND_TREE, LOOK, level);
+
+    expect(detachedPieces(mesh, 0.01).map((piece) => describePiece(mesh, piece))).toEqual([]);
+  });
+
+  it("shades a frond from above and below", () => {
+    const mesh = meshTree(FROND_TREE, LOOK, "high");
+
+    const leafNormals = Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex)
+      .filter((vertex) => mesh.channels.slot[vertex] === MaterialSlot.Leaf && mesh.positions[vertex * 3] > 1)
+      .map((vertex) => mesh.normals[vertex * 3 + 1]);
+
+    expect(Math.max(...leafNormals)).toBeGreaterThan(0.5);
+    expect(Math.min(...leafNormals)).toBeLessThan(-0.5);
+  });
+
+  it.each(LEVELS)("keeps a leafless tree to its bare wood at %s detail", (level) => {
+    const mesh = meshTree(BARE, LOOK, level);
+
+    expect(mesh.channels.slot).not.toContain(MaterialSlot.Leaf);
+    expect(vertexCount(mesh)).toBeGreaterThan(0);
   });
 });
