@@ -58,8 +58,9 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
   });
 
   it("uses fewer triangles at the low level of detail", () => {
-    const count = (level: "high" | "low"): number =>
-      buildAnimalParts(kind, level).reduce((sum, mesh) => sum + mesh.indices.length, 0);
+    function count(level: "high" | "low"): number {
+      return buildAnimalParts(kind, level).reduce((sum, mesh) => sum + mesh.indices.length, 0);
+    }
 
     expect(count("low")).toBeLessThan(count("high"));
   });
@@ -80,8 +81,9 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     const start = posedAnimal(kind, "walk", 0.25);
     const later = posedAnimal(kind, "walk", 0.75);
 
-    const leftLeads = (poser: SkeletonPoser): boolean =>
-      joint(poser, QuadrupedBone.HoofFrontLeft).z > joint(poser, QuadrupedBone.HoofFrontRight).z;
+    function leftLeads(poser: SkeletonPoser): boolean {
+      return joint(poser, QuadrupedBone.HoofFrontLeft).z > joint(poser, QuadrupedBone.HoofFrontRight).z;
+    }
 
     expect(leftLeads(start)).not.toBe(leftLeads(later));
   });

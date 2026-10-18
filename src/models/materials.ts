@@ -34,7 +34,7 @@ export const MaterialSlot = {
 
 export type MaterialSlotIndex = (typeof MaterialSlot)[keyof typeof MaterialSlot];
 
-export const MATERIAL_SLOT_COUNT = 31;
+const MATERIAL_SLOT_COUNT = 31;
 
 const COLORS_BY_SLOT: Readonly<Record<MaterialSlotIndex, number>> = {
   [MaterialSlot.Accent]: 0xc4_55_3a,
@@ -69,10 +69,6 @@ const COLORS_BY_SLOT: Readonly<Record<MaterialSlotIndex, number>> = {
   [MaterialSlot.Tusk]: 0xef_e6_d2,
   [MaterialSlot.Wood]: 0x8b_6a_48,
 };
-
-export function slotColor(slot: MaterialSlotIndex): number {
-  return COLORS_BY_SLOT[slot];
-}
 
 function buildColorTable(): number[] {
   const table = new Array<number>(MATERIAL_SLOT_COUNT).fill(0);

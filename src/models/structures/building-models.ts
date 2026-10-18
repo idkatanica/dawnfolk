@@ -11,7 +11,7 @@ import { blob, box, card, cone, cylinder, disc, type LoftSection, lathe, loft, p
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
 
-export type BuildingDetailLevel = "high" | "low";
+type BuildingDetailLevel = "high" | "low";
 
 export const GLOW_PART = 1;
 
@@ -147,11 +147,11 @@ function tentRadius(height: number): number {
 }
 
 function addTentPole(context: StructureContext, angle: number, order: number): void {
-  const pointAt = (height: number): Triple => {
+  function pointAt(height: number): Triple {
     const reach = tentRadius(height) + TENT_POLE_LIFT;
 
     return [Math.cos(angle) * reach, height, Math.sin(angle) * reach];
-  };
+  }
 
   addLog(context, pointAt(0), pointAt(TENT_HEIGHT + TENT_POLE_OVERHANG), 0.045, MaterialSlot.Wood, order);
 }
@@ -161,17 +161,17 @@ function addTentDoor(context: StructureContext, sides: number): void {
   const startAngle = TENT_DOOR_ANGLE - TENT_DOOR_HALF_ANGLE;
   const endAngle = TENT_DOOR_ANGLE + TENT_DOOR_HALF_ANGLE;
 
-  const onFacet = (around: number): number => {
+  function onFacet(around: number): number {
     const offset = fractionalPart((lerp(startAngle, endAngle, around) - TENT_DOOR_ANGLE) / facet) * facet;
 
     return Math.cos(facet / 2) / Math.cos(offset - facet / 2);
-  };
+  }
 
-  const section = (height: number): LoftSection => {
+  function section(height: number): LoftSection {
     const radius = tentRadius(height) + TENT_DOOR_LIFT;
 
     return { radiusX: radius, radiusZ: radius, ripple: onFacet, y: height };
-  };
+  }
 
   context.builder.add(
     panel({
@@ -210,7 +210,7 @@ function tent(context: StructureContext): void {
     style: {
       buildOrder: stage(0.4, 1, TENT_HEIGHT),
       shade: (point) => 0.75 + 0.25 * smoothstep(0, 1.5, point.position.y),
-      slot: (point) => tentSlot(point),
+      slot: tentSlot,
     },
     transform: transformOf({ rotation: [0, -firstPole, 0] }),
   });
@@ -324,12 +324,14 @@ function storehouse(context: StructureContext): void {
     },
     transform: transformOf({ position: [0, 1.7, 0] }),
   });
+
   for (const side of [-1, 1]) {
     builder.add(box(1.75, 0.12, 2.7), {
       style: { buildOrder: 0.85, shade: 0.92, slot: MaterialSlot.Thatch },
       transform: transformOf({ position: [side * 0.68, 2.62, 0], rotation: [0, 0, -side * 0.6] }),
     });
   }
+
   builder.add(card(0.7, 0.9), {
     style: { buildOrder: 0.6, slot: MaterialSlot.Ash },
     transform: transformOf({ position: [0, 1.15, 0.91] }),

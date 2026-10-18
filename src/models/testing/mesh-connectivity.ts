@@ -11,7 +11,7 @@ export interface MeshPiece {
   readonly vertices: readonly number[];
 }
 
-export type PieceAnchor = (piece: MeshPiece) => boolean;
+type PieceAnchor = (piece: MeshPiece) => boolean;
 
 const POSITION_GRID = 1e4;
 const RAY_DIRECTION: Point = [0.577_31, 0.577_43, 0.577_37];
@@ -348,7 +348,7 @@ export function piecesTouch(mesh: MeshData, first: MeshPiece, second: MeshPiece,
   return reaches(mesh, second, first, tolerance);
 }
 
-export function restsOnGround(tolerance: number): PieceAnchor {
+function restsOnGround(tolerance: number): PieceAnchor {
   return (piece) => piece.minimum[1] <= GROUND_HEIGHT + tolerance;
 }
 
@@ -387,7 +387,9 @@ export function describePiece(mesh: MeshData, piece: MeshPiece): string {
   const parts = new Set(piece.vertices.map((vertex) => mesh.channels.part[vertex]));
   const slots = new Set(piece.vertices.map((vertex) => mesh.channels.slot[vertex]));
 
-  const range = (axis: number): string => `${piece.minimum[axis].toFixed(2)}..${piece.maximum[axis].toFixed(2)}`;
+  function range(axis: number): string {
+    return `${piece.minimum[axis].toFixed(2)}..${piece.maximum[axis].toFixed(2)}`;
+  }
 
   return `${piece.triangles.length} triangles of part ${[...parts].join("/")} slot ${[...slots].join("/")} at x ${range(0)} y ${range(1)} z ${range(2)}`;
 }

@@ -79,7 +79,7 @@ function capRing(writer: ShapeWriter, center: number, ring: Ring, isFacingForwar
   }
 }
 
-export interface ProfilePoint {
+interface ProfilePoint {
   readonly radius: number;
   readonly y: number;
 }
@@ -267,7 +267,7 @@ export function loft(sections: readonly LoftSection[], segments: number): Shape 
   return { ...shape, normals: computeSmoothNormals(shape.positions, shape.indices) };
 }
 
-export interface PanelOptions {
+interface PanelOptions {
   readonly angularSegments: number;
   readonly endAngle: number;
   readonly sections: readonly LoftSection[];
@@ -354,7 +354,7 @@ export function panel(options: PanelOptions): Shape {
   return { ...shape, normals: computeSmoothNormals(shape.positions, shape.indices) };
 }
 
-export interface CylinderOptions {
+interface CylinderOptions {
   readonly hasBottomCap?: boolean;
   readonly hasTopCap?: boolean;
   readonly height: number;
@@ -575,7 +575,7 @@ export interface TubePoint {
   readonly z: number;
 }
 
-export interface TubeOptions {
+interface TubeOptions {
   readonly hasEndCap?: boolean;
   readonly hasStartCap?: boolean;
   readonly radialSegments?: number;
@@ -631,6 +631,13 @@ function endDirection(frame: TubeFrame, isEnd: boolean): Vector3 {
   }
 
   return frame.tangent.clone().negate();
+}
+
+function radialDirection(frame: TubeFrame, angle: number): Vector3 {
+  return frame.normal
+    .clone()
+    .multiplyScalar(Math.cos(angle))
+    .add(frame.binormal.clone().multiplyScalar(Math.sin(angle)));
 }
 
 function transportFrames(tangents: readonly Vector3[]): TubeFrame[] {
@@ -738,10 +745,7 @@ function tubeRing(
   for (let segment = 0; segment < segments; segment += 1) {
     const angle = (segment / segments) * FULL_TURN;
 
-    const radial = frame.normal
-      .clone()
-      .multiplyScalar(Math.cos(angle))
-      .add(frame.binormal.clone().multiplyScalar(Math.sin(angle)));
+    const radial = radialDirection(frame, angle);
 
     const position = center.clone().add(radial.clone().multiplyScalar(radius));
     const normal = radial.clone().sub(frame.tangent.clone().multiplyScalar(radiusSlope)).normalize();
@@ -769,10 +773,7 @@ function addTubeCap(
   for (let segment = 0; segment < segments; segment += 1) {
     const angle = (segment / segments) * FULL_TURN;
 
-    const radial = frame.normal
-      .clone()
-      .multiplyScalar(Math.cos(angle))
-      .add(frame.binormal.clone().multiplyScalar(Math.sin(angle)));
+    const radial = radialDirection(frame, angle);
 
     ring.push(writer.vertex(center.clone().add(radial.multiplyScalar(radius)), normal, along, segment / segments));
   }
@@ -869,7 +870,7 @@ export function disc(radius: number, segments = 12): Shape {
   return writer.finish();
 }
 
-export interface BlobOptions {
+interface BlobOptions {
   readonly detail?: number;
   readonly frequency?: number;
   readonly noise: VolumeNoise;
@@ -883,10 +884,8 @@ export function blob(options: BlobOptions): Shape {
   const { detail = 1, frequency = 1.4, normalSoftness = 0.45, offset = [0, 0, 0], roughness = 0.22 } = options;
   const { noise, radius } = options;
 
-  const sphereShape = icosphere(radius, detail);
-
   return displaceShape(
-    sphereShape,
+    icosphere(radius, detail),
     (vertex) => {
       const sampleX = (vertex.x / radius) * frequency + offset[0];
       const sampleY = (vertex.y / radius) * frequency + offset[1];

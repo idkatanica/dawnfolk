@@ -75,8 +75,9 @@ export function chainBlend(chain: WeightChain, x: number, y: number, z: number):
 }
 
 export function chainStyle(chain: WeightChain): VertexStyle {
-  const blendAt = (point: SurfacePoint): BoneBlend =>
-    chainBlend(chain, point.position.x, point.position.y, point.position.z);
+  function blendAt(point: SurfacePoint): BoneBlend {
+    return chainBlend(chain, point.position.x, point.position.y, point.position.z);
+  }
 
   return {
     boneA: (point) => blendAt(point).boneA,
@@ -87,8 +88,4 @@ export function chainStyle(chain: WeightChain): VertexStyle {
 
 export function rigidStyle(bone: number): VertexStyle {
   return { boneA: bone, boneB: bone, boneWeight: 0 };
-}
-
-export function blendStyle(boneA: number, boneB: number, weight: (point: SurfacePoint) => number): VertexStyle {
-  return { boneA, boneB, boneWeight: weight };
 }

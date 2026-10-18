@@ -278,6 +278,7 @@ export function addCarriedMeat(builder: MeshBuilder): void {
 
 export function addCarriedFish(builder: MeshBuilder, detail: HumanDetail): void {
   const [x, y, z] = RIGHT_FIST;
+
   const style = inRightHand(MaterialSlot.Fish);
 
   builder.add(
@@ -301,9 +302,9 @@ export function addCarriedFish(builder: MeshBuilder, detail: HumanDetail): void 
 }
 
 export function addCarriedCrops(builder: MeshBuilder, detail: HumanDetail): void {
-  const style = onChest(MaterialSlot.Grain);
   const [x, y, z] = CRADLE;
 
+  const style = onChest(MaterialSlot.Grain);
   const start: Triple = [x + 0.3, y, z];
   const end: Triple = [x - 0.34, y + 0.02, z];
 

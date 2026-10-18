@@ -104,15 +104,19 @@ describe("tree details", () => {
     const [mesh] = buildPlantVariants(species, "high");
 
     const vertices = Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex);
-    const isFoliage = (vertex: number): boolean => FOLIAGE_SLOTS.has(mesh.channels.slot[vertex]);
+
+    function isFoliage(vertex: number): boolean {
+      return FOLIAGE_SLOTS.has(mesh.channels.slot[vertex]);
+    }
 
     const foliage = vertices.filter(isFoliage);
     const wood = vertices.filter((vertex) => !isFoliage(vertex));
 
     const foot = wood.filter((vertex) => mesh.positions[vertex * 3 + 1] < canonicalHeight(species) / 3);
 
-    const averageSway = (group: readonly number[]): number =>
-      group.reduce((sum, vertex) => sum + mesh.channels.sway[vertex], 0) / group.length;
+    function averageSway(group: readonly number[]): number {
+      return group.reduce((sum, vertex) => sum + mesh.channels.sway[vertex], 0) / group.length;
+    }
 
     expect(foliage.length).toBeGreaterThan(0);
     expect(foliage.every((vertex) => mesh.channels.flutter[vertex] === FOLIAGE_FLUTTER)).toBe(true);

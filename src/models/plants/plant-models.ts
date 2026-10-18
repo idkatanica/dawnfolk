@@ -34,7 +34,7 @@ const TREE_LOOKS: Readonly<Partial<Record<PlantSpeciesIndex, TreeLook>>> = {
   [PlantSpecies.Willow]: BROADLEAF,
 };
 
-export function variantSeed(species: PlantSpeciesIndex, variant: number): number {
+function variantSeed(species: PlantSpeciesIndex, variant: number): number {
   return species * 1000 + variant * 77 + 13;
 }
 
@@ -50,7 +50,9 @@ function berries(
   const blobs = structure.foliage.filter((foliage): foliage is FoliageBlob => foliage.kind === "blob");
   const count = level === "high" ? 26 : 12;
 
-  const isFoliage = (triangle: number): boolean => tree.channels.slot[tree.indices[triangle * 3]] === look.foliage;
+  function isFoliage(triangle: number): boolean {
+    return tree.channels.slot[tree.indices[triangle * 3]] === look.foliage;
+  }
 
   for (let berry = 0; berry < count; berry += 1) {
     const host = random.pick(blobs);

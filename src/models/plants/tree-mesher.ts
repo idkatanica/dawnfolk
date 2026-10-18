@@ -1,6 +1,6 @@
 import { Vector3 } from "three";
 import { clamp, fractionalPart, lerp, smoothstep } from "../../shared/math.ts";
-import { createVolumeNoise, type VolumeNoise } from "../../shared/noise.ts";
+import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { MeshBuilder, type SurfacePoint, type VertexStyle } from "../mesh/mesh-builder.ts";
@@ -8,7 +8,14 @@ import type { MeshData } from "../mesh/mesh-data.ts";
 import { deformShape, type Shape } from "../mesh/shape.ts";
 import { blob, cone, icosphere, type LoftSection, loft, type TubePoint, tube } from "../mesh/shapes.ts";
 import { transformOf } from "../mesh/transforms.ts";
-import type { FoliageBlob, FoliageSkirt, FoliageStrand, TreeStructure } from "./tree-structure.ts";
+import {
+  type Foliage,
+  type FoliageBlob,
+  type FoliageSkirt,
+  type FoliageStrand,
+  type TreeStructure,
+  toVector,
+} from "./tree-structure.ts";
 
 export type PlantDetailLevel = "high" | "low" | "medium";
 
@@ -18,7 +25,7 @@ export interface TreeLook {
   readonly hasBarkMarks: boolean;
 }
 
-const MESH_NOISE: VolumeNoise = createVolumeNoise(createRandom(5150));
+const MESH_NOISE = createVolumeNoise(createRandom(5150));
 
 const BLOB_LIMITS: Readonly<Record<PlantDetailLevel, number>> = { high: 9, low: 1, medium: 4 };
 
@@ -66,11 +73,11 @@ function crownCenter(structure: TreeStructure): Vector3 {
   return sum.multiplyScalar(1 / Math.max(1, centers.length));
 }
 
-function foliageCenter(foliage: TreeStructure["foliage"][number]): Vector3 {
+function foliageCenter(foliage: Foliage): Vector3 {
   if (foliage.kind === "strand") {
     const [first] = foliage.points;
 
-    return new Vector3(first.x, first.y, first.z);
+    return toVector(first);
   }
 
   return new Vector3(...foliage.center);
@@ -151,7 +158,7 @@ function addSkirt(
   look: TreeLook,
   skirt: FoliageSkirt,
   level: PlantDetailLevel
-) {
+): void {
   const segments = { high: 14, low: 7, medium: 9 }[level];
   const teeth = { high: 11, low: 6, medium: 8 }[level];
   const center = new Vector3(skirt.center[0], (skirt.bottom + skirt.top) / 2, skirt.center[2]);
@@ -162,7 +169,13 @@ function addSkirt(
   });
 }
 
-function addBlob(builder: MeshBuilder, structure: TreeStructure, look: TreeLook, foliage: FoliageBlob, detail: number) {
+function addBlob(
+  builder: MeshBuilder,
+  structure: TreeStructure,
+  look: TreeLook,
+  foliage: FoliageBlob,
+  detail: number
+): void {
   const [x, y, z] = foliage.center;
   const center = crownCenter(structure);
 
@@ -189,7 +202,7 @@ function addStrand(
   look: TreeLook,
   strand: FoliageStrand,
   sides: number
-) {
+): void {
   const [root] = strand.points;
 
   const rootSway = plantSway(root.y, structure.height);
@@ -305,7 +318,7 @@ function mergedBlobs(blobs: readonly FoliageBlob[], target: number): FoliageBlob
   }
 
   return merged.map((foliage) => ({
-    center: [foliage.center.x, foliage.center.y, foliage.center.z],
+    center: foliage.center.toArray(),
     kind: "blob",
     radius: foliage.radius,
     squash: foliage.squash,
@@ -328,7 +341,7 @@ function crownEnvelope(structure: TreeStructure): FoliageBlob {
   const size = maximum.clone().sub(minimum).multiplyScalar(0.46);
 
   return {
-    center: [center.x, center.y, center.z],
+    center: center.toArray(),
     kind: "blob",
     radius: Math.max(size.x, size.z),
     squash: size.y / Math.max(size.x, size.z, 0.001),
@@ -341,9 +354,9 @@ interface Reach {
   readonly minimum: Vector3;
 }
 
-function foliageReach(foliage: TreeStructure["foliage"][number]): Reach {
+function foliageReach(foliage: Foliage): Reach {
   if (foliage.kind === "strand") {
-    const points = foliage.points.map((point) => new Vector3(point.x, point.y, point.z));
+    const points = foliage.points.map(toVector);
 
     return {
       maximum: points.reduce((maximum, point) => maximum.max(point), points[0].clone()),

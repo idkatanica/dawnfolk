@@ -39,8 +39,6 @@ export const HumanJoint = {
   Wrist: [0.215, 0.885, 0.01],
 } as const satisfies Readonly<Record<string, Triple>>;
 
-export const HUMAN_HEIGHT = 1.75;
-
 export type Side = -1 | 1;
 
 export const SIDES: readonly Side[] = [1, -1];

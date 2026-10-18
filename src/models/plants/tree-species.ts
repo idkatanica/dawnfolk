@@ -124,7 +124,7 @@ function addLimb(
 
 function addBlob(growth: Growth, center: Vector3, radius: number, squash: number): void {
   growth.foliage.push({
-    center: [center.x, center.y, center.z],
+    center: center.toArray(),
     kind: "blob",
     radius,
     squash,
@@ -467,7 +467,7 @@ function bush(seed: number): TreeStructure {
   return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Bush]);
 }
 
-export type TreeGenerator = (seed: number) => TreeStructure;
+type TreeGenerator = (seed: number) => TreeStructure;
 
 export const TREE_GENERATORS: Readonly<Partial<Record<PlantSpeciesIndex, TreeGenerator>>> = {
   [PlantSpecies.Birch]: birch,

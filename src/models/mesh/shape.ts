@@ -73,7 +73,7 @@ function addVector(vectors: Float32Array, offset: number, x: number, y: number, 
   vectors[offset + 2] += z;
 }
 
-export function normalizeVectors(vectors: Float32Array): void {
+function normalizeVectors(vectors: Float32Array): void {
   for (let offset = 0; offset < vectors.length; offset += 3) {
     const length = Math.hypot(vectors[offset], vectors[offset + 1], vectors[offset + 2]);
 
@@ -111,7 +111,7 @@ export function facetShape(shape: Shape): Shape {
   return { along, around, indices, normals: computeSmoothNormals(positions, indices), positions };
 }
 
-export type Deformation = (vertex: ShapeVertex) => readonly [number, number, number];
+type Deformation = (vertex: ShapeVertex) => readonly [number, number, number];
 
 export function deformShape(shape: Shape, deformation: Deformation): Shape {
   const positions = new Float32Array(shape.positions);
@@ -127,9 +127,9 @@ export function deformShape(shape: Shape, deformation: Deformation): Shape {
   return { ...shape, normals: computeSmoothNormals(positions, shape.indices), positions };
 }
 
-export type Displacement = (vertex: ShapeVertex) => number;
+type Displacement = (vertex: ShapeVertex) => number;
 
-export interface DisplaceOptions {
+interface DisplaceOptions {
   readonly normalSoftness?: number;
 }
 
@@ -137,7 +137,6 @@ export function displaceShape(shape: Shape, displacement: Displacement, options:
   const { normalSoftness = 0 } = options;
 
   const positions = new Float32Array(shape.positions);
-  const softNormals = new Float32Array(shape.normals);
 
   for (let index = 0; index < shapeVertexCount(shape); index += 1) {
     const vertex = readShapeVertex(shape, index);
@@ -152,7 +151,7 @@ export function displaceShape(shape: Shape, displacement: Displacement, options:
   const normals = computeSmoothNormals(positions, shape.indices);
 
   if (normalSoftness > 0) {
-    blendNormals(normals, softNormals, normalSoftness);
+    blendNormals(normals, shape.normals, normalSoftness);
   }
 
   return { along: shape.along, around: shape.around, indices: shape.indices, normals, positions };

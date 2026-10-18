@@ -1,19 +1,19 @@
 import { type Matrix4, Vector3 } from "three";
 import { segmentTransform } from "./transforms.ts";
 
-export interface Surface {
+interface Surface {
   readonly indices: Uint32Array;
   readonly positions: Float32Array;
 }
 
-export interface SurfaceHit {
+interface SurfaceHit {
   readonly distance: number;
   readonly normal: Vector3;
   readonly point: Vector3;
   readonly triangle: number;
 }
 
-export type TriangleFilter = (triangle: number) => boolean;
+type TriangleFilter = (triangle: number) => boolean;
 
 type Corners = readonly [Vector3, Vector3, Vector3];
 

@@ -243,7 +243,6 @@ function accessories(random: RandomSource, ageGroup: AgeGroup): Set<Accessory> {
   const chosen = new Set<Accessory>();
   const adultFactor = ageGroup === "child" ? 0.4 : 1;
   const wearsFeather = random.chance(0.4);
-
   const wearsHeadband = random.chance(0.36 * adultFactor);
 
   if (wearsHeadband) {

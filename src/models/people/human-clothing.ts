@@ -14,7 +14,7 @@ function triangleWave(value: number): number {
   return 1 - Math.abs(fractionalPart(value) * 2 - 1);
 }
 
-export function jaggedHem(shape: Shape, belowY: number, teeth: number, depth: number): Shape {
+function jaggedHem(shape: Shape, belowY: number, teeth: number, depth: number): Shape {
   return deformShape(shape, (vertex) => {
     if (vertex.y > belowY) {
       return [0, 0, 0];
@@ -24,7 +24,7 @@ export function jaggedHem(shape: Shape, belowY: number, teeth: number, depth: nu
   });
 }
 
-export function jaggedTop(shape: Shape, aboveY: number, teeth: number, depth: number): Shape {
+function jaggedTop(shape: Shape, aboveY: number, teeth: number, depth: number): Shape {
   return deformShape(shape, (vertex) => {
     if (vertex.y < aboveY) {
       return [0, 0, 0];
@@ -53,7 +53,7 @@ function pick(
   return value(point);
 }
 
-export function garmentStyle(followsLegs: number, hemLine = 0.55): VertexStyle {
+function garmentStyle(followsLegs: number, hemLine = 0.55): VertexStyle {
   const lower = skirtStyle(followsLegs, 0.92, hemLine);
 
   return {

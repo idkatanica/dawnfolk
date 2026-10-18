@@ -40,6 +40,7 @@ function lowestContact(measurement: StrideMeasurement, point: Vector3): PlantedC
 
 export function measureStride(measurement: StrideMeasurement): number {
   const { pose, poser, sample, scales } = measurement;
+
   const point = new Vector3();
 
   let stride = 0;

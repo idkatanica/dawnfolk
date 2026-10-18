@@ -22,9 +22,7 @@ export const QuadrupedBone = {
   UpperHindRight: 15,
 } as const;
 
-export const QUADRUPED_BONE_COUNT = 18;
-
-export type LegJoints = readonly [upper: Triple, lower: Triple, hoof: Triple];
+type LegJoints = readonly [upper: Triple, lower: Triple, hoof: Triple];
 
 export interface QuadrupedFrame {
   readonly bodyContacts: readonly ContactPoint[];
@@ -45,7 +43,7 @@ export type LegSide = -1 | 1;
 
 export type LegEnd = "front" | "hind";
 
-export interface LegBones {
+interface LegBones {
   readonly hoof: number;
   readonly lower: number;
   readonly upper: number;
