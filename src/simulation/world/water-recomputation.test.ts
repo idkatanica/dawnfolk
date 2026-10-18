@@ -53,6 +53,27 @@ describe("water recomputation", () => {
     expect(world.waterVersion).toBe(1);
   });
 
+  it("reports only the heights that recomputing changed", () => {
+    const levelled = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 48 } });
+
+    const recomputation = new WaterRecomputation(levelled);
+
+    for (let row = 10; row < 20; row += 1) {
+      const cell = levelled.grid.index(30, row);
+
+      levelled.terrain.carving[cell] = 3;
+      levelled.terrain.height[cell] = 97;
+    }
+
+    recomputation.recompute();
+
+    expect(levelled.heightChanges.takeRegion()).toEqual({ firstColumn: 28, firstRow: 8, lastColumn: 32, lastRow: 21 });
+
+    recomputation.recompute();
+
+    expect(levelled.heightChanges.takeRegion()).toBeNull();
+  });
+
   it("does not raise the old channel again once the land over it was levelled", () => {
     const levelled = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 24 } });
 

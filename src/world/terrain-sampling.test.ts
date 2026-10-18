@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isWaterAtPoint, isWaterCell, type SampledTerrain, sampleHeight, sampleSurface } from "./terrain-sampling.ts";
+import {
+  isWaterAtPoint,
+  isWaterCell,
+  type SampledTerrain,
+  sampleHeight,
+  sampleSurface,
+  touchesWaterCell,
+} from "./terrain-sampling.ts";
 import { NO_WATER } from "./water.ts";
 import { WorldGrid } from "./world-grid.ts";
 
@@ -13,6 +20,16 @@ function createSlopedTerrain(): SampledTerrain {
   }
 
   return { height, waterSurface: new Float32Array(grid.cellCount).fill(NO_WATER) };
+}
+
+function shoreRow(terrain: SampledTerrain, row: number): string {
+  let cells = "";
+
+  for (let column = 0; column < grid.cellsPerSide; column += 1) {
+    cells += touchesWaterCell(terrain, grid, grid.index(column, row)) ? "~" : ".";
+  }
+
+  return cells;
 }
 
 describe("height sampling", () => {
@@ -68,5 +85,15 @@ describe("water sampling", () => {
 
     expect(isWaterAtPoint(terrain, grid, grid.halfSize + 1, 0)).toBe(false);
     expect(sampleSurface(terrain, grid, grid.halfSize + 1, 0)).toBeLessThan(100);
+  });
+});
+
+describe("shores", () => {
+  it("touch water on all eight sides but not across the world's edge", () => {
+    const terrain = createSlopedTerrain();
+
+    terrain.waterSurface[grid.index(3, 1)] = 100;
+
+    expect([0, 1, 2, 3].map((row) => shoreRow(terrain, row))).toEqual(["..~~", "..~~", "..~~", "...."]);
   });
 });
