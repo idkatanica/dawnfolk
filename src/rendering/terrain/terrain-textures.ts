@@ -13,8 +13,15 @@ import {
   type WebGPURenderer,
 } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
+import { clamp, lerp } from "../../shared/math.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
-import { buildShoreField, SHORE_CHANNELS, type ShoreSource, updateShoreDepths } from "../water/shore-field.ts";
+import {
+  buildShoreField,
+  SHORE_CHANNELS,
+  ShoreChannel,
+  type ShoreSource,
+  updateShoreDepths,
+} from "../water/shore-field.ts";
 import type { WorldChanges } from "../world-changes.ts";
 import { bloomFor } from "./fireweed.ts";
 import { GroundAlbedo } from "./ground-albedo.ts";
@@ -76,6 +83,29 @@ export class TerrainTextures {
 
   get albedo(): Texture {
     return this.#albedo.texture;
+  }
+
+  shoreDepthAt(x: number, z: number): number {
+    const { grid } = this.#mirror;
+
+    const last = this.size - 1;
+    const column = clamp((x + grid.halfSize) / grid.cellSize - 0.5, 0, last - 0.001);
+    const row = clamp((z + grid.halfSize) / grid.cellSize - 0.5, 0, last - 0.001);
+
+    const firstColumn = Math.floor(column);
+    const firstRow = Math.floor(row);
+
+    const shore = this.#shoreData;
+    const { size } = this;
+
+    function depthAt(columnOffset: number, rowOffset: number): number {
+      return shore[((firstRow + rowOffset) * size + firstColumn + columnOffset) * SHORE_CHANNELS + ShoreChannel.Depth];
+    }
+
+    const near = lerp(depthAt(0, 0), depthAt(1, 0), column - firstColumn);
+    const far = lerp(depthAt(0, 1), depthAt(1, 1), column - firstColumn);
+
+    return lerp(near, far, row - firstRow);
   }
 
   update(renderer: WebGPURenderer, season: number, changes: WorldChanges): void {

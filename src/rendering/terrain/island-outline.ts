@@ -12,6 +12,7 @@ const WALK_STEPS = 65_536;
 const CROSSING_STEPS = 24;
 const SAME_ANGLE = 1e-9;
 const SIDE_TEST_SIZE = 80;
+const TANGENT_STEP = 0.002;
 
 export interface CoastPoint {
   readonly angle: number;
@@ -280,6 +281,32 @@ export class IslandOutline {
     const radius = radiusAt(this.#radii, angle);
 
     return [Math.cos(angle) * radius, Math.sin(angle) * radius];
+  }
+
+  isInside(x: number, z: number): boolean {
+    if (this.#radii === null) {
+      const { cellSize, halfSize } = this.#grid;
+
+      return Math.max(Math.abs(x), Math.abs(z)) < halfSize - cellSize / 2;
+    }
+
+    return Math.hypot(x, z) < radiusAt(this.#radii, Math.atan2(z, x));
+  }
+
+  outwardAt(x: number, z: number): readonly [number, number] {
+    if (this.#radii === null) {
+      return Math.abs(x) > Math.abs(z) ? [Math.sign(x), 0] : [0, Math.sign(z)];
+    }
+
+    const angle = Math.atan2(z, x);
+    const before = radiusAt(this.#radii, angle - TANGENT_STEP);
+    const after = radiusAt(this.#radii, angle + TANGENT_STEP);
+
+    const tangentX = Math.cos(angle + TANGENT_STEP) * after - Math.cos(angle - TANGENT_STEP) * before;
+    const tangentZ = Math.sin(angle + TANGENT_STEP) * after - Math.sin(angle - TANGENT_STEP) * before;
+    const tangentLength = Math.hypot(tangentX, tangentZ);
+
+    return [tangentZ / tangentLength, -tangentX / tangentLength];
   }
 
   insideNode(point: Node<"vec2">): Node<"bool"> {
