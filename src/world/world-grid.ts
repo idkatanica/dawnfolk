@@ -141,6 +141,54 @@ export class WorldGrid {
     return cells;
   }
 
+  traceAlong(
+    fromX: number,
+    fromZ: number,
+    toX: number,
+    toZ: number,
+    visit: (cell: number, enter: number, leave: number) => boolean
+  ): boolean {
+    const deltaX = toX - fromX;
+    const deltaZ = toZ - fromZ;
+    const stepColumn = Math.sign(deltaX);
+    const stepRow = Math.sign(deltaZ);
+    const strideX = deltaX === 0 ? Number.POSITIVE_INFINITY : this.cellSize / Math.abs(deltaX);
+    const strideZ = deltaZ === 0 ? Number.POSITIVE_INFINITY : this.cellSize / Math.abs(deltaZ);
+    const lastColumn = this.columnAt(toX);
+    const lastRow = this.rowAt(toZ);
+
+    let column = this.columnAt(fromX);
+    let row = this.rowAt(fromZ);
+    let crossingX = this.#firstCrossing(fromX, deltaX, column, stepColumn);
+    let crossingZ = this.#firstCrossing(fromZ, deltaZ, row, stepRow);
+    let entered = 0;
+
+    while (this.contains(column, row)) {
+      const isLast = column === lastColumn && row === lastRow;
+      const left = isLast ? 1 : Math.min(crossingX, crossingZ, 1);
+
+      if (!visit(this.index(column, row), entered, left)) {
+        return false;
+      }
+
+      if (isLast || left >= 1) {
+        return true;
+      }
+
+      entered = left;
+
+      if (crossingX < crossingZ) {
+        column += stepColumn;
+        crossingX += strideX;
+      } else {
+        row += stepRow;
+        crossingZ += strideZ;
+      }
+    }
+
+    return false;
+  }
+
   #firstCrossing(from: number, delta: number, line: number, step: number): number {
     if (delta === 0) {
       return Number.POSITIVE_INFINITY;

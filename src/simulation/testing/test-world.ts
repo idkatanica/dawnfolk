@@ -49,6 +49,7 @@ function createTestGeneratedWorld(overrides: Partial<TestWorldOptions>): Generat
   terrain.waterSurface.fill(NO_WATER);
 
   return {
+    crossings: [],
     deposits: options.deposits,
     dimensions: options.dimensions,
     monuments: options.monuments,
