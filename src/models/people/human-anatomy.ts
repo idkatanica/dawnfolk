@@ -8,7 +8,7 @@ import { combine, MIRROR_X, sideMirror, type Triple, transformOf } from "../mesh
 import { rigidStyle } from "../rig/skin-weights.ts";
 import type { HumanDetail } from "./human-detail.ts";
 import { armStyle, FLEXIBLE_TORSO_STYLE, legStyle, TORSO_STYLE } from "./human-rigging.ts";
-import { HumanBone, SIDES, type Side } from "./human-skeleton.ts";
+import { HumanBone, HumanJoint, SIDES, type Side, sideBones } from "./human-skeleton.ts";
 
 const HEAD_SECTIONS: readonly LoftSection[] = [
   { centerZ: 0.052, radiusX: 0, radiusZ: 0, y: 1.512 },
@@ -252,11 +252,18 @@ function handShape(builder: MeshBuilder, style: VertexStyle, mirror: Matrix4, de
   });
 }
 
+const SHOULDER_RADIUS = 0.058;
+
 function addArms(builder: MeshBuilder, detail: HumanDetail): void {
   forEachSide((side, mirror) => {
     const style = { ...armStyle(side), ...SKIN };
 
     builder.add(tube(ARM, { radialSegments: detail.limbSegments }), { seam: SKIN_SEAM, style, transform: mirror });
+    builder.add(sphere(SHOULDER_RADIUS, detail.limbSegments, Math.max(4, detail.limbSegments - 3)), {
+      seam: SKIN_SEAM,
+      style: { ...rigidStyle(sideBones(side).upperArm), ...SKIN },
+      transform: combine(mirror, transformOf({ position: HumanJoint.Shoulder })),
+    });
     handShape(builder, style, mirror, detail);
   });
 }
