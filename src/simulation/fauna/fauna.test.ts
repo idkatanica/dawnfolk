@@ -138,3 +138,78 @@ describe("animals", () => {
     expect(fauna.livingCount).toBe(3);
   });
 });
+
+function spawned<Herd>(herd: Herd | null): Herd {
+  if (herd === null) {
+    throw new Error("Expected the herd to spawn");
+  }
+
+  return herd;
+}
+
+function slopedFauna() {
+  return createFauna(
+    createTestWorld({
+      biome: Biome.Alpine,
+      dimensions: { cellSize: 10, cellsPerSide: 96 },
+      heightAt: (x) => 100 + x * 0.5,
+    })
+  );
+}
+
+describe("kinds of animals", () => {
+  it("bring ibex to rocky heights when the world is populated", () => {
+    const { fauna } = createFauna(
+      createTestWorld({ biome: Biome.Alpine, dimensions: { cellSize: 10, cellsPerSide: 96 } })
+    );
+
+    expect(fauna.populate(3, createRandom(2))).toBe(3);
+    expect(fauna.herds.every((herd) => herd.kind === "ibex")).toBe(true);
+  });
+
+  it("send a chased ibex bounding uphill while a deer runs straight away", () => {
+    const danger: Waypoint = { x: 0, z: 40 };
+    const threats: FaunaThreats = { dangerNear: () => danger, hunterNear: () => null };
+
+    const climbers = slopedFauna();
+    const runners = slopedFauna();
+
+    climbers.fauna.spawnHerd("ibex", 0, 0, 1, createRandom(1));
+    runners.fauna.spawnHerd("deer", 0, 0, 1, createRandom(1));
+
+    const [ibex] = climbers.fauna.animals;
+    const [deer] = runners.fauna.animals;
+
+    const ibexStart = ibex.mover.x;
+    const deerStart = deer.mover.x;
+
+    runFor(climbers.fauna, 4, { threats });
+    runFor(runners.fauna, 4, { threats });
+
+    expect(ibex.mover.x - ibexStart).toBeGreaterThan(deer.mover.x - deerStart + 12);
+    expect(ibex.mover.z).toBeLessThan(danger.z);
+  });
+
+  it("lead ibex herds to higher pastures", () => {
+    const { fauna } = slopedFauna();
+
+    const random = createRandom(1);
+
+    const herds = [-160, -80, 0, 80, 160].map((z) => spawned(fauna.spawnHerd("ibex", -100, z, 2, random)));
+
+    runFor(fauna, 1);
+
+    expect(herds.every((herd) => herd.goalX > -60)).toBe(true);
+  });
+
+  it("let wolf packs roam much farther than deer herds", () => {
+    const { fauna } = createFauna();
+
+    const pack = spawned(fauna.spawnHerd("wolf", 0, 0, 3, createRandom(1)));
+
+    runFor(fauna, 1);
+
+    expect(Math.hypot(pack.goalX, pack.goalZ)).toBeGreaterThanOrEqual(ANIMALS.wolf.pastureRange[0]);
+    expect(ANIMALS.wolf.pastureRange[0]).toBeGreaterThan(ANIMALS.deer.pastureRange[0]);
+  });
+});

@@ -122,10 +122,44 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
 });
 
 describe("animal appearance", () => {
-  it("is the same for the same animal", () => {
-    expect(animalAppearance({ kind: "deer", seed: 0.5, youth: 0.2 })).toEqual(
-      animalAppearance({ kind: "deer", seed: 0.5, youth: 0.2 })
+  it.each(ANIMAL_KINDS)("is the same for the same %s", (kind) => {
+    expect(animalAppearance({ kind, seed: 0.5, youth: 0.2 })).toEqual(
+      animalAppearance({ kind, seed: 0.5, youth: 0.2 })
     );
+  });
+
+  it.each(ANIMAL_KINDS)("varies the coat and size of every %s", (kind) => {
+    const herd = Array.from({ length: 12 }, (_, index) => animalAppearance({ kind, seed: index / 12, youth: 0 }));
+
+    expect(new Set(herd.map((animal) => animal.coat)).size).toBeGreaterThan(6);
+    expect(Math.max(...herd.map((animal) => animal.size))).toBeGreaterThan(
+      Math.min(...herd.map((animal) => animal.size))
+    );
+  });
+
+  it("gives ibex bucks long curved horns, does short ones and kids none", () => {
+    const adults = Array.from({ length: 40 }, (_, index) =>
+      animalAppearance({ kind: "ibex", seed: index / 40, youth: 0 })
+    );
+    const kid = animalAppearance({ kind: "ibex", seed: 0.3, youth: 1 });
+
+    const masks = adults.map((ibex) => animalPartMask("ibex", ibex));
+
+    expect(masks.filter((mask) => hasPart(mask, 2)).length).toBeGreaterThan(5);
+    expect(masks.filter((mask) => hasPart(mask, 1)).length).toBeGreaterThan(5);
+    expect(hasPart(animalPartMask("ibex", kid), 1)).toBe(false);
+  });
+
+  it("gives grown wolves a thick ruff now and then but never a pup", () => {
+    const adults = Array.from({ length: 40 }, (_, index) =>
+      animalAppearance({ kind: "wolf", seed: index / 40, youth: 0 })
+    );
+    const pups = Array.from({ length: 10 }, (_, index) =>
+      animalAppearance({ kind: "wolf", seed: index / 10, youth: 0.8 })
+    );
+
+    expect(adults.filter((wolf) => wolf.hasRuff).length).toBeGreaterThan(10);
+    expect(pups.some((wolf) => wolf.hasRuff)).toBe(false);
   });
 
   it("gives fawns spots and no antlers", () => {

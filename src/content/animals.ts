@@ -1,6 +1,6 @@
 import { Biome, type BiomeIndex } from "./biomes.ts";
 
-export const ANIMAL_KINDS = ["deer", "mammoth"] as const;
+export const ANIMAL_KINDS = ["deer", "mammoth", "ibex", "wolf"] as const;
 
 export type AnimalKind = (typeof ANIMAL_KINDS)[number];
 
@@ -40,6 +40,23 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     seeksHighGround: false,
     walkSpeed: 3.2,
   },
+  ibex: {
+    abundance: 2,
+    favouriteBiomes: [Biome.Alpine, Biome.Mesa, Biome.Tundra],
+    fleeDistance: 60,
+    food: 8,
+    health: 1,
+    herdSizeRange: [3, 6],
+    hitChance: 0.24,
+    huntingPartySize: 1,
+    maximumHerdSize: 9,
+    name: "Ibex",
+    pastureRange: [60, 260],
+    restingActivity: "Grazing",
+    runSpeed: 9,
+    seeksHighGround: true,
+    walkSpeed: 2.6,
+  },
   mammoth: {
     abundance: 2.4,
     favouriteBiomes: [Biome.Tundra, Biome.Taiga, Biome.Steppe, Biome.Glacier],
@@ -56,6 +73,23 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     runSpeed: 5.2,
     seeksHighGround: false,
     walkSpeed: 1.9,
+  },
+  wolf: {
+    abundance: 1,
+    favouriteBiomes: [Biome.Taiga, Biome.Tundra, Biome.Forest, Biome.Steppe],
+    fleeDistance: 80,
+    food: 6,
+    health: 1,
+    herdSizeRange: [3, 6],
+    hitChance: 0.2,
+    huntingPartySize: null,
+    maximumHerdSize: 8,
+    name: "Wolf",
+    pastureRange: [180, 600],
+    restingActivity: "Sniffing around",
+    runSpeed: 11,
+    seeksHighGround: false,
+    walkSpeed: 3.6,
   },
 };
 

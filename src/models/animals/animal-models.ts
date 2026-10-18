@@ -7,6 +7,7 @@ import type { Pose } from "../rig/pose.ts";
 import type { Skeleton } from "../rig/skeleton.ts";
 import type { AnimalAppearance } from "./animal-appearance.ts";
 import { addDeerBody, addFawnSpots, addLargeAntlers, addSmallAntlers, DEER_FRAME, DEER_GAIT } from "./deer-model.ts";
+import { addIbexBody, addLongHorns, addShortHorns, IBEX_FRAME, IBEX_GAIT } from "./ibex-model.ts";
 import {
   addLongTusks,
   addMammothBody,
@@ -17,6 +18,7 @@ import {
 } from "./mammoth-model.ts";
 import { type AnimalClipContext, applyAnimalClip, type ExtraMotion, type GaitStyle } from "./quadruped-clips.ts";
 import { createQuadrupedSkeleton, LEG_ENDS, LEG_SIDES, legBones, QuadrupedBone } from "./quadruped-skeleton.ts";
+import { addRuff, addWolfBody, WOLF_FRAME, WOLF_GAIT } from "./wolf-model.ts";
 
 type AnimalDetailLevel = "high" | "low";
 
@@ -59,6 +61,8 @@ function uniformBoneScales(skeleton: Skeleton, appearance: AnimalAppearance): Fl
 
 const DEER_SKELETON = createQuadrupedSkeleton(DEER_FRAME);
 const MAMMOTH_SKELETON = createQuadrupedSkeleton(MAMMOTH_FRAME);
+const IBEX_SKELETON = createQuadrupedSkeleton(IBEX_FRAME);
+const WOLF_SKELETON = createQuadrupedSkeleton(WOLF_FRAME);
 
 function deerParts(appearance: AnimalAppearance): string[] {
   const parts = ["body"];
@@ -86,6 +90,22 @@ function mammothParts(appearance: AnimalAppearance): string[] {
   return ["body"];
 }
 
+function ibexParts(appearance: AnimalAppearance): string[] {
+  if (appearance.hornLength > 0.8) {
+    return ["body", "hornsLong"];
+  }
+
+  if (appearance.hornLength > 0.2) {
+    return ["body", "hornsShort"];
+  }
+
+  return ["body"];
+}
+
+function wolfParts(appearance: AnimalAppearance): string[] {
+  return appearance.hasRuff ? ["body", "ruff"] : ["body"];
+}
+
 export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
   deer: {
     boneScales: (appearance) => uniformBoneScales(DEER_SKELETON, appearance),
@@ -100,6 +120,18 @@ export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
     skeleton: DEER_SKELETON,
     visibleParts: deerParts,
   },
+  ibex: {
+    boneScales: (appearance) => uniformBoneScales(IBEX_SKELETON, appearance),
+    extraMotion: null,
+    gait: IBEX_GAIT,
+    parts: [
+      { build: addIbexBody, name: "body" },
+      { build: addShortHorns, name: "hornsShort" },
+      { build: addLongHorns, name: "hornsLong" },
+    ],
+    skeleton: IBEX_SKELETON,
+    visibleParts: ibexParts,
+  },
   mammoth: {
     boneScales: (appearance) => uniformBoneScales(MAMMOTH_SKELETON, appearance),
     extraMotion: mammothTrunkMotion,
@@ -111,6 +143,17 @@ export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
     ],
     skeleton: MAMMOTH_SKELETON,
     visibleParts: mammothParts,
+  },
+  wolf: {
+    boneScales: (appearance) => uniformBoneScales(WOLF_SKELETON, appearance),
+    extraMotion: null,
+    gait: WOLF_GAIT,
+    parts: [
+      { build: addWolfBody, name: "body" },
+      { build: addRuff, name: "ruff" },
+    ],
+    skeleton: WOLF_SKELETON,
+    visibleParts: wolfParts,
   },
 };
 

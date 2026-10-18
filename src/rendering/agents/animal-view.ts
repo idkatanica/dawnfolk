@@ -33,7 +33,12 @@ const ANIMAL_LAYOUT: PaletteLayout = {
 const LEVEL_DISTANCES: LevelDistances = { high: 90, low: 650 };
 const BOUNDING_RADIUS = 3.5;
 const WADING_DEPTH = 1.2;
-const DOT_COLORS: Readonly<Record<AnimalKind, number>> = { deer: 0xb0_84_52, mammoth: 0x5c_44_32 };
+const DOT_COLORS: Readonly<Record<AnimalKind, number>> = {
+  deer: 0xb0_84_52,
+  ibex: 0x9c_8a_70,
+  mammoth: 0x5c_44_32,
+  wolf: 0x7c_7a_78,
+};
 const SHORTEST_STRIDE = 0.5;
 const REFERENCE_SEED = 0.5;
 const YOUTH_STEPS = 8;
@@ -103,7 +108,9 @@ export class AnimalView {
 
     this.#kinds = {
       deer: this.#createKindView("deer", material),
+      ibex: this.#createKindView("ibex", material),
       mammoth: this.#createKindView("mammoth", material),
+      wolf: this.#createKindView("wolf", material),
     };
   }
 

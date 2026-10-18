@@ -20,6 +20,7 @@ export const MaterialSlot = {
   Hair: 1,
   Hide: 4,
   Hoof: 21,
+  Horn: 32,
   Leaf: 11,
   Lip: 28,
   Meat: 25,
@@ -35,7 +36,7 @@ export const MaterialSlot = {
 
 export type MaterialSlotIndex = (typeof MaterialSlot)[keyof typeof MaterialSlot];
 
-const MATERIAL_SLOT_COUNT = 32;
+const MATERIAL_SLOT_COUNT = 33;
 
 const COLORS_BY_SLOT: Readonly<Record<MaterialSlotIndex, number>> = {
   [MaterialSlot.Accent]: 0xc4_55_3a,
@@ -59,6 +60,7 @@ const COLORS_BY_SLOT: Readonly<Record<MaterialSlotIndex, number>> = {
   [MaterialSlot.Hair]: 0x3b_2a_20,
   [MaterialSlot.Hide]: 0xa5_77_4f,
   [MaterialSlot.Hoof]: 0x3a_2e_26,
+  [MaterialSlot.Horn]: 0x5e_54_48,
   [MaterialSlot.Leaf]: 0x5e_8f_3a,
   [MaterialSlot.Lip]: 0x9a_5a_50,
   [MaterialSlot.Meat]: 0xa8_44_3a,
