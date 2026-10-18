@@ -42,6 +42,9 @@ const WAVE_SAMPLE_STEP = 0.35;
 const COARSE_LIFT = 0.4;
 const FOAM_FAR = 900;
 const FOAM_NEAR = 250;
+const ICE_COLOR = vec3(0.78, 0.86, 0.9);
+const THIN_ICE = 0.15;
+const SOLID_ICE = 0.5;
 
 export class WaterLook {
   readonly daylight = uniform(1);
@@ -130,6 +133,7 @@ export function createWaterMaterial(
   );
 
   const fullDetail = varying(select(step.lessThan(1.5), float(1), float(0)), "waterDetail");
+  const ice = varying(smoothstep(THIN_ICE, SOLID_ICE, textureLoad(textures.surface, ivec2(cell)).r), "waterIce");
   const flow = varying(slope, "waterFlow");
   const viewDirection = normalize(cameraPosition.sub(positionWorld));
   const bed = sampleHeightNode(textures.height, grid, positionWorld.xz);
@@ -138,7 +142,7 @@ export function createWaterMaterial(
     .mul(SHORE_WOBBLE);
 
   const shoreDepth = positionWorld.y.sub(bed).add(shoreWobble);
-  const normal = surfaceNormal(flow, look);
+  const normal = normalize(mix(surfaceNormal(flow, look), vec3(0, 1, 0), ice.mul(0.85)));
 
   const depth = max(shoreDepth, 0);
 
@@ -159,21 +163,26 @@ export function createWaterMaterial(
     .mul(smoothstep(0.25, 0.75, steadyFoam));
   const rapidsFoam = smoothstep(0.1, 0.3, length(flow)).mul(smoothstep(0.45, 0.85, steadyFoam));
 
-  const foam = clamp(shoreFoam.add(rapidsFoam), 0, 1);
+  const foam = clamp(shoreFoam.add(rapidsFoam), 0, 1).mul(float(1).sub(ice));
 
   const body = mix(vec3(0.16, 0.42, 0.42), vec3(0.03, 0.13, 0.2), smoothstep(0.2, 6, depth));
   const sky = mix(look.horizonColor, look.zenithColor, 0.35);
 
-  material.colorNode = mix(body, vec3(0.93, 0.96, 0.97), foam);
-  material.emissiveNode = sky.mul(fresnel).mul(look.daylight.mul(0.75).add(0.1)).mul(float(1).sub(foam));
+  material.colorNode = mix(mix(body, vec3(0.93, 0.96, 0.97), foam), ICE_COLOR, ice);
+  material.emissiveNode = sky
+    .mul(fresnel)
+    .mul(look.daylight.mul(0.75).add(0.1))
+    .mul(float(1).sub(foam))
+    .mul(float(1).sub(ice.mul(0.7)));
   material.opacityNode = clamp(
     mix(float(0.42), float(0.94), smoothstep(0, 3.5, depth))
       .add(foam.mul(0.5))
-      .add(fresnel.mul(0.3)),
+      .add(fresnel.mul(0.3))
+      .add(ice),
     0,
     1
   ).mul(mix(float(1), smoothstep(0, SHORE_FADE, shoreDepth), fullDetail));
-  material.roughnessNode = mix(float(0.06), float(0.5), foam);
+  material.roughnessNode = mix(mix(float(0.06), float(0.5), foam), float(0.35), ice);
   material.metalnessNode = float(0);
 
   return material;
