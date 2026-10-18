@@ -33,79 +33,97 @@ import { eraName, type Tribe, upcomingTechnology } from "./society/tribe.ts";
 import { SNOW_CAPACITY, type WorldState } from "./world/world-state.ts";
 
 const BYTE = 255;
+const NO_ROW = -1;
 
 function toByte(value: number): number {
   return Math.round(saturate(value) * BYTE);
 }
 
 export function packSurfaceRows(world: WorldState, runs: readonly RowRun[]): PackedRows[] {
-  const { cellsPerSide } = world.grid;
-  const { fields } = world;
+  const bytesPerRow = world.grid.cellsPerSide * SURFACE_CHANNELS;
 
   return runs.map((run) => {
-    const data = new Uint8Array(run.rowCount * cellsPerSide * SURFACE_CHANNELS);
-    const firstCell = run.firstRow * cellsPerSide;
+    const data = new Uint8Array(run.rowCount * bytesPerRow);
 
-    for (let offset = 0; offset < run.rowCount * cellsPerSide; offset += 1) {
-      const cell = firstCell + offset;
-      const position = offset * SURFACE_CHANNELS;
-
-      data[position + SurfaceChannel.Snow] = toByte(fields.snow[cell] / SNOW_CAPACITY);
-      data[position + SurfaceChannel.Wetness] = toByte(fields.wetness[cell]);
-      data[position + SurfaceChannel.Scorch] = toByte(fields.scorch[cell]);
-      data[position + SurfaceChannel.Fire] = toByte(fields.fire[cell]);
+    for (let row = 0; row < run.rowCount; row += 1) {
+      packSurfaceRow(world, run.firstRow + row, data, row * bytesPerRow);
     }
 
     return { data, firstRow: run.firstRow, rowCount: run.rowCount };
   });
 }
 
-export function keepChangedRows(runs: readonly PackedRows[], sent: Uint8Array, bytesPerRow: number): PackedRows[] {
+export function packChangedSurfaceRows(world: WorldState, runs: readonly RowRun[], sent: Uint8Array): PackedRows[] {
+  const bytesPerRow = world.grid.cellsPerSide * SURFACE_CHANNELS;
   const changed: PackedRows[] = [];
 
   for (const run of runs) {
-    let firstChanged = -1;
+    const endRow = run.firstRow + run.rowCount;
 
-    for (let row = 0; row <= run.rowCount; row += 1) {
-      const isChanged = row < run.rowCount && !isRowSent(run, row, sent, bytesPerRow);
+    let firstChangedRow = NO_ROW;
 
-      if (isChanged && firstChanged === -1) {
-        firstChanged = row;
+    for (let row = run.firstRow; row < endRow; row += 1) {
+      const isChanged = packSurfaceRow(world, row, sent, row * bytesPerRow);
+
+      if (isChanged && firstChangedRow === NO_ROW) {
+        firstChangedRow = row;
       }
 
-      if (!isChanged && firstChanged !== -1) {
-        changed.push(sliceRows(run, firstChanged, row, bytesPerRow));
-        firstChanged = -1;
+      if (!isChanged && firstChangedRow !== NO_ROW) {
+        changed.push(sentRows(sent, firstChangedRow, row, bytesPerRow));
+        firstChangedRow = NO_ROW;
       }
     }
-  }
 
-  for (const run of changed) {
-    sent.set(run.data, run.firstRow * bytesPerRow);
+    if (firstChangedRow !== NO_ROW) {
+      changed.push(sentRows(sent, firstChangedRow, endRow, bytesPerRow));
+    }
   }
 
   return changed;
 }
 
-function isRowSent(run: PackedRows, row: number, sent: Uint8Array, bytesPerRow: number): boolean {
-  const offset = row * bytesPerRow;
-  const sentOffset = (run.firstRow + row) * bytesPerRow;
-
-  for (let position = 0; position < bytesPerRow; position += 1) {
-    if (run.data[offset + position] !== sent[sentOffset + position]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function sliceRows(run: PackedRows, firstRow: number, endRow: number, bytesPerRow: number): PackedRows {
+function sentRows(sent: Uint8Array, firstRow: number, endRow: number, bytesPerRow: number): PackedRows {
   return {
-    data: run.data.slice(firstRow * bytesPerRow, endRow * bytesPerRow),
-    firstRow: run.firstRow + firstRow,
+    data: sent.slice(firstRow * bytesPerRow, endRow * bytesPerRow),
+    firstRow,
     rowCount: endRow - firstRow,
   };
+}
+
+function packSurfaceRow(world: WorldState, row: number, target: Uint8Array, offset: number): boolean {
+  const { cellsPerSide } = world.grid;
+  const { fire, scorch, snow, wetness } = world.fields;
+
+  const firstCell = row * cellsPerSide;
+
+  let isChanged = false;
+
+  for (let column = 0; column < cellsPerSide; column += 1) {
+    const cell = firstCell + column;
+    const position = offset + column * SURFACE_CHANNELS;
+
+    const snowByte = toByte(snow[cell] / SNOW_CAPACITY);
+    const wetnessByte = toByte(wetness[cell]);
+    const scorchByte = toByte(scorch[cell]);
+    const fireByte = toByte(fire[cell]);
+
+    if (
+      target[position + SurfaceChannel.Snow] !== snowByte ||
+      target[position + SurfaceChannel.Wetness] !== wetnessByte ||
+      target[position + SurfaceChannel.Scorch] !== scorchByte ||
+      target[position + SurfaceChannel.Fire] !== fireByte
+    ) {
+      isChanged = true;
+    }
+
+    target[position + SurfaceChannel.Snow] = snowByte;
+    target[position + SurfaceChannel.Wetness] = wetnessByte;
+    target[position + SurfaceChannel.Scorch] = scorchByte;
+    target[position + SurfaceChannel.Fire] = fireByte;
+  }
+
+  return isChanged;
 }
 
 export function packGroundRows(world: WorldState, runs: readonly RowRun[]): PackedRows[] {

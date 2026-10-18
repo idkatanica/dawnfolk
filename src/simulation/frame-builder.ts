@@ -1,13 +1,12 @@
-import { SURFACE_CHANNELS } from "../world/agent-buffers.ts";
 import type { HeightPatch, InitialWorld, PackedRows, SimulationFrame, SimulationStatistics } from "./frame.ts";
 import {
   allRows,
   describeBuilding,
   describeTribe,
   describeWeather,
-  keepChangedRows,
   packAnimals,
   packBurningCells,
+  packChangedSurfaceRows,
   packGroundRows,
   packHeightPatch,
   packPeople,
@@ -64,13 +63,13 @@ export class FrameBuilder {
   #changedSurfaceRows(): PackedRows[] {
     const { world } = this.#simulation;
 
-    const runs = packSurfaceRows(world, world.surfaceChanges.takeRuns());
+    const runs = world.surfaceChanges.takeRuns();
 
     if (this.#sentSurface === null) {
-      return runs;
+      return packSurfaceRows(world, runs);
     }
 
-    return keepChangedRows(runs, this.#sentSurface, world.grid.cellsPerSide * SURFACE_CHANNELS);
+    return packChangedSurfaceRows(world, runs, this.#sentSurface);
   }
 
   initialWorld(): InitialWorld {

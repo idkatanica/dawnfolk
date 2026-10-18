@@ -1,4 +1,5 @@
 import { isTreeSpecies, plantSpeciesDefinition } from "../content/plants.ts";
+import { saturate } from "../shared/math.ts";
 import type { WorldGrid } from "./world-grid.ts";
 
 export const PlantState = {
@@ -51,6 +52,7 @@ export interface PlantChange {
 export const NO_PLANT = -1;
 const FRUIT_LEVELS = 4;
 const BURNT_QUEUE_COMPACTION = 1024;
+const INITIAL_BERRY_BUSH_CAPACITY = 1024;
 
 export class VegetationStore {
   readonly #burntDay: Float32Array;
@@ -72,8 +74,12 @@ export class VegetationStore {
   readonly x: Float32Array;
   readonly z: Float32Array;
   #aliveCount = 0;
+  #berryBushCount = 0;
+  #berryBushes = new Int32Array(INITIAL_BERRY_BUSH_CAPACITY);
   #burntQueueStart = 0;
   #count = 0;
+  #emptyBerryBushCount = 0;
+  #fullBerryBushCount = 0;
 
   constructor(grid: WorldGrid, capacity: number) {
     this.#grid = grid;
@@ -120,6 +126,7 @@ export class VegetationStore {
     this.#linkToCell(index, this.#grid.cellAt(placement.x, placement.z));
     this.#aliveCount += 1;
     this.#changed.add(index);
+    this.#trackBerryBush(index);
 
     return index;
   }
@@ -131,6 +138,7 @@ export class VegetationStore {
 
     if (this.state[index] === PlantState.Alive) {
       this.#aliveCount -= 1;
+      this.#untrackBerryBush(index);
     }
 
     this.#unlinkFromCell(index);
@@ -146,6 +154,7 @@ export class VegetationStore {
       return;
     }
 
+    this.#untrackBerryBush(index);
     this.state[index] = PlantState.Burnt;
     this.#burntDay[index] = day;
     this.#burntQueue.push({ day: this.#burntDay[index], index });
@@ -160,11 +169,32 @@ export class VegetationStore {
     }
 
     const isVisibleChange = Math.round(this.fruit[index] * FRUIT_LEVELS) !== Math.round(fruit * FRUIT_LEVELS);
+    const isBerryBush = this.#givesBerries(index);
+
+    if (isBerryBush) {
+      this.#countFruit(index, -1);
+    }
 
     this.fruit[index] = fruit;
 
+    if (isBerryBush) {
+      this.#countFruit(index, 1);
+    }
+
     if (isVisibleChange) {
       this.#changed.add(index);
+    }
+  }
+
+  changeBerryFruit(change: number): void {
+    if (!this.#canBerriesChange(change)) {
+      return;
+    }
+
+    for (let position = 0; position < this.#berryBushCount; position += 1) {
+      const bush = this.#berryBushes[position];
+
+      this.setFruit(bush, saturate(this.fruit[bush] + change));
     }
   }
 
@@ -330,6 +360,83 @@ export class VegetationStore {
     }
 
     return plants;
+  }
+
+  #canBerriesChange(change: number): boolean {
+    if (change > 0) {
+      return this.#fullBerryBushCount < this.#berryBushCount;
+    }
+
+    if (change < 0) {
+      return this.#emptyBerryBushCount < this.#berryBushCount;
+    }
+
+    return false;
+  }
+
+  #givesBerries(index: number): boolean {
+    return plantSpeciesDefinition(this.species[index]).givesBerries;
+  }
+
+  #trackBerryBush(index: number): void {
+    if (!this.#givesBerries(index)) {
+      return;
+    }
+
+    if (this.#berryBushCount === this.#berryBushes.length) {
+      const grown = new Int32Array(this.#berryBushes.length * 2);
+
+      grown.set(this.#berryBushes);
+      this.#berryBushes = grown;
+    }
+
+    const position = this.#berryBushPosition(index);
+
+    this.#berryBushes.copyWithin(position + 1, position, this.#berryBushCount);
+    this.#berryBushes[position] = index;
+    this.#berryBushCount += 1;
+    this.#countFruit(index, 1);
+  }
+
+  #untrackBerryBush(index: number): void {
+    if (!this.#givesBerries(index)) {
+      return;
+    }
+
+    const position = this.#berryBushPosition(index);
+
+    this.#berryBushes.copyWithin(position, position + 1, this.#berryBushCount);
+    this.#berryBushCount -= 1;
+    this.#countFruit(index, -1);
+  }
+
+  #berryBushPosition(index: number): number {
+    let low = 0;
+    let high = this.#berryBushCount;
+
+    while (low < high) {
+      const middle = Math.floor((low + high) / 2);
+
+      if (this.#berryBushes[middle] < index) {
+        low = middle + 1;
+      } else {
+        high = middle;
+      }
+    }
+
+    return low;
+  }
+
+  #countFruit(index: number, direction: number): void {
+    const fruit = this.fruit[index];
+
+    if (fruit === 1) {
+      this.#fullBerryBushCount += direction;
+    }
+
+    if (fruit === 0) {
+      this.#emptyBerryBushCount += direction;
+    }
   }
 
   #initialFruit(species: number): number {

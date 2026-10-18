@@ -1,4 +1,5 @@
 import { FULL_TURN } from "../../shared/math.ts";
+import type { FireSystem } from "../nature/fire.ts";
 import type { WorldState } from "../world/world-state.ts";
 import type { Waypoint } from "./navigation.ts";
 
@@ -15,11 +16,13 @@ interface DangerZone {
 }
 
 export class HazardMap {
+  readonly #fire: FireSystem;
   readonly #world: WorldState;
   #zones: DangerZone[] = [];
 
-  constructor(world: WorldState) {
+  constructor(world: WorldState, fire: FireSystem) {
     this.#world = world;
+    this.#fire = fire;
   }
 
   addZone(zone: DangerZone): void {
@@ -45,6 +48,10 @@ export class HazardMap {
   }
 
   fireNear(x: number, z: number, radius: number): Waypoint | null {
+    if (this.#fire.burningCount === 0) {
+      return null;
+    }
+
     const { grid } = this.#world;
     const { fire } = this.#world.fields;
 
