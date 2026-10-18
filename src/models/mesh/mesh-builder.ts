@@ -8,6 +8,7 @@ import {
   type VertexChannel,
   vertexCount,
 } from "./mesh-data.ts";
+import { blendSeamNormals, type SeamSurface } from "./seams.ts";
 import { readShapeVertex, type Shape, shapeVertexCount } from "./shape.ts";
 
 export interface SurfacePoint {
@@ -23,6 +24,7 @@ type ChannelValue = number | ((point: SurfacePoint) => number);
 export type VertexStyle = Partial<Readonly<Record<VertexChannel, ChannelValue>>>;
 
 interface Placement {
+  readonly seam?: number;
   readonly style?: VertexStyle;
   readonly transform?: Matrix4;
 }
@@ -61,6 +63,7 @@ export class MeshBuilder {
   readonly #indices = new GrowableIndexArray();
   readonly #normals = new GrowableFloatArray();
   readonly #positions = new GrowableFloatArray();
+  readonly #seams: SeamSurface[] = [];
   #vertexCount = 0;
 
   constructor(baseStyle: VertexStyle = {}) {
@@ -74,6 +77,8 @@ export class MeshBuilder {
     const normalMatrix = new Matrix3().getNormalMatrix(transform);
     const isMirrored = transform.determinant() < 0;
     const firstVertex = this.#vertexCount;
+
+    this.#recordSeam(placement, shapeVertexCount(shape), shape.indices.length / 3);
 
     for (let index = 0; index < shapeVertexCount(shape); index += 1) {
       const vertex = readShapeVertex(shape, index);
@@ -96,6 +101,8 @@ export class MeshBuilder {
     const normalMatrix = new Matrix3().getNormalMatrix(transform);
     const isMirrored = transform.determinant() < 0;
     const firstVertex = this.#vertexCount;
+
+    this.#recordSeam(placement, vertexCount(mesh), mesh.indices.length / 3);
 
     for (let index = 0; index < vertexCount(mesh); index += 1) {
       const offset = index * 3;
@@ -120,6 +127,12 @@ export class MeshBuilder {
 
   build(): MeshData {
     const positions = this.#positions.toArray();
+    const normals = this.#normals.toArray();
+    const indices = this.#indices.toArray();
+
+    if (this.#seams.length > 1) {
+      blendSeamNormals({ indices, normals, positions }, this.#seams);
+    }
 
     return {
       bounds: boundsOf(positions),
@@ -134,10 +147,24 @@ export class MeshBuilder {
         slot: this.#channels.slot.toArray(),
         sway: this.#channels.sway.toArray(),
       },
-      indices: this.#indices.toArray(),
-      normals: this.#normals.toArray(),
+      indices,
+      normals,
       positions,
     };
+  }
+
+  #recordSeam(placement: Placement, vertices: number, triangles: number): void {
+    if (placement.seam === undefined) {
+      return;
+    }
+
+    this.#seams.push({
+      firstTriangle: this.#indices.length / 3,
+      firstVertex: this.#vertexCount,
+      reach: placement.seam,
+      triangleCount: triangles,
+      vertexCount: vertices,
+    });
   }
 
   #pushVertex(position: Vector3, normal: Vector3): void {
