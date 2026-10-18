@@ -29,6 +29,7 @@ interface CellClimate {
   desert: number;
   height: number;
   isNearShore: boolean;
+  isRiverBank: boolean;
   isWater: boolean;
   moisture: number;
   slope: number;
@@ -45,6 +46,11 @@ const ESCARPMENT_SLOPE = 0.62;
 const TREE_LINE_TEMPERATURE = 1.6;
 const ALPINE_SLOPE = 0.42;
 const SHORE_TEMPERATURE = 3;
+const WIDE_RIVER_STRENGTH = 130;
+const BROAD_RIVER_STRENGTH = 85;
+const RIVER_BANK_RISE = 1.4;
+const RIVER_BANK_RISE_PER_CELL = 0.9;
+const STEEPEST_RIVER_BANK = 0.36;
 
 const BIOME_GROUND: Readonly<Record<BiomeIndex, GroundIndex>> = {
   [Biome.Alpine]: Ground.Rock,
@@ -79,7 +85,7 @@ function classifyColdOrSteep(cell: CellClimate): BiomeIndex | null {
     return Biome.Mesa;
   }
 
-  if (cell.isNearShore && cell.temperature > SHORE_TEMPERATURE) {
+  if ((cell.isNearShore || cell.isRiverBank) && cell.temperature > SHORE_TEMPERATURE) {
     return Biome.Beach;
   }
 
@@ -209,6 +215,73 @@ function orthogonalNeighbors(grid: WorldGrid, cell: number): number[] {
   return neighbors;
 }
 
+interface Slopes {
+  north: Float32Array;
+  slope: Float32Array;
+}
+
+function measureSlopes(grid: WorldGrid, heights: Float32Array): Slopes {
+  const slopes: Slopes = { north: new Float32Array(grid.cellCount), slope: new Float32Array(grid.cellCount) };
+
+  for (let row = 0; row < grid.cellsPerSide; row += 1) {
+    for (let column = 0; column < grid.cellsPerSide; column += 1) {
+      const { north, slope } = slopeAt(grid, heights, column, row);
+
+      slopes.north[grid.index(column, row)] = north;
+      slopes.slope[grid.index(column, row)] = slope;
+    }
+  }
+
+  return slopes;
+}
+
+function riverBankWidth(strength: number): number {
+  if (strength >= WIDE_RIVER_STRENGTH) {
+    return 3;
+  }
+
+  return strength >= BROAD_RIVER_STRENGTH ? 2 : 1;
+}
+
+function markRiverBank(inputs: ClimateInputs, slopes: Float32Array, banks: Uint8Array, source: number): void {
+  const { grid, heights, waterSurface } = inputs;
+  const width = riverBankWidth(inputs.riverStrength[source]);
+  const column = grid.columnOf(source);
+  const row = grid.rowOf(source);
+
+  for (let rowOffset = -width; rowOffset <= width; rowOffset += 1) {
+    for (let columnOffset = -width; columnOffset <= width; columnOffset += 1) {
+      const distance = Math.hypot(columnOffset, rowOffset);
+
+      if (distance > width + 0.5 || !grid.contains(column + columnOffset, row + rowOffset)) {
+        continue;
+      }
+
+      const cell = grid.index(column + columnOffset, row + rowOffset);
+
+      const rise = heights[cell] - waterSurface[source];
+      const isLowAndGentle = rise <= RIVER_BANK_RISE + RIVER_BANK_RISE_PER_CELL * distance;
+
+      if (isLowAndGentle && slopes[cell] <= STEEPEST_RIVER_BANK && !hasWater(waterSurface[cell], heights[cell])) {
+        banks[cell] = 1;
+      }
+    }
+  }
+}
+
+function findRiverBanks(inputs: ClimateInputs, slopes: Float32Array): Uint8Array {
+  const { heights, riverStrength, waterSurface } = inputs;
+  const banks = new Uint8Array(heights.length);
+
+  for (const [cell, strength] of riverStrength.entries()) {
+    if (strength > 0 && hasWater(waterSurface[cell], heights[cell])) {
+      markRiverBank(inputs, slopes, banks, cell);
+    }
+  }
+
+  return banks;
+}
+
 function slopeAt(
   grid: WorldGrid,
   heights: Float32Array,
@@ -290,6 +363,8 @@ export function buildClimate(inputs: ClimateInputs): ClimateResult {
   const noise = createNoiseSampler(createRandom(inputs.seed * 13 + 5));
 
   const waterDistance = distanceToWater(grid, waterSurface, heights);
+  const slopes = measureSlopes(grid, heights);
+  const riverBanks = findRiverBanks(inputs, slopes.slope);
   const result: ClimateResult = {
     baseTemperature: new Float32Array(grid.cellCount),
     biome: new Uint8Array(grid.cellCount),
@@ -302,7 +377,8 @@ export function buildClimate(inputs: ClimateInputs): ClimateResult {
     for (let column = 0; column < grid.cellsPerSide; column += 1) {
       const point = islandPointAt(grid, column, row);
       const cell = grid.index(column, row);
-      const { north, slope } = slopeAt(grid, heights, column, row);
+      const north = slopes.north[cell];
+      const slope = slopes.slope[cell];
 
       const height = heights[cell];
       const desert = inputs.desertAt(point);
@@ -322,7 +398,16 @@ export function buildClimate(inputs: ClimateInputs): ClimateResult {
         waterDistance: waterDistance[cell],
       });
 
-      const climate: CellClimate = { desert, height, isNearShore, isWater, moisture, slope, temperature };
+      const climate: CellClimate = {
+        desert,
+        height,
+        isNearShore,
+        isRiverBank: riverBanks[cell] === 1,
+        isWater,
+        moisture,
+        slope,
+        temperature,
+      };
 
       const biome = classifyBiome(climate);
 
