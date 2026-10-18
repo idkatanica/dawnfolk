@@ -48,7 +48,6 @@ describe("indexed content", () => {
   it("asks trees for gentler ground than bushes and keeps everything off cliffs", () => {
     const trees = PLANT_SPECIES.filter((species) => isTreeSpecies(species.index));
     const undergrowth = PLANT_SPECIES.filter((species) => species.form === "shrub" || species.form === "succulent");
-
     const steepestTree = Math.max(...trees.map((species) => species.steepestSlope));
     const gentlestUndergrowth = Math.min(...undergrowth.map((species) => species.steepestSlope));
 
@@ -82,8 +81,8 @@ describe("seasons and grounds", () => {
   });
 
   it("blends ground colours at the end of a season", () => {
-    const midSummer = seasonalGroundColor(Ground.Meadow, 1.2, 0);
-    const lateSummer = seasonalGroundColor(Ground.Meadow, 1.95, 0);
+    const midSummer = seasonalGroundColor(Ground.Meadow, 1.2);
+    const lateSummer = seasonalGroundColor(Ground.Meadow, 1.95);
 
     expect(midSummer).toEqual([0.48, 0.48, 0.3]);
     expect(lateSummer[0]).toBeGreaterThan(midSummer[0]);

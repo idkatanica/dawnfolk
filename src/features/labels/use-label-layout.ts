@@ -89,7 +89,6 @@ function placeLabels(engine: EngineHandle, layer: HTMLElement): void {
   layer.toggleAttribute("data-far", engine.camera.state.distance > FAR_DISTANCE);
 
   const placed = placeVisibleLabels(engine, layer);
-
   const priority = placed.filter((entry) => entry.isPriority);
 
   for (const entry of placed) {

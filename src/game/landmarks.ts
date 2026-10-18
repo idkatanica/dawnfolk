@@ -76,17 +76,14 @@ function monumentLandmark(monument: Monument): Landmark {
 
 export function findLandmarks(source: LandmarkSource): Landmark[] {
   const random = createRandom(source.seed).derive(LANDMARK_STREAM);
-
   const firstLakeName = random.integer(0, LAKE_NAMES.length);
   const largestLakes = source.lakes
     .filter((lake) => lake.cellCount >= SMALLEST_NAMED_LAKE)
     .toSorted((first, second) => second.cellCount - first.cellCount)
     .slice(0, NAMED_LAKES);
-
   const lakes = largestLakes.map((lake, index) =>
     lakeLandmark(lake, LAKE_NAMES[(firstLakeName + index) % LAKE_NAMES.length])
   );
-
   const monuments = source.monuments.map((monument) => monumentLandmark(monument));
 
   return [peakLandmark(source, random.pick(PEAK_NAMES)), ...lakes, ...monuments];
