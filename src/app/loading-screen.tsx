@@ -1,3 +1,4 @@
+import { Logo } from "../design/logo.tsx";
 import type { GenerationProgress, GenerationStage } from "../generation/world-generator.ts";
 import { useEngineStore } from "./engine-store.ts";
 
@@ -20,6 +21,8 @@ function stageLabel(progress: GenerationProgress | null): string {
 function LoadingMessage({ progress }: { readonly progress: GenerationProgress | null }) {
   return (
     <div className="flex flex-col items-center gap-3 text-center" role="status">
+      <Logo className="size-20 text-pine" />
+
       <p className="text-3xl text-ink">Dawnfolk</p>
 
       <p className="text-ink-soft text-sm">{stageLabel(progress)}…</p>

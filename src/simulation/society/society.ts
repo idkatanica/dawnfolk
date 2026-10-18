@@ -49,6 +49,7 @@ interface TribeArrival {
 export class SocietySystem implements PeopleDirectory, SocietyServices {
   readonly quarryUses = new Map<number, number>();
   readonly #dependencies: SocietyDependencies;
+  readonly #tribesById = new Map<number, Tribe>();
   #deaths = 0;
   #people: Person[] = [];
   #tribeNumber = 0;
@@ -85,7 +86,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
   }
 
   findTribe(id: number): Tribe | null {
-    const tribe = this.#tribes.find((candidate) => candidate.id === id);
+    const tribe = this.#tribesById.get(id);
 
     if (tribe === undefined) {
       return null;
@@ -109,6 +110,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
 
     this.#tribeNumber += 1;
     this.#tribes.push(tribe);
+    this.#tribesById.set(tribe.id, tribe);
 
     return tribe;
   }
@@ -215,20 +217,30 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
   }
 
   livingWithin(x: number, z: number, radius: number): Person[] {
-    return this.#people.filter(
-      (person) => person.isAlive && Math.hypot(person.mover.x - x, person.mover.z - z) < radius
-    );
+    return this.#people.filter((person) => isLivingWithin(person, x, z, radius));
   }
 
   countNear(x: number, z: number, radius: number, accepts: (person: Person) => boolean): number {
-    return this.livingWithin(x, z, radius).filter(accepts).length;
+    let count = 0;
+
+    for (const person of this.#people) {
+      if (isLivingWithin(person, x, z, radius) && accepts(person)) {
+        count += 1;
+      }
+    }
+
+    return count;
   }
 
   nearestPerson(x: number, z: number, radius: number, accepts: (person: Person) => boolean): Person | null {
     let nearest: Person | null = null;
     let nearestDistance = radius;
 
-    for (const person of this.livingWithin(x, z, radius)) {
+    for (const person of this.#people) {
+      if (!person.isAlive) {
+        continue;
+      }
+
       const distance = Math.hypot(person.mover.x - x, person.mover.z - z);
 
       if (distance < nearestDistance && accepts(person)) {
@@ -259,8 +271,11 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
   update(seconds: number, days: number, context: SocietyContext): void {
     this.#handleBuildingLosses(context);
 
-    for (const tribe of [...this.#tribes]) {
-      updateTribe({ context, days, members: this.membersOf(tribe), seconds, services: this, tribe });
+    const tribes = [...this.#tribes];
+    const members = this.#membersOfEach(tribes);
+
+    for (const [position, tribe] of tribes.entries()) {
+      updateTribe({ context, days, members: members[position], seconds, services: this, tribe });
     }
 
     for (const person of [...this.#people]) {
@@ -294,6 +309,21 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     );
   }
 
+  #membersOfEach(tribes: readonly Tribe[]): Person[][] {
+    const positions = new Map(tribes.map((tribe, position) => [tribe.id, position]));
+    const members = tribes.map((): Person[] => []);
+
+    for (const person of this.#people) {
+      const position = positions.get(person.tribeId);
+
+      if (person.isAlive && position !== undefined) {
+        members[position].push(person);
+      }
+    }
+
+    return members;
+  }
+
   #dissolve(tribe: Tribe): void {
     const { buildings, chronicle } = this.#dependencies;
 
@@ -302,6 +332,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     }
 
     this.#tribes = this.#tribes.filter((candidate) => candidate !== tribe);
+    this.#tribesById.delete(tribe.id);
     chronicle.record({
       category: "death",
       text: `${tribe.name} is no more`,
@@ -368,6 +399,10 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
 
     this.#people = this.#people.filter((person) => person.isAlive || person.deathSeconds <= CORPSE_SECONDS);
   }
+}
+
+function isLivingWithin(person: Person, x: number, z: number, radius: number): boolean {
+  return person.isAlive && Math.hypot(person.mover.x - x, person.mover.z - z) < radius;
 }
 
 function newcomerAge(isGrownUp: boolean, random: RandomSource): number {

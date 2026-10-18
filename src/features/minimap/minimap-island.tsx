@@ -62,7 +62,7 @@ function MinimapCanvas({ engine }: { readonly engine: EngineHandle }) {
   return (
     <canvas
       aria-label="Map of the island. Click to move the camera."
-      className="block size-44 cursor-crosshair touch-none rounded-[16px]"
+      className="size-44 cursor-crosshair touch-none rounded-2xl"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       ref={canvasReference}

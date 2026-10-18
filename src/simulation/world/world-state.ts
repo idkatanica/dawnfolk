@@ -3,6 +3,7 @@ import type { GeneratedWorld } from "../../generation/world-generator.ts";
 import { clamp } from "../../shared/math.ts";
 import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../world/change-tracking.ts";
 import { isOnIsland } from "../../world/coast.ts";
+import type { IslandShapeKind } from "../../world/island-shape.ts";
 import type { TerrainData } from "../../world/terrain-data.ts";
 import {
   isWaterAtPoint,
@@ -23,7 +24,7 @@ const TERRAIN_LAPSE_RATE = 6.5 / 1000;
 const LOWEST_EDIT_BELOW_ORIGINAL = 60;
 const WALKABLE_SLOPE = 1.15;
 
-interface SurfaceFields {
+export interface SurfaceFields {
   crop: Float32Array;
   fire: Float32Array;
   fuel: Float32Array;
@@ -61,6 +62,7 @@ export class WorldState {
   readonly lowestHeight: number;
   readonly occupancy: Int32Array;
   readonly seed: number;
+  readonly shape: IslandShapeKind;
   readonly surfaceChanges: RowChangeTracker;
   readonly terrain: TerrainData;
   readonly vegetation: VegetationStore;
@@ -71,6 +73,7 @@ export class WorldState {
   constructor(generated: GeneratedWorld) {
     this.grid = new WorldGrid(generated.dimensions);
     this.seed = generated.seed;
+    this.shape = generated.shape;
     this.terrain = generated.terrain;
     this.vegetation = generated.vegetation;
     this.water = generated.water;

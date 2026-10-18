@@ -4,9 +4,10 @@ import { nearestPlant } from "../resources.ts";
 import type { PersonTick } from "../society-context.ts";
 import { learn, markScarce } from "../tribe.ts";
 import { DeliverJob } from "./deliver-job.ts";
-import { Errand, headTo, type Job } from "./job.ts";
+import { Errand, headToWork, type Job, plantTarget } from "./job.ts";
 
 const GATHERING_SECONDS = 4;
+const GATHERING_REACH = 0.35;
 const RIPE_BUSH = 0.25;
 const PICKABLE_FRUIT = 0.1;
 const HANDFUL = 0.5;
@@ -60,14 +61,15 @@ export function findBerries(tick: PersonTick): GatherJob | null {
 class GatherJob implements Job {
   readonly claimedPlant: number;
   readonly kind = "gather";
-  readonly #errand = new Errand(GATHERING_SECONDS, "gather");
+  readonly #errand: Errand;
 
   constructor(tick: PersonTick, bush: number) {
-    const { vegetation } = tick.context.world;
+    const target = plantTarget(tick.context.world.vegetation, bush, GATHERING_REACH);
 
     this.claimedPlant = bush;
+    this.#errand = new Errand(GATHERING_SECONDS, "gather", target);
     tick.tribe.claimedPlants.add(bush);
-    headTo(tick.person, { x: vegetation.x[bush] + 1.2, z: vegetation.z[bush] + 1.2 }, tick.context);
+    headToWork(tick.person, target, tick.context);
   }
 
   update(tick: PersonTick): Job | null {

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { CARRIED_ITEMS } from "../../world/agent-poses.ts";
+import { CARRIED_ITEMS, PERSON_POSES } from "../../world/agent-poses.ts";
 import { type MeshData, mergeMeshes, triangleCount, VERTEX_CHANNELS } from "../mesh/mesh-data.ts";
 import { MAXIMUM_PARTS } from "../part-mask.ts";
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
-import { meshProblems, openEdgeCount } from "../testing/mesh-checks.ts";
+import { meshProblems, openEdgeCount, thinnestPiece } from "../testing/mesh-checks.ts";
 import {
   describePiece,
   detachedPieces,
@@ -171,6 +171,65 @@ describe("attached parts", () => {
 
         expect(loose, `${appearance.ageGroup} carrying ${carried}`).toEqual([]);
         expect(isHeld, `${appearance.ageGroup} carrying ${carried}`).toBe(true);
+      }
+    }
+  });
+});
+
+const OUTFITS: readonly (readonly HumanPart[])[] = [
+  ["hairLong", "beardFull", "tunic", "cape", "boots", "headband", "feather", "necklace", "armband"],
+  ["hairBraids", "hairBun", "dress", "cloak", "paint"],
+  ["hairPonytail", "hairWild", "beardShort", "wrap", "loincloth"],
+  ["hairShort", "hairFringe"],
+];
+
+describe("moving parts", () => {
+  const tribe = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
+
+  const people = (
+    [
+      [30, false],
+      [28, true],
+      [9, false],
+    ] as const
+  ).map(([age, isFemale]) => personAppearance({ age, isFemale, seed: 0.37, tribe }));
+
+  describe.each([
+    ["high", highParts],
+    ["low", lowParts],
+  ] as const)("on the %s body", (_level, parts) => {
+    it.each(PERSON_POSES)("keeps every limb, garment and tool on the body to %s", (clip) => {
+      const poser = new SkeletonPoser(HUMAN_SKELETON);
+      const pose = new Pose(HUMAN_SKELETON.bones.length);
+      const carried = clip === "carry" ? "wood" : "nothing";
+
+      for (const appearance of people) {
+        const body = appearanceParts(appearance).filter((part) => part === "body" || part.startsWith("torso"));
+
+        for (const phase of [0.15, 0.4, 0.7]) {
+          applyHumanClip(pose, clip, phase, { ageGroup: appearance.ageGroup, carried, motion: appearance.motion });
+          poser.pose(pose, humanBoneScales(appearance.body));
+
+          for (const outfit of OUTFITS) {
+            const names = [...body, ...outfit, ...activityParts(clip, carried)];
+
+            const mesh = posedMesh(mergeMeshes(names.map((name) => parts[humanPartIndex(name)])), poser);
+
+            const loose = detachedPieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body))).map((piece) =>
+              describePiece(mesh, piece)
+            );
+
+            expect(loose, `${appearance.ageGroup} ${phase} ${outfit.join(" ")}`).toEqual([]);
+          }
+        }
+      }
+    });
+  });
+
+  it("builds every part from solid shapes, never paper-thin cards", () => {
+    for (const parts of [highParts, lowParts]) {
+      for (const [index, mesh] of parts.entries()) {
+        expect(thinnestPiece(mesh, meshPieces(mesh)), HUMAN_PARTS[index]).toBeGreaterThan(0.001);
       }
     }
   });

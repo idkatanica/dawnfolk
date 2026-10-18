@@ -4,13 +4,15 @@ import { nearestPlant, nearestQuarry } from "../resources.ts";
 import type { PersonTick } from "../society-context.ts";
 import { learn, markScarce } from "../tribe.ts";
 import { DeliverJob } from "./deliver-job.ts";
-import { Errand, headTo, type Job } from "./job.ts";
+import { Errand, headToWork, type Job, plantTarget, type WorkTarget } from "./job.ts";
 
 const QUARRYING_SECONDS = 9;
 const STONE_PER_TRIP = 3;
 const BOULDER_SEARCH_RADIUS = 420;
 const CLIFF_SEARCH_RADIUS = 520;
 const TRIPS_PER_BOULDER = 3;
+const PICK_REACH = 0.6;
+const CLIFF_FACE_RADIUS = 0.5;
 
 export function findStone(tick: PersonTick): Job | null {
   const { person, tribe } = tick;
@@ -55,14 +57,15 @@ function previousUses(quarryUses: ReadonlyMap<number, number>, boulder: number):
 class BoulderJob implements Job {
   readonly claimedPlant: number;
   readonly kind = "quarry";
-  readonly #errand = new Errand(QUARRYING_SECONDS, "dig");
+  readonly #errand: Errand;
 
   constructor(tick: PersonTick, boulder: number) {
-    const { vegetation } = tick.context.world;
+    const target = plantTarget(tick.context.world.vegetation, boulder, PICK_REACH);
 
     this.claimedPlant = boulder;
+    this.#errand = new Errand(QUARRYING_SECONDS, "dig", target);
     tick.tribe.claimedPlants.add(boulder);
-    headTo(tick.person, { x: vegetation.x[boulder] + 2.5, z: vegetation.z[boulder] + 2.5 }, tick.context);
+    headToWork(tick.person, target, tick.context);
   }
 
   update(tick: PersonTick): Job | null {
@@ -91,10 +94,13 @@ class BoulderJob implements Job {
 
 class QuarryJob implements Job {
   readonly kind = "quarry";
-  readonly #errand = new Errand(QUARRYING_SECONDS, "dig");
+  readonly #errand: Errand;
 
   constructor(tick: PersonTick, cliff: Waypoint) {
-    headTo(tick.person, { x: cliff.x + 2.5, z: cliff.z + 2.5 }, tick.context);
+    const target: WorkTarget = { radius: CLIFF_FACE_RADIUS, reach: PICK_REACH, x: cliff.x, z: cliff.z };
+
+    this.#errand = new Errand(QUARRYING_SECONDS, "dig", target);
+    headToWork(tick.person, target, tick.context);
   }
 
   update(tick: PersonTick): Job | null {

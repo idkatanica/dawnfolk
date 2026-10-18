@@ -2,6 +2,7 @@ import type { BuildingKind } from "../content/buildings.ts";
 import type { WeatherKind } from "../content/weather.ts";
 import type { WorldRules } from "../content/world-rules.ts";
 import type { CellRegion } from "../world/change-tracking.ts";
+import type { IslandShapeKind } from "../world/island-shape.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import type { VegetationBuffers } from "../world/vegetation-store.ts";
 import type { WaterFeatures } from "../world/water.ts";
@@ -151,6 +152,7 @@ export interface InitialWorld {
   frame: SimulationFrame;
   ground: Uint8Array;
   seed: number;
+  shape: IslandShapeKind;
   surface: Uint8Array;
   terrain: TerrainSnapshot;
   vegetation: VegetationBuffers;

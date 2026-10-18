@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { generateWorld } from "../../generation/world-generator.ts";
+import { type GenerationOptions, generateWorld } from "../../generation/world-generator.ts";
 import { createTestWorld } from "../testing/test-world.ts";
 import { flattenTerrain, raiseTerrain } from "./terrain-editing.ts";
 import { WaterRecomputation } from "./water-recomputation.ts";
 import { WorldState } from "./world-state.ts";
 
-const TEST_OPTIONS = { dimensions: { cellSize: 40, cellsPerSide: 96 }, erosionStrength: 0.4 };
+const TEST_OPTIONS: GenerationOptions = {
+  dimensions: { cellSize: 40, cellsPerSide: 96 },
+  erosionStrength: 0.4,
+  shape: "round",
+};
 
 let world: WorldState;
 
@@ -51,6 +55,27 @@ describe("water recomputation", () => {
 
     expect(Math.min(...world.terrain.carving)).toBeGreaterThanOrEqual(0);
     expect(world.waterVersion).toBe(1);
+  });
+
+  it("reports only the heights that recomputing changed", () => {
+    const levelled = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 48 } });
+
+    const recomputation = new WaterRecomputation(levelled);
+
+    for (let row = 10; row < 20; row += 1) {
+      const cell = levelled.grid.index(30, row);
+
+      levelled.terrain.carving[cell] = 3;
+      levelled.terrain.height[cell] = 97;
+    }
+
+    recomputation.recompute();
+
+    expect(levelled.heightChanges.takeRegion()).toEqual({ firstColumn: 28, firstRow: 8, lastColumn: 32, lastRow: 21 });
+
+    recomputation.recompute();
+
+    expect(levelled.heightChanges.takeRegion()).toBeNull();
   });
 
   it("does not raise the old channel again once the land over it was levelled", () => {

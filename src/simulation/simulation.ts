@@ -149,8 +149,8 @@ export class Simulation {
     this.world = new WorldState(generated);
     this.random = createRandom(generated.seed * 5 + 17);
     this.navigation = new NavigationGrid(this.world);
-    this.hazards = new HazardMap(this.world);
     this.fire = new FireSystem(this.world);
+    this.hazards = new HazardMap(this.world, this.fire);
     this.embers = new EmberSystem(this.world);
     this.surface = new SurfaceSystem(this.world);
     this.vegetationGrowth = new VegetationGrowthSystem(this.world);

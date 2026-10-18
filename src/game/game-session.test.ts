@@ -49,7 +49,7 @@ describe("creating a session", () => {
 
     const session = await GameSession.create(
       connection,
-      { options: { dimensions: { cellSize: 10, cellsPerSide: 96 }, erosionStrength: 1 }, seed: 3 },
+      { options: { dimensions: { cellSize: 10, cellsPerSide: 96 }, erosionStrength: 1, shape: "round" }, seed: 3 },
       {
         onProgress: (progress: GenerationProgress) => {
           stages.add(progress.stage);

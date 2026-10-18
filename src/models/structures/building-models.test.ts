@@ -4,7 +4,7 @@ import { BUILDING_KINDS } from "../../content/buildings.ts";
 import { MaterialSlot } from "../materials.ts";
 import { triangleCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
-import { meshProblems } from "../testing/mesh-checks.ts";
+import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
 import { buildBuildingModel, GLOW_PART } from "./building-models.ts";
 
@@ -24,6 +24,11 @@ describe.each(BUILDING_KINDS)("%s model", (kind) => {
     for (const mesh of [high, low]) {
       expect(detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece))).toEqual([]);
     }
+  });
+
+  it("closes every surface above the ground at both levels of detail", () => {
+    expect(highestOpenEdge(high)).toBeLessThan(0.05);
+    expect(highestOpenEdge(low)).toBeLessThan(0.05);
   });
 
   it("rises in stages from the ground while it is built", () => {

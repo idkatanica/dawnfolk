@@ -10,9 +10,11 @@ const FIRESIDE_DISTANCE = 5;
 
 export class WarmJob implements Job {
   readonly kind = "warm";
-  readonly #errand = new Errand(WARMING_SECONDS, "sit");
+  readonly #errand: Errand;
 
   constructor(tick: PersonTick, campfire: Building) {
+    this.#errand = new Errand(WARMING_SECONDS, "sit", campfire);
+
     const seat = aroundPoint(campfire, FIRESIDE_DISTANCE, tick.context.random.next() * FULL_TURN);
 
     headTo(tick.person, seat, tick.context);

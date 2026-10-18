@@ -1,10 +1,10 @@
-import { lerp, smoothstep } from "../../shared/math.ts";
+import { fractionalPart, lerp, smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder } from "../mesh/mesh-builder.ts";
 import { deformShape, type Shape, type ShapeVertex } from "../mesh/shape.ts";
-import { type LoftSection, loft, sphere, type TubePoint, torus, tube } from "../mesh/shapes.ts";
+import { type LoftSection, loft, panel, sphere, type TubePoint, torus, tube } from "../mesh/shapes.ts";
 import { combine, transformOf } from "../mesh/transforms.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
 import { forEachSide } from "./human-anatomy.ts";
@@ -81,10 +81,19 @@ function headShell(detail: HumanDetail, options: ShellOptions): Shape {
   return deformShape(shell, (vertex) => {
     const covered = coverage(vertex);
     const texture = roughness * HAIR_NOISE.fractal(vertex.x * 38, vertex.y * 38, vertex.z * 38, { octaves: 2 });
+    const tuck = (offset + 0.012) * (1 - covered);
+    const alongNormal = texture * covered - tuck * smoothstep(1.6, 1.68, vertex.y);
+    const inward = tuck * (1 - smoothstep(1.6, 1.68, vertex.y));
 
-    const push = -(offset + 0.012) * (1 - covered) + texture * covered;
+    const { centerZ: axisZ = 0 } = headSectionAt(Math.min(vertex.y, HEAD_CROWN - 0.01));
+    const offsetZ = vertex.z - axisZ;
+    const distance = Math.max(Math.hypot(vertex.x, offsetZ), 1e-6);
 
-    return [vertex.normalX * push, vertex.normalY * push, vertex.normalZ * push];
+    return [
+      vertex.normalX * alongNormal - (vertex.x / distance) * inward,
+      vertex.normalY * alongNormal,
+      vertex.normalZ * alongNormal - (offsetZ / distance) * inward,
+    ];
   });
 }
 
@@ -142,42 +151,71 @@ export function addFringeHair(builder: MeshBuilder, detail: HumanDetail): void {
   builder.add(shell, { style: HAIR });
 }
 
-function lockPath(angle: number, length: number): TubePoint[] {
-  const directionX = Math.cos(angle);
-  const directionZ = Math.sin(angle);
-  const points: TubePoint[] = [];
+const CURTAIN_START = Math.PI * 1.04;
+const CURTAIN_END = Math.PI * 1.96;
+const CURTAIN_THICKNESS = 0.03;
+const CURTAIN_BOTTOM = 1.37;
 
-  for (let index = 0; index <= 5; index += 1) {
-    const amount = index / 5;
+interface CurtainRing {
+  readonly flare: number;
+  readonly y: number;
+}
 
-    const reach = 0.098 + 0.03 * Math.sin(amount * Math.PI * 0.8);
+const CURTAIN_RINGS: readonly CurtainRing[] = [
+  { flare: 0, y: 1.7 },
+  { flare: 0, y: 1.64 },
+  { flare: 0.006, y: 1.56 },
+  { flare: 0.018, y: 1.47 },
+  { flare: 0.03, y: 1.41 },
+  { flare: 0.034, y: CURTAIN_BOTTOM },
+];
 
-    points.push({
-      radius: lerp(0.036, 0.012, amount ** 1.4),
-      x: directionX * reach,
-      y: lerp(1.66, 1.66 - length, amount),
-      z: -0.01 + directionZ * reach - 0.02 * amount,
-    });
-  }
+const LOW_CURTAIN_RINGS: readonly CurtainRing[] = [
+  { flare: 0, y: 1.7 },
+  { flare: 0.006, y: 1.56 },
+  { flare: 0.034, y: CURTAIN_BOTTOM },
+];
 
-  return points;
+function curtainSection(ring: CurtainRing, strands: number): LoftSection {
+  const head = headSectionAt(Math.max(ring.y, 1.62));
+  const { centerZ = 0 } = head;
+  const reach = 0.014 - CURTAIN_THICKNESS / 2 + ring.flare;
+
+  return {
+    centerZ: centerZ - ring.flare * 0.8,
+    radiusX: head.radiusX + reach,
+    radiusZ: head.radiusZ + reach,
+    ripple: (around) => 1 + 0.035 * Math.abs(Math.sin(around * Math.PI * strands)) * smoothstep(1.66, 1.5, ring.y),
+    y: ring.y,
+  };
+}
+
+function curtainShape(detail: HumanDetail): Shape {
+  const strands = detail.hasFineDetails ? 9 : 5;
+  const rings = detail.hasFineDetails ? CURTAIN_RINGS : LOW_CURTAIN_RINGS;
+
+  const curtain = panel({
+    angularSegments: detail.hasFineDetails ? 18 : 8,
+    endAngle: CURTAIN_END,
+    sections: rings.map((ring) => curtainSection(ring, strands)).reverse(),
+    startAngle: CURTAIN_START,
+    thickness: CURTAIN_THICKNESS,
+  });
+
+  return deformShape(curtain, (vertex) => {
+    if (vertex.y > CURTAIN_BOTTOM + 0.01) {
+      return [0, 0, 0];
+    }
+
+    const tooth = 1 - Math.abs(fractionalPart(vertex.around * strands + 0.5) * 2 - 1);
+
+    return [0, -0.05 * tooth, 0];
+  });
 }
 
 export function addLongHair(builder: MeshBuilder, detail: HumanDetail): void {
-  const style = { ...headToChestStyle(1.56, 1.4), slot: MaterialSlot.Hair };
-  const lockCount = detail.hasFineDetails ? 9 : 5;
-  const segments = Math.max(4, detail.limbSegments - 3);
-
   builder.add(capShell(detail, 0.014, 1.688, 1.56), { style: HAIR });
-
-  for (let lock = 0; lock < lockCount; lock += 1) {
-    const amount = lock / (lockCount - 1);
-
-    const angle = Math.PI * (1.08 + 0.84 * amount);
-    const length = 0.27 + 0.06 * Math.sin(amount * Math.PI) - 0.02 * ((lock % 2) * 2 - 1);
-
-    builder.add(tube(lockPath(angle, length), { radialSegments: segments }), { style });
-  }
+  builder.add(curtainShape(detail), { style: { ...headToChestStyle(1.56, 1.4), slot: MaterialSlot.Hair } });
 }
 
 function braidPath(): TubePoint[] {
@@ -266,41 +304,59 @@ function beardCoverage(vertex: ShapeVertex): number {
   return isFront * isLow * (1 - isLip);
 }
 
-function beardShell(detail: HumanDetail): Shape {
-  const sections: LoftSection[] = [
-    { centerZ: 0.052, radiusX: 0, radiusZ: 0, y: 1.5 },
-    { centerZ: 0.054, radiusX: 0.034, radiusZ: 0.03, y: 1.51 },
-    { centerZ: 0.03, radiusX: 0.071, radiusZ: 0.08, y: 1.545 },
-    { centerZ: 0.013, radiusX: 0.092, radiusZ: 0.103, y: 1.58 },
-    { centerZ: 0.003, radiusX: 0.101, radiusZ: 0.112, y: 1.62 },
-    { centerZ: 0.003, radiusX: 0, radiusZ: 0, y: 1.63 },
-  ];
+const BEARD_SECTIONS: readonly LoftSection[] = [
+  { centerZ: 0.052, radiusX: 0, radiusZ: 0, y: 1.5 },
+  { centerZ: 0.054, radiusX: 0.034, radiusZ: 0.03, y: 1.51 },
+  { centerZ: 0.03, radiusX: 0.071, radiusZ: 0.08, y: 1.545 },
+  { centerZ: 0.013, radiusX: 0.092, radiusZ: 0.103, y: 1.58 },
+  { centerZ: 0.003, radiusX: 0.101, radiusZ: 0.112, y: 1.62 },
+  { centerZ: 0.003, radiusX: 0, radiusZ: 0, y: 1.63 },
+];
 
+const FULL_BEARD_SECTIONS: readonly LoftSection[] = [
+  { centerZ: 0.072, radiusX: 0, radiusZ: 0, y: 1.39 },
+  { centerZ: 0.074, radiusX: 0.03, radiusZ: 0.022, y: 1.41 },
+  { centerZ: 0.072, radiusX: 0.058, radiusZ: 0.042, y: 1.46 },
+  { centerZ: 0.058, radiusX: 0.072, radiusZ: 0.062, y: 1.505 },
+  { centerZ: 0.03, radiusX: 0.078, radiusZ: 0.084, y: 1.545 },
+  ...BEARD_SECTIONS.slice(3),
+];
+
+const BEARD_TUCK = 0.02;
+
+function centerZAt(sections: readonly LoftSection[], y: number): number {
+  const upperIndex = sections.findIndex((section) => section.y >= y);
+
+  if (upperIndex <= 0) {
+    const { centerZ = 0 } = sections[Math.max(0, upperIndex)];
+
+    return centerZ;
+  }
+
+  const { centerZ: lowerCenter = 0, y: lowerY } = sections[upperIndex - 1];
+  const { centerZ: upperCenter = 0, y: upperY } = sections[upperIndex];
+
+  return lerp(lowerCenter, upperCenter, (y - lowerY) / Math.max(upperY - lowerY, 1e-6));
+}
+
+function beardShell(sections: readonly LoftSection[], detail: HumanDetail): Shape {
   return deformShape(loft(sections, detail.headSegments), (vertex) => {
-    const push = -0.022 * (1 - beardCoverage(vertex));
+    const tuck = BEARD_TUCK * (1 - beardCoverage(vertex));
+    const offsetZ = vertex.z - centerZAt(sections, vertex.y);
+    const distance = Math.hypot(vertex.x, offsetZ);
 
-    return [vertex.normalX * push, vertex.normalY * push, vertex.normalZ * push];
+    if (distance === 0) {
+      return [0, 0, 0];
+    }
+
+    return [(-vertex.x / distance) * tuck, 0, (-offsetZ / distance) * tuck];
   });
 }
 
 export function addShortBeard(builder: MeshBuilder, detail: HumanDetail): void {
-  builder.add(beardShell(detail), { style: HAIR });
+  builder.add(beardShell(BEARD_SECTIONS, detail), { style: HAIR });
 }
 
 export function addFullBeard(builder: MeshBuilder, detail: HumanDetail): void {
-  builder.add(beardShell(detail), { style: HAIR });
-  builder.add(
-    loft(
-      [
-        { centerZ: 0.07, radiusX: 0, radiusZ: 0, y: 1.39 },
-        { centerZ: 0.075, radiusX: 0.03, radiusZ: 0.022, y: 1.42 },
-        { centerZ: 0.075, radiusX: 0.058, radiusZ: 0.04, y: 1.48 },
-        { centerZ: 0.07, radiusX: 0.07, radiusZ: 0.045, y: 1.53 },
-        { centerZ: 0.06, radiusX: 0.05, radiusZ: 0.035, y: 1.56 },
-        { centerZ: 0.06, radiusX: 0, radiusZ: 0, y: 1.565 },
-      ],
-      detail.headSegments
-    ),
-    { style: HAIR }
-  );
+  builder.add(beardShell(FULL_BEARD_SECTIONS, detail), { style: HAIR });
 }

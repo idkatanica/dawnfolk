@@ -1,5 +1,7 @@
+import { Vector3 } from "three";
 import { type MeshData, VERTEX_CHANNELS, vertexCount } from "../mesh/mesh-data.ts";
 import { type Shape, shapeVertexCount } from "../mesh/shape.ts";
+import type { MeshPiece } from "./mesh-connectivity.ts";
 
 const NORMAL_TOLERANCE = 1e-3;
 
@@ -81,25 +83,68 @@ function cornerKey(mesh: MeshData, vertex: number): string {
     .join(",");
 }
 
-export function openEdgeCount(mesh: MeshData): number {
-  const uses = new Map<string, number>();
+interface EdgeUse {
+  count: number;
+  height: number;
+}
+
+function edgeUses(mesh: MeshData): Map<string, EdgeUse> {
+  const uses = new Map<string, EdgeUse>();
 
   for (let corner = 0; corner < mesh.indices.length; corner += 3) {
     for (let side = 0; side < 3; side += 1) {
-      const from = cornerKey(mesh, mesh.indices[corner + side]);
-      const to = cornerKey(mesh, mesh.indices[corner + ((side + 1) % 3)]);
+      const first = mesh.indices[corner + side];
+      const second = mesh.indices[corner + ((side + 1) % 3)];
+
+      const from = cornerKey(mesh, first);
+      const to = cornerKey(mesh, second);
 
       if (from === to) {
         continue;
       }
 
       const edge = from < to ? `${from}|${to}` : `${to}|${from}`;
+      const height = Math.max(mesh.positions[first * 3 + 1], mesh.positions[second * 3 + 1]);
 
-      const count = uses.get(edge);
+      const use = uses.get(edge);
 
-      uses.set(edge, count === undefined ? 1 : count + 1);
+      uses.set(edge, { count: use === undefined ? 1 : use.count + 1, height });
     }
   }
 
-  return [...uses.values()].filter((count) => count % 2 === 1).length;
+  return uses;
+}
+
+function openEdges(mesh: MeshData): EdgeUse[] {
+  return [...edgeUses(mesh).values()].filter((use) => use.count % 2 === 1);
+}
+
+export function openEdgeCount(mesh: MeshData): number {
+  return openEdges(mesh).length;
+}
+
+export function highestOpenEdge(mesh: MeshData): number {
+  return openEdges(mesh).reduce((highest, edge) => Math.max(highest, edge.height), Number.NEGATIVE_INFINITY);
+}
+
+export function thinnestPiece(mesh: MeshData, pieces: readonly MeshPiece[]): number {
+  return pieces.reduce((thinnest, piece) => Math.min(thinnest, pieceThickness(mesh, piece)), Number.POSITIVE_INFINITY);
+}
+
+function pieceThickness(mesh: MeshData, piece: MeshPiece): number {
+  let volume = 0;
+  let area = 0;
+
+  for (const triangle of piece.triangles) {
+    const [first, second, third] = [0, 1, 2].map((corner) => mesh.indices[triangle * 3 + corner] * 3);
+
+    const firstPoint = new Vector3().fromArray(mesh.positions, first);
+    const secondPoint = new Vector3().fromArray(mesh.positions, second);
+    const thirdPoint = new Vector3().fromArray(mesh.positions, third);
+
+    volume += firstPoint.dot(secondPoint.clone().cross(thirdPoint)) / 6;
+    area += secondPoint.clone().sub(firstPoint).cross(thirdPoint.clone().sub(firstPoint)).length() / 2;
+  }
+
+  return area === 0 ? 0 : (2 * Math.abs(volume)) / area;
 }

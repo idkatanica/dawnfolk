@@ -2,7 +2,10 @@ import { describe, expect, it, onTestFinished } from "vitest";
 import type { GenerationStage } from "../generation/world-generator.ts";
 import { WorkerSimulationConnection } from "./simulation-connection.ts";
 
-const SMALL_WORLD = { options: { dimensions: { cellSize: 10, cellsPerSide: 96 }, erosionStrength: 1 }, seed: 3 };
+const SMALL_WORLD = {
+  options: { dimensions: { cellSize: 10, cellsPerSide: 96 }, erosionStrength: 1, shape: "round" },
+  seed: 3,
+} as const;
 
 describe("worker simulation connection", () => {
   it("creates the world in a worker and advances it with the queued commands", async () => {

@@ -65,14 +65,14 @@ export function touchesWaterCell(terrain: SampledTerrain, grid: WorldGrid, cell:
   const column = grid.columnOf(cell);
   const row = grid.rowOf(cell);
 
-  return NEIGHBOR_OFFSETS.some((offset) => {
+  for (const offset of NEIGHBOR_OFFSETS) {
     const neighborColumn = column + offset.column;
     const neighborRow = row + offset.row;
 
-    if (!grid.contains(neighborColumn, neighborRow)) {
-      return false;
+    if (grid.contains(neighborColumn, neighborRow) && isWaterCell(terrain, grid.index(neighborColumn, neighborRow))) {
+      return true;
     }
+  }
 
-    return isWaterCell(terrain, grid.index(neighborColumn, neighborRow));
-  });
+  return false;
 }

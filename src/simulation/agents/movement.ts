@@ -21,6 +21,7 @@ const REPLAN_PROGRESS = 2;
 const MAXIMUM_FUTILE_REPLANS = 3;
 
 export interface Mover {
+  arrivalDistance: number;
   canWade: boolean;
   closestReplanDistance: number;
   futileReplans: number;
@@ -38,6 +39,7 @@ export interface Mover {
 
 export function createMover(x: number, z: number, heading: number): Mover {
   return {
+    arrivalDistance: FINAL_ARRIVAL_DISTANCE,
     canWade: false,
     closestReplanDistance: Number.POSITIVE_INFINITY,
     futileReplans: 0,
@@ -54,12 +56,20 @@ export function createMover(x: number, z: number, heading: number): Mover {
   };
 }
 
+export interface RouteOptions {
+  readonly arrivalDistance?: number;
+  readonly mayPlanRoute?: boolean;
+}
+
 export function setDestination(
   mover: Mover,
   destination: Waypoint,
   navigation: NavigationGrid,
-  mayPlanRoute = true
+  options: RouteOptions = {}
 ): void {
+  const { arrivalDistance = FINAL_ARRIVAL_DISTANCE, mayPlanRoute = true } = options;
+
+  mover.arrivalDistance = arrivalDistance;
   mover.goalX = destination.x;
   mover.goalZ = destination.z;
   mover.path = planRoute(mover, destination, navigation, mayPlanRoute);
@@ -114,7 +124,7 @@ export function moveAlong(
   const isFinalWaypoint = mover.pathIndex === mover.path.length - 1;
 
   const distanceLeft = Math.hypot(waypoint.x - mover.x, waypoint.z - mover.z);
-  const arrivalDistance = isFinalWaypoint ? FINAL_ARRIVAL_DISTANCE : WAYPOINT_ARRIVAL_DISTANCE;
+  const arrivalDistance = isFinalWaypoint ? mover.arrivalDistance : WAYPOINT_ARRIVAL_DISTANCE;
 
   if (distanceLeft < arrivalDistance) {
     mover.pathIndex += 1;

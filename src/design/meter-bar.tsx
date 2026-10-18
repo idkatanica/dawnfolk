@@ -24,7 +24,7 @@ export function MeterBar({ className, label, tone, value, valueText }: MeterBarP
     <Meter.Root className={cn("grid grid-cols-2 gap-y-1", className)} max={1} min={0} value={value}>
       <Meter.Label className="text-ink-soft text-xs">{label}</Meter.Label>
 
-      <span className="tabular text-right font-medium text-ink text-xs">{valueText}</span>
+      <span className="text-right font-medium text-ink text-xs tabular-nums">{valueText}</span>
 
       <Meter.Track className="col-span-2 h-1.5 overflow-hidden rounded-full bg-ink/10">
         <Meter.Indicator className={cn("rounded-full transition-[width] duration-500", INDICATOR_TONES[tone])} />

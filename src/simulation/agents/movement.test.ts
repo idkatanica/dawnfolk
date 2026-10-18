@@ -70,7 +70,7 @@ describe("movement", () => {
 
     const mover = createMover(-120, 0, 0);
 
-    setDestination(mover, { x: 0, z: 0 }, new NavigationGrid(world), false);
+    setDestination(mover, { x: 0, z: 0 }, new NavigationGrid(world), { mayPlanRoute: false });
     walk(mover, world, 30);
 
     expect(world.isWaterAt(mover.x, mover.z)).toBe(false);
@@ -86,7 +86,7 @@ describe("movement", () => {
     const mover = createMover(-120, 0, 0);
 
     mover.canWade = true;
-    setDestination(mover, { x: 0, z: 0 }, new NavigationGrid(world), false);
+    setDestination(mover, { x: 0, z: 0 }, new NavigationGrid(world), { mayPlanRoute: false });
 
     expect(walk(mover, world, 80)).toBe(true);
   });
@@ -98,7 +98,7 @@ describe("movement", () => {
 
     const mover = createMover(1.4, -0.1, 0);
 
-    setDestination(mover, { x: -9, z: 30 }, new NavigationGrid(world), false);
+    setDestination(mover, { x: -9, z: 30 }, new NavigationGrid(world), { mayPlanRoute: false });
 
     expect(walk(mover, world, 30)).toBe(true);
   });
@@ -113,7 +113,7 @@ describe("unreachable destinations", () => {
     const mover = createMover(-60, 0, 0);
 
     mover.canWade = true;
-    setDestination(mover, { x: 0, z: 0 }, new NavigationGrid(world), false);
+    setDestination(mover, { x: 0, z: 0 }, new NavigationGrid(world), { mayPlanRoute: false });
 
     expect(walk(mover, world, 60, 5)).toBe(true);
     expect(world.isWaterAt(mover.x, mover.z)).toBe(false);
@@ -149,7 +149,7 @@ describe("leaving water", () => {
 
     const startingDepth = depthAt(world, mover);
 
-    setDestination(mover, { x: 0, z: 0 }, navigation, false);
+    setDestination(mover, { x: 0, z: 0 }, navigation, { mayPlanRoute: false });
 
     let deepest = startingDepth;
 
@@ -167,7 +167,7 @@ describe("leaving water", () => {
 
     const mover = createMover(-50, 0, 0);
 
-    setDestination(mover, { x: -150, z: 0 }, new NavigationGrid(world), false);
+    setDestination(mover, { x: -150, z: 0 }, new NavigationGrid(world), { mayPlanRoute: false });
 
     expect(walk(mover, world, 60)).toBe(true);
     expect(depthAt(world, mover)).toBe(0);

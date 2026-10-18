@@ -16,8 +16,7 @@ import { SettingsDialog } from "../features/settings/settings-dialog.tsx";
 import { TimeControls } from "../features/time/time-controls.tsx";
 import { CompactClock, WorldStatus } from "../features/time/world-status.tsx";
 
-const HUD_FRAME =
-  "pointer-events-none fixed inset-0 z-10 flex flex-col pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))]";
+const HUD_FRAME = "pointer-events-none fixed inset-0 z-10 flex flex-col p-safe";
 
 function WideHud() {
   return (
@@ -36,12 +35,12 @@ function WideHud() {
         </Island>
       </div>
 
-      <div className="relative grid min-h-0 flex-1 grid-cols-[auto_auto] items-start justify-between gap-3">
-        <JournalIsland className="col-start-1 row-start-1" />
+      <div className="relative grid min-h-0 flex-1 items-start justify-between gap-3">
+        <JournalIsland className="col-start-1" />
 
-        <NoticeFeed className="pointer-events-none absolute inset-x-0 top-0" />
+        <NoticeFeed className="absolute inset-x-0 top-0" />
 
-        <div className="col-start-2 row-start-1 flex min-h-0 flex-col items-end gap-3 self-stretch">
+        <div className="col-start-2 flex min-h-0 flex-col items-end gap-3 self-stretch">
           <InspectorIsland />
 
           <PowerSettings className="mt-auto" />
@@ -49,7 +48,7 @@ function WideHud() {
       </div>
 
       <div className="flex items-end gap-3">
-        <div className="flex flex-1 items-end">
+        <div className="flex flex-1">
           <MinimapIsland />
         </div>
 
@@ -65,10 +64,10 @@ function CompactDetails() {
   const powerId = usePowerStore((state) => state.selectedPowerId);
 
   if (powerId === null) {
-    return <InspectorIsland className="max-h-[38dvh]" />;
+    return <InspectorIsland className="max-h-details" />;
   }
 
-  return <PowerSettings className="max-h-[38dvh]" />;
+  return <PowerSettings className="max-h-details" />;
 }
 
 function CompactHud() {
@@ -92,7 +91,7 @@ function CompactHud() {
 
       <NoticeFeed />
 
-      <div className="min-h-0 flex-1" />
+      <div className="flex-1" />
 
       <div className="flex min-h-0 flex-col gap-2">
         <MinimapIsland className="self-start" />

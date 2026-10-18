@@ -1,5 +1,6 @@
 import { isBiomeIndex } from "../content/biomes.ts";
-import { canGrowAt, PLANTING_RULES, plantSpeciesDefinition } from "../content/plants.ts";
+import { groundDefinition } from "../content/grounds.ts";
+import { canGrowAt, isTreeSpecies, PLANTING_RULES, plantSpeciesDefinition } from "../content/plants.ts";
 import { FULL_TURN, hashToUnit } from "../shared/math.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
 import { isOnIsland } from "../world/coast.ts";
@@ -38,6 +39,23 @@ function blendedBiome(grid: WorldGrid, terrain: TerrainData, cell: number, seed:
   return terrain.biome[neighbor];
 }
 
+interface PlantingOdds {
+  readonly chancePerCell: number;
+  readonly species: number;
+}
+
+function plantingChance(rule: PlantingOdds, clearing: number, holdsTrees: boolean): number {
+  if (plantSpeciesDefinition(rule.species).form === "stone") {
+    return rule.chancePerCell;
+  }
+
+  if (!holdsTrees && isTreeSpecies(rule.species)) {
+    return 0;
+  }
+
+  return rule.chancePerCell * clearing;
+}
+
 export function plantInitialVegetation(
   store: VegetationStore,
   grid: WorldGrid,
@@ -59,6 +77,7 @@ export function plantInitialVegetation(
 
     const isOnEdge = grid.isOnEdge(cell);
     const clearing = 0.45 + 0.9 * (0.5 + 0.5 * terrain.variation[cell]);
+    const { holdsTrees } = groundDefinition(terrain.ground[cell]);
     const column = grid.columnOf(cell);
     const row = grid.rowOf(cell);
 
@@ -67,11 +86,7 @@ export function plantInitialVegetation(
         continue;
       }
 
-      const isStone = plantSpeciesDefinition(rule.species).form === "stone";
-
-      const chance = isStone ? rule.chancePerCell : rule.chancePerCell * clearing;
-
-      if (!random.chance(chance)) {
+      if (!random.chance(plantingChance(rule, clearing, holdsTrees))) {
         continue;
       }
 

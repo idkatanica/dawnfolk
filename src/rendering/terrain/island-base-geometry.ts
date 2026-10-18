@@ -6,7 +6,7 @@ import { createRandom } from "../../shared/random.ts";
 import { sampleHeight } from "../../world/terrain-sampling.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 
-const PERIMETER_POINTS = 1024;
+const COAST_POINTS = 1024;
 const INLAND_START = 0.5;
 const COAST_SEARCH_STEPS = 24;
 const CLIFF_DROP = 60;
@@ -15,7 +15,10 @@ const UNDERSIDE_DEPTH = 1650;
 const UNDERSIDE_RINGS = 14;
 const UNDERSIDE_STRIDE = 4;
 const CLIFF_BULGE = 9;
-const RIM_OFFSET = 0.4;
+const SQUARE_RIM_OFFSET = 0.4;
+const COAST_RIM_OFFSET = -0.4;
+const SQUARE_UNDERSIDE_RADIUS = 1.08;
+const COAST_UNDERSIDE_RADIUS = 0.98;
 
 interface PerimeterPoint {
   readonly outwardX: number;
@@ -29,12 +32,46 @@ interface RingVertex {
   readonly depth: number;
 }
 
-interface VertexPlacement {
+interface BaseOutline {
   readonly grid: WorldGrid;
   readonly noise: VolumeNoise;
   readonly plinth: number;
-  readonly point: PerimeterPoint;
-  readonly ring: RingVertex;
+  readonly points: readonly PerimeterPoint[];
+  readonly rimOffset: number;
+  readonly undersideRadius: number;
+}
+
+export interface IslandBaseGeometry {
+  readonly cliff: BufferGeometry;
+  readonly plinth: number;
+  readonly underside: BufferGeometry;
+}
+
+function squarePerimeter(grid: WorldGrid): PerimeterPoint[] {
+  const points: PerimeterPoint[] = [];
+  const last = grid.cellsPerSide - 1;
+
+  function push(column: number, row: number, outwardX: number, outwardZ: number): void {
+    points.push({ outwardX, outwardZ, x: grid.centerX(column), z: grid.centerZ(row) });
+  }
+
+  for (let column = 0; column < last; column += 1) {
+    push(column, 0, 0, -1);
+  }
+
+  for (let row = 0; row < last; row += 1) {
+    push(last, row, 1, 0);
+  }
+
+  for (let column = last; column > 0; column -= 1) {
+    push(column, last, 0, 1);
+  }
+
+  for (let row = last; row > 0; row -= 1) {
+    push(0, row, -1, 0);
+  }
+
+  return points;
 }
 
 function coastRadius(mirror: WorldMirror, outwardX: number, outwardZ: number): number {
@@ -68,11 +105,11 @@ function coastRadius(mirror: WorldMirror, outwardX: number, outwardZ: number): n
   return inside;
 }
 
-function perimeter(mirror: WorldMirror): PerimeterPoint[] {
+function coastPerimeter(mirror: WorldMirror): PerimeterPoint[] {
   const points: PerimeterPoint[] = [];
 
-  for (let index = 0; index < PERIMETER_POINTS; index += 1) {
-    const angle = (index / PERIMETER_POINTS) * Math.PI * 2;
+  for (let index = 0; index < COAST_POINTS; index += 1) {
+    const angle = (index / COAST_POINTS) * Math.PI * 2;
     const outwardX = Math.cos(angle);
     const outwardZ = Math.sin(angle);
 
@@ -82,6 +119,14 @@ function perimeter(mirror: WorldMirror): PerimeterPoint[] {
   }
 
   return points;
+}
+
+function islandPerimeter(mirror: WorldMirror): PerimeterPoint[] {
+  if (mirror.shape === "square") {
+    return squarePerimeter(mirror.grid);
+  }
+
+  return coastPerimeter(mirror);
 }
 
 function cliffRings(): RingVertex[] {
@@ -104,7 +149,7 @@ function undersideRings(): RingVertex[] {
   return rings;
 }
 
-function lowestCoastHeight(mirror: WorldMirror, points: readonly PerimeterPoint[]): number {
+function lowestRimHeight(mirror: WorldMirror, points: readonly PerimeterPoint[]): number {
   let lowest = Number.POSITIVE_INFINITY;
 
   for (const point of points) {
@@ -115,21 +160,22 @@ function lowestCoastHeight(mirror: WorldMirror, points: readonly PerimeterPoint[
 }
 
 export function islandPlinthHeight(mirror: WorldMirror): number {
-  return lowestCoastHeight(mirror, perimeter(mirror)) - CLIFF_DROP;
+  return lowestRimHeight(mirror, islandPerimeter(mirror)) - CLIFF_DROP;
 }
 
 function undersideReach(depth: number): number {
   return 1 - 0.97 * depth ** 0.62;
 }
 
-function roundedRadius(x: number, z: number, depth: number, halfSize: number): number {
+function roundedRadius(outline: BaseOutline, x: number, z: number, depth: number): number {
   const rimRadius = Math.hypot(x, z);
-  const circleRadius = halfSize * 0.98;
+  const circleRadius = outline.grid.halfSize * outline.undersideRadius;
 
   return rimRadius + (circleRadius - rimRadius) * smoothstep(0, 0.45, depth);
 }
 
-function placeVertex({ grid, noise, plinth, point, ring }: VertexPlacement): readonly [number, number, number] {
+function placeVertex(outline: BaseOutline, point: PerimeterPoint, ring: RingVertex): readonly [number, number, number] {
+  const { noise, plinth } = outline;
   const { x, z } = point;
 
   const angle = Math.atan2(z, x);
@@ -138,32 +184,19 @@ function placeVertex({ grid, noise, plinth, point, ring }: VertexPlacement): rea
   const lumps = noise.fractal(x * 0.0021, ring.depth * 3.1 + 7, z * 0.0021, { octaves: 3 });
 
   if (ring.depth === 0) {
-    const bulge = RIM_OFFSET + CLIFF_BULGE * (1 - ring.cliffAmount) * (0.6 + 0.4 * Math.abs(lumps + ridges));
+    const bulge = outline.rimOffset + CLIFF_BULGE * (1 - ring.cliffAmount) * (0.6 + 0.4 * Math.abs(lumps + ridges));
 
     return [x + point.outwardX * bulge, plinth, z + point.outwardZ * bulge];
   }
 
   const radius =
-    roundedRadius(x, z, ring.depth, grid.halfSize) * undersideReach(ring.depth) * (1 + ridges * 0.09 + lumps * 0.12);
+    roundedRadius(outline, x, z, ring.depth) * undersideReach(ring.depth) * (1 + ridges * 0.09 + lumps * 0.12);
   const spikes =
     Math.max(0, noise.fractal(Math.cos(angle) * 23, 4.2, Math.sin(angle) * 23, { octaves: 2 })) * ring.depth ** 2;
 
   const drop = ring.depth ** 1.1 * UNDERSIDE_DEPTH * (1 + spikes * 0.45) + lumps * 60 * ring.depth;
 
   return [Math.cos(angle) * radius, plinth - drop, Math.sin(angle) * radius];
-}
-
-interface BaseOutline {
-  readonly grid: WorldGrid;
-  readonly noise: VolumeNoise;
-  readonly plinth: number;
-  readonly points: readonly PerimeterPoint[];
-}
-
-export interface IslandBaseGeometry {
-  readonly cliff: BufferGeometry;
-  readonly plinth: number;
-  readonly underside: BufferGeometry;
 }
 
 function finishGeometry(positions: readonly number[], indices: readonly number[]): BufferGeometry {
@@ -188,7 +221,7 @@ function pushStrips(indices: number[], pointCount: number, ringCount: number, fi
   }
 }
 
-function buildCliff({ grid, noise, plinth, points }: BaseOutline): BufferGeometry {
+function buildCliff(outline: BaseOutline): BufferGeometry {
   const rings = cliffRings();
 
   const positions: number[] = [];
@@ -197,16 +230,16 @@ function buildCliff({ grid, noise, plinth, points }: BaseOutline): BufferGeometr
   const outwards: number[] = [];
   const indices: number[] = [];
 
-  for (const point of points) {
+  for (const point of outline.points) {
     for (const ring of rings) {
-      positions.push(...placeVertex({ grid, noise, plinth, point, ring }));
+      positions.push(...placeVertex(outline, point, ring));
       topPoints.push(point.x, point.z);
       cliffAmounts.push(ring.cliffAmount);
       outwards.push(point.outwardX, point.outwardZ);
     }
   }
 
-  pushStrips(indices, points.length, rings.length, 0);
+  pushStrips(indices, outline.points.length, rings.length, 0);
 
   const geometry = finishGeometry(positions, indices);
 
@@ -232,34 +265,34 @@ function pushStitch(indices: number[], rimCount: number, coarseCount: number, ri
   }
 }
 
-function buildUnderside({ grid, noise, plinth, points }: BaseOutline): BufferGeometry {
+function buildUnderside(outline: BaseOutline): BufferGeometry {
   const rimRing: RingVertex = { cliffAmount: 0, depth: 0 };
   const rings = undersideRings();
-  const coarsePoints = points.filter((_, index) => index % UNDERSIDE_STRIDE === 0);
+  const coarsePoints = outline.points.filter((_, index) => index % UNDERSIDE_STRIDE === 0);
 
   const positions: number[] = [];
   const indices: number[] = [];
 
-  for (const point of points) {
-    positions.push(...placeVertex({ grid, noise, plinth, point, ring: rimRing }));
+  for (const point of outline.points) {
+    positions.push(...placeVertex(outline, point, rimRing));
   }
 
   for (const point of coarsePoints) {
     for (const ring of rings) {
-      positions.push(...placeVertex({ grid, noise, plinth, point, ring }));
+      positions.push(...placeVertex(outline, point, ring));
     }
   }
 
   const tip = positions.length / 3;
 
-  positions.push(0, plinth - UNDERSIDE_DEPTH * 1.12, 0);
+  positions.push(0, outline.plinth - UNDERSIDE_DEPTH * 1.12, 0);
 
-  pushStitch(indices, points.length, coarsePoints.length, rings.length);
-  pushStrips(indices, coarsePoints.length, rings.length, points.length);
+  pushStitch(indices, outline.points.length, coarsePoints.length, rings.length);
+  pushStrips(indices, coarsePoints.length, rings.length, outline.points.length);
 
   for (let point = 0; point < coarsePoints.length; point += 1) {
     const next = (point + 1) % coarsePoints.length;
-    const lowest = points.length + rings.length - 1;
+    const lowest = outline.points.length + rings.length - 1;
 
     indices.push(lowest + point * rings.length, lowest + next * rings.length, tip);
   }
@@ -272,13 +305,16 @@ function buildUnderside({ grid, noise, plinth, points }: BaseOutline): BufferGeo
 }
 
 export function buildIslandBaseGeometry(mirror: WorldMirror): IslandBaseGeometry {
-  const points = perimeter(mirror);
+  const points = islandPerimeter(mirror);
+  const isSquare = mirror.shape === "square";
 
   const outline: BaseOutline = {
     grid: mirror.grid,
     noise: createVolumeNoise(createRandom(mirror.seed + 17)),
-    plinth: lowestCoastHeight(mirror, points) - CLIFF_DROP,
+    plinth: lowestRimHeight(mirror, points) - CLIFF_DROP,
     points,
+    rimOffset: isSquare ? SQUARE_RIM_OFFSET : COAST_RIM_OFFSET,
+    undersideRadius: isSquare ? SQUARE_UNDERSIDE_RADIUS : COAST_UNDERSIDE_RADIUS,
   };
 
   return { cliff: buildCliff(outline), plinth: outline.plinth, underside: buildUnderside(outline) };

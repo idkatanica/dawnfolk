@@ -53,8 +53,8 @@ export class SocietyHarness {
     this.calendar = new Calendar({ ...DEFAULT_CALENDAR, day: settings.day });
     this.random = createRandom(settings.seed);
     this.navigation = new NavigationGrid(this.world);
-    this.hazards = new HazardMap(this.world);
     this.fire = new FireSystem(this.world);
+    this.hazards = new HazardMap(this.world, this.fire);
     this.fauna = new FaunaSystem(this.world, this.navigation, this.identifiers);
     this.buildings = new BuildingSystem(this.world, this.identifiers);
     this.society = new SocietySystem({

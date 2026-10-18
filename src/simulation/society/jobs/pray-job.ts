@@ -8,11 +8,12 @@ const MAXIMUM_FAITH = 100;
 
 export class PrayJob implements Job {
   readonly kind = "pray";
-  readonly #errand = new Errand(PRAYER_SECONDS, "pray");
+  readonly #errand: Errand;
 
   constructor(tick: PersonTick, totem: Building) {
     const { random } = tick.context;
 
+    this.#errand = new Errand(PRAYER_SECONDS, "pray", totem);
     headTo(tick.person, { x: totem.x + random.signed() * 4, z: totem.z + 5 }, tick.context);
   }
 

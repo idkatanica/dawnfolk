@@ -3,14 +3,24 @@ import { createNoiseSampler, type NoiseSampler } from "../shared/noise.ts";
 import { createRandom } from "../shared/random.ts";
 import type { WorldGrid } from "./world-grid.ts";
 
+export const ISLAND_SHAPES = ["round", "square"] as const;
+
+export type IslandShapeKind = (typeof ISLAND_SHAPES)[number];
+
 const MEAN_REACH = 0.915;
 const SHORTEST_REACH = 0.74;
 const LONGEST_REACH = 0.972;
 const COVE_DEPTH = 0.022;
 
 export interface IslandShape {
-  coastDistanceAt: (x: number, z: number) => number;
+  readonly coastDistanceAt: (x: number, z: number) => number;
+  readonly kind: IslandShapeKind;
 }
+
+const SQUARE_SHAPE: IslandShape = {
+  coastDistanceAt: (x, z) => 1 - Math.max(Math.abs(x), Math.abs(z)),
+  kind: "square",
+};
 
 function coastReach(noise: NoiseSampler, angle: number): number {
   const directionX = Math.cos(angle);
@@ -23,7 +33,7 @@ function coastReach(noise: NoiseSampler, angle: number): number {
   return clamp(MEAN_REACH + 0.07 * lobes + 0.035 * bays - 0.025 * headlands, SHORTEST_REACH, LONGEST_REACH);
 }
 
-export function createIslandShape(seed: number): IslandShape {
+function roundShape(seed: number): IslandShape {
   const noise = createNoiseSampler(createRandom(seed * 31 + 17).derive(1));
 
   return {
@@ -33,7 +43,16 @@ export function createIslandShape(seed: number): IslandShape {
 
       return Math.min(reach - Math.hypot(x, z) + coves, LONGEST_REACH - Math.max(Math.abs(x), Math.abs(z)));
     },
+    kind: "round",
   };
+}
+
+export function createIslandShape(kind: IslandShapeKind, seed: number): IslandShape {
+  if (kind === "square") {
+    return SQUARE_SHAPE;
+  }
+
+  return roundShape(seed);
 }
 
 export function measureCoastDistances(grid: WorldGrid, shape: IslandShape): Float32Array {

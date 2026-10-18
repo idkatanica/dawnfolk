@@ -7,14 +7,22 @@ import { hasPart } from "../part-mask.ts";
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { measureStride } from "../rig/stride.ts";
-import { meshProblems, openEdgeCount } from "../testing/mesh-checks.ts";
-import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
+import { meshProblems, openEdgeCount, thinnestPiece } from "../testing/mesh-checks.ts";
+import { describePiece, detachedPieces, type MeshPiece, meshPieces } from "../testing/mesh-connectivity.ts";
 import { posedMesh } from "../testing/moved-mesh.ts";
 import { animalAppearance } from "./animal-appearance.ts";
 import { ANIMAL_SPECIES, animalPartMask, buildAnimalParts, poseAnimal } from "./animal-models.ts";
 import { QuadrupedBone } from "./quadruped-skeleton.ts";
 
 const ADULT = { seed: 0.31, youth: 0 };
+
+const TOUCHING = 0.01;
+const THINNEST = 0.001;
+const PHASES = [0, 0.25, 0.5, 0.75];
+
+function isTorso(piece: MeshPiece): boolean {
+  return piece.vertices.includes(0);
+}
 
 function posedAnimal(kind: (typeof ANIMAL_KINDS)[number], clip: (typeof ANIMAL_POSES)[number], phase: number) {
   const species = ANIMAL_SPECIES[kind];
@@ -62,6 +70,39 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     for (const level of ["high", "low"] as const) {
       for (const [index, mesh] of buildAnimalParts(kind, level).entries()) {
         expect(openEdgeCount(mesh), `${level} ${species.parts[index].name}`).toBe(0);
+      }
+    }
+  });
+
+  it("keeps every part on the body through every clip at both levels of detail", () => {
+    const scales = species.boneScales(animalAppearance({ kind, ...ADULT }));
+    const poser = new SkeletonPoser(species.skeleton);
+    const pose = new Pose(species.skeleton.bones.length);
+
+    for (const level of ["high", "low"] as const) {
+      const mesh = mergeMeshes(buildAnimalParts(kind, level));
+
+      for (const clip of ANIMAL_POSES) {
+        for (const phase of PHASES) {
+          poseAnimal(kind, pose, clip, phase, { variation: 0.3 });
+          poser.pose(pose, scales);
+
+          const posed = posedMesh(mesh, poser);
+
+          const loose = detachedPieces(posed, TOUCHING, isTorso).map((piece) => describePiece(posed, piece));
+
+          expect(loose, `${level} ${clip} ${phase}`).toEqual([]);
+        }
+      }
+    }
+  });
+
+  it("builds every part from solid shapes, never paper-thin cards", () => {
+    for (const level of ["high", "low"] as const) {
+      for (const [index, mesh] of buildAnimalParts(kind, level).entries()) {
+        expect(thinnestPiece(mesh, meshPieces(mesh)), `${level} ${species.parts[index].name}`).toBeGreaterThan(
+          THINNEST
+        );
       }
     }
   });

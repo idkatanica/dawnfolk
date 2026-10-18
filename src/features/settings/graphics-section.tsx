@@ -146,7 +146,7 @@ function NewWorld() {
           <span className="text-ink-muted">Seed</span>
 
           <input
-            className="tabular h-9 min-w-0 flex-1 bg-transparent text-ink outline-none"
+            className="h-9 min-w-0 flex-1 bg-transparent text-ink tabular-nums outline-none"
             inputMode="numeric"
             onChange={changeSeed}
             value={seedText}

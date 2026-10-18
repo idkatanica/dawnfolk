@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
+import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
-import { meshProblems } from "../testing/mesh-checks.ts";
+import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces, meshPieces } from "../testing/mesh-connectivity.ts";
 import { windBentMesh } from "../testing/moved-mesh.ts";
 import { CACTUS_FORMS, cactusForm } from "./cacti.ts";
@@ -10,13 +10,16 @@ import {
   BERRY_PART,
   buildPlantVariants,
   canonicalHeight,
+  footprintRadius,
   PLANT_DETAIL_LEVELS,
   plantVariantCount,
 } from "./plant-models.ts";
 import { FOLIAGE_FLUTTER, plantSway } from "./tree-mesher.ts";
 
 const TOUCHING = 0.01;
+const RADIUS_TOLERANCE = 0.2;
 const STORM_PUSH = 2;
+const GROUND_LEVEL = 0.05;
 
 const SPECIES: readonly PlantSpeciesIndex[] = PLANT_SPECIES.map((definition) => definition.index);
 const FOLIAGE_SLOTS: ReadonlySet<number> = new Set([MaterialSlot.Leaf, MaterialSlot.Needle]);
@@ -32,6 +35,28 @@ const TREES = [
   PlantSpecies.Willow,
 ];
 const MIXED_FORMS: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DeadTree]);
+
+function widestRadius(species: PlantSpeciesIndex): number {
+  let widest = 0;
+
+  for (const mesh of buildPlantVariants(species, "high")) {
+    for (let vertex = 0; vertex < vertexCount(mesh); vertex += 1) {
+      widest = Math.max(widest, Math.hypot(mesh.positions[vertex * 3], mesh.positions[vertex * 3 + 2]));
+    }
+  }
+
+  return widest;
+}
+
+function workingRadius(species: PlantSpeciesIndex): number {
+  const { form } = plantSpeciesDefinition(species);
+
+  if (form === "shrub" || form === "stone") {
+    return widestRadius(species);
+  }
+
+  return footprintRadius(species);
+}
 
 function averageTriangles(species: PlantSpeciesIndex, level: (typeof PLANT_DETAIL_LEVELS)[number]): number {
   const variants = buildPlantVariants(species, level);
@@ -78,6 +103,22 @@ describe.each(SPECIES)("plant species %i", (species) => {
     const [again] = buildPlantVariants(species, "medium");
 
     expect(again.positions).toEqual(first.positions);
+  });
+
+  it("tells the simulation how far it reaches where people work on it", () => {
+    const measured = workingRadius(species) / canonicalHeight(species);
+
+    expect(Math.abs(plantSpeciesDefinition(species).radiusPerMeter - measured)).toBeLessThan(
+      measured * RADIUS_TOLERANCE
+    );
+  });
+
+  it("closes every variant everywhere above the ground", () => {
+    for (const level of PLANT_DETAIL_LEVELS) {
+      for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
+        expect(highestOpenEdge(mesh), `${level} variant ${variant}`).toBeLessThan(GROUND_LEVEL);
+      }
+    }
   });
 
   it("keeps every part of every variant attached to the ground", () => {
@@ -134,7 +175,7 @@ describe("tree details", () => {
     expect(averageSway(foliage)).toBeGreaterThan(averageSway(foot));
   });
 
-  it("starts every willow strand swaying with the crown it hangs from", () => {
+  it("sways the top of every willow crown with the tree", () => {
     for (const level of ["high", "medium"] as const) {
       for (const willow of buildPlantVariants(PlantSpecies.Willow, level)) {
         const foliage = meshPieces(willow).filter(

@@ -1,9 +1,10 @@
 import { Biome, isBiomeIndex } from "../../content/biomes.ts";
-import { plantSpeciesDefinition, regrowingSpecies } from "../../content/plants.ts";
+import { groundDefinition } from "../../content/grounds.ts";
+import { regrowingSpecies } from "../../content/plants.ts";
 import { isGrowingSeason } from "../../content/seasons.ts";
 import type { WorldRules } from "../../content/world-rules.ts";
 import { plantHeight } from "../../generation/vegetation.ts";
-import { FULL_TURN, saturate } from "../../shared/math.ts";
+import { FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { NO_BUILDING, type WorldState } from "../world/world-state.ts";
 
@@ -139,6 +140,10 @@ export class VegetationGrowthSystem {
       return false;
     }
 
+    if (!groundDefinition(world.terrain.ground[cell]).holdsTrees) {
+      return false;
+    }
+
     if (REGROWING_BIOMES.has(biome)) {
       return true;
     }
@@ -147,18 +152,6 @@ export class VegetationGrowthSystem {
   }
 
   #growBerries(days: number, season: number, rules: WorldRules): void {
-    const { vegetation } = this.#world;
-
-    const change = berryChange(season, days, rules);
-
-    if (change === 0) {
-      return;
-    }
-
-    for (let index = 0; index < vegetation.count; index += 1) {
-      if (vegetation.isAlive(index) && plantSpeciesDefinition(vegetation.species[index]).givesBerries) {
-        vegetation.setFruit(index, saturate(vegetation.fruit[index] + change));
-      }
-    }
+    this.#world.vegetation.changeBerryFruit(berryChange(season, days, rules));
   }
 }

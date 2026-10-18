@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/logo-dark.svg">
+    <img src=".github/logo.svg" alt="" width="96" height="96">
+  </picture>
+</p>
+
 <h1 align="center">Dawnfolk</h1>
 
 <p align="center">A god game about the first tribes on a floating island.</p>
@@ -22,6 +29,7 @@
 </p>
 
 <p align="center">
+  <a href="https://dawnfolk.svidskiy.workers.dev">Play</a> ·
   <a href="#features">Features</a> ·
   <a href="#getting-started">Getting started</a> ·
   <a href="#architecture">Architecture</a> ·
@@ -76,6 +84,7 @@ URL parameters help when exploring: `?seed=7&quality=low|medium|high&hours=21&pa
 | `bun run test` | Unit tests (node) and browser tests (Chromium) |
 | `bun run test:e2e` | Playwright smoke tests against the production build |
 | `bun run validate` | Check, typecheck and test in one go |
+| `bun run deploy` | Build and deploy to Cloudflare Workers as static assets |
 
 Browser tests and Playwright need Chromium; set `CHROMIUM_EXECUTABLE_PATH` to use a system Chromium.
 

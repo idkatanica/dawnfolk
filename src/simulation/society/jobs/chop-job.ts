@@ -3,9 +3,10 @@ import { nearestPlant } from "../resources.ts";
 import type { PersonTick } from "../society-context.ts";
 import { learn, markScarce } from "../tribe.ts";
 import { DeliverJob } from "./deliver-job.ts";
-import { Errand, headTo, type Job } from "./job.ts";
+import { Errand, headToWork, type Job, plantTarget } from "./job.ts";
 
 const CHOPPING_SECONDS = 7;
+const AXE_REACH = 0.75;
 const SEARCH_RADIUS = 320;
 
 export function findTree(tick: PersonTick): ChopJob | null {
@@ -32,14 +33,15 @@ export function findTree(tick: PersonTick): ChopJob | null {
 class ChopJob implements Job {
   readonly claimedPlant: number;
   readonly kind = "chop";
-  readonly #errand = new Errand(CHOPPING_SECONDS, "chop");
+  readonly #errand: Errand;
 
   constructor(tick: PersonTick, tree: number) {
-    const { vegetation } = tick.context.world;
+    const target = plantTarget(tick.context.world.vegetation, tree, AXE_REACH);
 
     this.claimedPlant = tree;
+    this.#errand = new Errand(CHOPPING_SECONDS, "chop", target);
     tick.tribe.claimedPlants.add(tree);
-    headTo(tick.person, { x: vegetation.x[tree] + 1.5, z: vegetation.z[tree] + 1.5 }, tick.context);
+    headToWork(tick.person, target, tick.context);
   }
 
   update(tick: PersonTick): Job | null {
