@@ -12,6 +12,8 @@ const CRATER_RIM_HEIGHT = 0.28;
 const CRATER_RIM_WIDTH = 0.24;
 const CAPTURED_RIVER_REACH = 0.9;
 const BREACH_FLANK_CELLS = 2;
+const QUAKE_BLUR_CELLS = 2;
+const QUAKE_SWELL = 3;
 
 interface CircleArea {
   radius: number;
@@ -219,13 +221,45 @@ export function carveCrater(world: WorldState, crater: CircleArea, depth: number
 }
 
 export function shakeTerrain(world: WorldState, area: CircleArea, magnitude: number, random: RandomSource): void {
-  for (const areaCell of editableCells(world, area)) {
+  const region = areaRegion(world, area);
+  const cells = editableCells(world, area);
+
+  const width = region.lastColumn - region.firstColumn + 1;
+  const jolts = new Float32Array(width * (region.lastRow - region.firstRow + 1));
+
+  for (const areaCell of cells) {
     const closeness = 1 - areaCell.distance / area.radius;
 
-    const jolt = closeness * (random.next() - 0.45) * 5 * magnitude;
-
-    world.setHeight(areaCell.cell, world.terrain.height[areaCell.cell] + jolt);
+    jolts[(areaCell.row - region.firstRow) * width + areaCell.column - region.firstColumn] =
+      closeness * (random.next() - 0.45) * 5 * magnitude;
   }
 
-  world.finishSuddenHeightEdit(areaRegion(world, area));
+  for (const areaCell of cells) {
+    const swell = averageJolt(jolts, width, areaCell.column - region.firstColumn, areaCell.row - region.firstRow);
+
+    world.setHeight(areaCell.cell, world.terrain.height[areaCell.cell] + swell * QUAKE_SWELL);
+  }
+
+  world.finishSuddenHeightEdit(region);
+}
+
+function averageJolt(jolts: Float32Array, width: number, column: number, row: number): number {
+  const rows = jolts.length / width;
+
+  let total = 0;
+  let count = 0;
+
+  for (let rowOffset = -QUAKE_BLUR_CELLS; rowOffset <= QUAKE_BLUR_CELLS; rowOffset += 1) {
+    for (let columnOffset = -QUAKE_BLUR_CELLS; columnOffset <= QUAKE_BLUR_CELLS; columnOffset += 1) {
+      const neighborColumn = column + columnOffset;
+      const neighborRow = row + rowOffset;
+
+      if (neighborColumn >= 0 && neighborRow >= 0 && neighborColumn < width && neighborRow < rows) {
+        total += jolts[neighborRow * width + neighborColumn];
+        count += 1;
+      }
+    }
+  }
+
+  return total / count;
 }
