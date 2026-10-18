@@ -55,13 +55,13 @@ const BURNT_QUEUE_COMPACTION = 1024;
 export class VegetationStore {
   readonly #burntDay: Float32Array;
   readonly #burntQueue: BurntPlant[] = [];
+  readonly #capacity: number;
   readonly #changed = new Set<number>();
   readonly #firstInCell: Int32Array;
   readonly #freeSlots: number[] = [];
   readonly #grid: WorldGrid;
   readonly #nextInCell: Int32Array;
   readonly bornDay: Float32Array;
-  readonly capacity: number;
   readonly cell: Int32Array;
   readonly fruit: Float32Array;
   readonly height: Float32Array;
@@ -77,7 +77,7 @@ export class VegetationStore {
 
   constructor(grid: WorldGrid, capacity: number) {
     this.#grid = grid;
-    this.capacity = capacity;
+    this.#capacity = capacity;
     this.x = new Float32Array(capacity);
     this.z = new Float32Array(capacity);
     this.rotation = new Float32Array(capacity);
@@ -311,7 +311,7 @@ export class VegetationStore {
       return reused;
     }
 
-    if (this.#count >= this.capacity) {
+    if (this.#count >= this.#capacity) {
       return NO_PLANT;
     }
 

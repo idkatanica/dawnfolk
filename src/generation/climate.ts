@@ -5,9 +5,9 @@ import { createNoiseSampler } from "../shared/noise.ts";
 import { createRandom } from "../shared/random.ts";
 import { hasWater } from "../world/water.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
-import type { IslandPoint } from "./relief.ts";
+import { type IslandPoint, islandPointAt } from "./relief.ts";
 
-export interface ClimateInputs {
+interface ClimateInputs {
   desertAt: (point: IslandPoint) => number;
   grid: WorldGrid;
   heights: Float32Array;
@@ -17,7 +17,7 @@ export interface ClimateInputs {
   waterSurface: Float32Array;
 }
 
-export interface ClimateResult {
+interface ClimateResult {
   baseTemperature: Float32Array;
   biome: Uint8Array;
   ground: Uint8Array;
@@ -34,6 +34,8 @@ interface CellClimate {
   slope: number;
   temperature: number;
 }
+
+const MAXIMUM_WATER_DISTANCE = 64;
 
 const BIOME_GROUND: Readonly<Record<BiomeIndex, GroundIndex>> = {
   [Biome.Alpine]: Ground.Rock,
@@ -137,13 +139,8 @@ function classifyBiome(cell: CellClimate): BiomeIndex {
   return classifyTemperate(cell);
 }
 
-function distanceToWater(
-  grid: WorldGrid,
-  waterSurface: Float32Array,
-  heights: Float32Array,
-  cap: number
-): Float32Array {
-  const distances = new Float32Array(grid.cellCount).fill(cap);
+function distanceToWater(grid: WorldGrid, waterSurface: Float32Array, heights: Float32Array): Float32Array {
+  const distances = new Float32Array(grid.cellCount).fill(MAXIMUM_WATER_DISTANCE);
   const queue = new Int32Array(grid.cellCount);
   let head = 0;
   let tail = 0;
@@ -163,7 +160,7 @@ function distanceToWater(
 
     head += 1;
 
-    if (next >= cap) {
+    if (next >= MAXIMUM_WATER_DISTANCE) {
       continue;
     }
 
@@ -209,14 +206,14 @@ function slopeAt(
   column: number,
   row: number
 ): { north: number; slope: number } {
-  const size = grid.cellsPerSide;
+  const lastIndex = grid.cellsPerSide - 1;
+  const nextColumnHeight = heights[grid.index(Math.min(lastIndex, column + 1), row)];
+  const previousColumnHeight = heights[grid.index(Math.max(0, column - 1), row)];
+  const nextRowHeight = heights[grid.index(column, Math.min(lastIndex, row + 1))];
+  const previousRowHeight = heights[grid.index(column, Math.max(0, row - 1))];
 
-  const gradientX =
-    (heights[row * size + Math.min(size - 1, column + 1)] - heights[row * size + Math.max(0, column - 1)]) /
-    (2 * grid.cellSize);
-  const gradientZ =
-    (heights[Math.min(size - 1, row + 1) * size + column] - heights[Math.max(0, row - 1) * size + column]) /
-    (2 * grid.cellSize);
+  const gradientX = (nextColumnHeight - previousColumnHeight) / (2 * grid.cellSize);
+  const gradientZ = (nextRowHeight - previousRowHeight) / (2 * grid.cellSize);
 
   const slope = Math.hypot(gradientX, gradientZ);
 
@@ -283,7 +280,7 @@ export function buildClimate(inputs: ClimateInputs): ClimateResult {
   const { grid, heights, waterSurface } = inputs;
   const noise = createNoiseSampler(createRandom(inputs.seed * 13 + 5));
 
-  const waterDistance = distanceToWater(grid, waterSurface, heights, 64);
+  const waterDistance = distanceToWater(grid, waterSurface, heights);
   const result: ClimateResult = {
     baseTemperature: new Float32Array(grid.cellCount),
     biome: new Uint8Array(grid.cellCount),
@@ -294,7 +291,7 @@ export function buildClimate(inputs: ClimateInputs): ClimateResult {
 
   for (let row = 0; row < grid.cellsPerSide; row += 1) {
     for (let column = 0; column < grid.cellsPerSide; column += 1) {
-      const point = { x: grid.centerX(column) / grid.halfSize, z: grid.centerZ(row) / grid.halfSize };
+      const point = islandPointAt(grid, column, row);
       const cell = grid.index(column, row);
       const { north, slope } = slopeAt(grid, heights, column, row);
 

@@ -30,7 +30,10 @@ export function sunDirection(hours: number, season: number): Direction {
 
   const morningAzimuth = Math.acos(clamp(cosineOfAzimuth, -1, 1));
 
-  const azimuth = afternoonAzimuth(morningAzimuth, hourAngle);
+  return directionOf(afternoonAzimuth(morningAzimuth, hourAngle), altitude);
+}
+
+function directionOf(azimuth: number, altitude: number): Direction {
   const horizontal = Math.cos(altitude);
 
   return { x: Math.sin(azimuth) * horizontal, y: Math.sin(altitude), z: -Math.cos(azimuth) * horizontal };
@@ -48,9 +51,6 @@ export function moonDirection(hours: number): Direction {
   const hourAngle = hours * RADIANS_PER_HOUR;
 
   const altitude = Math.asin(Math.cos(LATITUDE) * Math.cos(hourAngle) * MOON_ORBIT_TILT);
-  const azimuth = hourAngle + Math.PI;
 
-  const horizontal = Math.cos(altitude);
-
-  return { x: Math.sin(azimuth) * horizontal, y: Math.sin(altitude), z: -Math.cos(azimuth) * horizontal };
+  return directionOf(hourAngle + Math.PI, altitude);
 }

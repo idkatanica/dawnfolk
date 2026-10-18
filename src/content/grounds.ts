@@ -20,7 +20,7 @@ export type GroundIndex = (typeof Ground)[keyof typeof Ground];
 
 export type Color = readonly [number, number, number];
 
-export interface GroundDefinition {
+interface GroundDefinition {
   fertility: number;
   flammability: number;
   fuel: number;

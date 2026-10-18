@@ -5,7 +5,7 @@ export interface GridDimensions {
 
 export const DEFAULT_GRID_DIMENSIONS: GridDimensions = { cellSize: 10, cellsPerSide: 512 };
 
-export interface NeighborOffset {
+interface NeighborOffset {
   column: number;
   distance: number;
   row: number;
@@ -96,7 +96,7 @@ export class WorldGrid {
     return this.centerZ(this.rowOf(cellIndex));
   }
 
-  isInside(x: number, z: number, margin = 0): boolean {
+  isInside(x: number, z: number, margin: number): boolean {
     const limit = this.halfSize - margin;
 
     return Math.abs(x) < limit && Math.abs(z) < limit;

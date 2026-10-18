@@ -1,9 +1,8 @@
 import { createNoise2D, createNoise3D, type NoiseFunction2D, type NoiseFunction3D } from "simplex-noise";
 import type { RandomSource } from "./random.ts";
 
-export interface FractalOptions {
+interface FractalOptions {
   gain?: number;
-  lacunarity?: number;
   octaves: number;
 }
 
@@ -13,6 +12,8 @@ export interface NoiseSampler {
 }
 
 const RIDGE_ROUNDING = 0.012;
+const FRACTAL_LACUNARITY = 2.03;
+const RIDGED_LACUNARITY = 2.05;
 
 class SimplexSampler implements NoiseSampler {
   readonly #noise: NoiseFunction2D;
@@ -21,7 +22,7 @@ class SimplexSampler implements NoiseSampler {
     this.#noise = noise;
   }
 
-  fractal(x: number, z: number, { octaves, lacunarity = 2.03, gain = 0.5 }: FractalOptions): number {
+  fractal(x: number, z: number, { octaves, gain = 0.5 }: FractalOptions): number {
     let sum = 0;
     let amplitude = 0.5;
     let frequency = 1;
@@ -31,13 +32,13 @@ class SimplexSampler implements NoiseSampler {
       sum += amplitude * this.#noise(x * frequency, z * frequency);
       normalization += amplitude;
       amplitude *= gain;
-      frequency *= lacunarity;
+      frequency *= FRACTAL_LACUNARITY;
     }
 
     return sum / normalization;
   }
 
-  ridged(x: number, z: number, { octaves, lacunarity = 2.05, gain = 0.45 }: FractalOptions): number {
+  ridged(x: number, z: number, { octaves, gain = 0.45 }: FractalOptions): number {
     let sum = 0;
     let amplitude = 0.5;
     let frequency = 1;
@@ -54,7 +55,7 @@ class SimplexSampler implements NoiseSampler {
       sum += ridge * amplitude;
       normalization += amplitude;
       amplitude *= gain;
-      frequency *= lacunarity;
+      frequency *= RIDGED_LACUNARITY;
     }
 
     return sum / normalization;
@@ -81,7 +82,7 @@ class SimplexVolume implements VolumeNoise {
     return this.#noise(x, y, z);
   }
 
-  fractal(x: number, y: number, z: number, { octaves, lacunarity = 2.03, gain = 0.5 }: FractalOptions): number {
+  fractal(x: number, y: number, z: number, { octaves, gain = 0.5 }: FractalOptions): number {
     let sum = 0;
     let amplitude = 0.5;
     let frequency = 1;
@@ -91,7 +92,7 @@ class SimplexVolume implements VolumeNoise {
       sum += amplitude * this.#noise(x * frequency, y * frequency, z * frequency);
       normalization += amplitude;
       amplitude *= gain;
-      frequency *= lacunarity;
+      frequency *= FRACTAL_LACUNARITY;
     }
 
     return sum / normalization;

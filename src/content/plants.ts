@@ -14,9 +14,9 @@ export const PlantSpecies = {
 
 export type PlantSpeciesIndex = (typeof PlantSpecies)[keyof typeof PlantSpecies];
 
-export type PlantForm = "broadleaf" | "conifer" | "shrub" | "succulent" | "stone";
+type PlantForm = "broadleaf" | "conifer" | "shrub" | "succulent" | "stone";
 
-export interface PlantSpeciesDefinition {
+interface PlantSpeciesDefinition {
   canopyFuel: number;
   form: PlantForm;
   givesBerries: boolean;
@@ -126,7 +126,7 @@ export function isTreeSpecies(index: number): boolean {
   return form === "broadleaf" || form === "conifer";
 }
 
-export interface PlantingRule {
+interface PlantingRule {
   chancePerCell: number;
   heightScale: number;
   species: PlantSpeciesIndex;

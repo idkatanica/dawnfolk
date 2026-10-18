@@ -5,7 +5,7 @@ const CHANNEL_MAXIMUM = 255;
 const RED_FACTOR = 65_536;
 const GREEN_FACTOR = 256;
 
-export type ColorChannels = readonly [red: number, green: number, blue: number];
+type ColorChannels = readonly [red: number, green: number, blue: number];
 
 export function parseHexColor(text: string): number {
   if (!HEX_COLOR.test(text)) {

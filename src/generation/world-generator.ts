@@ -6,7 +6,7 @@ import { DEFAULT_GRID_DIMENSIONS, type GridDimensions, WorldGrid } from "../worl
 import { buildClimate } from "./climate.ts";
 import { DEFAULT_HYDRAULIC_EROSION, erodeHydraulically, erodeThermally, smoothHeights } from "./erosion.ts";
 import { computeHydrology } from "./hydrology.ts";
-import { createRelief } from "./relief.ts";
+import { createRelief, islandPointAt } from "./relief.ts";
 import { plantInitialVegetation } from "./vegetation.ts";
 
 export type GenerationStage = "climate" | "erosion" | "relief" | "vegetation" | "water";
@@ -43,7 +43,7 @@ function buildRelief(grid: WorldGrid, seed: number, onProgress: (progress: Gener
 
   for (let row = 0; row < grid.cellsPerSide; row += 1) {
     for (let column = 0; column < grid.cellsPerSide; column += 1) {
-      const point = { x: grid.centerX(column) / grid.halfSize, z: grid.centerZ(row) / grid.halfSize };
+      const point = islandPointAt(grid, column, row);
       const cell = grid.index(column, row);
 
       heights[cell] = relief.heightAt(point);

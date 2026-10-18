@@ -4,13 +4,12 @@ export const ANIMAL_KINDS = ["deer", "mammoth"] as const;
 
 export type AnimalKind = (typeof ANIMAL_KINDS)[number];
 
-export interface AnimalDefinition {
+interface AnimalDefinition {
   favouriteBiomes: readonly BiomeIndex[];
   fleeDistance: number;
   food: number;
   health: number;
   herdSizeRange: readonly [number, number];
-  kind: AnimalKind;
   maximumHerdSize: number;
   name: string;
   runSpeed: number;
@@ -24,7 +23,6 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     food: 10,
     health: 1,
     herdSizeRange: [3, 6],
-    kind: "deer",
     maximumHerdSize: 10,
     name: "Deer",
     runSpeed: 10,
@@ -36,7 +34,6 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     food: 45,
     health: 5,
     herdSizeRange: [2, 4],
-    kind: "mammoth",
     maximumHerdSize: 7,
     name: "Mammoth",
     runSpeed: 5.2,

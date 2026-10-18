@@ -2,7 +2,7 @@ import { FULL_TURN } from "../shared/math.ts";
 
 export const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
 
-export type SeasonName = (typeof SEASONS)[number];
+type SeasonName = (typeof SEASONS)[number];
 
 export const SEASON_COUNT = SEASONS.length;
 

@@ -22,7 +22,7 @@ export function isBiomeIndex(value: number): value is BiomeIndex {
   return BIOME_INDICES.has(value);
 }
 
-export interface BiomeDefinition {
+interface BiomeDefinition {
   index: BiomeIndex;
   name: string;
 }

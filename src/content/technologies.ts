@@ -69,7 +69,7 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
 ];
 
-export interface EraDefinition {
+interface EraDefinition {
   name: string;
   unlockedBy: TechnologyId | "start";
 }

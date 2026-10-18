@@ -15,8 +15,9 @@ import { interpolatePoint, makeSurfaceDescend, smoothRiverPath } from "./river-p
 const DIAGONAL_REACH = 0.75;
 const BANK_DEPTH = 0.3;
 const SHALLOWEST_WATER = 0.05;
+const MINIMUM_BANK_WIDTH = 6;
 
-export interface HydrologyOptions {
+interface HydrologyOptions {
   lakeMinimumArea: number;
   lakeMinimumCatchmentArea: number;
   lakeMinimumDepth: number;
@@ -48,7 +49,7 @@ function toCellThresholds(options: HydrologyOptions, grid: WorldGrid): CellThres
   };
 }
 
-export interface HydrologyResult {
+interface HydrologyResult {
   features: WaterFeatures;
   lakeIds: Int32Array;
   riverStrength: Uint8Array;
@@ -283,11 +284,13 @@ function buildUpstreamLists(isRiver: Uint8Array, receivers: Int32Array): Map<num
 
     const list = upstream.get(receiver);
 
-    if (list === undefined) {
-      upstream.set(receiver, [cell]);
-    } else {
+    if (list !== undefined) {
       list.push(cell);
+
+      continue;
     }
+
+    upstream.set(receiver, [cell]);
   }
 
   return upstream;
@@ -442,7 +445,7 @@ function appendLakeEntry(points: RiverPoint[], lake: Lake, lakeCell: number, gri
 }
 
 function bankWidthOf(point: RiverPoint): number {
-  return Math.max(6, point.width);
+  return Math.max(MINIMUM_BANK_WIDTH, point.width);
 }
 
 function channelBed(distanceFromCenter: number, point: RiverPoint, uncarvedHeight: number): number {
@@ -477,7 +480,8 @@ function carveSegment(start: RiverPoint, end: RiverPoint, targets: ChannelTarget
   const segmentX = end.x - start.x;
   const segmentZ = end.z - start.z;
 
-  const reach = Math.max(start.width, end.width) / 2 + Math.max(6, start.width, end.width) + grid.cellSize;
+  const reach =
+    Math.max(start.width, end.width) / 2 + Math.max(MINIMUM_BANK_WIDTH, start.width, end.width) + grid.cellSize;
   const lengthSquared = Math.max(1e-6, segmentX * segmentX + segmentZ * segmentZ);
 
   const firstColumn = Math.max(0, grid.columnAt(Math.min(start.x, end.x) - reach));
