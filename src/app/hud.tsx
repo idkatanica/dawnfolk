@@ -41,7 +41,7 @@ function WideHud() {
         <NoticeFeed className="absolute inset-x-0 top-0" />
 
         <div className="col-start-2 flex min-h-0 flex-col items-end gap-3 self-stretch">
-          <InspectorIsland />
+          <InspectorIsland className="max-h-full min-h-0" />
 
           <PowerSettings className="mt-auto" />
         </div>
