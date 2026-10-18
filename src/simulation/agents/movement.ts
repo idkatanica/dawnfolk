@@ -26,7 +26,6 @@ export interface Mover {
   goalX: number;
   goalZ: number;
   heading: number;
-  isSwimmingAcross: boolean;
   path: Waypoint[];
   pathIndex: number;
   stuckSeconds: number;
@@ -45,7 +44,6 @@ export function createMover(x: number, z: number, heading: number): Mover {
     goalX: x,
     goalZ: z,
     heading,
-    isSwimmingAcross: false,
     path: [],
     pathIndex: 0,
     stuckSeconds: 0,
@@ -76,7 +74,6 @@ export function setDestination(
   mover.goalZ = landing.z;
   mover.path = planRoute(mover, landing, navigation, mayPlanRoute);
   mover.pathIndex = 0;
-  mover.isSwimmingAcross = false;
   forgetReplans(mover);
   mover.stuckSeconds = 0;
 }
@@ -117,7 +114,7 @@ export function isStranded(mover: Mover, world: WorldState): boolean {
 }
 
 function isOutOfDepth(mover: Mover, cell: number, world: WorldState): boolean {
-  if (!world.isWater(cell) || mover.isSwimmingAcross) {
+  if (!world.isWater(cell)) {
     return false;
   }
 
@@ -327,7 +324,7 @@ function canEnter(mover: Mover, x: number, z: number, isEscapingWater: boolean, 
 
   const depth = world.waterDepth(target);
 
-  if (mover.isSwimmingAcross || (mover.canWade && depth < WADING_DEPTH)) {
+  if (mover.canWade && depth < WADING_DEPTH) {
     return true;
   }
 
@@ -365,10 +362,6 @@ function replan(mover: Mover, navigation: NavigationGrid): boolean {
     mover.futileReplans += 1;
   }
 
-  if (mover.futileReplans >= MAXIMUM_FUTILE_REPLANS && !mover.isSwimmingAcross) {
-    return swimAcross(mover);
-  }
-
   if (mover.futileReplans >= MAXIMUM_FUTILE_REPLANS) {
     return giveUp(mover);
   }
@@ -381,15 +374,6 @@ function replan(mover: Mover, navigation: NavigationGrid): boolean {
 
   mover.path = route;
   mover.pathIndex = 0;
-
-  return false;
-}
-
-function swimAcross(mover: Mover): boolean {
-  mover.isSwimmingAcross = true;
-  mover.path = [{ x: mover.goalX, z: mover.goalZ }];
-  mover.pathIndex = 0;
-  forgetReplans(mover);
 
   return false;
 }
