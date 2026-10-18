@@ -25,6 +25,7 @@ interface GroundDefinition {
   flammability: number;
   fuel: number;
   grass: number;
+  holdsTrees: boolean;
   index: GroundIndex;
   name: string;
   seasonalColors: readonly [Color, Color, Color, Color];
@@ -37,6 +38,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     flammability: 0.95,
     fuel: 0.8,
     grass: 1,
+    holdsTrees: true,
     index: Ground.Meadow,
     name: "Meadow",
     seasonalColors: [
@@ -52,6 +54,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     flammability: 1.3,
     fuel: 1,
     grass: 0.85,
+    holdsTrees: true,
     index: Ground.Steppe,
     name: "Dry grass",
     seasonalColors: [
@@ -67,6 +70,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     flammability: 0.85,
     fuel: 0.7,
     grass: 0.35,
+    holdsTrees: true,
     index: Ground.Forest,
     name: "Forest floor",
     seasonalColors: [
@@ -82,6 +86,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     flammability: 1.1,
     fuel: 1.4,
     grass: 0.6,
+    holdsTrees: true,
     index: Ground.Scrub,
     name: "Shrubs",
     seasonalColors: [
@@ -97,6 +102,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     flammability: 0,
     fuel: 0,
     grass: 0.05,
+    holdsTrees: false,
     index: Ground.Sand,
     name: "Sand",
     seasonalColors: [
@@ -112,6 +118,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     flammability: 0,
     fuel: 0,
     grass: 0,
+    holdsTrees: true,
     index: Ground.Rock,
     name: "Rock",
     seasonalColors: [
@@ -127,6 +134,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     flammability: 0,
     fuel: 0,
     grass: 0,
+    holdsTrees: true,
     index: Ground.Snow,
     name: "Eternal snow",
     seasonalColors: [
@@ -142,6 +150,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     flammability: 0.6,
     fuel: 0.4,
     grass: 0.45,
+    holdsTrees: true,
     index: Ground.Tundra,
     name: "Tundra",
     seasonalColors: [
@@ -157,6 +166,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     flammability: 0.35,
     fuel: 0.5,
     grass: 0.7,
+    holdsTrees: true,
     index: Ground.Swamp,
     name: "Swamp",
     seasonalColors: [
@@ -172,6 +182,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     flammability: 0,
     fuel: 0,
     grass: 0.08,
+    holdsTrees: true,
     index: Ground.Dirt,
     name: "Trodden earth",
     seasonalColors: [
@@ -187,6 +198,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     flammability: 0.9,
     fuel: 0.6,
     grass: 0,
+    holdsTrees: true,
     index: Ground.Farm,
     name: "Field",
     seasonalColors: [
@@ -202,6 +214,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     flammability: 0,
     fuel: 0,
     grass: 0,
+    holdsTrees: true,
     index: Ground.RedRock,
     name: "Red stone",
     seasonalColors: [

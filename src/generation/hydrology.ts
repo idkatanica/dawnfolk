@@ -56,10 +56,19 @@ interface HydrologyResult {
   waterSurface: Float32Array;
 }
 
-interface DrainageNetwork {
+export interface DrainageNetwork {
   accumulation: Float32Array;
   filled: Float32Array;
+  order: Int32Array;
   receivers: Int32Array;
+}
+
+export interface DrainageBasins {
+  lakeIds: Int32Array;
+  lakes: Lake[];
+  network: DrainageNetwork;
+  riverThreshold: number;
+  waterSurface: Float32Array;
 }
 
 interface RiverChain {
@@ -68,7 +77,7 @@ interface RiverChain {
   mouthReceiver: number;
 }
 
-const NO_CELL = -1;
+export const NO_CELL = -1;
 const REJECTED_LAKE = -2;
 const FILL_EPSILON = 1e-3;
 const FLOODED_DEPTH = 0.25;
@@ -144,7 +153,7 @@ function fillDepressions(heights: Float32Array, grid: WorldGrid): DrainageNetwor
     }
   }
 
-  return { accumulation, filled, receivers };
+  return { accumulation, filled, order, receivers };
 }
 
 interface FloodedArea {
@@ -603,6 +612,22 @@ function dropShallowWater(heights: Float32Array, waterSurface: Float32Array, riv
   }
 }
 
+export function analyzeDrainage(
+  heights: Float32Array,
+  grid: WorldGrid,
+  dryness: Float32Array,
+  options: HydrologyOptions = DEFAULT_HYDROLOGY
+): DrainageBasins {
+  const thresholds = toCellThresholds(options, grid);
+  const network = fillDepressions(heights, grid);
+  const waterSurface = new Float32Array(grid.cellCount).fill(NO_WATER);
+  const lakeIds = new Int32Array(grid.cellCount).fill(NO_CELL);
+
+  const lakes = findLakes(heights, network, grid, dryness, thresholds, waterSurface, lakeIds);
+
+  return { lakeIds, lakes, network, riverThreshold: thresholds.riverThreshold, waterSurface };
+}
+
 export function computeHydrology(
   heights: Float32Array,
   grid: WorldGrid,
@@ -610,12 +635,9 @@ export function computeHydrology(
   options: HydrologyOptions = DEFAULT_HYDROLOGY
 ): HydrologyResult {
   const thresholds = toCellThresholds(options, grid);
-  const network = fillDepressions(heights, grid);
-  const waterSurface = new Float32Array(grid.cellCount).fill(NO_WATER);
-  const lakeIds = new Int32Array(grid.cellCount).fill(NO_CELL);
+  const { lakeIds, lakes, network, waterSurface } = analyzeDrainage(heights, grid, dryness, options);
   const riverStrength = new Uint8Array(grid.cellCount);
 
-  const lakes = findLakes(heights, network, grid, dryness, thresholds, waterSurface, lakeIds);
   const chains = traceRiverChains(network, lakeIds, thresholds);
 
   const rivers = buildRivers(chains, heights, network, grid, lakes, lakeIds, thresholds.riverThreshold);

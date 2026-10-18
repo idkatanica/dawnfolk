@@ -198,6 +198,7 @@ export class WorldRenderer {
     this.#vegetation.weather.blow(wind.directionX, wind.directionZ, wind.metersPerSecond, view.realSeconds);
     view.camera.updateMatrixWorld();
     this.#terrain.update(view.camera, this.#quality.terrainDetail);
+    this.#islandBase.followPatchLevels(this.#terrain.patchLevels);
     this.#water.update(view.camera, this.#quality.terrainDetail, this.#terrain.patchLevels);
     this.#vegetation.update(view.camera, this.#quality.vegetationDetail, frame.calendar.season);
     this.#grass.update(view.camera, view.viewDistance);

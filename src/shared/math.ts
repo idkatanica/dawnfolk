@@ -67,7 +67,7 @@ export function distanceToPolyline(x: number, z: number, points: readonly (reado
   return best;
 }
 
-function distanceToSegment(
+export function distanceToSegment(
   x: number,
   z: number,
   start: readonly [number, number],
