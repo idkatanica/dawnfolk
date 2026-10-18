@@ -5,6 +5,7 @@ import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../wo
 import { hasRoomFromCoast, isOnIsland } from "../../world/coast.ts";
 import { canGrowWild, canStandOn, isOpenGround, slopeAt } from "../../world/footing.ts";
 import type { IslandShapeKind } from "../../world/island-shape.ts";
+import type { Monument } from "../../world/monuments.ts";
 import type { TerrainData } from "../../world/terrain-data.ts";
 import {
   isWaterAtPoint,
@@ -18,6 +19,7 @@ import { NO_WATER, type WaterFeatures } from "../../world/water.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
 
 export const NO_BUILDING = -1;
+export const MONUMENT_GROUND = -2;
 export const SNOW_CAPACITY = 1.2;
 
 const MAXIMUM_TERRAIN_HEIGHT = 3200;
@@ -61,6 +63,7 @@ export class WorldState {
   readonly heightChanges = new RegionChangeTracker();
   readonly initialCanopyFuel: Float32Array;
   readonly lowestHeight: number;
+  readonly monuments: readonly Monument[];
   readonly occupancy: Int32Array;
   readonly seed: number;
   readonly shape: IslandShapeKind;
@@ -78,6 +81,7 @@ export class WorldState {
     this.terrain = generated.terrain;
     this.vegetation = generated.vegetation;
     this.water = generated.water;
+    this.monuments = generated.monuments;
     this.fields = createSurfaceFields(this.grid.cellCount, generated.terrain.ground);
     this.occupancy = new Int32Array(this.grid.cellCount).fill(NO_BUILDING);
     this.canopyFuel = new Float32Array(this.grid.cellCount);
@@ -88,6 +92,12 @@ export class WorldState {
 
     for (let cell = 0; cell < this.grid.cellCount; cell += 1) {
       this.refreshCanopy(cell);
+    }
+
+    for (const monument of this.monuments) {
+      for (const cell of monument.cells) {
+        this.occupancy[cell] = MONUMENT_GROUND;
+      }
     }
   }
 
@@ -150,7 +160,27 @@ export class WorldState {
       return false;
     }
 
+    if (this.isObstructed(cell)) {
+      return false;
+    }
+
     return this.slope(cell) < WALKABLE_SLOPE;
+  }
+
+  isObstructed(cell: number): boolean {
+    return cell >= 0 && this.occupancy[cell] === MONUMENT_GROUND;
+  }
+
+  isObstructedAt(x: number, z: number): boolean {
+    return this.isObstructed(this.grid.cellAt(x, z));
+  }
+
+  isObstructedBetween(fromX: number, fromZ: number, toX: number, toZ: number): boolean {
+    if (this.isObstructedAt(fromX, fromZ)) {
+      return false;
+    }
+
+    return this.grid.cellsAlong(fromX, fromZ, toX, toZ).some((cell) => this.isObstructed(cell));
   }
 
   isWalkableAt(x: number, z: number): boolean {

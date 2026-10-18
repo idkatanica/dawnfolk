@@ -272,7 +272,9 @@ export class VegetationStore {
 
   clearCell(cellIndex: number, includesStones: boolean): void {
     for (const index of this.#plantsInCell(cellIndex)) {
-      if (includesStones || plantSpeciesDefinition(this.species[index]).form !== "stone") {
+      const { form } = plantSpeciesDefinition(this.species[index]);
+
+      if (form !== "monument" && (includesStones || form !== "stone")) {
         this.remove(index);
       }
     }

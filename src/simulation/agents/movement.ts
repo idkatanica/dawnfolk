@@ -315,6 +315,10 @@ function canEnter(mover: Mover, x: number, z: number, isEscapingWater: boolean, 
     return false;
   }
 
+  if (world.isObstructedBetween(mover.x, mover.z, x, z)) {
+    return false;
+  }
+
   if (!world.isWater(target)) {
     return true;
   }

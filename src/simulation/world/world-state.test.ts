@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { Ground, groundDefinition } from "../../content/grounds.ts";
 import { PlantSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
-import { centerCell, createTestWorld, floodCells, plantInCell } from "../testing/test-world.ts";
+import { WorldGrid } from "../../world/world-grid.ts";
+import { centerCell, createTestWorld, floodCells, monumentAround, plantInCell } from "../testing/test-world.ts";
+import { MONUMENT_GROUND } from "./world-state.ts";
 
 describe("world state", () => {
   it("interpolates heights between cell centers", () => {
@@ -107,5 +109,35 @@ describe("world state", () => {
     world.removePlant(tree);
 
     expect(world.initialCanopyFuel[cell]).toBeCloseTo(plantSpeciesDefinition(PlantSpecies.Spruce).canopyFuel);
+  });
+
+  it("keeps walkers, builders and new plants off monument ground", () => {
+    const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 64 });
+    const world = createTestWorld({ monuments: [monumentAround(grid, 0, 0, 15)] });
+
+    const ruin = centerCell(world);
+    const open = world.grid.cellAt(200, 0);
+
+    expect(world.occupancy[ruin]).toBe(MONUMENT_GROUND);
+    expect(world.isObstructed(ruin)).toBe(true);
+    expect(world.isWalkable(ruin)).toBe(false);
+    expect(world.canPlace(ruin, 1)).toBe(false);
+    expect(world.isObstructed(open)).toBe(false);
+    expect(world.isWalkable(open)).toBe(true);
+    expect(world.canPlace(open, 1)).toBe(true);
+  });
+
+  it("never clears monument stones, not even with the stones", () => {
+    const world = createTestWorld();
+
+    const cell = centerCell(world);
+
+    const menhir = plantInCell(world, cell, PlantSpecies.Menhir);
+    const boulder = plantInCell(world, cell, PlantSpecies.Boulder);
+
+    world.clearPlants(cell, true);
+
+    expect(world.vegetation.isAlive(menhir)).toBe(true);
+    expect(world.vegetation.isAlive(boulder)).toBe(false);
   });
 });

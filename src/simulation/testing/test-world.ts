@@ -86,6 +86,10 @@ export function floodCells(world: WorldState, cells: readonly number[], depth: n
   }
 }
 
+export function monumentAround(grid: WorldGrid, x: number, z: number, radius: number): Monument {
+  return { cells: grid.cellsInRadius(x, z, radius), id: 0, kind: "stoneCircle", name: "Test Ring", x, z };
+}
+
 export function centerCell(world: WorldState): number {
   return world.grid.cellAt(0, 0);
 }
