@@ -16,8 +16,7 @@ import { SettingsDialog } from "../features/settings/settings-dialog.tsx";
 import { TimeControls } from "../features/time/time-controls.tsx";
 import { CompactClock, WorldStatus } from "../features/time/world-status.tsx";
 
-const HUD_FRAME =
-  "pointer-events-none fixed inset-0 z-10 flex flex-col pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))]";
+const HUD_FRAME = "pointer-events-none fixed inset-0 z-10 flex flex-col p-safe";
 
 function WideHud() {
   return (
@@ -65,10 +64,10 @@ function CompactDetails() {
   const powerId = usePowerStore((state) => state.selectedPowerId);
 
   if (powerId === null) {
-    return <InspectorIsland className="max-h-[38dvh]" />;
+    return <InspectorIsland className="max-h-details" />;
   }
 
-  return <PowerSettings className="max-h-[38dvh]" />;
+  return <PowerSettings className="max-h-details" />;
 }
 
 function CompactHud() {

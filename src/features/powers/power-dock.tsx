@@ -10,7 +10,7 @@ import { usePowerStore } from "./power-store.ts";
 const DOCK_CATEGORIES = POWER_CATEGORIES.filter((category) => category.id !== "observe");
 
 const TILE_CLASS =
-  "flex h-16 w-[4.75rem] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl text-ink-soft outline-none transition-colors duration-150 hover:bg-veil hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn pointer-coarse:h-[4.25rem]";
+  "flex h-16 w-19 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl text-ink-soft outline-none transition-colors duration-150 hover:bg-veil hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn pointer-coarse:h-17";
 
 function usePowerSelection(powerId: PowerId) {
   const isSelected = usePowerStore((state) => state.selectedPowerId === powerId);
@@ -41,7 +41,7 @@ function PowerTile({ powerId }: { readonly powerId: PowerId }) {
       >
         <Icon aria-hidden="true" size={22} strokeWidth={1.9} />
 
-        <span className="max-w-full truncate px-1 font-medium text-[11px] leading-none">{power.name}</span>
+        <span className="max-w-full truncate px-1 font-medium text-2xs leading-none">{power.name}</span>
       </button>
     </WithTooltip>
   );
@@ -71,7 +71,7 @@ function SelectTile() {
       >
         <MousePointer2 aria-hidden="true" size={22} strokeWidth={1.9} />
 
-        <span className="font-medium text-[11px] leading-none">Select</span>
+        <span className="font-medium text-2xs leading-none">Select</span>
       </button>
     </WithTooltip>
   );
@@ -125,7 +125,7 @@ export function PowerDock({ className }: { readonly className?: string | undefin
           ))}
         </Tabs.List>
 
-        <div className="flex gap-1 overflow-x-auto [scrollbar-width:none]">
+        <div className="scrollbar-none flex gap-1 overflow-x-auto">
           <SelectTile />
 
           <DockDivider />

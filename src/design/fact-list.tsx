@@ -11,7 +11,7 @@ function FactRow({ fact }: { readonly fact: Fact }) {
     <div className="flex items-baseline justify-between gap-3 py-1.5">
       <dt className="text-ink-soft text-xs">{fact.label}</dt>
 
-      <dd className="tabular text-right font-medium text-ink text-sm">{fact.value}</dd>
+      <dd className="text-right font-medium text-ink text-sm tabular-nums">{fact.value}</dd>
     </div>
   );
 }

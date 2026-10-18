@@ -64,7 +64,7 @@ function Reading({ detail, icon: Icon, title, value }: ReadingProps) {
       <Icon aria-hidden="true" className="shrink-0" size={18} />
 
       <span className="flex flex-col gap-1 leading-none">
-        <span className="tabular font-semibold text-ink text-sm">{value}</span>
+        <span className="font-semibold text-ink text-sm tabular-nums">{value}</span>
 
         <span className="flex items-center gap-1 text-ink-muted text-xs max-lg:hidden">{detail}</span>
       </span>
@@ -104,7 +104,7 @@ function WeatherReading() {
           <>
             <Wind aria-hidden="true" size={11} />
 
-            <span className="tabular">{Math.round(weather.windSpeed)} km/h</span>
+            <span className="tabular-nums">{Math.round(weather.windSpeed)} km/h</span>
           </>
         }
         icon={WEATHER_ICONS[weather.kind]}
@@ -149,9 +149,9 @@ export function CompactClock({ className }: { readonly className?: string | unde
         <DaylightIcon aria-hidden="true" className="@max-[6.5rem]:hidden shrink-0" size={18} />
 
         <div className="flex min-w-0 flex-col leading-none">
-          <span className="tabular font-semibold text-ink text-sm">{formatClock(calendar.hours)}</span>
+          <span className="font-semibold text-ink text-sm tabular-nums">{formatClock(calendar.hours)}</span>
 
-          <span className="truncate text-[11px] text-ink-muted">
+          <span className="truncate text-2xs text-ink-muted">
             <span className="@max-[5rem]:hidden">{calendar.seasonName} · </span>
             Day {calendar.dayOfSeason}
           </span>

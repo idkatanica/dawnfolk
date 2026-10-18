@@ -28,7 +28,7 @@ function NoticeItem({ notice }: { readonly notice: WorldNotice }) {
   useDismissLater(notice.id);
 
   return (
-    <li className="pointer-events-auto flex max-w-[min(26rem,calc(100vw-2rem))] items-center gap-2.5 rounded-full bg-white/82 px-4 py-2 text-ink text-sm backdrop-blur-xl motion-safe:animate-[notice-in_0.35s_var(--ease-glide)]">
+    <li className="pointer-events-auto flex max-w-notice items-center gap-2.5 rounded-full bg-white/82 px-4 py-2 text-ink text-sm backdrop-blur-xl motion-safe:animate-notice-in">
       <NoticeIcon notice={notice} />
 
       <span className="leading-snug">{notice.text}</span>

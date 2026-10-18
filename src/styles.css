@@ -4,6 +4,20 @@
 @theme {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
 
+  --text-2xs: 0.6875rem;
+
+  --radius-island: 22px;
+  --radius-sheet: 1.75rem;
+
+  --container-dialog: min(40rem, calc(100vw - 1.5rem));
+  --container-journal: min(21rem, calc(100vw - 2rem));
+  --container-notice: min(26rem, calc(100vw - 2rem));
+
+  --max-height-details: 38dvh;
+  --max-height-dialog: min(44rem, calc(100dvh - 1.5rem));
+  --max-height-dialog-body: min(34rem, calc(100dvh - 12rem));
+  --max-height-journal: min(28rem, 55vh);
+
   --color-sky: #dbe7f1;
   --color-ink: #1d2733;
   --color-ink-soft: #46546a;
@@ -22,6 +36,26 @@
   --color-gold: #c9952c;
 
   --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --animate-notice-in: notice-in 0.35s var(--ease-glide);
+
+  @keyframes notice-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.97);
+    }
+  }
+}
+
+@utility p-safe {
+  padding-top: max(--spacing(3), env(safe-area-inset-top));
+  padding-right: max(--spacing(3), env(safe-area-inset-right));
+  padding-bottom: max(--spacing(3), env(safe-area-inset-bottom));
+  padding-left: max(--spacing(3), env(safe-area-inset-left));
+}
+
+@utility pb-sheet {
+  padding-bottom: calc(--spacing(4) + env(safe-area-inset-bottom, 0px));
 }
 
 :root {
@@ -61,22 +95,11 @@ body {
   scrollbar-width: thin;
 }
 
-.tabular {
-  font-variant-numeric: tabular-nums;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
-  }
-}
-
-@keyframes notice-in {
-  from {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.97);
   }
 }

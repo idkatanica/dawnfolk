@@ -30,7 +30,7 @@ function ScrollingPanel({ children, value }: { readonly children: ReactNode; rea
   return (
     <Tabs.Panel className="outline-none" value={value}>
       <ScrollArea.Root className="relative">
-        <ScrollArea.Viewport className="max-h-[min(28rem,55vh)] overscroll-contain pr-2.5 outline-none">
+        <ScrollArea.Viewport className="max-h-journal overscroll-contain pr-2.5 outline-none">
           {children}
         </ScrollArea.Viewport>
 

@@ -28,7 +28,7 @@ function LandmarkDetail({ detail }: { readonly detail: string | null }) {
     return null;
   }
 
-  return <span className="tabular font-medium text-xs opacity-90">{detail}</span>;
+  return <span className="font-medium text-xs tabular-nums opacity-90">{detail}</span>;
 }
 
 function LandmarkLabel({ landmark }: { readonly landmark: Landmark }) {
@@ -86,7 +86,7 @@ function TribeLabel({ isSelected, tribe }: TribeLabelProps) {
 
         <span className="font-semibold text-ink">{tribe.name}</span>
 
-        <span className="tabular font-semibold text-dawn-strong">{tribe.population}</span>
+        <span className="font-semibold text-dawn-strong tabular-nums">{tribe.population}</span>
 
         <span className="text-ink-muted group-data-far:hidden">{tribe.eraName}</span>
       </button>
