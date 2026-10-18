@@ -42,19 +42,33 @@ function evergreen(summer: number, winter: number): readonly FoliageKey[] {
 
 const LEAFLESS: readonly FoliageKey[] = [{ color: BARE_BRANCHES, coverage: 0, season: 0 }];
 
+const STONEWORK: readonly FoliageKey[] = evergreen(0x6f_8a_3e, 0x6a_6a_48);
+
 const FOLIAGE_KEYS: Readonly<Record<PlantSpeciesIndex, readonly FoliageKey[]>> = {
   [PlantSpecies.Acacia]: evergreen(0x76_93_42, 0x86_8c_4c),
+  [PlantSpecies.Arch]: STONEWORK,
   [PlantSpecies.Birch]: deciduous(0x6f_a8_40, 0xe0_b0_36),
-  [PlantSpecies.Boulder]: evergreen(0x6f_8a_3e, 0x6a_6a_48),
+  [PlantSpecies.Boulder]: STONEWORK,
   [PlantSpecies.Bush]: deciduous(0x4f_86_34, 0xa8_52_2a),
   [PlantSpecies.Cactus]: evergreen(0x4f_8a_4a, 0x4a_7c_46),
+  [PlantSpecies.Cairn]: STONEWORK,
+  [PlantSpecies.Crag]: STONEWORK,
   [PlantSpecies.DeadTree]: LEAFLESS,
   [PlantSpecies.DesertShrub]: evergreen(0x8c_9a_68, 0x80_88_5e),
+  [PlantSpecies.Dolmen]: STONEWORK,
+  [PlantSpecies.FrostedRock]: STONEWORK,
+  [PlantSpecies.Idol]: STONEWORK,
   [PlantSpecies.Maple]: deciduous(0x4e_8c_32, 0xc4_3e_24),
+  [PlantSpecies.Menhir]: STONEWORK,
+  [PlantSpecies.MossyRock]: STONEWORK,
   [PlantSpecies.Oak]: deciduous(0x4a_7e_2e, 0xb0_6a_28),
   [PlantSpecies.Palm]: evergreen(0x58_94_3a, 0x52_86_3a),
+  [PlantSpecies.Pillar]: STONEWORK,
   [PlantSpecies.Pine]: evergreen(0x3c_6a_38, 0x33_58_3c),
   [PlantSpecies.Poplar]: deciduous(0x5a_92_38, 0xe2_c0_38),
+  [PlantSpecies.Sandstone]: STONEWORK,
+  [PlantSpecies.Scree]: STONEWORK,
+  [PlantSpecies.Slab]: STONEWORK,
   [PlantSpecies.Spruce]: evergreen(0x2c_56_38, 0x27_48_3a),
   [PlantSpecies.Willow]: deciduous(0x82_a8_44, 0xbc_b0_46),
 };

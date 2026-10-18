@@ -90,6 +90,7 @@ export class FrameBuilder {
       dimensions: { cellSize: world.grid.cellSize, cellsPerSide: world.grid.cellsPerSide },
       frame: this.build(),
       ground: ground.data,
+      monuments: world.monuments,
       seed: world.seed,
       shape: world.shape,
       surface: surface.data,

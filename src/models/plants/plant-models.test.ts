@@ -35,6 +35,17 @@ const TREES = [
   PlantSpecies.Willow,
 ];
 const MIXED_FORMS: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DeadTree]);
+const LYING_FORMS: ReadonlySet<PlantSpeciesIndex> = new Set(
+  PLANT_SPECIES.filter((definition) => definition.form === "monument").map((definition) => definition.index)
+);
+
+function shortestVariantShare(species: PlantSpeciesIndex): number {
+  if (LYING_FORMS.has(species)) {
+    return 0.08;
+  }
+
+  return MIXED_FORMS.has(species) ? 0.3 : 0.62;
+}
 
 function widestRadius(species: PlantSpeciesIndex): number {
   let widest = 0;
@@ -51,7 +62,7 @@ function widestRadius(species: PlantSpeciesIndex): number {
 function workingRadius(species: PlantSpeciesIndex): number {
   const { form } = plantSpeciesDefinition(species);
 
-  if (form === "shrub" || form === "stone") {
+  if (form === "shrub" || form === "stone" || form === "monument") {
     return widestRadius(species);
   }
 
@@ -79,7 +90,7 @@ describe.each(SPECIES)("plant species %i", (species) => {
 
   it("stands on the ground at about its canonical height", () => {
     const height = canonicalHeight(species);
-    const shortest = MIXED_FORMS.has(species) ? 0.3 : 0.62;
+    const shortest = shortestVariantShare(species);
 
     const variants = buildPlantVariants(species, "high");
 

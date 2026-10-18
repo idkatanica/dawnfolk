@@ -6,12 +6,14 @@ import { BUILDINGS } from "./buildings.ts";
 import { GROUNDS, Ground, seasonalGroundColor } from "./grounds.ts";
 import { personName, tribeIdentity } from "./names.ts";
 import { describeParameters } from "./parameters.ts";
-import { PLANT_SPECIES, PLANTING_RULES, PlantSpecies, regrowingSpecies } from "./plants.ts";
+import { isTreeSpecies, PLANT_SPECIES, PLANTING_RULES, PlantSpecies, regrowingSpecies } from "./plants.ts";
 import { defaultPowerParameters, POWER_ORDER, POWERS, powersInCategory, readPowerParameters } from "./powers.ts";
 import { seasonName, seasonTemperatureOffset } from "./seasons.ts";
 import { currentEra, nextTechnology, TECHNOLOGIES, type TechnologyId } from "./technologies.ts";
 import { WEATHER, WEATHER_KINDS } from "./weather.ts";
 import { DEFAULT_WORLD_RULES, readWorldRules } from "./world-rules.ts";
+
+const STEEPEST_FOOTING = 1.05;
 
 describe("indexed content", () => {
   it("lists biomes in the order of their indices", () => {
@@ -41,6 +43,25 @@ describe("indexed content", () => {
     expect(regrowingSpecies(Biome.Forest, 10)).not.toContain(PlantSpecies.Bush);
     expect(regrowingSpecies(Biome.Forest, 10)).not.toContain(PlantSpecies.DeadTree);
     expect(regrowingSpecies(Biome.Desert, 20)).toEqual([PlantSpecies.Acacia, PlantSpecies.Palm]);
+  });
+
+  it("asks trees for gentler ground than bushes and keeps everything off cliffs", () => {
+    const trees = PLANT_SPECIES.filter((species) => isTreeSpecies(species.index));
+    const undergrowth = PLANT_SPECIES.filter((species) => species.form === "shrub" || species.form === "succulent");
+
+    const steepestTree = Math.max(...trees.map((species) => species.steepestSlope));
+    const gentlestUndergrowth = Math.min(...undergrowth.map((species) => species.steepestSlope));
+
+    expect(steepestTree).toBeLessThan(gentlestUndergrowth);
+
+    for (const species of PLANT_SPECIES) {
+      expect(species.steepestSlope, species.name).toBeGreaterThan(0.3);
+      expect(species.steepestSlope, species.name).toBeLessThanOrEqual(STEEPEST_FOOTING);
+    }
+
+    for (const building of Object.values(BUILDINGS)) {
+      expect(building.steepestSlope).toBeLessThan(steepestTree);
+    }
   });
 
   it("keeps warm-weather trees out of cold places", () => {

@@ -1,8 +1,9 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { Biome } from "../content/biomes.ts";
 import { Ground } from "../content/grounds.ts";
-import { isTreeSpecies } from "../content/plants.ts";
+import { isTreeSpecies, plantSpeciesDefinition } from "../content/plants.ts";
 import { isOnIsland } from "../world/coast.ts";
+import { admitsWildPlant, slopeAt } from "../world/footing.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { sampleHeight } from "../world/terrain-sampling.ts";
@@ -32,21 +33,8 @@ function generateTestWorld(seed: number, shape: IslandShapeKind = "round"): Gene
   );
 }
 
-function slopeAt(terrain: TerrainData, grid: WorldGrid, cell: number): number {
-  const last = grid.cellsPerSide - 1;
-  const column = grid.columnOf(cell);
-  const row = grid.rowOf(cell);
-
-  const east = terrain.height[grid.index(Math.min(last, column + 1), row)];
-  const west = terrain.height[grid.index(Math.max(0, column - 1), row)];
-  const south = terrain.height[grid.index(column, Math.min(last, row + 1))];
-  const north = terrain.height[grid.index(column, Math.max(0, row - 1))];
-
-  return Math.hypot((east - west) / (2 * grid.cellSize), (south - north) / (2 * grid.cellSize));
-}
-
 function slopesOf(terrain: TerrainData, grid: WorldGrid): number[] {
-  return Array.from({ length: grid.cellCount }, (_, cell) => slopeAt(terrain, grid, cell));
+  return Array.from({ length: grid.cellCount }, (_, cell) => slopeAt(terrain.height, grid, cell));
 }
 
 function shareAbove(values: readonly number[], limit: number): number {
@@ -96,6 +84,35 @@ function cellsAround(grid: WorldGrid, cell: number, innerRadius: number, outerRa
   return grid
     .cellsInRadius(x, z, outerRadius)
     .filter((other) => Math.hypot(grid.cellCenterX(other) - x, grid.cellCenterZ(other) - z) >= innerRadius);
+}
+
+function plantsAboveTheirSlope(generated: GeneratedWorld): string[] {
+  const grid = new WorldGrid(generated.dimensions);
+  const { terrain, vegetation } = generated;
+  const misplaced: string[] = [];
+
+  for (let plant = 0; plant < vegetation.count; plant += 1) {
+    const cell = grid.cellAt(vegetation.x[plant], vegetation.z[plant]);
+    const { name, steepestSlope } = plantSpeciesDefinition(vegetation.species[plant]);
+
+    const slope = slopeAt(terrain.height, grid, cell);
+
+    if (slope > steepestSlope) {
+      misplaced.push(`${name} on slope ${slope.toFixed(2)}`);
+    }
+  }
+
+  return misplaced;
+}
+
+function isWooded(terrain: TerrainData, cell: number): boolean {
+  return terrain.biome[cell] === Biome.Forest || terrain.biome[cell] === Biome.Taiga;
+}
+
+function nearWater(terrain: TerrainData, grid: WorldGrid, cell: number, radius: number): boolean {
+  return grid
+    .cellsInRadius(grid.cellCenterX(cell), grid.cellCenterZ(cell), radius)
+    .some((other) => hasWater(terrain.waterSurface[other], terrain.height[other]));
 }
 
 function median(values: readonly number[]): number {
@@ -360,7 +377,7 @@ describe("world generation", () => {
 
       for (const bank of cellsAround(grid, cell, 1, grid.cellSize * 1.5)) {
         const isLow = terrain.height[bank] < terrain.waterSurface[cell] + 1.5;
-        const isGentle = slopeAt(terrain, grid, bank) < 0.25;
+        const isGentle = slopeAt(terrain.height, grid, bank) < 0.25;
         const isWarm = terrain.baseTemperature[bank] > 4;
 
         if (isLow && isGentle && isWarm && !hasWater(terrain.waterSurface[bank], terrain.height[bank])) {
@@ -379,6 +396,51 @@ describe("world generation", () => {
         expect(terrain.ground[grid.cellAt(vegetation.x[plant], vegetation.z[plant])]).not.toBe(Ground.Sand);
       }
     }
+  });
+
+  it("plants nothing on ground steeper than its species can hold", () => {
+    expect(plantsAboveTheirSlope(world)).toEqual([]);
+  });
+
+  it("opens glades, sparse stands and riverside meadows in the forests", () => {
+    const grid = new WorldGrid(TEST_DIMENSIONS);
+    const { terrain } = world;
+
+    const wooded = Array.from({ length: grid.cellCount }, (_, cell) => cell).filter((cell) => isWooded(terrain, cell));
+
+    const densities = wooded.map((cell) => terrain.woodland[cell]);
+    const mean = densities.reduce((total, density) => total + density, 0) / densities.length;
+
+    const banks = wooded.filter((cell) => nearWater(terrain, grid, cell, 50));
+    const bankMean = banks.reduce((total, cell) => total + terrain.woodland[cell], 0) / banks.length;
+
+    expect(wooded.length).toBeGreaterThan(1000);
+    expect(mean).toBeGreaterThan(0.5);
+    expect(mean).toBeLessThan(0.85);
+    expect(densities.filter((density) => density < 0.05).length / densities.length).toBeGreaterThan(0.04);
+    expect(densities.filter((density) => density > 0.95).length / densities.length).toBeGreaterThan(0.2);
+    expect(bankMean).toBeLessThan(mean * 0.7);
+
+    for (const cell of wooded) {
+      if (terrain.woodland[cell] < 0.3) {
+        expect(terrain.ground[cell]).not.toBe(Ground.Forest);
+      }
+    }
+  });
+
+  it("grows no wild plant where the woodland turns it away", () => {
+    const grid = new WorldGrid(TEST_DIMENSIONS);
+    const { terrain, vegetation } = world;
+
+    for (let plant = 0; plant < vegetation.count; plant += 1) {
+      const cell = grid.cellAt(vegetation.x[plant], vegetation.z[plant]);
+
+      expect(admitsWildPlant(terrain, grid, cell, vegetation.species[plant])).toBe(true);
+    }
+  });
+
+  it("keeps the woodland the same for a seed", () => {
+    expect(generateTestWorld(7).terrain.woodland).toEqual(world.terrain.woodland);
   });
 
   it("produces many biomes and a living vegetation cover", () => {
@@ -427,6 +489,11 @@ describe("full-size island rim", () => {
       expect(median(rises)).toBeLessThan(0.3);
       expect(quantile(rises, 0.9)).toBeLessThan(0.5);
     }
+  });
+
+  it("keeps every plant of the full island off ground too steep for it", () => {
+    expect(plantsAboveTheirSlope(fullSize)).toEqual([]);
+    expect(plantsAboveTheirSlope(fullSquare)).toEqual([]);
   });
 
   it("has few slopes steeper than 45 degrees and almost none steeper than 55", () => {

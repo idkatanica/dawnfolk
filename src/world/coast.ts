@@ -12,6 +12,12 @@ export function isOnIsland(coastDistance: Float32Array, cell: number): boolean {
   return cell >= 0 && coastDistance[cell] > 0;
 }
 
-export function hasRoomFromCoast(coastDistance: Float32Array, grid: WorldGrid, x: number, z: number): boolean {
-  return sampleHeight(coastDistance, grid, x, z) > PLANT_COAST_CLEARANCE;
+export function hasRoomFromCoast(
+  coastDistance: Float32Array,
+  grid: WorldGrid,
+  x: number,
+  z: number,
+  clearance = PLANT_COAST_CLEARANCE
+): boolean {
+  return sampleHeight(coastDistance, grid, x, z) > clearance;
 }

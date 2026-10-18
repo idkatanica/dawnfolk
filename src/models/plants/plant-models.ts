@@ -1,4 +1,5 @@
 import { Vector3 } from "three";
+import { PIECE_FORMS } from "../../content/monuments.ts";
 import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import { createRandom } from "../../shared/random.ts";
@@ -8,30 +9,49 @@ import { type MeshData, mergeMeshes, vertexCount } from "../mesh/mesh-data.ts";
 import { sphere } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { transformOf } from "../mesh/transforms.ts";
+import { isMonumentModel, MONUMENT_HEIGHTS, meshMonument } from "../structures/monuments.ts";
 import { CACTUS_FORMS, cactusForm, meshCactus } from "./cacti.ts";
-import { meshBoulder } from "./ground-plants.ts";
+import { isRockModel, meshRock, ROCK_HEIGHTS, ROCK_VARIANT_COUNTS } from "./rocks.ts";
 import { FOLIAGE_FLUTTER, meshTree, type PlantDetailLevel, plantSway, type TreeLook } from "./tree-mesher.ts";
-import { CANONICAL_HEIGHTS, DESERT_SHRUB_FORM_COUNT, TREE_GENERATORS } from "./tree-species.ts";
+import { DESERT_SHRUB_FORM_COUNT, TREE_GENERATORS, TREE_HEIGHTS } from "./tree-species.ts";
 import type { FoliageBlob, TreeStructure } from "./tree-structure.ts";
 
 const VARIANT_COUNTS: Readonly<Record<PlantSpeciesIndex, number>> = {
+  ...ROCK_VARIANT_COUNTS,
   [PlantSpecies.Acacia]: 3,
+  [PlantSpecies.Arch]: PIECE_FORMS[PlantSpecies.Arch].length,
   [PlantSpecies.Birch]: 4,
-  [PlantSpecies.Boulder]: 4,
   [PlantSpecies.Bush]: 4,
+  [PlantSpecies.Cairn]: PIECE_FORMS[PlantSpecies.Cairn].length,
   [PlantSpecies.Cactus]: CACTUS_FORMS.length,
   [PlantSpecies.DeadTree]: 3,
   [PlantSpecies.DesertShrub]: DESERT_SHRUB_FORM_COUNT,
+  [PlantSpecies.Dolmen]: PIECE_FORMS[PlantSpecies.Dolmen].length,
+  [PlantSpecies.Idol]: PIECE_FORMS[PlantSpecies.Idol].length,
   [PlantSpecies.Maple]: 4,
+  [PlantSpecies.Menhir]: PIECE_FORMS[PlantSpecies.Menhir].length,
   [PlantSpecies.Oak]: 4,
   [PlantSpecies.Palm]: 2,
+  [PlantSpecies.Pillar]: PIECE_FORMS[PlantSpecies.Pillar].length,
   [PlantSpecies.Pine]: 4,
   [PlantSpecies.Poplar]: 2,
   [PlantSpecies.Spruce]: 4,
   [PlantSpecies.Willow]: 4,
 };
 
-const FORM_PER_VARIANT: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DesertShrub]);
+const CANONICAL_HEIGHTS: Readonly<Record<PlantSpeciesIndex, number>> = {
+  ...TREE_HEIGHTS,
+  ...ROCK_HEIGHTS,
+  ...MONUMENT_HEIGHTS,
+};
+
+const FORM_PER_VARIANT: ReadonlySet<PlantSpeciesIndex> = new Set([
+  PlantSpecies.Cactus,
+  PlantSpecies.DesertShrub,
+  PlantSpecies.Idol,
+  PlantSpecies.Menhir,
+  PlantSpecies.Pillar,
+]);
 
 export const PLANT_DETAIL_LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low"];
 
@@ -113,8 +133,12 @@ function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDe
     return meshCactus(seed, level, cactusForm(variant));
   }
 
-  if (species === PlantSpecies.Boulder) {
-    return meshBoulder(seed, level);
+  if (isRockModel(species)) {
+    return meshRock(species, seed, variant, level);
+  }
+
+  if (isMonumentModel(species)) {
+    return meshMonument(species, seed, variant, level);
   }
 
   const generator = TREE_GENERATORS[species];

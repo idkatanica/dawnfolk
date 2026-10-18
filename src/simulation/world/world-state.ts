@@ -3,7 +3,9 @@ import type { GeneratedWorld } from "../../generation/world-generator.ts";
 import { clamp } from "../../shared/math.ts";
 import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../world/change-tracking.ts";
 import { hasRoomFromCoast, isOnIsland } from "../../world/coast.ts";
+import { canGrowWild, canStandOn, isOpenGround, slopeAt } from "../../world/footing.ts";
 import type { IslandShapeKind } from "../../world/island-shape.ts";
+import type { Monument } from "../../world/monuments.ts";
 import type { TerrainData } from "../../world/terrain-data.ts";
 import {
   isWaterAtPoint,
@@ -17,6 +19,7 @@ import { NO_WATER, type WaterFeatures } from "../../world/water.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
 
 export const NO_BUILDING = -1;
+export const MONUMENT_GROUND = -2;
 export const SNOW_CAPACITY = 1.2;
 
 const MAXIMUM_TERRAIN_HEIGHT = 3200;
@@ -60,6 +63,7 @@ export class WorldState {
   readonly heightChanges = new RegionChangeTracker();
   readonly initialCanopyFuel: Float32Array;
   readonly lowestHeight: number;
+  readonly monuments: readonly Monument[];
   readonly occupancy: Int32Array;
   readonly seed: number;
   readonly shape: IslandShapeKind;
@@ -77,6 +81,7 @@ export class WorldState {
     this.terrain = generated.terrain;
     this.vegetation = generated.vegetation;
     this.water = generated.water;
+    this.monuments = generated.monuments;
     this.fields = createSurfaceFields(this.grid.cellCount, generated.terrain.ground);
     this.occupancy = new Int32Array(this.grid.cellCount).fill(NO_BUILDING);
     this.canopyFuel = new Float32Array(this.grid.cellCount);
@@ -87,6 +92,12 @@ export class WorldState {
 
     for (let cell = 0; cell < this.grid.cellCount; cell += 1) {
       this.refreshCanopy(cell);
+    }
+
+    for (const monument of this.monuments) {
+      for (const cell of monument.cells) {
+        this.occupancy[cell] = MONUMENT_GROUND;
+      }
     }
   }
 
@@ -125,18 +136,19 @@ export class WorldState {
   }
 
   slope(cell: number): number {
-    const { cellsPerSide, cellSize } = this.grid;
+    return slopeAt(this.terrain.height, this.grid, cell);
+  }
 
-    const column = this.grid.columnOf(cell);
-    const row = this.grid.rowOf(cell);
-    const heights = this.terrain.height;
+  isOpenGround(cell: number): boolean {
+    return isOpenGround(this.terrain, this.grid, cell);
+  }
 
-    const east = heights[row * cellsPerSide + Math.min(cellsPerSide - 1, column + 1)];
-    const west = heights[row * cellsPerSide + Math.max(0, column - 1)];
-    const south = heights[Math.min(cellsPerSide - 1, row + 1) * cellsPerSide + column];
-    const north = heights[Math.max(0, row - 1) * cellsPerSide + column];
+  canPlace(cell: number, steepestSlope: number): boolean {
+    return canStandOn(this.terrain, this.grid, cell, steepestSlope) && this.occupancy[cell] === NO_BUILDING;
+  }
 
-    return Math.hypot((east - west) / (2 * cellSize), (south - north) / (2 * cellSize));
+  canGrowWild(cell: number, species: number): boolean {
+    return canGrowWild(this.terrain, this.grid, cell, species) && this.occupancy[cell] === NO_BUILDING;
   }
 
   temperature(cell: number, airTemperatureOffset: number): number {
@@ -148,7 +160,27 @@ export class WorldState {
       return false;
     }
 
+    if (this.isObstructed(cell)) {
+      return false;
+    }
+
     return this.slope(cell) < WALKABLE_SLOPE;
+  }
+
+  isObstructed(cell: number): boolean {
+    return cell >= 0 && this.occupancy[cell] === MONUMENT_GROUND;
+  }
+
+  isObstructedAt(x: number, z: number): boolean {
+    return this.isObstructed(this.grid.cellAt(x, z));
+  }
+
+  isObstructedBetween(fromX: number, fromZ: number, toX: number, toZ: number): boolean {
+    if (this.isObstructedAt(fromX, fromZ)) {
+      return false;
+    }
+
+    return this.grid.cellsAlong(fromX, fromZ, toX, toZ).some((cell) => this.isObstructed(cell));
   }
 
   isWalkableAt(x: number, z: number): boolean {

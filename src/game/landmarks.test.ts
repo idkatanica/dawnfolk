@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LAKE_NAMES, PEAK_NAMES } from "../content/landmarks.ts";
+import type { Monument } from "../world/monuments.ts";
 import type { Lake } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 import { findLandmarks, type LandmarkSource } from "./landmarks.ts";
@@ -10,12 +11,12 @@ function lake(id: number, cellCount: number): Lake {
   return { cellCount, centerX: id * 10, centerZ: -id * 10, id, level: 40, maximumDepth: 6 };
 }
 
-function sourceWith(lakes: readonly Lake[], seed = 7): LandmarkSource {
+function sourceWith(lakes: readonly Lake[], seed = 7, monuments: readonly Monument[] = []): LandmarkSource {
   const heights = new Float32Array(GRID.cellCount).fill(20);
 
   heights[GRID.index(5, 2)] = 812.4;
 
-  return { grid: GRID, heights, lakes, seed };
+  return { grid: GRID, heights, lakes, monuments, seed };
 }
 
 describe("findLandmarks", () => {
@@ -52,5 +53,15 @@ describe("findLandmarks", () => {
     const lakes = [lake(1, 300), lake(2, 200)];
 
     expect(findLandmarks(sourceWith(lakes, 11))).toEqual(findLandmarks(sourceWith(lakes, 11)));
+  });
+
+  it("labels every monument with its name and kind", () => {
+    const circle: Monument = { cells: [12], id: 4, kind: "stoneCircle", name: "Whispering Ring", x: 15, z: -25 };
+
+    const landmarks = findLandmarks(sourceWith([], 7, [circle]));
+
+    expect(landmarks).toContainEqual(
+      expect.objectContaining({ detail: "Stone circle", id: "monument-4", kind: "monument", name: "Whispering Ring" })
+    );
   });
 });

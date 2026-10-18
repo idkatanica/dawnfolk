@@ -1,25 +1,38 @@
+import { lerp } from "../shared/math.ts";
 import { Biome, type BiomeIndex } from "./biomes.ts";
 
 export const PlantSpecies = {
   Acacia: 10,
+  Arch: 24,
   Birch: 3,
   Boulder: 8,
   Bush: 6,
   Cactus: 7,
+  Cairn: 25,
+  Crag: 15,
   DeadTree: 12,
   DesertShrub: 13,
+  Dolmen: 21,
+  FrostedRock: 19,
+  Idol: 22,
   Maple: 5,
+  Menhir: 20,
+  MossyRock: 17,
   Oak: 2,
   Palm: 9,
+  Pillar: 23,
   Pine: 1,
   Poplar: 11,
+  Sandstone: 18,
+  Scree: 16,
+  Slab: 14,
   Spruce: 0,
   Willow: 4,
 } as const;
 
 export type PlantSpeciesIndex = (typeof PlantSpecies)[keyof typeof PlantSpecies];
 
-type PlantForm = "broadleaf" | "conifer" | "deadwood" | "shrub" | "succulent" | "stone";
+type PlantForm = "broadleaf" | "conifer" | "deadwood" | "monument" | "shrub" | "succulent" | "stone";
 
 interface PlantSpeciesDefinition {
   canopyFuel: number;
@@ -29,6 +42,7 @@ interface PlantSpeciesDefinition {
   index: PlantSpeciesIndex;
   name: string;
   radiusPerMeter: number;
+  steepestSlope: number;
   wood: number;
 }
 
@@ -41,6 +55,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.Spruce,
     name: "Spruce",
     radiusPerMeter: 0.024,
+    steepestSlope: 0.75,
     wood: 3,
   },
   {
@@ -51,6 +66,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.Pine,
     name: "Pine",
     radiusPerMeter: 0.024,
+    steepestSlope: 0.75,
     wood: 3,
   },
   {
@@ -61,6 +77,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.Oak,
     name: "Oak",
     radiusPerMeter: 0.047,
+    steepestSlope: 0.65,
     wood: 4,
   },
   {
@@ -71,6 +88,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.Birch,
     name: "Birch",
     radiusPerMeter: 0.021,
+    steepestSlope: 0.7,
     wood: 2,
   },
   {
@@ -81,6 +99,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.Willow,
     name: "Willow",
     radiusPerMeter: 0.062,
+    steepestSlope: 0.45,
     wood: 2,
   },
   {
@@ -91,6 +110,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.Maple,
     name: "Maple",
     radiusPerMeter: 0.038,
+    steepestSlope: 0.65,
     wood: 3,
   },
   {
@@ -101,6 +121,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.Bush,
     name: "Berry bush",
     radiusPerMeter: 0.75,
+    steepestSlope: 0.85,
     wood: 0,
   },
   {
@@ -111,6 +132,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.Cactus,
     name: "Cactus",
     radiusPerMeter: 0.18,
+    steepestSlope: 0.85,
     wood: 0,
   },
   {
@@ -120,7 +142,8 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [1.2, 4],
     index: PlantSpecies.Boulder,
     name: "Boulder",
-    radiusPerMeter: 0.89,
+    radiusPerMeter: 1,
+    steepestSlope: 1,
     wood: 0,
   },
   {
@@ -131,6 +154,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.Palm,
     name: "Palm",
     radiusPerMeter: 0.042,
+    steepestSlope: 0.5,
     wood: 2,
   },
   {
@@ -141,6 +165,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.Acacia,
     name: "Acacia",
     radiusPerMeter: 0.051,
+    steepestSlope: 0.6,
     wood: 3,
   },
   {
@@ -151,6 +176,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.Poplar,
     name: "Poplar",
     radiusPerMeter: 0.026,
+    steepestSlope: 0.55,
     wood: 3,
   },
   {
@@ -161,6 +187,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.DeadTree,
     name: "Dead tree",
     radiusPerMeter: 0.063,
+    steepestSlope: 0.75,
     wood: 2,
   },
   {
@@ -171,6 +198,139 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     index: PlantSpecies.DesertShrub,
     name: "Desert shrub",
     radiusPerMeter: 0.95,
+    steepestSlope: 0.9,
+    wood: 0,
+  },
+  {
+    canopyFuel: 0,
+    form: "stone",
+    givesBerries: false,
+    heightRange: [0.5, 1],
+    index: PlantSpecies.Slab,
+    name: "Flat slab",
+    radiusPerMeter: 2.4,
+    steepestSlope: 0.8,
+    wood: 0,
+  },
+  {
+    canopyFuel: 0,
+    form: "stone",
+    givesBerries: false,
+    heightRange: [3, 5.5],
+    index: PlantSpecies.Crag,
+    name: "Crag",
+    radiusPerMeter: 0.4,
+    steepestSlope: 1.05,
+    wood: 0,
+  },
+  {
+    canopyFuel: 0,
+    form: "stone",
+    givesBerries: false,
+    heightRange: [0.6, 1.1],
+    index: PlantSpecies.Scree,
+    name: "Scree",
+    radiusPerMeter: 2.1,
+    steepestSlope: 1,
+    wood: 0,
+  },
+  {
+    canopyFuel: 0,
+    form: "stone",
+    givesBerries: false,
+    heightRange: [1, 2],
+    index: PlantSpecies.MossyRock,
+    name: "Mossy rock",
+    radiusPerMeter: 1.2,
+    steepestSlope: 0.85,
+    wood: 0,
+  },
+  {
+    canopyFuel: 0,
+    form: "stone",
+    givesBerries: false,
+    heightRange: [2, 4],
+    index: PlantSpecies.Sandstone,
+    name: "Sandstone",
+    radiusPerMeter: 0.6,
+    steepestSlope: 0.95,
+    wood: 0,
+  },
+  {
+    canopyFuel: 0,
+    form: "stone",
+    givesBerries: false,
+    heightRange: [1.2, 2.4],
+    index: PlantSpecies.FrostedRock,
+    name: "Frosted rock",
+    radiusPerMeter: 1.15,
+    steepestSlope: 1.05,
+    wood: 0,
+  },
+  {
+    canopyFuel: 0,
+    form: "monument",
+    givesBerries: false,
+    heightRange: [2.6, 6.4],
+    index: PlantSpecies.Menhir,
+    name: "Standing stone",
+    radiusPerMeter: 0.5,
+    steepestSlope: 0.35,
+    wood: 0,
+  },
+  {
+    canopyFuel: 0,
+    form: "monument",
+    givesBerries: false,
+    heightRange: [3.4, 4.6],
+    index: PlantSpecies.Dolmen,
+    name: "Dolmen",
+    radiusPerMeter: 0.9,
+    steepestSlope: 0.35,
+    wood: 0,
+  },
+  {
+    canopyFuel: 0,
+    form: "monument",
+    givesBerries: false,
+    heightRange: [6.5, 9.5],
+    index: PlantSpecies.Idol,
+    name: "Stone head",
+    radiusPerMeter: 0.55,
+    steepestSlope: 0.35,
+    wood: 0,
+  },
+  {
+    canopyFuel: 0,
+    form: "monument",
+    givesBerries: false,
+    heightRange: [5.5, 7],
+    index: PlantSpecies.Pillar,
+    name: "Broken pillar",
+    radiusPerMeter: 1,
+    steepestSlope: 0.35,
+    wood: 0,
+  },
+  {
+    canopyFuel: 0,
+    form: "monument",
+    givesBerries: false,
+    heightRange: [7, 8.2],
+    index: PlantSpecies.Arch,
+    name: "Ruined arch",
+    radiusPerMeter: 0.45,
+    steepestSlope: 0.35,
+    wood: 0,
+  },
+  {
+    canopyFuel: 0,
+    form: "monument",
+    givesBerries: false,
+    heightRange: [1.3, 4.4],
+    index: PlantSpecies.Cairn,
+    name: "Cairn",
+    radiusPerMeter: 0.79,
+    steepestSlope: 0.35,
     wood: 0,
   },
 ];
@@ -195,14 +355,40 @@ export function isTreeSpecies(index: number): boolean {
   return isLivingTreeSpecies(index) || plantSpeciesDefinition(index).form === "deadwood";
 }
 
-interface PlantingRule {
+export function isRockSpecies(index: number): boolean {
+  return plantSpeciesDefinition(index).form === "stone";
+}
+
+export function isMonumentSpecies(index: number): boolean {
+  return plantSpeciesDefinition(index).form === "monument";
+}
+
+const UNDERGROWTH_IN_CLEARINGS = 0.55;
+
+export function woodlandShare(index: number, woodland: number): number {
+  if (isTreeSpecies(index)) {
+    return woodland;
+  }
+
+  const { form } = plantSpeciesDefinition(index);
+
+  if (form === "shrub" || form === "succulent") {
+    return lerp(UNDERGROWTH_IN_CLEARINGS, 1, woodland);
+  }
+
+  return 1;
+}
+
+export interface PlantingRule {
   chancePerCell: number;
   heightScale: number;
+  maximumTemperature?: number;
   minimumTemperature?: number;
   species: PlantSpeciesIndex;
 }
 
 const WARM = 12;
+const COLD = 3.5;
 
 export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> = {
   [Biome.Alpine]: [
@@ -284,8 +470,60 @@ export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]
   [Biome.Water]: [],
 };
 
+export const ROCK_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> = {
+  [Biome.Alpine]: [
+    { chancePerCell: 0.03, heightScale: 1, species: PlantSpecies.Scree },
+    { chancePerCell: 0.012, heightScale: 1, species: PlantSpecies.Crag },
+    { chancePerCell: 0.025, heightScale: 1, maximumTemperature: COLD, species: PlantSpecies.FrostedRock },
+  ],
+  [Biome.Beach]: [{ chancePerCell: 0.003, heightScale: 0.8, species: PlantSpecies.Slab }],
+  [Biome.Desert]: [
+    { chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.Sandstone },
+    { chancePerCell: 0.004, heightScale: 0.8, species: PlantSpecies.Slab },
+  ],
+  [Biome.Forest]: [{ chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.MossyRock }],
+  [Biome.Glacier]: [
+    { chancePerCell: 0.03, heightScale: 1, species: PlantSpecies.FrostedRock },
+    { chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.Scree },
+  ],
+  [Biome.Meadow]: [
+    { chancePerCell: 0.005, heightScale: 1, species: PlantSpecies.Slab },
+    { chancePerCell: 0.002, heightScale: 0.8, species: PlantSpecies.MossyRock },
+  ],
+  [Biome.Mesa]: [
+    { chancePerCell: 0.025, heightScale: 1, species: PlantSpecies.Sandstone },
+    { chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.Scree },
+    { chancePerCell: 0.006, heightScale: 1, species: PlantSpecies.Crag },
+  ],
+  [Biome.Scrub]: [
+    { chancePerCell: 0.006, heightScale: 1, species: PlantSpecies.Crag },
+    { chancePerCell: 0.006, heightScale: 1, species: PlantSpecies.Scree },
+    { chancePerCell: 0.004, heightScale: 1, species: PlantSpecies.Slab },
+  ],
+  [Biome.Steppe]: [
+    { chancePerCell: 0.005, heightScale: 1, species: PlantSpecies.Slab },
+    { chancePerCell: 0.003, heightScale: 1, species: PlantSpecies.Scree },
+    { chancePerCell: 0.002, heightScale: 0.8, species: PlantSpecies.Crag },
+  ],
+  [Biome.Swamp]: [{ chancePerCell: 0.006, heightScale: 0.8, species: PlantSpecies.MossyRock }],
+  [Biome.Taiga]: [
+    { chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.MossyRock },
+    { chancePerCell: 0.004, heightScale: 1, maximumTemperature: COLD, species: PlantSpecies.FrostedRock },
+  ],
+  [Biome.Tundra]: [
+    { chancePerCell: 0.008, heightScale: 1, species: PlantSpecies.Slab },
+    { chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.Scree },
+    { chancePerCell: 0.012, heightScale: 1, maximumTemperature: COLD, species: PlantSpecies.FrostedRock },
+  ],
+  [Biome.Water]: [],
+};
+
 export function canGrowAt(rule: PlantingRule, temperature: number): boolean {
-  return rule.minimumTemperature === undefined || temperature > rule.minimumTemperature;
+  if (rule.minimumTemperature !== undefined && temperature <= rule.minimumTemperature) {
+    return false;
+  }
+
+  return rule.maximumTemperature === undefined || temperature < rule.maximumTemperature;
 }
 
 export function regrowingSpecies(biome: BiomeIndex, temperature: number): readonly PlantSpeciesIndex[] {

@@ -1,8 +1,9 @@
 import { Biome, type BiomeIndex } from "../../content/biomes.ts";
 import { Ground, type GroundIndex } from "../../content/grounds.ts";
-import type { PlantSpeciesIndex } from "../../content/plants.ts";
+import { type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import { plantInitialVegetation } from "../../generation/vegetation.ts";
 import type { GeneratedWorld } from "../../generation/world-generator.ts";
+import type { Monument } from "../../world/monuments.ts";
 import { createTerrainData } from "../../world/terrain-data.ts";
 import { VegetationStore } from "../../world/vegetation-store.ts";
 import { NO_WATER } from "../../world/water.ts";
@@ -15,6 +16,7 @@ export interface TestWorldOptions {
   dimensions: GridDimensions;
   ground: GroundIndex;
   heightAt: (x: number, z: number) => number;
+  monuments: readonly Monument[];
 }
 
 const DEFAULT_TEST_WORLD: TestWorldOptions = {
@@ -23,6 +25,7 @@ const DEFAULT_TEST_WORLD: TestWorldOptions = {
   dimensions: { cellSize: 10, cellsPerSide: 64 },
   ground: Ground.Meadow,
   heightAt: () => 100,
+  monuments: [],
 };
 
 function createTestGeneratedWorld(overrides: Partial<TestWorldOptions> = {}): GeneratedWorld {
@@ -43,6 +46,7 @@ function createTestGeneratedWorld(overrides: Partial<TestWorldOptions> = {}): Ge
 
   return {
     dimensions: options.dimensions,
+    monuments: options.monuments,
     seed: 1,
     shape: "square",
     terrain,
@@ -82,6 +86,35 @@ export function floodCells(world: WorldState, cells: readonly number[], depth: n
   }
 }
 
+export function monumentAround(grid: WorldGrid, x: number, z: number, radius: number): Monument {
+  return { cells: grid.cellsInRadius(x, z, radius), id: 0, kind: "stoneCircle", name: "Test Ring", x, z };
+}
+
 export function centerCell(world: WorldState): number {
   return world.grid.cellAt(0, 0);
+}
+
+export function steepeningRamp(steepestSlope: number, halfSize: number): (x: number) => number {
+  return (x) => {
+    const fromWest = x + halfSize;
+
+    return 100 + (steepestSlope * fromWest * fromWest) / (4 * halfSize);
+  };
+}
+
+export function plantsTooSteep(world: WorldState): string[] {
+  const { vegetation } = world;
+  const misplaced: string[] = [];
+
+  for (let plant = 0; plant < vegetation.count; plant += 1) {
+    const { name, steepestSlope } = plantSpeciesDefinition(vegetation.species[plant]);
+
+    const slope = world.slope(vegetation.cell[plant]);
+
+    if (vegetation.isAlive(plant) && slope > steepestSlope) {
+      misplaced.push(`${name} on slope ${slope.toFixed(2)}`);
+    }
+  }
+
+  return misplaced;
 }

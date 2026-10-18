@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Ground } from "../../content/grounds.ts";
-import { createTestWorld, floodCells } from "../testing/test-world.ts";
+import { WorldGrid } from "../../world/world-grid.ts";
+import { createTestWorld, floodCells, monumentAround } from "../testing/test-world.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { createMover, hasArrived, type Mover, moveAlong, setDestination } from "./movement.ts";
 import { NavigationGrid } from "./navigation.ts";
@@ -62,6 +63,29 @@ describe("movement", () => {
     walk(inSwamp, swamp, 10);
 
     expect(inSwamp.x).toBeLessThan(onMeadow.x);
+  });
+
+  it("walks around monument ground instead of through it", () => {
+    const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 64 });
+    const world = createTestWorld({ monuments: [monumentAround(grid, 0, 0, 22)] });
+    const navigation = new NavigationGrid(world);
+
+    const mover = createMover(-80, 3, 0);
+
+    let enteredRuin = false;
+
+    setDestination(mover, { x: 80, z: 3 }, navigation, { mayPlanRoute: false });
+
+    for (let elapsed = 0; elapsed < 90 && !hasArrived(mover); elapsed += STEP_SECONDS) {
+      moveAlong(mover, STEP_SECONDS, 3, world, navigation);
+
+      if (world.isObstructedAt(mover.x, mover.z)) {
+        enteredRuin = true;
+      }
+    }
+
+    expect(enteredRuin).toBe(false);
+    expect(Math.hypot(mover.x - 80, mover.z - 3)).toBeLessThan(3);
   });
 
   it("does not step into deep water", () => {

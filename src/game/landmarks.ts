@@ -1,9 +1,11 @@
 import { LAKE_NAMES, PEAK_NAMES } from "../content/landmarks.ts";
+import { MONUMENTS } from "../content/monuments.ts";
 import { createRandom } from "../shared/random.ts";
+import type { Monument } from "../world/monuments.ts";
 import type { Lake } from "../world/water.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 
-type LandmarkKind = "lake" | "peak";
+type LandmarkKind = "lake" | "monument" | "peak";
 
 export interface Landmark {
   readonly detail: string | null;
@@ -19,6 +21,7 @@ export interface LandmarkSource {
   readonly grid: WorldGrid;
   readonly heights: Float32Array;
   readonly lakes: readonly Lake[];
+  readonly monuments: readonly Monument[];
   readonly seed: number;
 }
 
@@ -27,6 +30,7 @@ const NAMED_LAKES = 3;
 const SMALLEST_NAMED_LAKE = 60;
 const PEAK_LIFT = 30;
 const LAKE_LIFT = 4;
+const MONUMENT_LIFT = 9;
 
 function highestCell(heights: Float32Array): number {
   let highest = 0;
@@ -58,6 +62,18 @@ function lakeLandmark(lake: Lake, name: string): Landmark {
   return { detail: null, id: `lake-${lake.id}`, kind: "lake", lift: LAKE_LIFT, name, x: lake.centerX, z: lake.centerZ };
 }
 
+function monumentLandmark(monument: Monument): Landmark {
+  return {
+    detail: MONUMENTS[monument.kind].name,
+    id: `monument-${monument.id}`,
+    kind: "monument",
+    lift: MONUMENT_LIFT,
+    name: monument.name,
+    x: monument.x,
+    z: monument.z,
+  };
+}
+
 export function findLandmarks(source: LandmarkSource): Landmark[] {
   const random = createRandom(source.seed).derive(LANDMARK_STREAM);
 
@@ -71,5 +87,7 @@ export function findLandmarks(source: LandmarkSource): Landmark[] {
     lakeLandmark(lake, LAKE_NAMES[(firstLakeName + index) % LAKE_NAMES.length])
   );
 
-  return [peakLandmark(source, random.pick(PEAK_NAMES)), ...lakes];
+  const monuments = source.monuments.map((monument) => monumentLandmark(monument));
+
+  return [peakLandmark(source, random.pick(PEAK_NAMES)), ...lakes, ...monuments];
 }

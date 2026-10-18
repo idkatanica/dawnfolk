@@ -5,7 +5,15 @@ import { PlantSpecies } from "../../content/plants.ts";
 import { DEFAULT_WORLD_RULES, type WorldRules, worldRulesSchema } from "../../content/world-rules.ts";
 import { createRandom } from "../../shared/random.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
-import { centerCell, createTestWorld, plantInCell } from "../testing/test-world.ts";
+import { WorldGrid } from "../../world/world-grid.ts";
+import {
+  centerCell,
+  createTestWorld,
+  monumentAround,
+  plantInCell,
+  plantsTooSteep,
+  steepeningRamp,
+} from "../testing/test-world.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { berryGrowthPerDay, SNAG_LIFETIME_DAYS, VegetationGrowthSystem } from "./vegetation-growth.ts";
 
@@ -132,6 +140,53 @@ describe("regrowth", () => {
 
     expect(stopped.vegetation.aliveCount).toBe(0);
     expect(frozen.vegetation.aliveCount).toBe(0);
+  });
+
+  it("regrows each tree only on ground gentle enough for it", () => {
+    const world = createTestWorld({ biome: Biome.Forest, ground: Ground.Forest, heightAt: steepeningRamp(1.4, 320) });
+
+    growFor(world, { days: 2, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
+
+    const slopes = Array.from({ length: world.vegetation.count }, (_, plant) =>
+      world.slope(world.vegetation.cell[plant])
+    );
+
+    expect(world.vegetation.aliveCount).toBeGreaterThan(400);
+    expect(Math.max(...slopes)).toBeGreaterThan(0.6);
+    expect(plantsTooSteep(world)).toEqual([]);
+  });
+
+  it("leaves glades open and lets thin stands grow back thin", () => {
+    const world = createTestWorld({ biome: Biome.Forest, ground: Ground.Forest });
+    const { grid, terrain, vegetation } = world;
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      terrain.woodland[cell] = grid.cellCenterX(cell) < 0 ? 0 : 0.5;
+    }
+
+    growFor(world, { days: 3, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
+
+    const columns = Array.from({ length: vegetation.count }, (_, plant) => grid.columnOf(vegetation.cell[plant]));
+    const thinCells = grid.cellCount / 2;
+
+    expect(columns.every((column) => column >= grid.cellsPerSide / 2)).toBe(true);
+    expect(vegetation.aliveCount).toBeGreaterThan(thinCells * 0.3);
+    expect(vegetation.aliveCount).toBeLessThan(thinCells * 0.65);
+  });
+
+  it("never regrows trees on monument ground", () => {
+    const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 64 });
+    const ruin = monumentAround(grid, 0, 0, 60);
+    const world = createTestWorld({ biome: Biome.Forest, ground: Ground.Forest, monuments: [ruin] });
+
+    growFor(world, { days: 2, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
+
+    const onRuin = Array.from({ length: world.vegetation.count }, (_, plant) => world.vegetation.cell[plant]).filter(
+      (cell) => world.isObstructed(cell)
+    );
+
+    expect(world.vegetation.aliveCount).toBeGreaterThan(400);
+    expect(onRuin).toEqual([]);
   });
 
   it("keeps trees off sandy banks", () => {

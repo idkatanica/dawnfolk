@@ -44,8 +44,12 @@ procedurally generated island rendered with WebGPU.
 ## Features
 
 - **A living island.** Every world is named and grown from a seed, round with bays and headlands or square: relief,
-  erosion, rivers, lakes, waterfalls off the edge, climate, biomes and forests. Seasons change foliage, snow settles
-  and melts, fire spreads with the wind.
+  erosion, rivers, lakes, waterfalls off the edge, climate, biomes and forests with glades, sparse stands and
+  riverside meadows. Nothing grows on cliffs. Seasons change foliage, snow settles and melts, fire spreads with the
+  wind.
+- **Ruins of a forgotten people.** Every island hides a handful of weathered megaliths on dry, level ground: stone
+  circles, rows of standing stones, dolmens, half-buried stone heads, fallen colonnades with a ruined arch, and
+  cairns. People and animals walk around them, and nothing is built or planted where they stand.
 - **Tribes with their own lives.** People gather, hunt, fish, farm, chop, quarry, build camps and huts, warm
   themselves at campfires, pray, learn technologies, migrate and split into new tribes. Herds of deer, mammoths and
   ibex graze and flee, ibex up the nearest heights, and wolf packs roam far from people.
@@ -55,9 +59,10 @@ procedurally generated island rendered with WebGPU.
   fire spreads, how far embers fly, how hungry people get) are adjustable in the settings.
 - **A model engine.** People, animals, trees, rocks and buildings are built procedurally from seeds: varied bodies,
   clothes, hair and tools; skeletal animation with blended clips; tree species with seasonal foliage, palms,
-  dead snags, four kinds of cactus and desert shrubs.
+  dead snags, four kinds of cactus and desert shrubs; boulders, flat slabs, crags, scree, mossy forest rocks,
+  layered sandstone and frosted rocks, all of which people quarry for stone.
 - **Map labels.** Tribe banners with population and era float over their camps (click one to fly there), and the
-  highest peak and the largest lakes carry names drawn from the seed.
+  highest peak, the largest lakes and every ruin carry names drawn from the seed.
 - **Glass islands UI.** Every panel floats on its own island of refracting glass
   ([`@svidskiy/glass-surface`](https://github.com/svidskiy/glass-surface)), with a compact layout for phones.
 

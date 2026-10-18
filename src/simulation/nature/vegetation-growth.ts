@@ -113,6 +113,10 @@ export class VegetationGrowthSystem {
 
     const species = random.pick(candidates);
 
+    if (!world.canGrowWild(cell, species)) {
+      return;
+    }
+
     world.plant({
       bornDay: day,
       height: plantHeight(species, random, 1),
@@ -128,7 +132,7 @@ export class VegetationGrowthSystem {
     const world = this.#world;
     const biome = world.terrain.biome[cell];
 
-    if (world.grid.isOnEdge(cell) || !world.isOnIsland(cell) || world.touchesWater(cell)) {
+    if (!world.isOpenGround(cell)) {
       return false;
     }
 

@@ -3,6 +3,7 @@ import type { WeatherKind } from "../content/weather.ts";
 import type { WorldRules } from "../content/world-rules.ts";
 import type { CellRegion } from "../world/change-tracking.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
+import type { Monument } from "../world/monuments.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import type { VegetationBuffers } from "../world/vegetation-store.ts";
 import type { WaterFeatures } from "../world/water.ts";
@@ -144,12 +145,13 @@ export interface SimulationFrame {
   weather: WeatherView;
 }
 
-export type TerrainSnapshot = Omit<TerrainData, "carving" | "dryness">;
+export type TerrainSnapshot = Omit<TerrainData, "carving" | "dryness" | "woodland">;
 
 export interface InitialWorld {
   dimensions: GridDimensions;
   frame: SimulationFrame;
   ground: Uint8Array;
+  monuments: readonly Monument[];
   seed: number;
   shape: IslandShapeKind;
   surface: Uint8Array;
