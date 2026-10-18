@@ -12,6 +12,8 @@ const CRATER_RIM_HEIGHT = 0.28;
 const CRATER_RIM_WIDTH = 0.24;
 const CAPTURED_RIVER_REACH = 0.9;
 const BREACH_FLANK_CELLS = 2;
+const CRATER_WALL_SLOPE = 0.6;
+const DESERT_DRYNESS = 0.5;
 const QUAKE_BLUR_CELLS = 2;
 const QUAKE_SWELL = 3;
 
@@ -217,7 +219,16 @@ export function carveCrater(world: WorldState, crater: CircleArea, depth: number
     world.setHeight(areaCell.cell, world.terrain.height[areaCell.cell] + bowl + standingRim);
   }
 
+  bareCraterWalls(world, reach);
   world.finishSuddenHeightEdit(areaRegion(world, reach));
+}
+
+function bareCraterWalls(world: WorldState, reach: CircleArea): void {
+  for (const { cell } of editableCells(world, reach)) {
+    if (world.slope(cell) > CRATER_WALL_SLOPE) {
+      world.setGround(cell, world.terrain.dryness[cell] > DESERT_DRYNESS ? Ground.RedRock : Ground.Rock);
+    }
+  }
 }
 
 export function shakeTerrain(world: WorldState, area: CircleArea, magnitude: number, random: RandomSource): void {

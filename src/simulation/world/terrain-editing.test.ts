@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Ground } from "../../content/grounds.ts";
 import { createRandom } from "../../shared/random.ts";
 import { createTestWorld } from "../testing/test-world.ts";
 import {
@@ -87,6 +88,15 @@ describe("terrain editing", () => {
 
     expect(heightAtCellCenter(world, 5, 5)).toBeCloseTo(88);
     expect(heightAtCellCenter(world, 55, 5)).toBeGreaterThan(100);
+  });
+
+  it("bares the steep walls of a deep crater as rock", () => {
+    const world = createTestWorld();
+
+    carveCrater(world, { radius: 140, x: 5, z: 5 }, 52);
+
+    expect(world.terrain.ground[world.grid.cellAt(125, 5)]).toBe(Ground.Rock);
+    expect(world.terrain.ground[world.grid.cellAt(5, 5)]).toBe(Ground.Meadow);
   });
 
   it("shakes the ground unevenly", () => {
