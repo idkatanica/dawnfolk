@@ -30,7 +30,6 @@ import {
   vec3,
 } from "three/tsl";
 import { Color, MeshPhysicalNodeMaterial, type MeshStandardNodeMaterial, type Node, Vector2 } from "three/webgpu";
-import { NO_WATER } from "../../world/water.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleCellsNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
@@ -54,6 +53,9 @@ const SHORE_FOAM_DEPTH = 0.45;
 const SHORE_FOAM_FAR = 1300;
 const SHORE_FOAM_NEAR = 500;
 const RAPIDS_START = 0.1;
+const STEEP_RUN = 0.5;
+const FASTEST_FLOW = 1.2;
+const RAPIDS_CALMING = 0.6;
 const ICE_COLOR = vec3(0.78, 0.86, 0.9);
 const THIN_ICE = 0.15;
 const SOLID_ICE = 0.5;
@@ -147,12 +149,12 @@ export function createWaterMaterial(
 
   const neighborLevel = max(max(max(east, west), max(south, north)), diagonalLevel);
   const isOwnWater = own.greaterThan(PRESENT_LEVEL);
-  const bankAverage = averageWetLevel([east, west, south, north]);
+  const besideLevel = max(max(east, west), max(south, north));
   const isCoarseShore = step.greaterThan(1.5).and(reach.lessThanEqual(step.add(COARSE_REACH_MARGIN)));
 
   const isNearWater = neighborLevel.greaterThan(PRESENT_LEVEL);
   const bankLevel = min(
-    select(bankAverage.greaterThan(PRESENT_LEVEL), bankAverage, neighborLevel),
+    select(besideLevel.greaterThan(PRESENT_LEVEL), besideLevel, neighborLevel),
     ground.sub(BANK_SINK)
   );
 
@@ -231,26 +233,14 @@ export function createWaterMaterial(
   return material;
 }
 
-function averageWetLevel(levels: readonly Node<"float">[]): Node<"float"> {
-  let total: Node<"float"> = float(0);
-  let count: Node<"float"> = float(0);
-
-  for (const level of levels) {
-    const isWet = level.greaterThan(PRESENT_LEVEL);
-
-    total = total.add(select(isWet, level, float(0)));
-    count = count.add(select(isWet, float(1), float(0)));
-  }
-
-  return select(count.greaterThan(0), total.div(max(count, 1)), float(NO_WATER));
-}
-
 function surfaceNormal(flow: Node<"vec2">, look: WaterLook): Node<"vec3"> {
-  const speed = clamp(length(flow).mul(55), 0, 3);
-  const direction = select(length(flow).greaterThan(0.0001), normalize(flow), vec2(0, 0));
+  const slope = length(flow);
+  const speed = clamp(slope.mul(55), 0, FASTEST_FLOW);
+  const direction = select(slope.greaterThan(0.0001), normalize(flow), vec2(0, 0));
 
   const cycle = time.mul(0.22);
   const calming = smoothstep(1800, 150, distance(positionWorld, cameraPosition)).mul(0.85).add(0.15);
+  const rapids = smoothstep(RAPIDS_START, STEEP_RUN, slope);
 
   const phase = fract(cycle);
   const otherPhase = fract(cycle.add(0.5));
@@ -258,10 +248,15 @@ function surfaceNormal(flow: Node<"vec2">, look: WaterLook): Node<"vec3"> {
   const drift = look.windTravel;
   const travel = direction.mul(speed).mul(7);
   const blend = abs(phase.mul(2).sub(1));
-  const strength = float(1.1).add(speed.mul(0.6)).mul(calming);
+  const strength = float(1.1)
+    .add(speed.mul(0.6))
+    .mul(calming)
+    .mul(float(1).sub(rapids.mul(RAPIDS_CALMING)));
 
   const pointA = positionWorld.xz.sub(drift).sub(travel.mul(phase));
   const pointB = positionWorld.xz.sub(drift).sub(travel.mul(otherPhase)).add(vec2(13.7, 4.1));
 
-  return normalize(mix(waveNormal(pointA, strength), waveNormal(pointB, strength), blend));
+  const waves = normalize(mix(waveNormal(pointA, strength), waveNormal(pointB, strength), blend));
+
+  return normalize(waves.add(vec3(flow.x, 0, flow.y)));
 }

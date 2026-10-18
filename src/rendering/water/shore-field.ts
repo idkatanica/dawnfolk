@@ -31,8 +31,7 @@ function isWet(level: number): boolean {
 function bankLevel(source: ShoreSource, column: number, row: number): number {
   const { levels, size } = source;
 
-  let total = 0;
-  let count = 0;
+  let highestBeside = NO_WATER;
   let highest = NO_WATER;
 
   for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
@@ -48,17 +47,12 @@ function bankLevel(source: ShoreSource, column: number, row: number): number {
       highest = Math.max(highest, level);
 
       if (Math.abs(rowOffset) + Math.abs(columnOffset) === 1) {
-        total += level;
-        count += 1;
+        highestBeside = Math.max(highestBeside, level);
       }
     }
   }
 
-  if (count > 0) {
-    return total / count;
-  }
-
-  return highest;
+  return isWet(highestBeside) ? highestBeside : highest;
 }
 
 function wetDepth(source: ShoreSource, column: number, row: number): number {
