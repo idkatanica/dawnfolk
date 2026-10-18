@@ -6,8 +6,20 @@ import { createRandom, type RandomSource } from "../../shared/random.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { MeshBuilder, type SurfacePoint } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
-import type { Shape } from "../mesh/shape.ts";
-import { blob, box, card, cone, cylinder, disc, type LoftSection, lathe, loft, panel } from "../mesh/shapes.ts";
+import { facetShape, type Shape } from "../mesh/shape.ts";
+import {
+  blob,
+  box,
+  card,
+  cone,
+  cylinder,
+  disc,
+  type LoftSection,
+  lathe,
+  lengthwiseLoft,
+  loft,
+  panel,
+} from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
 
@@ -200,11 +212,14 @@ function tent(context: StructureContext): void {
     addTentPole(context, firstPole + pole * spacing, (pole / poles) * 0.4);
   }
 
-  const profile = Array.from({ length: rings + 1 }, (_, ring) => {
-    const height = (TENT_HEIGHT * ring) / rings;
+  const profile = [
+    ...Array.from({ length: rings + 1 }, (_, ring) => {
+      const height = (TENT_HEIGHT * ring) / rings;
 
-    return { radius: tentRadius(height), y: height };
-  });
+      return { radius: tentRadius(height), y: height };
+    }),
+    { radius: 0, y: TENT_HEIGHT + TENT_TOP_RADIUS },
+  ];
 
   builder.add(lathe(profile, sides), {
     style: {
@@ -227,6 +242,66 @@ function tentSlot(point: SurfacePoint): MaterialSlotIndex {
 }
 
 const HUT_RADIUS = 2.4;
+const HUT_SILL = 0.5;
+const HUT_DOOR_TOP = 1.5;
+const HUT_DOOR_HALF_WIDTH = 0.47;
+const HUT_POST_RADIUS = 0.06;
+const HUT_POST_SINK = 0.035;
+
+function wallRadiusAt(height: number): number {
+  return HUT_RADIUS - 0.04 * clamp((height - 0.55) / 1.2, 0, 1);
+}
+
+function onWall(x: number, height: number, sink: number): number {
+  const radius = wallRadiusAt(height);
+
+  return Math.sqrt(radius * radius - x * x) + sink;
+}
+
+function addHutDoor(context: StructureContext): void {
+  const halfAngle = Math.asin(HUT_DOOR_HALF_WIDTH / HUT_RADIUS);
+
+  function section(height: number): LoftSection {
+    const radius = wallRadiusAt(height) + 0.012;
+
+    return { radiusX: radius, radiusZ: radius, y: height };
+  }
+
+  context.builder.add(
+    panel({
+      angularSegments: context.level === "high" ? 4 : 2,
+      endAngle: Math.PI / 2 + halfAngle,
+      sections: [section(HUT_SILL), section(HUT_DOOR_TOP)],
+      startAngle: Math.PI / 2 - halfAngle,
+      thickness: 0.02,
+    }),
+    { style: { buildOrder: 0.35, slot: MaterialSlot.Ash } }
+  );
+
+  for (const side of [-1, 1]) {
+    const x = side * (HUT_DOOR_HALF_WIDTH + HUT_POST_RADIUS * 0.4);
+
+    addLog(
+      context,
+      [x, 0, onWall(x, HUT_SILL, HUT_POST_SINK + 0.06)],
+      [x, HUT_DOOR_TOP + 0.08, onWall(x, HUT_DOOR_TOP, HUT_POST_SINK)],
+      HUT_POST_RADIUS,
+      MaterialSlot.Wood,
+      0.3
+    );
+  }
+
+  const lintelEnd = HUT_DOOR_HALF_WIDTH + 0.15;
+
+  addLog(
+    context,
+    [-lintelEnd, HUT_DOOR_TOP + 0.02, onWall(0, HUT_DOOR_TOP, -0.02)],
+    [lintelEnd, HUT_DOOR_TOP + 0.02, onWall(0, HUT_DOOR_TOP, -0.02)],
+    HUT_POST_RADIUS,
+    MaterialSlot.Wood,
+    0.32
+  );
+}
 
 function thatchRing(radius: number, bottom: number, top: number, segments: number): LoftSection[] {
   return [
@@ -290,15 +365,33 @@ function hut(context: StructureContext): void {
     });
   }
 
-  builder.add(card(0.95, 1.45), {
-    style: { buildOrder: 0.35, slot: MaterialSlot.Ash },
-    transform: transformOf({ position: [0, 0.02, HUT_RADIUS + 0.03] }),
-  });
-  addLog(context, [-0.5, 0, HUT_RADIUS + 0.06], [-0.5, 1.55, HUT_RADIUS + 0.06], 0.06, MaterialSlot.Wood, 0.3);
-  addLog(context, [0.5, 0, HUT_RADIUS + 0.06], [0.5, 1.55, HUT_RADIUS + 0.06], 0.06, MaterialSlot.Wood, 0.3);
-  addLog(context, [-0.62, 1.52, HUT_RADIUS + 0.06], [0.62, 1.52, HUT_RADIUS + 0.06], 0.06, MaterialSlot.Wood, 0.32);
+  addHutDoor(context);
   addFlag(context, [0, 0, 0], { bottom: 3.75, height: 0.35, turn: 0.3, width: 0.5 });
   addLog(context, [0, 3.4, 0], [0, 4.2, 0], 0.03, MaterialSlot.Wood, 0.98);
+}
+
+const STORE_WALL_TOP = 2.25;
+const STORE_HALF_WIDTH = 1.1;
+const STORE_HALF_DEPTH = 0.9;
+const GABLE_RISE = 0.74;
+const RIDGE_HEIGHT = 3.11;
+const GABLE_INSET = 0.004;
+
+function gableShape(): Shape {
+  const depth = STORE_HALF_DEPTH - GABLE_INSET;
+  const end = { centerY: STORE_WALL_TOP, halfHeight: GABLE_RISE, halfWidth: STORE_HALF_WIDTH - GABLE_INSET };
+
+  return facetShape(
+    lengthwiseLoft(
+      [
+        { centerY: STORE_WALL_TOP, halfHeight: 0, halfWidth: 0, z: -depth },
+        { ...end, z: -depth },
+        { ...end, z: depth },
+        { centerY: STORE_WALL_TOP, halfHeight: 0, halfWidth: 0, z: depth },
+      ],
+      4
+    )
+  );
 }
 
 function storehouse(context: StructureContext): void {
@@ -326,12 +419,16 @@ function storehouse(context: StructureContext): void {
     transform: transformOf({ position: [0, 1.7, 0] }),
   });
 
+  builder.add(gableShape(), { style: { buildOrder: 0.72, shade: 0.97, slot: MaterialSlot.Daub } });
+
   for (const side of [-1, 1]) {
     builder.add(box(1.75, 0.12, 2.7), {
       style: { buildOrder: 0.85, shade: 0.92, slot: MaterialSlot.Thatch },
       transform: transformOf({ position: [side * 0.68, 2.62, 0], rotation: [0, 0, -side * 0.6] }),
     });
   }
+
+  addLog(context, [0, RIDGE_HEIGHT, -1.38], [0, RIDGE_HEIGHT, 1.38], 0.075, MaterialSlot.Wood, 0.88);
 
   builder.add(card(0.7, 0.9), {
     style: { buildOrder: 0.6, slot: MaterialSlot.Ash },
@@ -381,36 +478,57 @@ const TOTEM_BASE = 0.15;
 const TOTEM_NOSE_LENGTH = 0.26;
 const TOTEM_NOSE_DEPTH = 0.04;
 const TOTEM_NOSE_TILT = 0.25;
+const TOTEM_WAIST = 0.94;
 
-function totemSection(bottom: number, height: number, radius: number): LoftSection[] {
+function totemRadius(head: number): number {
+  return 0.3 - head * 0.02;
+}
+
+function headSections(bottom: number, height: number, radius: number): LoftSection[] {
   return [
-    { radiusX: radius * 0.92, radiusZ: radius * 0.92, y: bottom },
     { radiusX: radius * 1.05, radiusZ: radius * 1.12, y: bottom + height * 0.3 },
     { centerZ: radius * 0.12, radiusX: radius * 1.02, radiusZ: radius * 1.18, y: bottom + height * 0.62 },
-    { radiusX: radius * 0.9, radiusZ: radius * 0.95, y: bottom + height },
   ];
 }
 
-function totemFooting(radius: number, isLowest: boolean): LoftSection[] {
-  if (!isLowest) {
-    return [];
-  }
+function waist(head: number): LoftSection {
+  const radius = Math.min(totemRadius(head - 1) * 0.9, totemRadius(head) * 0.92) * TOTEM_WAIST;
 
-  return [{ radiusX: radius * 0.92, radiusZ: radius * 0.92, y: 0 }];
+  return { radiusX: radius, radiusZ: radius, y: TOTEM_BASE + head * TOTEM_HEAD_HEIGHT };
 }
 
-function totemHead(bottom: number, radius: number, isLowest: boolean, segments: number): Shape {
-  const foot = isLowest ? 0 : bottom;
+function totemLog(segments: number): Shape {
+  const top = TOTEM_BASE + TOTEM_HEADS * TOTEM_HEAD_HEIGHT;
+  const lowest = totemRadius(0);
+  const highest = totemRadius(TOTEM_HEADS - 1);
 
-  return loft(
-    [
-      { radiusX: 0, radiusZ: 0, y: foot },
-      ...totemFooting(radius, isLowest),
-      ...totemSection(bottom, TOTEM_HEAD_HEIGHT, radius),
-      { radiusX: 0, radiusZ: 0, y: bottom + TOTEM_HEAD_HEIGHT },
-    ],
-    segments
-  );
+  const sections: LoftSection[] = [
+    { radiusX: 0, radiusZ: 0, y: 0 },
+    { radiusX: lowest * 0.92, radiusZ: lowest * 0.92, y: 0 },
+    { radiusX: lowest * 0.92, radiusZ: lowest * 0.92, y: TOTEM_BASE },
+  ];
+
+  for (let head = 0; head < TOTEM_HEADS; head += 1) {
+    const bottom = TOTEM_BASE + head * TOTEM_HEAD_HEIGHT;
+
+    if (head > 0) {
+      sections.push(waist(head));
+    }
+
+    sections.push(...headSections(bottom, TOTEM_HEAD_HEIGHT, totemRadius(head)));
+  }
+
+  sections.push({ radiusX: highest * 0.9, radiusZ: highest * 0.95, y: top }, { radiusX: 0, radiusZ: 0, y: top });
+
+  return loft(sections, segments);
+}
+
+function headOf(height: number): number {
+  return clamp(Math.floor((height - TOTEM_BASE) / TOTEM_HEAD_HEIGHT), 0, TOTEM_HEADS - 1);
+}
+
+function headOrder(head: number): number {
+  return 0.15 + head * 0.25;
 }
 
 function addTotemEyes(context: StructureContext, head: Shape, bottom: number, order: number): void {
@@ -463,22 +581,28 @@ function totem(context: StructureContext): void {
     addStone(context, [Math.cos(angle) * 0.42, 0.1, Math.sin(angle) * 0.42], 0.17, 0.05);
   }
 
+  const log = totemLog(segments);
+
+  builder.add(log, {
+    style: {
+      buildOrder: (point) => headOrder(headOf(point.position.y)),
+      slot: (point) => {
+        const head = headOf(point.position.y);
+
+        return totemSlot(point, TOTEM_BASE + head * TOTEM_HEAD_HEIGHT, TOTEM_HEAD_HEIGHT);
+      },
+    },
+  });
+
   for (let head = 0; head < TOTEM_HEADS; head += 1) {
     const bottom = TOTEM_BASE + head * TOTEM_HEAD_HEIGHT;
-    const radius = 0.3 - head * 0.02;
-    const order = 0.15 + head * 0.25;
-
-    const shape = totemHead(bottom, radius, head === 0, segments);
-
-    builder.add(shape, {
-      style: { buildOrder: order, slot: (point) => totemSlot(point, bottom, TOTEM_HEAD_HEIGHT) },
-    });
+    const order = headOrder(head);
 
     if (level === "high") {
-      addTotemEyes(context, shape, bottom, order + 0.05);
+      addTotemEyes(context, log, bottom, order + 0.05);
     }
 
-    addTotemNose(context, shape, bottom, order + 0.05);
+    addTotemNose(context, log, bottom, order + 0.05);
   }
 
   const top = TOTEM_BASE + TOTEM_HEADS * TOTEM_HEAD_HEIGHT;
