@@ -65,7 +65,7 @@ export class SkyDome {
     const material = new MeshBasicNodeMaterial({ depthWrite: false, fog: false, side: BackSide });
 
     material.colorNode = this.#skyColor();
-    this.mesh = new Mesh(new SphereGeometry(DOME_RADIUS, 48, 24), material);
+    this.mesh = new Mesh(new SphereGeometry(DOME_RADIUS, 16, 8), material);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = -10;
   }
