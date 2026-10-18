@@ -2,7 +2,7 @@ import { Group, type PerspectiveCamera, PointLight, Vector3 } from "three/webgpu
 import { Ground } from "../../content/grounds.ts";
 import { isTreeSpecies } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import { hashToUnit } from "../../shared/math.ts";
+import { distanceSquared, hashToUnit } from "../../shared/math.ts";
 import type { BuildingView } from "../../simulation/frame.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
@@ -46,7 +46,7 @@ interface BurningCell {
   readonly intensity: number;
 }
 
-function isLitCampfire(building: BuildingView): boolean {
+export function isLitCampfire(building: BuildingView): boolean {
   return building.kind === "campfire" && building.progress >= 1 && building.fuel > LIT_CAMPFIRE_FUEL;
 }
 
@@ -158,17 +158,13 @@ export class FireView {
   #nearestBurningCells(mirror: WorldMirror, camera: PerspectiveCamera): BurningCell[] {
     const { burningCells, burningIntensity } = mirror.frame;
     const { grid } = mirror;
+    const { position } = camera;
     const cells: BurningCell[] = [];
 
     for (const [index, cell] of burningCells.entries()) {
-      const x = grid.cellCenterX(cell) - camera.position.x;
-      const z = grid.cellCenterZ(cell) - camera.position.z;
+      const distance = distanceSquared(position.x, position.z, grid.cellCenterX(cell), grid.cellCenterZ(cell));
 
-      cells.push({ cell, distance: x * x + z * z, intensity: burningIntensity[index] / BYTE });
-    }
-
-    if (cells.length <= FLAME_CELL_LIMIT) {
-      return cells.toSorted((first, second) => first.distance - second.distance);
+      cells.push({ cell, distance, intensity: burningIntensity[index] / BYTE });
     }
 
     return cells.toSorted((first, second) => first.distance - second.distance).slice(0, FLAME_CELL_LIMIT);
@@ -202,12 +198,14 @@ export class FireView {
     let added = 0;
 
     for (const [cell, intensity] of intensities) {
-      if (intensity >= CROWN_FIRE) {
-        const chunkColumn = Math.floor(grid.columnOf(cell) / CHUNK_CELLS);
-        const chunkRow = Math.floor(grid.rowOf(cell) / CHUNK_CELLS);
-
-        chunkIndices.add(chunkRow * this.#chunks.chunksPerSide + chunkColumn);
+      if (intensity < CROWN_FIRE) {
+        continue;
       }
+
+      const chunkColumn = Math.floor(grid.columnOf(cell) / CHUNK_CELLS);
+      const chunkRow = Math.floor(grid.rowOf(cell) / CHUNK_CELLS);
+
+      chunkIndices.add(chunkRow * this.#chunks.chunksPerSide + chunkColumn);
     }
 
     for (const chunkIndex of chunkIndices) {
@@ -308,11 +306,12 @@ export class FireView {
   }
 
   #placeLights(mirror: WorldMirror, camera: PerspectiveCamera): void {
-    const distanceTo = (building: BuildingView) =>
-      Math.hypot(building.x - camera.position.x, building.z - camera.position.z);
+    function distanceTo(building: BuildingView): number {
+      return Math.hypot(building.x - camera.position.x, building.z - camera.position.z);
+    }
 
     this.#litCampfires = mirror.frame.buildings
-      .filter((building) => isLitCampfire(building))
+      .filter(isLitCampfire)
       .toSorted((first, second) => distanceTo(first) - distanceTo(second))
       .slice(0, CAMPFIRE_LIGHTS);
 

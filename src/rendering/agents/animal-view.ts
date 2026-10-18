@@ -1,4 +1,4 @@
-import { Color, Group, Sphere, Vector3 } from "three/webgpu";
+import { Color, Group, type MeshStandardNodeMaterial, Sphere, Vector3 } from "three/webgpu";
 import { ANIMAL_KINDS, type AnimalKind } from "../../content/animals.ts";
 import { type AnimalAppearance, animalAppearance } from "../../models/animals/animal-appearance.ts";
 import { ANIMAL_SPECIES, animalPartMask, buildAnimalParts, poseAnimal } from "../../models/animals/animal-models.ts";
@@ -148,7 +148,7 @@ export class AnimalView {
     this.#palette.dispose();
   }
 
-  #createKindView(kind: AnimalKind, material: ReturnType<typeof createSkinnedMaterial>): AnimalKindView {
+  #createKindView(kind: AnimalKind, material: MeshStandardNodeMaterial): AnimalKindView {
     const batches = new PartBatches(
       [
         { castsShadow: true, parts: buildAnimalParts(kind, "high") },

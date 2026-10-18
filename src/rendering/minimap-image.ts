@@ -1,10 +1,8 @@
-import { GROUNDS, seasonalGroundColor } from "../content/grounds.ts";
+import { type Color, GROUNDS, seasonalGroundColor } from "../content/grounds.ts";
 import type { WorldMirror } from "../game/world-mirror.ts";
 import { clamp } from "../shared/math.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../world/agent-buffers.ts";
 import { hasWater } from "../world/water.ts";
-
-type Color = readonly [number, number, number];
 
 const BYTE = 255;
 const SLOPE_SHADE = 0.26;
@@ -50,9 +48,9 @@ function cellColor(mirror: WorldMirror, palette: readonly Color[], cell: number)
 }
 
 export function paintMinimapTerrain(mirror: WorldMirror, size: number): ImageData {
-  const image = new ImageData(size, size);
   const { frame, grid } = mirror;
 
+  const image = new ImageData(size, size);
   const palette = GROUNDS.map((_, index) => seasonalGroundColor(index, frame.calendar.season, 0));
   const last = grid.cellsPerSide - 1;
 

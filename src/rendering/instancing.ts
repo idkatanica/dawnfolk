@@ -145,7 +145,7 @@ export class InterleavedInstances {
       return;
     }
 
-    this.#buffer = this.#create(Math.ceil(count * GROWTH_FACTOR));
+    this.#create(Math.ceil(count * GROWTH_FACTOR));
   }
 
   markUpdated(count: number): void {

@@ -90,16 +90,16 @@ export class PatchGrid {
     }
   }
 
+  get chosenLevels(): Readonly<Int8Array> {
+    return this.#chosenLevels;
+  }
+
   remeasure(region: CellRegion | null): void {
     for (const patch of this.#patches) {
       if (region === null || overlaps(region, patch.corner)) {
         this.#measurePatch(patch);
       }
     }
-  }
-
-  get chosenLevels(): Readonly<Int8Array> {
-    return this.#chosenLevels;
   }
 
   update(camera: PerspectiveCamera, detail: number, sharedLevels?: Readonly<Int8Array>): void {
@@ -114,7 +114,7 @@ export class PatchGrid {
         continue;
       }
 
-      const shared = sharedLevels?.[index] ?? NO_LEVEL;
+      const shared = sharedLevels === undefined ? NO_LEVEL : sharedLevels[index];
       const level =
         shared === NO_LEVEL ? this.#levelFor(patch.bounds.distanceToPoint(camera.position), detail) : shared;
 

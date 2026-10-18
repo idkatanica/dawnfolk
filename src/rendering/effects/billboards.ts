@@ -1,4 +1,4 @@
-import { attribute, normalize, uniform, vec3 } from "three/tsl";
+import { attribute, uniform } from "three/tsl";
 import {
   Float32BufferAttribute,
   InstancedBufferGeometry,
@@ -11,7 +11,7 @@ import {
 } from "three/webgpu";
 import { InterleavedInstances } from "../instancing.ts";
 
-export const FLOATS_PER_BILLBOARD = 8;
+const FLOATS_PER_BILLBOARD = 8;
 
 const BILLBOARD_FIELDS = [
   { name: "billboardPlacement", size: 4 },
@@ -42,12 +42,6 @@ export function billboardNodes(): BillboardNodes {
     look: attribute("billboardLook", "vec4"),
     placement: attribute("billboardPlacement", "vec4"),
   };
-}
-
-export function uprightBillboard(axes: CameraAxes, center: Node<"vec3">, corner: Node<"vec2">, size: Node<"vec2">) {
-  const flatRight = normalize(vec3(axes.right.x, 0, axes.right.z));
-
-  return center.add(flatRight.mul(corner.x.mul(size.x))).add(vec3(0, 1, 0).mul(corner.y.mul(size.y)));
 }
 
 export function facingBillboard(axes: CameraAxes, center: Node<"vec3">, corner: Node<"vec2">, size: Node<"float">) {

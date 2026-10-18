@@ -21,16 +21,16 @@ import { BUILDING_KINDS, BUILDINGS, type BuildingKind } from "../../content/buil
 import { MaterialSlot, SLOT_COLOR_TABLE } from "../../models/materials.ts";
 import { buildBuildingModel, GLOW_PART } from "../../models/structures/building-models.ts";
 import { parseHexColor } from "../../shared/color.ts";
-import { clamp } from "../../shared/math.ts";
+import { clamp, saturate } from "../../shared/math.ts";
 import type { BuildingView as BuildingSnapshot, TribeSummary } from "../../simulation/frame.ts";
 import type { AgentViewInput } from "../agents/agent-view-input.ts";
+import { isLitCampfire } from "../effects/fire-view.ts";
 import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
 
 const LEVEL_DISTANCES = { high: 320, low: 3200 } as const;
 const BOUNDING_RADIUS = 6;
 const CHARCOAL = vec3(0.04, 0.035, 0.03);
 const NEUTRAL_ACCENT = new Color(0xc4_55_3a);
-const LIT_FUEL = 0.02;
 
 const BUILDING_FIELDS = [
   { name: "buildingPlacement", size: 4 },
@@ -195,12 +195,12 @@ export class BuildingView {
 
     data.set([building.x, y, building.z, building.rotation], offset);
     data.set([building.progress, accent.r, accent.g, accent.b], offset + 4);
-    data.set([clamp(1 - building.health / definition.health, 0, 1), this.#glowOf(building), 0, 0], offset + 8);
+    data.set([saturate(1 - building.health / definition.health), this.#glowOf(building), 0, 0], offset + 8);
     batch.count += 1;
   }
 
   #glowOf(building: BuildingSnapshot): number {
-    if (building.kind !== "campfire" || building.progress < 1 || building.fuel <= LIT_FUEL) {
+    if (!isLitCampfire(building)) {
       return 0;
     }
 

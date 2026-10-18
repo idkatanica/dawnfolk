@@ -196,6 +196,28 @@ export class WorldRenderer {
     this.#output.render();
   }
 
+  dispose(): void {
+    this.#fire.dispose();
+    this.#effects.dispose();
+    this.#weather.dispose();
+    this.cursor.dispose();
+    this.#selectionRing.dispose();
+    this.#people.dispose();
+    this.#animals.dispose();
+    this.#dots.dispose();
+    this.#buildings.dispose();
+    this.#vegetation.dispose();
+    this.#grass.dispose();
+    this.#water.dispose();
+    this.#waterfalls.dispose();
+    this.#terrain.dispose();
+    this.#islandBase.dispose();
+    this.#textures.dispose();
+    this.#fireGlow.dispose();
+    this.#atmosphere.dispose();
+    this.#output.dispose();
+  }
+
   #paintWater(wind: Wind): void {
     const { look } = this.#water;
     const { palette } = this.#atmosphere;
@@ -271,27 +293,5 @@ export class WorldRenderer {
 
     weather.gust.value = clamp(wind.metersPerSecond / 7, 0.12, 2);
     weather.wind.value.set(wind.directionX, wind.directionZ);
-  }
-
-  dispose(): void {
-    this.#fire.dispose();
-    this.#effects.dispose();
-    this.#weather.dispose();
-    this.cursor.dispose();
-    this.#selectionRing.dispose();
-    this.#people.dispose();
-    this.#animals.dispose();
-    this.#dots.dispose();
-    this.#buildings.dispose();
-    this.#vegetation.dispose();
-    this.#grass.dispose();
-    this.#water.dispose();
-    this.#waterfalls.dispose();
-    this.#terrain.dispose();
-    this.#islandBase.dispose();
-    this.#textures.dispose();
-    this.#fireGlow.dispose();
-    this.#atmosphere.dispose();
-    this.#output.dispose();
   }
 }

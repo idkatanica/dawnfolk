@@ -173,6 +173,7 @@ export function createPlantMaterial({
   const fireLight = varying(fireLightAt(glow, grid, placement.xz), "plantFireLight");
 
   material.colorNode = mix(vertexColor.mul(leafPattern), SNOW, snowOnTop);
+
   const nearRoots = varying(smoothstep(SMOULDER_HEIGHT, 0, positionLocal.y.mul(scale)), "plantNearRoots");
 
   const smoulder = Fn(() => {

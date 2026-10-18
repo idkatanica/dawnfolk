@@ -9,20 +9,6 @@ export interface CameraState {
   readonly yaw: number;
 }
 
-export interface CameraLimits {
-  readonly maximumDistance: number;
-  readonly maximumPitch: number;
-  readonly minimumDistance: number;
-  readonly minimumPitch: number;
-}
-
-export const DEFAULT_CAMERA_LIMITS: CameraLimits = {
-  maximumDistance: 9000,
-  maximumPitch: 1.48,
-  minimumDistance: 4,
-  minimumPitch: 0.08,
-};
-
 export interface FollowTarget {
   readonly x: number;
   readonly z: number;
@@ -30,6 +16,10 @@ export interface FollowTarget {
 
 export type HeightProbe = (x: number, z: number) => number;
 
+const MAXIMUM_DISTANCE = 9000;
+const MAXIMUM_PITCH = 1.48;
+const MINIMUM_DISTANCE = 4;
+const MINIMUM_PITCH = 0.08;
 const SMOOTHING_RATE = 9;
 const CLEARANCE = 1.2;
 
@@ -46,7 +36,6 @@ export class GodCamera {
   readonly #current: MutableCameraState;
   readonly #goal: MutableCameraState;
   readonly #heightAt: HeightProbe;
-  readonly #limits: CameraLimits;
   readonly #offset = new Vector3();
   readonly #position = new Vector3();
   readonly #target = new Vector3();
@@ -56,10 +45,9 @@ export class GodCamera {
   #shake = 0;
   #targetHeight: number;
 
-  constructor(camera: PerspectiveCamera, heightAt: HeightProbe, worldHalfSize: number, limits = DEFAULT_CAMERA_LIMITS) {
+  constructor(camera: PerspectiveCamera, heightAt: HeightProbe, worldHalfSize: number) {
     this.camera = camera;
     this.#heightAt = heightAt;
-    this.#limits = limits;
     this.#worldHalfSize = worldHalfSize;
     this.#goal = { distance: 3200, pitch: 0.82, targetX: 0, targetZ: 0, yaw: 0.6 };
     this.#current = { ...this.#goal };
@@ -186,8 +174,8 @@ export class GodCamera {
     const limit = this.#worldHalfSize * 1.05;
     const goal = this.#goal;
 
-    goal.distance = clamp(goal.distance, this.#limits.minimumDistance, this.#limits.maximumDistance);
-    goal.pitch = clamp(goal.pitch, this.#limits.minimumPitch, this.#limits.maximumPitch);
+    goal.distance = clamp(goal.distance, MINIMUM_DISTANCE, MAXIMUM_DISTANCE);
+    goal.pitch = clamp(goal.pitch, MINIMUM_PITCH, MAXIMUM_PITCH);
     goal.targetX = clamp(goal.targetX, -limit, limit);
     goal.targetZ = clamp(goal.targetZ, -limit, limit);
   }

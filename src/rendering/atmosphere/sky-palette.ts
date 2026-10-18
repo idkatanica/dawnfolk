@@ -1,5 +1,5 @@
 import { mixColors } from "../../shared/color.ts";
-import { clamp, inverseLerp } from "../../shared/math.ts";
+import { inverseLerp, saturate } from "../../shared/math.ts";
 
 export interface SkyPalette {
   readonly abyss: number;
@@ -81,7 +81,7 @@ const PALETTE_KEYS: readonly PaletteKey[] = [
   { palette: DAY, sunHeight: 0.38 },
 ];
 
-export function mixPalettes(from: SkyPalette, to: SkyPalette, amount: number): SkyPalette {
+function mixPalettes(from: SkyPalette, to: SkyPalette, amount: number): SkyPalette {
   return {
     abyss: mixColors(from.abyss, to.abyss, amount),
     ambientGround: mixColors(from.ambientGround, to.ambientGround, amount),
@@ -99,7 +99,7 @@ function clearSkyPalette(sunHeight: number): SkyPalette {
 
   for (const upper of PALETTE_KEYS) {
     if (sunHeight < upper.sunHeight) {
-      const amount = clamp(inverseLerp(lower.sunHeight, upper.sunHeight, sunHeight), 0, 1);
+      const amount = saturate(inverseLerp(lower.sunHeight, upper.sunHeight, sunHeight));
 
       return mixPalettes(lower.palette, upper.palette, amount);
     }
@@ -112,9 +112,9 @@ function clearSkyPalette(sunHeight: number): SkyPalette {
 
 export function skyPaletteAt(sunHeight: number, overcast: number): SkyPalette {
   const clear = clearSkyPalette(sunHeight);
-  const daylight = clamp(inverseLerp(-0.2, 0.25, sunHeight), 0, 1);
+  const daylight = saturate(inverseLerp(-0.2, 0.25, sunHeight));
 
   const gloomy = mixPalettes(NIGHT, OVERCAST, daylight);
 
-  return mixPalettes(clear, gloomy, clamp(overcast, 0, 1) * 0.85);
+  return mixPalettes(clear, gloomy, saturate(overcast) * 0.85);
 }

@@ -36,7 +36,6 @@ const ASH = vec3(0.13, 0.12, 0.11);
 const EMBER_DEEP = vec3(1.2, 0.24, 0.03);
 const EMBER_BRIGHT = vec3(1.3, 0.42, 0.06);
 const GROUND_FIRE_LIGHT = 0.6;
-
 const EMBER_THRESHOLD = 0.004;
 
 function unitNoise(point: Node<"vec2">): Node<"float"> {
@@ -76,8 +75,11 @@ function terrainPosition(textures: TerrainTextures, grid: WorldGrid): Node<"vec3
   const localCell = attribute("cell", "vec2");
   const skirt = attribute("skirt", "float");
 
-  const heightAt = (column: number, row: number, base: Node<"vec2">) =>
-    textureLoad(textures.height, ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(lastCell, lastCell)))).x;
+  function heightAt(column: number, row: number, base: Node<"vec2">) {
+    const cell = ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(lastCell, lastCell)));
+
+    return textureLoad(textures.height, cell).x;
+  }
 
   return Fn(() => {
     const cell = clamp(origin.add(localCell), vec2(0, 0), vec2(lastCell, lastCell)).toVar();

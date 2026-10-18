@@ -1,5 +1,5 @@
 import { type Mesh, Vector3 } from "three/webgpu";
-import { clamp, hashToUnit, lerp, smoothstep } from "../../shared/math.ts";
+import { FULL_TURN, hashToUnit, lerp, saturate, smoothstep } from "../../shared/math.ts";
 import type {
   BlessingEffect,
   EarthquakeEffect,
@@ -28,12 +28,10 @@ export interface EffectContext {
 }
 
 export interface ActiveEffect {
-  readonly finish: () => void;
+  readonly finish?: () => void;
   readonly meshes: readonly Mesh[];
   readonly update: (seconds: number, sinks: SpriteSinks) => boolean;
 }
-
-const releaseNothing = (): void => undefined;
 
 const BOLT_HEIGHT = 1100;
 const BOLT_SUBDIVISIONS = 6;
@@ -137,7 +135,7 @@ export class LightningStrike implements ActiveEffect {
 
 function addPuffs(sinks: SpriteSinks, center: Vector3, spread: number, age: number, color: readonly number[]): void {
   for (let puff = 0; puff < DUST_PUFFS; puff += 1) {
-    const angle = hashToUnit(puff, 1) * Math.PI * 2;
+    const angle = hashToUnit(puff, 1) * FULL_TURN;
     const reach = (0.3 + hashToUnit(puff, 2) * 0.9) * spread * (0.4 + age * 0.9);
     const rise = (6 + hashToUnit(puff, 3) * 24) * Math.sqrt(age);
     const fade = (1 - smoothstep(0.2, 1, age / EXPLOSION_SECONDS)) * 0.8;
@@ -206,7 +204,6 @@ export class Explosion implements ActiveEffect {
 }
 
 export class MeteorFall implements ActiveEffect {
-  readonly finish = releaseNothing;
   readonly meshes: readonly Mesh[] = [];
   readonly #effect: MeteorEffect;
   readonly #from: Vector3;
@@ -225,14 +222,14 @@ export class MeteorFall implements ActiveEffect {
     const duration = Math.max(0.1, this.#effect.durationSeconds);
     const size = 8 + this.#effect.radius * 0.08;
 
-    const progress = clamp(this.#age / duration, 0, 1);
+    const progress = saturate(this.#age / duration);
 
     const head = this.#from.clone().lerp(this.#to, progress);
 
     sinks.glow.add([head.x, head.y, head.z, size * 2.4], [1, 0.75, 0.4, 1]);
 
     for (let sample = 1; sample <= TRAIL_SAMPLES; sample += 1) {
-      const behind = clamp(progress - sample * 0.012, 0, 1);
+      const behind = saturate(progress - sample * 0.012);
       const fade = 1 - sample / TRAIL_SAMPLES;
 
       const point = this.#from.clone().lerp(this.#to, behind);
@@ -246,7 +243,6 @@ export class MeteorFall implements ActiveEffect {
 }
 
 export class EmberFlight implements ActiveEffect {
-  readonly finish = releaseNothing;
   readonly meshes: readonly Mesh[] = [];
   readonly #effect: EmberEffect;
   readonly #from: Vector3;
@@ -265,7 +261,7 @@ export class EmberFlight implements ActiveEffect {
     const duration = Math.max(0.2, this.#effect.durationSeconds);
     const flicker = 0.6 + Math.random() * 0.4;
 
-    const progress = clamp(this.#age / duration, 0, 1);
+    const progress = saturate(this.#age / duration);
 
     const position = this.#from.clone().lerp(this.#to, progress);
 
@@ -277,7 +273,6 @@ export class EmberFlight implements ActiveEffect {
 }
 
 export class Earthquake implements ActiveEffect {
-  readonly finish = releaseNothing;
   readonly meshes: readonly Mesh[] = [];
   readonly #context: EffectContext;
   readonly #effect: EarthquakeEffect;
@@ -298,7 +293,7 @@ export class Earthquake implements ActiveEffect {
     const fade = smoothstep(0, 0.4, this.#age) * (1 - smoothstep(1.5, EARTHQUAKE_SECONDS, this.#age)) * 0.45;
 
     for (let puff = 0; puff < DUST_PUFFS; puff += 1) {
-      const angle = hashToUnit(puff, 7) * Math.PI * 2;
+      const angle = hashToUnit(puff, 7) * FULL_TURN;
       const reach = Math.sqrt(hashToUnit(puff, 8)) * this.#effect.radius;
 
       const x = this.#effect.x + Math.cos(angle) * reach;
@@ -315,7 +310,6 @@ export class Earthquake implements ActiveEffect {
 }
 
 export class Blessing implements ActiveEffect {
-  readonly finish = releaseNothing;
   readonly meshes: readonly Mesh[] = [];
   readonly #context: EffectContext;
   readonly #effect: BlessingEffect;
@@ -333,7 +327,7 @@ export class Blessing implements ActiveEffect {
     const fade = smoothstep(0, 0.3, this.#age) * (1 - smoothstep(1.8, BLESSING_SECONDS, this.#age));
 
     for (let sparkle = 0; sparkle < SPARKLES; sparkle += 1) {
-      const angle = hashToUnit(sparkle, 11) * Math.PI * 2;
+      const angle = hashToUnit(sparkle, 11) * FULL_TURN;
       const reach = Math.sqrt(hashToUnit(sparkle, 12)) * Math.min(this.#effect.radius, 120);
       const rise = lerp(0, 18, (this.#age * (0.6 + hashToUnit(sparkle, 13))) % 1);
       const twinkle = 0.5 + 0.5 * Math.sin(this.#age * 9 + sparkle);

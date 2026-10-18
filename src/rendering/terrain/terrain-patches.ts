@@ -8,6 +8,8 @@ export const PATCH_LEVEL_DISTANCES: readonly number[] = [650, 1400, 2700];
 
 export type PatchStep = (typeof PATCH_STEPS)[number];
 
+export type PatchEdges = "open" | "skirted";
+
 interface GridVertexWriter {
   readonly cells: number[];
   readonly skirts: number[];
@@ -51,8 +53,6 @@ function upNormals(count: number): Float32Array {
 
   return normals;
 }
-
-export type PatchEdges = "open" | "skirted";
 
 function addSkirts(writer: GridVertexWriter, indices: number[], step: PatchStep): void {
   const steps = PATCH_CELLS / step;

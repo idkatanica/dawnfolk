@@ -158,8 +158,13 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
     .mul(LATTICE_ROW)
     .add(uint(lattice.y.add(LATTICE_OFFSET)));
 
-  const random = (salt: number) => hash(key.bitXor(salt));
-  const bladeRandom = (salt: number) => hash(key.bitXor(SALT_BLADE).add(uint(blade.mul(SALTS_PER_BLADE).add(salt))));
+  function random(salt: number) {
+    return hash(key.bitXor(salt));
+  }
+
+  function bladeRandom(salt: number) {
+    return hash(key.bitXor(SALT_BLADE).add(uint(blade.mul(SALTS_PER_BLADE).add(salt))));
+  }
 
   const root = lattice.add(vec2(random(SALT_JITTER_X), random(SALT_JITTER_Z))).mul(spacing);
 
@@ -170,8 +175,9 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   const surface = textureLoad(textures.surface, cell);
   const footprint = floor(root.add(grid.halfSize).div(grid.cellSize).sub(0.5));
 
-  const waterAt = (column: number, row: number) =>
-    textureLoad(textures.water, ivec2(clamp(footprint.add(vec2(column, row)), vec2(0, 0), vec2(last, last)))).x;
+  function waterAt(column: number, row: number) {
+    return textureLoad(textures.water, ivec2(clamp(footprint.add(vec2(column, row)), vec2(0, 0), vec2(last, last)))).x;
+  }
 
   const nearestWater = max(max(waterAt(0, 0), waterAt(1, 0)), max(waterAt(0, 1), waterAt(1, 1)));
 

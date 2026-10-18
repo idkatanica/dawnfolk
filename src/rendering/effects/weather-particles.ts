@@ -24,7 +24,7 @@ import {
   Vector2,
 } from "three/webgpu";
 import type { WeatherKind } from "../../content/weather.ts";
-import { clamp } from "../../shared/math.ts";
+import { saturate } from "../../shared/math.ts";
 import type { CameraAxes } from "./billboards.ts";
 
 const BOX_SIZE = 90;
@@ -109,7 +109,7 @@ export class WeatherParticles {
   }
 
   update(precipitation: number, kind: Precipitation, windX: number, windZ: number): void {
-    const strength = clamp((precipitation - LIGHTEST_PRECIPITATION) / (1 - LIGHTEST_PRECIPITATION), 0, 1);
+    const strength = saturate((precipitation - LIGHTEST_PRECIPITATION) / (1 - LIGHTEST_PRECIPITATION));
     const isSnow = kind === "snow";
 
     const count = Math.round(strength * MAXIMUM_DROPS);

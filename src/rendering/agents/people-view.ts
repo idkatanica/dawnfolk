@@ -11,7 +11,7 @@ import { SkeletonPoser } from "../../models/rig/skeleton-poser.ts";
 import { parseHexColor } from "../../shared/color.ts";
 import type { TribeSummary } from "../../simulation/frame.ts";
 import { PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
-import { CARRIED_ITEMS, type CarriedItem, PERSON_POSES, type PersonPose } from "../../world/agent-poses.ts";
+import { CARRIED_ITEMS, type CarriedItem, PERSON_POSES } from "../../world/agent-poses.ts";
 import { AgentMotion } from "./agent-motion.ts";
 import { AgentPalette } from "./agent-palette.ts";
 import {
@@ -205,10 +205,9 @@ export class PeopleView {
       return this.#pose;
     }
 
-    const clip: PersonPose = PERSON_POSES[motion.previousClip];
     const eased = motion.blend * motion.blend * (3 - 2 * motion.blend);
 
-    applyHumanClip(this.#previousPose, clip, motion.previousPhase, context);
+    applyHumanClip(this.#previousPose, PERSON_POSES[motion.previousClip], motion.previousPhase, context);
     this.#blendedPose.blendBetween(this.#previousPose, this.#pose, eased);
 
     return this.#blendedPose;

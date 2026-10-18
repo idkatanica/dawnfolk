@@ -45,13 +45,15 @@ export function createSkinnedMaterial(palette: AgentPalette, layout: PaletteLayo
   const slot = int(attribute("slot", "float").add(0.5));
   const shade = attribute("shade", "float");
 
-  const texelAt = (texel: Node<"int">) => palette.node.load(ivec2(texel, row));
+  function texelAt(texel: Node<"int">) {
+    return palette.node.load(ivec2(texel, row));
+  }
 
-  const skin = (bone: Node<"int">, vector: Node<"vec4">) => {
+  function skin(bone: Node<"int">, vector: Node<"vec4">) {
     const first = bone.mul(TEXELS_PER_BONE);
 
     return vec3(dot(texelAt(first), vector), dot(texelAt(first.add(1)), vector), dot(texelAt(first.add(2)), vector));
-  };
+  }
 
   const point = vec4(positionLocal, 1);
   const root = texelAt(int(rootTexel(layout)));

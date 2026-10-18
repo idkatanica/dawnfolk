@@ -134,7 +134,9 @@ export class EffectView {
       this.group.remove(mesh);
     }
 
-    effect.finish();
+    if (effect.finish !== undefined) {
+      effect.finish();
+    }
   }
 
   #takeRing(): GroundRing {

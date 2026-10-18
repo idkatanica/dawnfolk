@@ -8,6 +8,7 @@ import {
   Uint32BufferAttribute,
   Vector2,
 } from "three/webgpu";
+import { FULL_TURN } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
@@ -20,7 +21,7 @@ function createRingGeometry(): BufferGeometry {
   const indices: number[] = [];
 
   for (let segment = 0; segment <= SEGMENTS; segment += 1) {
-    const angle = (segment / SEGMENTS) * Math.PI * 2;
+    const angle = (segment / SEGMENTS) * FULL_TURN;
 
     angles.push(angle, angle);
     sides.push(0, 1);
