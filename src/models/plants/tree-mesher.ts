@@ -259,7 +259,7 @@ const SKIRT_DETAILS: Readonly<Record<PlantDetailLevel, SkirtDetail>> = {
   far: { hasRoundedUnderside: false, segments: 7, teeth: 6 },
   high: { hasRoundedUnderside: true, segments: 14, teeth: 11 },
   low: { hasRoundedUnderside: false, segments: 7, teeth: 6 },
-  medium: { hasRoundedUnderside: false, segments: 9, teeth: 8 },
+  medium: { hasRoundedUnderside: false, segments: 8, teeth: 7 },
 };
 
 const SHOULDER_HEIGHT = 0.38;
