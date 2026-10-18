@@ -91,10 +91,12 @@ export class FrameBuilder {
       frame: this.build(),
       ground: ground.data,
       seed: world.seed,
+      shape: world.shape,
       surface: surface.data,
       terrain: {
         baseTemperature: Float32Array.from(terrain.baseTemperature),
         biome: Uint8Array.from(terrain.biome),
+        coastDistance: Float32Array.from(terrain.coastDistance),
         ground: Uint8Array.from(terrain.ground),
         height: Float32Array.from(terrain.height),
         moisture: Float32Array.from(terrain.moisture),

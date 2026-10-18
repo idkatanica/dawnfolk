@@ -152,6 +152,10 @@ export function createTerrainMaterial({
 
   material.positionNode = terrainPosition(textures, grid, plinth);
 
+  if (textures.outline.hasCoast) {
+    material.maskNode = textures.outline.insideNode(positionWorld.xz, 0);
+  }
+
   const mapCoordinates = warpedMapCoordinates(warp, grid);
   const broad = mx_fractal_noise_float(positionWorld.mul(0.012), 3, 2, 0.5);
   const patches = mx_noise_float(positionWorld.mul(0.07));

@@ -8,6 +8,7 @@ import type {
 } from "../simulation/frame.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../world/agent-buffers.ts";
 import { RegionChangeTracker, RowChangeTracker } from "../world/change-tracking.ts";
+import type { IslandShapeKind } from "../world/island-shape.ts";
 import { isWaterAtPoint, sampleHeight, sampleSurface } from "../world/terrain-sampling.ts";
 import type { VegetationBuffers } from "../world/vegetation-store.ts";
 import type { WaterFeatures } from "../world/water.ts";
@@ -107,6 +108,7 @@ export class WorldMirror {
   readonly grid: WorldGrid;
   readonly heightChanges = new RegionChangeTracker();
   readonly seed: number;
+  readonly shape: IslandShapeKind;
   readonly surface: Uint8Array;
   readonly surfaceChanges: RowChangeTracker;
   readonly terrain: TerrainSnapshot;
@@ -120,6 +122,7 @@ export class WorldMirror {
   constructor(initial: InitialWorld, receivedAt: number) {
     this.grid = new WorldGrid(initial.dimensions);
     this.seed = initial.seed;
+    this.shape = initial.shape;
     this.terrain = initial.terrain;
     this.surface = initial.surface;
     this.ground = initial.ground;

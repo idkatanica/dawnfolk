@@ -53,7 +53,7 @@ export class WaterRecomputation {
 
     const carvedHeights = uncarvedHeights.slice();
 
-    const hydrology = computeHydrology(carvedHeights, grid, terrain.dryness);
+    const hydrology = computeHydrology(carvedHeights, grid, terrain.dryness, terrain.coastDistance);
 
     const changedRegion = this.#applyCarving(uncarvedHeights, carvedHeights);
 

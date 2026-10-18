@@ -18,6 +18,7 @@ const CLOSING_MARGIN = 2.2;
 
 export interface LakeSiting {
   readonly boundaryDistance: (cell: number) => number;
+  readonly coastDistance: Float32Array;
   readonly dryness: Float32Array;
   readonly grid: WorldGrid;
   readonly random: RandomSource;
@@ -140,15 +141,20 @@ function digBasin(heights: Float32Array, grid: WorldGrid, site: LakeSite, random
 }
 
 export function digRiverLakes(heights: Float32Array, siting: LakeSiting): void {
-  const basins = analyzeDrainage(heights, siting.grid, siting.dryness);
+  const basins = analyzeDrainage(heights, siting.grid, siting.dryness, siting.coastDistance);
 
   for (const site of chooseSites(heights, basins, siting)) {
     digBasin(heights, siting.grid, site, siting.random);
   }
 }
 
-export function fillSinks(heights: Float32Array, grid: WorldGrid, dryness: Float32Array): void {
-  const { lakeIds, network } = analyzeDrainage(heights, grid, dryness);
+export function fillSinks(
+  heights: Float32Array,
+  grid: WorldGrid,
+  dryness: Float32Array,
+  coastDistance: Float32Array
+): void {
+  const { lakeIds, network } = analyzeDrainage(heights, grid, dryness, coastDistance);
 
   for (const [cell, level] of network.filled.entries()) {
     if (lakeIds[cell] === NO_CELL) {

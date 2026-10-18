@@ -105,7 +105,7 @@ export function naturalStrikeSite(focus: Waypoint, services: PowerServices): Way
 function isStrikeSite(cell: number, acceptsAnyLand: boolean, services: PowerServices): boolean {
   const { world } = services;
 
-  if (cell < 0 || world.isWater(cell)) {
+  if (!world.isOnIsland(cell) || world.isWater(cell)) {
     return false;
   }
 

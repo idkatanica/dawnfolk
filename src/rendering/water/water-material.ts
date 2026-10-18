@@ -186,7 +186,7 @@ export function createWaterMaterial(
     mix(surfaceNormal(flow, look).add(rainDimples(viewDistance, look.rainfall)), vec3(0, 1, 0), ice.mul(0.85))
   );
 
-  material.maskNode = isWet;
+  material.maskNode = textures.outline.hasCoast ? isWet.and(textures.outline.insideNode(positionWorld.xz, 0)) : isWet;
   material.normalNode = transformNormalToView(normal);
 
   const fresnel = pow(float(1).sub(max(dot(normal, viewDirection), 0)), 4);

@@ -71,7 +71,7 @@ export class EngineLauncher {
       canvas: this.#canvas,
       onProgress: (progress) => this.#progress(progress),
       quality: launch.quality,
-      request: { ...DEFAULT_WORLD_REQUEST, seed: launch.seed },
+      request: { options: { ...DEFAULT_WORLD_REQUEST.options, shape: launch.shape }, seed: launch.seed },
     });
 
     if (this.#state === "cancelled") {

@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { generateWorld } from "../../generation/world-generator.ts";
+import { type GenerationOptions, generateWorld } from "../../generation/world-generator.ts";
 import { createTestWorld } from "../testing/test-world.ts";
 import { flattenTerrain, raiseTerrain } from "./terrain-editing.ts";
 import { WaterRecomputation } from "./water-recomputation.ts";
 import { WorldState } from "./world-state.ts";
 
-const TEST_OPTIONS = { dimensions: { cellSize: 40, cellsPerSide: 96 }, erosionStrength: 0.4 };
+const TEST_OPTIONS: GenerationOptions = {
+  dimensions: { cellSize: 40, cellsPerSide: 96 },
+  erosionStrength: 0.4,
+  shape: "round",
+};
 
 let world: WorldState;
 

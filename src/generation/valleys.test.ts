@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { landEverywhere } from "../world/coast.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 import { analyzeDrainage } from "./hydrology.ts";
 import { carveValleys } from "./valleys.ts";
@@ -18,7 +19,9 @@ function troughWithBasin(x: number, z: number): number {
 }
 
 function lakeLevels(heights: Float32Array, grid: WorldGrid): number[] {
-  return analyzeDrainage(heights, grid, new Float32Array(grid.cellCount)).lakes.map((lake) => lake.level);
+  return analyzeDrainage(heights, grid, new Float32Array(grid.cellCount), landEverywhere(grid.cellCount)).lakes.map(
+    (lake) => lake.level
+  );
 }
 
 describe("river valleys", () => {
@@ -26,7 +29,7 @@ describe("river valleys", () => {
   const original = shapeTerrain(grid, trough);
   const carved = Float32Array.from(original);
 
-  carveValleys(carved, grid, new Float32Array(grid.cellCount));
+  carveValleys(carved, grid, new Float32Array(grid.cellCount), landEverywhere(grid.cellCount));
 
   it("sinks big rivers well below their banks", () => {
     const river = grid.cellAt(-5, -440);
@@ -52,7 +55,7 @@ describe("river valleys", () => {
 
     const levelsBefore = lakeLevels(basin, lakeGrid);
 
-    carveValleys(basin, lakeGrid, new Float32Array(lakeGrid.cellCount));
+    carveValleys(basin, lakeGrid, new Float32Array(lakeGrid.cellCount), landEverywhere(lakeGrid.cellCount));
 
     expect(levelsBefore.length).toBeGreaterThan(0);
     expect(lakeLevels(basin, lakeGrid)).toEqual(levelsBefore);

@@ -24,7 +24,7 @@ export class TerrainView {
     this.#material = createTerrainMaterial({
       glow,
       grid: mirror.grid,
-      plinth: islandPlinthHeight(mirror),
+      plinth: islandPlinthHeight(mirror, textures.outline),
       textures,
       warp: this.#warp,
     });

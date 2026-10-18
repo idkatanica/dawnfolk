@@ -1,5 +1,8 @@
+import { Ground } from "../content/grounds.ts";
 import { lerp, smoothstep } from "../shared/math.ts";
 import { createRandom } from "../shared/random.ts";
+import { isOnIsland } from "../world/coast.ts";
+import { createIslandShape, type IslandShapeKind, measureCoastDistances } from "../world/island-shape.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { VegetationStore } from "../world/vegetation-store.ts";
 import type { WaterFeatures } from "../world/water.ts";
@@ -29,16 +32,19 @@ export interface GenerationProgress {
 export interface GenerationOptions {
   dimensions: GridDimensions;
   erosionStrength: number;
+  shape: IslandShapeKind;
 }
 
 export const DEFAULT_GENERATION_OPTIONS: GenerationOptions = {
   dimensions: DEFAULT_GRID_DIMENSIONS,
   erosionStrength: 1,
+  shape: "round",
 };
 
 export interface GeneratedWorld {
   dimensions: GridDimensions;
   seed: number;
+  shape: IslandShapeKind;
   terrain: TerrainData;
   vegetation: VegetationStore;
   water: WaterFeatures;
@@ -96,8 +102,15 @@ function boundaryDistances(grid: WorldGrid, relief: Relief): (cell: number) => n
   return (cell) => relief.boundaryDistanceAt(islandPointAt(grid, grid.columnOf(cell), grid.rowOf(cell)));
 }
 
-function buildRelief(grid: WorldGrid, seed: number, onProgress: (progress: GenerationProgress) => void) {
-  const relief = createRelief(seed);
+function buildRelief(
+  grid: WorldGrid,
+  seed: number,
+  shapeKind: IslandShapeKind,
+  onProgress: (progress: GenerationProgress) => void
+) {
+  const shape = createIslandShape(shapeKind, seed);
+  const relief = createRelief(seed, shape);
+  const coastDistance = measureCoastDistances(grid, shape);
   const heights = new Float32Array(grid.cellCount);
   const dryness = new Float32Array(grid.cellCount);
 
@@ -115,7 +128,15 @@ function buildRelief(grid: WorldGrid, seed: number, onProgress: (progress: Gener
     }
   }
 
-  return { dryness, heights, relief };
+  return { coastDistance, dryness, heights, relief };
+}
+
+function bareOffIsland(ground: Uint8Array, coastDistance: Float32Array): void {
+  for (let cell = 0; cell < ground.length; cell += 1) {
+    if (!isOnIsland(coastDistance, cell)) {
+      ground[cell] = Ground.Rock;
+    }
+  }
 }
 
 export function generateWorld(
@@ -126,7 +147,7 @@ export function generateWorld(
   const grid = new WorldGrid(options.dimensions);
 
   const size = grid.cellsPerSide;
-  const { dryness, heights, relief } = buildRelief(grid, seed, onProgress);
+  const { coastDistance, dryness, heights, relief } = buildRelief(grid, seed, options.shape, onProgress);
   const talus = talusSlopes(heights, dryness);
 
   relaxSlopes(heights, size, grid.cellSize, talus, ROUGH_RELAXATION_ITERATIONS);
@@ -140,19 +161,20 @@ export function generateWorld(
   digLakeBasins(grid, heights, relief);
   digRiverLakes(heights, {
     boundaryDistance: boundaryDistances(grid, relief),
+    coastDistance,
     dryness,
     grid,
     random: createRandom(seed * 11 + 5),
   });
-  carveValleys(heights, grid, dryness);
+  carveValleys(heights, grid, dryness, coastDistance);
   relaxSlopes(heights, size, grid.cellSize, talus, FINAL_RELAXATION_ITERATIONS);
   limitSlopes(heights, size, grid.cellSize, STEEPEST_SLOPE);
   smoothHeights(heights, size, 1, 0.2);
-  fillSinks(heights, grid, dryness);
+  fillSinks(heights, grid, dryness, coastDistance);
   onProgress({ progress: 0, stage: "water" });
 
   const uncarvedHeights = Float32Array.from(heights);
-  const hydrology = computeHydrology(heights, grid, dryness);
+  const hydrology = computeHydrology(heights, grid, dryness, coastDistance);
 
   const carving = uncarvedHeights.map((uncarvedHeight, cell) => uncarvedHeight - heights[cell]);
 
@@ -168,9 +190,12 @@ export function generateWorld(
     waterSurface: hydrology.waterSurface,
   });
 
+  bareOffIsland(climate.ground, coastDistance);
+
   const terrain: TerrainData = {
     ...climate,
     carving,
+    coastDistance,
     dryness,
     height: heights,
     riverStrength: hydrology.riverStrength,
@@ -184,5 +209,5 @@ export function generateWorld(
   plantInitialVegetation(vegetation, grid, terrain, seed);
   vegetation.discardChanges();
 
-  return { dimensions: options.dimensions, seed, terrain, vegetation, water: hydrology.features };
+  return { dimensions: options.dimensions, seed, shape: options.shape, terrain, vegetation, water: hydrology.features };
 }

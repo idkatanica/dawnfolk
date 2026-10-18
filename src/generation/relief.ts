@@ -2,6 +2,7 @@ import { type ErodedRidgedOptions, GradientNoise, type NoiseGradient } from "../
 import { distanceToSegment, gaussian, lerp, saturate, smoothstep } from "../shared/math.ts";
 import { createNoiseSampler, type NoiseSampler } from "../shared/noise.ts";
 import { createRandom } from "../shared/random.ts";
+import type { IslandShape } from "../world/island-shape.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 
 type Polyline = readonly (readonly [number, number])[];
@@ -42,6 +43,10 @@ const CLIFF_WIDTH = 55;
 const CLIFF_SHARE = 0.3;
 const TALUS_WIDTH = 210;
 const SHALLOWEST_MESA_PATTERN = 0.35;
+const SHORE_HEIGHT = 185;
+const SHORE_BELOW_INLAND = 15;
+const OUTSIDE_SLOPE = 1500;
+const DEEPEST_OUTSIDE_DROP = 200;
 
 const RIDGE_HEIGHT = 420;
 const RIDGE_FREQUENCY = 1.2;
@@ -180,10 +185,17 @@ function centralLake(point: IslandPoint): number {
   return gaussian(point.x * 0.8, point.z, 0, 0.1, 0.17);
 }
 
-function reliefHeight(noise: ReliefNoise, point: IslandPoint): number {
+function boundaryDistance(noise: ReliefNoise, island: IslandShape, point: IslandPoint): number {
+  if (island.kind === "square") {
+    return distanceToBoundary(noise.secondary, point);
+  }
+
+  return island.coastDistanceAt(point.x, point.z);
+}
+
+function landformHeight(noise: ReliefNoise, point: IslandPoint, boundary: number): number {
   const warped = warpPoint(noise.primary, point, 3, 0.13);
   const outline = warpPoint(noise.primary, point, 1, 0.07);
-  const boundary = distanceToBoundary(noise.secondary, point);
   const lake = centralLake(point);
   const desert = desertMask(noise.desert, point);
 
@@ -220,7 +232,37 @@ function reliefHeight(noise: ReliefNoise, point: IslandPoint): number {
   return lerp(rimHeight(landform), landform, smoothstep(0, RIM_WIDTH, boundary));
 }
 
-export function createRelief(seed: number): Relief {
+function shoreHeight(noise: ReliefNoise, point: IslandPoint, inland: number): number {
+  const shore = SHORE_HEIGHT + 40 * noise.secondary.fractal(point.x * 3.2 + 17, point.z * 3.2 - 21, { octaves: 3 });
+
+  return Math.min(shore, inland - SHORE_BELOW_INLAND);
+}
+
+function coastalHeight(noise: ReliefNoise, point: IslandPoint, inland: number, coastDistance: number): number {
+  const shore = shoreHeight(noise, point, inland);
+
+  if (coastDistance <= 0) {
+    return shore + Math.max(coastDistance * OUTSIDE_SLOPE, -DEEPEST_OUTSIDE_DROP);
+  }
+
+  const width = 0.07 + 0.11 * smoothstep(shore, shore + 900, inland);
+  const cliffs = noise.secondary.ridged(point.x * 5.5 - 13, point.z * 5.5 + 4, { octaves: 3 });
+
+  return lerp(shore, inland, smoothstep(0, width * (0.7 + 0.6 * cliffs), coastDistance));
+}
+
+function reliefHeight(noise: ReliefNoise, island: IslandShape, point: IslandPoint): number {
+  const boundary = boundaryDistance(noise, island, point);
+  const landform = landformHeight(noise, point, boundary);
+
+  if (island.kind === "square") {
+    return landform;
+  }
+
+  return coastalHeight(noise, point, landform, boundary);
+}
+
+export function createRelief(seed: number, island: IslandShape): Relief {
   const random = createRandom(seed);
 
   const desert = createNoiseSampler(random.derive(1));
@@ -240,8 +282,8 @@ export function createRelief(seed: number): Relief {
 
   return {
     basinDepthAt: (point) => CENTRAL_LAKE_DEPTH * centralLake(point),
-    boundaryDistanceAt: (point) => distanceToBoundary(noise.secondary, point),
+    boundaryDistanceAt: (point) => boundaryDistance(noise, island, point),
     desertAt: (point) => desertMask(noise.desert, point),
-    heightAt: (point) => reliefHeight(noise, point),
+    heightAt: (point) => reliefHeight(noise, island, point),
   };
 }

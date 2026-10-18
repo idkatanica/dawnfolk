@@ -1,6 +1,5 @@
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import { paintMinimapTerrain } from "../../rendering/minimap-image.ts";
-import { clamp } from "../../shared/math.ts";
 
 const TERRAIN_REFRESH_MILLISECONDS = 1000;
 const SEASON_STEP = 0.05;
@@ -9,7 +8,7 @@ const REFERENCE_SIZE = 176;
 const FIRE_COLOR = "rgb(230 82 40)";
 const VIEW_FILL = "rgb(255 255 255 / 0.32)";
 const VIEW_OUTLINE = "rgb(255 255 255 / 0.9)";
-const VIEW_HALF_ANGLE = 0.45;
+const FOOTPRINT_REACH_IN_WORLDS = 2;
 
 export class MinimapPainter {
   readonly #canvas: HTMLCanvasElement;
@@ -60,6 +59,7 @@ export class MinimapPainter {
       this.#lastTerrain = time;
     }
 
+    context.clearRect(0, 0, size, size);
     context.drawImage(this.#terrain, 0, 0);
     this.#drawFires(context, size);
     this.#drawTribes(context, size);
@@ -135,16 +135,22 @@ export class MinimapPainter {
   }
 
   #drawView(context: CanvasRenderingContext2D, size: number): void {
-    const { distance, targetX, targetZ, yaw } = this.#engine.camera.state;
     const { grid } = this.#engine.session.mirror;
 
-    const [x, y] = this.#toMap(targetX, targetZ, size);
-    const reach = clamp((distance / grid.worldSize) * size * 0.8, 6, size * 0.45);
-    const facing = Math.atan2(-Math.cos(yaw), -Math.sin(yaw));
+    const footprint = this.#engine.camera.groundFootprint(grid.worldSize * FOOTPRINT_REACH_IN_WORLDS);
+
+    if (footprint.length === 0) {
+      return;
+    }
 
     context.beginPath();
-    context.moveTo(x, y);
-    context.arc(x, y, reach, facing - VIEW_HALF_ANGLE, facing + VIEW_HALF_ANGLE);
+
+    for (const point of footprint) {
+      const [x, y] = this.#toMap(point.x, point.z, size);
+
+      context.lineTo(x, y);
+    }
+
     context.closePath();
     context.fillStyle = VIEW_FILL;
     context.fill();

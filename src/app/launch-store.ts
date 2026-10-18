@@ -1,18 +1,26 @@
 import { create } from "zustand";
-import { type LaunchOptions, readLaunchOptions } from "./launch-options.ts";
+import { choosesWorld, type LaunchOptions, readLaunchOptions } from "./launch-options.ts";
 
 export interface LaunchChanges {
+  readonly name?: LaunchOptions["name"];
   readonly quality?: LaunchOptions["quality"];
-  readonly seed?: number;
+  readonly seed?: LaunchOptions["seed"];
+  readonly shape?: LaunchOptions["shape"];
 }
 
 interface LaunchStore {
+  readonly isChoosingWorld: boolean;
   readonly launch: LaunchOptions;
   readonly relaunch: (changes: LaunchChanges) => void;
 }
 
 function rememberInAddress(launch: LaunchOptions): void {
-  const parameters = new URLSearchParams({ quality: launch.quality, seed: String(launch.seed) });
+  const parameters = new URLSearchParams({
+    name: launch.name,
+    quality: launch.quality,
+    seed: String(launch.seed),
+    shape: launch.shape,
+  });
 
   try {
     window.history.replaceState(null, "", `?${parameters.toString()}`);
@@ -22,6 +30,7 @@ function rememberInAddress(launch: LaunchOptions): void {
 }
 
 export const useLaunchStore = create<LaunchStore>()((set) => ({
+  isChoosingWorld: !choosesWorld(window.location.search),
   launch: readLaunchOptions(window.location.search),
   relaunch: (changes) =>
     set((state) => {
@@ -29,6 +38,6 @@ export const useLaunchStore = create<LaunchStore>()((set) => ({
 
       rememberInAddress(launch);
 
-      return { launch };
+      return { isChoosingWorld: false, launch };
     }),
 }));

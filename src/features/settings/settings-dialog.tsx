@@ -3,6 +3,7 @@ import { ScrollArea } from "@base-ui/react/scroll-area";
 import { Tabs } from "@base-ui/react/tabs";
 import { X } from "lucide-react";
 import type { ComponentType } from "react";
+import { useLaunchStore } from "../../app/launch-store.ts";
 import { IconButton } from "../../design/buttons.tsx";
 import { type SettingsTab, useInterfaceStore } from "../interface/interface-store.ts";
 import { GraphicsSection } from "./graphics-section.tsx";
@@ -53,6 +54,7 @@ function useSettingsDialog() {
   const setOpen = useInterfaceStore((state) => state.setSettingsOpen);
   const tab = useInterfaceStore((state) => state.settingsTab);
   const setTab = useInterfaceStore((state) => state.setSettingsTab);
+  const worldName = useLaunchStore((state) => state.launch.name);
 
   function changeTab(value: unknown): void {
     if (isSettingsTab(value)) {
@@ -60,11 +62,11 @@ function useSettingsDialog() {
     }
   }
 
-  return { changeTab, isOpen, setOpen, tab };
+  return { changeTab, isOpen, setOpen, tab, worldName };
 }
 
 export function SettingsDialog() {
-  const { changeTab, isOpen, setOpen, tab } = useSettingsDialog();
+  const { changeTab, isOpen, setOpen, tab, worldName } = useSettingsDialog();
 
   return (
     <Dialog.Root onOpenChange={setOpen} open={isOpen}>
@@ -79,7 +81,7 @@ export function SettingsDialog() {
                   <Dialog.Title className="font-semibold text-ink text-xl">Settings</Dialog.Title>
 
                   <Dialog.Description className="text-ink-muted text-sm">
-                    Shape how the world of Dawnfolk behaves.
+                    Shape how the world of {worldName} behaves.
                   </Dialog.Description>
                 </div>
 

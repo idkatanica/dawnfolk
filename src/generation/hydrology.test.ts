@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { landEverywhere } from "../world/coast.ts";
 import { hasWater } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 import { computeHydrology, DEFAULT_HYDROLOGY } from "./hydrology.ts";
@@ -27,7 +28,13 @@ describe("river carving", () => {
     const carved = Float32Array.from(uncarved);
     const options = { ...DEFAULT_HYDROLOGY, riverCatchmentArea: 30_000 };
 
-    const result = computeHydrology(carved, grid, new Float32Array(grid.cellCount), options);
+    const result = computeHydrology(
+      carved,
+      grid,
+      new Float32Array(grid.cellCount),
+      landEverywhere(grid.cellCount),
+      options
+    );
 
     let deepestWallCut = 0;
     let wetFloorCells = 0;

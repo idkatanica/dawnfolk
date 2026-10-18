@@ -1,15 +1,15 @@
-import { Dices } from "lucide-react";
-import { type ChangeEvent, useState } from "react";
-import { LARGEST_SEED, randomSeed } from "../../app/launch-options.ts";
+import { type FormEvent, useState } from "react";
 import { type LaunchChanges, useLaunchStore } from "../../app/launch-store.ts";
 import { storeQuality } from "../../app/preferences.ts";
 import { useEngine } from "../../app/use-engine.ts";
-import { IconButton, TextButton } from "../../design/buttons.tsx";
+import { TextButton } from "../../design/buttons.tsx";
 import { ChoiceField } from "../../design/choice-field.tsx";
 import { ToggleField } from "../../design/toggle-field.tsx";
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import { isQualityLevel, QUALITY_LEVELS, type QualityLevel } from "../../rendering/render-quality.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
+import { useWorldDraft } from "../new-world/use-world-draft.ts";
+import { NameField, SeedField, ShapeChoice } from "../new-world/world-fields.tsx";
 import { useWorldStore } from "../world/world-store.ts";
 
 const QUALITY_LABELS: Readonly<Record<QualityLevel, string>> = { high: "High", low: "Light", medium: "Balanced" };
@@ -58,39 +58,22 @@ function useQualityChoice() {
   return { applyQuality, changeQuality, hasChanged: quality !== active, quality };
 }
 
-function readSeed(text: string): number | null {
-  const seed = Number(text.trim());
-
-  if (!Number.isInteger(seed) || seed < 1 || seed > LARGEST_SEED) {
-    return null;
-  }
-
-  return seed;
-}
-
 function useNewWorld() {
+  const launch = useLaunchStore((state) => state.launch);
   const currentSeed = useWorldStore((state) => state.seed);
   const relaunch = useRelaunch();
 
-  const [seedText, setSeedText] = useState(() => String(currentSeed));
+  const draft = useWorldDraft({ name: launch.name, seed: currentSeed, shape: launch.shape });
 
-  const seed = readSeed(seedText);
+  function createWorld(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
 
-  function changeSeed(event: ChangeEvent<HTMLInputElement>): void {
-    setSeedText(event.target.value);
-  }
-
-  function rollSeed(): void {
-    setSeedText(String(randomSeed()));
-  }
-
-  function createWorld(): void {
-    if (seed !== null) {
-      relaunch({ seed });
+    if (draft.choice !== null) {
+      relaunch(draft.choice);
     }
   }
 
-  return { changeSeed, createWorld, isValid: seed !== null, rollSeed, seedText };
+  return { createWorld, draft };
 }
 
 function QualityChoice() {
@@ -131,35 +114,33 @@ function MapLabelsChoice() {
 }
 
 function NewWorld() {
-  const { changeSeed, createWorld, isValid, rollSeed, seedText } = useNewWorld();
+  const { createWorld, draft } = useNewWorld();
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-veil p-4">
+    <form aria-label="New world" className="flex flex-col gap-3 rounded-2xl bg-veil p-4" onSubmit={createWorld}>
       <div className="flex flex-col gap-0.5">
         <h3 className="font-semibold text-ink text-sm">New world</h3>
 
-        <p className="text-ink-muted text-xs">Every number grows a different island. The current one is lost.</p>
+        <p className="text-ink-muted text-xs">Every seed grows a different island. The current one is lost.</p>
       </div>
 
+      <NameField onChange={draft.changeName} onRoll={draft.rollName} value={draft.nameText} />
+
+      <ShapeChoice onChange={draft.changeShape} value={draft.shape} />
+
       <div className="flex items-center gap-2">
-        <label className="flex flex-1 items-center gap-2 rounded-full bg-white/70 px-4 text-sm focus-within:ring-2 focus-within:ring-dawn">
-          <span className="text-ink-muted">Seed</span>
+        <SeedField
+          className="min-w-0 flex-1"
+          onChange={draft.changeSeed}
+          onRoll={draft.rollSeed}
+          value={draft.seedText}
+        />
 
-          <input
-            className="h-9 min-w-0 flex-1 bg-transparent text-ink tabular-nums outline-none"
-            inputMode="numeric"
-            onChange={changeSeed}
-            value={seedText}
-          />
-        </label>
-
-        <IconButton icon={<Dices aria-hidden="true" size={18} />} label="Random seed" onClick={rollSeed} />
-
-        <TextButton disabled={!isValid} onClick={createWorld} tone="accent">
+        <TextButton disabled={draft.choice === null} tone="accent" type="submit">
           Create
         </TextButton>
       </div>
-    </div>
+    </form>
   );
 }
 

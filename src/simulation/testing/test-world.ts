@@ -44,6 +44,7 @@ function createTestGeneratedWorld(overrides: Partial<TestWorldOptions> = {}): Ge
   return {
     dimensions: options.dimensions,
     seed: 1,
+    shape: "square",
     terrain,
     vegetation: new VegetationStore(grid, grid.cellCount * 2),
     water: { lakes: [], rivers: [], waterfalls: [] },

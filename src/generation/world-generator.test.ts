@@ -2,21 +2,34 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { Biome } from "../content/biomes.ts";
 import { Ground } from "../content/grounds.ts";
 import { isTreeSpecies } from "../content/plants.ts";
+import { isOnIsland } from "../world/coast.ts";
+import type { IslandShapeKind } from "../world/island-shape.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
+import { sampleHeight } from "../world/terrain-sampling.ts";
 import { hasWater, NO_WATER } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
-import { type GeneratedWorld, type GenerationProgress, generateWorld } from "./world-generator.ts";
+import {
+  DEFAULT_GENERATION_OPTIONS,
+  type GeneratedWorld,
+  type GenerationProgress,
+  generateWorld,
+} from "./world-generator.ts";
 
 const TEST_DIMENSIONS = { cellSize: 40, cellsPerSide: 128 };
 const STEEP = 1;
 const CLIFF = Math.tan((55 * Math.PI) / 180);
 let world: GeneratedWorld;
+let squareWorld: GeneratedWorld;
 const stages = new Set<string>();
 
-function generateTestWorld(seed: number): GeneratedWorld {
-  return generateWorld(seed, { dimensions: TEST_DIMENSIONS, erosionStrength: 1 }, (progress: GenerationProgress) => {
-    stages.add(progress.stage);
-  });
+function generateTestWorld(seed: number, shape: IslandShapeKind = "round"): GeneratedWorld {
+  return generateWorld(
+    seed,
+    { dimensions: TEST_DIMENSIONS, erosionStrength: 1, shape },
+    (progress: GenerationProgress) => {
+      stages.add(progress.stage);
+    }
+  );
 }
 
 function slopeAt(terrain: TerrainData, grid: WorldGrid, cell: number): number {
@@ -52,6 +65,16 @@ function edgeSides(grid: WorldGrid): number[][] {
   ];
 }
 
+function coastCells(terrain: TerrainData, grid: WorldGrid): number[] {
+  return Array.from({ length: grid.cellCount }, (_, cell) => cell).filter(
+    (cell) =>
+      isOnIsland(terrain.coastDistance, cell) &&
+      grid
+        .cellsInRadius(grid.cellCenterX(cell), grid.cellCenterZ(cell), grid.cellSize * 1.5)
+        .some((neighbor) => !isOnIsland(terrain.coastDistance, neighbor))
+  );
+}
+
 function largestStepAlong(heights: Float32Array, cells: readonly number[]): number {
   let largest = 0;
 
@@ -83,6 +106,7 @@ function median(values: readonly number[]): number {
 
 beforeAll(() => {
   world = generateTestWorld(7);
+  squareWorld = generateTestWorld(7, "square");
 });
 
 describe("world generation", () => {
@@ -107,14 +131,26 @@ describe("world generation", () => {
     let highest = Number.NEGATIVE_INFINITY;
     let lowest = Number.POSITIVE_INFINITY;
 
-    for (const height of world.terrain.height) {
+    for (const height of squareWorld.terrain.height) {
       highest = Math.max(highest, height);
       lowest = Math.min(lowest, height);
     }
 
     expect(highest).toBeGreaterThan(900);
     expect(lowest).toBeLessThan(200);
-    expect(world.water.lakes.length).toBeGreaterThanOrEqual(3);
+    expect(squareWorld.water.lakes.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("raises mountains and a lake on the round island too", () => {
+    const heights = world.terrain.height.filter((_, cell) => isOnIsland(world.terrain.coastDistance, cell));
+
+    expect(Math.max(...heights)).toBeGreaterThan(900);
+    expect(Math.min(...heights)).toBeLessThan(200);
+    expect(world.water.lakes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("keeps the square island whole to its edges", () => {
+    expect(squareWorld.terrain.coastDistance.every((distance) => distance > 0)).toBe(true);
   });
 
   it("covers lake cells with water at the lake level", () => {
@@ -152,7 +188,42 @@ describe("world generation", () => {
     expect(world.water.waterfalls).toHaveLength(edgeRivers.length);
 
     for (const waterfall of world.water.waterfalls) {
-      expect(Math.abs(waterfall.directionX) + Math.abs(waterfall.directionZ)).toBe(1);
+      expect(Math.hypot(waterfall.directionX, waterfall.directionZ)).toBeCloseTo(1);
+    }
+  });
+
+  it("keeps every plant clear of the coast so none hangs over the edge", () => {
+    const grid = new WorldGrid(TEST_DIMENSIONS);
+
+    for (let plant = 0; plant < world.vegetation.count; plant += 1) {
+      const x = world.vegetation.x[plant];
+      const z = world.vegetation.z[plant];
+
+      expect(sampleHeight(world.terrain.coastDistance, grid, x, z)).toBeGreaterThan(6);
+    }
+  });
+
+  it("rounds the island off with a coast inside the square", () => {
+    const grid = new WorldGrid(TEST_DIMENSIONS);
+    const last = grid.cellsPerSide - 1;
+    const middle = Math.floor(grid.cellsPerSide / 2);
+
+    for (const corner of [grid.index(0, 0), grid.index(last, 0), grid.index(0, last), grid.index(last, last)]) {
+      expect(isOnIsland(world.terrain.coastDistance, corner)).toBe(false);
+    }
+
+    expect(isOnIsland(world.terrain.coastDistance, grid.index(middle, middle))).toBe(true);
+
+    for (let plant = 0; plant < world.vegetation.count; plant += 1) {
+      const cell = grid.cellAt(world.vegetation.x[plant], world.vegetation.z[plant]);
+
+      expect(isOnIsland(world.terrain.coastDistance, cell)).toBe(true);
+    }
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      if (!isOnIsland(world.terrain.coastDistance, cell)) {
+        expect(world.terrain.waterSurface[cell]).toBe(NO_WATER);
+      }
     }
   });
 
@@ -172,13 +243,22 @@ describe("world generation", () => {
     }
   });
 
-  it("keeps the island rim at a moderate height", () => {
+  it("keeps the square island rim at a moderate height", () => {
     const grid = new WorldGrid(TEST_DIMENSIONS);
 
-    const rim = edgeSides(grid).flatMap((side) => side.map((cell) => world.terrain.height[cell]));
+    const rim = edgeSides(grid).flatMap((side) => side.map((cell) => squareWorld.terrain.height[cell]));
 
     expect(Math.min(...rim)).toBeGreaterThan(120);
     expect(Math.max(...rim)).toBeLessThan(400);
+  });
+
+  it("eases the round island down to a low shore", () => {
+    const grid = new WorldGrid(TEST_DIMENSIONS);
+
+    const shore = coastCells(world.terrain, grid).map((cell) => world.terrain.height[cell]);
+
+    expect(Math.min(...shore)).toBeGreaterThan(30);
+    expect(Math.max(...shore)).toBeLessThan(300);
   });
 
   it("keeps slopes realistic, with few cliffs", () => {
@@ -260,21 +340,32 @@ describe("world generation", () => {
 
 describe("full-size island rim", () => {
   let fullSize: GeneratedWorld;
+  let fullSquare: GeneratedWorld;
 
   beforeAll(() => {
     fullSize = generateWorld(7);
+    fullSquare = generateWorld(7, { ...DEFAULT_GENERATION_OPTIONS, shape: "square" });
   }, 60_000);
 
-  it("meets the cliff at a moderate height without steps that could open gaps", () => {
-    const grid = new WorldGrid(fullSize.dimensions);
+  it("meets the square cliff at a moderate height without steps that could open gaps", () => {
+    const grid = new WorldGrid(fullSquare.dimensions);
 
     for (const side of edgeSides(grid)) {
-      const heights = side.map((cell) => fullSize.terrain.height[cell]);
+      const heights = side.map((cell) => fullSquare.terrain.height[cell]);
 
       expect(Math.min(...heights)).toBeGreaterThan(120);
       expect(Math.max(...heights)).toBeLessThan(400);
-      expect(largestStepAlong(fullSize.terrain.height, side)).toBeLessThan(15);
+      expect(largestStepAlong(fullSquare.terrain.height, side)).toBeLessThan(15);
     }
+  });
+
+  it("meets the round coast at a moderate height", () => {
+    const shore = coastCells(fullSize.terrain, new WorldGrid(fullSize.dimensions)).map(
+      (cell) => fullSize.terrain.height[cell]
+    );
+
+    expect(Math.min(...shore)).toBeGreaterThan(100);
+    expect(Math.max(...shore)).toBeLessThan(300);
   });
 
   it("has few slopes steeper than 45 degrees and almost none steeper than 55", () => {

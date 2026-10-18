@@ -103,7 +103,7 @@ export class WorldRenderer {
     this.#terrain = new TerrainView(mirror, this.#textures, this.#fireGlow, renderer);
     this.#islandBase = new IslandBase(mirror, this.#textures);
     this.#water = new WaterView(mirror, this.#textures);
-    this.#waterfalls.rebuild(mirror.water.waterfalls);
+    this.#waterfalls.rebuild(mirror.water.waterfalls, this.#textures.outline);
     this.#vegetation = new VegetationView(mirror, this.#textures, this.#fireGlow);
 
     this.#grass = new GrassField({
@@ -128,7 +128,7 @@ export class WorldRenderer {
     });
 
     this.#atmosphere = new Atmosphere(this.scene, {
-      cloudSeaAltitude: islandPlinthHeight(mirror) - CLOUD_SEA_DEPTH,
+      cloudSeaAltitude: islandPlinthHeight(mirror, this.#textures.outline) - CLOUD_SEA_DEPTH,
       shadowMapSize: quality.shadowMapSize,
     });
 
@@ -172,7 +172,7 @@ export class WorldRenderer {
 
     if (changes.hasWaterChanged) {
       this.#water.waterChanged();
-      this.#waterfalls.rebuild(this.#mirror.water.waterfalls);
+      this.#waterfalls.rebuild(this.#mirror.water.waterfalls, this.#textures.outline);
     }
 
     const wind = windOf(frame.weather);

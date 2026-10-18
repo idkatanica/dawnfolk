@@ -139,8 +139,13 @@ function protectLakeRims(carving: ValleyCarving, basins: DrainageBasins): void {
   }
 }
 
-export function carveValleys(heights: Float32Array, grid: WorldGrid, dryness: Float32Array): void {
-  const basins = analyzeDrainage(heights, grid, dryness);
+export function carveValleys(
+  heights: Float32Array,
+  grid: WorldGrid,
+  dryness: Float32Array,
+  coastDistance: Float32Array
+): void {
+  const basins = analyzeDrainage(heights, grid, dryness, coastDistance);
   const carving: ValleyCarving = { grid, heights, original: Float32Array.from(heights) };
   const baseLevels = downstreamLakeLevels(basins);
   const belowLakes = cellsBelowLakes(basins);

@@ -1,9 +1,11 @@
+import { landEverywhere } from "./coast.ts";
 import type { GridDimensions } from "./world-grid.ts";
 
 export interface TerrainData {
   baseTemperature: Float32Array;
   biome: Uint8Array;
   carving: Float32Array;
+  coastDistance: Float32Array;
   dryness: Float32Array;
   ground: Uint8Array;
   height: Float32Array;
@@ -20,6 +22,7 @@ export function createTerrainData({ cellsPerSide }: GridDimensions): TerrainData
     baseTemperature: new Float32Array(cellCount),
     biome: new Uint8Array(cellCount),
     carving: new Float32Array(cellCount),
+    coastDistance: landEverywhere(cellCount),
     dryness: new Float32Array(cellCount),
     ground: new Uint8Array(cellCount),
     height: new Float32Array(cellCount),

@@ -2,6 +2,7 @@ import { type Color, GROUNDS, seasonalGroundColor } from "../content/grounds.ts"
 import type { WorldMirror } from "../game/world-mirror.ts";
 import { clamp, lerp, saturate } from "../shared/math.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../world/agent-buffers.ts";
+import { isOnIsland } from "../world/coast.ts";
 import { hasWater } from "../world/water.ts";
 
 const BYTE = 255;
@@ -60,7 +61,13 @@ export function paintMinimapTerrain(mirror: WorldMirror, size: number): ImageDat
       const row = Math.min(last, Math.floor((pixelRow / size) * grid.cellsPerSide));
       const offset = (pixelRow * size + pixelColumn) * 4;
 
-      const color = cellColor(mirror, palette, grid.index(column, row));
+      const cell = grid.index(column, row);
+
+      if (!isOnIsland(mirror.terrain.coastDistance, cell)) {
+        continue;
+      }
+
+      const color = cellColor(mirror, palette, cell);
       const shade = slopeShade(mirror, column, row);
 
       image.data[offset] = saturate(color[0] * shade) * BYTE;

@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { createRandom } from "../shared/random.ts";
+import { landEverywhere } from "../world/coast.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 import { analyzeDrainage } from "./hydrology.ts";
 import { digRiverLakes, fillSinks, type LakeSiting } from "./lake-basins.ts";
 
 const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 192 });
 const dryness = new Float32Array(grid.cellCount);
+const coastDistance = landEverywhere(grid.cellCount);
 
 function gentleValley(): Float32Array {
   return Float32Array.from(
@@ -29,18 +31,18 @@ function boundaryDistance(cell: number): number {
 }
 
 function siting(seed: number): LakeSiting {
-  return { boundaryDistance, dryness, grid, random: createRandom(seed) };
+  return { boundaryDistance, coastDistance, dryness, grid, random: createRandom(seed) };
 }
 
 describe("river lakes", () => {
   it("dams a fed river into a lake away from the island rim", () => {
     const heights = gentleValley();
 
-    expect(analyzeDrainage(heights, grid, dryness).lakes).toHaveLength(0);
+    expect(analyzeDrainage(heights, grid, dryness, coastDistance).lakes).toHaveLength(0);
 
     digRiverLakes(heights, siting(3));
 
-    const { lakes } = analyzeDrainage(heights, grid, dryness);
+    const { lakes } = analyzeDrainage(heights, grid, dryness, coastDistance);
 
     expect(lakes.length).toBeGreaterThan(0);
 
@@ -65,9 +67,9 @@ describe("sink filling", () => {
     const heights = shapeTerrain((x, z) => 100 + 0.02 * z + 0.01 * x);
 
     heights[grid.cellAt(5, 5)] -= 3;
-    fillSinks(heights, grid, dryness);
+    fillSinks(heights, grid, dryness, coastDistance);
 
-    const { network } = analyzeDrainage(heights, grid, dryness);
+    const { network } = analyzeDrainage(heights, grid, dryness, coastDistance);
 
     expect(network.filled.every((level, cell) => level - heights[cell] < 0.01)).toBe(true);
   });
@@ -78,9 +80,9 @@ describe("sink filling", () => {
 
     const bottom = heights[center];
 
-    fillSinks(heights, grid, dryness);
+    fillSinks(heights, grid, dryness, coastDistance);
 
     expect(heights[center]).toBe(bottom);
-    expect(analyzeDrainage(heights, grid, dryness).lakes.length).toBeGreaterThan(0);
+    expect(analyzeDrainage(heights, grid, dryness, coastDistance).lakes.length).toBeGreaterThan(0);
   });
 });
