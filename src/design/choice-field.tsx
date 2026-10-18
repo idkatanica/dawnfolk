@@ -89,7 +89,7 @@ function ListChoice({ label, onChange, options, value }: ChoiceFieldProps) {
   const handleChange = useListChange(onChange);
 
   return (
-    <Select.Root items={[...options]} onValueChange={handleChange} value={value}>
+    <Select.Root items={options} onValueChange={handleChange} value={value}>
       <Select.Trigger
         aria-label={label}
         className="flex h-9 w-full items-center justify-between gap-3 rounded-full bg-veil px-4 text-ink text-sm outline-none transition-colors hover:bg-veil-strong focus-visible:ring-2 focus-visible:ring-dawn"

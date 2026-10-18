@@ -41,7 +41,7 @@ export function StartScreen() {
 
         <form
           aria-label="New world"
-          className="flex w-full max-w-sm flex-col gap-4 rounded-island bg-white/55 p-5 ring-1 ring-white/40 backdrop-blur-xl backdrop-saturate-150"
+          className="flex w-full max-w-sm flex-col gap-4 rounded-island bg-veil p-5 ring-1 ring-white/40 backdrop-blur-xl backdrop-saturate-150"
           onSubmit={begin}
         >
           <h2 className="font-semibold text-ink text-lg">New world</h2>

@@ -1,7 +1,6 @@
 import { ScrollArea } from "@base-ui/react/scroll-area";
 import { Tabs } from "@base-ui/react/tabs";
 import type { ReactNode } from "react";
-import { cn } from "../../design/cn.ts";
 import { type JournalTab, useInterfaceStore } from "../interface/interface-store.ts";
 import { ChronicleList } from "./chronicle-list.tsx";
 import { TribeList } from "./tribe-list.tsx";
@@ -55,11 +54,11 @@ function useJournalTab() {
   return { changeTab, journalTab };
 }
 
-export function JournalPanel({ className }: { readonly className?: string | undefined }) {
+export function JournalPanel() {
   const { changeTab, journalTab } = useJournalTab();
 
   return (
-    <Tabs.Root className={cn("flex flex-col gap-2", className)} onValueChange={changeTab} value={journalTab}>
+    <Tabs.Root className="flex flex-col gap-2" onValueChange={changeTab} value={journalTab}>
       <Tabs.List aria-label="Journal" className="flex gap-1 rounded-full bg-ink/8 p-1">
         {TABS.map((tab) => (
           <JournalTabButton key={tab.value} label={tab.label} value={tab.value} />

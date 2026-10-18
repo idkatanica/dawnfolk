@@ -13,6 +13,7 @@ function useShowPlace(entry: ChronicleEntry) {
 
 function ChronicleItem({ entry }: { readonly entry: ChronicleEntry }) {
   const showPlace = useShowPlace(entry);
+
   const Icon = CHRONICLE_ICONS[entry.category];
 
   return (

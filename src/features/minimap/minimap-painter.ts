@@ -1,10 +1,11 @@
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import { paintMinimapTerrain } from "../../rendering/minimap-image.ts";
 
+export const MAP_PIXELS = 176;
+
 const TERRAIN_REFRESH_MILLISECONDS = 1000;
 const SEASON_STEP = 0.05;
 const OVERLAY_INTERVAL_MILLISECONDS = 100;
-const REFERENCE_SIZE = 176;
 const FIRE_COLOR = "rgb(230 82 40)";
 const VIEW_FILL = "rgb(255 255 255 / 0.32)";
 const VIEW_OUTLINE = "rgb(255 255 255 / 0.9)";
@@ -119,7 +120,7 @@ export class MinimapPainter {
   }
 
   #drawTribes(context: CanvasRenderingContext2D, size: number): void {
-    const scale = size / REFERENCE_SIZE;
+    const scale = size / MAP_PIXELS;
 
     for (const tribe of this.#engine.session.frame.tribes) {
       const [x, y] = this.#toMap(tribe.campX, tribe.campZ, size);
@@ -154,7 +155,7 @@ export class MinimapPainter {
     context.closePath();
     context.fillStyle = VIEW_FILL;
     context.fill();
-    context.lineWidth = 1.5 * (size / REFERENCE_SIZE);
+    context.lineWidth = 1.5 * (size / MAP_PIXELS);
     context.strokeStyle = VIEW_OUTLINE;
     context.stroke();
   }

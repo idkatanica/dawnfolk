@@ -3,9 +3,7 @@ import { useEngine } from "../../app/use-engine.ts";
 import { Island } from "../../design/island.tsx";
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
-import { MinimapPainter } from "./minimap-painter.ts";
-
-const MAP_PIXELS = 176;
+import { MAP_PIXELS, MinimapPainter } from "./minimap-painter.ts";
 
 function useMinimapPainter(canvasReference: RefObject<HTMLCanvasElement | null>, engine: EngineHandle): void {
   useEffect(() => {
@@ -30,8 +28,9 @@ function useMinimapPainter(canvasReference: RefObject<HTMLCanvasElement | null>,
 
 function useMinimapNavigation(engine: EngineHandle) {
   function focusAt(event: PointerEvent<HTMLCanvasElement>): void {
-    const bounds = event.currentTarget.getBoundingClientRect();
     const { grid } = engine.session.mirror;
+
+    const bounds = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - bounds.left) / bounds.width) * grid.worldSize - grid.halfSize;
     const z = ((event.clientY - bounds.top) / bounds.height) * grid.worldSize - grid.halfSize;
 

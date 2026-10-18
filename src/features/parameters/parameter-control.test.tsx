@@ -77,7 +77,6 @@ describe("range parameter", () => {
     const screen = await render(<ParameterControl field={RADIUS_FIELD} onChange={handleChange} value={25} />);
 
     screen.getByRole("slider", { name: "Radius" }).element().focus();
-
     await userEvent.keyboard("{ArrowRight}");
 
     expect(handleChange).toHaveBeenCalledExactlyOnceWith("radius", 30);

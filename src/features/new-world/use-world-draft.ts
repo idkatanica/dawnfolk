@@ -3,7 +3,7 @@ import { LARGEST_SEED, randomSeed } from "../../app/launch-options.ts";
 import { type IslandShapeKind, isIslandShapeKind } from "../../world/island-shape.ts";
 import { readWorldName, worldNameFor } from "./world-names.ts";
 
-export interface WorldChoice {
+interface WorldChoice {
   readonly name: string;
   readonly seed: number;
   readonly shape: IslandShapeKind;
@@ -21,7 +21,7 @@ function readSeed(text: string): number | null {
 
 export function useWorldDraft(initial: WorldChoice) {
   const [nameText, setNameText] = useState(initial.name);
-  const [seedText, setSeedText] = useState(() => String(initial.seed));
+  const [seedText, setSeedText] = useState(String(initial.seed));
   const [shape, setShape] = useState(initial.shape);
 
   const name = readWorldName(nameText);

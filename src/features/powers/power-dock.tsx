@@ -109,11 +109,11 @@ function useCategory() {
   return { category, setCategory };
 }
 
-export function PowerDock({ className }: { readonly className?: string | undefined }) {
+export function PowerDock() {
   const { category, setCategory } = useCategory();
 
   return (
-    <Island className={cn("max-w-full", className)}>
+    <Island className="max-w-full">
       <Tabs.Root className="flex flex-col gap-2 p-2" onValueChange={setCategory} value={category}>
         <Tabs.List aria-label="Kinds of powers" className="flex justify-center gap-1">
           {DOCK_CATEGORIES.map((entry) => (
