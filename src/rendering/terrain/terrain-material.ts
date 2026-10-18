@@ -28,6 +28,7 @@ import { MeshStandardNodeMaterial, type Node } from "three/webgpu";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { unitNoise } from "../node-helpers.ts";
+import { FIREWEED, fireweedOn } from "./fireweed.ts";
 import type { GroundWarp } from "./ground-warp.ts";
 import { sampleCellsNode } from "./height-sampling.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
@@ -193,9 +194,12 @@ export function createTerrainMaterial({
 
   const scorched = mix(underwater, ash, surface.b.mul(0.95));
 
+  const petals = smoothstep(0.55, 0.85, fine.mul(0.65).add(patches.mul(0.35)).add(0.5));
+  const flowering = mix(scorched, FIREWEED, fireweedOn(surface.b, textures.bloom).mul(petals).mul(0.42));
+
   const fireLight = fireLightAt(glow, grid, positionWorld.xz);
 
-  material.colorNode = scorched;
+  material.colorNode = flowering;
   material.roughnessNode = mix(float(0.95), float(0.5), wetness);
   material.metalnessNode = float(0);
   material.emissiveNode = emberGlow(surface.a, positionWorld.xz, fine.mul(0.5).add(0.5)).add(
