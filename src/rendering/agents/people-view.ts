@@ -36,7 +36,7 @@ const PERSON_LAYOUT: PaletteLayout = {
   colorSlots: [MaterialSlot.Skin, MaterialSlot.Hair, MaterialSlot.Fur, MaterialSlot.Hide, MaterialSlot.Accent],
 };
 
-const LEVEL_DISTANCES: LevelDistances = { high: 70, low: 420 };
+const LEVEL_DISTANCES: LevelDistances = { far: 420, high: 70, low: 120 };
 const BOUNDING_RADIUS = 1.4;
 const WADING_DEPTH = 1.1;
 const DEFAULT_TRIBE: TribeLook = { accent: 0xc4_55_3a, fur: 0x6b_4a_33, id: -1 };
@@ -101,6 +101,7 @@ export class PeopleView {
       [
         { castsShadow: true, parts: buildHumanParts(HUMAN_DETAILS.high) },
         { castsShadow: false, parts: buildHumanParts(HUMAN_DETAILS.low) },
+        { castsShadow: false, parts: buildHumanParts(HUMAN_DETAILS.far) },
       ],
       material
     );

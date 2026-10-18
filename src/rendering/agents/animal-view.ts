@@ -34,7 +34,7 @@ const ANIMAL_LAYOUT: PaletteLayout = {
   colorSlots: [MaterialSlot.Coat, MaterialSlot.CoatLight],
 };
 
-const LEVEL_DISTANCES: LevelDistances = { high: 90, low: 650 };
+const LEVEL_DISTANCES: LevelDistances = { far: 650, high: 90, low: 160 };
 const BOUNDING_RADIUS = 3.5;
 const WADING_DEPTH = 1.2;
 const SHORTEST_STRIDE = 0.5;
@@ -175,6 +175,7 @@ export class AnimalView {
       [
         { castsShadow: true, parts: buildAnimalParts(kind, "high") },
         { castsShadow: false, parts: buildAnimalParts(kind, "low") },
+        { castsShadow: false, parts: buildAnimalParts(kind, "far") },
       ],
       material
     );
