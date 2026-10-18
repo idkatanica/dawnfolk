@@ -529,6 +529,18 @@ describe("world generation", () => {
     }
   });
 
+  it("points every waterfall out of the island, the way its river leaves", () => {
+    for (const generated of [world, squareWorld]) {
+      const grid = new WorldGrid(generated.dimensions);
+
+      for (const { directionX, directionZ, x, z } of generated.water.waterfalls) {
+        const upstream = sampleHeight(generated.terrain.coastDistance, grid, x - directionX * 30, z - directionZ * 30);
+
+        expect(upstream).toBeGreaterThan(sampleHeight(generated.terrain.coastDistance, grid, x, z));
+      }
+    }
+  });
+
   it("keeps every plant clear of the coast so none hangs over the edge", () => {
     const grid = new WorldGrid(TEST_DIMENSIONS);
 

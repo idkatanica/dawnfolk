@@ -103,6 +103,7 @@ const MINIMUM_POINT_DROP = 0.04;
 const SHALLOWEST_CHANNEL = 0.6;
 const DESCENT_PASSES = 8;
 const LIFT_ALLOWANCE = 0.3;
+const FLOW_REACH = 15;
 const PINCH_PASSES = 2;
 const PINCHED_DEPTH = 0.6;
 const OPPOSITE_SIDES = [
@@ -913,41 +914,16 @@ function fillPinchedBanks(targets: ChannelTargets): void {
   }
 }
 
-interface EdgeDirection {
-  directionX: number;
-  directionZ: number;
+function flowDirectionAt(river: River, mouth: RiverPoint): { directionX: number; directionZ: number } {
+  const upstream = river.points.findLast((point) => Math.hypot(point.x - mouth.x, point.z - mouth.z) >= FLOW_REACH);
+  const from = upstream === undefined ? river.points[0] : upstream;
+
+  const length = Math.max(1e-6, Math.hypot(mouth.x - from.x, mouth.z - from.z));
+
+  return { directionX: (mouth.x - from.x) / length, directionZ: (mouth.z - from.z) / length };
 }
 
-function edgeDirection(x: number, z: number, grid: WorldGrid): EdgeDirection {
-  if (!grid.isOnEdge(grid.cellAt(x, z))) {
-    const distanceFromCenter = Math.max(1e-6, Math.hypot(x, z));
-
-    return { directionX: x / distanceFromCenter, directionZ: z / distanceFromCenter };
-  }
-
-  const distanceWest = x + grid.halfSize;
-  const distanceEast = grid.halfSize - x;
-  const distanceNorth = z + grid.halfSize;
-  const distanceSouth = grid.halfSize - z;
-
-  const nearestDistance = Math.min(distanceWest, distanceEast, distanceNorth, distanceSouth);
-
-  if (nearestDistance === distanceWest) {
-    return { directionX: -1, directionZ: 0 };
-  }
-
-  if (nearestDistance === distanceEast) {
-    return { directionX: 1, directionZ: 0 };
-  }
-
-  if (nearestDistance === distanceNorth) {
-    return { directionX: 0, directionZ: -1 };
-  }
-
-  return { directionX: 0, directionZ: 1 };
-}
-
-function findWaterfalls(rivers: readonly River[], grid: WorldGrid): Waterfall[] {
+function findWaterfalls(rivers: readonly River[]): Waterfall[] {
   const waterfalls: Waterfall[] = [];
 
   for (const river of rivers) {
@@ -958,7 +934,7 @@ function findWaterfalls(rivers: readonly River[], grid: WorldGrid): Waterfall[] 
     }
 
     waterfalls.push({
-      ...edgeDirection(mouth.x, mouth.z, grid),
+      ...flowDirectionAt(river, mouth),
       top: mouth.surface,
       width: mouth.width,
       x: mouth.x,
@@ -1180,7 +1156,7 @@ export function computeHydrology(
   fillPinchedBanks(targets);
 
   return {
-    features: { lakes, rivers, springs: springs.springs, waterfalls: findWaterfalls(rivers, grid) },
+    features: { lakes, rivers, springs: springs.springs, waterfalls: findWaterfalls(rivers) },
     lakeIds,
     riverStrength,
     waterSurface,
