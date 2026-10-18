@@ -3,6 +3,7 @@ import { lerp, smoothstep } from "../shared/math.ts";
 import { createRandom } from "../shared/random.ts";
 import { isOnIsland } from "../world/coast.ts";
 import { createIslandShape, type IslandShapeKind, measureCoastDistances } from "../world/island-shape.ts";
+import type { Monument } from "../world/monuments.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { VegetationStore } from "../world/vegetation-store.ts";
 import type { WaterFeatures } from "../world/water.ts";
@@ -18,6 +19,7 @@ import {
 } from "./erosion.ts";
 import { computeHydrology } from "./hydrology.ts";
 import { digRiverLakes, fillSinks } from "./lake-basins.ts";
+import { planMonuments } from "./monuments.ts";
 import { createRelief, islandPointAt, type Relief } from "./relief.ts";
 import { carveValleys } from "./valleys.ts";
 import { plantInitialVegetation } from "./vegetation.ts";
@@ -44,6 +46,7 @@ export const DEFAULT_GENERATION_OPTIONS: GenerationOptions = {
 
 export interface GeneratedWorld {
   dimensions: GridDimensions;
+  monuments: readonly Monument[];
   seed: number;
   shape: IslandShapeKind;
   terrain: TerrainData;
@@ -207,10 +210,24 @@ export function generateWorld(
   onProgress({ progress: 0, stage: "vegetation" });
   openWoodland(terrain, grid, seed);
 
+  const ruins = planMonuments(grid, terrain, seed);
   const vegetation = new VegetationStore(grid, Math.round(grid.cellCount * VEGETATION_CAPACITY_PER_CELL));
 
-  plantInitialVegetation(vegetation, grid, terrain, seed);
+  plantInitialVegetation(vegetation, grid, terrain, seed, ruins.ground);
+
+  for (const piece of ruins.pieces) {
+    vegetation.add(piece);
+  }
+
   vegetation.discardChanges();
 
-  return { dimensions: options.dimensions, seed, shape: options.shape, terrain, vegetation, water: hydrology.features };
+  return {
+    dimensions: options.dimensions,
+    monuments: ruins.monuments,
+    seed,
+    shape: options.shape,
+    terrain,
+    vegetation,
+    water: hydrology.features,
+  };
 }

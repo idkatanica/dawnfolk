@@ -80,13 +80,14 @@ export function plantInitialVegetation(
   store: VegetationStore,
   grid: WorldGrid,
   terrain: TerrainData,
-  seed: number
+  seed: number,
+  reserved: Uint8Array = new Uint8Array(grid.cellCount)
 ): void {
   const random = createRandom(seed * 3 + 1);
   const rocks = createRandom(seed * 3 + 2);
 
-  function plantWhereRoom(plant: PlantPlacement): void {
-    if (hasRoomToGrow(terrain, grid, plant.x, plant.z, plant.species)) {
+  function plantWhereRoom(plant: PlantPlacement, cell: number): void {
+    if (reserved[cell] === 0 && hasRoomToGrow(terrain, grid, plant.x, plant.z, plant.species)) {
       store.add(plant);
     }
   }
@@ -108,13 +109,13 @@ export function plantInitialVegetation(
 
     for (const rule of PLANTING_RULES[biome]) {
       if (canGrowAt(rule, temperature) && random.chance(plantingChance(rule, clearing, holdsTrees))) {
-        plantWhereRoom(sow(rule, random, grid, cell));
+        plantWhereRoom(sow(rule, random, grid, cell), cell);
       }
     }
 
     for (const rule of ROCK_RULES[biome]) {
       if (canGrowAt(rule, temperature) && rocks.chance(rule.chancePerCell)) {
-        plantWhereRoom(sow(rule, rocks, grid, cell));
+        plantWhereRoom(sow(rule, rocks, grid, cell), cell);
       }
     }
   }

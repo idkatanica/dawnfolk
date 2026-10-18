@@ -3,6 +3,7 @@ import { Ground, type GroundIndex } from "../../content/grounds.ts";
 import { type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import { plantInitialVegetation } from "../../generation/vegetation.ts";
 import type { GeneratedWorld } from "../../generation/world-generator.ts";
+import type { Monument } from "../../world/monuments.ts";
 import { createTerrainData } from "../../world/terrain-data.ts";
 import { VegetationStore } from "../../world/vegetation-store.ts";
 import { NO_WATER } from "../../world/water.ts";
@@ -15,6 +16,7 @@ export interface TestWorldOptions {
   dimensions: GridDimensions;
   ground: GroundIndex;
   heightAt: (x: number, z: number) => number;
+  monuments: readonly Monument[];
 }
 
 const DEFAULT_TEST_WORLD: TestWorldOptions = {
@@ -23,6 +25,7 @@ const DEFAULT_TEST_WORLD: TestWorldOptions = {
   dimensions: { cellSize: 10, cellsPerSide: 64 },
   ground: Ground.Meadow,
   heightAt: () => 100,
+  monuments: [],
 };
 
 function createTestGeneratedWorld(overrides: Partial<TestWorldOptions> = {}): GeneratedWorld {
@@ -43,6 +46,7 @@ function createTestGeneratedWorld(overrides: Partial<TestWorldOptions> = {}): Ge
 
   return {
     dimensions: options.dimensions,
+    monuments: options.monuments,
     seed: 1,
     shape: "square",
     terrain,
