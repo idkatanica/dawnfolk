@@ -4,6 +4,7 @@ import {
   FloatType,
   LinearFilter,
   NearestFilter,
+  type PixelFormat,
   RedFormat,
   RGBAFormat,
   SRGBColorSpace,
@@ -13,20 +14,20 @@ import { type Color, GROUNDS, Ground, seasonalGroundColor } from "../../content/
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { lerp, saturate } from "../../shared/math.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
-import { NO_WATER } from "../../world/water.ts";
+import type { CellRegion } from "../../world/change-tracking.ts";
+import { buildShoreField, SHORE_CHANNELS, type ShoreSource, updateShoreDepths } from "../water/shore-field.ts";
 import type { WorldChanges } from "../world-changes.ts";
 
 const BYTE = 255;
 const SEASON_STEP = 0.01;
 const CROP_COVER = 0.9;
-const POOLED_WATER_STEPS = [2, 4, 8] as const;
 
 const FIELD_SOIL: Color = [0.4, 0.31, 0.22];
 const FIELD_SPROUT: Color = [0.42, 0.55, 0.25];
 const FIELD_RIPE: Color = [0.8, 0.67, 0.32];
 
-function floatTexture(data: Float32Array, size: number): DataTexture {
-  const texture = new DataTexture(data, size, size, RedFormat, FloatType);
+function floatTexture(data: Float32Array, size: number, format: PixelFormat = RedFormat): DataTexture {
+  const texture = new DataTexture(data, size, size, format, FloatType);
 
   texture.minFilter = NearestFilter;
   texture.magFilter = NearestFilter;
@@ -74,44 +75,16 @@ function cropColor(growth: number): Color {
   return mixColor(FIELD_SPROUT, FIELD_RIPE, (growth - 0.5) / 0.5);
 }
 
-function poolWater(source: Float32Array, size: number, radius: number, target: Float32Array): void {
-  const across = new Float32Array(source.length);
-
-  for (let row = 0; row < size; row += 1) {
-    for (let column = 0; column < size; column += 1) {
-      let highest = NO_WATER;
-
-      for (let offset = Math.max(0, column - radius); offset <= Math.min(size - 1, column + radius); offset += 1) {
-        highest = Math.max(highest, source[row * size + offset]);
-      }
-
-      across[row * size + column] = highest;
-    }
-  }
-
-  for (let row = 0; row < size; row += 1) {
-    for (let column = 0; column < size; column += 1) {
-      let highest = NO_WATER;
-
-      for (let offset = Math.max(0, row - radius); offset <= Math.min(size - 1, row + radius); offset += 1) {
-        highest = Math.max(highest, across[offset * size + column]);
-      }
-
-      target[row * size + column] = highest;
-    }
-  }
-}
-
 export class TerrainTextures {
   readonly albedo: DataTexture;
   readonly height: DataTexture;
-  readonly pooledWater: readonly DataTexture[];
+  readonly shore: DataTexture;
   readonly size: number;
   readonly surface: DataTexture;
   readonly water: DataTexture;
   readonly #albedoData: Uint8Array;
   readonly #mirror: WorldMirror;
-  readonly #pooledData: readonly Float32Array[];
+  readonly #shoreData: Float32Array;
   #albedoSeason = Number.NaN;
 
   constructor(mirror: WorldMirror) {
@@ -121,9 +94,9 @@ export class TerrainTextures {
     this.size = size;
     this.height = floatTexture(mirror.terrain.height, size);
     this.water = floatTexture(mirror.terrain.waterSurface, size);
-    this.#pooledData = POOLED_WATER_STEPS.map(() => new Float32Array(size * size));
-    this.pooledWater = this.#pooledData.map((data) => floatTexture(data, size));
-    this.#poolWater();
+    this.#shoreData = new Float32Array(size * size * SHORE_CHANNELS);
+    this.shore = floatTexture(this.#shoreData, size, RGBAFormat);
+    this.#buildShore();
     this.surface = colorTexture(mirror.surface, size, false);
     this.#albedoData = new Uint8Array(size * size * 4);
     this.albedo = colorTexture(this.#albedoData, size, true);
@@ -134,13 +107,18 @@ export class TerrainTextures {
       this.height.needsUpdate = true;
     }
 
+    if (changes.hasWaterChanged) {
+      this.#buildShore();
+    } else if (changes.heightRegion !== null) {
+      this.#updateShore(changes.heightRegion);
+    }
+
     if (changes.surfaceRuns.length > 0) {
       this.surface.needsUpdate = true;
     }
 
     if (changes.hasWaterChanged) {
       this.water.needsUpdate = true;
-      this.#poolWater();
     }
 
     const hasSeasonChanged = Number.isNaN(this.#albedoSeason) || Math.abs(season - this.#albedoSeason) >= SEASON_STEP;
@@ -155,17 +133,23 @@ export class TerrainTextures {
     this.height.dispose();
     this.surface.dispose();
     this.water.dispose();
-
-    for (const texture of this.pooledWater) {
-      texture.dispose();
-    }
+    this.shore.dispose();
   }
 
-  #poolWater(): void {
-    for (const [index, step] of POOLED_WATER_STEPS.entries()) {
-      poolWater(this.#mirror.terrain.waterSurface, this.size, step / 2, this.#pooledData[index]);
-      this.pooledWater[index].needsUpdate = true;
-    }
+  #shoreSource(): ShoreSource {
+    const { grid, terrain } = this.#mirror;
+
+    return { cellSize: grid.cellSize, heights: terrain.height, levels: terrain.waterSurface, size: this.size };
+  }
+
+  #buildShore(): void {
+    buildShoreField(this.#shoreSource(), this.#shoreData);
+    this.shore.needsUpdate = true;
+  }
+
+  #updateShore(region: CellRegion): void {
+    updateShoreDepths(this.#shoreSource(), region, this.#shoreData);
+    this.shore.needsUpdate = true;
   }
 
   #paintAlbedo(season: number): void {

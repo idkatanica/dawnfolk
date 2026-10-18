@@ -6,8 +6,8 @@ import {
   distance,
   dot,
   float,
-  floor,
   fract,
+  fwidth,
   ivec2,
   length,
   max,
@@ -19,29 +19,33 @@ import {
   pow,
   select,
   smoothstep,
+  texture,
   textureLoad,
   time,
   transformNormalToView,
   uniform,
-  varying,
   vec2,
   vec3,
 } from "three/tsl";
 import { Color, MeshStandardNodeMaterial, type Node, Vector2 } from "three/webgpu";
 import { NO_WATER } from "../../world/water.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
-import { sampleHeightNode } from "../terrain/height-sampling.ts";
+import { sampleCellsNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
+import { BANK_SINK, PRESENT_LEVEL } from "./shore-field.ts";
 
-const PRESENT_LEVEL = NO_WATER / 2;
 const HIDDEN_DEPTH = 40;
-const BANK_SINK = 0.3;
 const SHORE_FADE = 0.2;
 const SHORE_WOBBLE = 0.32;
+const FINE_WOBBLE_NEAR = 500;
+const FINE_WOBBLE_FAR = 1500;
 const WAVE_SAMPLE_STEP = 0.35;
 const COARSE_LIFT = 0.4;
+const COARSE_REACH_MARGIN = 2;
 const FOAM_FAR = 900;
 const FOAM_NEAR = 250;
+const SHORE_FOAM_FAR = 1300;
+const SHORE_FOAM_NEAR = 500;
 const ICE_COLOR = vec3(0.78, 0.86, 0.9);
 const THIN_ICE = 0.15;
 const SOLID_ICE = 0.5;
@@ -90,44 +94,26 @@ export function createWaterMaterial(
   const south = levelAt(0, 1);
   const north = levelAt(0, -1);
   const ground = textureLoad(textures.height, ivec2(cell)).x;
+  const reach = textureLoad(textures.shore, ivec2(cell)).w;
+  const step = attribute("patchStep", "float");
 
   const diagonalLevel = max(max(levelAt(1, 1), levelAt(-1, -1)), max(levelAt(1, -1), levelAt(-1, 1)));
 
   const neighborLevel = max(max(max(east, west), max(south, north)), diagonalLevel);
   const isOwnWater = own.greaterThan(PRESENT_LEVEL);
   const bankAverage = averageWetLevel([east, west, south, north]);
-  const hasEastWestWater = east.greaterThan(PRESENT_LEVEL).and(west.greaterThan(PRESENT_LEVEL));
-  const hasNorthSouthWater = south.greaterThan(PRESENT_LEVEL).and(north.greaterThan(PRESENT_LEVEL));
+  const isCoarseShore = step.greaterThan(1.5).and(reach.lessThanEqual(step.add(COARSE_REACH_MARGIN)));
 
   const isNearWater = neighborLevel.greaterThan(PRESENT_LEVEL);
   const bankLevel = min(
     select(bankAverage.greaterThan(PRESENT_LEVEL), bankAverage, neighborLevel),
     ground.sub(BANK_SINK)
   );
-  const slope = vec2(
-    select(hasEastWestWater, west.sub(east), float(0)),
-    select(hasNorthSouthWater, north.sub(south), float(0))
-  ).div(cellSize.mul(2));
-
-  const step = attribute("patchStep", "float");
-
-  function pooledAt(index: number) {
-    return textureLoad(textures.pooledWater[index], ivec2(cell)).x;
-  }
-
-  const pooled = select(step.greaterThan(6), pooledAt(2), select(step.greaterThan(3), pooledAt(1), pooledAt(0)));
-
-  const isCoarse = step.greaterThan(1.5);
-  const coarseLevel = max(pooled, ground.add(COARSE_LIFT));
 
   const level = select(
     isOwnWater,
     own,
-    select(
-      isCoarse.and(pooled.greaterThan(PRESENT_LEVEL)),
-      coarseLevel,
-      select(isNearWater, bankLevel, ground.sub(HIDDEN_DEPTH))
-    )
+    select(isCoarseShore, ground.add(COARSE_LIFT), select(isNearWater, bankLevel, ground.sub(HIDDEN_DEPTH)))
   );
 
   material.positionNode = vec3(
@@ -136,23 +122,25 @@ export function createWaterMaterial(
     cell.y.add(0.5).mul(cellSize).sub(halfSize)
   );
 
-  const fullDetail = varying(select(step.lessThan(1.5), float(1), float(0)), "waterDetail");
-  const ice = varying(smoothstep(THIN_ICE, SOLID_ICE, textureLoad(textures.surface, ivec2(cell)).r), "waterIce");
-  const flow = varying(slope, "waterFlow");
+  const shore = sampleCellsNode(textures.shore, grid, positionWorld.xz);
+  const viewDistance = distance(positionWorld, cameraPosition);
+  const mapCoordinates = positionWorld.xz.add(grid.halfSize).div(grid.worldSize);
   const viewDirection = normalize(cameraPosition.sub(positionWorld));
-  const bed = sampleHeightNode(textures.height, grid, positionWorld.xz);
+  const fineWobble = smoothstep(FINE_WOBBLE_FAR, FINE_WOBBLE_NEAR, viewDistance).mul(0.35);
+
+  const flow = shore.yz;
+  const ice = smoothstep(THIN_ICE, SOLID_ICE, texture(textures.surface, mapCoordinates).r);
   const shoreWobble = mx_noise_float(vec3(positionWorld.xz.mul(0.09), 3.7))
-    .add(mx_noise_float(vec3(positionWorld.xz.mul(0.37), 8.1)).mul(0.35))
+    .add(mx_noise_float(vec3(positionWorld.xz.mul(0.37), 8.1)).mul(fineWobble))
     .mul(SHORE_WOBBLE);
 
-  const shoreDepth = positionWorld.y.sub(bed).add(shoreWobble);
+  const shoreDepth = shore.x.add(shoreWobble);
   const normal = normalize(mix(surfaceNormal(flow, look), vec3(0, 1, 0), ice.mul(0.85)));
 
   const depth = max(shoreDepth, 0);
+  const shoreEdge = max(fwidth(shoreDepth), SHORE_FADE);
 
-  material.maskNode = isWetAround(textures, grid, positionWorld.xz).and(
-    fullDetail.lessThan(0.5).or(shoreDepth.greaterThan(0))
-  );
+  material.maskNode = shoreDepth.greaterThan(0);
   material.normalNode = transformNormalToView(normal);
 
   const fresnel = pow(float(1).sub(max(dot(normal, viewDirection), 0)), 4);
@@ -160,10 +148,10 @@ export function createWaterMaterial(
     .mul(0.5)
     .add(0.5);
 
-  const foamDetail = smoothstep(FOAM_FAR, FOAM_NEAR, distance(positionWorld, cameraPosition));
+  const foamDetail = smoothstep(FOAM_FAR, FOAM_NEAR, viewDistance);
   const steadyFoam = mix(float(0.5), foamNoise, foamDetail);
   const shoreFoam = smoothstep(0.45, 0, depth)
-    .mul(fullDetail)
+    .mul(smoothstep(SHORE_FOAM_FAR, SHORE_FOAM_NEAR, viewDistance))
     .mul(smoothstep(0.25, 0.75, steadyFoam));
   const rapidsFoam = smoothstep(0.1, 0.3, length(flow)).mul(smoothstep(0.45, 0.85, steadyFoam));
 
@@ -185,7 +173,7 @@ export function createWaterMaterial(
       .add(ice),
     0,
     1
-  ).mul(mix(float(1), smoothstep(0, SHORE_FADE, shoreDepth), fullDetail));
+  ).mul(smoothstep(0, shoreEdge, shoreDepth));
   material.roughnessNode = mix(mix(float(0.06), float(0.5), foam), float(0.35), ice);
   material.metalnessNode = float(0);
 
@@ -204,19 +192,6 @@ function averageWetLevel(levels: readonly Node<"float">[]): Node<"float"> {
   }
 
   return select(count.greaterThan(0), total.div(max(count, 1)), float(NO_WATER));
-}
-
-function isWetAround(textures: TerrainTextures, grid: WorldGrid, point: Node<"vec2">): Node<"bool"> {
-  const last = grid.cellsPerSide - 1;
-  const base = floor(point.add(grid.halfSize).div(grid.cellSize).sub(0.5));
-
-  function levelAt(column: number, row: number) {
-    return textureLoad(textures.water, ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(last, last)))).x;
-  }
-
-  const highest = max(max(levelAt(0, 0), levelAt(1, 0)), max(levelAt(0, 1), levelAt(1, 1)));
-
-  return highest.greaterThan(PRESENT_LEVEL);
 }
 
 function surfaceNormal(flow: Node<"vec2">, look: WaterLook): Node<"vec3"> {

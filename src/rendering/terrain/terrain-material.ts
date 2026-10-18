@@ -25,15 +25,14 @@ import {
   vec3,
 } from "three/tsl";
 import { MeshStandardNodeMaterial, type Node } from "three/webgpu";
-import { NO_WATER } from "../../world/water.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { unitNoise } from "../node-helpers.ts";
+import { sampleCellsNode } from "./height-sampling.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
 const SKIRT_DROP_PER_STEP = 25;
 const EDGE_SKIRT_INSET = 3;
-const PRESENT_WATER = NO_WATER / 2;
 const CHARCOAL = vec3(0.012, 0.011, 0.01);
 const ASH = vec3(0.13, 0.12, 0.11);
 const EMBER_DEEP = vec3(1.2, 0.24, 0.03);
@@ -129,9 +128,17 @@ function underwaterDepth(textures: TerrainTextures, grid: WorldGrid): Node<"floa
 
   const cell = clamp(positionWorld.xz.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
 
-  const level = textureLoad(textures.water, ivec2(cell)).x;
+  const reach = textureLoad(textures.shore, ivec2(cell)).w;
 
-  return select(level.greaterThan(PRESENT_WATER), max(level.sub(positionWorld.y), 0), float(0));
+  return Fn(() => {
+    const depth = float(0).toVar();
+
+    If(reach.lessThan(1.5), () => {
+      depth.assign(max(sampleCellsNode(textures.shore, grid, positionWorld.xz).x, 0));
+    });
+
+    return depth;
+  })();
 }
 
 export function createTerrainMaterial(
