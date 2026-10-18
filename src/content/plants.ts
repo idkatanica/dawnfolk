@@ -28,6 +28,7 @@ interface PlantSpeciesDefinition {
   heightRange: readonly [number, number];
   index: PlantSpeciesIndex;
   name: string;
+  radiusPerMeter: number;
   wood: number;
 }
 
@@ -39,6 +40,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [16, 32],
     index: PlantSpecies.Spruce,
     name: "Spruce",
+    radiusPerMeter: 0.024,
     wood: 3,
   },
   {
@@ -48,6 +50,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [18, 30],
     index: PlantSpecies.Pine,
     name: "Pine",
+    radiusPerMeter: 0.024,
     wood: 3,
   },
   {
@@ -57,6 +60,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [12, 21],
     index: PlantSpecies.Oak,
     name: "Oak",
+    radiusPerMeter: 0.047,
     wood: 4,
   },
   {
@@ -66,6 +70,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [14, 24],
     index: PlantSpecies.Birch,
     name: "Birch",
+    radiusPerMeter: 0.021,
     wood: 2,
   },
   {
@@ -75,6 +80,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [9, 15],
     index: PlantSpecies.Willow,
     name: "Willow",
+    radiusPerMeter: 0.062,
     wood: 2,
   },
   {
@@ -84,6 +90,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [12, 20],
     index: PlantSpecies.Maple,
     name: "Maple",
+    radiusPerMeter: 0.038,
     wood: 3,
   },
   {
@@ -93,6 +100,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [1.6, 2.8],
     index: PlantSpecies.Bush,
     name: "Berry bush",
+    radiusPerMeter: 0.75,
     wood: 0,
   },
   {
@@ -102,6 +110,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [2.5, 5.5],
     index: PlantSpecies.Cactus,
     name: "Cactus",
+    radiusPerMeter: 0.18,
     wood: 0,
   },
   {
@@ -111,6 +120,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [1.2, 4],
     index: PlantSpecies.Boulder,
     name: "Boulder",
+    radiusPerMeter: 0.89,
     wood: 0,
   },
   {
@@ -120,6 +130,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [7, 12],
     index: PlantSpecies.Palm,
     name: "Palm",
+    radiusPerMeter: 0.042,
     wood: 2,
   },
   {
@@ -129,6 +140,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [6, 11],
     index: PlantSpecies.Acacia,
     name: "Acacia",
+    radiusPerMeter: 0.051,
     wood: 3,
   },
   {
@@ -138,6 +150,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [16, 25],
     index: PlantSpecies.Poplar,
     name: "Poplar",
+    radiusPerMeter: 0.026,
     wood: 3,
   },
   {
@@ -147,6 +160,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [5, 11],
     index: PlantSpecies.DeadTree,
     name: "Dead tree",
+    radiusPerMeter: 0.063,
     wood: 2,
   },
   {
@@ -156,6 +170,7 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     heightRange: [0.7, 1.6],
     index: PlantSpecies.DesertShrub,
     name: "Desert shrub",
+    radiusPerMeter: 0.95,
     wood: 0,
   },
 ];

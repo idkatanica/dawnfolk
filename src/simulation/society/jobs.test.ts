@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
+import { wrapAngle } from "../../shared/math.ts";
 import { SocietyHarness } from "../testing/test-society.ts";
+import { findTree } from "./jobs/chop-job.ts";
+import { findBerries } from "./jobs/gather-job.ts";
 import { findGame, HuntJob } from "./jobs/hunt-job.ts";
 import type { Job } from "./jobs/job.ts";
 import { TendJob } from "./jobs/tend-job.ts";
@@ -8,6 +12,13 @@ import type { PersonTick } from "./society-context.ts";
 import type { Tribe } from "./tribe.ts";
 
 const MORNING = 0.3;
+const WORK_SPOT_TOLERANCE = 0.35;
+const FACING_TOLERANCE = 0.05;
+
+interface WorkPlacement {
+  readonly missedBy: number;
+  readonly turnedAwayBy: number;
+}
 
 function settle(harness: SocietyHarness, people: number): Tribe {
   const tribe = harness.spawnTribe(people);
@@ -25,6 +36,48 @@ function firstMemberTick(harness: SocietyHarness, tribe: Tribe): PersonTick {
   return { context: harness.context, person, seconds: 0.1, tribe };
 }
 
+function plantNear(tick: PersonTick, species: PlantSpeciesIndex, height: number): number {
+  const { mover } = tick.person;
+
+  return tick.context.world.plant({
+    bornDay: 0,
+    height,
+    rotation: 0,
+    seed: 0.5,
+    species,
+    x: mover.x + 14,
+    z: mover.z - 6,
+  });
+}
+
+function workUntilPosed(job: Job, tick: PersonTick, pose: string): void {
+  let current: Job | null = job;
+
+  for (let elapsed = 0; elapsed < 60 && current !== null; elapsed += tick.seconds) {
+    current = current.update(tick);
+
+    if (tick.person.pose === pose) {
+      return;
+    }
+  }
+
+  throw new Error(`Expected the person to start the ${pose} pose`);
+}
+
+function placementAt(tick: PersonTick, plant: number, reach: number): WorkPlacement {
+  const { vegetation } = tick.context.world;
+  const { mover } = tick.person;
+
+  const radius = plantSpeciesDefinition(vegetation.species[plant]).radiusPerMeter * vegetation.height[plant];
+  const towardX = vegetation.x[plant] - mover.x;
+  const towardZ = vegetation.z[plant] - mover.z;
+
+  return {
+    missedBy: Math.abs(Math.hypot(towardX, towardZ) - (radius + reach)),
+    turnedAwayBy: Math.abs(wrapAngle(Math.atan2(towardX, towardZ) - mover.heading)),
+  };
+}
+
 function runToCompletion(job: Job, tick: PersonTick, limitSeconds: number): boolean {
   let current: Job | null = job;
 
@@ -38,6 +91,48 @@ function runToCompletion(job: Job, tick: PersonTick, limitSeconds: number): bool
 
   return false;
 }
+
+describe("working at plants", () => {
+  it("gathers berries at the edge of the bush, facing it", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+    const tick = firstMemberTick(harness, settle(harness, 1));
+
+    tick.context.world.vegetation.setFruit(plantNear(tick, PlantSpecies.Bush, 2.2), 1);
+
+    const job = findBerries(tick);
+
+    if (job === null) {
+      throw new Error("Expected a bush to gather from");
+    }
+
+    workUntilPosed(job, tick, "gather");
+
+    const placement = placementAt(tick, job.claimedPlant, 0.35);
+
+    expect(placement.missedBy).toBeLessThan(WORK_SPOT_TOLERANCE);
+    expect(placement.turnedAwayBy).toBeLessThan(FACING_TOLERANCE);
+  });
+
+  it("chops a tree from arm's reach of the trunk, facing it", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+    const tick = firstMemberTick(harness, settle(harness, 1));
+
+    plantNear(tick, PlantSpecies.Oak, 16);
+
+    const job = findTree(tick);
+
+    if (job === null) {
+      throw new Error("Expected a tree to chop");
+    }
+
+    workUntilPosed(job, tick, "chop");
+
+    const placement = placementAt(tick, job.claimedPlant, 0.75);
+
+    expect(placement.missedBy).toBeLessThan(WORK_SPOT_TOLERANCE);
+    expect(placement.turnedAwayBy).toBeLessThan(FACING_TOLERANCE);
+  });
+});
 
 describe("feeding the campfire", () => {
   it("keeps the wood the tender was already carrying", () => {

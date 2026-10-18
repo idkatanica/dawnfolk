@@ -1,5 +1,7 @@
+import { plantSpeciesDefinition } from "../../../content/plants.ts";
 import type { PersonPose } from "../../../world/agent-poses.ts";
-import { moveAlong, setDestination, stopMoving } from "../../agents/movement.ts";
+import type { VegetationStore } from "../../../world/vegetation-store.ts";
+import { faceTowards, moveAlong, setDestination, stopMoving } from "../../agents/movement.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
 import { nearestWalkableSpot } from "../../agents/walkable-ground.ts";
 import { isCarryingAnything, type Person, walkSpeed } from "../person.ts";
@@ -7,6 +9,8 @@ import type { PersonTick, SocietyContext } from "../society-context.ts";
 
 const RUNNING_SPEED = 3.4;
 const DRY_DESTINATION_RADIUS = 40;
+const WORK_ARRIVAL_DISTANCE = 0.3;
+const SHORTEST_APPROACH = 0.01;
 
 export type JobKind =
   | "build"
@@ -65,6 +69,43 @@ function travelPose(person: Person, speed: number): PersonPose {
   return "walk";
 }
 
+export interface WorkTarget {
+  readonly radius: number;
+  readonly reach: number;
+  readonly x: number;
+  readonly z: number;
+}
+
+export function plantTarget(vegetation: VegetationStore, plant: number, reach: number): WorkTarget {
+  const { radiusPerMeter } = plantSpeciesDefinition(vegetation.species[plant]);
+
+  return { radius: radiusPerMeter * vegetation.height[plant], reach, x: vegetation.x[plant], z: vegetation.z[plant] };
+}
+
+function approachDirection(person: Person, target: WorkTarget): Waypoint {
+  const awayX = person.mover.x - target.x;
+  const awayZ = person.mover.z - target.z;
+
+  const distance = Math.hypot(awayX, awayZ);
+
+  if (distance < SHORTEST_APPROACH) {
+    return { x: 1, z: 0 };
+  }
+
+  return { x: awayX / distance, z: awayZ / distance };
+}
+
+export function headToWork(person: Person, target: WorkTarget, context: SocietyContext): void {
+  const direction = approachDirection(person, target);
+  const standOff = target.radius + target.reach;
+
+  const spot = { x: target.x + direction.x * standOff, z: target.z + direction.z * standOff };
+
+  const drySpot = nearestWalkableSpot(context.world, spot, DRY_DESTINATION_RADIUS);
+
+  setDestination(person.mover, drySpot, context.navigation, { arrivalDistance: WORK_ARRIVAL_DISTANCE });
+}
+
 export function headTo(person: Person, destination: Waypoint, context: SocietyContext): void {
   const dryDestination = nearestWalkableSpot(context.world, destination, DRY_DESTINATION_RADIUS);
 
@@ -97,12 +138,14 @@ type ErrandProgress = "finished" | "travelling" | "working";
 type ErrandPhase = "travel" | "work";
 
 export class Errand {
+  readonly #focus: Waypoint | null;
   readonly #workPose: PersonPose;
   readonly #workSeconds: number;
   #elapsedWork = 0;
   #phase: ErrandPhase = "travel";
 
-  constructor(workSeconds: number, workPose: PersonPose) {
+  constructor(workSeconds: number, workPose: PersonPose, focus: Waypoint | null = null) {
+    this.#focus = focus;
     this.#workSeconds = workSeconds;
     this.#workPose = workPose;
   }
@@ -113,6 +156,7 @@ export class Errand {
     }
 
     standStill(tick.person, this.#workPose);
+    this.#faceFocus(tick);
     this.#elapsedWork += tick.seconds;
 
     if (this.#elapsedWork < this.#workSeconds) {
@@ -124,6 +168,16 @@ export class Errand {
 
   restartWork(): void {
     this.#elapsedWork = 0;
+  }
+
+  #faceFocus(tick: PersonTick): void {
+    const focus = this.#focus;
+
+    if (focus === null) {
+      return;
+    }
+
+    faceTowards(tick.person.mover, focus.x, focus.z);
   }
 
   #isAtWorkplace(tick: PersonTick): boolean {

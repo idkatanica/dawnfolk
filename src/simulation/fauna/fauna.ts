@@ -446,7 +446,7 @@ export class FaunaSystem {
     animal.poseSeconds -= tick.seconds;
 
     if (animal.pose !== "run" || animal.poseSeconds <= 0) {
-      setDestination(mover, this.#escapeFrom(animal), this.#navigation, false);
+      setDestination(mover, this.#escapeFrom(animal), this.#navigation, { mayPlanRoute: false });
       animal.pose = "run";
       animal.poseSeconds = FLEE_REPLAN_SECONDS;
     }

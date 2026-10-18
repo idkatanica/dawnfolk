@@ -1,21 +1,26 @@
 import type { Building } from "../buildings.ts";
 import type { PersonTick } from "../society-context.ts";
-import { Errand, headTo, type Job } from "./job.ts";
+import { Errand, headToWork, type Job, type WorkTarget } from "./job.ts";
 
 const TENDING_SECONDS = 2.5;
 const LOG = 1;
 const FUEL_PER_LOG = 0.45;
+const CAMPFIRE_RADIUS = 0.8;
+const TENDING_REACH = 0.5;
 
 export class TendJob implements Job {
   readonly kind = "tend";
   readonly #campfireId: number;
-  readonly #errand = new Errand(TENDING_SECONDS, "build");
+  readonly #errand: Errand;
 
   constructor(tick: PersonTick, campfire: Building) {
+    const target: WorkTarget = { radius: CAMPFIRE_RADIUS, reach: TENDING_REACH, x: campfire.x, z: campfire.z };
+
     this.#campfireId = campfire.id;
+    this.#errand = new Errand(TENDING_SECONDS, "build", target);
     tick.tribe.stock.wood -= LOG;
     tick.person.carrying.wood += LOG;
-    headTo(tick.person, { x: campfire.x + 2.5, z: campfire.z + 2 }, tick.context);
+    headToWork(tick.person, target, tick.context);
   }
 
   update(tick: PersonTick): Job | null {
