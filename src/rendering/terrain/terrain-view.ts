@@ -1,7 +1,8 @@
-import type { Group, MeshStandardNodeMaterial, PerspectiveCamera } from "three/webgpu";
+import type { Group, MeshStandardNodeMaterial, PerspectiveCamera, WebGPURenderer } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
+import { GroundWarp } from "./ground-warp.ts";
 import { islandPlinthHeight } from "./island-base-geometry.ts";
 import { type HeightRange, type PatchCorner, PatchGrid } from "./patch-grid.ts";
 import { createTerrainMaterial } from "./terrain-material.ts";
@@ -14,10 +15,19 @@ export class TerrainView {
   readonly #material: MeshStandardNodeMaterial;
   readonly #mirror: WorldMirror;
   readonly #patches: PatchGrid;
+  readonly #warp: GroundWarp;
 
-  constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow) {
+  constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow, renderer: WebGPURenderer) {
     this.#mirror = mirror;
-    this.#material = createTerrainMaterial(textures, mirror.grid, glow, islandPlinthHeight(mirror));
+    this.#warp = new GroundWarp(mirror.grid);
+    this.#warp.bake(renderer);
+    this.#material = createTerrainMaterial({
+      glow,
+      grid: mirror.grid,
+      plinth: islandPlinthHeight(mirror),
+      textures,
+      warp: this.#warp,
+    });
     this.#patches = new PatchGrid(mirror.grid, (corner) => this.#measure(corner), {
       castsShadow: true,
       edges: "skirted",
@@ -46,6 +56,7 @@ export class TerrainView {
   dispose(): void {
     this.#patches.dispose();
     this.#material.dispose();
+    this.#warp.dispose();
   }
 
   #measure(corner: PatchCorner): HeightRange {

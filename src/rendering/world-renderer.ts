@@ -98,7 +98,7 @@ export class WorldRenderer {
     this.#changes = new WorldChangeReader(mirror);
     this.#textures = new TerrainTextures(mirror);
     this.#fireGlow = new FireGlow(mirror.grid);
-    this.#terrain = new TerrainView(mirror, this.#textures, this.#fireGlow);
+    this.#terrain = new TerrainView(mirror, this.#textures, this.#fireGlow, renderer);
     this.#islandBase = new IslandBase(mirror, this.#textures);
     this.#water = new WaterView(mirror, this.#textures);
     this.#waterfalls.rebuild(mirror.water.waterfalls);
