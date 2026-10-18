@@ -1,7 +1,7 @@
 import { abs, atan, floor, fract, ivec2, length, max, mix, textureLoad, vec2 } from "three/tsl";
 import { ClampToEdgeWrapping, DataTexture, FloatType, NearestFilter, type Node, RedFormat } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import { FULL_TURN } from "../../shared/math.ts";
+import { clamp, FULL_TURN, wrapAngle } from "../../shared/math.ts";
 import { sampleHeight } from "../../world/terrain-sampling.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 
@@ -11,6 +11,7 @@ const INLAND_START = 0.5;
 const WALK_STEPS = 65_536;
 const CROSSING_STEPS = 24;
 const SAME_ANGLE = 1e-9;
+const SIDE_TEST_SIZE = 80;
 
 export interface CoastPoint {
   readonly angle: number;
@@ -18,6 +19,15 @@ export interface CoastPoint {
 }
 
 type LatticeLines = readonly [column: number, row: number, diagonal: number];
+
+export type OutlineSide = "across" | "inside" | "outside";
+
+export interface GroundArea {
+  readonly maximumX: number;
+  readonly maximumZ: number;
+  readonly minimumX: number;
+  readonly minimumZ: number;
+}
 
 function coastRadius(mirror: WorldMirror, outwardX: number, outwardZ: number): number {
   const { grid, terrain } = mirror;
@@ -84,6 +94,63 @@ function radiusAt(radii: Float32Array, angle: number): number {
   const following = (index + 1) % radii.length;
 
   return radii[index] + (radii[following] - radii[index]) * (sample - index);
+}
+
+function anglesAcross(area: GroundArea): readonly [number, number] {
+  const middle = Math.atan2((area.minimumZ + area.maximumZ) / 2, (area.minimumX + area.maximumX) / 2);
+
+  let first = 0;
+  let last = 0;
+
+  for (const x of [area.minimumX, area.maximumX]) {
+    for (const z of [area.minimumZ, area.maximumZ]) {
+      const offset = wrapAngle(Math.atan2(z, x) - middle);
+
+      first = Math.min(first, offset);
+      last = Math.max(last, offset);
+    }
+  }
+
+  return [middle + first, middle + last];
+}
+
+function radiiBetween(radii: Float32Array, firstAngle: number, lastAngle: number): readonly [number, number] {
+  let lowest = Math.min(radiusAt(radii, firstAngle), radiusAt(radii, lastAngle));
+  let highest = Math.max(radiusAt(radii, firstAngle), radiusAt(radii, lastAngle));
+
+  const firstSample = Math.ceil((firstAngle / FULL_TURN) * radii.length);
+  const lastSample = Math.floor((lastAngle / FULL_TURN) * radii.length);
+
+  for (let sample = firstSample; sample <= lastSample; sample += 1) {
+    const radius = radii[((sample % radii.length) + radii.length) % radii.length];
+
+    lowest = Math.min(lowest, radius);
+    highest = Math.max(highest, radius);
+  }
+
+  return [lowest, highest];
+}
+
+function sideOfPart(radii: Float32Array, area: GroundArea, margin: number): OutlineSide {
+  const nearest = Math.hypot(clamp(0, area.minimumX, area.maximumX), clamp(0, area.minimumZ, area.maximumZ));
+  const farthest = Math.hypot(
+    Math.max(Math.abs(area.minimumX), Math.abs(area.maximumX)),
+    Math.max(Math.abs(area.minimumZ), Math.abs(area.maximumZ))
+  );
+
+  const [firstAngle, lastAngle] = nearest === 0 ? [0, FULL_TURN] : anglesAcross(area);
+
+  const [lowest, highest] = radiiBetween(radii, firstAngle, lastAngle);
+
+  if (farthest < lowest - margin) {
+    return "inside";
+  }
+
+  if (nearest > highest + margin) {
+    return "outside";
+  }
+
+  return "across";
 }
 
 function latticeLinesAt(grid: WorldGrid, radii: Float32Array, angle: number): LatticeLines {
@@ -171,6 +238,37 @@ export class IslandOutline {
 
   get hasCoast(): boolean {
     return this.#texture !== null;
+  }
+
+  sideOf(area: GroundArea, margin: number): OutlineSide {
+    if (this.#radii === null) {
+      return "inside";
+    }
+
+    const width = area.maximumX - area.minimumX;
+    const depth = area.maximumZ - area.minimumZ;
+    const columns = Math.max(1, Math.ceil(width / SIDE_TEST_SIZE));
+    const rows = Math.max(1, Math.ceil(depth / SIDE_TEST_SIZE));
+    const sides = new Set<OutlineSide>();
+
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const part = {
+          maximumX: area.minimumX + (width * (column + 1)) / columns,
+          maximumZ: area.minimumZ + (depth * (row + 1)) / rows,
+          minimumX: area.minimumX + (width * column) / columns,
+          minimumZ: area.minimumZ + (depth * row) / rows,
+        };
+
+        sides.add(sideOfPart(this.#radii, part, margin));
+      }
+    }
+
+    if (sides.size > 1 || sides.has("across")) {
+      return "across";
+    }
+
+    return sides.has("inside") ? "inside" : "outside";
   }
 
   atCoast(x: number, z: number): readonly [number, number] {
