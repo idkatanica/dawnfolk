@@ -7,7 +7,7 @@ import { admitsWildPlant, slopeAt } from "../world/footing.ts";
 import { ISLAND_SHAPES, type IslandShapeKind } from "../world/island-shape.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { sampleHeight } from "../world/terrain-sampling.ts";
-import { hasWater, NO_WATER, type River, SPRING_KINDS } from "../world/water.ts";
+import { hasWater, NO_WATER, type River, type RiverPoint, SPRING_KINDS } from "../world/water.ts";
 import { NEIGHBOR_OFFSETS, WorldGrid } from "../world/world-grid.ts";
 import {
   DEFAULT_GENERATION_OPTIONS,
@@ -19,6 +19,9 @@ import {
 const TEST_DIMENSIONS = { cellSize: 40, cellsPerSide: 128 };
 const STEEP = 1;
 const CLIFF = Math.tan((55 * Math.PI) / 180);
+const SMALLEST_RIVER_GAP = 35;
+const CONFLUENCE_REACH = 100;
+const JUNCTION_CELLS = 1.5;
 
 let world: GeneratedWorld;
 let squareWorld: GeneratedWorld;
@@ -311,6 +314,71 @@ function headFaults(generated: GeneratedWorld): string[] {
   return faults;
 }
 
+function riverEnd(river: River): RiverPoint {
+  const end = river.points.at(-1);
+
+  if (end === undefined) {
+    throw new Error(`River ${river.id} has no points`);
+  }
+
+  return end;
+}
+
+function isNear(point: RiverPoint, other: RiverPoint, reach: number): boolean {
+  return Math.hypot(point.x - other.x, point.z - other.z) < reach;
+}
+
+function joinsRiver(tributary: River, main: River, reach: number): boolean {
+  const end = riverEnd(tributary);
+
+  return main.points.some((point) => isNear(point, end, reach));
+}
+
+function confluencesOf(rivers: readonly River[], first: River, second: River, reach: number): RiverPoint[] {
+  const confluences: RiverPoint[] = [];
+
+  for (const [tributary, main] of [
+    [first, second],
+    [second, first],
+  ] as const) {
+    if (joinsRiver(tributary, main, reach)) {
+      confluences.push(riverEnd(tributary));
+    }
+  }
+
+  for (const third of rivers) {
+    if (third !== first && third !== second && joinsRiver(first, third, reach) && joinsRiver(second, third, reach)) {
+      confluences.push(riverEnd(first), riverEnd(second));
+    }
+  }
+
+  return confluences;
+}
+
+function closestDistinctRivers(generated: GeneratedWorld): number {
+  const { cellSize } = generated.dimensions;
+  const { rivers } = generated.water;
+
+  let closest = Number.POSITIVE_INFINITY;
+
+  for (const [index, first] of rivers.entries()) {
+    for (const second of rivers.slice(index + 1)) {
+      const confluences = confluencesOf(rivers, first, second, cellSize * JUNCTION_CELLS);
+
+      const isApart = (point: RiverPoint) =>
+        confluences.every((confluence) => !isNear(point, confluence, CONFLUENCE_REACH));
+
+      for (const point of first.points.filter(isApart)) {
+        for (const other of second.points.filter(isApart)) {
+          closest = Math.min(closest, Math.hypot(point.x - other.x, point.z - other.z));
+        }
+      }
+    }
+  }
+
+  return closest;
+}
+
 function distanceToWaterfall(generated: GeneratedWorld, grid: WorldGrid, cell: number): number {
   const x = grid.cellCenterX(cell);
   const z = grid.cellCenterZ(cell);
@@ -411,6 +479,16 @@ describe("world generation", () => {
     for (const generated of [world, squareWorld, generateTestWorld(11), generateTestWorld(11, "square")]) {
       expect(generated.water.waterfalls.length).toBeGreaterThan(0);
       expect(mouthFaults(generated)).toEqual([]);
+    }
+  });
+
+  it("keeps distinct rivers apart instead of running them side by side on several seeds and both shapes", () => {
+    for (const seed of [3, 7, 11]) {
+      for (const shape of ISLAND_SHAPES) {
+        const generated = seed === 7 && shape === "round" ? world : generateTestWorld(seed, shape);
+
+        expect(closestDistinctRivers(generated)).toBeGreaterThan(SMALLEST_RIVER_GAP);
+      }
     }
   });
 
@@ -690,6 +768,11 @@ describe("full-size island rim", () => {
       expect(riverFaults(generated)).toEqual([]);
       expect(mouthFaults(generated)).toEqual([]);
     }
+  });
+
+  it("keeps the full-size rivers apart on both shapes", () => {
+    expect(closestDistinctRivers(fullSize)).toBeGreaterThan(SMALLEST_RIVER_GAP);
+    expect(closestDistinctRivers(fullSquare)).toBeGreaterThan(SMALLEST_RIVER_GAP);
   });
 
   it("starts every full-size river at a spring lake, a rocky spring or a cave on both shapes", () => {

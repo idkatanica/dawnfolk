@@ -12,6 +12,7 @@ import {
 } from "../world/water.ts";
 import { NEIGHBOR_OFFSETS, type WorldGrid } from "../world/world-grid.ts";
 import { interpolatePoint, makeSurfaceDescend, smoothRiverPath } from "./river-paths.ts";
+import { spaceRiverChains } from "./river-spacing.ts";
 import { placeSprings } from "./springs.ts";
 
 const DIAGONAL_REACH = 0.75;
@@ -83,7 +84,7 @@ export interface DrainageBasins {
   waterSurface: Float32Array;
 }
 
-interface RiverChain {
+export interface RiverChain {
   cells: number[];
   joinsCell: number;
   mouthReceiver: number;
@@ -109,7 +110,7 @@ const OPPOSITE_SIDES = [
   [1, 0],
 ] as const;
 
-function touchesOffIsland(cell: number, grid: WorldGrid, coastDistance: Float32Array): boolean {
+export function touchesOffIsland(cell: number, grid: WorldGrid, coastDistance: Float32Array): boolean {
   const column = grid.columnOf(cell);
   const row = grid.rowOf(cell);
 
@@ -440,6 +441,10 @@ function channelGround(cell: number, heights: Float32Array, network: DrainageNet
   return filled;
 }
 
+export function riverWidthFor(flow: number, threshold: number): number {
+  return clamp(3.5 + 3.4 * riverStrengthFor(flow, threshold), 3.5, 26);
+}
+
 function riverPointFor(
   cell: number,
   heights: Float32Array,
@@ -455,7 +460,7 @@ function riverPointFor(
     depth: clamp(0.8 + 0.42 * strength, 0.8, 3.2),
     flow,
     surface: channelGround(cell, heights, network) - 0.3,
-    width: clamp(3.5 + 3.4 * strength, 3.5, 26),
+    width: riverWidthFor(flow, threshold),
     x: grid.cellCenterX(cell),
     z: grid.cellCenterZ(cell),
   };
@@ -1143,7 +1148,12 @@ export function computeHydrology(
 
   const riverStrength = new Uint8Array(grid.cellCount);
 
-  const chains = traceRiverChains(basins.network, lakeIds, riverThreshold);
+  const chains = spaceRiverChains(traceRiverChains(basins.network, lakeIds, riverThreshold), {
+    basins,
+    coastDistance,
+    grid,
+    heights,
+  });
 
   const rivers = buildRivers(chains, { basins, coastDistance, grid, heights });
   const springs = placeSprings(rivers, { grid, heights, lakeIds, riverThreshold });
