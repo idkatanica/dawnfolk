@@ -4,10 +4,12 @@ import {
   Fn,
   float,
   fwidth,
+  If,
   ivec2,
   mix,
   mx_fractal_noise_float,
   mx_noise_float,
+  normalLocal,
   positionLocal,
   positionWorld,
   sin,
@@ -25,12 +27,17 @@ function createBaseMaterial(textures: TerrainTextures, size: number, plinth: num
   const material = new MeshStandardNodeMaterial();
   const topCell = attribute("topCell", "vec2");
   const cliffAmount = attribute("cliffAmount", "float");
+  const outward = attribute("outward", "vec2");
   const last = size - 1;
 
   material.positionNode = Fn(() => {
     const cell = ivec2(clamp(topCell, vec2(0, 0), vec2(last, last)));
 
     const surface = textureLoad(textures.height, cell).x;
+
+    If(cliffAmount.greaterThan(0), () => {
+      normalLocal.assign(vec3(outward.x, 0, outward.y));
+    });
 
     return vec3(positionLocal.x, mix(positionLocal.y, surface, cliffAmount), positionLocal.z);
   })();

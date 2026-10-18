@@ -32,6 +32,7 @@ import { unitNoise } from "../node-helpers.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
 const SKIRT_DROP_PER_STEP = 25;
+const EDGE_SKIRT_INSET = 3;
 const PRESENT_WATER = NO_WATER / 2;
 const CHARCOAL = vec3(0.012, 0.011, 0.01);
 const ASH = vec3(0.13, 0.12, 0.11);
@@ -64,6 +65,14 @@ function burningGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"floa
   return EMBER_DEEP.mul(smoulder).add(EMBER_BRIGHT.mul(blaze));
 }
 
+function edgeSide(coordinate: Node<"float">, lastCell: number): Node<"float"> {
+  return select(
+    coordinate.lessThan(0.5),
+    float(-1),
+    select(coordinate.greaterThan(lastCell - 0.5), float(1), float(0))
+  );
+}
+
 function terrainPosition(textures: TerrainTextures, grid: WorldGrid, plinth: number): Node<"vec3"> {
   const cellSize = float(grid.cellSize);
   const halfSize = float(grid.halfSize);
@@ -89,11 +98,13 @@ function terrainPosition(textures: TerrainTextures, grid: WorldGrid, plinth: num
     normalLocal.assign(normalize(vec3(slopeX, cellSize.mul(2), slopeZ)));
 
     const drop = skirt.mul(SKIRT_DROP_PER_STEP);
+    const outward = vec2(edgeSide(cell.x, lastCell), edgeSide(cell.y, lastCell));
+    const inset = outward.mul(select(skirt.greaterThan(0), float(EDGE_SKIRT_INSET), float(0)));
 
     return vec3(
-      cell.x.add(0.5).mul(cellSize).sub(halfSize),
+      cell.x.add(0.5).mul(cellSize).sub(halfSize).sub(inset.x),
       max(height.sub(drop), min(height, plinth)),
-      cell.y.add(0.5).mul(cellSize).sub(halfSize)
+      cell.y.add(0.5).mul(cellSize).sub(halfSize).sub(inset.y)
     );
   })();
 }

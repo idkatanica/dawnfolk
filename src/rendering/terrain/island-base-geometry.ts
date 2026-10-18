@@ -141,6 +141,7 @@ export function buildIslandBaseGeometry(mirror: WorldMirror): BufferGeometry {
   const positions: number[] = [];
   const cells: number[] = [];
   const cliffAmounts: number[] = [];
+  const outwards: number[] = [];
   const indices: number[] = [];
 
   for (const point of points) {
@@ -148,6 +149,7 @@ export function buildIslandBaseGeometry(mirror: WorldMirror): BufferGeometry {
       positions.push(...placeVertex({ grid, noise, plinth, point, ring }));
       cells.push(point.column, point.row);
       cliffAmounts.push(ring.cliffAmount);
+      outwards.push(point.outwardX, point.outwardZ);
     }
   }
 
@@ -157,6 +159,7 @@ export function buildIslandBaseGeometry(mirror: WorldMirror): BufferGeometry {
   positions.push(0, plinth - UNDERSIDE_DEPTH * 1.12, 0);
   cells.push(0, 0);
   cliffAmounts.push(0);
+  outwards.push(0, 0);
 
   for (let point = 0; point < points.length; point += 1) {
     const next = (point + 1) % points.length;
@@ -176,6 +179,7 @@ export function buildIslandBaseGeometry(mirror: WorldMirror): BufferGeometry {
   geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
   geometry.setAttribute("topCell", new Float32BufferAttribute(cells, 2));
   geometry.setAttribute("cliffAmount", new Float32BufferAttribute(cliffAmounts, 1));
+  geometry.setAttribute("outward", new Float32BufferAttribute(outwards, 2));
   geometry.setIndex(new Uint32BufferAttribute(indices, 1));
   geometry.computeVertexNormals();
 
