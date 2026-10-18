@@ -3,7 +3,13 @@ import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefini
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
-import { describePiece, detachedPieces, type MeshPiece, meshPieces } from "../testing/mesh-connectivity.ts";
+import {
+  describePiece,
+  detachedPieces,
+  isInsidePiece,
+  type MeshPiece,
+  meshPieces,
+} from "../testing/mesh-connectivity.ts";
 import { windBentMesh } from "../testing/moved-mesh.ts";
 import { BERRY_RADIUS, isBerryPart } from "./berries.ts";
 import { CACTUS_FORMS, cactusForm } from "./cacti.ts";
@@ -252,6 +258,32 @@ describe("tree details", () => {
           expect(ripening.size).toBe(1);
           expect(widestSpan(bush, piece)).toBeLessThan(BERRY_RADIUS * 2.5);
           expect(widestSpan(bent, piece)).toBeCloseTo(widestSpan(bush, piece), 5);
+        }
+      }
+    }
+  });
+
+  it("tucks the tip of every spruce tier inside the tier above it", () => {
+    for (const level of ["high", "medium"] as const) {
+      for (const spruce of buildPlantVariants(PlantSpecies.Spruce, level)) {
+        const tiers = meshPieces(spruce)
+          .filter((piece) => spruce.channels.slot[piece.vertices[0]] === MaterialSlot.Needle)
+          .sort((first, second) => first.maximum[1] - second.maximum[1]);
+
+        for (const tier of tiers.slice(0, -1)) {
+          const tip = highestVertex(spruce, tier.vertices) * 3;
+
+          const isTucked = tiers.some(
+            (other) =>
+              other !== tier &&
+              isInsidePiece(spruce, other, [
+                spruce.positions[tip],
+                spruce.positions[tip + 1],
+                spruce.positions[tip + 2],
+              ])
+          );
+
+          expect(isTucked).toBe(true);
         }
       }
     }

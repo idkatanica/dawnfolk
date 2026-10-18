@@ -276,7 +276,7 @@ function rayCrossesTriangle(origin: Point, corners: Corners): boolean {
   return dot(secondEdge, across) / determinant > RAY_EPSILON;
 }
 
-function isInsidePiece(mesh: MeshData, piece: MeshPiece, point: Point): boolean {
+export function isInsidePiece(mesh: MeshData, piece: MeshPiece, point: Point): boolean {
   const crossings = piece.triangles.filter((triangle) => rayCrossesTriangle(point, triangleCorners(mesh, triangle)));
 
   return crossings.length % 2 === 1;

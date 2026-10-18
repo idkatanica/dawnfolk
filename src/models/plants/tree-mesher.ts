@@ -208,27 +208,91 @@ function thinned(points: readonly TubePoint[]): TubePoint[] {
   return [...kept, last];
 }
 
-function skirtShape(skirt: FoliageSkirt, segments: number, teeth: number): Shape {
-  const { bottom, droop, radius, top } = skirt;
+interface SkirtDetail {
+  readonly hasRoundedUnderside: boolean;
+  readonly segments: number;
+  readonly teeth: number;
+}
 
-  const sections: LoftSection[] = [
-    { radiusX: 0, radiusZ: 0, y: bottom + droop * 0.8 },
-    { radiusX: radius * 0.55, radiusZ: radius * 0.55, y: bottom + droop * 0.55 },
-    { radiusX: radius, radiusZ: radius, y: bottom },
-    { radiusX: radius * 0.62, radiusZ: radius * 0.62, y: lerp(bottom, top, 0.38) },
-    { radiusX: radius * 0.16, radiusZ: radius * 0.16, y: lerp(top, bottom, 0.08) },
+const SKIRT_DETAILS: Readonly<Record<PlantDetailLevel, SkirtDetail>> = {
+  high: { hasRoundedUnderside: true, segments: 14, teeth: 11 },
+  low: { hasRoundedUnderside: false, segments: 7, teeth: 6 },
+  medium: { hasRoundedUnderside: false, segments: 9, teeth: 8 },
+};
+
+const SHOULDER_HEIGHT = 0.38;
+const SHOULDER_RADIUS = 0.62;
+const TIP_HEIGHT = 0.92;
+const TIP_RADIUS = 0.16;
+const HOLLOW_VERTICES = 1;
+
+function skirtCrown(skirt: FoliageSkirt, isCovered: boolean): LoftSection[] {
+  const { bottom, radius, top } = skirt;
+
+  const shoulder = lerp(bottom, top, SHOULDER_HEIGHT);
+  const tip = lerp(bottom, top, TIP_HEIGHT);
+
+  if (isCovered) {
+    const apex = shoulder + ((tip - shoulder) * SHOULDER_RADIUS) / (SHOULDER_RADIUS - TIP_RADIUS);
+
+    return [{ radiusX: 0, radiusZ: 0, y: apex }];
+  }
+
+  return [
+    { radiusX: radius * TIP_RADIUS, radiusZ: radius * TIP_RADIUS, y: tip },
     { radiusX: 0, radiusZ: 0, y: top },
   ];
+}
 
-  return deformShape(loft(sections, segments), (vertex) => {
+function toothedLoft(sections: readonly LoftSection[], skirt: FoliageSkirt, detail: SkirtDetail): Shape {
+  const { bottom, droop } = skirt;
+
+  return deformShape(loft(sections, detail.segments), (vertex) => {
     if (vertex.y > bottom + 0.01) {
       return [0, 0, 0];
     }
 
-    const tooth = Math.abs(fractionalPart(vertex.around * teeth) * 2 - 1);
+    const tooth = Math.abs(fractionalPart(vertex.around * detail.teeth) * 2 - 1);
 
     return [vertex.x * 0.12 * tooth, -droop * (1 - tooth), vertex.z * 0.12 * tooth];
   });
+}
+
+function skirtShape(skirt: FoliageSkirt, detail: SkirtDetail, isCovered: boolean): Shape {
+  const { bottom, droop, radius, top } = skirt;
+
+  const hollow: LoftSection = { radiusX: 0, radiusZ: 0, y: bottom + droop * 0.8 };
+  const underside: LoftSection = { radiusX: radius * 0.55, radiusZ: radius * 0.55, y: bottom + droop * 0.55 };
+
+  const upperSide: LoftSection[] = [
+    { radiusX: radius, radiusZ: radius, y: bottom },
+    {
+      radiusX: radius * SHOULDER_RADIUS,
+      radiusZ: radius * SHOULDER_RADIUS,
+      y: lerp(bottom, top, SHOULDER_HEIGHT),
+    },
+    ...skirtCrown(skirt, isCovered),
+  ];
+
+  const rounded = toothedLoft([hollow, underside, ...upperSide], skirt, detail);
+
+  if (detail.hasRoundedUnderside) {
+    return rounded;
+  }
+
+  const plain = toothedLoft([hollow, ...upperSide], skirt, detail);
+  const normals = new Float32Array(plain.normals);
+  const rimInRounded = (HOLLOW_VERTICES + detail.segments) * 3;
+
+  normals.set(rounded.normals.subarray(rimInRounded, rimInRounded + detail.segments * 3), HOLLOW_VERTICES * 3);
+
+  return { ...plain, normals };
+}
+
+function isCoveredSkirt(skirt: FoliageSkirt, structure: TreeStructure): boolean {
+  return structure.foliage.some(
+    (other) => other.kind === "skirt" && other.bottom > skirt.bottom && other.bottom < skirt.top
+  );
 }
 
 function addSkirt(
@@ -238,11 +302,9 @@ function addSkirt(
   skirt: FoliageSkirt,
   level: PlantDetailLevel
 ): void {
-  const segments = { high: 14, low: 7, medium: 9 }[level];
-  const teeth = { high: 11, low: 6, medium: 8 }[level];
   const center = new Vector3(skirt.center[0], (skirt.bottom + skirt.top) / 2, skirt.center[2]);
 
-  builder.add(skirtShape(skirt, segments, teeth), {
+  builder.add(skirtShape(skirt, SKIRT_DETAILS[level], isCoveredSkirt(skirt, structure)), {
     style: foliageStyle(structure, look, skirt.tint, center),
     transform: transformOf({ position: [skirt.center[0], 0, skirt.center[2]] }),
   });
