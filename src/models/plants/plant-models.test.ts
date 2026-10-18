@@ -21,14 +21,17 @@ const STORM_PUSH = 2;
 const SPECIES: readonly PlantSpeciesIndex[] = PLANT_SPECIES.map((definition) => definition.index);
 const FOLIAGE_SLOTS: ReadonlySet<number> = new Set([MaterialSlot.Leaf, MaterialSlot.Needle]);
 const TREES = [
+  PlantSpecies.Acacia,
   PlantSpecies.Birch,
   PlantSpecies.Maple,
   PlantSpecies.Oak,
+  PlantSpecies.Palm,
   PlantSpecies.Pine,
+  PlantSpecies.Poplar,
   PlantSpecies.Spruce,
   PlantSpecies.Willow,
 ];
-const MIXED_FORMS: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus]);
+const MIXED_FORMS: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DeadTree]);
 
 function averageTriangles(species: PlantSpeciesIndex, level: (typeof PLANT_DETAIL_LEVELS)[number]): number {
   const variants = buildPlantVariants(species, level);
@@ -177,6 +180,15 @@ describe("tree details", () => {
     expect(barrel.bounds.maximum[1]).toBeLessThan(1.6);
     expect(pricklyPear.channels.slot).toContain(MaterialSlot.Berry);
     expect(saguaro.channels.slot).toContain(MaterialSlot.Blossom);
+  });
+
+  it("leaves dead trees bare in every season", () => {
+    for (const level of PLANT_DETAIL_LEVELS) {
+      for (const snag of buildPlantVariants(PlantSpecies.DeadTree, level)) {
+        expect([...snag.channels.slot].some((slot) => FOLIAGE_SLOTS.has(slot))).toBe(false);
+        expect(snag.channels.slot).toContain(MaterialSlot.Deadwood);
+      }
+    }
   });
 
   it("marks birch bark and hangs berries only on near bushes", () => {

@@ -1,5 +1,5 @@
 import { Biome } from "../../content/biomes.ts";
-import { plantSpeciesDefinition } from "../../content/plants.ts";
+import { isLivingTreeSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
 import { aroundPoint, type Waypoint } from "../agents/navigation.ts";
@@ -141,10 +141,10 @@ function countLivingForage(world: WorldState, cell: number, count: ForageCount):
       continue;
     }
 
-    const { form } = plantSpeciesDefinition(vegetation.species[plant]);
+    const species = vegetation.species[plant];
 
-    count.bushes += form === "shrub" ? 1 : 0;
-    count.trees += form === "broadleaf" || form === "conifer" ? 1 : 0;
+    count.bushes += plantSpeciesDefinition(species).givesBerries ? 1 : 0;
+    count.trees += isLivingTreeSpecies(species) ? 1 : 0;
   }
 }
 

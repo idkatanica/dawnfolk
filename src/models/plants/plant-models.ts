@@ -27,13 +27,20 @@ const FOOTPRINT_HEIGHT = 0.3;
 const BROADLEAF: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
 const CONIFER: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Needle, hasBarkMarks: false };
 const BIRCH: TreeLook = { bark: MaterialSlot.BirchBark, foliage: MaterialSlot.Leaf, hasBarkMarks: true };
+const PALM: TreeLook = { bark: MaterialSlot.Wood, foliage: MaterialSlot.Leaf, hasBarkMarks: true };
+const DEADWOOD: TreeLook = { bark: MaterialSlot.Deadwood, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
 
 const TREE_LOOKS: Readonly<Partial<Record<PlantSpeciesIndex, TreeLook>>> = {
+  [PlantSpecies.Acacia]: BROADLEAF,
   [PlantSpecies.Birch]: BIRCH,
   [PlantSpecies.Bush]: BROADLEAF,
+  [PlantSpecies.DeadTree]: DEADWOOD,
+  [PlantSpecies.DesertShrub]: DEADWOOD,
   [PlantSpecies.Maple]: BROADLEAF,
   [PlantSpecies.Oak]: BROADLEAF,
+  [PlantSpecies.Palm]: PALM,
   [PlantSpecies.Pine]: CONIFER,
+  [PlantSpecies.Poplar]: BROADLEAF,
   [PlantSpecies.Spruce]: CONIFER,
   [PlantSpecies.Willow]: BROADLEAF,
 };
@@ -100,7 +107,7 @@ function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDe
     throw new RangeError(`No model for plant species ${PLANT_SPECIES[species].name}`);
   }
 
-  const structure = generator(seed);
+  const structure = generator(seed, variant);
 
   const tree = meshTree(structure, look, level);
 

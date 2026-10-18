@@ -1,20 +1,25 @@
 import { Biome, type BiomeIndex } from "./biomes.ts";
 
 export const PlantSpecies = {
+  Acacia: 10,
   Birch: 3,
   Boulder: 8,
   Bush: 6,
   Cactus: 7,
+  DeadTree: 12,
+  DesertShrub: 13,
   Maple: 5,
   Oak: 2,
+  Palm: 9,
   Pine: 1,
+  Poplar: 11,
   Spruce: 0,
   Willow: 4,
 } as const;
 
 export type PlantSpeciesIndex = (typeof PlantSpecies)[keyof typeof PlantSpecies];
 
-type PlantForm = "broadleaf" | "conifer" | "shrub" | "succulent" | "stone";
+type PlantForm = "broadleaf" | "conifer" | "deadwood" | "shrub" | "succulent" | "stone";
 
 interface PlantSpeciesDefinition {
   canopyFuel: number;
@@ -108,6 +113,51 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     name: "Boulder",
     wood: 0,
   },
+  {
+    canopyFuel: 1.2,
+    form: "broadleaf",
+    givesBerries: false,
+    heightRange: [7, 12],
+    index: PlantSpecies.Palm,
+    name: "Palm",
+    wood: 2,
+  },
+  {
+    canopyFuel: 1.4,
+    form: "broadleaf",
+    givesBerries: false,
+    heightRange: [6, 11],
+    index: PlantSpecies.Acacia,
+    name: "Acacia",
+    wood: 3,
+  },
+  {
+    canopyFuel: 1.8,
+    form: "broadleaf",
+    givesBerries: false,
+    heightRange: [16, 25],
+    index: PlantSpecies.Poplar,
+    name: "Poplar",
+    wood: 3,
+  },
+  {
+    canopyFuel: 0.5,
+    form: "deadwood",
+    givesBerries: false,
+    heightRange: [5, 11],
+    index: PlantSpecies.DeadTree,
+    name: "Dead tree",
+    wood: 2,
+  },
+  {
+    canopyFuel: 0.3,
+    form: "shrub",
+    givesBerries: false,
+    heightRange: [0.7, 1.6],
+    index: PlantSpecies.DesertShrub,
+    name: "Desert shrub",
+    wood: 0,
+  },
 ];
 
 export function plantSpeciesDefinition(index: number): PlantSpeciesDefinition {
@@ -120,30 +170,43 @@ export function plantSpeciesDefinition(index: number): PlantSpeciesDefinition {
   return definition;
 }
 
-export function isTreeSpecies(index: number): boolean {
+export function isLivingTreeSpecies(index: number): boolean {
   const { form } = plantSpeciesDefinition(index);
 
   return form === "broadleaf" || form === "conifer";
 }
 
+export function isTreeSpecies(index: number): boolean {
+  return isLivingTreeSpecies(index) || plantSpeciesDefinition(index).form === "deadwood";
+}
+
 interface PlantingRule {
   chancePerCell: number;
   heightScale: number;
+  minimumTemperature?: number;
   species: PlantSpeciesIndex;
 }
+
+const WARM = 12;
 
 export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> = {
   [Biome.Alpine]: [
     { chancePerCell: 0.045, heightScale: 1, species: PlantSpecies.Boulder },
     { chancePerCell: 0.02, heightScale: 0.45, species: PlantSpecies.Spruce },
+    { chancePerCell: 0.004, heightScale: 0.7, species: PlantSpecies.DeadTree },
   ],
   [Biome.Beach]: [
     { chancePerCell: 0.004, heightScale: 1, species: PlantSpecies.Boulder },
-    { chancePerCell: 0.03, heightScale: 0.9, species: PlantSpecies.Willow },
+    { chancePerCell: 0.02, heightScale: 0.9, species: PlantSpecies.Willow },
+    { chancePerCell: 0.04, heightScale: 1, minimumTemperature: WARM, species: PlantSpecies.Palm },
   ],
   [Biome.Desert]: [
-    { chancePerCell: 0.022, heightScale: 1, species: PlantSpecies.Cactus },
+    { chancePerCell: 0.03, heightScale: 1, species: PlantSpecies.Cactus },
     { chancePerCell: 0.012, heightScale: 1, species: PlantSpecies.Boulder },
+    { chancePerCell: 0.06, heightScale: 1, species: PlantSpecies.DesertShrub },
+    { chancePerCell: 0.008, heightScale: 0.85, species: PlantSpecies.Acacia },
+    { chancePerCell: 0.004, heightScale: 0.9, species: PlantSpecies.DeadTree },
+    { chancePerCell: 0.003, heightScale: 0.9, minimumTemperature: WARM, species: PlantSpecies.Palm },
   ],
   [Biome.Forest]: [
     { chancePerCell: 0.36, heightScale: 1, species: PlantSpecies.Oak },
@@ -160,22 +223,34 @@ export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]
     { chancePerCell: 0.015, heightScale: 1, species: PlantSpecies.Maple },
     { chancePerCell: 0.08, heightScale: 1, species: PlantSpecies.Bush },
     { chancePerCell: 0.02, heightScale: 1, species: PlantSpecies.Pine },
+    { chancePerCell: 0.012, heightScale: 1, species: PlantSpecies.Poplar },
   ],
-  [Biome.Mesa]: [{ chancePerCell: 0.02, heightScale: 1.2, species: PlantSpecies.Boulder }],
+  [Biome.Mesa]: [
+    { chancePerCell: 0.02, heightScale: 1.2, species: PlantSpecies.Boulder },
+    { chancePerCell: 0.04, heightScale: 1, species: PlantSpecies.DesertShrub },
+    { chancePerCell: 0.008, heightScale: 0.9, species: PlantSpecies.Cactus },
+    { chancePerCell: 0.006, heightScale: 0.8, species: PlantSpecies.DeadTree },
+  ],
   [Biome.Scrub]: [
     { chancePerCell: 0.42, heightScale: 1, species: PlantSpecies.Bush },
     { chancePerCell: 0.06, heightScale: 1, species: PlantSpecies.Pine },
     { chancePerCell: 0.05, heightScale: 0.85, species: PlantSpecies.Oak },
+    { chancePerCell: 0.05, heightScale: 1, species: PlantSpecies.Acacia },
+    { chancePerCell: 0.05, heightScale: 1, species: PlantSpecies.DesertShrub },
   ],
   [Biome.Steppe]: [
     { chancePerCell: 0.035, heightScale: 1, species: PlantSpecies.Pine },
     { chancePerCell: 0.03, heightScale: 0.9, species: PlantSpecies.Oak },
     { chancePerCell: 0.035, heightScale: 1, species: PlantSpecies.Bush },
+    { chancePerCell: 0.03, heightScale: 1, species: PlantSpecies.DesertShrub },
+    { chancePerCell: 0.012, heightScale: 0.9, species: PlantSpecies.Poplar },
+    { chancePerCell: 0.025, heightScale: 1, minimumTemperature: WARM, species: PlantSpecies.Acacia },
   ],
   [Biome.Swamp]: [
     { chancePerCell: 0.22, heightScale: 0.9, species: PlantSpecies.Willow },
     { chancePerCell: 0.12, heightScale: 0.9, species: PlantSpecies.Birch },
     { chancePerCell: 0.16, heightScale: 1, species: PlantSpecies.Bush },
+    { chancePerCell: 0.04, heightScale: 0.9, species: PlantSpecies.DeadTree },
   ],
   [Biome.Taiga]: [
     { chancePerCell: 0.9, heightScale: 1, species: PlantSpecies.Spruce },
@@ -183,15 +258,23 @@ export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]
     { chancePerCell: 0.1, heightScale: 1, species: PlantSpecies.Pine },
     { chancePerCell: 0.05, heightScale: 1, species: PlantSpecies.Birch },
     { chancePerCell: 0.04, heightScale: 1, species: PlantSpecies.Bush },
+    { chancePerCell: 0.008, heightScale: 1, species: PlantSpecies.DeadTree },
   ],
   [Biome.Tundra]: [
     { chancePerCell: 0.06, heightScale: 0.35, species: PlantSpecies.Spruce },
     { chancePerCell: 0.04, heightScale: 0.8, species: PlantSpecies.Bush },
     { chancePerCell: 0.025, heightScale: 1, species: PlantSpecies.Boulder },
+    { chancePerCell: 0.012, heightScale: 0.6, species: PlantSpecies.DeadTree },
   ],
   [Biome.Water]: [],
 };
 
-export function regrowingSpecies(biome: BiomeIndex): readonly PlantSpeciesIndex[] {
-  return PLANTING_RULES[biome].filter((rule) => isTreeSpecies(rule.species)).map((rule) => rule.species);
+export function canGrowAt(rule: PlantingRule, temperature: number): boolean {
+  return rule.minimumTemperature === undefined || temperature > rule.minimumTemperature;
+}
+
+export function regrowingSpecies(biome: BiomeIndex, temperature: number): readonly PlantSpeciesIndex[] {
+  return PLANTING_RULES[biome]
+    .filter((rule) => isLivingTreeSpecies(rule.species) && canGrowAt(rule, temperature))
+    .map((rule) => rule.species);
 }
