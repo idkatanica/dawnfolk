@@ -1,9 +1,11 @@
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, SlidersHorizontal } from "lucide-react";
+import { useState } from "react";
 import { describeParameters } from "../../content/parameters.ts";
 import { type ParameterValue, POWERS, type PowerId } from "../../content/powers.ts";
 import { IconButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
 import { Island } from "../../design/island.tsx";
+import { useIsCompact } from "../../design/use-media-query.ts";
 import { ParameterControl } from "../parameters/parameter-control.tsx";
 import { POWER_ICONS } from "./power-icons.tsx";
 import { usePowerStore, withDefaults } from "./power-store.ts";
@@ -32,8 +34,21 @@ function usePowerParameters(powerId: PowerId) {
   return { changeParameter, reset, values };
 }
 
+function useFieldDisclosure() {
+  const isCompact = useIsCompact();
+
+  const [isExpanded, setExpanded] = useState(false);
+
+  function toggleFields(): void {
+    setExpanded((wasExpanded) => !wasExpanded);
+  }
+
+  return { areFieldsShown: !isCompact || isExpanded, isCompact, toggleFields };
+}
+
 function PowerSettingsContent({ powerId }: { readonly powerId: PowerId }) {
   const { changeParameter, reset, values } = usePowerParameters(powerId);
+  const { areFieldsShown, isCompact, toggleFields } = useFieldDisclosure();
 
   const power = POWERS[powerId];
   const Icon = POWER_ICONS[powerId];
@@ -55,14 +70,25 @@ function PowerSettingsContent({ powerId }: { readonly powerId: PowerId }) {
           </p>
         </div>
 
+        {isCompact ? (
+          <IconButton
+            aria-expanded={areFieldsShown}
+            icon={<SlidersHorizontal aria-hidden="true" size={16} />}
+            label="Adjust settings"
+            onClick={toggleFields}
+          />
+        ) : null}
+
         <IconButton icon={<RotateCcw aria-hidden="true" size={16} />} label="Reset to defaults" onClick={reset} />
       </header>
 
-      <div className={cn("grid gap-3", { "sm:max-md:grid-cols-2": fields.length > 1 })}>
-        {fields.map((field) => (
-          <ParameterControl field={field} key={field.key} onChange={changeParameter} value={values[field.key]} />
-        ))}
-      </div>
+      {areFieldsShown ? (
+        <div className={cn("grid gap-3", { "sm:max-md:grid-cols-2": fields.length > 1 })}>
+          {fields.map((field) => (
+            <ParameterControl field={field} key={field.key} onChange={changeParameter} value={values[field.key]} />
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
