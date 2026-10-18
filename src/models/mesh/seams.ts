@@ -3,6 +3,7 @@ import { smoothstep } from "../../shared/math.ts";
 export interface SeamSurface {
   readonly firstTriangle: number;
   readonly firstVertex: number;
+  readonly isReference: boolean;
   readonly reach: number;
   readonly triangleCount: number;
   readonly vertexCount: number;
@@ -37,6 +38,7 @@ interface Nearest {
 }
 
 interface Blend {
+  readonly isReference: boolean;
   readonly normalX: number;
   readonly normalY: number;
   readonly normalZ: number;
@@ -384,31 +386,47 @@ function collectBlends(
       continue;
     }
 
-    blends.set(vertex, { normalX: nearest.normalX, normalY: nearest.normalY, normalZ: nearest.normalZ, weight });
+    blends.set(vertex, {
+      isReference: other.surface.isReference,
+      normalX: nearest.normalX,
+      normalY: nearest.normalY,
+      normalZ: nearest.normalZ,
+      weight,
+    });
   }
+}
+
+function seamNormal(normals: Float32Array, offset: number, blend: Blend): Vector | null {
+  if (blend.isReference) {
+    return [blend.normalX, blend.normalY, blend.normalZ];
+  }
+
+  const sumX = normals[offset] + blend.normalX;
+  const sumY = normals[offset + 1] + blend.normalY;
+  const sumZ = normals[offset + 2] + blend.normalZ;
+
+  const length = Math.hypot(sumX, sumY, sumZ);
+
+  if (length < SHORTEST_SUM) {
+    return null;
+  }
+
+  return [sumX / length, sumY / length, sumZ / length];
 }
 
 function applyBlends(normals: Float32Array, blends: ReadonlyMap<number, Blend>): void {
   for (const [vertex, blend] of blends) {
     const offset = vertex * 3;
 
-    const ownX = normals[offset];
-    const ownY = normals[offset + 1];
-    const ownZ = normals[offset + 2];
+    const target = seamNormal(normals, offset, blend);
 
-    const sumX = ownX + blend.normalX;
-    const sumY = ownY + blend.normalY;
-    const sumZ = ownZ + blend.normalZ;
-
-    const sumLength = Math.hypot(sumX, sumY, sumZ);
-
-    if (sumLength < SHORTEST_SUM) {
+    if (target === null) {
       continue;
     }
 
-    const blendedX = ownX + (sumX / sumLength - ownX) * blend.weight;
-    const blendedY = ownY + (sumY / sumLength - ownY) * blend.weight;
-    const blendedZ = ownZ + (sumZ / sumLength - ownZ) * blend.weight;
+    const blendedX = normals[offset] + (target[0] - normals[offset]) * blend.weight;
+    const blendedY = normals[offset + 1] + (target[1] - normals[offset + 1]) * blend.weight;
+    const blendedZ = normals[offset + 2] + (target[2] - normals[offset + 2]) * blend.weight;
 
     const length = Math.hypot(blendedX, blendedY, blendedZ);
 
@@ -424,6 +442,10 @@ export function blendSeamNormals(geometry: SeamGeometry, surfaces: readonly Seam
   const hidden = new Set<number>();
 
   for (const [index, owner] of prepared.entries()) {
+    if (owner.surface.isReference) {
+      continue;
+    }
+
     for (const [otherIndex, other] of prepared.entries()) {
       if (otherIndex === index || !boundsOverlap(owner, other, owner.surface.reach)) {
         continue;

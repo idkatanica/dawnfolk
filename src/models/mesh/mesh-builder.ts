@@ -63,6 +63,8 @@ export class MeshBuilder {
   readonly #indices = new GrowableIndexArray();
   readonly #normals = new GrowableFloatArray();
   readonly #positions = new GrowableFloatArray();
+  #references: MeshBuilder | null = null;
+  readonly #referenceSeams: SeamSurface[] = [];
   readonly #seams: SeamSurface[] = [];
   #vertexCount = 0;
 
@@ -125,14 +127,26 @@ export class MeshBuilder {
     this.#pushTriangles(mesh.indices, firstVertex, isMirrored);
   }
 
+  addSeamReference(shape: Shape, transform: Matrix4 = IDENTITY): void {
+    const references = this.#referenceBuilder();
+
+    this.#referenceSeams.push({
+      firstTriangle: references.#indices.length / 3,
+      firstVertex: references.#vertexCount,
+      isReference: true,
+      reach: 0,
+      triangleCount: shape.indices.length / 3,
+      vertexCount: shapeVertexCount(shape),
+    });
+    references.add(shape, { transform });
+  }
+
   build(): MeshData {
     const positions = this.#positions.toArray();
     const normals = this.#normals.toArray();
     const indices = this.#indices.toArray();
 
-    if (this.#seams.length > 1) {
-      blendSeamNormals({ indices, normals, positions }, this.#seams);
-    }
+    this.#blendSeams(positions, normals, indices);
 
     return {
       bounds: boundsOf(positions),
@@ -153,6 +167,57 @@ export class MeshBuilder {
     };
   }
 
+  #blendSeams(positions: Float32Array, normals: Float32Array, indices: Uint32Array): void {
+    if (this.#seams.length + this.#referenceSeams.length < 2 || this.#seams.length === 0) {
+      return;
+    }
+
+    if (this.#referenceSeams.length === 0) {
+      blendSeamNormals({ indices, normals, positions }, this.#seams);
+
+      return;
+    }
+
+    const references = this.#referenceBuilder().build();
+    const ownVertices = this.#vertexCount;
+    const ownTriangles = indices.length / 3;
+
+    const combinedIndices = new Uint32Array(indices.length + references.indices.length);
+    const combinedNormals = new Float32Array(normals.length + references.normals.length);
+    const combinedPositions = new Float32Array(positions.length + references.positions.length);
+
+    combinedIndices.set(indices);
+    combinedNormals.set(normals);
+    combinedPositions.set(positions);
+    combinedNormals.set(references.normals, normals.length);
+    combinedPositions.set(references.positions, positions.length);
+
+    for (let index = 0; index < references.indices.length; index += 1) {
+      combinedIndices[indices.length + index] = references.indices[index] + ownVertices;
+    }
+
+    const shifted = this.#referenceSeams.map((seam) => ({
+      ...seam,
+      firstTriangle: seam.firstTriangle + ownTriangles,
+      firstVertex: seam.firstVertex + ownVertices,
+    }));
+
+    blendSeamNormals({ indices: combinedIndices, normals: combinedNormals, positions: combinedPositions }, [
+      ...this.#seams,
+      ...shifted,
+    ]);
+
+    normals.set(combinedNormals.subarray(0, normals.length));
+  }
+
+  #referenceBuilder(): MeshBuilder {
+    if (this.#references === null) {
+      this.#references = new MeshBuilder();
+    }
+
+    return this.#references;
+  }
+
   #recordSeam(placement: Placement, vertices: number, triangles: number): void {
     if (placement.seam === undefined) {
       return;
@@ -161,6 +226,7 @@ export class MeshBuilder {
     this.#seams.push({
       firstTriangle: this.#indices.length / 3,
       firstVertex: this.#vertexCount,
+      isReference: false,
       reach: placement.seam,
       triangleCount: triangles,
       vertexCount: vertices,

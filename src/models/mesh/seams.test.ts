@@ -75,6 +75,21 @@ describe("seam normals", () => {
     }
   });
 
+  it("blends a part toward a body that is only a reference and leaves no trace of it", () => {
+    const builder = new MeshBuilder();
+
+    builder.add(tube(LIMB, { radialSegments: 12 }), { seam: 0.3, style: { part: 1 } });
+    builder.addSeamReference(sphere(1, 24, 16));
+
+    const limb = builder.build();
+    const alone = limbOnBody(null, null);
+    const limbOnly = verticesWhere(alone, (_x, _y, _z, part) => part === 1);
+    const atSeam = verticesWhere(limb, (_x, y) => Math.abs(y - 1.05) < 1e-4);
+
+    expect(vertexCount(limb)).toBe(limbOnly.length);
+    expect(verticalness(limb, atSeam)).toBeGreaterThan(0.2);
+  });
+
   it("does not shade a surface by a part hidden just beneath it", () => {
     function withHiddenCore(seam: number | null): MeshData {
       const builder = new MeshBuilder();
