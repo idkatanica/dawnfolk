@@ -70,7 +70,7 @@ describe("advancing", () => {
 
     const advance = vi.spyOn(connection, "advance");
 
-    session.update(0.05);
+    session.update(0.1);
     session.update(0.05);
     session.update(0.05);
     await session.whenIdle();
@@ -78,8 +78,45 @@ describe("advancing", () => {
     await session.whenIdle();
 
     expect(advance).toHaveBeenCalledTimes(2);
-    expect(advance).toHaveBeenNthCalledWith(1, expect.closeTo(0.05));
+    expect(advance).toHaveBeenNthCalledWith(1, expect.closeTo(0.1));
     expect(advance).toHaveBeenNthCalledWith(2, expect.closeTo(0.15));
+  });
+
+  it("waits for a whole tick before asking the worker for a frame", async () => {
+    const { connection, session } = await createSession();
+
+    const advance = vi.spyOn(connection, "advance");
+
+    session.update(0.04);
+    session.update(0.04);
+
+    expect(advance).not.toHaveBeenCalled();
+
+    session.update(0.04);
+    await session.whenIdle();
+
+    expect(advance).toHaveBeenCalledWith(expect.closeTo(0.12));
+  });
+
+  it("stays quiet while paused until a command arrives", async () => {
+    const { connection, session } = await createSession();
+
+    session.send({ isPaused: true, type: "setPaused" });
+    session.update(0.02);
+    await session.whenIdle();
+
+    const advance = vi.spyOn(connection, "advance");
+
+    session.update(0.3);
+    session.update(0.3);
+
+    expect(advance).not.toHaveBeenCalled();
+
+    session.send({ isPaused: false, type: "setPaused" });
+    session.update(0.02);
+    await session.whenIdle();
+
+    expect(advance).toHaveBeenCalledOnce();
   });
 
   it("applies every frame to the mirror and tells the subscribers", async () => {

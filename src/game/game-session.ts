@@ -9,6 +9,9 @@ import { WorldMirror } from "./world-mirror.ts";
 
 export const CHRONICLE_HISTORY_LIMIT = 300;
 
+const TICK_SECONDS = 0.1;
+const LONGEST_QUIET_SECONDS = 1;
+
 export type SessionStatus = { kind: "closed" } | { error: Error; kind: "failed" } | { kind: "running" };
 
 export type FrameListener = (frame: SimulationFrame) => void;
@@ -42,6 +45,7 @@ export class GameSession {
   readonly #effects: SimulationEffect[] = [];
   readonly #frameListeners = new Set<FrameListener>();
   readonly #statusListeners = new Set<StatusListener>();
+  #commandsSinceRequest = 0;
   #pendingSeconds = 0;
   #request: Promise<void> | null = null;
   #status: SessionStatus = { kind: "running" };
@@ -83,6 +87,7 @@ export class GameSession {
     }
 
     this.#connection.send(command);
+    this.#commandsSinceRequest += 1;
   }
 
   update(realSeconds: number): void {
@@ -92,13 +97,14 @@ export class GameSession {
 
     this.#pendingSeconds += realSeconds;
 
-    if (this.#request !== null) {
+    if (this.#request !== null || !this.#isAdvanceDue()) {
       return;
     }
 
     const seconds = this.#pendingSeconds;
 
     this.#pendingSeconds = 0;
+    this.#commandsSinceRequest = 0;
     this.#request = this.#advance(seconds);
   }
 
@@ -139,6 +145,22 @@ export class GameSession {
     this.#frameListeners.clear();
     this.#statusListeners.clear();
     this.#connection.dispose();
+  }
+
+  #isAdvanceDue(): boolean {
+    const { frame } = this.mirror;
+    const hasCommands = this.#commandsSinceRequest > 0;
+    const isQuietTooLong = this.#pendingSeconds >= LONGEST_QUIET_SECONDS;
+
+    if (hasCommands || frame.isBusy || isQuietTooLong) {
+      return true;
+    }
+
+    if (frame.isPaused) {
+      return false;
+    }
+
+    return frame.secondsSinceTick + this.#pendingSeconds * frame.speed >= TICK_SECONDS;
   }
 
   async #advance(seconds: number): Promise<void> {

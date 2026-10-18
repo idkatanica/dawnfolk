@@ -193,6 +193,7 @@ export function createFrame(overrides: Partial<SimulationFrame> = {}): Simulatio
     groundRows: [],
     heightPatch: null,
     inspection: null,
+    isBusy: false,
     isPaused: false,
     notices: [],
     people: new Float32Array(0),

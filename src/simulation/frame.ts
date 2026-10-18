@@ -127,6 +127,7 @@ export interface SimulationFrame {
   groundRows: PackedRows[];
   heightPatch: HeightPatch | null;
   inspection: Inspection | null;
+  isBusy: boolean;
   isPaused: boolean;
   notices: string[];
   people: Float32Array;

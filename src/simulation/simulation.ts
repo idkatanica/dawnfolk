@@ -180,6 +180,10 @@ export class Simulation {
     return this.services.environment;
   }
 
+  get isBusy(): boolean {
+    return this.#tasks.length > 0 || this.#stroke !== null || this.waterRecomputation.isPending;
+  }
+
   get isPaused(): boolean {
     return this.#isPaused;
   }
