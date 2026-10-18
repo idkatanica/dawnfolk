@@ -18,7 +18,7 @@ function NoticeIcon({ notice }: { readonly notice: WorldNotice }) {
   const Icon = notice.category === "notice" ? Info : CHRONICLE_ICONS[notice.category];
 
   return (
-    <span className="flex shrink-0 text-ink-soft">
+    <span className="shrink-0 text-ink-soft">
       <Icon aria-hidden="true" size={16} />
     </span>
   );

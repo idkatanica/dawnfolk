@@ -24,7 +24,7 @@ export function FactList({
   readonly facts: readonly Fact[];
 }) {
   return (
-    <dl className={cn("flex flex-col divide-y divide-line", className)}>
+    <dl className={cn("divide-y divide-line", className)}>
       {facts.map((fact) => (
         <FactRow fact={fact} key={fact.label} />
       ))}

@@ -35,7 +35,7 @@ function WideHud() {
         </Island>
       </div>
 
-      <div className="relative grid min-h-0 flex-1 grid-cols-[auto_auto] items-start justify-between gap-3">
+      <div className="relative grid min-h-0 flex-1 items-start justify-between gap-3">
         <JournalIsland className="col-start-1 row-start-1" />
 
         <NoticeFeed className="pointer-events-none absolute inset-x-0 top-0" />
@@ -48,7 +48,7 @@ function WideHud() {
       </div>
 
       <div className="flex items-end gap-3">
-        <div className="flex flex-1 items-end">
+        <div className="flex flex-1">
           <MinimapIsland />
         </div>
 
@@ -91,7 +91,7 @@ function CompactHud() {
 
       <NoticeFeed />
 
-      <div className="min-h-0 flex-1" />
+      <div className="flex-1" />
 
       <div className="flex min-h-0 flex-col gap-2">
         <MinimapIsland className="self-start" />

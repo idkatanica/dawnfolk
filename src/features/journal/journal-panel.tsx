@@ -34,7 +34,7 @@ function ScrollingPanel({ children, value }: { readonly children: ReactNode; rea
           {children}
         </ScrollArea.Viewport>
 
-        <ScrollArea.Scrollbar className="flex w-1.5 justify-center rounded-full py-1 opacity-0 transition-opacity data-hovering:opacity-100 data-scrolling:opacity-100">
+        <ScrollArea.Scrollbar className="w-1.5 rounded-full py-1 opacity-0 transition-opacity data-hovering:opacity-100 data-scrolling:opacity-100">
           <ScrollArea.Thumb className="w-full rounded-full bg-ink/25" />
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>

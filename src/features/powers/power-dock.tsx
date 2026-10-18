@@ -119,7 +119,7 @@ export function PowerDock({ className }: { readonly className?: string | undefin
   return (
     <Island className={cn("max-w-full", className)}>
       <Tabs.Root className="flex flex-col gap-2 p-2" onValueChange={setCategory} value={category}>
-        <Tabs.List aria-label="Kinds of powers" className="flex items-center justify-center gap-1">
+        <Tabs.List aria-label="Kinds of powers" className="flex justify-center gap-1">
           {DOCK_CATEGORIES.map((entry) => (
             <CategoryTab category={entry} key={entry.id} />
           ))}

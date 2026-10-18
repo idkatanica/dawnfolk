@@ -144,18 +144,16 @@ export function CompactClock({ className }: { readonly className?: string | unde
   const DaylightIcon = daylightIcon(calendar.hours);
 
   return (
-    <div className={cn("@container min-w-0", className)}>
-      <div className="flex items-center gap-2">
-        <DaylightIcon aria-hidden="true" className="@max-[6.5rem]:hidden shrink-0" size={18} />
+    <div className={cn("@container flex min-w-0 items-center gap-2", className)}>
+      <DaylightIcon aria-hidden="true" className="@max-[6.5rem]:hidden shrink-0" size={18} />
 
-        <div className="flex min-w-0 flex-col leading-none">
-          <span className="font-semibold text-ink text-sm tabular-nums">{formatClock(calendar.hours)}</span>
+      <div className="flex min-w-0 flex-col leading-none">
+        <span className="font-semibold text-ink text-sm tabular-nums">{formatClock(calendar.hours)}</span>
 
-          <span className="truncate text-2xs text-ink-muted">
-            <span className="@max-[5rem]:hidden">{calendar.seasonName} · </span>
-            Day {calendar.dayOfSeason}
-          </span>
-        </div>
+        <span className="truncate text-2xs text-ink-muted">
+          <span className="@max-[5rem]:hidden">{calendar.seasonName} · </span>
+          Day {calendar.dayOfSeason}
+        </span>
       </div>
     </div>
   );

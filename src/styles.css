@@ -62,20 +62,11 @@
   color-scheme: light;
 }
 
-html,
-body,
-#root {
-  height: 100%;
-}
-
 body {
-  margin: 0;
-  background: var(--color-sky);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  color: var(--color-ink);
+  background: var(--color-sky);
 }
 
 .island {
@@ -86,7 +77,6 @@ body {
 
 .island > .glass-surface__content {
   display: block;
-  width: 100%;
   height: auto;
   max-height: inherit;
   padding: 0;
