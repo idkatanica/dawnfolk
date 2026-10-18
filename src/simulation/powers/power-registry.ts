@@ -14,10 +14,12 @@ import {
   abundancePower,
   deerPower,
   healingPower,
+  ibexPower,
   inspectPower,
   inspirationPower,
   mammothPower,
   tribePower,
+  wolfPower,
 } from "./life-powers.ts";
 import type { PowerHandler, PowerOutcome, PowerServices, PowerTarget } from "./power-handler.ts";
 
@@ -32,6 +34,7 @@ export const POWER_HANDLERS: PowerHandlers = {
   flatten: flattenPower,
   forest: forestPower,
   healing: healingPower,
+  ibex: ibexPower,
   inspect: inspectPower,
   inspiration: inspirationPower,
   lightning: lightningPower,
@@ -44,6 +47,7 @@ export const POWER_HANDLERS: PowerHandlers = {
   smooth: smoothPower,
   snow: snowPower,
   tribe: tribePower,
+  wolf: wolfPower,
 };
 
 type PowerSchemas = { readonly [Id in PowerId]: z.ZodType<PowerParameters<Id>> };
@@ -57,6 +61,7 @@ const POWER_SCHEMAS: PowerSchemas = {
   flatten: POWERS.flatten.parameters,
   forest: POWERS.forest.parameters,
   healing: POWERS.healing.parameters,
+  ibex: POWERS.ibex.parameters,
   inspect: POWERS.inspect.parameters,
   inspiration: POWERS.inspiration.parameters,
   lightning: POWERS.lightning.parameters,
@@ -69,6 +74,7 @@ const POWER_SCHEMAS: PowerSchemas = {
   smooth: POWERS.smooth.parameters,
   snow: POWERS.snow.parameters,
   tribe: POWERS.tribe.parameters,
+  wolf: POWERS.wolf.parameters,
 };
 
 export function parsePowerParameters<Id extends PowerId>(powerId: Id, values: unknown): PowerParameters<Id> | null {

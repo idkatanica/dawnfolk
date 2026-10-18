@@ -37,9 +37,16 @@ describe("indexed content", () => {
     }
   });
 
-  it("regrows only trees", () => {
-    expect(regrowingSpecies(Biome.Forest)).not.toContain(PlantSpecies.Bush);
-    expect(regrowingSpecies(Biome.Desert)).toEqual([]);
+  it("regrows only living trees", () => {
+    expect(regrowingSpecies(Biome.Forest, 10)).not.toContain(PlantSpecies.Bush);
+    expect(regrowingSpecies(Biome.Forest, 10)).not.toContain(PlantSpecies.DeadTree);
+    expect(regrowingSpecies(Biome.Desert, 20)).toEqual([PlantSpecies.Acacia, PlantSpecies.Palm]);
+  });
+
+  it("keeps warm-weather trees out of cold places", () => {
+    expect(regrowingSpecies(Biome.Beach, 15)).toContain(PlantSpecies.Palm);
+    expect(regrowingSpecies(Biome.Beach, 5)).not.toContain(PlantSpecies.Palm);
+    expect(regrowingSpecies(Biome.Steppe, 5)).not.toContain(PlantSpecies.Acacia);
   });
 });
 

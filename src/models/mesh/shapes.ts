@@ -781,6 +781,78 @@ function addTubeCap(
   capRing(writer, centerIndex, ring, isEnd);
 }
 
+interface RibbonOptions {
+  readonly fold?: number;
+}
+
+function ribbonSide(
+  writer: ShapeWriter,
+  points: readonly TubePoint[],
+  frames: readonly TubeFrame[],
+  fold: number,
+  lengths: readonly number[],
+  isBack: boolean
+): void {
+  const totalLength = totalLengthOf(lengths);
+  const rows: [number, number, number][] = [];
+
+  for (const [index, point] of points.entries()) {
+    const frame = frames[index];
+    const center = new Vector3(point.x, point.y, point.z);
+    const along = lengths[index] / totalLength;
+    const facing = isBack ? frame.normal.clone().negate() : frame.normal.clone();
+
+    const left = center.clone().addScaledVector(frame.binormal, point.radius);
+    const middle = center.clone().addScaledVector(frame.normal, point.radius * fold);
+    const right = center.clone().addScaledVector(frame.binormal, -point.radius);
+
+    rows.push([
+      writer.vertex(left, facing, along, 0),
+      writer.vertex(middle, facing, along, 0.5),
+      writer.vertex(right, facing, along, 1),
+    ]);
+  }
+
+  for (let index = 1; index < rows.length; index += 1) {
+    const [leftBefore, middleBefore, rightBefore] = rows[index - 1];
+    const [left, middle, right] = rows[index];
+
+    if (isBack) {
+      writer.triangle(leftBefore, left, middleBefore);
+      writer.triangle(middleBefore, left, middle);
+      writer.triangle(middleBefore, middle, rightBefore);
+      writer.triangle(rightBefore, middle, right);
+
+      continue;
+    }
+
+    writer.triangle(leftBefore, middleBefore, left);
+    writer.triangle(middleBefore, middle, left);
+    writer.triangle(middleBefore, rightBefore, middle);
+    writer.triangle(rightBefore, right, middle);
+  }
+}
+
+export function ribbon(points: readonly TubePoint[], options: RibbonOptions = {}): Shape {
+  if (points.length < 2) {
+    throw new RangeError("A ribbon needs at least two points");
+  }
+
+  const { fold = 0.3 } = options;
+
+  const centers = points.map((point) => new Vector3(point.x, point.y, point.z));
+  const frames = transportFrames(tubeTangents(centers));
+  const lengths = arcLengths(centers);
+  const writer = new ShapeWriter();
+
+  ribbonSide(writer, points, frames, fold, lengths, false);
+  ribbonSide(writer, points, frames, fold, lengths, true);
+
+  const shape = writer.finish();
+
+  return { ...shape, normals: computeSmoothNormals(shape.positions, shape.indices) };
+}
+
 export function torus(radius: number, thickness: number, segments = 16, sides = 6): Shape {
   const writer = new ShapeWriter();
   const rings: number[][] = [];

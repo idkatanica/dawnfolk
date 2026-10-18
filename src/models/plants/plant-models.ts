@@ -4,16 +4,34 @@ import { FULL_TURN } from "../../shared/math.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot } from "../materials.ts";
 import { MeshBuilder } from "../mesh/mesh-builder.ts";
-import { type MeshData, mergeMeshes } from "../mesh/mesh-data.ts";
+import { type MeshData, mergeMeshes, vertexCount } from "../mesh/mesh-data.ts";
 import { sphere } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { transformOf } from "../mesh/transforms.ts";
-import { meshBoulder, meshCactus } from "./ground-plants.ts";
+import { CACTUS_FORMS, cactusForm, meshCactus } from "./cacti.ts";
+import { meshBoulder } from "./ground-plants.ts";
 import { FOLIAGE_FLUTTER, meshTree, type PlantDetailLevel, plantSway, type TreeLook } from "./tree-mesher.ts";
-import { CANONICAL_HEIGHTS, TREE_GENERATORS } from "./tree-species.ts";
+import { CANONICAL_HEIGHTS, DESERT_SHRUB_FORM_COUNT, TREE_GENERATORS } from "./tree-species.ts";
 import type { FoliageBlob, TreeStructure } from "./tree-structure.ts";
 
-export const PLANT_VARIANT_COUNT = 4;
+const VARIANT_COUNTS: Readonly<Record<PlantSpeciesIndex, number>> = {
+  [PlantSpecies.Acacia]: 3,
+  [PlantSpecies.Birch]: 4,
+  [PlantSpecies.Boulder]: 4,
+  [PlantSpecies.Bush]: 4,
+  [PlantSpecies.Cactus]: CACTUS_FORMS.length,
+  [PlantSpecies.DeadTree]: 3,
+  [PlantSpecies.DesertShrub]: DESERT_SHRUB_FORM_COUNT,
+  [PlantSpecies.Maple]: 4,
+  [PlantSpecies.Oak]: 4,
+  [PlantSpecies.Palm]: 2,
+  [PlantSpecies.Pine]: 4,
+  [PlantSpecies.Poplar]: 2,
+  [PlantSpecies.Spruce]: 4,
+  [PlantSpecies.Willow]: 4,
+};
+
+const FORM_PER_VARIANT: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DesertShrub]);
 
 export const PLANT_DETAIL_LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low"];
 
@@ -21,16 +39,25 @@ export const BERRY_PART = 1;
 
 const BERRY_RADIUS = 0.07;
 
+const FOOTPRINT_HEIGHT = 0.3;
+
 const BROADLEAF: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
 const CONIFER: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Needle, hasBarkMarks: false };
 const BIRCH: TreeLook = { bark: MaterialSlot.BirchBark, foliage: MaterialSlot.Leaf, hasBarkMarks: true };
+const PALM: TreeLook = { bark: MaterialSlot.Wood, foliage: MaterialSlot.Leaf, hasBarkMarks: true };
+const DEADWOOD: TreeLook = { bark: MaterialSlot.Deadwood, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
 
 const TREE_LOOKS: Readonly<Partial<Record<PlantSpeciesIndex, TreeLook>>> = {
+  [PlantSpecies.Acacia]: BROADLEAF,
   [PlantSpecies.Birch]: BIRCH,
   [PlantSpecies.Bush]: BROADLEAF,
+  [PlantSpecies.DeadTree]: DEADWOOD,
+  [PlantSpecies.DesertShrub]: DEADWOOD,
   [PlantSpecies.Maple]: BROADLEAF,
   [PlantSpecies.Oak]: BROADLEAF,
+  [PlantSpecies.Palm]: PALM,
   [PlantSpecies.Pine]: CONIFER,
+  [PlantSpecies.Poplar]: BROADLEAF,
   [PlantSpecies.Spruce]: CONIFER,
   [PlantSpecies.Willow]: BROADLEAF,
 };
@@ -83,7 +110,7 @@ function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDe
   const seed = variantSeed(species, variant);
 
   if (species === PlantSpecies.Cactus) {
-    return meshCactus(seed, level);
+    return meshCactus(seed, level, cactusForm(variant));
   }
 
   if (species === PlantSpecies.Boulder) {
@@ -97,7 +124,7 @@ function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDe
     throw new RangeError(`No model for plant species ${PLANT_SPECIES[species].name}`);
   }
 
-  const structure = generator(seed);
+  const structure = generator(seed, variant);
 
   const tree = meshTree(structure, look, level);
 
@@ -108,10 +135,36 @@ function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDe
   return mergeMeshes([tree, berries(tree, structure, look, seed + 1, level)]);
 }
 
+export function plantVariantCount(species: PlantSpeciesIndex): number {
+  return VARIANT_COUNTS[species];
+}
+
+export function farVariantOf(species: PlantSpeciesIndex, variant: number): number {
+  return FORM_PER_VARIANT.has(species) ? variant : 0;
+}
+
 export function buildPlantVariants(species: PlantSpeciesIndex, level: PlantDetailLevel): MeshData[] {
-  return Array.from({ length: PLANT_VARIANT_COUNT }, (_, variant) => meshVariant(species, variant, level));
+  return Array.from({ length: plantVariantCount(species) }, (_, variant) => meshVariant(species, variant, level));
 }
 
 export function canonicalHeight(species: PlantSpeciesIndex): number {
   return CANONICAL_HEIGHTS[species];
+}
+
+function baseRadius(mesh: MeshData): number {
+  let radius = 0;
+
+  for (let vertex = 0; vertex < vertexCount(mesh); vertex += 1) {
+    const offset = vertex * 3;
+
+    if (mesh.positions[offset + 1] < FOOTPRINT_HEIGHT) {
+      radius = Math.max(radius, Math.hypot(mesh.positions[offset], mesh.positions[offset + 2]));
+    }
+  }
+
+  return radius;
+}
+
+export function footprintRadius(species: PlantSpeciesIndex): number {
+  return buildPlantVariants(species, "low").reduce((widest, mesh) => Math.max(widest, baseRadius(mesh)), 0);
 }

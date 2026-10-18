@@ -6,11 +6,12 @@ import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { MeshBuilder, type SurfacePoint, type VertexStyle } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
 import { deformShape, type Shape } from "../mesh/shape.ts";
-import { blob, cone, icosphere, type LoftSection, loft, type TubePoint, tube } from "../mesh/shapes.ts";
+import { blob, cone, icosphere, type LoftSection, loft, ribbon, type TubePoint, tube } from "../mesh/shapes.ts";
 import { transformOf } from "../mesh/transforms.ts";
 import {
   type Foliage,
   type FoliageBlob,
+  type FoliageFrond,
   type FoliageSkirt,
   type FoliageStrand,
   type TreeStructure,
@@ -30,6 +31,8 @@ const MESH_NOISE = createVolumeNoise(createRandom(5150));
 const BLOB_LIMITS: Readonly<Record<PlantDetailLevel, number>> = { high: 9, low: 1, medium: 4 };
 
 const STRAND_ROOT_DEPTH = 0.85;
+
+const GROUNDED_CROWN_LIFT = 0.8;
 
 const SWAY_GROWTH = 1.4;
 
@@ -74,7 +77,7 @@ function crownCenter(structure: TreeStructure): Vector3 {
 }
 
 function foliageCenter(foliage: Foliage): Vector3 {
-  if (foliage.kind === "strand") {
+  if (foliage.kind === "strand" || foliage.kind === "frond") {
     const [first] = foliage.points;
 
     return toVector(first);
@@ -210,6 +213,26 @@ function addStrand(
   builder.add(tube(strand.points, { radialSegments: sides }), {
     style: {
       ...foliageStyle(structure, look, strand.tint, crownCenter(structure)),
+      sway: (point) => lerp(rootSway, 1, point.along),
+    },
+  });
+}
+
+function addFrond(
+  builder: MeshBuilder,
+  structure: TreeStructure,
+  look: TreeLook,
+  frond: FoliageFrond,
+  level: PlantDetailLevel
+): void {
+  const [root] = frond.points;
+
+  const rootSway = plantSway(root.y, structure.height);
+  const points = level === "high" ? frond.points : thinned(frond.points);
+
+  builder.add(ribbon(points, { fold: 0.35 }), {
+    style: {
+      ...foliageStyle(structure, look, frond.tint, crownCenter(structure)),
       sway: (point) => lerp(rootSway, 1, point.along),
     },
   });
@@ -355,7 +378,7 @@ interface Reach {
 }
 
 function foliageReach(foliage: Foliage): Reach {
-  if (foliage.kind === "strand") {
+  if (foliage.kind === "strand" || foliage.kind === "frond") {
     const points = foliage.points.map(toVector);
 
     return {
@@ -396,10 +419,26 @@ function addLowCrown(builder: MeshBuilder, structure: TreeStructure, look: TreeL
     return;
   }
 
+  if (structure.foliage.length === 0) {
+    return;
+  }
+
   const envelope = crownEnvelope(structure);
+
+  if (stemRoot(structure) === null) {
+    addBlob(builder, structure, look, groundedEnvelope(envelope), 0);
+
+    return;
+  }
 
   addCrownStem(builder, structure, look, envelope);
   addBlob(builder, structure, look, envelope, 0);
+}
+
+function groundedEnvelope(envelope: FoliageBlob): FoliageBlob {
+  const [x, , z] = envelope.center;
+
+  return { ...envelope, center: [x, envelope.radius * envelope.squash * GROUNDED_CROWN_LIFT, z] };
 }
 
 function stemRoot(structure: TreeStructure): TubePoint | null {
@@ -470,6 +509,10 @@ function addFoliage(builder: MeshBuilder, structure: TreeStructure, look: TreeLo
 
     if (foliage.kind === "strand") {
       addStrand(builder, structure, look, anchoredStrand(foliage, visibleBlobs), level === "high" ? 4 : 3);
+    }
+
+    if (foliage.kind === "frond") {
+      addFrond(builder, structure, look, foliage, level);
     }
   }
 }

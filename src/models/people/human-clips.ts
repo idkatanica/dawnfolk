@@ -349,14 +349,14 @@ function throwSpear(pose: Pose, phase: number): void {
 
 function sitting(pose: Pose): void {
   pose.grounding = "body";
-  moveBody(pose, { forward: -degrees(12) });
+  moveBody(pose, { forward: -degrees(18) });
   bendTrunk(pose, HumanBone.Spine, { forward: degrees(8) });
-  bendTrunk(pose, HumanBone.Chest, { forward: degrees(6) });
+  bendTrunk(pose, HumanBone.Chest, { forward: degrees(12) });
 
   for (const side of SIDES) {
-    swingLeg(pose, side, { forward: degrees(84), outward: degrees(16) });
-    bendKnee(pose, side, degrees(100));
-    bendAnkle(pose, side, degrees(10));
+    swingLeg(pose, side, { forward: degrees(120), outward: degrees(18) });
+    bendKnee(pose, side, degrees(112));
+    bendAnkle(pose, side, degrees(20));
   }
 }
 

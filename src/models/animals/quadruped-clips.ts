@@ -6,6 +6,7 @@ import { LEG_ENDS, LEG_SIDES, type LegEnd, type LegSide, legBones, QuadrupedBone
 type RunKind = "amble" | "gallop";
 
 export interface GaitStyle {
+  readonly deadHeadRoll: number;
   readonly grazeReach: number;
   readonly headBob: number;
   readonly lowerFlex: number;
@@ -166,11 +167,11 @@ function graze(pose: Pose, phase: number, context: AnimalClipContext): void {
   swishTail(pose, phase * 2, gait.tailSwish);
 }
 
-function dead(pose: Pose): void {
+function dead(pose: Pose, _phase: number, context: AnimalClipContext): void {
   pose.grounding = "body";
   bendTrunkBone(pose, QuadrupedBone.Pelvis, 0, degrees(88));
   bendTrunkBone(pose, QuadrupedBone.Neck, degrees(30), degrees(10));
-  bendTrunkBone(pose, QuadrupedBone.Head, degrees(15));
+  bendTrunkBone(pose, QuadrupedBone.Head, degrees(15), context.gait.deadHeadRoll);
 
   for (const end of LEG_ENDS) {
     for (const side of LEG_SIDES) {

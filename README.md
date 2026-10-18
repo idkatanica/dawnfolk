@@ -38,14 +38,15 @@ procedurally generated island rendered with WebGPU.
 - **A living island.** Every world is generated from a seed: relief, erosion, rivers, lakes, waterfalls off the
   edge, climate, biomes and forests. Seasons change foliage, snow settles and melts, fire spreads with the wind.
 - **Tribes with their own lives.** People gather, hunt, fish, farm, chop, quarry, build camps and huts, warm
-  themselves at campfires, pray, learn technologies, migrate and split into new tribes. Herds of deer and mammoths
-  roam and flee.
+  themselves at campfires, pray, learn technologies, migrate and split into new tribes. Herds of deer, mammoths and
+  ibex graze and flee, ibex up the nearest heights, and wolf packs roam far from people.
 - **Powers with real parameters.** Elements, land and life powers (fire, lightning, rain, snow, explosions,
   meteors, earthquakes, raising and painting land, forests, healing, new tribes and more). Every power is described
   by a schema, so its strength, radius and other settings appear as controls automatically. World rules (how fast
   fire spreads, how far embers fly, how hungry people get) are adjustable in the settings.
 - **A model engine.** People, animals, trees, rocks and buildings are built procedurally from seeds: varied bodies,
-  clothes, hair and tools; skeletal animation with blended clips; tree species with seasonal foliage.
+  clothes, hair and tools; skeletal animation with blended clips; tree species with seasonal foliage, palms,
+  dead snags, four kinds of cactus and desert shrubs.
 - **Map labels.** Tribe banners with population and era float over their camps (click one to fly there), and the
   highest peak and the largest lakes carry names drawn from the seed.
 - **Glass islands UI.** Every panel floats on its own island of refracting glass

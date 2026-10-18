@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SocietyHarness } from "../testing/test-society.ts";
-import { HuntJob } from "./jobs/hunt-job.ts";
+import { findGame, HuntJob } from "./jobs/hunt-job.ts";
 import type { Job } from "./jobs/job.ts";
 import { TendJob } from "./jobs/tend-job.ts";
 import { nearestShore } from "./resources.ts";
@@ -101,6 +101,60 @@ describe("hunting mammoths", () => {
     expect(tick.person.causeOfDeath).toBe("mammoth");
     expect(harness.chronicle.takeEntries()).toContainEqual(
       expect.objectContaining({ text: expect.stringContaining("trampled by a mammoth") })
+    );
+  });
+});
+
+describe("choosing game", () => {
+  it("leaves wolves alone and stalks an ibex instead", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+
+    const tribe = settle(harness, 3);
+
+    const tick = firstMemberTick(harness, tribe);
+
+    harness.fauna.spawnHerd("wolf", tribe.campX + 30, tribe.campZ, 3, harness.random);
+
+    expect(findGame(tick)).toBeNull();
+
+    harness.fauna.spawnHerd("ibex", tribe.campX - 120, tribe.campZ, 2, harness.random);
+
+    expect(findGame(tick)).toBeInstanceOf(HuntJob);
+  });
+
+  it("names the ibex with the right article when hunters bring one down", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+
+    const tribe = settle(harness, 3);
+
+    const tick = firstMemberTick(harness, tribe);
+
+    const herd = harness.fauna.spawnHerd("ibex", tribe.campX + 20, tribe.campZ, 1, harness.random);
+
+    if (herd === null) {
+      throw new Error("Expected an ibex herd");
+    }
+
+    const ibex = harness.fauna.findAnimal(herd.memberIds[0]);
+
+    if (ibex === null) {
+      throw new Error("Expected an ibex");
+    }
+
+    tick.person.mover.x = ibex.mover.x + 6;
+    tick.person.mover.z = ibex.mover.z;
+
+    for (let hunt = 0; hunt < 30; hunt += 1) {
+      if (!ibex.isAlive) {
+        break;
+      }
+
+      runToCompletion(new HuntJob(tick, ibex), tick, 30);
+    }
+
+    expect(ibex.isAlive).toBe(false);
+    expect(harness.chronicle.takeEntries()).toContainEqual(
+      expect.objectContaining({ text: expect.stringContaining("brought down an ibex") })
     );
   });
 });

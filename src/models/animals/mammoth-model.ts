@@ -58,6 +58,7 @@ export const MAMMOTH_FRAME: QuadrupedFrame = {
 };
 
 export const MAMMOTH_GAIT: GaitStyle = {
+  deadHeadRoll: 0,
   grazeReach: degrees(28),
   headBob: degrees(3),
   lowerFlex: degrees(38),
@@ -126,12 +127,13 @@ function addLegs(builder: MeshBuilder, segments: number): void {
 function addFurSkirt(builder: MeshBuilder, segments: number): void {
   const skirt = loft(
     [
-      { centerZ: -0.4, radiusX: 0, radiusZ: 0, y: 1.65 },
-      { centerZ: -0.4, radiusX: 0.6, radiusZ: 1.2, y: 1.6 },
-      { centerZ: -0.42, radiusX: 0.96, radiusZ: 1.62, y: 1.32 },
-      { centerZ: -0.4, radiusX: 0.98, radiusZ: 1.66, y: 1.8 },
-      { centerZ: -0.35, radiusX: 0.94, radiusZ: 1.62, y: 2.3 },
-      { centerZ: -0.35, radiusX: 0, radiusZ: 0, y: 2.35 },
+      { centerZ: -0.45, radiusX: 0, radiusZ: 0, y: 1.6 },
+      { centerZ: -0.45, radiusX: 0.6, radiusZ: 0.82, y: 1.52 },
+      { centerZ: -0.45, radiusX: 0.9, radiusZ: 1.12, y: 1.32 },
+      { centerZ: -0.4, radiusX: 0.97, radiusZ: 1.26, y: 1.55 },
+      { centerZ: -0.32, radiusX: 0.98, radiusZ: 1.32, y: 1.9 },
+      { centerZ: -0.25, radiusX: 0.92, radiusZ: 1.28, y: 2.3 },
+      { centerZ: -0.25, radiusX: 0, radiusZ: 0, y: 2.35 },
     ],
     segments * 3
   );

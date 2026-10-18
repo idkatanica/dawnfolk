@@ -33,7 +33,13 @@ export interface FoliageStrand {
   readonly tint: number;
 }
 
-export type Foliage = FoliageBlob | FoliageSkirt | FoliageStrand;
+export interface FoliageFrond {
+  readonly kind: "frond";
+  readonly points: readonly TubePoint[];
+  readonly tint: number;
+}
+
+export type Foliage = FoliageBlob | FoliageFrond | FoliageSkirt | FoliageStrand;
 
 export interface TreeStructure {
   readonly branches: readonly Branch[];

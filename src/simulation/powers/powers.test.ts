@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { Ground } from "../../content/grounds.ts";
+import { PlantSpecies } from "../../content/plants.ts";
 import { POWER_ORDER, POWERS } from "../../content/powers.ts";
 import { Simulation } from "../simulation.ts";
 import { createVegetatedWorld } from "../testing/test-world.ts";
 import { POWER_HANDLERS, parsePowerParameters } from "./power-registry.ts";
 
-function createSimulation(): Simulation {
-  return new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 96 } }));
+function createSimulation(baseTemperature = 15): Simulation {
+  return new Simulation(createVegetatedWorld({ baseTemperature, dimensions: { cellSize: 10, cellsPerSide: 96 } }));
 }
 
 function brush(simulation: Simulation, powerId: Parameters<Simulation["beginStroke"]>[0], seconds: number) {
@@ -148,6 +149,24 @@ describe("land", () => {
     }
 
     expect(simulation.world.vegetation.aliveCount).toBeGreaterThan(before + 20);
+  });
+
+  it("forest suited to a hot climate grows acacias and palms", () => {
+    const simulation = createSimulation(20);
+    const { vegetation } = simulation.world;
+
+    const before = vegetation.count;
+
+    simulation.beginStroke("forest", 0, 0, { density: 100, species: "climate" });
+
+    for (let step = 0; step < 40; step += 1) {
+      simulation.advance(0.05);
+    }
+
+    const planted = Array.from({ length: vegetation.count - before }, (_, index) => vegetation.species[before + index]);
+
+    expect(planted.length).toBeGreaterThan(20);
+    expect(planted.every((species) => species === PlantSpecies.Acacia || species === PlantSpecies.Palm)).toBe(true);
   });
 });
 

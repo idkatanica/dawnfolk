@@ -141,6 +141,9 @@ export const POWERS = {
           { label: "Birch", value: "birch" },
           { label: "Maple", value: "maple" },
           { label: "Willow", value: "willow" },
+          { label: "Poplar", value: "poplar" },
+          { label: "Acacia", value: "acacia" },
+          { label: "Palm", value: "palm" },
           { label: "Berry bushes", value: "bush" },
         ],
       }),
@@ -153,6 +156,23 @@ export const POWERS = {
     name: "Healing",
     parameters: z.object({
       radius: brushRadius(60, 200),
+    }),
+    usage: "point",
+  },
+  ibex: {
+    category: "life",
+    description: "A herd of ibex. They keep to rocky heights and bound uphill when chased.",
+    name: "Ibex",
+    parameters: z.object({
+      herdSize: rangeParameter({
+        defaultValue: 5,
+        description: "Animals in the herd.",
+        label: "Herd size",
+        maximum: 9,
+        minimum: 2,
+        step: 1,
+        unit: "count",
+      }),
     }),
     usage: "point",
   },
@@ -334,6 +354,23 @@ export const POWERS = {
     }),
     usage: "point",
   },
+  wolf: {
+    category: "life",
+    description: "A wolf pack that roams far and keeps its distance from people.",
+    name: "Wolves",
+    parameters: z.object({
+      herdSize: rangeParameter({
+        defaultValue: 4,
+        description: "Wolves in the pack.",
+        label: "Pack size",
+        maximum: 8,
+        minimum: 2,
+        step: 1,
+        unit: "count",
+      }),
+    }),
+    usage: "point",
+  },
 } as const satisfies Readonly<Record<string, PowerDefinition>>;
 
 export type PowerId = keyof typeof POWERS;
@@ -357,6 +394,8 @@ export const POWER_ORDER: readonly PowerId[] = [
   "tribe",
   "deer",
   "mammoth",
+  "ibex",
+  "wolf",
   "abundance",
   "inspiration",
   "healing",

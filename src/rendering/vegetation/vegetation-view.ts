@@ -17,12 +17,11 @@ import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { createPlantMaterial, PlantWeather, SpeciesLook } from "./plant-material.ts";
 import { foliageLook } from "./plant-palette.ts";
 import {
-  BUCKET_COUNT,
+  bucketGroups,
   FLOATS_PER_PLANT,
-  speciesOfBucket,
+  PLANT_BUCKETS,
   type VegetationChunk,
   VegetationChunks,
-  variantOfBucket,
 } from "./vegetation-chunks.ts";
 
 const LEVEL_DISTANCES: readonly number[] = [160, 600, 4200];
@@ -35,6 +34,7 @@ const PLANT_FIELDS = [
 ] as const;
 
 interface PlantBatch {
+  readonly buckets: readonly number[];
   readonly geometry: InstancedBufferGeometry;
   readonly instances: InterleavedInstances;
   readonly mesh: Mesh;
@@ -63,15 +63,14 @@ export class VegetationView {
     this.#batches = PLANT_DETAIL_LEVELS.map((level, levelIndex) => {
       const variantsBySpecies = PLANT_SPECIES.map((species) => buildPlantVariants(species.index, level));
 
-      return Array.from({ length: BUCKET_COUNT }, (_, bucket) => {
-        const species = speciesOfBucket(bucket);
-
-        const data = variantsBySpecies[species][variantOfBucket(bucket)];
+      return bucketGroups(level).map((buckets) => {
+        const { species, variant } = PLANT_BUCKETS[buckets[0]];
 
         return this.#createBatch(
-          geometryFromMeshData(data, ["flutter", "part", "shade", "slot", "sway"]),
+          geometryFromMeshData(variantsBySpecies[species][variant], ["flutter", "part", "shade", "slot", "sway"]),
           materials[species],
-          levelIndex
+          levelIndex,
+          buckets
         );
       });
     });
@@ -107,7 +106,12 @@ export class VegetationView {
     }
   }
 
-  #createBatch(geometry: InstancedBufferGeometry, material: MeshStandardNodeMaterial, levelIndex: number): PlantBatch {
+  #createBatch(
+    geometry: InstancedBufferGeometry,
+    material: MeshStandardNodeMaterial,
+    levelIndex: number,
+    buckets: readonly number[]
+  ): PlantBatch {
     const instances = new InterleavedInstances(geometry, PLANT_FIELDS, 64);
     const mesh = new Mesh(geometry, material);
 
@@ -117,7 +121,7 @@ export class VegetationView {
     mesh.visible = false;
     this.group.add(mesh);
 
-    return { geometry, instances, mesh };
+    return { buckets, geometry, instances, mesh };
   }
 
   #paintSeason(season: number): void {
@@ -172,16 +176,19 @@ export class VegetationView {
     for (const level of this.#dirtyLevels) {
       const visible = this.chunks.chunks.filter((_chunk, index) => this.#chunkLevels[index] === level);
 
-      for (const [bucket, batch] of this.#batches[level].entries()) {
-        this.#fill(batch, visible, bucket);
+      for (const batch of this.#batches[level]) {
+        this.#fill(batch, visible);
       }
     }
 
     this.#dirtyLevels.clear();
   }
 
-  #fill(batch: PlantBatch, chunks: readonly VegetationChunk[], bucket: number): void {
-    const total = chunks.reduce((sum, chunk) => sum + chunk.buckets[bucket].length, 0);
+  #fill(batch: PlantBatch, chunks: readonly VegetationChunk[]): void {
+    const total = chunks.reduce(
+      (sum, chunk) => batch.buckets.reduce((chunkSum, bucket) => chunkSum + chunk.buckets[bucket].length, sum),
+      0
+    );
 
     const count = total / FLOATS_PER_PLANT;
 
@@ -199,10 +206,12 @@ export class VegetationView {
     let offset = 0;
 
     for (const chunk of chunks) {
-      const data = chunk.buckets[bucket];
+      for (const bucket of batch.buckets) {
+        const data = chunk.buckets[bucket];
 
-      target.set(data, offset);
-      offset += data.length;
+        target.set(data, offset);
+        offset += data.length;
+      }
     }
 
     batch.instances.markUpdated(count);

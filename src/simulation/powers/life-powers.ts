@@ -32,29 +32,27 @@ export const tribePower: PowerHandler<"tribe"> = {
   },
 };
 
-export const deerPower: PowerHandler<"deer"> = {
-  apply: (target, parameters, services) => {
-    const herd = services.fauna.spawnHerd("deer", target.x, target.z, parameters.herdSize, services.random);
+function herdPower<Id extends "deer" | "ibex" | "mammoth" | "wolf">(kind: Id, refusal: string): PowerHandler<Id> {
+  return {
+    apply: (target, parameters, services) => {
+      const herd = services.fauna.spawnHerd(kind, target.x, target.z, parameters.herdSize, services.random);
 
-    if (herd === null) {
-      return refused("Deer need flat, dry land.");
-    }
+      if (herd === null) {
+        return refused(refusal);
+      }
 
-    return APPLIED;
-  },
-};
+      return APPLIED;
+    },
+  };
+}
 
-export const mammothPower: PowerHandler<"mammoth"> = {
-  apply: (target, parameters, services) => {
-    const herd = services.fauna.spawnHerd("mammoth", target.x, target.z, parameters.herdSize, services.random);
+export const deerPower = herdPower("deer", "Deer need flat, dry land.");
 
-    if (herd === null) {
-      return refused("Mammoths need flat, dry land.");
-    }
+export const mammothPower = herdPower("mammoth", "Mammoths need flat, dry land.");
 
-    return APPLIED;
-  },
-};
+export const ibexPower = herdPower("ibex", "Ibex need dry land they can stand on.");
+
+export const wolfPower = herdPower("wolf", "Wolves need flat, dry land.");
 
 function ripenBushes(services: PowerServices, x: number, z: number, radius: number): void {
   const { vegetation } = services.world;

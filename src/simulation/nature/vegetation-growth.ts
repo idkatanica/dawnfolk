@@ -102,7 +102,7 @@ export class VegetationGrowthSystem {
       return;
     }
 
-    const candidates = regrowingSpecies(biome);
+    const candidates = regrowingSpecies(biome, world.terrain.baseTemperature[cell]);
 
     if (candidates.length === 0) {
       return;

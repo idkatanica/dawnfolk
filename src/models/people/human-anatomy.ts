@@ -215,10 +215,7 @@ function addArms(builder: MeshBuilder, detail: HumanDetail): void {
   forEachSide((side, mirror) => {
     const style = { ...armStyle(side), ...SKIN };
 
-    builder.add(tube(UPPER_ARM, { hasStartCap: false, radialSegments: detail.limbSegments }), {
-      style,
-      transform: mirror,
-    });
+    builder.add(tube(UPPER_ARM, { radialSegments: detail.limbSegments }), { style, transform: mirror });
     builder.add(tube(FOREARM, { radialSegments: detail.limbSegments }), { style, transform: mirror });
     handShape(builder, style, mirror, detail);
   });

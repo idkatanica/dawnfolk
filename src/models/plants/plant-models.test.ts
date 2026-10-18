@@ -5,12 +5,13 @@ import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts"
 import { meshProblems } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces, meshPieces } from "../testing/mesh-connectivity.ts";
 import { windBentMesh } from "../testing/moved-mesh.ts";
+import { CACTUS_FORMS, cactusForm } from "./cacti.ts";
 import {
   BERRY_PART,
   buildPlantVariants,
   canonicalHeight,
   PLANT_DETAIL_LEVELS,
-  PLANT_VARIANT_COUNT,
+  plantVariantCount,
 } from "./plant-models.ts";
 import { FOLIAGE_FLUTTER, plantSway } from "./tree-mesher.ts";
 
@@ -20,13 +21,17 @@ const STORM_PUSH = 2;
 const SPECIES: readonly PlantSpeciesIndex[] = PLANT_SPECIES.map((definition) => definition.index);
 const FOLIAGE_SLOTS: ReadonlySet<number> = new Set([MaterialSlot.Leaf, MaterialSlot.Needle]);
 const TREES = [
+  PlantSpecies.Acacia,
   PlantSpecies.Birch,
   PlantSpecies.Maple,
   PlantSpecies.Oak,
+  PlantSpecies.Palm,
   PlantSpecies.Pine,
+  PlantSpecies.Poplar,
   PlantSpecies.Spruce,
   PlantSpecies.Willow,
 ];
+const MIXED_FORMS: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DeadTree]);
 
 function averageTriangles(species: PlantSpeciesIndex, level: (typeof PLANT_DETAIL_LEVELS)[number]): number {
   const variants = buildPlantVariants(species, level);
@@ -39,7 +44,7 @@ describe.each(SPECIES)("plant species %i", (species) => {
     for (const level of PLANT_DETAIL_LEVELS) {
       const variants = buildPlantVariants(species, level);
 
-      expect(variants).toHaveLength(PLANT_VARIANT_COUNT);
+      expect(variants).toHaveLength(plantVariantCount(species));
 
       for (const mesh of variants) {
         expect(meshProblems(mesh)).toEqual([]);
@@ -49,13 +54,18 @@ describe.each(SPECIES)("plant species %i", (species) => {
 
   it("stands on the ground at about its canonical height", () => {
     const height = canonicalHeight(species);
+    const shortest = MIXED_FORMS.has(species) ? 0.3 : 0.62;
 
-    for (const mesh of buildPlantVariants(species, "high")) {
+    const variants = buildPlantVariants(species, "high");
+
+    for (const mesh of variants) {
       expect(mesh.bounds.minimum[1]).toBeGreaterThan(-0.5);
       expect(mesh.bounds.minimum[1]).toBeLessThan(height * 0.2);
-      expect(mesh.bounds.maximum[1]).toBeGreaterThan(height * 0.62);
+      expect(mesh.bounds.maximum[1]).toBeGreaterThan(height * shortest);
       expect(mesh.bounds.maximum[1]).toBeLessThan(height * 1.25);
     }
+
+    expect(Math.max(...variants.map((mesh) => mesh.bounds.maximum[1]))).toBeGreaterThan(height * 0.62);
   });
 
   it("spends fewer triangles further away", () => {
@@ -157,6 +167,26 @@ describe("tree details", () => {
           expect(bush.channels.sway[vertex]).toBeCloseTo(crownSway, 5);
           expect(bush.channels.flutter[vertex]).toBe(FOLIAGE_FLUTTER);
         }
+      }
+    }
+  });
+
+  it("grows a different kind of cactus from each variant", () => {
+    const [saguaro, organPipe, barrel, pricklyPear] = buildPlantVariants(PlantSpecies.Cactus, "high");
+
+    expect(CACTUS_FORMS.map((_form, variant) => cactusForm(variant))).toEqual(CACTUS_FORMS);
+    expect(saguaro.bounds.maximum[1]).toBeGreaterThan(3);
+    expect(meshPieces(organPipe).filter((piece) => piece.triangles.length > 60).length).toBeGreaterThan(3);
+    expect(barrel.bounds.maximum[1]).toBeLessThan(1.6);
+    expect(pricklyPear.channels.slot).toContain(MaterialSlot.Berry);
+    expect(saguaro.channels.slot).toContain(MaterialSlot.Blossom);
+  });
+
+  it("leaves dead trees bare in every season", () => {
+    for (const level of PLANT_DETAIL_LEVELS) {
+      for (const snag of buildPlantVariants(PlantSpecies.DeadTree, level)) {
+        expect([...snag.channels.slot].some((slot) => FOLIAGE_SLOTS.has(slot))).toBe(false);
+        expect(snag.channels.slot).toContain(MaterialSlot.Deadwood);
       }
     }
   });

@@ -1,5 +1,5 @@
 import { isBiomeIndex } from "../content/biomes.ts";
-import { PLANTING_RULES, plantSpeciesDefinition } from "../content/plants.ts";
+import { canGrowAt, PLANTING_RULES, plantSpeciesDefinition } from "../content/plants.ts";
 import { FULL_TURN, hashToUnit } from "../shared/math.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
@@ -62,6 +62,10 @@ export function plantInitialVegetation(
     const row = grid.rowOf(cell);
 
     for (const rule of PLANTING_RULES[biome]) {
+      if (!canGrowAt(rule, terrain.baseTemperature[cell])) {
+        continue;
+      }
+
       const isStone = plantSpeciesDefinition(rule.species).form === "stone";
 
       const chance = isStone ? rule.chancePerCell : rule.chancePerCell * clearing;

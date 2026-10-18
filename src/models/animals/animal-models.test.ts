@@ -7,8 +7,9 @@ import { hasPart } from "../part-mask.ts";
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { measureStride } from "../rig/stride.ts";
-import { meshProblems } from "../testing/mesh-checks.ts";
+import { meshProblems, openEdgeCount } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
+import { posedMesh } from "../testing/moved-mesh.ts";
 import { animalAppearance } from "./animal-appearance.ts";
 import { ANIMAL_SPECIES, animalPartMask, buildAnimalParts, poseAnimal } from "./animal-models.ts";
 import { QuadrupedBone } from "./quadruped-skeleton.ts";
@@ -57,6 +58,14 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     }
   });
 
+  it("leaves no holes in any part at either level of detail", () => {
+    for (const level of ["high", "low"] as const) {
+      for (const [index, mesh] of buildAnimalParts(kind, level).entries()) {
+        expect(openEdgeCount(mesh), `${level} ${species.parts[index].name}`).toBe(0);
+      }
+    }
+  });
+
   it("uses fewer triangles at the low level of detail", () => {
     function count(level: "high" | "low"): number {
       return buildAnimalParts(kind, level).reduce((sum, mesh) => sum + mesh.indices.length, 0);
@@ -97,6 +106,14 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     expect(joint(dead, QuadrupedBone.Chest).y).toBeLessThan(joint(standing, QuadrupedBone.Chest).y * 0.6);
   });
 
+  it("keeps antlers, tusks and horns out of the ground when lying dead", () => {
+    const parts = buildAnimalParts(kind, "high");
+
+    const lying = posedMesh(mergeMeshes(parts), posedAnimal(kind, "dead", 0));
+
+    expect(lying.bounds.minimum[1]).toBeGreaterThan(-0.1);
+  });
+
   it("covers ground with every stride", () => {
     const appearance = animalAppearance({ kind, ...ADULT });
 
@@ -113,10 +130,44 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
 });
 
 describe("animal appearance", () => {
-  it("is the same for the same animal", () => {
-    expect(animalAppearance({ kind: "deer", seed: 0.5, youth: 0.2 })).toEqual(
-      animalAppearance({ kind: "deer", seed: 0.5, youth: 0.2 })
+  it.each(ANIMAL_KINDS)("is the same for the same %s", (kind) => {
+    expect(animalAppearance({ kind, seed: 0.5, youth: 0.2 })).toEqual(
+      animalAppearance({ kind, seed: 0.5, youth: 0.2 })
     );
+  });
+
+  it.each(ANIMAL_KINDS)("varies the coat and size of every %s", (kind) => {
+    const herd = Array.from({ length: 12 }, (_, index) => animalAppearance({ kind, seed: index / 12, youth: 0 }));
+
+    expect(new Set(herd.map((animal) => animal.coat)).size).toBeGreaterThan(6);
+    expect(Math.max(...herd.map((animal) => animal.size))).toBeGreaterThan(
+      Math.min(...herd.map((animal) => animal.size))
+    );
+  });
+
+  it("gives ibex bucks long curved horns, does short ones and kids none", () => {
+    const adults = Array.from({ length: 40 }, (_, index) =>
+      animalAppearance({ kind: "ibex", seed: index / 40, youth: 0 })
+    );
+    const kid = animalAppearance({ kind: "ibex", seed: 0.3, youth: 1 });
+
+    const masks = adults.map((ibex) => animalPartMask("ibex", ibex));
+
+    expect(masks.filter((mask) => hasPart(mask, 2)).length).toBeGreaterThan(5);
+    expect(masks.filter((mask) => hasPart(mask, 1)).length).toBeGreaterThan(5);
+    expect(hasPart(animalPartMask("ibex", kid), 1)).toBe(false);
+  });
+
+  it("gives grown wolves a thick ruff now and then but never a pup", () => {
+    const adults = Array.from({ length: 40 }, (_, index) =>
+      animalAppearance({ kind: "wolf", seed: index / 40, youth: 0 })
+    );
+    const pups = Array.from({ length: 10 }, (_, index) =>
+      animalAppearance({ kind: "wolf", seed: index / 10, youth: 0.8 })
+    );
+
+    expect(adults.filter((wolf) => wolf.hasRuff).length).toBeGreaterThan(10);
+    expect(pups.some((wolf) => wolf.hasRuff)).toBe(false);
   });
 
   it("gives fawns spots and no antlers", () => {

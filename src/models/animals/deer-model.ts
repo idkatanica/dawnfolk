@@ -44,6 +44,7 @@ export const DEER_FRAME: QuadrupedFrame = {
 };
 
 export const DEER_GAIT: GaitStyle = {
+  deadHeadRoll: -degrees(55),
   grazeReach: degrees(70),
   headBob: degrees(4),
   lowerFlex: degrees(55),

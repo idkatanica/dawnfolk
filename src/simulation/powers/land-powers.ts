@@ -18,6 +18,7 @@ const PLANTING_PER_SECOND = 4;
 const DEFAULT_DENSITY = 0.5;
 const CROWDED_CELL = 2;
 const SNOWY_PAINT = 0.6;
+const HOT_CLIMATE = 14;
 const FORESTED_BIOMES: ReadonlySet<number> = new Set([Biome.Forest, Biome.Taiga]);
 
 type ForestSpecies = PowerParameters<"forest">["species"];
@@ -25,11 +26,14 @@ type ForestSpecies = PowerParameters<"forest">["species"];
 type PaintMaterial = PowerParameters<"paint">["material"];
 
 const CHOSEN_SPECIES: Readonly<Record<Exclude<ForestSpecies, "climate">, PlantSpeciesIndex>> = {
+  acacia: PlantSpecies.Acacia,
   birch: PlantSpecies.Birch,
   bush: PlantSpecies.Bush,
   maple: PlantSpecies.Maple,
   oak: PlantSpecies.Oak,
+  palm: PlantSpecies.Palm,
   pine: PlantSpecies.Pine,
+  poplar: PlantSpecies.Poplar,
   spruce: PlantSpecies.Spruce,
   willow: PlantSpecies.Willow,
 };
@@ -96,6 +100,10 @@ function climateSpecies(temperature: number, random: RandomSource): PlantSpecies
 
   if (temperature < 7.5) {
     return random.chance(0.7) ? PlantSpecies.Spruce : PlantSpecies.Pine;
+  }
+
+  if (temperature > HOT_CLIMATE) {
+    return random.chance(0.65) ? PlantSpecies.Acacia : PlantSpecies.Palm;
   }
 
   if (random.chance(0.45)) {

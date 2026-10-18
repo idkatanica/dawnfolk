@@ -4,7 +4,7 @@ import { type MeshData, mergeMeshes, triangleCount, VERTEX_CHANNELS } from "../m
 import { MAXIMUM_PARTS } from "../part-mask.ts";
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
-import { meshProblems } from "../testing/mesh-checks.ts";
+import { meshProblems, openEdgeCount } from "../testing/mesh-checks.ts";
 import {
   describePiece,
   detachedPieces,
@@ -111,6 +111,11 @@ describe("human model", () => {
     expect(body.bounds.maximum[1]).toBeLessThan(1.8);
   });
 
+  it("closes the body so no hole opens at a shoulder or a joint", () => {
+    expect(openEdgeCount(highParts[humanPartIndex("body")])).toBe(0);
+    expect(openEdgeCount(lowParts[humanPartIndex("body")])).toBe(0);
+  });
+
   it("saves triangles at the low level of detail", () => {
     const highTriangles = highParts.reduce((sum, mesh) => sum + triangleCount(mesh), 0);
     const lowTriangles = lowParts.reduce((sum, mesh) => sum + triangleCount(mesh), 0);
@@ -167,6 +172,34 @@ describe("attached parts", () => {
         expect(loose, `${appearance.ageGroup} carrying ${carried}`).toEqual([]);
         expect(isHeld, `${appearance.ageGroup} carrying ${carried}`).toBe(true);
       }
+    }
+  });
+});
+
+describe("resting poses", () => {
+  it.each(["sit", "eat"] as const)("seats a person on the ground, not in the air, to %s", (clip) => {
+    const tribe = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
+    const poser = new SkeletonPoser(HUMAN_SKELETON);
+    const pose = new Pose(HUMAN_SKELETON.bones.length);
+
+    for (const age of [9, 30, 70]) {
+      const appearance = personAppearance({ age, isFemale: age > 20, seed: 0.42, tribe });
+
+      applyHumanClip(pose, clip, 0.3, { ageGroup: appearance.ageGroup, carried: "nothing", motion: appearance.motion });
+      poser.pose(pose, humanBoneScales(appearance.body));
+
+      const body = appearanceParts(appearance).filter((part) => part === "body" || part.startsWith("torso"));
+
+      const mesh = posedMesh(mergeMeshes(body.map((name) => highParts[humanPartIndex(name)])), poser);
+
+      const seat = Array.from({ length: mesh.positions.length / 3 }, (_, vertex) => vertex).filter(
+        (vertex) => mesh.channels.boneA[vertex] === HumanBone.Pelvis && mesh.channels.boneWeight[vertex] === 0
+      );
+
+      const lowestSeat = Math.min(...seat.map((vertex) => mesh.positions[vertex * 3 + 1]));
+
+      expect(lowestSeat, `${appearance.ageGroup}`).toBeLessThan(0.08);
+      expect(lowestSeat, `${appearance.ageGroup}`).toBeGreaterThan(-0.08);
     }
   });
 });
