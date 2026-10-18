@@ -2,7 +2,6 @@ import {
   attribute,
   bool,
   clamp,
-  cos,
   equal,
   Fn,
   float,
@@ -27,28 +26,18 @@ import {
   textureLoad,
   time,
   uniform,
-  uniformArray,
   varying,
   vec2,
   vec3,
 } from "three/tsl";
-import { Color, MeshStandardNodeMaterial, type Node, Vector2, Vector3 } from "three/webgpu";
-import { MaterialSlot, SLOT_COLOR_TABLE } from "../../models/materials.ts";
+import { Color, MeshStandardNodeMaterial, type Node, Vector2 } from "three/webgpu";
+import { MaterialSlot } from "../../models/materials.ts";
 import { BERRY_PART } from "../../models/plants/plant-models.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
+import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
-
-export class PlantWeather {
-  readonly gust = uniform(0.5);
-  readonly wind = uniform(new Vector2(1, 0));
-}
-
-export class SpeciesLook {
-  readonly foliageColor = uniform(new Color(0x4e_8c_32));
-  readonly foliageCoverage = uniform(1);
-}
 
 const CHARCOAL = vec3(0.035, 0.03, 0.028);
 const SNOW = vec3(0.86, 0.9, 0.95);
@@ -63,29 +52,26 @@ const SMOULDER_HEIGHT = 5;
 const SMOULDER_HEAT = 0.02;
 const SMOULDER_CRACK_SCALE = 3.4;
 
-function linearColorVector(hex: number): Vector3 {
-  const color = new Color(hex);
-
-  return new Vector3(color.r, color.g, color.b);
-}
-
-function rotateAroundUp(vector: Node<"vec3">, angle: Node<"float">): Node<"vec3"> {
-  const cosine = cos(angle);
-  const sine = sin(angle);
-
-  return vec3(vector.x.mul(cosine).add(vector.z.mul(sine)), vector.y, vector.z.mul(cosine).sub(vector.x.mul(sine)));
-}
-
-function isSlot(slot: Node<"float">, value: number): Node<"bool"> {
-  return equal(int(slot.add(0.5)), int(value));
-}
-
-export interface PlantMaterialOptions {
+interface PlantMaterialOptions {
   readonly glow: FireGlow;
   readonly grid: WorldGrid;
   readonly look: SpeciesLook;
   readonly textures: TerrainTextures;
   readonly weather: PlantWeather;
+}
+
+export class PlantWeather {
+  readonly gust = uniform(0.5);
+  readonly wind = uniform(new Vector2(1, 0));
+}
+
+export class SpeciesLook {
+  readonly foliageColor = uniform(new Color(0x4e_8c_32));
+  readonly foliageCoverage = uniform(1);
+}
+
+function isSlot(slot: Node<"float">, value: number): Node<"bool"> {
+  return equal(int(slot.add(0.5)), int(value));
 }
 
 export function createPlantMaterial({
@@ -154,7 +140,7 @@ export function createPlantMaterial({
   const heat = varying(surface.a, "plantHeat");
   const charred = varying(select(isBurnt, float(1), select(isFoliage, float(0), float(0.6))), "plantCharred");
 
-  const slotColors = uniformArray<"vec3">(SLOT_COLOR_TABLE.map(linearColorVector), "vec3");
+  const slotColors = slotColorTable();
 
   const variation = tint.mul(0.3).add(0.85);
   const baseColor = select(isFoliage, look.foliageColor.rgb, slotColors.element(int(slot.add(0.5))));

@@ -9,6 +9,7 @@ import { HUMAN_BONE_COUNT, HUMAN_SKELETON } from "../../models/people/human-skel
 import { Pose } from "../../models/rig/pose.ts";
 import { SkeletonPoser } from "../../models/rig/skeleton-poser.ts";
 import { parseHexColor } from "../../shared/color.ts";
+import { smoothstep } from "../../shared/math.ts";
 import type { TribeSummary } from "../../simulation/frame.ts";
 import { PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
 import { CARRIED_ITEMS, type CarriedItem, PERSON_POSES } from "../../world/agent-poses.ts";
@@ -205,7 +206,7 @@ export class PeopleView {
       return this.#pose;
     }
 
-    const eased = motion.blend * motion.blend * (3 - 2 * motion.blend);
+    const eased = smoothstep(0, 1, motion.blend);
 
     applyHumanClip(this.#previousPose, PERSON_POSES[motion.previousClip], motion.previousPhase, context);
     this.#blendedPose.blendBetween(this.#previousPose, this.#pose, eased);

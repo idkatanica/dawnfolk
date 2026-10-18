@@ -27,6 +27,7 @@ import { MeshStandardNodeMaterial, type Node } from "three/webgpu";
 import { NO_WATER } from "../../world/water.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
+import { unitNoise } from "../node-helpers.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
 const SKIRT_DROP_PER_STEP = 25;
@@ -37,10 +38,6 @@ const EMBER_DEEP = vec3(1.2, 0.24, 0.03);
 const EMBER_BRIGHT = vec3(1.3, 0.42, 0.06);
 const GROUND_FIRE_LIGHT = 0.6;
 const EMBER_THRESHOLD = 0.004;
-
-function unitNoise(point: Node<"vec2">): Node<"float"> {
-  return mx_noise_float(vec3(point, 0)).mul(0.5).add(0.5);
-}
 
 function emberGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"float">): Node<"vec3"> {
   return Fn(() => {

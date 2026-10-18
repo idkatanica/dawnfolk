@@ -10,11 +10,10 @@ import {
   time,
   uniform,
   varying,
-  vec2,
   vec3,
 } from "three/tsl";
 import { MeshBasicNodeMaterial, Vector2 } from "three/webgpu";
-import { billboardNodes, type CameraAxes, facingBillboard } from "./billboards.ts";
+import { billboardNodes, type CameraAxes, distanceFromBillboardCenter, facingBillboard } from "./billboards.ts";
 
 const SOOT = vec3(0.05, 0.048, 0.046);
 const PALE_SMOKE = vec3(0.62, 0.62, 0.62);
@@ -64,7 +63,7 @@ export function createSmokeMaterial(axes: CameraAxes, look: SmokeLook): MeshBasi
   const distance = varying(length(center.sub(cameraPosition)), "smokeDistance");
   const puffSeed = varying(seed, "smokeSeed");
 
-  const radius = length(vec2(shape.x, shape.y.sub(0.5))).mul(2);
+  const radius = distanceFromBillboardCenter(shape).mul(2);
   const billow = mx_noise_float(vec3(shape.mul(3).add(puffSeed.mul(17)), age.mul(1.5)))
     .mul(0.225)
     .add(0.775);

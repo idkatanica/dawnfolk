@@ -15,24 +15,17 @@ import {
   vec2,
   vec3,
 } from "three/tsl";
-import {
-  Float32BufferAttribute,
-  InstancedBufferGeometry,
-  Mesh,
-  MeshBasicNodeMaterial,
-  Uint16BufferAttribute,
-  Vector2,
-} from "three/webgpu";
+import { Mesh, MeshBasicNodeMaterial, Vector2 } from "three/webgpu";
 import type { WeatherKind } from "../../content/weather.ts";
 import { saturate } from "../../shared/math.ts";
-import type { CameraAxes } from "./billboards.ts";
+import { type CameraAxes, createQuadGeometry, distanceFromBillboardCenter } from "./billboards.ts";
 
 const BOX_SIZE = 90;
 const BOX_HEIGHT = 60;
 const MAXIMUM_DROPS = 9000;
 const LIGHTEST_PRECIPITATION = 0.04;
 
-export type Precipitation = "rain" | "snow";
+type Precipitation = "rain" | "snow";
 
 export function precipitationOf(kind: WeatherKind): Precipitation {
   if (kind === "snow" || kind === "blizzard") {
@@ -42,21 +35,10 @@ export function precipitationOf(kind: WeatherKind): Precipitation {
   return "rain";
 }
 
-function createStreakGeometry(): InstancedBufferGeometry {
-  const geometry = new InstancedBufferGeometry();
-
-  geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(12), 3));
-  geometry.setAttribute("dropCorner", new Float32BufferAttribute([-0.5, 0, 0.5, 0, 0.5, 1, -0.5, 1], 2));
-  geometry.setIndex(new Uint16BufferAttribute([0, 1, 2, 0, 2, 3], 1));
-  geometry.instanceCount = 0;
-
-  return geometry;
-}
-
 export class WeatherParticles {
   readonly mesh: Mesh;
   readonly #fallSpeed = uniform(14);
-  readonly #geometry = createStreakGeometry();
+  readonly #geometry = createQuadGeometry("dropCorner");
   readonly #isSnow = uniform(0);
   readonly #opacity = uniform(0.3);
   readonly #wind = uniform(new Vector2());
@@ -96,7 +78,7 @@ export class WeatherParticles {
     const shape = varying(corner, "dropCorner");
     const fade = varying(slabFade.mul(rangeFade), "dropFade");
 
-    const softness = smoothstep(0.5, 0.1, length(vec2(shape.x, shape.y.sub(0.5))));
+    const softness = smoothstep(0.5, 0.1, distanceFromBillboardCenter(shape));
     const streak = smoothstep(0, 0.45, shape.y).mul(smoothstep(1, 0.7, shape.y));
 
     material.colorNode = mix(vec3(0.72, 0.78, 0.86), vec3(1, 1, 1), this.#isSnow);

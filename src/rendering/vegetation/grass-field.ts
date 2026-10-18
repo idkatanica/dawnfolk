@@ -37,7 +37,7 @@ import {
   Vector2,
   Vector3,
 } from "three/webgpu";
-import { clamp as clampNumber } from "../../shared/math.ts";
+import { clamp as clampNumber, FULL_TURN, saturate } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
@@ -83,7 +83,7 @@ const SPACING_PER_DISTANCE = 0.011;
 const FADE_START_DISTANCE = 130;
 const FADE_END_DISTANCE = 190;
 
-export interface GrassFieldOptions {
+interface GrassFieldOptions {
   readonly clumpsPerSide: number;
   readonly grid: WorldGrid;
   readonly textures: TerrainTextures;
@@ -135,7 +135,7 @@ function spacingFor(viewDistance: number): number {
 function presenceFor(viewDistance: number): number {
   const amount = (viewDistance - FADE_START_DISTANCE) / (FADE_END_DISTANCE - FADE_START_DISTANCE);
 
-  return 1 - clampNumber(amount, 0, 1);
+  return 1 - saturate(amount);
 }
 
 function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms): MeshStandardNodeMaterial {
@@ -198,9 +198,9 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
     .mul(mix(float(0.65), float(1), ground.a))
     .mul(growth);
   const bladeWidth = mix(float(NARROWEST_BLADE), float(WIDEST_BLADE), bladeRandom(5)).mul(growth);
-  const facingAngle = bladeRandom(7).mul(Math.PI * 2);
-  const spreadAngle = blade.mul((Math.PI * 2) / BLADES_PER_CLUMP).add(random(SALT_SPREAD).mul(Math.PI * 2));
-  const leanAngle = bladeRandom(11).mul(Math.PI * 2);
+  const facingAngle = bladeRandom(7).mul(FULL_TURN);
+  const spreadAngle = blade.mul(FULL_TURN / BLADES_PER_CLUMP).add(random(SALT_SPREAD).mul(FULL_TURN));
+  const leanAngle = bladeRandom(11).mul(FULL_TURN);
 
   const facing = vec2(cos(facingAngle), sin(facingAngle));
   const spread = vec2(cos(spreadAngle), sin(spreadAngle)).mul(spacing.mul(CLUMP_SPREAD));

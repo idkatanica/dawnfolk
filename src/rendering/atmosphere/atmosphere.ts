@@ -7,7 +7,7 @@ import { fogShapeFor, HeightFog } from "./height-fog.ts";
 import { SkyDome } from "./sky-dome.ts";
 import { type SkyPalette, skyPaletteAt } from "./sky-palette.ts";
 
-export interface AtmosphereState {
+interface AtmosphereState {
   readonly cloudCover: number;
   readonly flash: number;
   readonly fog: number;
@@ -19,7 +19,7 @@ export interface AtmosphereState {
   readonly windZ: number;
 }
 
-export interface AtmosphereOptions {
+interface AtmosphereOptions {
   readonly cloudSeaAltitude: number;
   readonly shadowMapSize: number;
 }

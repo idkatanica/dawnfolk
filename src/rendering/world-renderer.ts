@@ -27,7 +27,7 @@ import { WaterfallView } from "./water/waterfall-view.ts";
 import { type Wind, windOf } from "./wind.ts";
 import { WorldChangeReader } from "./world-changes.ts";
 
-export interface RenderView {
+interface RenderView {
   readonly camera: PerspectiveCamera;
   readonly effects: readonly SimulationEffect[];
   readonly focus: Vector3;
@@ -47,9 +47,9 @@ const SELECTION_RADIUS: Readonly<Record<"animal" | "building" | "cell" | "person
   person: 1.1,
 };
 
-export type ShakeListener = (amount: number, x: number, z: number) => void;
+type ShakeListener = (amount: number, x: number, z: number) => void;
 
-export interface WorldRendererOptions {
+interface WorldRendererOptions {
   readonly camera: PerspectiveCamera;
   readonly mirror: WorldMirror;
   readonly onShake: ShakeListener;
@@ -230,9 +230,8 @@ export class WorldRenderer {
 
   #updateAgents(view: RenderView): void {
     const mirror = this.#mirror;
-    const { camera } = view;
-
     const { frame } = mirror;
+    const { camera } = view;
 
     this.#frustum.setFromProjectionMatrix(
       this.#matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)

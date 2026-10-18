@@ -1,6 +1,6 @@
 import { type Color, GROUNDS, seasonalGroundColor } from "../content/grounds.ts";
 import type { WorldMirror } from "../game/world-mirror.ts";
-import { clamp } from "../shared/math.ts";
+import { clamp, lerp, saturate } from "../shared/math.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../world/agent-buffers.ts";
 import { hasWater } from "../world/water.ts";
 
@@ -11,12 +11,12 @@ const WATER_SHALLOW: Color = [0.42, 0.66, 0.78];
 const WATER_DEEP: Color = [0.16, 0.36, 0.58];
 
 function waterColor(depth: number): Color {
-  const amount = clamp(depth / DEEPEST_TINT, 0, 1);
+  const amount = saturate(depth / DEEPEST_TINT);
 
   return [
-    WATER_SHALLOW[0] + (WATER_DEEP[0] - WATER_SHALLOW[0]) * amount,
-    WATER_SHALLOW[1] + (WATER_DEEP[1] - WATER_SHALLOW[1]) * amount,
-    WATER_SHALLOW[2] + (WATER_DEEP[2] - WATER_SHALLOW[2]) * amount,
+    lerp(WATER_SHALLOW[0], WATER_DEEP[0], amount),
+    lerp(WATER_SHALLOW[1], WATER_DEEP[1], amount),
+    lerp(WATER_SHALLOW[2], WATER_DEEP[2], amount),
   ];
 }
 
@@ -63,9 +63,9 @@ export function paintMinimapTerrain(mirror: WorldMirror, size: number): ImageDat
       const color = cellColor(mirror, palette, grid.index(column, row));
       const shade = slopeShade(mirror, column, row);
 
-      image.data[offset] = clamp(color[0] * shade, 0, 1) * BYTE;
-      image.data[offset + 1] = clamp(color[1] * shade, 0, 1) * BYTE;
-      image.data[offset + 2] = clamp(color[2] * shade, 0, 1) * BYTE;
+      image.data[offset] = saturate(color[0] * shade) * BYTE;
+      image.data[offset + 1] = saturate(color[1] * shade) * BYTE;
+      image.data[offset + 2] = saturate(color[2] * shade) * BYTE;
       image.data[offset + 3] = BYTE;
     }
   }

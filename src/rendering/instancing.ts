@@ -14,6 +14,11 @@ import type { MeshData, VertexChannel } from "../models/mesh/mesh-data.ts";
 
 const GROWTH_FACTOR = 1.5;
 
+interface InterleavedField {
+  readonly name: string;
+  readonly size: number;
+}
+
 export function toInstancedGeometry(source: BufferGeometry): InstancedBufferGeometry {
   const geometry = new InstancedBufferGeometry();
 
@@ -106,11 +111,6 @@ export class InstanceAttribute {
 
     return attribute;
   }
-}
-
-export interface InterleavedField {
-  readonly name: string;
-  readonly size: number;
 }
 
 export class InterleavedInstances {

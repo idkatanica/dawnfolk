@@ -1,6 +1,5 @@
 import {
   attribute,
-  cos,
   dot,
   equal,
   Fn,
@@ -12,29 +11,14 @@ import {
   normalLocal,
   positionLocal,
   select,
-  sin,
-  uniformArray,
   varying,
   vec3,
   vec4,
 } from "three/tsl";
-import { Color, MeshStandardNodeMaterial, type Node, Vector3 } from "three/webgpu";
-import { SLOT_COLOR_TABLE } from "../../models/materials.ts";
+import { MeshStandardNodeMaterial, type Node } from "three/webgpu";
+import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import type { AgentPalette } from "./agent-palette.ts";
 import { colorTexel, type PaletteLayout, rootTexel, TEXELS_PER_BONE } from "./palette-layout.ts";
-
-function linearColorVector(hex: number): Vector3 {
-  const color = new Color(hex);
-
-  return new Vector3(color.r, color.g, color.b);
-}
-
-function rotateAroundUp(vector: Node<"vec3">, angle: Node<"float">): Node<"vec3"> {
-  const cosine = cos(angle);
-  const sine = sin(angle);
-
-  return vec3(vector.x.mul(cosine).add(vector.z.mul(sine)), vector.y, vector.z.mul(cosine).sub(vector.x.mul(sine)));
-}
 
 export function createSkinnedMaterial(palette: AgentPalette, layout: PaletteLayout): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial();
@@ -70,7 +54,7 @@ export function createSkinnedMaterial(palette: AgentPalette, layout: PaletteLayo
     return rotateAroundUp(skinned, root.w).add(root.xyz);
   })();
 
-  const slotColors = uniformArray<"vec3">(SLOT_COLOR_TABLE.map(linearColorVector), "vec3");
+  const slotColors = slotColorTable();
 
   const color = layout.colorSlots.reduce<Node<"vec3">>(
     (current, colorSlot, index) =>

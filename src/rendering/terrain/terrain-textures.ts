@@ -11,7 +11,7 @@ import {
 } from "three/webgpu";
 import { type Color, GROUNDS, Ground, seasonalGroundColor } from "../../content/grounds.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import { clamp, lerp } from "../../shared/math.ts";
+import { lerp, saturate } from "../../shared/math.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import { NO_WATER } from "../../world/water.ts";
 import type { WorldChanges } from "../world-changes.ts";
@@ -51,7 +51,7 @@ function colorTexture(data: Uint8Array, size: number, isSrgb: boolean): DataText
 }
 
 function toByte(value: number): number {
-  return Math.round(clamp(value, 0, 1) * BYTE);
+  return Math.round(saturate(value) * BYTE);
 }
 
 function mixColor(from: Color, to: Color, amount: number): Color {
@@ -177,7 +177,7 @@ export class TerrainTextures {
     for (let cell = 0; cell < cellCount; cell += 1) {
       const groundIndex = ground[cell * GROUND_CHANNELS + GroundChannel.Ground];
       const crop = ground[cell * GROUND_CHANNELS + GroundChannel.Crop];
-      const moisture = clamp(terrain.moisture[cell], 0, 1);
+      const moisture = saturate(terrain.moisture[cell]);
       const brightness = 1 + terrain.variation[cell] * 0.09;
       const offset = cell * 4;
 

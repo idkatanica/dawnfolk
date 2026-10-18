@@ -5,7 +5,6 @@ import {
   float,
   max,
   mix,
-  mx_noise_float,
   normalize,
   pow,
   select,
@@ -15,7 +14,8 @@ import {
   vec2,
   vec3,
 } from "three/tsl";
-import { CustomBlending, MeshBasicNodeMaterial, type Node, OneFactor, OneMinusSrcAlphaFactor } from "three/webgpu";
+import { CustomBlending, MeshBasicNodeMaterial, OneFactor, OneMinusSrcAlphaFactor } from "three/webgpu";
+import { unitNoise } from "../node-helpers.ts";
 import { billboardNodes, type CameraAxes, facingBillboard } from "./billboards.ts";
 
 const RIM_COLOR = vec3(0.68, 0.07, 0.008);
@@ -23,10 +23,6 @@ const BODY_COLOR = vec3(1.7, 0.41, 0.04);
 const CORE_COLOR = vec3(2.4, 1.1, 0.2);
 const TOP_DOWN_SQUASH = 0.42;
 const SEED_SPREAD = 37;
-
-function unitNoise(point: Node<"vec2">): Node<"float"> {
-  return mx_noise_float(vec3(point, 0)).mul(0.5).add(0.5);
-}
 
 export function createFlameMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
   const material = new MeshBasicNodeMaterial({ depthWrite: false, transparent: true });

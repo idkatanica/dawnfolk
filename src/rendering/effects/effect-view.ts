@@ -16,7 +16,7 @@ import {
   type SpriteSinks,
 } from "./transient-effects.ts";
 
-export interface EffectViewOptions {
+interface EffectViewOptions {
   readonly axes: CameraAxes;
   readonly createRing: () => GroundRing;
   readonly heightAt: (x: number, z: number) => number;

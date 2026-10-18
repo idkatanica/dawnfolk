@@ -1,6 +1,5 @@
 import {
   attribute,
-  cos,
   equal,
   Fn,
   float,
@@ -10,22 +9,21 @@ import {
   normalLocal,
   positionLocal,
   select,
-  sin,
   time,
-  uniformArray,
   varying,
   vec3,
 } from "three/tsl";
-import { Color, Group, Mesh, MeshStandardNodeMaterial, type Node, Sphere, Vector3 } from "three/webgpu";
+import { Color, Group, Mesh, MeshStandardNodeMaterial, Sphere, Vector3 } from "three/webgpu";
 import { BUILDING_KINDS, BUILDINGS, type BuildingKind } from "../../content/buildings.ts";
-import { MaterialSlot, SLOT_COLOR_TABLE } from "../../models/materials.ts";
+import { MaterialSlot } from "../../models/materials.ts";
 import { buildBuildingModel, GLOW_PART } from "../../models/structures/building-models.ts";
 import { parseHexColor } from "../../shared/color.ts";
 import { clamp, saturate } from "../../shared/math.ts";
 import type { BuildingView as BuildingSnapshot, TribeSummary } from "../../simulation/frame.ts";
 import type { AgentViewInput } from "../agents/agent-view-input.ts";
-import { isLitCampfire } from "../effects/fire-view.ts";
 import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
+import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { isLitCampfire } from "./lit-campfire.ts";
 
 const LEVEL_DISTANCES = { high: 320, low: 3200 } as const;
 const BOUNDING_RADIUS = 6;
@@ -45,19 +43,6 @@ interface BuildingBatch {
   readonly geometry: ReturnType<typeof geometryFromMeshData>;
   readonly instances: InterleavedInstances;
   readonly mesh: Mesh;
-}
-
-function linearColorVector(hex: number): Vector3 {
-  const color = new Color(hex);
-
-  return new Vector3(color.r, color.g, color.b);
-}
-
-function rotateAroundUp(vector: Node<"vec3">, angle: Node<"float">): Node<"vec3"> {
-  const cosine = cos(angle);
-  const sine = sin(angle);
-
-  return vec3(vector.x.mul(cosine).add(vector.z.mul(sine)), vector.y, vector.z.mul(cosine).sub(vector.x.mul(sine)));
 }
 
 function createBuildingMaterial(): MeshStandardNodeMaterial {
@@ -82,7 +67,7 @@ function createBuildingMaterial(): MeshStandardNodeMaterial {
     return rotateAroundUp(local, placement.w).add(placement.xyz);
   })();
 
-  const slotColors = uniformArray<"vec3">(SLOT_COLOR_TABLE.map(linearColorVector), "vec3");
+  const slotColors = slotColorTable();
   const accent = look.yzw;
   const damage = state.x;
 

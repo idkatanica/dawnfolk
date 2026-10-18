@@ -9,12 +9,12 @@ export interface CameraState {
   readonly yaw: number;
 }
 
-export interface FollowTarget {
+interface FollowTarget {
   readonly x: number;
   readonly z: number;
 }
 
-export type HeightProbe = (x: number, z: number) => number;
+type HeightProbe = (x: number, z: number) => number;
 
 const MAXIMUM_DISTANCE = 9000;
 const MAXIMUM_PITCH = 1.48;

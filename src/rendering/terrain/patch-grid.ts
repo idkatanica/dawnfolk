@@ -16,7 +16,7 @@ import { createPatchGeometry, PATCH_CELLS, PATCH_STEPS, type PatchEdges, type Pa
 
 const NO_LEVEL = -1;
 
-export interface PatchGridOptions {
+interface PatchGridOptions {
   readonly castsShadow: boolean;
   readonly edges: PatchEdges;
   readonly levelDistances: readonly number[];
@@ -48,7 +48,7 @@ interface PatchLevel {
   readonly origins: InstancedBufferAttribute;
 }
 
-export type PatchMeasure = (corner: PatchCorner) => HeightRange | null;
+type PatchMeasure = (corner: PatchCorner) => HeightRange | null;
 
 function overlaps(region: CellRegion, corner: PatchCorner): boolean {
   return (

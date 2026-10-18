@@ -6,6 +6,7 @@ import { distanceSquared, hashToUnit } from "../../shared/math.ts";
 import type { BuildingView } from "../../simulation/frame.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
+import { isLitCampfire } from "../structures/lit-campfire.ts";
 import { CHUNK_CELLS, type VegetationChunks } from "../vegetation/vegetation-chunks.ts";
 import { BillboardBatch, type CameraAxes } from "./billboards.ts";
 import { createFlameMaterial } from "./flame-material.ts";
@@ -27,7 +28,6 @@ const CAMPFIRE_SPARK_RISE = 9;
 const SMOULDERING = 0.3;
 const CROWN_FIRE = 0.45;
 const FLAME_LIFT = 0.36;
-const LIT_CAMPFIRE_FUEL = 0.02;
 const CAMPFIRE_LIGHTS = 3;
 const CAMPFIRE_LIGHT_RANGE = 70;
 const CAMPFIRE_LIGHT_POWER = 260;
@@ -35,7 +35,7 @@ const HEAVY_SMOKE_HEIGHT = 190;
 const REBUILD_DISTANCE = 120;
 const LIGHT_SMOKE_HEIGHT = 95;
 
-export interface FireViewOptions {
+interface FireViewOptions {
   readonly axes: CameraAxes;
   readonly chunks: VegetationChunks;
 }
@@ -44,10 +44,6 @@ interface BurningCell {
   readonly cell: number;
   readonly distance: number;
   readonly intensity: number;
-}
-
-export function isLitCampfire(building: BuildingView): boolean {
-  return building.kind === "campfire" && building.progress >= 1 && building.fuel > LIT_CAMPFIRE_FUEL;
 }
 
 function groundFlameCount(intensity: number): number {
