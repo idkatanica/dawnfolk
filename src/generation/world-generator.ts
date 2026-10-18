@@ -16,6 +16,7 @@ import {
 import { computeHydrology } from "./hydrology.ts";
 import { digRiverLakes, fillSinks } from "./lake-basins.ts";
 import { createRelief, islandPointAt, type Relief } from "./relief.ts";
+import { carveValleys } from "./valleys.ts";
 import { plantInitialVegetation } from "./vegetation.ts";
 
 export type GenerationStage = "climate" | "erosion" | "relief" | "vegetation" | "water";
@@ -143,6 +144,7 @@ export function generateWorld(
     grid,
     random: createRandom(seed * 11 + 5),
   });
+  carveValleys(heights, grid, dryness);
   relaxSlopes(heights, size, grid.cellSize, talus, FINAL_RELAXATION_ITERATIONS);
   limitSlopes(heights, size, grid.cellSize, STEEPEST_SLOPE);
   smoothHeights(heights, size, 1, 0.2);

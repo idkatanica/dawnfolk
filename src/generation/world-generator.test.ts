@@ -60,6 +60,25 @@ function largestStepAlong(heights: Float32Array, cells: readonly number[]): numb
   return largest;
 }
 
+function isRiverWater(terrain: TerrainData, cell: number): boolean {
+  return terrain.riverStrength[cell] > 0 && hasWater(terrain.waterSurface[cell], terrain.height[cell]);
+}
+
+function cellsAround(grid: WorldGrid, cell: number, innerRadius: number, outerRadius: number): number[] {
+  const x = grid.cellCenterX(cell);
+  const z = grid.cellCenterZ(cell);
+
+  return grid
+    .cellsInRadius(x, z, outerRadius)
+    .filter((other) => Math.hypot(grid.cellCenterX(other) - x, grid.cellCenterZ(other) - z) >= innerRadius);
+}
+
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((first, second) => first - second);
+
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
 beforeAll(() => {
   world = generateTestWorld(7);
 });
@@ -169,6 +188,31 @@ describe("world generation", () => {
     expect(meanSlope).toBeLessThan(24);
     expect(shareAbove(slopes, STEEP)).toBeLessThan(0.03);
     expect(shareAbove(slopes, CLIFF)).toBeLessThan(0.001);
+  });
+
+  it("sinks rivers into valleys below the land around them", () => {
+    const grid = new WorldGrid(TEST_DIMENSIONS);
+    const { terrain } = world;
+    const depths: number[] = [];
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      if (!isRiverWater(terrain, cell)) {
+        continue;
+      }
+
+      const land = cellsAround(grid, cell, 60, 100).filter(
+        (other) => !hasWater(terrain.waterSurface[other], terrain.height[other])
+      );
+
+      if (land.length > 0) {
+        depths.push(
+          land.reduce((total, other) => total + terrain.height[other], 0) / land.length - terrain.waterSurface[cell]
+        );
+      }
+    }
+
+    expect(depths.length).toBeGreaterThan(100);
+    expect(median(depths)).toBeGreaterThan(5);
   });
 
   it("produces many biomes and a living vegetation cover", () => {
