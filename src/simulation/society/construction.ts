@@ -20,6 +20,7 @@ const POSTPONE_DAYS = 1.5;
 const LONGEST_STALL_DAYS = 2.5;
 const PLANS_TO_SAVE_FOR = 3;
 const CLEARING = 4;
+const SLOPE_PROBE = 3;
 
 export function canAfford(tribe: Tribe, kind: BuildingKind): boolean {
   return hasResources(tribe.stock, BUILDINGS[kind].cost);
@@ -163,15 +164,34 @@ export function isBuildable(spot: Waypoint, kind: BuildingKind, context: Society
   return isFirmGround && isClearOfOthers(spot, kind, context);
 }
 
-function startBuilding(tribe: Tribe, plan: BuildingPlan, spot: Waypoint, context: SocietyContext): Building {
-  const rotation = Math.atan2(tribe.campX - spot.x, tribe.campZ - spot.z);
+function downhillRotation(spot: Waypoint, context: SocietyContext): number {
+  const { world } = context;
 
+  const slopeX = world.heightAt(spot.x + SLOPE_PROBE, spot.z) - world.heightAt(spot.x - SLOPE_PROBE, spot.z);
+  const slopeZ = world.heightAt(spot.x, spot.z + SLOPE_PROBE) - world.heightAt(spot.x, spot.z - SLOPE_PROBE);
+
+  return Math.atan2(-slopeX, -slopeZ);
+}
+
+function siteRotation(tribe: Tribe, plan: BuildingPlan, spot: Waypoint, context: SocietyContext): number {
+  if (isEnclosure(plan.kind)) {
+    return plan.gateAngle;
+  }
+
+  if (BUILDINGS[plan.kind].role === "mine") {
+    return downhillRotation(spot, context);
+  }
+
+  return Math.atan2(tribe.campX - spot.x, tribe.campZ - spot.z);
+}
+
+function startBuilding(tribe: Tribe, plan: BuildingPlan, spot: Waypoint, context: SocietyContext): Building {
   const site = context.buildings.add(
     {
       depositId: plan.depositId,
       extent: plan.extent,
       kind: plan.kind,
-      rotation: isEnclosure(plan.kind) ? plan.gateAngle : rotation,
+      rotation: siteRotation(tribe, plan, spot, context),
       style: tribe.eraIndex,
       tribeId: tribe.id,
       x: spot.x,

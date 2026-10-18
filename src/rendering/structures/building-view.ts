@@ -29,7 +29,7 @@ import { MaterialSlot, SLOT_COLOR_TABLE } from "../../models/materials.ts";
 import type { MeshData } from "../../models/mesh/mesh-data.ts";
 import { buildBuildingModel, GLOW_PART } from "../../models/structures/building-models.ts";
 import { buildEnclosurePieces, type EnclosureKind } from "../../models/structures/enclosures.ts";
-import { buildMineModel, type MineOre } from "../../models/structures/mine-model.ts";
+import { buildMineModel, MINE_SCALE, type MineOre } from "../../models/structures/mine-model.ts";
 import { parseHexColor } from "../../shared/color.ts";
 import { clamp, FULL_TURN, saturate } from "../../shared/math.ts";
 import type { BuildingView as BuildingSnapshot, TribeSummary } from "../../simulation/frame.ts";
@@ -60,6 +60,18 @@ const BUILDING_FIELDS = [
 ] as const;
 
 const FLOATS_PER_BUILDING = 12;
+const CENTER_PROBE: readonly GroundProbe[] = [[0, 0]];
+const MINE_GROUND_PROBES: readonly GroundProbe[] = [
+  [0, 0],
+  [0, 1],
+  [0, 2],
+  [-1.75, 1.35],
+  [1.95, 1],
+  [-1.1, 0.4],
+  [1.1, 0.4],
+].map(([x, z]): GroundProbe => [x * MINE_SCALE, z * MINE_SCALE]);
+
+type GroundProbe = readonly [number, number];
 
 type ModelKey = string;
 
@@ -71,6 +83,7 @@ interface BuildingBatch {
 }
 
 interface PiecePlacement {
+  readonly groundProbes: readonly GroundProbe[];
   readonly key: ModelKey;
   readonly progress: number;
   readonly rotation: number;
@@ -87,6 +100,17 @@ function slotColor(slot: number): Vector3 {
   const color = new Color(SLOT_COLOR_TABLE[slot]);
 
   return new Vector3(color.r, color.g, color.b);
+}
+
+function groundUnder(input: AgentViewInput, piece: PiecePlacement): number {
+  const cosine = Math.cos(piece.rotation);
+  const sine = Math.sin(piece.rotation);
+
+  return Math.min(
+    ...piece.groundProbes.map(([localX, localZ]) =>
+      input.mirror.heightAt(piece.x + localX * cosine + localZ * sine, piece.z + localZ * cosine - localX * sine)
+    )
+  );
 }
 
 function vectorNode(vector: Vector3) {
@@ -263,7 +287,11 @@ export class BuildingView {
 
     const key = building.kind === "mine" ? mineKey(oreOfVariant(building.variant)) : building.kind;
 
-    return [{ key, progress: building.progress, rotation: building.rotation, x: building.x, z: building.z }];
+    const groundProbes = building.kind === "mine" ? MINE_GROUND_PROBES : CENTER_PROBE;
+
+    return [
+      { groundProbes, key, progress: building.progress, rotation: building.rotation, x: building.x, z: building.z },
+    ];
   }
 
   #ringOf(building: BuildingSnapshot): PiecePlacement[] {
@@ -277,6 +305,7 @@ export class BuildingView {
       const angle = building.rotation + (index / count) * FULL_TURN;
 
       return {
+        groundProbes: CENTER_PROBE,
         key: enclosureKey(kind, index === 0 ? "gate" : "segment"),
         progress: saturate(building.progress * count - index),
         rotation: -angle - Math.PI / 2,
@@ -287,7 +316,7 @@ export class BuildingView {
   }
 
   #place(input: AgentViewInput, building: BuildingSnapshot, piece: PiecePlacement): void {
-    const y = input.mirror.heightAt(piece.x, piece.z);
+    const y = groundUnder(input, piece);
 
     this.#bounds.center.set(piece.x, y + 2, piece.z);
 
