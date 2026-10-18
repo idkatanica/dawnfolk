@@ -307,6 +307,25 @@ describe("earthquakes", () => {
 
     expect(treesWithin(simulation, 300, PlantState.Fallen)).toBeGreaterThan(20);
   });
+
+  it("name the thrown trees as fallen when the ground is inspected", () => {
+    const simulation = createForest();
+    const { vegetation } = simulation.world;
+
+    simulation.usePower("earthquake", 0, 0, { magnitude: 100, radius: 300 });
+
+    const fallen = Array.from({ length: vegetation.count }, (_, plant) => plant).findIndex(
+      (plant) => vegetation.state[plant] === PlantState.Fallen
+    );
+
+    expect(fallen).toBeGreaterThanOrEqual(0);
+
+    simulation.setSelection({ kind: "cell", x: vegetation.x[fallen], z: vegetation.z[fallen] });
+
+    expect(simulation.advance(0).inspection).toMatchObject({
+      plants: expect.arrayContaining([expect.objectContaining({ name: expect.stringContaining("(fallen)") })]),
+    });
+  });
 });
 
 describe("determinism", () => {
