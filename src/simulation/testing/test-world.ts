@@ -51,7 +51,7 @@ function createTestGeneratedWorld(overrides: Partial<TestWorldOptions>): Generat
     shape: "square",
     terrain,
     vegetation: new VegetationStore(grid, grid.cellCount * 2),
-    water: { lakes: [], rivers: [], waterfalls: [] },
+    water: { lakes: [], rivers: [], springs: [], waterfalls: [] },
   };
 }
 

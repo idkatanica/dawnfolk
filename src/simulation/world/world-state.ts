@@ -15,12 +15,13 @@ import {
   touchesWaterCell,
 } from "../../world/terrain-sampling.ts";
 import { NO_PLANT, type PlantPlacement, type VegetationStore } from "../../world/vegetation-store.ts";
-import { NO_WATER, type WaterFeatures } from "../../world/water.ts";
+import { NO_WATER, type Spring, type WaterFeatures } from "../../world/water.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
 import { CellSet } from "./cell-set.ts";
 
 export const NO_BUILDING = -1;
 export const MONUMENT_GROUND = -2;
+export const SPRING_GROUND = -3;
 export const SNOW_CAPACITY = 1.2;
 
 const MAXIMUM_TERRAIN_HEIGHT = 3200;
@@ -107,6 +108,8 @@ export class WorldState {
         this.occupancy[cell] = MONUMENT_GROUND;
       }
     }
+
+    this.#reserveSprings(this.water.springs);
   }
 
   heightAt(x: number, z: number): number {
@@ -176,7 +179,11 @@ export class WorldState {
   }
 
   isObstructed(cell: number): boolean {
-    return cell >= 0 && this.occupancy[cell] === MONUMENT_GROUND;
+    if (cell < 0) {
+      return false;
+    }
+
+    return this.occupancy[cell] === MONUMENT_GROUND || this.occupancy[cell] === SPRING_GROUND;
   }
 
   isObstructedAt(x: number, z: number): boolean {
@@ -315,12 +322,37 @@ export class WorldState {
   }
 
   replaceWater(water: WaterFeatures): void {
+    for (const spring of this.water.springs) {
+      for (const cell of spring.cells) {
+        if (this.occupancy[cell] === SPRING_GROUND) {
+          this.occupancy[cell] = NO_BUILDING;
+        }
+      }
+    }
+
     this.water = water;
     this.markWaterChanged();
+    this.#reserveSprings(water.springs);
+
+    for (const spring of water.springs) {
+      for (const cell of spring.cells) {
+        this.clearPlants(cell, true);
+      }
+    }
   }
 
   markWaterChanged(): void {
     this.waterVersion += 1;
+  }
+
+  #reserveSprings(springs: readonly Spring[]): void {
+    for (const spring of springs) {
+      for (const cell of spring.cells) {
+        if (this.occupancy[cell] === NO_BUILDING) {
+          this.occupancy[cell] = SPRING_GROUND;
+        }
+      }
+    }
   }
 }
 

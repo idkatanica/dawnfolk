@@ -7,7 +7,7 @@ import { admitsWildPlant, slopeAt } from "../world/footing.ts";
 import { ISLAND_SHAPES, type IslandShapeKind } from "../world/island-shape.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { sampleHeight } from "../world/terrain-sampling.ts";
-import { hasWater, NO_WATER, type River } from "../world/water.ts";
+import { hasWater, NO_WATER, type River, SPRING_KINDS } from "../world/water.ts";
 import { NEIGHBOR_OFFSETS, WorldGrid } from "../world/world-grid.ts";
 import {
   DEFAULT_GENERATION_OPTIONS,
@@ -271,6 +271,46 @@ function mouthFaults(generated: GeneratedWorld): string[] {
   return faults;
 }
 
+function isFedByLake(generated: GeneratedWorld, grid: WorldGrid, river: River): boolean {
+  const [head] = river.points;
+
+  return grid.cellsInRadius(head.x, head.z, grid.cellSize * 2.5).some((cell) => isLakeWater(generated.terrain, cell));
+}
+
+function headFaults(generated: GeneratedWorld): string[] {
+  const grid = new WorldGrid(generated.dimensions);
+  const faults: string[] = [];
+
+  for (const river of generated.water.rivers) {
+    const spring = generated.water.springs.find((candidate) => candidate.river === river.id);
+    const [head] = river.points;
+    const ahead = river.points.find((point) => Math.hypot(point.x - head.x, point.z - head.z) >= 25);
+
+    if (spring === undefined) {
+      if (!isFedByLake(generated, grid, river)) {
+        faults.push(`river ${river.id} starts from nothing at ${head.x.toFixed(0)}, ${head.z.toFixed(0)}`);
+      }
+
+      continue;
+    }
+
+    if (ahead === undefined) {
+      continue;
+    }
+
+    const facing =
+      (spring.directionX * (ahead.x - head.x) + spring.directionZ * (ahead.z - head.z)) /
+      Math.hypot(ahead.x - head.x, ahead.z - head.z);
+    const behind = spring.directionX * (head.x - spring.x) + spring.directionZ * (head.z - spring.z);
+
+    if (facing < 0.95 || behind < 0) {
+      faults.push(`the ${spring.kind} of river ${river.id} does not face down the river`);
+    }
+  }
+
+  return faults;
+}
+
 function distanceToWaterfall(generated: GeneratedWorld, grid: WorldGrid, cell: number): number {
   const x = grid.cellCenterX(cell);
   const z = grid.cellCenterZ(cell);
@@ -371,6 +411,33 @@ describe("world generation", () => {
     for (const generated of [world, squareWorld, generateTestWorld(11), generateTestWorld(11, "square")]) {
       expect(generated.water.waterfalls.length).toBeGreaterThan(0);
       expect(mouthFaults(generated)).toEqual([]);
+    }
+  });
+
+  it("starts every river at a spring lake, a rocky spring or a cave facing down the river", () => {
+    for (const generated of [world, squareWorld, generateTestWorld(11), generateTestWorld(19, "square")]) {
+      expect(generated.water.springs.length).toBeGreaterThan(0);
+      expect(headFaults(generated)).toEqual([]);
+    }
+  });
+
+  it("digs spring lakes as water at the level of the river head and keeps plants off every spring", () => {
+    const grid = new WorldGrid(TEST_DIMENSIONS);
+    const pools = world.water.springs.filter((spring) => spring.kind !== "cave");
+
+    expect(pools.length).toBeGreaterThan(0);
+
+    for (const pool of pools) {
+      const cell = grid.cellAt(pool.x, pool.z);
+
+      expect(hasWater(world.terrain.waterSurface[cell], world.terrain.height[cell])).toBe(true);
+      expect(world.terrain.waterSurface[cell]).toBeCloseTo(pool.level, 1);
+    }
+
+    const springGround = new Set(world.water.springs.flatMap((spring) => spring.cells));
+
+    for (let plant = 0; plant < world.vegetation.count; plant += 1) {
+      expect(springGround.has(grid.cellAt(world.vegetation.x[plant], world.vegetation.z[plant]))).toBe(false);
     }
   });
 
@@ -622,6 +689,15 @@ describe("full-size island rim", () => {
     for (const generated of [fullSize, fullSquare]) {
       expect(riverFaults(generated)).toEqual([]);
       expect(mouthFaults(generated)).toEqual([]);
+    }
+  });
+
+  it("starts every full-size river at a spring lake, a rocky spring or a cave on both shapes", () => {
+    for (const generated of [fullSize, fullSquare]) {
+      const kinds = new Set(generated.water.springs.map((spring) => spring.kind));
+
+      expect(headFaults(generated)).toEqual([]);
+      expect([...kinds].sort()).toEqual([...SPRING_KINDS].sort());
     }
   });
 

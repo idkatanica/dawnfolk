@@ -12,6 +12,7 @@ import {
 } from "../world/water.ts";
 import { NEIGHBOR_OFFSETS, type WorldGrid } from "../world/world-grid.ts";
 import { interpolatePoint, makeSurfaceDescend, smoothRiverPath } from "./river-paths.ts";
+import { placeSprings } from "./springs.ts";
 
 const DIAGONAL_REACH = 0.75;
 const BANK_DEPTH = 0.7;
@@ -693,11 +694,11 @@ function sampleSegment(points: readonly RiverPoint[], segment: number, grid: Wor
   }
 }
 
-function nearestChannelSamples(river: River, grid: WorldGrid): ChannelSamples {
+function nearestChannelSamples(points: readonly RiverPoint[], grid: WorldGrid): ChannelSamples {
   const samples: ChannelSamples = new Map();
 
-  for (let segment = 0; segment < river.points.length - 1; segment += 1) {
-    sampleSegment(river.points, segment, grid, samples);
+  for (let segment = 0; segment < points.length - 1; segment += 1) {
+    sampleSegment(points, segment, grid, samples);
   }
 
   return samples;
@@ -766,15 +767,17 @@ function pastCoastSegment(river: River, targets: ChannelTargets): number {
   return river.points.length - 2;
 }
 
+function carveChannel(points: readonly RiverPoint[], targets: ChannelTargets, coastSegment = NO_CELL): void {
+  for (const [cell, sample] of nearestChannelSamples(points, targets.grid)) {
+    const point = interpolatePoint(points[sample.segment], points[sample.segment + 1], sample.along);
+
+    carveCell(cell, sample.distance, point, targets, sample.segment === coastSegment);
+  }
+}
+
 function carveRivers(rivers: readonly River[], targets: ChannelTargets): void {
   for (const river of rivers) {
-    const coastSegment = pastCoastSegment(river, targets);
-
-    for (const [cell, sample] of nearestChannelSamples(river, targets.grid)) {
-      const point = interpolatePoint(river.points[sample.segment], river.points[sample.segment + 1], sample.along);
-
-      carveCell(cell, sample.distance, point, targets, sample.segment === coastSegment);
-    }
+    carveChannel(river.points, targets, pastCoastSegment(river, targets));
   }
 }
 
@@ -1143,6 +1146,7 @@ export function computeHydrology(
   const chains = traceRiverChains(basins.network, lakeIds, riverThreshold);
 
   const rivers = buildRivers(chains, { basins, coastDistance, grid, heights });
+  const springs = placeSprings(rivers, { grid, heights, lakeIds, riverThreshold });
   const targets: ChannelTargets = {
     coastDistance,
     grid,
@@ -1155,13 +1159,18 @@ export function computeHydrology(
   };
 
   carveRivers(rivers, targets);
+
+  for (const channel of springs.channels) {
+    carveChannel(channel, targets);
+  }
+
   keepRiversDescending(rivers, targets);
   dropShallowWater(heights, waterSurface, riverStrength);
   lowerBanks(targets);
   fillPinchedBanks(targets);
 
   return {
-    features: { lakes, rivers, waterfalls: findWaterfalls(rivers, grid) },
+    features: { lakes, rivers, springs: springs.springs, waterfalls: findWaterfalls(rivers, grid) },
     lakeIds,
     riverStrength,
     waterSurface,

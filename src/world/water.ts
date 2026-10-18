@@ -33,9 +33,27 @@ export interface Waterfall {
   z: number;
 }
 
+export const SPRING_KINDS = ["pool", "rocky", "cave"] as const;
+
+export type SpringKind = (typeof SPRING_KINDS)[number];
+
+export interface Spring {
+  readonly cells: readonly number[];
+  readonly directionX: number;
+  readonly directionZ: number;
+  readonly kind: SpringKind;
+  readonly level: number;
+  readonly radius: number;
+  readonly river: number;
+  readonly seed: number;
+  readonly x: number;
+  readonly z: number;
+}
+
 export interface WaterFeatures {
   lakes: Lake[];
   rivers: River[];
+  springs: Spring[];
   waterfalls: Waterfall[];
 }
 

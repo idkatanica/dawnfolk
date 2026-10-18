@@ -3,7 +3,7 @@ import { type GenerationOptions, generateWorld } from "../../generation/world-ge
 import { createTestWorld } from "../testing/test-world.ts";
 import { flattenTerrain, raiseTerrain } from "./terrain-editing.ts";
 import { WaterRecomputation } from "./water-recomputation.ts";
-import { WorldState } from "./world-state.ts";
+import { NO_BUILDING, SPRING_GROUND, WorldState } from "./world-state.ts";
 
 const TEST_OPTIONS: GenerationOptions = {
   dimensions: { cellSize: 40, cellsPerSide: 96 },
@@ -45,6 +45,31 @@ describe("water recomputation", () => {
 
     expect(largestChange).toBeLessThan(0.01);
     expect(world.water.lakes).toHaveLength(lakesBefore);
+  });
+
+  it("keeps the springs at the heads of the recomputed rivers and their ground reserved", () => {
+    const recomputation = new WaterRecomputation(world);
+
+    raiseTerrain(world, { radius: 300, x: 0, z: 0 }, 20);
+    recomputation.recompute();
+
+    const reserved = new Set(world.water.springs.flatMap((spring) => spring.cells));
+
+    expect(world.water.springs.length).toBeGreaterThan(0);
+
+    for (const spring of world.water.springs) {
+      expect(world.water.rivers[spring.river]).toBeDefined();
+    }
+
+    for (let cell = 0; cell < world.grid.cellCount; cell += 1) {
+      if (world.occupancy[cell] === SPRING_GROUND) {
+        expect(reserved.has(cell)).toBe(true);
+      }
+
+      if (reserved.has(cell)) {
+        expect(world.occupancy[cell]).not.toBe(NO_BUILDING);
+      }
+    }
   });
 
   it("keeps carving depths positive after an edit", () => {

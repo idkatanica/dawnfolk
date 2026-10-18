@@ -2,9 +2,25 @@ import { describe, expect, it } from "vitest";
 import { Ground, groundDefinition } from "../../content/grounds.ts";
 import { PlantSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
+import type { Spring } from "../../world/water.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
 import { centerCell, createTestWorld, floodCells, monumentAround, plantInCell } from "../testing/test-world.ts";
-import { MONUMENT_GROUND } from "./world-state.ts";
+import { MONUMENT_GROUND, NO_BUILDING, SPRING_GROUND } from "./world-state.ts";
+
+function caveAt(grid: WorldGrid, cell: number): Spring {
+  return {
+    cells: [cell],
+    directionX: 0,
+    directionZ: 1,
+    kind: "cave",
+    level: 100,
+    radius: 4,
+    river: 0,
+    seed: 0.5,
+    x: grid.cellCenterX(cell),
+    z: grid.cellCenterZ(cell),
+  };
+}
 
 describe("world state", () => {
   it("interpolates heights between cell centers", () => {
@@ -123,6 +139,29 @@ describe("world state", () => {
     expect(world.isObstructed(open)).toBe(false);
     expect(world.isWalkable(open)).toBe(true);
     expect(world.canPlace(open, 1)).toBe(true);
+  });
+
+  it("keeps builders, walkers and plants off the ground of a spring and moves it with the water", () => {
+    const world = createTestWorld();
+
+    const first = centerCell(world);
+    const second = world.grid.cellAt(200, 0);
+    const tree = plantInCell(world, second, PlantSpecies.Oak);
+
+    world.replaceWater({ ...world.water, springs: [caveAt(world.grid, first)] });
+
+    expect(world.occupancy[first]).toBe(SPRING_GROUND);
+    expect(world.isObstructed(first)).toBe(true);
+    expect(world.canPlace(first, 1)).toBe(false);
+    expect(world.canGrowWild(first, PlantSpecies.Oak)).toBe(false);
+    expect(world.vegetation.isAlive(tree)).toBe(true);
+
+    world.replaceWater({ ...world.water, springs: [caveAt(world.grid, second)] });
+
+    expect(world.occupancy[first]).toBe(NO_BUILDING);
+    expect(world.canPlace(first, 1)).toBe(true);
+    expect(world.occupancy[second]).toBe(SPRING_GROUND);
+    expect(world.vegetation.isAlive(tree)).toBe(false);
   });
 
   it("never clears monument stones, not even with the stones", () => {
