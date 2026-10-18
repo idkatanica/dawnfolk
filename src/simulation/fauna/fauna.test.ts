@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ANIMALS } from "../../content/animals.ts";
 import { Biome } from "../../content/biomes.ts";
 import { DEFAULT_WORLD_RULES } from "../../content/world-rules.ts";
 import { createRandom } from "../../shared/random.ts";
@@ -54,7 +55,7 @@ describe("herds", () => {
     const created = fauna.populate(4, createRandom(2));
 
     expect(created).toBe(4);
-    expect(fauna.herds.every((herd) => herd.kind === "deer")).toBe(true);
+    expect(fauna.herds.every((herd) => ANIMALS[herd.kind].favouriteBiomes.includes(Biome.Forest))).toBe(true);
   });
 
   it("wander to new pastures over time", () => {

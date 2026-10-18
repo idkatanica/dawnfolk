@@ -94,7 +94,7 @@ interface InspectionSources {
   world: WorldState;
 }
 
-const ANIMAL_ACTIVITIES = { dead: "Dead", graze: "Grazing", run: "Running away", walk: "Wandering" } as const;
+const ANIMAL_ACTIVITIES = { dead: "Dead", run: "Running away", walk: "Wandering" } as const;
 
 export function inspect(selection: Selection, sources: InspectionSources): Inspection | null {
   switch (selection.kind) {
@@ -169,7 +169,7 @@ function inspectAnimal(id: number, sources: InspectionSources): AnimalInspection
   }
 
   return {
-    activity: ANIMAL_ACTIVITIES[animal.pose],
+    activity: animal.pose === "graze" ? ANIMALS[animal.kind].restingActivity : ANIMAL_ACTIVITIES[animal.pose],
     health: animal.health / ANIMALS[animal.kind].health,
     id: animal.id,
     isAlive: animal.isAlive,

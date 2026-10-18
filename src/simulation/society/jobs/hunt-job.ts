@@ -1,4 +1,4 @@
-import { ANIMALS } from "../../../content/animals.ts";
+import { ANIMALS, animalWithArticle } from "../../../content/animals.ts";
 import { faceTowards } from "../../agents/movement.ts";
 import { type Animal, startleAnimal } from "../../fauna/fauna.ts";
 import { pickUpFood, walkSpeed } from "../person.ts";
@@ -19,21 +19,20 @@ const HELPER_RANGE = 40;
 const MAMMOTH_REACH = 12;
 const MAMMOTH_COUNTERATTACK = 0.15;
 const MAMMOTH_WOUND = 0.35;
-const MAMMOTH_HUNTING_TRIBE = 6;
+const HELPER_HIT_BONUS = 0.05;
 
 type HuntPhase = "stalk" | "strike";
 
 export function findGame(tick: PersonTick): HuntJob | null {
   const { tribe } = tick;
 
-  const canHuntMammoths = tribe.memberIds.length >= MAMMOTH_HUNTING_TRIBE;
+  const hunters = tribe.memberIds.length;
 
-  const animal = tick.context.fauna.nearestAnimal(
-    tribe.campX,
-    tribe.campZ,
-    HUNTING_RANGE,
-    (candidate) => candidate.kind === "deer" || canHuntMammoths
-  );
+  const animal = tick.context.fauna.nearestAnimal(tribe.campX, tribe.campZ, HUNTING_RANGE, (candidate) => {
+    const { huntingPartySize } = ANIMALS[candidate.kind];
+
+    return huntingPartySize !== null && hunters >= huntingPartySize;
+  });
 
   if (animal === null) {
     markScarce(tribe, "game", tick.context.environment.day);
@@ -136,8 +135,10 @@ export class HuntJob implements Job {
 }
 
 function hitChance(tick: PersonTick, animal: Animal): number {
-  if (animal.kind === "deer") {
-    return 0.32;
+  const definition = ANIMALS[animal.kind];
+
+  if (definition.huntingPartySize === null || definition.huntingPartySize <= 1) {
+    return definition.hitChance;
   }
 
   const helpers = tick.context.people.countNear(
@@ -147,7 +148,7 @@ function hitChance(tick: PersonTick, animal: Animal): number {
     (person) => person.tribeId === tick.tribe.id && person.job?.kind === "hunt"
   );
 
-  return 0.1 + 0.05 * helpers;
+  return definition.hitChance + HELPER_HIT_BONUS * helpers;
 }
 
 function sufferCounterattack(tick: PersonTick, animal: Animal, distance: number): void {
@@ -177,7 +178,7 @@ function sufferCounterattack(tick: PersonTick, animal: Animal, distance: number)
 }
 
 function bringDown(tick: PersonTick, animal: Animal): Job {
-  const { food, name } = ANIMALS[animal.kind];
+  const { food } = ANIMALS[animal.kind];
 
   const carried = Math.min(MAXIMUM_CARRIED_MEAT, food);
 
@@ -187,7 +188,7 @@ function bringDown(tick: PersonTick, animal: Animal): Job {
   learn(tick.tribe, 3, tick.context.rules);
   tick.context.chronicle.record({
     category: "hunt",
-    text: `${tick.tribe.name} hunters brought down a ${name.toLowerCase()}`,
+    text: `${tick.tribe.name} hunters brought down ${animalWithArticle(animal.kind)}`,
     tribeId: tick.tribe.id,
     x: animal.mover.x,
     z: animal.mover.z,

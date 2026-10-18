@@ -1,5 +1,4 @@
-import { ANIMALS, type AnimalKind } from "../../content/animals.ts";
-import { Biome } from "../../content/biomes.ts";
+import { ANIMALS, type AnimalKind, animalsAt } from "../../content/animals.ts";
 import type { WorldRules } from "../../content/world-rules.ts";
 import { clamp, distanceSquared, FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
@@ -22,7 +21,9 @@ const CORPSE_SECONDS = 30;
 const EDGE_MARGIN = 4;
 const SPRING_BIRTHS_PER_DAY = 0.6;
 const YOUTH_DECAY_PER_DAY = 0.5;
-const COLD_BIOMES: ReadonlySet<number> = new Set([Biome.Alpine, Biome.Glacier, Biome.Taiga, Biome.Tundra]);
+const PASTURE_ATTEMPTS = 8;
+const ANY_BIOME_ATTEMPT = 6;
+const ESCAPE_TURNS: readonly number[] = [0, -0.6, 0.6, -1.1, 1.1];
 
 type AnimalDeathCause = "blast" | "fire" | "hunt" | "lightning";
 
@@ -263,15 +264,7 @@ export class FaunaSystem {
       return null;
     }
 
-    const biome = this.#world.terrain.biome[cell];
-
-    const kind = kindForBiome(biome, random);
-
-    if (!isFavouriteBiome(kind, biome)) {
-      return null;
-    }
-
-    return kind;
+    return kindForBiome(this.#world.terrain.biome[cell], random);
   }
 
   #animalsWithin(x: number, z: number, radius: number): Animal[] {
@@ -300,18 +293,69 @@ export class FaunaSystem {
   }
 
   #findPasture(kind: AnimalKind, from: Waypoint, random: RandomSource): Waypoint | null {
-    for (let attempt = 0; attempt < 8; attempt += 1) {
+    const { pastureRange, seeksHighGround } = ANIMALS[kind];
+
+    let best: Waypoint | null = null;
+
+    for (let attempt = 0; attempt < PASTURE_ATTEMPTS; attempt += 1) {
       const angle = random.next() * FULL_TURN;
-      const distance = random.between(80, 340);
+      const distance = random.between(pastureRange[0], pastureRange[1]);
 
       const pasture = aroundPoint(from, distance, angle);
 
-      if (this.#isOpenPasture(pasture.x, pasture.z, kind, attempt >= 6)) {
+      if (!this.#isOpenPasture(pasture.x, pasture.z, kind, attempt >= ANY_BIOME_ATTEMPT)) {
+        continue;
+      }
+
+      if (!seeksHighGround) {
         return pasture;
+      }
+
+      if (best === null || this.#groundHeight(pasture) > this.#groundHeight(best)) {
+        best = pasture;
       }
     }
 
-    return null;
+    return best;
+  }
+
+  #groundHeight(point: Waypoint): number {
+    const cell = this.#world.grid.cellAt(point.x, point.z);
+
+    if (cell < 0) {
+      return Number.NEGATIVE_INFINITY;
+    }
+
+    return this.#world.terrain.height[cell];
+  }
+
+  #escapeFrom(animal: Animal): Waypoint {
+    const { mover } = animal;
+
+    const awayX = mover.x - animal.fleeFromX;
+    const awayZ = mover.z - animal.fleeFromZ;
+
+    const away = Math.atan2(awayZ, awayX);
+
+    if (!ANIMALS[animal.kind].seeksHighGround) {
+      return aroundPoint(mover, FLEE_DISTANCE, away);
+    }
+
+    let best = aroundPoint(mover, FLEE_DISTANCE, away);
+    let bestHeight = Number.NEGATIVE_INFINITY;
+
+    for (const turn of ESCAPE_TURNS) {
+      const candidate = aroundPoint(mover, FLEE_DISTANCE, away + turn);
+
+      const height = this.#groundHeight(candidate);
+
+      if (this.#navigation.isPassable(candidate.x, candidate.z) && height > bestHeight) {
+        best = candidate;
+        bestHeight = height;
+      }
+    }
+
+    return best;
   }
 
   #isOpenPasture(x: number, z: number, kind: AnimalKind, acceptsAnyBiome: boolean): boolean {
@@ -402,17 +446,7 @@ export class FaunaSystem {
     animal.poseSeconds -= tick.seconds;
 
     if (animal.pose !== "run" || animal.poseSeconds <= 0) {
-      const awayX = mover.x - animal.fleeFromX;
-      const awayZ = mover.z - animal.fleeFromZ;
-
-      const length = Math.max(1, Math.hypot(awayX, awayZ));
-
-      const destination = {
-        x: mover.x + (awayX / length) * FLEE_DISTANCE,
-        z: mover.z + (awayZ / length) * FLEE_DISTANCE,
-      };
-
-      setDestination(mover, destination, this.#navigation, false);
+      setDestination(mover, this.#escapeFrom(animal), this.#navigation, false);
       animal.pose = "run";
       animal.poseSeconds = FLEE_REPLAN_SECONDS;
     }
@@ -523,16 +557,22 @@ export function startleAnimal(animal: Animal, fromX: number, fromZ: number, stre
   animal.fleeFromZ = fromZ;
 }
 
-function kindForBiome(biome: number, random: RandomSource): AnimalKind {
-  if (!COLD_BIOMES.has(biome)) {
-    return "deer";
+function kindForBiome(biome: number, random: RandomSource): AnimalKind | null {
+  const kinds = animalsAt(biome);
+
+  const total = kinds.reduce((sum, kind) => sum + ANIMALS[kind].abundance, 0);
+
+  let remaining = random.next() * total;
+
+  for (const kind of kinds) {
+    remaining -= ANIMALS[kind].abundance;
+
+    if (remaining < 0) {
+      return kind;
+    }
   }
 
-  if (random.chance(0.55)) {
-    return "mammoth";
-  }
-
-  return "deer";
+  return null;
 }
 
 function isFavouriteBiome(kind: AnimalKind, biome: number): boolean {
