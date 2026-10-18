@@ -50,7 +50,7 @@ export class GameSession {
   #request: Promise<void> | null = null;
   #status: SessionStatus = { kind: "running" };
 
-  constructor(connection: SimulationConnection, mirror: WorldMirror, clock: SessionClock = PERFORMANCE_CLOCK) {
+  constructor(connection: SimulationConnection, mirror: WorldMirror, clock: SessionClock) {
     this.#connection = connection;
     this.#clock = clock;
     this.mirror = mirror;
@@ -149,6 +149,7 @@ export class GameSession {
 
   #isAdvanceDue(): boolean {
     const { frame } = this.mirror;
+
     const hasCommands = this.#commandsSinceRequest > 0;
     const isQuietTooLong = this.#pendingSeconds >= LONGEST_QUIET_SECONDS;
 

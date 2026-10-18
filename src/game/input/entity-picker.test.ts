@@ -5,7 +5,7 @@ import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
 import { PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
 import { EntityPicker } from "./entity-picker.ts";
-import { GroundPicker } from "./ground-picker.ts";
+import { GroundPicker, type HeightField } from "./ground-picker.ts";
 
 const VIEWPORT = { height: 600, width: 800 };
 const CENTER = { x: 400, y: 300 };
@@ -52,7 +52,7 @@ function peopleAt(...positions: readonly (readonly [number, number])[]): Float32
   return people;
 }
 
-function pickAt(heightAt: (x: number, z: number) => number, ...positions: readonly (readonly [number, number])[]) {
+function pickAt(heightAt: HeightField, ...positions: readonly (readonly [number, number])[]) {
   const camera = cameraLookingAt(0, 0);
   const frame = frameWithPeople(...positions);
 

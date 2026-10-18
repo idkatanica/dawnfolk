@@ -6,15 +6,12 @@ export interface NoiseGradient {
   value: number;
 }
 
-export interface ErodedFractalOptions {
+export interface ErodedRidgedOptions {
   readonly damping: number;
   readonly gain: number;
   readonly octaves: number;
-  readonly slopeScale: number;
-}
-
-export interface ErodedRidgedOptions extends ErodedFractalOptions {
   readonly rounding: number;
+  readonly slopeScale: number;
 }
 
 const SQUARE_ROOT_OF_THREE = Math.sqrt(3);
@@ -136,35 +133,6 @@ export class GradientNoise {
     result.gradientZ = gradientZ / normalization;
 
     return result;
-  }
-
-  erodedFractal(x: number, z: number, options: ErodedFractalOptions): number {
-    const octave = this.#octave;
-    const normalization = totalAmplitude(options.octaves, options.gain);
-    const slopeScale = options.slopeScale / normalization;
-
-    let sum = 0;
-    let gradientX = 0;
-    let gradientZ = 0;
-    let amplitude = 0.5;
-    let frequency = 1;
-
-    for (let index = 0; index < options.octaves; index += 1) {
-      this.sample(x * frequency, z * frequency, octave);
-
-      const slopeX = gradientX * slopeScale;
-      const slopeZ = gradientZ * slopeScale;
-
-      const damping = 1 / (1 + options.damping * (slopeX * slopeX + slopeZ * slopeZ));
-
-      sum += amplitude * damping * octave.value;
-      gradientX += amplitude * damping * frequency * octave.gradientX;
-      gradientZ += amplitude * damping * frequency * octave.gradientZ;
-      amplitude *= options.gain;
-      frequency *= LACUNARITY;
-    }
-
-    return sum / normalization;
   }
 
   erodedRidged(x: number, z: number, options: ErodedRidgedOptions): number {

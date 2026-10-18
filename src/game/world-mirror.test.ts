@@ -132,6 +132,7 @@ describe("world mirror", () => {
     floodCells(simulation.world, [lakeCell], 2);
 
     const mirror = new WorldMirror(simulation.initialWorld(), 0);
+
     const { grid } = simulation.world;
 
     const lakeX = grid.cellCenterX(lakeCell);

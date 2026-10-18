@@ -1,4 +1,5 @@
 import { type PerspectiveCamera, Vector3 } from "three/webgpu";
+import { lerp } from "../shared/math.ts";
 import type { HeightField, ViewportSize } from "./input/ground-picker.ts";
 
 export interface LabelPlacement {
@@ -60,9 +61,9 @@ export class LabelProjector {
     for (let sample = 1; sample < OCCLUSION_SAMPLES; sample += 1) {
       const amount = (sample / OCCLUSION_SAMPLES) * OCCLUSION_REACH;
 
-      const sampleX = eye.x + (x - eye.x) * amount;
-      const sampleY = eye.y + (y - eye.y) * amount;
-      const sampleZ = eye.z + (z - eye.z) * amount;
+      const sampleX = lerp(eye.x, x, amount);
+      const sampleY = lerp(eye.y, y, amount);
+      const sampleZ = lerp(eye.z, z, amount);
 
       if (this.#isUnderground(sampleX, sampleY, sampleZ)) {
         return true;

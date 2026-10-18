@@ -91,6 +91,7 @@ export class GameEngine implements EngineHandle {
     this.quality = parts.quality;
 
     const { mirror } = parts.session;
+
     const perspective = new PerspectiveCamera(FIELD_OF_VIEW, 1, NEAR_PLANE, FAR_PLANE);
 
     function heightAt(x: number, z: number): number {
@@ -280,8 +281,8 @@ export class GameEngine implements EngineHandle {
 
   #shake(amount: number, x: number, z: number): void {
     const { target } = this.camera;
-    const reach = 400 + this.camera.state.distance;
 
+    const reach = 400 + this.camera.state.distance;
     const distance = Math.hypot(target.x - x, target.z - z);
 
     this.camera.shake(amount * Math.max(0, 1 - distance / reach));

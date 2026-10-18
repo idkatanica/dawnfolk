@@ -121,6 +121,7 @@ describe("advancing", () => {
 
   it("applies every frame to the mirror and tells the subscribers", async () => {
     const { clock, session } = await createSession();
+
     const listener = vi.fn();
 
     session.subscribe(listener);
@@ -135,6 +136,7 @@ describe("advancing", () => {
 
   it("stops telling a subscriber that left", async () => {
     const { session } = await createSession();
+
     const listener = vi.fn();
 
     const unsubscribe = session.subscribe(listener);
@@ -184,6 +186,7 @@ describe("history", () => {
 describe("failures and closing", () => {
   it("stops and reports when the simulation fails", async () => {
     const { connection, session } = await createSession();
+
     const statuses: SessionStatus[] = [];
     const failure = new Error("The worker crashed");
     const logError = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -215,8 +218,8 @@ describe("failures and closing", () => {
 
   it("ignores the frame that arrives after closing", async () => {
     const { connection, session } = await createSession();
-    const listener = vi.fn();
 
+    const listener = vi.fn();
     const send = vi.spyOn(connection, "send");
     const initialFrame = session.frame;
 
