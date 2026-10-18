@@ -17,6 +17,7 @@ import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { buildShoreField, SHORE_CHANNELS, type ShoreSource, updateShoreDepths } from "../water/shore-field.ts";
 import type { WorldChanges } from "../world-changes.ts";
+import { IslandOutline } from "./island-outline.ts";
 
 const BYTE = 255;
 const SEASON_STEP = 0.01;
@@ -77,8 +78,8 @@ function cropColor(growth: number): Color {
 
 export class TerrainTextures {
   readonly albedo: DataTexture;
-  readonly coast: DataTexture;
   readonly height: DataTexture;
+  readonly outline: IslandOutline;
   readonly shore: DataTexture;
   readonly size: number;
   readonly surface: DataTexture;
@@ -93,8 +94,8 @@ export class TerrainTextures {
 
     this.#mirror = mirror;
     this.size = size;
-    this.coast = floatTexture(mirror.terrain.coastDistance, size);
     this.height = floatTexture(mirror.terrain.height, size);
+    this.outline = new IslandOutline(mirror);
     this.water = floatTexture(mirror.terrain.waterSurface, size);
     this.#shoreData = new Float32Array(size * size * SHORE_CHANNELS);
     this.shore = floatTexture(this.#shoreData, size, RGBAFormat);
@@ -132,7 +133,7 @@ export class TerrainTextures {
 
   dispose(): void {
     this.albedo.dispose();
-    this.coast.dispose();
+    this.outline.dispose();
     this.height.dispose();
     this.surface.dispose();
     this.water.dispose();

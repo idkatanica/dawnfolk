@@ -28,7 +28,7 @@ import { MeshStandardNodeMaterial, type Node } from "three/webgpu";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { unitNoise } from "../node-helpers.ts";
-import { sampleCellsNode, sampleHeightNode } from "./height-sampling.ts";
+import { sampleCellsNode } from "./height-sampling.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
 const SKIRT_DROP_PER_STEP = 25;
@@ -145,15 +145,14 @@ export function createTerrainMaterial(
   textures: TerrainTextures,
   grid: WorldGrid,
   glow: FireGlow,
-  plinth: number,
-  hasVoid: boolean
+  plinth: number
 ): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial();
 
   material.positionNode = terrainPosition(textures, grid, plinth);
 
-  if (hasVoid) {
-    material.maskNode = sampleHeightNode(textures.coast, grid, positionWorld.xz).greaterThan(0);
+  if (textures.outline.hasCoast) {
+    material.maskNode = textures.outline.insideNode(positionWorld.xz, 0);
   }
 
   const mapCoordinates = warpedMapCoordinates(grid);

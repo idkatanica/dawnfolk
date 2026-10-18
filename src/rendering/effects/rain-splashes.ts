@@ -177,9 +177,7 @@ export class RainSplashes {
 
     const isOnWater = water.greaterThan(ground);
     const level = max(ground, water);
-    const isOnIsland = max(abs(spot.x), abs(spot.y))
-      .lessThan(grid.halfSize)
-      .and(sampleHeightNode(textures.coast, grid, spot).greaterThan(0));
+    const isOnIsland = textures.outline.insideNode(spot, 0);
     const viewportMeters = distance(vec3(spot.x, level, spot.y), cameraPosition).mul(this.#viewportSpan);
 
     const lift = max(float(0.04), viewportMeters.mul(0.0015));

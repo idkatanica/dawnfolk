@@ -4,12 +4,13 @@ import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
 import { sampleHeight } from "../../world/terrain-sampling.ts";
 import { buildIslandBaseGeometry } from "./island-base-geometry.ts";
+import { IslandOutline } from "./island-outline.ts";
 
 const CELLS_PER_SIDE = 32;
 const COAST_TOLERANCE = 0.01;
 
 function rimPoints(mirror: WorldMirror): (readonly [number, number])[] {
-  const { cliff } = buildIslandBaseGeometry(mirror);
+  const { cliff } = buildIslandBaseGeometry(mirror, new IslandOutline(mirror));
 
   const topPoints = cliff.getAttribute("topPoint");
   const cliffAmounts = cliff.getAttribute("cliffAmount");

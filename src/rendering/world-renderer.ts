@@ -126,7 +126,7 @@ export class WorldRenderer {
     });
 
     this.#atmosphere = new Atmosphere(this.scene, {
-      cloudSeaAltitude: islandPlinthHeight(mirror) - CLOUD_SEA_DEPTH,
+      cloudSeaAltitude: islandPlinthHeight(mirror, this.#textures.outline) - CLOUD_SEA_DEPTH,
       shadowMapSize: quality.shadowMapSize,
     });
 

@@ -17,13 +17,7 @@ export class TerrainView {
 
   constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow) {
     this.#mirror = mirror;
-    this.#material = createTerrainMaterial(
-      textures,
-      mirror.grid,
-      glow,
-      islandPlinthHeight(mirror),
-      mirror.shape === "round"
-    );
+    this.#material = createTerrainMaterial(textures, mirror.grid, glow, islandPlinthHeight(mirror, textures.outline));
     this.#patches = new PatchGrid(mirror.grid, (corner) => this.#measure(corner), {
       castsShadow: true,
       edges: "skirted",

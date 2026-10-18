@@ -5,7 +5,6 @@ import {
   float,
   floor,
   fwidth,
-  If,
   ivec2,
   max,
   min,
@@ -127,9 +126,7 @@ function createCliffMaterial(
   material.positionNode = Fn(() => {
     const surface = renderedSurfaceHeight(textures, steps, grid, topPoint);
 
-    If(cliffAmount.greaterThan(0), () => {
-      normalLocal.assign(vec3(outward.x, 0, outward.y));
-    });
+    normalLocal.assign(vec3(outward.x, 0, outward.y));
 
     return vec3(positionLocal.x, mix(positionLocal.y, surface, cliffAmount), positionLocal.z);
   })();
@@ -157,7 +154,7 @@ export class IslandBase {
 
   constructor(mirror: WorldMirror, textures: TerrainTextures) {
     const patchesPerSide = Math.ceil(mirror.grid.cellsPerSide / PATCH_CELLS);
-    const geometry = buildIslandBaseGeometry(mirror);
+    const geometry = buildIslandBaseGeometry(mirror, textures.outline);
 
     this.#stepData = new Float32Array(patchesPerSide * patchesPerSide).fill(1);
     this.#steps = createStepTexture(this.#stepData, patchesPerSide);

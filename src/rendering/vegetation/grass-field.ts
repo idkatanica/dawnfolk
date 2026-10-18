@@ -180,7 +180,7 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   const nearestWater = max(max(waterAt(0, 0), waterAt(1, 0)), max(waterAt(0, 1), waterAt(1, 1)));
 
   const isDry = nearestWater.lessThan(height.add(DRY_MARGIN));
-  const isOnIsland = sampleHeightNode(textures.coast, grid, root).greaterThan(grid.cellSize * 0.5);
+  const isOnIsland = textures.outline.insideNode(root, 0);
   const reach = length(root.sub(center)).div(perSide.mul(spacing).mul(0.5));
 
   const cover = ground.a

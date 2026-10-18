@@ -5,10 +5,8 @@ import { createVolumeNoise, type VolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import { sampleHeight } from "../../world/terrain-sampling.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
+import { coastAngle, type IslandOutline } from "./island-outline.ts";
 
-const COAST_POINTS = 1024;
-const INLAND_START = 0.5;
-const COAST_SEARCH_STEPS = 24;
 const CLIFF_DROP = 60;
 const CLIFF_RINGS = 6;
 const UNDERSIDE_DEPTH = 1650;
@@ -74,59 +72,22 @@ function squarePerimeter(grid: WorldGrid): PerimeterPoint[] {
   return points;
 }
 
-function coastRadius(mirror: WorldMirror, outwardX: number, outwardZ: number): number {
-  const { grid, terrain } = mirror;
-
-  function coastDistanceAt(radius: number): number {
-    return sampleHeight(terrain.coastDistance, grid, outwardX * radius, outwardZ * radius);
-  }
-
-  const step = grid.cellSize / 2;
-  const farthest = grid.halfSize - grid.cellSize;
-
-  let inside = grid.halfSize * INLAND_START;
-
-  while (inside + step < farthest && coastDistanceAt(inside + step) > 0) {
-    inside += step;
-  }
-
-  let outside = Math.min(inside + step, farthest);
-
-  for (let iteration = 0; iteration < COAST_SEARCH_STEPS; iteration += 1) {
-    const middle = (inside + outside) / 2;
-
-    if (coastDistanceAt(middle) > 0) {
-      inside = middle;
-    } else {
-      outside = middle;
-    }
-  }
-
-  return inside;
-}
-
-function coastPerimeter(mirror: WorldMirror): PerimeterPoint[] {
-  const points: PerimeterPoint[] = [];
-
-  for (let index = 0; index < COAST_POINTS; index += 1) {
-    const angle = (index / COAST_POINTS) * Math.PI * 2;
+function coastPerimeter(coastRadii: Float32Array): PerimeterPoint[] {
+  return Array.from(coastRadii, (radius, index) => {
+    const angle = coastAngle(index);
     const outwardX = Math.cos(angle);
     const outwardZ = Math.sin(angle);
 
-    const radius = coastRadius(mirror, outwardX, outwardZ);
-
-    points.push({ outwardX, outwardZ, x: outwardX * radius, z: outwardZ * radius });
-  }
-
-  return points;
+    return { outwardX, outwardZ, x: outwardX * radius, z: outwardZ * radius };
+  });
 }
 
-function islandPerimeter(mirror: WorldMirror): PerimeterPoint[] {
-  if (mirror.shape === "square") {
+function islandPerimeter(mirror: WorldMirror, outline: IslandOutline): PerimeterPoint[] {
+  if (outline.coastRadii === null) {
     return squarePerimeter(mirror.grid);
   }
 
-  return coastPerimeter(mirror);
+  return coastPerimeter(outline.coastRadii);
 }
 
 function cliffRings(): RingVertex[] {
@@ -159,8 +120,8 @@ function lowestRimHeight(mirror: WorldMirror, points: readonly PerimeterPoint[])
   return lowest;
 }
 
-export function islandPlinthHeight(mirror: WorldMirror): number {
-  return lowestRimHeight(mirror, islandPerimeter(mirror)) - CLIFF_DROP;
+export function islandPlinthHeight(mirror: WorldMirror, outline: IslandOutline): number {
+  return lowestRimHeight(mirror, islandPerimeter(mirror, outline)) - CLIFF_DROP;
 }
 
 function undersideReach(depth: number): number {
@@ -304,11 +265,11 @@ function buildUnderside(outline: BaseOutline): BufferGeometry {
   return geometry;
 }
 
-export function buildIslandBaseGeometry(mirror: WorldMirror): IslandBaseGeometry {
-  const points = islandPerimeter(mirror);
-  const isSquare = mirror.shape === "square";
+export function buildIslandBaseGeometry(mirror: WorldMirror, outline: IslandOutline): IslandBaseGeometry {
+  const points = islandPerimeter(mirror, outline);
+  const isSquare = outline.coastRadii === null;
 
-  const outline: BaseOutline = {
+  const base: BaseOutline = {
     grid: mirror.grid,
     noise: createVolumeNoise(createRandom(mirror.seed + 17)),
     plinth: lowestRimHeight(mirror, points) - CLIFF_DROP,
@@ -317,5 +278,5 @@ export function buildIslandBaseGeometry(mirror: WorldMirror): IslandBaseGeometry
     undersideRadius: isSquare ? SQUARE_UNDERSIDE_RADIUS : COAST_UNDERSIDE_RADIUS,
   };
 
-  return { cliff: buildCliff(outline), plinth: outline.plinth, underside: buildUnderside(outline) };
+  return { cliff: buildCliff(base), plinth: base.plinth, underside: buildUnderside(base) };
 }
