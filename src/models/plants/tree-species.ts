@@ -20,10 +20,9 @@ import {
   toVector,
 } from "./tree-structure.ts";
 
-export const CANONICAL_HEIGHTS: Readonly<Record<PlantSpeciesIndex, number>> = {
+export const TREE_HEIGHTS = {
   [PlantSpecies.Acacia]: 9,
   [PlantSpecies.Birch]: 19,
-  [PlantSpecies.Boulder]: 1.7,
   [PlantSpecies.Bush]: 2.2,
   [PlantSpecies.Cactus]: 4,
   [PlantSpecies.DeadTree]: 9,
@@ -35,7 +34,7 @@ export const CANONICAL_HEIGHTS: Readonly<Record<PlantSpeciesIndex, number>> = {
   [PlantSpecies.Poplar]: 21,
   [PlantSpecies.Spruce]: 24,
   [PlantSpecies.Willow]: 12,
-};
+} as const satisfies Readonly<Partial<Record<PlantSpeciesIndex, number>>>;
 
 interface Growth {
   readonly branches: Branch[];
@@ -203,7 +202,7 @@ function oak(seed: number): TreeStructure {
 
   addBlob(growth, toVector(tipOf(trunk)).add(new Vector3(0, 3.2, 0)), random.between(2.8, 3.4), 0.7);
 
-  return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Oak]);
+  return finish(growth, TREE_HEIGHTS[PlantSpecies.Oak]);
 }
 
 function stemOffset(random: RandomSource, stem: number, stems: number): Vector3 {
@@ -266,7 +265,7 @@ function birch(seed: number): TreeStructure {
     addBlob(growth, toVector(tipOf(trunk)), random.between(1.5, 2), 1.1);
   }
 
-  return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Birch]);
+  return finish(growth, TREE_HEIGHTS[PlantSpecies.Birch]);
 }
 
 const FORK_HEIGHT = 0.93;
@@ -318,7 +317,7 @@ function maple(seed: number): TreeStructure {
 
   addBlob(growth, toVector(tipOf(trunk)).add(new Vector3(0, 6.5, 0)), random.between(3, 3.6), 0.9);
 
-  return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Maple]);
+  return finish(growth, TREE_HEIGHTS[PlantSpecies.Maple]);
 }
 
 const DRAPE_SHARE = 0.68;
@@ -366,7 +365,7 @@ function willow(seed: number): TreeStructure {
     });
   }
 
-  return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Willow]);
+  return finish(growth, TREE_HEIGHTS[PlantSpecies.Willow]);
 }
 
 function spruce(seed: number): TreeStructure {
@@ -374,7 +373,7 @@ function spruce(seed: number): TreeStructure {
 
   const { random } = growth;
 
-  const height = CANONICAL_HEIGHTS[PlantSpecies.Spruce] * random.between(0.94, 1.02);
+  const height = TREE_HEIGHTS[PlantSpecies.Spruce] * random.between(0.94, 1.02);
 
   const trunk = addTrunk(growth, {
     forks: false,
@@ -474,7 +473,7 @@ function pine(seed: number): TreeStructure {
 
   addBlob(growth, toVector(tipOf(trunk)).add(new Vector3(0, 0.6, 0)), random.between(2, 2.4), 0.55);
 
-  return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Pine]);
+  return finish(growth, TREE_HEIGHTS[PlantSpecies.Pine]);
 }
 
 function bush(seed: number): TreeStructure {
@@ -507,7 +506,7 @@ function bush(seed: number): TreeStructure {
 
   addBlob(growth, new Vector3(0, random.between(0.75, 0.95), 0), random.between(0.75, 0.95), 0.8);
 
-  return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Bush]);
+  return finish(growth, TREE_HEIGHTS[PlantSpecies.Bush]);
 }
 
 function addFrond(growth: Growth, points: readonly TubePoint[]): void {
@@ -593,7 +592,7 @@ function palm(seed: number): TreeStructure {
     );
   }
 
-  return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Palm]);
+  return finish(growth, TREE_HEIGHTS[PlantSpecies.Palm]);
 }
 
 function acacia(seed: number): TreeStructure {
@@ -650,7 +649,7 @@ function acacia(seed: number): TreeStructure {
     addBlob(growth, tip.setY(Math.max(tip.y + 0.3, crownHeight)), random.between(2.4, 3.1), 0.3);
   }
 
-  return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Acacia]);
+  return finish(growth, TREE_HEIGHTS[PlantSpecies.Acacia]);
 }
 
 function poplar(seed: number): TreeStructure {
@@ -705,7 +704,7 @@ function poplar(seed: number): TreeStructure {
 
   tuckTrunk(growth, blobCeiling(growth.foliage));
 
-  return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.Poplar]);
+  return finish(growth, TREE_HEIGHTS[PlantSpecies.Poplar]);
 }
 
 const BLOB_COVER = 0.45;
@@ -765,7 +764,7 @@ function deadTree(seed: number): TreeStructure {
     }
   }
 
-  return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.DeadTree]);
+  return finish(growth, TREE_HEIGHTS[PlantSpecies.DeadTree]);
 }
 
 function sagebrush(growth: Growth): void {
@@ -868,7 +867,7 @@ function desertShrub(seed: number, variant: number): TreeStructure {
 
   DESERT_SHRUB_FORMS[variant % DESERT_SHRUB_FORMS.length](growth);
 
-  return finish(growth, CANONICAL_HEIGHTS[PlantSpecies.DesertShrub]);
+  return finish(growth, TREE_HEIGHTS[PlantSpecies.DesertShrub]);
 }
 
 type TreeGenerator = (seed: number, variant: number) => TreeStructure;
