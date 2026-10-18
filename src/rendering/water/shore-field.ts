@@ -1,3 +1,4 @@
+import { clamp } from "../../shared/math.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { NO_WATER } from "../../world/water.ts";
 
@@ -36,8 +37,8 @@ function bankLevel(source: ShoreSource, column: number, row: number): number {
 
   for (let rowOffset = -1; rowOffset <= 1; rowOffset += 1) {
     for (let columnOffset = -1; columnOffset <= 1; columnOffset += 1) {
-      const neighborColumn = Math.min(size - 1, Math.max(0, column + columnOffset));
-      const neighborRow = Math.min(size - 1, Math.max(0, row + rowOffset));
+      const neighborColumn = clamp(column + columnOffset, 0, size - 1);
+      const neighborRow = clamp(row + rowOffset, 0, size - 1);
       const level = levels[neighborRow * size + neighborColumn];
 
       if (!isWet(level)) {
@@ -107,6 +108,7 @@ function flowAcross(before: number, after: number, cellSize: number): number {
 
 function writeShore(source: ShoreSource, column: number, row: number, target: Float32Array): void {
   const { cellSize, heights, levels, size } = source;
+
   const cell = row * size + column;
   const offset = cell * SHORE_CHANNELS;
   const level = levels[cell];

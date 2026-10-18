@@ -32,8 +32,6 @@ const corner = new Vector3();
 export interface VegetationChunk {
   readonly bounds: Box3;
   buckets: Float32Array[];
-  readonly firstColumn: number;
-  readonly firstRow: number;
   isDirty: boolean;
   readonly plants: Set<number>;
 }
@@ -53,7 +51,6 @@ export function bucketGroups(level: PlantDetailLevel): number[][] {
 
   for (const [index, { species, variant }] of PLANT_BUCKETS.entries()) {
     const key = `${species}:${farVariantOf(species, variant)}`;
-
     const group = groups.get(key);
 
     if (group === undefined) {
@@ -87,17 +84,8 @@ export class VegetationChunks {
     this.#mirror = mirror;
     this.chunksPerSide = Math.ceil(mirror.grid.cellsPerSide / CHUNK_CELLS);
 
-    for (let row = 0; row < this.chunksPerSide; row += 1) {
-      for (let column = 0; column < this.chunksPerSide; column += 1) {
-        this.chunks.push({
-          bounds: new Box3(),
-          buckets: [],
-          firstColumn: column * CHUNK_CELLS,
-          firstRow: row * CHUNK_CELLS,
-          isDirty: true,
-          plants: new Set(),
-        });
-      }
+    for (let chunk = 0; chunk < this.chunksPerSide * this.chunksPerSide; chunk += 1) {
+      this.chunks.push({ bounds: new Box3(), buckets: [], isDirty: true, plants: new Set() });
     }
 
     const { count } = mirror.vegetation;
@@ -190,6 +178,7 @@ export class VegetationChunks {
 
   #repack(chunk: VegetationChunk): void {
     const { vegetation } = this.#mirror;
+
     const counts = new Array<number>(BUCKET_COUNT).fill(0);
 
     for (const plant of chunk.plants) {
@@ -203,7 +192,6 @@ export class VegetationChunks {
 
     for (const plant of chunk.plants) {
       const bucket = bucketOf(vegetation.species[plant], vegetation.seed[plant]);
-
       const offset = filled[bucket] * FLOATS_PER_PLANT;
 
       this.#writePlant(plant, buckets[bucket], offset, chunk.bounds);
@@ -219,13 +207,10 @@ export class VegetationChunks {
 
     const x = vegetation.x[plant];
     const z = vegetation.z[plant];
-
     const species = vegetation.species[plant];
     const height = vegetation.height[plant];
     const seed = vegetation.seed[plant];
-
     const scale = height / canonicalHeight(PLANT_SPECIES[species].index);
-
     const y = this.#groundUnder(x, z, this.#footprints[species] * scale);
 
     target[offset] = x;

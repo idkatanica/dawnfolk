@@ -64,8 +64,7 @@ describe("buildShoreField", () => {
   });
 
   it("measures how many cells away the nearest water is", () => {
-    const source = createSource();
-    const field = build(source);
+    const field = build(createSource());
 
     expect(valueAt(field, 5, RIVER_ROW, ShoreChannel.Reach)).toBe(0);
     expect(valueAt(field, 5, RIVER_ROW + 2, ShoreChannel.Reach)).toBe(2);
@@ -75,12 +74,12 @@ describe("buildShoreField", () => {
   it("caps the reach far from any water", () => {
     const size = MAXIMUM_REACH + 4;
     const levels = new Float32Array(size * size).fill(NO_WATER);
-    const target = new Float32Array(size * size * SHORE_CHANNELS);
 
     levels[0] = 1;
-    buildShoreField({ cellSize: CELL_SIZE, heights: new Float32Array(size * size), levels, size }, target);
 
-    expect(target[(size * size - 1) * SHORE_CHANNELS + ShoreChannel.Reach]).toBe(MAXIMUM_REACH);
+    const field = build({ cellSize: CELL_SIZE, heights: new Float32Array(size * size), levels, size });
+
+    expect(field[(size * size - 1) * SHORE_CHANNELS + ShoreChannel.Reach]).toBe(MAXIMUM_REACH);
   });
 
   it("puts the shore of deep water halfway to a low bank instead of against it", () => {
