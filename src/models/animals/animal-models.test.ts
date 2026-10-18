@@ -9,6 +9,7 @@ import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { measureStride } from "../rig/stride.ts";
 import { meshProblems } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
+import { posedMesh } from "../testing/moved-mesh.ts";
 import { animalAppearance } from "./animal-appearance.ts";
 import { ANIMAL_SPECIES, animalPartMask, buildAnimalParts, poseAnimal } from "./animal-models.ts";
 import { QuadrupedBone } from "./quadruped-skeleton.ts";
@@ -95,6 +96,14 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
 
     expect(joint(grazing, QuadrupedBone.Head).y).toBeLessThan(joint(standing, QuadrupedBone.Head).y);
     expect(joint(dead, QuadrupedBone.Chest).y).toBeLessThan(joint(standing, QuadrupedBone.Chest).y * 0.6);
+  });
+
+  it("keeps antlers, tusks and horns out of the ground when lying dead", () => {
+    const parts = buildAnimalParts(kind, "high");
+
+    const lying = posedMesh(mergeMeshes(parts), posedAnimal(kind, "dead", 0));
+
+    expect(lying.bounds.minimum[1]).toBeGreaterThan(-0.1);
   });
 
   it("covers ground with every stride", () => {
