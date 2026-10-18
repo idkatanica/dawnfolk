@@ -86,7 +86,12 @@ function addCurtain(writer: CurtainWriter, waterfall: Waterfall): void {
 }
 
 function createCurtainMaterial(): MeshBasicNodeMaterial {
-  const material = new MeshBasicNodeMaterial({ depthWrite: false, side: DoubleSide, transparent: true });
+  const material = new MeshBasicNodeMaterial({
+    depthWrite: false,
+    forceSinglePass: true,
+    side: DoubleSide,
+    transparent: true,
+  });
   const coordinates = attribute("fallCoordinates", "vec2");
   const progress = attribute("fallProgress", "float");
   const sideAmount = attribute("fallSide", "float");
