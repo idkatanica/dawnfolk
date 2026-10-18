@@ -145,7 +145,10 @@ export class InterleavedInstances {
       return;
     }
 
-    this.#create(Math.ceil(count * GROWTH_FACTOR));
+    const previous = this.array;
+    const next = this.#create(Math.ceil(count * GROWTH_FACTOR));
+
+    next.array.set(previous);
   }
 
   markUpdated(count: number): void {
