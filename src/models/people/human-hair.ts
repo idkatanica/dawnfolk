@@ -191,10 +191,10 @@ function curtainSection(ring: CurtainRing, strands: number): LoftSection {
 }
 
 function curtainShape(detail: HumanDetail): Shape {
-  const strands = detail.hasFineDetails ? 9 : 5;
+  const strands = detail.hasFineDetails ? 7 : 5;
   const rings = detail.hasFineDetails ? CURTAIN_RINGS : LOW_CURTAIN_RINGS;
   const curtain = panel({
-    angularSegments: detail.hasFineDetails ? 18 : 8,
+    angularSegments: detail.hasFineDetails ? 14 : 8,
     endAngle: CURTAIN_END,
     sections: rings.map((ring) => curtainSection(ring, strands)).reverse(),
     startAngle: CURTAIN_START,
@@ -245,7 +245,7 @@ export function addBraids(builder: MeshBuilder, detail: HumanDetail): void {
       style,
       transform: mirror,
     });
-    builder.add(torus(0.016, 0.006, trimSegments(detail, 10), trimSegments(detail, 4)), {
+    builder.add(torus(0.016, 0.006, trimSegments(detail, 8), trimSegments(detail, 4)), {
       style: { ...style, slot: MaterialSlot.Accent },
       transform: combine(mirror, transformOf({ position: [0.12, 1.325, 0.088], rotation: [0.3, 0, 0] })),
     });
@@ -292,7 +292,7 @@ export function addPonytail(builder: MeshBuilder, detail: HumanDetail): void {
     ),
     { style: { ...headToChestStyle(1.62, 1.46), slot: MaterialSlot.Hair } }
   );
-  builder.add(torus(0.03, 0.007, trimSegments(detail, 10), trimSegments(detail, 4)), {
+  builder.add(torus(0.03, 0.007, trimSegments(detail, 8), trimSegments(detail, 4)), {
     style: { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Accent },
     transform: transformOf({ position: [0, 1.672, -0.112], rotation: [1.2, 0, 0] }),
   });

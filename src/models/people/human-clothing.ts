@@ -59,7 +59,7 @@ interface Belt {
 function addBelt(builder: MeshBuilder, detail: HumanDetail, belt: Belt): void {
   const { depthRatio, radius, y } = belt;
 
-  builder.add(torus(radius, 0.012, trimSegments(detail, 20), trimSegments(detail, 5)), {
+  builder.add(torus(radius, 0.012, trimSegments(detail, 14), trimSegments(detail, 4)), {
     style: { ...FLEXIBLE_TORSO_STYLE, slot: MaterialSlot.Accent },
     transform: transformOf({ position: [0, y, -0.004], scale: [1, 1, depthRatio] }),
   });
@@ -112,7 +112,7 @@ export function addDress(builder: MeshBuilder, detail: HumanDetail): void {
   const shape = jaggedHem(loft(alongPath(DRESS, detail), detail.torsoSegments), 0.535, 22, 0.03);
 
   builder.add(shape, { style: { ...garmentStyle(0.6, 0.5), slot: MaterialSlot.Hide } });
-  addBelt(builder, detail, { depthRatio: 0.72, radius: 0.155, y: 1.03 });
+  addBelt(builder, detail, { depthRatio: 0.72, radius: 0.158, y: 1.03 });
 
   forEachSide((_side, mirror) => {
     builder.add(
@@ -145,7 +145,7 @@ export function addLoincloth(builder: MeshBuilder, detail: HumanDetail): void {
   const shape = jaggedHem(loft(alongPath(LOINCLOTH, detail), detail.torsoSegments), 0.81, 8, 0.06);
 
   builder.add(shape, { style: { ...garmentStyle(0.5, 0.75), slot: MaterialSlot.Hide } });
-  addBelt(builder, detail, { depthRatio: 0.72, radius: 0.168, y: 0.995 });
+  addBelt(builder, detail, { depthRatio: 0.72, radius: 0.171, y: 0.995 });
 }
 
 const WRAP_SKIRT: readonly LoftSection[] = [

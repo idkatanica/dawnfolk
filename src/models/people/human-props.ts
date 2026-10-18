@@ -65,7 +65,7 @@ function lump(detail: HumanDetail, offset: Triple, radius: number, roughness: nu
 }
 
 export function addHeadband(builder: MeshBuilder, detail: HumanDetail): void {
-  builder.add(ring(detail, 0.1, 0.011, 22), {
+  builder.add(ring(detail, 0.1, 0.011, 16), {
     style: { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Accent },
     transform: transformOf({ position: [0, 1.684, -0.008], rotation: [0.1, 0, 0], scale: [1.02, 1, 1.13] }),
   });
@@ -112,11 +112,12 @@ export function addFeather(builder: MeshBuilder, detail: HumanDetail): void {
 
 const NECKLACE_RADIUS = 0.088;
 const NECKLACE_CORD = transformOf({ position: [0, 1.425, 0.005], rotation: [-0.35, 0, 0], scale: [1, 1, 0.9] });
+const TOOTH_ANGLES = [-0.3, 0, 0.3];
 
 export function addNecklace(builder: MeshBuilder, detail: HumanDetail): void {
   const style = onChest(MaterialSlot.Bone);
 
-  builder.add(ring(detail, NECKLACE_RADIUS, 0.008, 20), {
+  builder.add(ring(detail, NECKLACE_RADIUS, 0.008, 14), {
     style: { ...FLEXIBLE_TORSO_STYLE, slot: MaterialSlot.Rope },
     transform: NECKLACE_CORD,
   });
@@ -125,14 +126,14 @@ export function addNecklace(builder: MeshBuilder, detail: HumanDetail): void {
     return;
   }
 
-  for (let index = -2; index <= 2; index += 1) {
-    const angle = Math.PI / 2 + index * 0.32;
+  for (const offset of TOOTH_ANGLES) {
+    const angle = Math.PI / 2 + offset;
 
     const knot = new Vector3(Math.cos(angle) * NECKLACE_RADIUS, 0, Math.sin(angle) * NECKLACE_RADIUS).applyMatrix4(
       NECKLACE_CORD
     );
 
-    builder.add(cone(0.009, 0.034, 5), {
+    builder.add(cone(0.011, 0.04, 5), {
       style,
       transform: transformOf({ position: [knot.x, knot.y - 0.004, knot.z + 0.005], rotation: [Math.PI + 0.25, 0, 0] }),
     });
@@ -166,7 +167,7 @@ export function addPaint(builder: MeshBuilder, detail: HumanDetail): void {
 }
 
 export function addArmband(builder: MeshBuilder, detail: HumanDetail): void {
-  builder.add(ring(detail, 0.06, 0.009, 14), {
+  builder.add(ring(detail, 0.06, 0.009, 12), {
     style: { ...armStyle(1), slot: MaterialSlot.Accent },
     transform: transformOf({ position: [0.202, 1.29, -0.004], rotation: [0, 0, -0.05] }),
   });

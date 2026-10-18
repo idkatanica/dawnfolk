@@ -27,12 +27,12 @@ export const HUMAN_DETAILS: Readonly<Record<HumanDetailLevel, HumanDetail>> = {
   high: {
     hasFineDetails: true,
     hasSmallParts: true,
-    headSegments: 14,
-    limbSegments: 9,
+    headSegments: 12,
+    limbSegments: 7,
     pathStep: 1,
     propSubdivisions: 1,
     segmentFloor: 8,
-    torsoSegments: 16,
+    torsoSegments: 12,
     trimShare: 1,
   },
   low: {
@@ -44,7 +44,7 @@ export const HUMAN_DETAILS: Readonly<Record<HumanDetailLevel, HumanDetail>> = {
     propSubdivisions: 1,
     segmentFloor: 8,
     torsoSegments: 8,
-    trimShare: 1,
+    trimShare: 0.6,
   },
 };
 
