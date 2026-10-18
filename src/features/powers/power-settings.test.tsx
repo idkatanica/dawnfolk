@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { defaultPowerParameters, POWERS } from "../../content/powers.ts";
 import { PowerSettings } from "./power-settings.tsx";
@@ -14,6 +14,10 @@ function renderSettingsOf(powerId: "explosion" | "fire" | "forest") {
 }
 
 describe("power settings", () => {
+  beforeEach(async () => {
+    await page.viewport(1280, 800);
+  });
+
   afterEach(() => {
     usePowerStore.setState(initialState, true);
     localStorage.clear();
@@ -110,5 +114,35 @@ describe("power settings", () => {
 
     expect(usePowerStore.getState().parameters.fire).toEqual(defaultPowerParameters("fire"));
     await expect.element(screen.getByText("60%", { exact: true })).toBeVisible();
+  });
+});
+
+describe("power settings on a phone", () => {
+  beforeEach(async () => {
+    await page.viewport(390, 844);
+  });
+
+  afterEach(() => {
+    usePowerStore.setState(initialState, true);
+    localStorage.clear();
+  });
+
+  it("keeps to one line until the settings are asked for", async () => {
+    const screen = await renderSettingsOf("fire");
+
+    const adjust = screen.getByRole("button", { name: "Adjust settings" });
+
+    await expect.element(screen.getByText("Hold and drag over the land.")).toBeVisible();
+    await expect.element(adjust).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("slider", { name: "Strength" }).query()).toBeNull();
+
+    await adjust.click();
+
+    await expect.element(adjust).toHaveAttribute("aria-expanded", "true");
+    await expect.element(screen.getByRole("slider", { name: "Strength" })).toBeVisible();
+
+    await adjust.click();
+
+    expect(screen.getByRole("slider", { name: "Strength" }).query()).toBeNull();
   });
 });
