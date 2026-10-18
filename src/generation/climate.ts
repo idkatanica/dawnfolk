@@ -36,6 +36,15 @@ interface CellClimate {
 }
 
 const MAXIMUM_WATER_DISTANCE = 64;
+const GLACIER_TEMPERATURE = -2.4;
+const ICE_CLIFF_SLOPE = 1.2;
+const BARE_ROCK_SLOPE = 0.9;
+const COLD_ROCK_SLOPE = 0.55;
+const COLD_ROCK_TEMPERATURE = 3.2;
+const ESCARPMENT_SLOPE = 0.62;
+const TREE_LINE_TEMPERATURE = 1.6;
+const ALPINE_SLOPE = 0.42;
+const SHORE_TEMPERATURE = 3;
 
 const BIOME_GROUND: Readonly<Record<BiomeIndex, GroundIndex>> = {
   [Biome.Alpine]: Ground.Rock,
@@ -58,24 +67,24 @@ function baseTemperature(height: number, southness: number, desert: number): num
 }
 
 function classifyColdOrSteep(cell: CellClimate): BiomeIndex | null {
-  if (cell.temperature < -2.4) {
-    return cell.slope > 1.9 ? Biome.Alpine : Biome.Glacier;
+  if (cell.temperature < GLACIER_TEMPERATURE) {
+    return cell.slope > ICE_CLIFF_SLOPE ? Biome.Alpine : Biome.Glacier;
   }
 
-  if (cell.slope > 1.25 || (cell.slope > 0.95 && cell.temperature < 3)) {
+  if (cell.slope > BARE_ROCK_SLOPE || (cell.slope > COLD_ROCK_SLOPE && cell.temperature < COLD_ROCK_TEMPERATURE)) {
     return cell.desert > 0.5 ? Biome.Mesa : Biome.Alpine;
   }
 
-  if (cell.desert > 0.5 && cell.slope > 1) {
+  if (cell.desert > 0.5 && cell.slope > ESCARPMENT_SLOPE) {
     return Biome.Mesa;
   }
 
-  if (cell.isNearShore && cell.temperature > 3) {
+  if (cell.isNearShore && cell.temperature > SHORE_TEMPERATURE) {
     return Biome.Beach;
   }
 
-  if (cell.temperature < 1) {
-    return cell.slope > 0.9 ? Biome.Alpine : Biome.Tundra;
+  if (cell.temperature < TREE_LINE_TEMPERATURE) {
+    return cell.slope > ALPINE_SLOPE ? Biome.Alpine : Biome.Tundra;
   }
 
   return null;
