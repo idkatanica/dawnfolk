@@ -20,7 +20,8 @@ interface PatchGridOptions {
   readonly castsShadow: boolean;
   readonly edges: PatchEdges;
   readonly levelDistances: readonly number[];
-  readonly material: Material;
+  readonly materials: readonly Material[];
+  readonly pieceCells: number;
   readonly renderOrder: number;
 }
 
@@ -36,10 +37,20 @@ export interface PatchCorner {
   readonly lastRow: number;
 }
 
+export interface PatchPiece {
+  readonly firstColumn: number;
+  readonly firstRow: number;
+  readonly material: number;
+}
+
+export interface PatchContent extends HeightRange {
+  readonly pieces: readonly PatchPiece[];
+}
+
 interface Patch {
   readonly bounds: Box3;
   readonly corner: PatchCorner;
-  isPresent: boolean;
+  pieces: readonly PatchPiece[];
 }
 
 interface PatchLevel {
@@ -48,7 +59,7 @@ interface PatchLevel {
   readonly origins: InstancedBufferAttribute;
 }
 
-type PatchMeasure = (corner: PatchCorner) => HeightRange | null;
+type PatchMeasure = (corner: PatchCorner) => PatchContent | null;
 
 function overlaps(region: CellRegion, corner: PatchCorner): boolean {
   return (
@@ -62,11 +73,11 @@ function overlaps(region: CellRegion, corner: PatchCorner): boolean {
 export class PatchGrid {
   readonly group = new Group();
   readonly #chosenLevels: Int8Array;
-  readonly #counts: number[];
+  readonly #counts: number[][];
   readonly #frustum = new Frustum();
   readonly #grid: WorldGrid;
   readonly #levelDistances: readonly number[];
-  readonly #levels: readonly PatchLevel[];
+  readonly #levels: readonly (readonly PatchLevel[])[];
   readonly #matrix = new Matrix4();
   readonly #measure: PatchMeasure;
   readonly #patches: Patch[] = [];
@@ -74,14 +85,17 @@ export class PatchGrid {
 
   constructor(grid: WorldGrid, measure: PatchMeasure, options: PatchGridOptions) {
     const patchesPerSide = Math.ceil(grid.cellsPerSide / PATCH_CELLS);
+    const piecesPerPatch = (PATCH_CELLS / options.pieceCells) ** 2;
 
     const patchCount = patchesPerSide * patchesPerSide;
 
     this.#grid = grid;
     this.#measure = measure;
     this.#levelDistances = options.levelDistances;
-    this.#levels = PATCH_STEPS.map((step) => this.#createLevel(step, patchCount, options));
-    this.#counts = this.#levels.map(() => 0);
+    this.#levels = options.materials.map((material) =>
+      PATCH_STEPS.map((step) => this.#createLevel(step, material, patchCount * piecesPerPatch, options))
+    );
+    this.#counts = this.#levels.map((levels) => levels.map(() => 0));
     this.#chosenLevels = new Int8Array(patchCount).fill(NO_LEVEL);
     this.#previousLevels = new Int8Array(patchCount).fill(NO_LEVEL);
 
@@ -106,11 +120,14 @@ export class PatchGrid {
 
   update(camera: PerspectiveCamera, detail: number, sharedLevels?: Readonly<Int8Array>): void {
     this.#previousLevels.set(this.#chosenLevels);
-    this.#counts.fill(0);
     this.#chosenLevels.fill(NO_LEVEL);
     this.#frustum.setFromProjectionMatrix(
       this.#matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
     );
+
+    for (const counts of this.#counts) {
+      counts.fill(0);
+    }
 
     for (const [index, patch] of this.#patches.entries()) {
       if (!this.#isVisible(patch)) {
@@ -123,52 +140,66 @@ export class PatchGrid {
 
       this.#chosenLevels[index] = level;
 
-      const slot = this.#counts[level];
-
-      this.#levels[level].origins.setXY(slot, patch.corner.firstColumn, patch.corner.firstRow);
-      this.#counts[level] = slot + 1;
+      for (const piece of patch.pieces) {
+        this.#place(piece, level);
+      }
     }
 
     const hasChanged = this.#chosenLevels.some((level, index) => level !== this.#previousLevels[index]);
 
-    for (const [index, level] of this.#levels.entries()) {
-      level.geometry.instanceCount = this.#counts[index];
-      level.mesh.visible = this.#counts[index] > 0;
+    for (const [material, levels] of this.#levels.entries()) {
+      for (const [index, level] of levels.entries()) {
+        const count = this.#counts[material][index];
 
-      if (hasChanged) {
-        level.origins.needsUpdate = true;
+        level.geometry.instanceCount = count;
+        level.mesh.visible = count > 0;
+
+        if (hasChanged) {
+          level.origins.needsUpdate = true;
+        }
       }
     }
   }
 
   dispose(): void {
-    for (const level of this.#levels) {
-      level.geometry.dispose();
+    for (const levels of this.#levels) {
+      for (const level of levels) {
+        level.geometry.dispose();
+      }
     }
   }
 
   #isVisible(patch: Patch): boolean {
-    return patch.isPresent && this.#frustum.intersectsBox(patch.bounds);
+    return patch.pieces.length > 0 && this.#frustum.intersectsBox(patch.bounds);
   }
 
   #levelFor(distance: number, detail: number): number {
     const index = this.#levelDistances.findIndex((limit) => distance < limit * detail);
 
     if (index === -1) {
-      return this.#levels.length - 1;
+      return PATCH_STEPS.length - 1;
     }
 
     return index;
   }
 
-  #createLevel(step: PatchStep, patchCount: number, options: PatchGridOptions): PatchLevel {
-    const geometry = toInstancedGeometry(createPatchGeometry(step, options.edges));
-    const origins = new InstancedBufferAttribute(new Float32Array(patchCount * 2), 2);
+  #place(piece: PatchPiece, level: number): void {
+    const counts = this.#counts[piece.material];
+
+    const slot = counts[level];
+
+    this.#levels[piece.material][level].origins.setXY(slot, piece.firstColumn, piece.firstRow);
+    counts[level] = slot + 1;
+  }
+
+  #createLevel(step: PatchStep, material: Material, capacity: number, options: PatchGridOptions): PatchLevel {
+    const geometry = toInstancedGeometry(createPatchGeometry(options.pieceCells, step, options.edges));
+    const origins = new InstancedBufferAttribute(new Float32Array(capacity * 2), 2);
 
     geometry.setAttribute("origin", origins);
     geometry.instanceCount = 0;
 
-    const mesh = new Mesh(geometry, options.material);
+    const mesh = new Mesh(geometry, material);
 
     mesh.frustumCulled = false;
     mesh.receiveShadow = true;
@@ -191,7 +222,7 @@ export class PatchGrid {
       lastRow: Math.min(last, firstRow + PATCH_CELLS),
     };
 
-    const patch = { bounds: new Box3(), corner, isPresent: false };
+    const patch: Patch = { bounds: new Box3(), corner, pieces: [] };
 
     this.#measurePatch(patch);
 
@@ -199,10 +230,16 @@ export class PatchGrid {
   }
 
   #measurePatch(patch: Patch): void {
-    const range = this.#measure(patch.corner);
+    const content = this.#measure(patch.corner);
 
-    if (range === null) {
-      patch.isPresent = false;
+    for (const levels of this.#levels) {
+      for (const level of levels) {
+        level.origins.needsUpdate = true;
+      }
+    }
+
+    if (content === null) {
+      patch.pieces = [];
 
       return;
     }
@@ -210,8 +247,8 @@ export class PatchGrid {
     const grid = this.#grid;
     const { corner } = patch;
 
-    patch.isPresent = true;
-    patch.bounds.min.set(grid.centerX(corner.firstColumn), range.lowest, grid.centerZ(corner.firstRow));
-    patch.bounds.max.set(grid.centerX(corner.lastColumn), range.highest, grid.centerZ(corner.lastRow));
+    patch.pieces = content.pieces;
+    patch.bounds.min.set(grid.centerX(corner.firstColumn), content.lowest, grid.centerZ(corner.firstRow));
+    patch.bounds.max.set(grid.centerX(corner.lastColumn), content.highest, grid.centerZ(corner.lastRow));
   }
 }

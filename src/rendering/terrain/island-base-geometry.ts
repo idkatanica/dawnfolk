@@ -8,7 +8,8 @@ import type { WorldGrid } from "../../world/world-grid.ts";
 import type { CoastPoint, IslandOutline } from "./island-outline.ts";
 
 const CLIFF_DROP = 60;
-const CLIFF_RINGS = 6;
+const SQUARE_CLIFF_BANDS = 6;
+const COAST_CLIFF_BANDS = 1;
 const UNDERSIDE_DEPTH = 1650;
 const UNDERSIDE_RINGS = 14;
 const UNDERSIDE_COLUMNS = 512;
@@ -32,6 +33,7 @@ interface RingVertex {
 }
 
 interface BaseOutline {
+  readonly cliffBands: number;
   readonly grid: WorldGrid;
   readonly noise: VolumeNoise;
   readonly plinth: number;
@@ -90,11 +92,11 @@ function islandPerimeter(mirror: WorldMirror, outline: IslandOutline): Perimeter
   return coastPerimeter(outline.coast);
 }
 
-function cliffRings(): RingVertex[] {
+function cliffRings(bands: number): RingVertex[] {
   const rings: RingVertex[] = [];
 
-  for (let ring = 0; ring <= CLIFF_RINGS; ring += 1) {
-    rings.push({ cliffAmount: 1 - ring / CLIFF_RINGS, depth: 0 });
+  for (let ring = 0; ring <= bands; ring += 1) {
+    rings.push({ cliffAmount: 1 - ring / bands, depth: 0 });
   }
 
   return rings;
@@ -183,7 +185,7 @@ function pushStrips(indices: number[], pointCount: number, ringCount: number, fi
 }
 
 function buildCliff(outline: BaseOutline): BufferGeometry {
-  const rings = cliffRings();
+  const rings = cliffRings(outline.cliffBands);
 
   const positions: number[] = [];
   const topPoints: number[] = [];
@@ -274,6 +276,7 @@ export function buildIslandBaseGeometry(mirror: WorldMirror, outline: IslandOutl
   const isSquare = outline.coast === null;
 
   const base: BaseOutline = {
+    cliffBands: isSquare ? SQUARE_CLIFF_BANDS : COAST_CLIFF_BANDS,
     grid: mirror.grid,
     noise: createVolumeNoise(createRandom(mirror.seed + 17)),
     plinth: lowestRimHeight(mirror, points) - CLIFF_DROP,

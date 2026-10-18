@@ -26,6 +26,9 @@ const FALL_HEIGHT = 1150;
 const GRAVITY = 9.8;
 const LAUNCH_SPEED = 3.5;
 const ALONG_SEGMENTS = 56;
+const FADE_START = 0.2;
+const FADE_END = 0.62;
+const DRAWN_SEGMENTS = Math.ceil(FADE_END * ALONG_SEGMENTS);
 const ACROSS_SEGMENTS = 6;
 const MINIMUM_WIDTH = 7;
 
@@ -44,7 +47,7 @@ function addCurtain(writer: CurtainWriter, waterfall: Waterfall): void {
   const sideZ = waterfall.directionX;
   const firstVertex = writer.progress.length;
 
-  for (let along = 0; along <= ALONG_SEGMENTS; along += 1) {
+  for (let along = 0; along <= DRAWN_SEGMENTS; along += 1) {
     const amount = along / ALONG_SEGMENTS;
 
     const seconds = amount * fallSeconds;
@@ -71,7 +74,7 @@ function addCurtain(writer: CurtainWriter, waterfall: Waterfall): void {
 
   const rowLength = ACROSS_SEGMENTS + 1;
 
-  for (let along = 0; along < ALONG_SEGMENTS; along += 1) {
+  for (let along = 0; along < DRAWN_SEGMENTS; along += 1) {
     for (let across = 0; across < ACROSS_SEGMENTS; across += 1) {
       const corner = firstVertex + along * rowLength + across;
 
@@ -83,7 +86,12 @@ function addCurtain(writer: CurtainWriter, waterfall: Waterfall): void {
 }
 
 function createCurtainMaterial(): MeshBasicNodeMaterial {
-  const material = new MeshBasicNodeMaterial({ depthWrite: false, side: DoubleSide, transparent: true });
+  const material = new MeshBasicNodeMaterial({
+    depthWrite: false,
+    forceSinglePass: true,
+    side: DoubleSide,
+    transparent: true,
+  });
   const coordinates = attribute("fallCoordinates", "vec2");
   const progress = attribute("fallProgress", "float");
   const sideAmount = attribute("fallSide", "float");
@@ -97,7 +105,7 @@ function createCurtainMaterial(): MeshBasicNodeMaterial {
 
   const mist = max(smoothstep(0.08, 0.45, progress), smoothstep(600, 2400, distance(positionWorld, cameraPosition)));
   const edges = smoothstep(0, 0.2, sideAmount).mul(smoothstep(1, 0.8, sideAmount));
-  const fade = float(1).sub(smoothstep(0.2, 0.62, progress));
+  const fade = float(1).sub(smoothstep(FADE_START, FADE_END, progress));
 
   const sheet = mix(smoothstep(0.3, 0.75, streaks.mul(0.75).add(spray.mul(0.25))), float(0.5), mist);
 

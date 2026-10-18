@@ -31,6 +31,7 @@ import { unitNoise } from "../node-helpers.ts";
 import { FIREWEED, fireweedOn } from "./fireweed.ts";
 import type { GroundWarp } from "./ground-warp.ts";
 import { sampleCellsNode } from "./height-sampling.ts";
+import { PATCH_CELLS } from "./terrain-patches.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
 const SKIRT_DROP_PER_STEP = 25;
@@ -86,6 +87,7 @@ function terrainPosition(textures: TerrainTextures, grid: WorldGrid, plinth: num
   const origin = attribute("origin", "vec2");
   const localCell = attribute("cell", "vec2");
   const skirt = attribute("skirt", "float");
+  const skirtAxis = attribute("skirtAxis", "float");
 
   function heightAt(column: number, row: number, base: Node<"vec2">) {
     const cell = ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(lastCell, lastCell)));
@@ -102,9 +104,13 @@ function terrainPosition(textures: TerrainTextures, grid: WorldGrid, plinth: num
 
     normalLocal.assign(normalize(vec3(slopeX, cellSize.mul(2), slopeZ)));
 
-    const drop = skirt.mul(SKIRT_DROP_PER_STEP);
+    const border = origin.add(localCell);
+
+    const hangs = skirt.greaterThan(0).and(mix(border.x, border.y, skirtAxis).mod(PATCH_CELLS).equal(0));
+
+    const drop = select(hangs, skirt.mul(SKIRT_DROP_PER_STEP), float(0));
     const outward = vec2(edgeSide(cell.x, lastCell), edgeSide(cell.y, lastCell));
-    const inset = outward.mul(select(skirt.greaterThan(0), float(EDGE_SKIRT_INSET), float(0)));
+    const inset = outward.mul(select(hangs, float(EDGE_SKIRT_INSET), float(0)));
 
     return vec3(
       cell.x.add(0.5).mul(cellSize).sub(halfSize).sub(inset.x),
@@ -139,6 +145,7 @@ function underwaterDepth(textures: TerrainTextures, grid: WorldGrid): Node<"floa
 }
 
 interface TerrainMaterialOptions {
+  readonly cutsAtCoast: boolean;
   readonly glow: FireGlow;
   readonly grid: WorldGrid;
   readonly plinth: number;
@@ -147,6 +154,7 @@ interface TerrainMaterialOptions {
 }
 
 export function createTerrainMaterial({
+  cutsAtCoast,
   glow,
   grid,
   plinth,
@@ -157,7 +165,7 @@ export function createTerrainMaterial({
 
   material.positionNode = terrainPosition(textures, grid, plinth);
 
-  if (textures.outline.hasCoast) {
+  if (cutsAtCoast) {
     material.maskNode = textures.outline.insideNode(positionWorld.xz);
   }
 
