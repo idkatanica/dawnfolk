@@ -17,11 +17,12 @@ export const PersonField = {
   Z: 2,
 } as const;
 
-export const ANIMAL_STRIDE = 11;
+export const ANIMAL_STRIDE = 12;
 
 export const AnimalField = {
   AppearanceSeed: 10,
   Heading: 3,
+  HerdId: 11,
   Id: 0,
   Kind: 8,
   Phase: 7,

@@ -247,6 +247,7 @@ export function packAnimals(animals: readonly Animal[]): Float32Array {
     buffer[offset + AnimalField.Kind] = ANIMAL_KINDS.indexOf(animal.kind);
     buffer[offset + AnimalField.Youth] = animal.youth;
     buffer[offset + AnimalField.AppearanceSeed] = animal.appearanceSeed;
+    buffer[offset + AnimalField.HerdId] = animal.herdId;
   }
 
   return buffer;

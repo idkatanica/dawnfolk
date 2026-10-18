@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PERSON_STRIDE, PersonField } from "../world/agent-buffers.ts";
+import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../world/agent-buffers.ts";
 import { Simulation, TICK_SECONDS } from "./simulation.ts";
 import { createVegetatedWorld } from "./testing/test-world.ts";
 
@@ -157,6 +157,23 @@ describe("frames", () => {
     expect(frame.people).toHaveLength(frame.personCount * PERSON_STRIDE);
     expect(frame.people[PersonField.Id]).toBe(simulation.society.people[0].id);
     expect(frame.tribes.length).toBeGreaterThan(0);
+  });
+
+  it("pack every animal with its herd into the animal buffer", () => {
+    const simulation = createSimulation();
+
+    simulation.populate();
+
+    const frame = simulation.advance(TICK_SECONDS);
+
+    const { animals } = simulation.fauna;
+    const last = frame.animalCount - 1;
+
+    expect(frame.animalCount).toBeGreaterThan(0);
+    expect(frame.animalCount).toBe(animals.length);
+    expect(frame.animals).toHaveLength(frame.animalCount * ANIMAL_STRIDE);
+    expect(frame.animals[last * ANIMAL_STRIDE + AnimalField.Id]).toBe(animals[last].id);
+    expect(frame.animals[last * ANIMAL_STRIDE + AnimalField.HerdId]).toBe(animals[last].herdId);
   });
 
   it("send changed surface rows and height regions once", () => {
