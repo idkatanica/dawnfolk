@@ -222,8 +222,10 @@ export class VegetationChunks {
     target[offset + 6] = vegetation.state[plant];
     target[offset + 7] = vegetation.fruit[plant];
 
-    bounds.expandByPoint(corner.set(x - height * 0.5, y - 1, z - height * 0.5));
-    bounds.expandByPoint(corner.set(x + height * 0.5, y + height, z + height * 0.5));
+    const reach = vegetation.state[plant] === PlantState.Fallen ? height : height * 0.5;
+
+    bounds.expandByPoint(corner.set(x - reach, y - 1, z - reach));
+    bounds.expandByPoint(corner.set(x + reach, y + height, z + reach));
   }
 
   #groundUnder(x: number, z: number, radius: number): number {
