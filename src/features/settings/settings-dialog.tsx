@@ -55,11 +55,11 @@ function useSettingsDialog() {
   const tab = useInterfaceStore((state) => state.settingsTab);
   const setTab = useInterfaceStore((state) => state.setSettingsTab);
 
-  const changeTab = (value: unknown) => {
+  function changeTab(value: unknown): void {
     if (isSettingsTab(value)) {
       setTab(value);
     }
-  };
+  }
 
   return { changeTab, isOpen, setOpen, tab };
 }

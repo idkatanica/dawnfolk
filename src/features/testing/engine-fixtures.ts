@@ -51,19 +51,19 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
   const placeLabel = vi.fn<(x: number, z: number, lift: number) => LabelPlacement | null>(() => null);
   const stopFollowing = vi.fn<() => void>();
 
-  const subscribeToRenders = (listener: () => void) => {
+  function subscribeToRenders(listener: () => void): () => void {
     renderListeners.add(listener);
 
     return () => {
       renderListeners.delete(listener);
     };
-  };
+  }
 
-  const renderFrame = () => {
+  function renderFrame(): void {
     for (const listener of renderListeners) {
       listener();
     }
-  };
+  }
 
   const engine: EngineHandle = {
     camera: { state: { ...TEST_CAMERA, distance: cameraDistance } },

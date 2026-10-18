@@ -145,10 +145,6 @@ export function CellDetails({ cell }: { readonly cell: CellInspection }) {
   );
 }
 
-function TechnologyChip({ name }: { readonly name: string }) {
-  return <Badge tone="muted">{name}</Badge>;
-}
-
 function NextDiscovery({ tribe }: { readonly tribe: TribeInspection }) {
   const { knowledge, nextTechnology } = tribe.summary;
 
@@ -190,7 +186,9 @@ export function TribeDetails({ tribe }: { readonly tribe: TribeInspection }) {
 
       <div className="flex flex-wrap gap-1.5">
         {summary.technologies.map((name) => (
-          <TechnologyChip key={name} name={name} />
+          <Badge key={name} tone="muted">
+            {name}
+          </Badge>
         ))}
       </div>
     </div>

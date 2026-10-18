@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TOUCH_QUERY } from "../design/use-media-query.ts";
 import type { CameraState } from "../rendering/camera/god-camera.ts";
 import { QUALITY_LEVELS, type QualityLevel } from "../rendering/render-quality.ts";
 import { storedQuality } from "./preferences.ts";
@@ -38,7 +39,7 @@ function defaultQuality(): QualityLevel {
     return stored;
   }
 
-  const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
+  const isTouchDevice = window.matchMedia(TOUCH_QUERY).matches;
 
   return isTouchDevice ? "low" : "medium";
 }

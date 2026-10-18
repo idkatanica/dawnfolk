@@ -3,7 +3,7 @@ import { useSyncExternalStore } from "react";
 type Subscribe = (onChange: () => void) => () => void;
 
 export const COMPACT_QUERY = "(max-width: 767px)";
-const TOUCH_QUERY = "(pointer: coarse)";
+export const TOUCH_QUERY = "(pointer: coarse)";
 
 const subscribers = new Map<string, Subscribe>();
 
@@ -14,13 +14,13 @@ function subscriberFor(query: string): Subscribe {
     return existing;
   }
 
-  const subscribe: Subscribe = (onChange) => {
+  function subscribe(onChange: () => void): () => void {
     const list = window.matchMedia(query);
 
     list.addEventListener("change", onChange);
 
     return () => list.removeEventListener("change", onChange);
-  };
+  }
 
   subscribers.set(query, subscribe);
 

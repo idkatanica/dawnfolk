@@ -19,7 +19,9 @@ export function useHeldDraft<Value>(confirmed: Value): readonly [Value, (value: 
     return () => window.clearTimeout(timer);
   }, [draft]);
 
-  const hold = (value: Value) => setDraft({ value });
+  function hold(value: Value): void {
+    setDraft({ value });
+  }
 
   if (draft === null) {
     return [confirmed, hold];

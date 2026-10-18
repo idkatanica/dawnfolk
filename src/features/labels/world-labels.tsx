@@ -43,7 +43,7 @@ function LandmarkLabel({ landmark }: { readonly landmark: Landmark }) {
       data-x={landmark.x}
       data-z={landmark.z}
     >
-      <span className={cn("font-display font-semibold text-sm tracking-wide", { italic: landmark.kind === "lake" })}>
+      <span className={cn("font-semibold text-sm tracking-wide", { italic: landmark.kind === "lake" })}>
         {landmark.name}
       </span>
 

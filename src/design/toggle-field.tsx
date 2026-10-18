@@ -2,7 +2,7 @@ import { Switch } from "@base-ui/react/switch";
 import { useId } from "react";
 import { cn } from "./cn.ts";
 
-export interface ToggleFieldProps {
+interface ToggleFieldProps {
   readonly className?: string | undefined;
   readonly description?: string | undefined;
   readonly isChecked: boolean;

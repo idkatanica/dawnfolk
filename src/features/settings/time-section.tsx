@@ -12,11 +12,25 @@ const SEASON_OPTIONS = SEASONS.map((season, index) => ({ label: season, value: S
 function useTimeSettings() {
   const send = useSendCommand();
 
-  const changeHours = (hours: number) => send({ hours, type: "setHours" });
-  const changeSeason = (value: string) => send({ season: Number(value), type: "setSeason" });
-  const changeDayLength = (seconds: number) => send({ seconds, type: "setDaySeconds" });
-  const changeSeasonLength = (days: number) => send({ days, type: "setDaysPerSeason" });
-  const changeFrozen = (isFrozen: boolean) => send({ isFrozen, type: "setTimeFrozen" });
+  function changeHours(hours: number): void {
+    send({ hours, type: "setHours" });
+  }
+
+  function changeSeason(value: string): void {
+    send({ season: Number(value), type: "setSeason" });
+  }
+
+  function changeDayLength(seconds: number): void {
+    send({ seconds, type: "setDaySeconds" });
+  }
+
+  function changeSeasonLength(days: number): void {
+    send({ days, type: "setDaysPerSeason" });
+  }
+
+  function changeFrozen(isFrozen: boolean): void {
+    send({ isFrozen, type: "setTimeFrozen" });
+  }
 
   return { changeDayLength, changeFrozen, changeHours, changeSeason, changeSeasonLength };
 }

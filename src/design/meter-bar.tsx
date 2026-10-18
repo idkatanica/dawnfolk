@@ -1,7 +1,7 @@
 import { Meter } from "@base-ui/react/meter";
 import { cn } from "./cn.ts";
 
-export type MeterTone = "dawn" | "ember" | "gold" | "lake" | "meadow";
+type MeterTone = "dawn" | "ember" | "gold" | "lake" | "meadow";
 
 const INDICATOR_TONES: Readonly<Record<MeterTone, string>> = {
   dawn: "bg-dawn",
@@ -11,7 +11,7 @@ const INDICATOR_TONES: Readonly<Record<MeterTone, string>> = {
   meadow: "bg-meadow",
 };
 
-export interface MeterBarProps {
+interface MeterBarProps {
   readonly className?: string | undefined;
   readonly label: string;
   readonly tone: MeterTone;

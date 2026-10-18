@@ -6,11 +6,11 @@ function useJournalSheet() {
   const isOpen = useInterfaceStore((state) => state.isJournalOpen);
   const closeJournal = useInterfaceStore((state) => state.closeJournal);
 
-  const changeOpen = (open: boolean) => {
+  function changeOpen(open: boolean): void {
     if (!open) {
       closeJournal();
     }
-  };
+  }
 
   return { changeOpen, isOpen };
 }

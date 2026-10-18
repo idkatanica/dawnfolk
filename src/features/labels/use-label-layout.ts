@@ -119,6 +119,37 @@ function viewKey(engine: EngineHandle): string {
   ].join();
 }
 
+function keepLabelsPlaced(engine: EngineHandle, layer: HTMLElement): () => void {
+  let placedKey = "";
+  let haveLabelsChanged = true;
+
+  const observer = new MutationObserver(() => {
+    haveLabelsChanged = true;
+  });
+
+  function place(): void {
+    const key = viewKey(engine);
+
+    if (!haveLabelsChanged && key === placedKey) {
+      return;
+    }
+
+    placedKey = key;
+    haveLabelsChanged = false;
+    placeLabels(engine, layer);
+  }
+
+  observer.observe(layer, { attributeFilter: LABEL_ATTRIBUTES, attributes: true, childList: true, subtree: true });
+  place();
+
+  const unsubscribe = engine.subscribeToRenders(place);
+
+  return () => {
+    unsubscribe();
+    observer.disconnect();
+  };
+}
+
 export function useLabelLayout(layerReference: RefObject<HTMLElement | null>, engine: EngineHandle): void {
   useEffect(() => {
     const layer = layerReference.current;
@@ -127,33 +158,6 @@ export function useLabelLayout(layerReference: RefObject<HTMLElement | null>, en
       return;
     }
 
-    let placedKey = "";
-    let haveLabelsChanged = true;
-
-    const observer = new MutationObserver(() => {
-      haveLabelsChanged = true;
-    });
-
-    const place = () => {
-      const key = viewKey(engine);
-
-      if (!haveLabelsChanged && key === placedKey) {
-        return;
-      }
-
-      placedKey = key;
-      haveLabelsChanged = false;
-      placeLabels(engine, layer);
-    };
-
-    observer.observe(layer, { attributeFilter: LABEL_ATTRIBUTES, attributes: true, childList: true, subtree: true });
-    place();
-
-    const unsubscribe = engine.subscribeToRenders(place);
-
-    return () => {
-      unsubscribe();
-      observer.disconnect();
-    };
+    return keepLabelsPlaced(engine, layer);
   }, [engine, layerReference]);
 }

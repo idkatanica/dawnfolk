@@ -110,23 +110,11 @@ function CompactHud() {
 export function Hud() {
   const isCompact = useIsCompact();
 
-  if (isCompact) {
-    return (
-      <>
-        <WorldLabels />
-
-        <CompactHud />
-
-        <SettingsDialog />
-      </>
-    );
-  }
-
   return (
     <>
       <WorldLabels />
 
-      <WideHud />
+      {isCompact ? <CompactHud /> : <WideHud />}
 
       <SettingsDialog />
     </>

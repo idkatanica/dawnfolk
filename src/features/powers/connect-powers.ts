@@ -19,7 +19,9 @@ function clearOnEscape(event: KeyboardEvent): void {
 }
 
 export function connectPowers(engine: Pick<EngineHandle, "selectPower">): () => void {
-  const apply = (state: PowerStore) => engine.selectPower(selectionOf(state));
+  function apply(state: PowerStore): void {
+    engine.selectPower(selectionOf(state));
+  }
 
   apply(usePowerStore.getState());
 

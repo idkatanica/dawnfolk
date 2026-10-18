@@ -16,7 +16,9 @@ function usePowerSelection(powerId: PowerId) {
   const isSelected = usePowerStore((state) => state.selectedPowerId === powerId);
   const selectPower = usePowerStore((state) => state.selectPower);
 
-  const toggle = () => selectPower(isSelected ? null : powerId);
+  function toggle(): void {
+    selectPower(isSelected ? null : powerId);
+  }
 
   return { isSelected, toggle };
 }
@@ -49,7 +51,9 @@ function useClearPower() {
   const isSelecting = usePowerStore((state) => state.selectedPowerId === null);
   const selectPower = usePowerStore((state) => state.selectPower);
 
-  const clearPower = () => selectPower(null);
+  function clearPower(): void {
+    selectPower(null);
+  }
 
   return { clearPower, isSelecting };
 }

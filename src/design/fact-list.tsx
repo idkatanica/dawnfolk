@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "./cn.ts";
 
-export interface Fact {
+interface Fact {
   readonly label: string;
   readonly value: ReactNode;
 }

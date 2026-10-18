@@ -17,7 +17,11 @@ function useDismissLater(id: number): void {
 function NoticeIcon({ notice }: { readonly notice: WorldNotice }) {
   const Icon = notice.category === "notice" ? Info : CHRONICLE_ICONS[notice.category];
 
-  return <Icon aria-hidden="true" className="shrink-0 text-ink-soft" size={16} />;
+  return (
+    <span className="flex shrink-0 text-ink-soft">
+      <Icon aria-hidden="true" size={16} />
+    </span>
+  );
 }
 
 function NoticeItem({ notice }: { readonly notice: WorldNotice }) {

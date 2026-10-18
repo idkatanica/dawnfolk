@@ -9,7 +9,7 @@ export interface ChoiceOption {
   readonly value: string;
 }
 
-export interface ChoiceFieldProps {
+interface ChoiceFieldProps {
   readonly className?: string | undefined;
   readonly description?: string | undefined;
   readonly label: string;

@@ -21,21 +21,21 @@ function createFeed({ chronicle = [], frame = createFrame(), seed = 7 }: FeedOpt
   const listeners = new Set<FrameListener>();
   const entries = [...chronicle];
 
-  const emit = (next: SimulationFrame) => {
+  function emit(next: SimulationFrame): void {
     entries.push(...next.chronicle);
 
     for (const listener of listeners) {
       listener(next);
     }
-  };
+  }
 
-  const subscribe = (listener: FrameListener) => {
+  function subscribe(listener: FrameListener): () => void {
     listeners.add(listener);
 
     return () => {
       listeners.delete(listener);
     };
-  };
+  }
 
   return { chronicle: entries, emit, frame, listenerCount: () => listeners.size, mirror: { seed }, subscribe };
 }

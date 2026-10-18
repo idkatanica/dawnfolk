@@ -29,7 +29,7 @@ function useMinimapPainter(canvasReference: RefObject<HTMLCanvasElement | null>,
 }
 
 function useMinimapNavigation(engine: EngineHandle) {
-  const focusAt = (event: PointerEvent<HTMLCanvasElement>) => {
+  function focusAt(event: PointerEvent<HTMLCanvasElement>): void {
     const bounds = event.currentTarget.getBoundingClientRect();
     const { grid } = engine.session.mirror;
     const x = ((event.clientX - bounds.left) / bounds.width) * grid.worldSize - grid.halfSize;
@@ -37,18 +37,18 @@ function useMinimapNavigation(engine: EngineHandle) {
 
     engine.stopFollowing();
     engine.focusOn(x, z);
-  };
+  }
 
-  const handlePointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
+  function handlePointerDown(event: PointerEvent<HTMLCanvasElement>): void {
     event.currentTarget.setPointerCapture(event.pointerId);
     focusAt(event);
-  };
+  }
 
-  const handlePointerMove = (event: PointerEvent<HTMLCanvasElement>) => {
+  function handlePointerMove(event: PointerEvent<HTMLCanvasElement>): void {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       focusAt(event);
     }
-  };
+  }
 
   return { handlePointerDown, handlePointerMove };
 }

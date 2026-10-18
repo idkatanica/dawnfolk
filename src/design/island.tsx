@@ -17,7 +17,7 @@ const REFRACTING_GLASS: Partial<GlassSurfaceOptions> = {
 
 const FROSTED_GLASS: Partial<GlassSurfaceOptions> = { ...REFRACTING_GLASS, backgroundOpacity: 0.68, refraction: false };
 
-export interface IslandProps {
+interface IslandProps {
   readonly children: ReactNode;
   readonly className?: string | undefined;
 }

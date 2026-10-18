@@ -1,6 +1,6 @@
 import { RotateCcw } from "lucide-react";
-import { describeParameters, type ParameterField } from "../../content/parameters.ts";
-import { type ParameterValue, type ParameterValueMap, POWERS, type PowerId } from "../../content/powers.ts";
+import { describeParameters } from "../../content/parameters.ts";
+import { type ParameterValue, POWERS, type PowerId } from "../../content/powers.ts";
 import { IconButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
 import { Island } from "../../design/island.tsx";
@@ -14,18 +14,6 @@ const USAGE_HINTS = {
   point: "Tap a spot on the island.",
 } as const;
 
-function PowerParameter({
-  field,
-  onChange,
-  values,
-}: {
-  readonly field: ParameterField;
-  readonly onChange: (key: string, value: ParameterValue) => void;
-  readonly values: ParameterValueMap;
-}) {
-  return <ParameterControl field={field} onChange={onChange} value={values[field.key]} />;
-}
-
 function usePowerParameters(powerId: PowerId) {
   const stored = usePowerStore((state) => state.parameters[powerId]);
   const setParameter = usePowerStore((state) => state.setParameter);
@@ -33,8 +21,13 @@ function usePowerParameters(powerId: PowerId) {
 
   const values = withDefaults(powerId, stored);
 
-  const changeParameter = (key: string, value: ParameterValue) => setParameter(powerId, key, value);
-  const reset = () => resetParameters(powerId);
+  function changeParameter(key: string, value: ParameterValue): void {
+    setParameter(powerId, key, value);
+  }
+
+  function reset(): void {
+    resetParameters(powerId);
+  }
 
   return { changeParameter, reset, values };
 }
@@ -67,7 +60,7 @@ function PowerSettingsContent({ powerId }: { readonly powerId: PowerId }) {
 
       <div className={cn("grid gap-3", { "sm:max-md:grid-cols-2": fields.length > 1 })}>
         {fields.map((field) => (
-          <PowerParameter field={field} key={field.key} onChange={changeParameter} values={values} />
+          <ParameterControl field={field} key={field.key} onChange={changeParameter} value={values[field.key]} />
         ))}
       </div>
     </section>
