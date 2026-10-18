@@ -48,10 +48,38 @@ describe("berries", () => {
 
     const bush = plantInCell(world, centerCell(world), PlantSpecies.Bush);
 
-    world.vegetation.fruit[bush] = 0;
+    world.vegetation.setFruit(bush, 0);
     growFor(world, { season: SUMMER });
 
     expect(world.vegetation.fruit[bush]).toBeGreaterThan(0.7);
+  });
+
+  it("report their fruit in plant order", () => {
+    const world = createTestWorld();
+    const { vegetation } = world;
+
+    const oaks = [10, 20, 30].map((column) => plantInCell(world, world.grid.index(column, 30), PlantSpecies.Oak));
+    const firstBush = plantInCell(world, world.grid.index(40, 30), PlantSpecies.Bush);
+
+    vegetation.remove(oaks[0]);
+    vegetation.remove(oaks[2]);
+
+    const bushes = [
+      firstBush,
+      ...[50, 60].map((column) => plantInCell(world, world.grid.index(column, 30), PlantSpecies.Bush)),
+    ];
+
+    for (const bush of bushes) {
+      vegetation.setFruit(bush, 0);
+    }
+
+    vegetation.discardChanges();
+    growFor(world, { days: 0.4, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 0 } }) });
+
+    expect(vegetation.takeChanges().map((change) => change.index)).toEqual(
+      [...bushes].sort((first, second) => first - second)
+    );
+    expect(bushes).not.toEqual([...bushes].sort((first, second) => first - second));
   });
 
   it("disappear in winter", () => {
