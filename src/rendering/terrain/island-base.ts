@@ -14,30 +14,18 @@ import {
   smoothstep,
   vec3,
 } from "three/tsl";
-import { Mesh, MeshStandardNodeMaterial } from "three/webgpu";
+import { Mesh, MeshLambertNodeMaterial, MeshStandardNodeMaterial, type Node } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleHeightNode } from "./height-sampling.ts";
-import { buildIslandBaseGeometry, islandPlinthHeight } from "./island-base-geometry.ts";
+import { buildIslandBaseGeometry } from "./island-base-geometry.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
-function createBaseMaterial(textures: TerrainTextures, grid: WorldGrid, plinth: number): MeshStandardNodeMaterial {
-  const material = new MeshStandardNodeMaterial();
-  const topPoint = attribute("topPoint", "vec2");
-  const cliffAmount = attribute("cliffAmount", "float");
-  const outward = attribute("outward", "vec2");
+const CLIFF_GRAIN_OCTAVES = 4;
+const UNDERSIDE_GRAIN_OCTAVES = 2;
 
-  material.positionNode = Fn(() => {
-    const surface = sampleHeightNode(textures.height, grid, topPoint);
-
-    If(cliffAmount.greaterThan(0), () => {
-      normalLocal.assign(vec3(outward.x, 0, outward.y));
-    });
-
-    return vec3(positionLocal.x, mix(positionLocal.y, surface, cliffAmount), positionLocal.z);
-  })();
-
-  const grain = mx_fractal_noise_float(positionWorld.mul(0.018), 4, 2, 0.5);
+function rockColor(plinth: number, grainOctaves: number): Node<"vec3"> {
+  const grain = mx_fractal_noise_float(positionWorld.mul(0.018), grainOctaves, 2, 0.5);
   const streaks = mx_noise_float(
     vec3(positionWorld.x.mul(0.05), positionWorld.y.mul(0.004), positionWorld.z.mul(0.05))
   );
@@ -57,26 +45,58 @@ function createBaseMaterial(textures: TerrainTextures, grid: WorldGrid, plinth: 
 
   const layered = mix(mix(rock, soil, soilBand.mul(0.8)), vec3(0.26, 0.34, 0.17), moss.mul(0.55));
 
-  material.colorNode = layered.mul(depthShade).mul(streaks.mul(0.08).add(0.96));
+  return layered.mul(depthShade).mul(streaks.mul(0.08).add(0.96));
+}
+
+function createCliffMaterial(textures: TerrainTextures, grid: WorldGrid, plinth: number): MeshStandardNodeMaterial {
+  const material = new MeshStandardNodeMaterial();
+  const topPoint = attribute("topPoint", "vec2");
+  const cliffAmount = attribute("cliffAmount", "float");
+  const outward = attribute("outward", "vec2");
+
+  material.positionNode = Fn(() => {
+    const surface = sampleHeightNode(textures.height, grid, topPoint);
+
+    If(cliffAmount.greaterThan(0), () => {
+      normalLocal.assign(vec3(outward.x, 0, outward.y));
+    });
+
+    return vec3(positionLocal.x, mix(positionLocal.y, surface, cliffAmount), positionLocal.z);
+  })();
+
+  material.colorNode = rockColor(plinth, CLIFF_GRAIN_OCTAVES);
   material.roughnessNode = float(0.97);
   material.metalnessNode = float(0);
 
   return material;
 }
 
+function createUndersideMaterial(plinth: number): MeshLambertNodeMaterial {
+  const material = new MeshLambertNodeMaterial();
+
+  material.colorNode = rockColor(plinth, UNDERSIDE_GRAIN_OCTAVES);
+
+  return material;
+}
+
 export class IslandBase {
   readonly mesh: Mesh;
+  readonly #underside: Mesh;
 
   constructor(mirror: WorldMirror, textures: TerrainTextures) {
-    const material = createBaseMaterial(textures, mirror.grid, islandPlinthHeight(mirror));
+    const geometry = buildIslandBaseGeometry(mirror);
 
-    this.mesh = new Mesh(buildIslandBaseGeometry(mirror), material);
-    this.mesh.castShadow = true;
+    this.mesh = new Mesh(geometry.cliff, createCliffMaterial(textures, mirror.grid, geometry.plinth));
     this.mesh.receiveShadow = true;
     this.mesh.frustumCulled = false;
+
+    this.#underside = new Mesh(geometry.underside, createUndersideMaterial(geometry.plinth));
+    this.#underside.frustumCulled = false;
+    this.mesh.add(this.#underside);
   }
 
   dispose(): void {
     this.mesh.geometry.dispose();
+    this.#underside.geometry.dispose();
   }
 }

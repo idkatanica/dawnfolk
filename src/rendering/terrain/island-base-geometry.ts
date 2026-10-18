@@ -12,7 +12,8 @@ const COAST_SEARCH_STEPS = 24;
 const CLIFF_DROP = 60;
 const CLIFF_RINGS = 6;
 const UNDERSIDE_DEPTH = 1650;
-const UNDERSIDE_RINGS = 26;
+const UNDERSIDE_RINGS = 14;
+const UNDERSIDE_STRIDE = 4;
 const CLIFF_BULGE = 9;
 const RIM_OFFSET = 0.4;
 
@@ -83,12 +84,18 @@ function perimeter(mirror: WorldMirror): PerimeterPoint[] {
   return points;
 }
 
-function ringLayout(): RingVertex[] {
+function cliffRings(): RingVertex[] {
   const rings: RingVertex[] = [];
 
   for (let ring = 0; ring <= CLIFF_RINGS; ring += 1) {
     rings.push({ cliffAmount: 1 - ring / CLIFF_RINGS, depth: 0 });
   }
+
+  return rings;
+}
+
+function undersideRings(): RingVertex[] {
+  const rings: RingVertex[] = [];
 
   for (let ring = 1; ring <= UNDERSIDE_RINGS; ring += 1) {
     rings.push({ cliffAmount: 0, depth: ring / UNDERSIDE_RINGS });
@@ -146,12 +153,43 @@ function placeVertex({ grid, noise, plinth, point, ring }: VertexPlacement): rea
   return [Math.cos(angle) * radius, plinth - drop, Math.sin(angle) * radius];
 }
 
-export function buildIslandBaseGeometry(mirror: WorldMirror): BufferGeometry {
-  const { grid } = mirror;
-  const noise = createVolumeNoise(createRandom(mirror.seed + 17));
-  const rings = ringLayout();
-  const points = perimeter(mirror);
-  const plinth = lowestCoastHeight(mirror, points) - CLIFF_DROP;
+interface BaseOutline {
+  readonly grid: WorldGrid;
+  readonly noise: VolumeNoise;
+  readonly plinth: number;
+  readonly points: readonly PerimeterPoint[];
+}
+
+export interface IslandBaseGeometry {
+  readonly cliff: BufferGeometry;
+  readonly plinth: number;
+  readonly underside: BufferGeometry;
+}
+
+function finishGeometry(positions: readonly number[], indices: readonly number[]): BufferGeometry {
+  const geometry = new BufferGeometry();
+
+  geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+  geometry.setIndex(new Uint32BufferAttribute(indices, 1));
+
+  return geometry;
+}
+
+function pushStrips(indices: number[], pointCount: number, ringCount: number, firstVertex: number): void {
+  for (let point = 0; point < pointCount; point += 1) {
+    const next = (point + 1) % pointCount;
+
+    for (let ring = 0; ring < ringCount - 1; ring += 1) {
+      const current = firstVertex + point * ringCount + ring;
+      const following = firstVertex + next * ringCount + ring;
+
+      indices.push(current, following, current + 1, following, following + 1, current + 1);
+    }
+  }
+}
+
+function buildCliff({ grid, noise, plinth, points }: BaseOutline): BufferGeometry {
+  const rings = cliffRings();
 
   const positions: number[] = [];
   const topPoints: number[] = [];
@@ -168,35 +206,80 @@ export function buildIslandBaseGeometry(mirror: WorldMirror): BufferGeometry {
     }
   }
 
-  const tip = positions.length / 3;
-  const ringCount = rings.length;
+  pushStrips(indices, points.length, rings.length, 0);
 
-  positions.push(0, plinth - UNDERSIDE_DEPTH * 1.12, 0);
-  topPoints.push(0, 0);
-  cliffAmounts.push(0);
-  outwards.push(0, 0);
+  const geometry = finishGeometry(positions, indices);
 
-  for (let point = 0; point < points.length; point += 1) {
-    const next = (point + 1) % points.length;
-
-    for (let ring = 0; ring < ringCount - 1; ring += 1) {
-      const current = point * ringCount + ring;
-      const following = next * ringCount + ring;
-
-      indices.push(current, following, current + 1, following, following + 1, current + 1);
-    }
-
-    indices.push(point * ringCount + ringCount - 1, next * ringCount + ringCount - 1, tip);
-  }
-
-  const geometry = new BufferGeometry();
-
-  geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
   geometry.setAttribute("topPoint", new Float32BufferAttribute(topPoints, 2));
   geometry.setAttribute("cliffAmount", new Float32BufferAttribute(cliffAmounts, 1));
   geometry.setAttribute("outward", new Float32BufferAttribute(outwards, 2));
-  geometry.setIndex(new Uint32BufferAttribute(indices, 1));
   geometry.computeVertexNormals();
 
   return geometry;
+}
+
+function pushStitch(indices: number[], rimCount: number, coarseCount: number, ringCount: number): void {
+  for (let coarse = 0; coarse < coarseCount; coarse += 1) {
+    const below = rimCount + coarse * ringCount;
+    const nextBelow = rimCount + ((coarse + 1) % coarseCount) * ringCount;
+    const firstRim = coarse * UNDERSIDE_STRIDE;
+
+    for (let step = 0; step < UNDERSIDE_STRIDE; step += 1) {
+      indices.push(firstRim + step, (firstRim + step + 1) % rimCount, below);
+    }
+
+    indices.push((firstRim + UNDERSIDE_STRIDE) % rimCount, nextBelow, below);
+  }
+}
+
+function buildUnderside({ grid, noise, plinth, points }: BaseOutline): BufferGeometry {
+  const rimRing: RingVertex = { cliffAmount: 0, depth: 0 };
+  const rings = undersideRings();
+  const coarsePoints = points.filter((_, index) => index % UNDERSIDE_STRIDE === 0);
+
+  const positions: number[] = [];
+  const indices: number[] = [];
+
+  for (const point of points) {
+    positions.push(...placeVertex({ grid, noise, plinth, point, ring: rimRing }));
+  }
+
+  for (const point of coarsePoints) {
+    for (const ring of rings) {
+      positions.push(...placeVertex({ grid, noise, plinth, point, ring }));
+    }
+  }
+
+  const tip = positions.length / 3;
+
+  positions.push(0, plinth - UNDERSIDE_DEPTH * 1.12, 0);
+
+  pushStitch(indices, points.length, coarsePoints.length, rings.length);
+  pushStrips(indices, coarsePoints.length, rings.length, points.length);
+
+  for (let point = 0; point < coarsePoints.length; point += 1) {
+    const next = (point + 1) % coarsePoints.length;
+    const lowest = points.length + rings.length - 1;
+
+    indices.push(lowest + point * rings.length, lowest + next * rings.length, tip);
+  }
+
+  const geometry = finishGeometry(positions, indices);
+
+  geometry.computeVertexNormals();
+
+  return geometry;
+}
+
+export function buildIslandBaseGeometry(mirror: WorldMirror): IslandBaseGeometry {
+  const points = perimeter(mirror);
+
+  const outline: BaseOutline = {
+    grid: mirror.grid,
+    noise: createVolumeNoise(createRandom(mirror.seed + 17)),
+    plinth: lowestCoastHeight(mirror, points) - CLIFF_DROP,
+    points,
+  };
+
+  return { cliff: buildCliff(outline), plinth: outline.plinth, underside: buildUnderside(outline) };
 }
