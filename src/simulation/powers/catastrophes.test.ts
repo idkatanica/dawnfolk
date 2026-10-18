@@ -86,6 +86,18 @@ describe("water after a blast", () => {
     expect(depthAt(simulation, 0, METEOR_Z)).toBeGreaterThan(30);
   });
 
+  it("draws a river into a crater that tears through its bank", () => {
+    const simulation = createValley();
+
+    expect(simulation.world.isWaterAt(35, 0)).toBe(false);
+
+    simulation.usePower("explosion", 35, 0, { radius: 45 });
+    settle(simulation, 8);
+
+    expect(depthAt(simulation, 35, 0)).toBeGreaterThan(3);
+    expect(simulation.world.isWaterAt(0, -250)).toBe(true);
+  });
+
   it("dams a river that the rim of a nearby crater falls across", () => {
     const simulation = createValley();
 
