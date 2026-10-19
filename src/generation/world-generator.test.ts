@@ -492,24 +492,25 @@ describe("world generation", () => {
     }
   });
 
-  it("starts every river at a spring lake, a rocky spring or a cave facing down the river", () => {
+  it("starts every river at a pond or a cave facing down the river", () => {
     for (const generated of [world, squareWorld, generateTestWorld(11), generateTestWorld(19, "square")]) {
       expect(generated.water.springs.length).toBeGreaterThan(0);
       expect(headFaults(generated)).toEqual([]);
     }
   });
 
-  it("digs spring lakes as water at the level of the river head and keeps plants off every spring", () => {
+  it("digs ponds as still water at the level of the river head and keeps plants off every spring", () => {
     const grid = new WorldGrid(TEST_DIMENSIONS);
-    const pools = world.water.springs.filter((spring) => spring.kind !== "cave");
+    const ponds = world.water.springs.filter((spring) => spring.kind === "pond");
 
-    expect(pools.length).toBeGreaterThan(0);
+    expect(ponds.length).toBeGreaterThan(0);
 
-    for (const pool of pools) {
-      const cell = grid.cellAt(pool.x, pool.z);
+    for (const pond of ponds) {
+      const cell = grid.cellAt(pond.x, pond.z);
 
       expect(hasWater(world.terrain.waterSurface[cell], world.terrain.height[cell])).toBe(true);
-      expect(world.terrain.waterSurface[cell]).toBeCloseTo(pool.level, 1);
+      expect(world.terrain.waterSurface[cell]).toBeCloseTo(pond.level, 1);
+      expect(world.terrain.riverStrength[cell]).toBe(0);
     }
 
     const springGround = new Set(world.water.springs.flatMap((spring) => spring.cells));
@@ -787,7 +788,7 @@ describe("full-size island rim", () => {
     expect(closestDistinctRivers(fullSquare)).toBeGreaterThan(SMALLEST_RIVER_GAP);
   });
 
-  it("starts every full-size river at a spring lake, a rocky spring or a cave on both shapes", () => {
+  it("starts every full-size river at a pond or a cave on both shapes", () => {
     for (const generated of [fullSize, fullSquare]) {
       const kinds = new Set(generated.water.springs.map((spring) => spring.kind));
 

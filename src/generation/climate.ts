@@ -308,6 +308,14 @@ function slopeAt(
   return { north: (gradientZ / slope) * Math.min(1, slope * 3), slope };
 }
 
+function isStillWater(inputs: ClimateInputs, cell: number): boolean {
+  if (inputs.lakeIds[cell] >= 0) {
+    return true;
+  }
+
+  return inputs.riverStrength[cell] === 0 && hasWater(inputs.waterSurface[cell], inputs.heights[cell]);
+}
+
 function isNearLakeShore(inputs: ClimateInputs, column: number, row: number, height: number): boolean {
   const { grid } = inputs;
 
@@ -322,7 +330,7 @@ function isNearLakeShore(inputs: ClimateInputs, column: number, row: number, hei
 
       const neighbor = grid.index(neighborColumn, neighborRow);
 
-      if (inputs.lakeIds[neighbor] >= 0 && height < inputs.waterSurface[neighbor] + 2.6) {
+      if (isStillWater(inputs, neighbor) && height < inputs.waterSurface[neighbor] + 2.6) {
         return true;
       }
     }
