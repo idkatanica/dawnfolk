@@ -6,7 +6,7 @@ import type { PersonTick } from "../society-context.ts";
 import { workSeconds } from "../tools.ts";
 import { learn, markScarce } from "../tribe.ts";
 import { DeliverJob } from "./deliver-job.ts";
-import { Errand, headToWork, type Job, plantTarget } from "./job.ts";
+import { canWorkAt, Errand, headToWork, type Job, plantTarget } from "./job.ts";
 
 const CHOPPING_SECONDS = 7;
 const FELLING_YIELD = 2;
@@ -15,16 +15,23 @@ const SEARCH_RADIUS = 320;
 
 export function findTree(tick: PersonTick): ChopJob | null {
   const { person, tribe } = tick;
-  const { vegetation } = tick.context.world;
-
+  const { navigation, world } = tick.context;
+  const { vegetation } = world;
   const { day } = tick.context.environment;
 
-  const tree = nearestPlant(tick.context.world, {
+  const isReachable = (plant: number): boolean => {
+    const target = plantTarget(vegetation, plant, AXE_REACH);
+
+    return canWorkAt(world, target, person.mover) && navigation.isWithinWalk(person.mover, target);
+  };
+
+  const tree = nearestPlant(world, {
     accepts: (plant) =>
       vegetation.isAlive(plant) &&
       isTreeSpecies(vegetation.species[plant]) &&
       !tribe.claimedPlants.has(plant) &&
-      !isProtectedPlant(tribe, plant, vegetation.species[plant], day),
+      !isProtectedPlant(tribe, plant, vegetation.species[plant], day) &&
+      isReachable(plant),
     radius: SEARCH_RADIUS,
     x: (tribe.campX + person.mover.x) / 2,
     z: (tribe.campZ + person.mover.z) / 2,
@@ -64,7 +71,15 @@ class ChopJob implements Job {
       return null;
     }
 
-    if (this.#errand.update(tick) !== "finished") {
+    const progress = this.#errand.update(tick);
+
+    if (progress === "abandoned") {
+      tick.tribe.claimedPlants.delete(tree);
+
+      return null;
+    }
+
+    if (progress !== "finished") {
       return this;
     }
 

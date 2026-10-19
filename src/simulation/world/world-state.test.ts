@@ -4,8 +4,16 @@ import { PlantSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
 import type { Spring } from "../../world/water.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
-import { centerCell, createTestWorld, floodCells, monumentAround, plantInCell } from "../testing/test-world.ts";
-import { MONUMENT_GROUND, NO_BUILDING, SPRING_GROUND } from "./world-state.ts";
+import {
+  centerCell,
+  createTestWorld,
+  floodCells,
+  floodStrip,
+  fordAcross,
+  monumentAround,
+  plantInCell,
+} from "../testing/test-world.ts";
+import { CROSSING_GROUND, MONUMENT_GROUND, NO_BUILDING, SPRING_GROUND } from "./world-state.ts";
 
 function caveAt(grid: WorldGrid, cell: number): Spring {
   return {
@@ -148,7 +156,7 @@ describe("world state", () => {
     const second = world.grid.cellAt(200, 0);
     const tree = plantInCell(world, second, PlantSpecies.Oak);
 
-    world.replaceWater({ ...world.water, springs: [caveAt(world.grid, first)] });
+    world.replaceWater({ ...world.water, springs: [caveAt(world.grid, first)] }, []);
 
     expect(world.occupancy[first]).toBe(SPRING_GROUND);
     expect(world.isObstructed(first)).toBe(true);
@@ -156,7 +164,7 @@ describe("world state", () => {
     expect(world.canGrowWild(first, PlantSpecies.Oak)).toBe(false);
     expect(world.vegetation.isAlive(tree)).toBe(true);
 
-    world.replaceWater({ ...world.water, springs: [caveAt(world.grid, second)] });
+    world.replaceWater({ ...world.water, springs: [caveAt(world.grid, second)] }, []);
 
     expect(world.occupancy[first]).toBe(NO_BUILDING);
     expect(world.canPlace(first, 1)).toBe(true);
@@ -175,5 +183,26 @@ describe("world state", () => {
 
     expect(world.vegetation.isAlive(menhir)).toBe(true);
     expect(world.vegetation.isAlive(boulder)).toBe(false);
+  });
+
+  it("keeps buildings and fields off the banks a crossing lands on but lets walkers over them", () => {
+    const ford = fordAcross(-24, 24, 0);
+    const world = createTestWorld({ crossings: [ford] });
+
+    floodStrip(world, 20, 1.5);
+
+    const bank = world.grid.cellAt(-24, 0);
+
+    expect(world.occupancy[bank]).toBe(CROSSING_GROUND);
+    expect(world.canPlace(bank, 1)).toBe(false);
+    expect(world.isWalkable(bank)).toBe(true);
+    expect(world.crossingAt(0, 0.5)).toBe(ford);
+    expect(world.crossingAt(0, 3)).toBeNull();
+
+    world.replaceWater(world.water, []);
+
+    expect(world.occupancy[bank]).toBe(NO_BUILDING);
+    expect(world.crossingAt(0, 0.5)).toBeNull();
+    expect(world.waterVersion).toBe(1);
   });
 });

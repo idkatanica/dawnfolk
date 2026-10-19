@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createTestWorld, floodCells } from "../testing/test-world.ts";
+import { BROOK_STRENGTH } from "../../world/brooks.ts";
+import { createTestWorld, floodCells, floodStrip, fordAcross, riverStrip } from "../testing/test-world.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { NavigationGrid, type Waypoint } from "./navigation.ts";
 
@@ -78,7 +79,7 @@ describe("navigation grid", () => {
     expect(navigation.findPath({ x: -150, z: -100 }, { x: 150, z: -100 })).toBeNull();
   });
 
-  it("lands a destination in deep water on the nearest dry ground and leaves shallows to waders", () => {
+  it("lands a destination in deep or shallow water on the nearest dry ground", () => {
     const world = createTestWorld(RIVER_WORLD);
 
     floodCells(world, world.grid.cellsInRadius(0, 0, 30), 3);
@@ -86,11 +87,14 @@ describe("navigation grid", () => {
 
     const navigation = new NavigationGrid(world);
 
-    const landing = navigation.landingSpot({ x: 0, z: 0 }, 1.1);
+    const deep = navigation.landingSpot({ x: 0, z: 0 });
+    const shallow = navigation.landingSpot({ x: 200, z: 0 });
 
-    expect(world.isWalkableAt(landing.x, landing.z)).toBe(true);
-    expect(Math.hypot(landing.x, landing.z)).toBeLessThan(40);
-    expect(navigation.landingSpot({ x: 200, z: 0 }, 1.1)).toEqual({ x: 200, z: 0 });
+    expect(world.isWalkableAt(deep.x, deep.z)).toBe(true);
+    expect(Math.hypot(deep.x, deep.z)).toBeLessThan(40);
+    expect(world.isWalkableAt(shallow.x, shallow.z)).toBe(true);
+    expect(Math.hypot(shallow.x - 200, shallow.z)).toBeLessThan(30);
+    expect(navigation.landingSpot({ x: -200, z: 0 })).toEqual({ x: -200, z: 0 });
   });
 
   it("leads out of water one cell at a time toward the nearest bank", () => {
@@ -123,5 +127,128 @@ describe("navigation grid", () => {
 
     expect(navigation.rebuildIfChanged()).toBe(true);
     expect(navigation.rebuildIfChanged()).toBe(false);
+  });
+});
+
+describe("crossings", () => {
+  function riverWithFord(): WorldState {
+    const world = createTestWorld({ ...RIVER_WORLD, crossings: [fordAcross(-24, 24, 60)] });
+
+    floodStrip(world, 20, 1.5);
+
+    return world;
+  }
+
+  function wadesOutsideTheFord(world: WorldState, from: Waypoint, path: readonly Waypoint[]): boolean {
+    let current = from;
+
+    for (const waypoint of path) {
+      for (let sample = 1; sample <= 200; sample += 1) {
+        const amount = sample / 200;
+
+        const x = current.x + (waypoint.x - current.x) * amount;
+        const z = current.z + (waypoint.z - current.z) * amount;
+
+        if (world.isWaterAt(x, z) && world.crossingAt(x, z) === null) {
+          return true;
+        }
+      }
+
+      current = waypoint;
+    }
+
+    return false;
+  }
+
+  it("routes between opposite banks over the ford and nowhere else", () => {
+    const world = riverWithFord();
+    const from = { x: -150, z: -100 };
+
+    const path = expectPath(new NavigationGrid(world).findPath(from, { x: 150, z: -100 }));
+
+    expect(path).toContainEqual({ x: -24, z: 60 });
+    expect(path).toContainEqual({ x: 24, z: 60 });
+    expect(wadesOutsideTheFord(world, from, path)).toBe(false);
+  });
+
+  it("knows which places a ford joins and which a river keeps apart", () => {
+    const joined = new NavigationGrid(riverWithFord());
+
+    const parted = createTestWorld(RIVER_WORLD);
+
+    floodStrip(parted, 20, 1.5);
+
+    const navigation = new NavigationGrid(parted);
+
+    expect(joined.isReachable({ x: -150, z: -100 }, { x: 150, z: 200 })).toBe(true);
+    expect(navigation.isReachable({ x: -150, z: -100 }, { x: 150, z: 200 })).toBe(false);
+    expect(navigation.isReachable({ x: -150, z: -100 }, { x: -60, z: 200 })).toBe(true);
+  });
+
+  it("sends a mover to the nearest dry ground on its own bank when nothing crosses the river", () => {
+    const world = createTestWorld(RIVER_WORLD);
+
+    floodStrip(world, 20, 1.5);
+
+    const spot = new NavigationGrid(world).reachableSpot({ x: -150, z: -100 }, { x: 60, z: 40 });
+
+    expect(world.isWalkableAt(spot.x, spot.z)).toBe(true);
+    expect(spot.x).toBeLessThan(-20);
+    expect(spot.x).toBeGreaterThan(-35);
+    expect(Math.abs(spot.z - 40)).toBeLessThan(10);
+  });
+
+  it("leads from the middle of a ford to whichever bank the way goes on", () => {
+    const world = riverWithFord();
+    const navigation = new NavigationGrid(world);
+
+    const toEast = expectPath(navigation.findPath({ x: -2, z: 60 }, { x: 150, z: -150 }));
+    const toWest = expectPath(navigation.findPath({ x: 2, z: 60 }, { x: -150, z: -150 }));
+
+    expect(toEast[0]).toEqual({ x: 24, z: 60 });
+    expect(toWest[0]).toEqual({ x: -24, z: 60 });
+  });
+
+  it("hops straight over a brook and joins its banks", () => {
+    const world = createTestWorld(RIVER_WORLD);
+
+    riverStrip(world, -20, 0, BROOK_STRENGTH);
+
+    const navigation = new NavigationGrid(world);
+
+    expect(navigation.findPath({ x: -150, z: -100 }, { x: 150, z: 0 })).toEqual([{ x: 150, z: 0 }]);
+    expect(navigation.isReachable({ x: -150, z: -100 }, { x: 150, z: 200 })).toBe(true);
+  });
+
+  it("does not hop a river wider than a hop or flood water", () => {
+    const wide = createTestWorld(RIVER_WORLD);
+    const flooded = createTestWorld(RIVER_WORLD);
+
+    riverStrip(wide, -20, 0, BROOK_STRENGTH + 10);
+    riverStrip(flooded, -20, 0, 0);
+
+    expect(new NavigationGrid(wide).findPath({ x: -150, z: -100 }, { x: 150, z: 40 })).toBeNull();
+    expect(new NavigationGrid(flooded).findPath({ x: -150, z: -100 }, { x: 150, z: 40 })).toBeNull();
+  });
+
+  it("does not hop a brook that spreads wider than a hop", () => {
+    const world = createTestWorld(RIVER_WORLD);
+
+    riverStrip(world, -30, 10, BROOK_STRENGTH);
+
+    expect(new NavigationGrid(world).findPath({ x: -150, z: -100 }, { x: 150, z: 40 })).toBeNull();
+  });
+
+  it("measures the walk to the ford and back rather than the straight line", () => {
+    const navigation = new NavigationGrid(riverWithFord());
+
+    const from = { x: -60, z: -300 };
+    const across = { x: 60, z: -300 };
+    const along = { x: -60, z: -100 };
+
+    expect(navigation.walkLength(from, across)).toBeGreaterThan(700);
+    expect(navigation.isWithinWalk(from, across)).toBe(false);
+    expect(navigation.walkLength(from, along)).toBeLessThan(260);
+    expect(navigation.isWithinWalk(from, along)).toBe(true);
   });
 });

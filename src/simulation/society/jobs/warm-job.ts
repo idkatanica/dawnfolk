@@ -19,7 +19,9 @@ export class WarmJob implements Job {
   }
 
   update(tick: PersonTick): Job | null {
-    if (this.#errand.update(tick) === "finished" || tick.person.warmth > WARM_ENOUGH) {
+    const progress = this.#errand.update(tick);
+
+    if (progress === "finished" || progress === "abandoned" || tick.person.warmth > WARM_ENOUGH) {
       return null;
     }
 

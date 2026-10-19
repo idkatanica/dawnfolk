@@ -71,13 +71,11 @@ function isOnTheRoad(job: Job): boolean {
 export function assignJob(tick: PersonTick, job: Job): void {
   releaseClaim(tick.tribe, tick.person.job);
   tick.person.job = job;
-  tick.person.mover.canWade = job.kind === "flee";
 }
 
 export function dropJob(tribe: Tribe, person: Person): void {
   releaseClaim(tribe, person.job);
   person.job = null;
-  person.mover.canWade = false;
 }
 
 function releaseClaim(tribe: Tribe, job: Job | null): void {

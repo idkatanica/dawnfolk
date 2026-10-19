@@ -15,6 +15,7 @@ import { findStone } from "./jobs/quarry-job.ts";
 import { TendJob } from "./jobs/tend-job.ts";
 import { isElder } from "./person.ts";
 import type { PersonTick } from "./society-context.ts";
+import { totalFood } from "./stock.ts";
 import { type Field, knows } from "./tribe.ts";
 import { completedBuilding } from "./tribe-places.ts";
 import { hasWeaponsToHunt } from "./weapons.ts";
@@ -28,6 +29,7 @@ const FIELD_TASK_WEIGHTS: Readonly<Record<FieldTask | "none", number>> = { harve
 const MASONRY_STONE = 24;
 const FIRE_WOOD = 4;
 const LARGEST_BUILDING_PARTY = 4;
+const EXPEDITION_MEALS_PER_PERSON = 2;
 const COLD_SEASON_FIRE_WOOD = 12;
 const AUTUMN = 2;
 
@@ -101,7 +103,13 @@ const WORK_OPTIONS: readonly WorkOption[] = [
         return 6;
       }
 
-      if (!isExpeditionSeason(tick.context.environment.season) || expeditionBuilders(tick) >= LARGEST_BUILDING_PARTY) {
+      const isUnprovisioned = totalFood(tick.tribe.stock) < tick.tribe.memberIds.length * EXPEDITION_MEALS_PER_PERSON;
+
+      if (
+        !isExpeditionSeason(tick.context.environment.season) ||
+        expeditionBuilders(tick) >= LARGEST_BUILDING_PARTY ||
+        isUnprovisioned
+      ) {
         return 0;
       }
 

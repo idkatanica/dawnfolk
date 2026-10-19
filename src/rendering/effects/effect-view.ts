@@ -14,6 +14,7 @@ import {
   Explosion,
   LightningStrike,
   MeteorFall,
+  Splash,
   type SpriteSinks,
 } from "./transient-effects.ts";
 
@@ -127,6 +128,8 @@ export class EffectView {
         return new LightningStrike(this.#context, effect);
       case "meteor":
         return new MeteorFall(this.#context, effect);
+      case "splash":
+        return new Splash(effect);
       default:
         return effect satisfies never;
     }

@@ -1,7 +1,8 @@
 import { personName, tribeIdentity } from "../../content/names.ts";
 import type { TechnologyId } from "../../content/technologies.ts";
 import type { RandomSource } from "../../shared/random.ts";
-import { isStranded, stopMoving } from "../agents/movement.ts";
+import { isHopping, isLeaping } from "../agents/hops.ts";
+import { isStranded, moveAlong, stopMoving } from "../agents/movement.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import { nearestWalkableSpot } from "../agents/walkable-ground.ts";
 import type { Chronicle } from "../chronicle.ts";
@@ -19,6 +20,7 @@ import { createTribe, type Tribe } from "./tribe.ts";
 import { type SocietyServices, updateTribe } from "./tribe-life.ts";
 import { TroddenGround } from "./trodden-ground.ts";
 
+const HOP_PACE = 1.5;
 const CORPSE_SECONDS = 40;
 const ARRIVAL_SEARCH_RADIUS = 260;
 const ARRIVAL_SPREAD = 16;
@@ -373,6 +375,8 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
 
     const tick: PersonTick = { context, person, seconds, tribe };
 
+    person.mover.hopSpeed = walkSpeed(person) * HOP_PACE;
+
     const causeOfDeath = updateNeeds(tick, days);
 
     if (causeOfDeath !== null) {
@@ -381,11 +385,13 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
       return;
     }
 
-    updateMind(tick);
-
-    if (isStranded(person.mover, context.world)) {
+    if (isHopping(person.mover)) {
+      keepHopping(tick);
+    } else if (isStranded(person.mover, context.world)) {
+      dropJob(tribe, person);
       walk(tick, walkSpeed(person));
     } else {
+      updateMind(tick);
       this.#act(tick);
     }
 
@@ -423,4 +429,13 @@ function newcomerAge(isGrownUp: boolean, random: RandomSource): number {
   }
 
   return random.between(4, 11);
+}
+
+function keepHopping(tick: PersonTick): void {
+  const { context, person, seconds } = tick;
+  const { hop } = person.mover;
+
+  person.pose = isLeaping(person.mover) ? "leap" : "run";
+  person.speed = hop === null ? 0 : hop.speed;
+  moveAlong(person.mover, seconds, person.speed, context.world, context.navigation);
 }

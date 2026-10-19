@@ -12,6 +12,8 @@ interface WildTerrain extends FootingTerrain {
   readonly woodland: Float32Array;
 }
 
+export const WALKABLE_SLOPE = 1.15;
+
 const STAND_SALT = 19.19;
 
 export function slopeAt(heights: Float32Array, grid: WorldGrid, cell: number): number {

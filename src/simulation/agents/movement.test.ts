@@ -1,9 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { Ground } from "../../content/grounds.ts";
+import { BROOK_STRENGTH } from "../../world/brooks.ts";
+import type { Crossing, LogBridge } from "../../world/crossings.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
-import { createTestWorld, floodCells, monumentAround } from "../testing/test-world.ts";
+import {
+  createTestWorld,
+  floodCells,
+  floodStrip,
+  fordAcross,
+  monumentAround,
+  riverStrip,
+} from "../testing/test-world.ts";
 import type { WorldState } from "../world/world-state.ts";
-import { createMover, hasArrived, type Mover, moveAlong, setDestination } from "./movement.ts";
+import { isHopping } from "./hops.ts";
+import { createMover, hasArrived, isStranded, type Mover, moveAlong, setDestination } from "./movement.ts";
 import { NavigationGrid } from "./navigation.ts";
 
 const STEP_SECONDS = 0.1;
@@ -65,6 +75,30 @@ describe("movement", () => {
     expect(inSwamp.x).toBeLessThan(onMeadow.x);
   });
 
+  it("keeps to a waypoint until the next one is in sight", () => {
+    const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 64 });
+    const world = createTestWorld({ monuments: [monumentAround(grid, 15, 15, 4)] });
+    const navigation = new NavigationGrid(world);
+
+    const mover = createMover(-40, 25, 0);
+
+    let longestStuck = 0;
+
+    setDestination(mover, { x: 25, z: -30 }, navigation, { mayPlanRoute: false });
+    mover.path = [
+      { x: 25, z: 25 },
+      { x: 25, z: -30 },
+    ];
+
+    for (let elapsed = 0; elapsed < 60 && !hasArrived(mover); elapsed += STEP_SECONDS) {
+      moveAlong(mover, STEP_SECONDS, 3, world, navigation);
+      longestStuck = Math.max(longestStuck, mover.stuckSeconds);
+    }
+
+    expect(hasArrived(mover)).toBe(true);
+    expect(longestStuck).toBe(0);
+  });
+
   it("walks around monument ground instead of through it", () => {
     const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 64 });
     const world = createTestWorld({ monuments: [monumentAround(grid, 0, 0, 22)] });
@@ -103,31 +137,46 @@ describe("movement", () => {
     expect(world.isWaterAt(mover.x, mover.z)).toBe(false);
   });
 
-  it("wades through shallows when allowed", () => {
+  it("keeps out of shallow water too", () => {
     const world = createTestWorld();
 
-    const ford = world.grid.cellsInRadius(0, 0, 40);
-
-    floodCells(world, ford, 0.6);
+    floodCells(world, world.grid.cellsInRadius(0, 0, 40), 0.6);
 
     const mover = createMover(-120, 0, 0);
 
-    mover.canWade = true;
+    let wasInWater = false;
+
     setDestination(mover, { x: 0, z: 0 }, new NavigationGrid(world), { mayPlanRoute: false });
 
-    expect(walk(mover, world, 80)).toBe(true);
+    for (let elapsed = 0; elapsed < 80; elapsed += STEP_SECONDS) {
+      walk(mover, world, STEP_SECONDS);
+      wasInWater = wasInWater || world.isWaterAt(mover.x, mover.z);
+    }
+
+    expect(wasInWater).toBe(false);
+    expect(Math.hypot(mover.x, mover.z)).toBeLessThan(60);
   });
 
-  it("slips between pools that touch at a corner", () => {
+  it("walks around pools that touch at a corner instead of through the gap", () => {
     const world = createTestWorld();
+    const navigation = new NavigationGrid(world);
 
     floodCells(world, [world.grid.cellAt(5, 5), world.grid.cellAt(-5, -5)], 1.2);
+    navigation.rebuild();
 
     const mover = createMover(1.4, -0.1, 0);
 
-    setDestination(mover, { x: -9, z: 30 }, new NavigationGrid(world), { mayPlanRoute: false });
+    let wasInWater = false;
 
-    expect(walk(mover, world, 30)).toBe(true);
+    setDestination(mover, { x: -9, z: 30 }, navigation);
+
+    for (let elapsed = 0; elapsed < 30 && !hasArrived(mover); elapsed += STEP_SECONDS) {
+      moveAlong(mover, STEP_SECONDS, 3, world, navigation);
+      wasInWater = wasInWater || world.isWaterAt(mover.x, mover.z);
+    }
+
+    expect(hasArrived(mover)).toBe(true);
+    expect(wasInWater).toBe(false);
   });
 });
 
@@ -139,7 +188,6 @@ describe("unreachable destinations", () => {
 
     const mover = createMover(-60, 0, 0);
 
-    mover.canWade = true;
     setDestination(mover, { x: 0, z: 0 }, new NavigationGrid(world), { mayPlanRoute: false });
 
     expect(walk(mover, world, 60, 5)).toBe(true);
@@ -278,7 +326,6 @@ describe("routes", () => {
     ]) {
       const mover = createMover(-300, 10, 0);
 
-      mover.canWade = true;
       setDestination(mover, destination, navigation);
 
       expect(mover.path.every((waypoint) => world.isWalkableAt(waypoint.x, waypoint.z))).toBe(true);
@@ -286,14 +333,147 @@ describe("routes", () => {
     }
   });
 
-  it("may end in shallows that the mover can wade", () => {
+  it("end on dry ground beside shallows as well", () => {
     const world = createLake(0.6);
 
     const mover = createMover(-120, 0, 0);
 
-    mover.canWade = true;
     setDestination(mover, { x: 10, z: 5 }, new NavigationGrid(world));
 
-    expect(mover.path.at(-1)).toEqual({ x: 10, z: 5 });
+    expect(world.isWalkableAt(mover.goalX, mover.goalZ)).toBe(true);
+    expect(mover.path.every((waypoint) => world.isWalkableAt(waypoint.x, waypoint.z))).toBe(true);
+  });
+});
+
+describe("crossings", () => {
+  const LOG: LogBridge = {
+    endDeck: 101,
+    endX: 0,
+    endZ: -1,
+    id: 1,
+    kind: "log",
+    seed: 0.4,
+    startDeck: 101,
+    startX: 0,
+    startZ: 1,
+  };
+
+  interface Crossed {
+    readonly deckSeconds: number;
+    readonly hasArrived: boolean;
+    readonly wasInWater: boolean;
+  }
+
+  function crossRiver(crossing: Crossing, start: { x: number; z: number }, goal: { x: number; z: number }): Crossed {
+    const world = createTestWorld({ crossings: [crossing] });
+
+    floodStrip(world, 20, 1.5);
+
+    const navigation = new NavigationGrid(world);
+    const mover = createMover(start.x, start.z, 0);
+
+    let deckSeconds = 0;
+    let wasInWater = false;
+
+    setDestination(mover, goal, navigation);
+
+    for (let elapsed = 0; elapsed < 200 && !hasArrived(mover); elapsed += STEP_SECONDS) {
+      moveAlong(mover, STEP_SECONDS, 3, world, navigation);
+      wasInWater = wasInWater || isStranded(mover, world);
+      deckSeconds += world.isWaterAt(mover.x, mover.z) ? STEP_SECONDS : 0;
+    }
+
+    return { deckSeconds, hasArrived: hasArrived(mover), wasInWater };
+  }
+
+  it("walks over a ford at walking speed and never into the water beside it", () => {
+    const crossed = crossRiver(fordAcross(-24, 24, -40), { x: -90, z: 60 }, { x: 90, z: 60 });
+
+    expect(crossed.hasArrived).toBe(true);
+    expect(crossed.wasInWater).toBe(false);
+    expect(crossed.deckSeconds).toBeGreaterThan(0);
+    expect(crossed.deckSeconds).toBeLessThan((40 / 3) * 1.3);
+  });
+
+  it("walks along a fallen log from one bank to the other", () => {
+    const log: LogBridge = { ...LOG, endX: 25, endZ: 30, startX: -25, startZ: 30 };
+
+    const crossed = crossRiver(log, { x: -60, z: -80 }, { x: 70, z: -60 });
+
+    expect(crossed.hasArrived).toBe(true);
+    expect(crossed.wasInWater).toBe(false);
+    expect(crossed.deckSeconds).toBeLessThan((40 / 3) * 1.3);
+  });
+
+  it.each([
+    [0.13, 33],
+    [0.37, -38],
+    [0.71, 12],
+  ])("stays on a slanted log to its end before turning off it toward %f, %f", (slant, goalZ) => {
+    const world = createTestWorld();
+
+    floodStrip(world, 20, 1.5);
+
+    const log: LogBridge = { ...LOG, endX: 25, endZ: 30 + 50 * slant, startX: -25, startZ: 30 };
+    const navigation = new NavigationGrid(world);
+
+    world.replaceWater(world.water, [log]);
+    navigation.rebuild();
+
+    const mover = createMover(4, 30 + 29 * slant, 0);
+
+    let wasInWater = false;
+
+    setDestination(mover, { x: 60, z: goalZ }, navigation);
+
+    for (let elapsed = 0; elapsed < 60 && !hasArrived(mover); elapsed += STEP_SECONDS) {
+      moveAlong(mover, STEP_SECONDS, 3, world, navigation);
+      wasInWater = wasInWater || isStranded(mover, world);
+    }
+
+    expect(hasArrived(mover)).toBe(true);
+    expect(wasInWater).toBe(false);
+  });
+
+  it("hops over a brook at its hop speed without stopping or standing in the water", () => {
+    const world = createTestWorld();
+
+    riverStrip(world, -20, 0, BROOK_STRENGTH);
+
+    const navigation = new NavigationGrid(world);
+    const mover = createMover(-80, 30, 0);
+    const hopSpeed = 3.75;
+    const along: number[] = [];
+
+    let wetTicks = 0;
+    let crossingTicks = 0;
+    let hops = 0;
+
+    mover.hopSpeed = hopSpeed;
+    setDestination(mover, { x: 70, z: -20 }, navigation);
+
+    for (let elapsed = 0; elapsed < 120 && !hasArrived(mover); elapsed += STEP_SECONDS) {
+      const wasHopping = isHopping(mover);
+
+      moveAlong(mover, STEP_SECONDS, 2.5, world, navigation);
+      wetTicks += isStranded(mover, world) ? 1 : 0;
+      hops += !wasHopping && isHopping(mover) ? 1 : 0;
+
+      if (isHopping(mover) || wasHopping) {
+        crossingTicks += 1;
+        along.push(mover.x);
+      }
+    }
+
+    const hopLength = Math.max(...along) - Math.min(...along);
+
+    expect(hasArrived(mover)).toBe(true);
+    expect(hops).toBe(1);
+    expect(wetTicks).toBe(0);
+    expect(hopLength).toBeGreaterThan(20);
+    expect(along.every((x, index) => index === 0 || x > along[index - 1])).toBe(true);
+    expect(
+      Math.abs(crossingTicks - hopLength / (hopSpeed * STEP_SECONDS * Math.cos(Math.atan2(50, 150))))
+    ).toBeLessThan(3);
   });
 });

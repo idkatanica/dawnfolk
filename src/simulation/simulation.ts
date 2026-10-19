@@ -462,6 +462,7 @@ export class Simulation {
 
     this.navigation.rebuild();
     this.#waterUpdate = {
+      crossings: this.world.crossings,
       features: this.world.water,
       riverStrength: Uint8Array.from(this.world.terrain.riverStrength),
       waterSurface: Float32Array.from(this.world.terrain.waterSurface),
@@ -583,6 +584,18 @@ export class Simulation {
     });
     this.hazards.update(TICK_SECONDS);
     this.#recordBuildingIncidents();
+    this.#recordSplashes();
+  }
+
+  #recordSplashes(): void {
+    const movers = [...this.society.people, ...this.fauna.animals].map((walker) => walker.mover);
+
+    for (const mover of movers) {
+      if (mover.splash !== null) {
+        this.effects.add({ ...mover.splash, kind: "splash" });
+        mover.splash = null;
+      }
+    }
   }
 
   #faunaThreats(): FaunaThreats {

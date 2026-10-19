@@ -332,7 +332,11 @@ export function ripestFruitTree(tribe: Tribe, world: WorldState, claimed: Readon
 
   for (const plot of tribe.plots) {
     for (const spot of plot.spots) {
-      const isPickable = isFruitTreeSpecies(spot.species) && !isSpotEmpty(spot, world) && !claimed.has(spot.plant);
+      const isPickable =
+        isFruitTreeSpecies(spot.species) &&
+        !isSpotEmpty(spot, world) &&
+        !claimed.has(spot.plant) &&
+        !world.isWater(world.vegetation.cell[spot.plant]);
 
       if (isPickable && world.vegetation.fruit[spot.plant] > ripestFruit) {
         ripest = spot.plant;

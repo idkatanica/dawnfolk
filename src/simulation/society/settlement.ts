@@ -38,6 +38,7 @@ const YOUNG_ADULT_AGE = 32;
 const SETTLED_DISTANCE = 60;
 const SETTLED_SHARE = 0.7;
 const LONGEST_MIGRATION_DAYS = 1.5;
+const MIGRANT_PACE = 2;
 const BURNT_CAMP = 0.8;
 const PROSPECTING_SHARE = 0.5;
 
@@ -65,7 +66,9 @@ export function scoreSite(
 
   const cell = world.grid.cellAt(point.x, point.z);
 
-  if (!isCampable(world, cell, point)) {
+  const longestWalk = LONGEST_MIGRATION_DAYS * context.environment.daySeconds * MIGRANT_PACE;
+
+  if (!(isCampable(world, cell, point) && context.navigation.walkLength(search.origin, point) <= longestWalk)) {
     return UNSUITABLE;
   }
 

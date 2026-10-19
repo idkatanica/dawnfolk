@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { allRows, packGroundRows, packSurfaceRows } from "../simulation/frame-packing.ts";
 import { Simulation } from "../simulation/simulation.ts";
-import { centerCell, createVegetatedWorld, floodCells } from "../simulation/testing/test-world.ts";
+import {
+  centerCell,
+  createVegetatedWorld,
+  floodCells,
+  floodStrip,
+  fordAcross,
+} from "../simulation/testing/test-world.ts";
 import type { VegetationBuffers } from "../world/vegetation-store.ts";
 import { MirroredVegetation, WorldMirror } from "./world-mirror.ts";
 
@@ -80,6 +86,27 @@ describe("world mirror", () => {
     expect(mirror.terrain.waterSurface).toEqual(simulation.world.terrain.waterSurface);
     expect(mirror.terrain.riverStrength).toEqual(simulation.world.terrain.riverStrength);
     expect(mirror.water).toEqual(simulation.world.water);
+  });
+
+  it("carries the crossings and drops them when the water they spanned is gone", () => {
+    const ford = fordAcross(-24, 24, 0);
+    const simulation = new Simulation(
+      createVegetatedWorld({ crossings: [ford], dimensions: { cellSize: 10, cellsPerSide: 64 } })
+    );
+
+    floodStrip(simulation.world, 20, 1.5);
+
+    const mirror = new WorldMirror(simulation.initialWorld(), 0);
+
+    expect(mirror.crossings).toEqual([ford]);
+    expect(mirror.crossingAt(0, 0.4)).toEqual(ford);
+
+    strokeFor(simulation, mirror, { parameters: { radius: 40, strength: 100 }, powerId: "raise" }, 0.3);
+    advanceTogether(simulation, mirror, 1.5);
+
+    expect(mirror.waterVersion).toBe(1);
+    expect(mirror.crossings).toEqual([]);
+    expect(mirror.crossingAt(0, 0.4)).toBeNull();
   });
 
   it("follows painted ground and the burning surface", () => {

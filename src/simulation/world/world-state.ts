@@ -1,10 +1,12 @@
 import { groundDefinition } from "../../content/grounds.ts";
 import type { GeneratedWorld } from "../../generation/world-generator.ts";
 import { clamp } from "../../shared/math.ts";
+import { isBrookCell } from "../../world/brooks.ts";
 import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../world/change-tracking.ts";
 import { hasRoomFromCoast, isOnIsland } from "../../world/coast.ts";
+import { type Crossing, CrossingIndex, crossingCells, LOG_ROOT_BEHIND } from "../../world/crossings.ts";
 import type { Deposit } from "../../world/deposits.ts";
-import { canGrowWild, canStandOn, isOpenGround, slopeAt } from "../../world/footing.ts";
+import { canGrowWild, canStandOn, isOpenGround, slopeAt, WALKABLE_SLOPE } from "../../world/footing.ts";
 import type { IslandShapeKind } from "../../world/island-shape.ts";
 import { type Monument, type MonumentCondition, MonumentDamage } from "../../world/monuments.ts";
 import type { TerrainData } from "../../world/terrain-data.ts";
@@ -24,13 +26,14 @@ export const NO_BUILDING = -1;
 export const MONUMENT_GROUND = -2;
 export const SPRING_GROUND = -3;
 export const PLOT_GROUND = -4;
+export const CROSSING_GROUND = -5;
 export const SNOW_CAPACITY = 1.2;
 export const TRODDEN_GROUND = 0.35;
 
 const MAXIMUM_TERRAIN_HEIGHT = 3200;
+const CROSSING_TOLERANCE = 0.01;
 const TERRAIN_LAPSE_RATE = 6.5 / 1000;
 const LOWEST_EDIT_BELOW_ORIGINAL = 60;
-const WALKABLE_SLOPE = 1.15;
 const TRODDEN_LEVELS = 32;
 
 export interface SurfaceFields {
@@ -83,9 +86,11 @@ export class WorldState {
   readonly surfaceChanges: RowChangeTracker;
   readonly terrain: TerrainData;
   readonly vegetation: VegetationStore;
+  crossings: readonly Crossing[];
   heightVersion = 0;
   water: WaterFeatures;
   waterVersion = 0;
+  #crossingIndex: CrossingIndex;
   #hasSuddenHeightEdit = false;
 
   constructor(generated: GeneratedWorld) {
@@ -98,6 +103,8 @@ export class WorldState {
     this.monuments = generated.monuments;
     this.monumentConditions = generated.monuments.map(() => ({ damage: MonumentDamage.Standing, isDrowned: false }));
     this.deposits = generated.deposits;
+    this.crossings = generated.crossings;
+    this.#crossingIndex = new CrossingIndex(this.grid, this.crossings, CROSSING_TOLERANCE);
     this.fields = createSurfaceFields(this.grid.cellCount, generated.terrain.ground);
     this.cropCodes = new Uint8Array(this.grid.cellCount);
     this.occupancy = new Int32Array(this.grid.cellCount).fill(NO_BUILDING);
@@ -120,6 +127,7 @@ export class WorldState {
     }
 
     this.#reserveSprings(this.water.springs);
+    this.#markCrossingGround();
   }
 
   heightAt(x: number, z: number): number {
@@ -196,6 +204,10 @@ export class WorldState {
     return this.slope(cell) < WALKABLE_SLOPE;
   }
 
+  isBrook(cell: number): boolean {
+    return isBrookCell(this.terrain, cell);
+  }
+
   isObstructed(cell: number): boolean {
     if (cell < 0) {
       return false;
@@ -218,6 +230,10 @@ export class WorldState {
 
   isWalkableAt(x: number, z: number): boolean {
     return this.isWalkable(this.grid.cellAt(x, z));
+  }
+
+  crossingAt(x: number, z: number): Crossing | null {
+    return this.#crossingIndex.crossingAt(x, z);
   }
 
   isBurning(cell: number): boolean {
@@ -358,7 +374,7 @@ export class WorldState {
     this.initialCanopyFuel[cell] = fuel;
   }
 
-  replaceWater(water: WaterFeatures): void {
+  replaceWater(water: WaterFeatures, crossings: readonly Crossing[]): void {
     for (const spring of this.water.springs) {
       for (const cell of spring.cells) {
         if (this.occupancy[cell] === SPRING_GROUND) {
@@ -367,9 +383,18 @@ export class WorldState {
       }
     }
 
+    for (const [cell, occupant] of this.occupancy.entries()) {
+      if (occupant === CROSSING_GROUND) {
+        this.occupancy[cell] = NO_BUILDING;
+      }
+    }
+
     this.water = water;
+    this.crossings = crossings;
+    this.#crossingIndex = new CrossingIndex(this.grid, crossings, CROSSING_TOLERANCE);
     this.markWaterChanged();
     this.#reserveSprings(water.springs);
+    this.#markCrossingGround();
 
     for (const spring of water.springs) {
       for (const cell of spring.cells) {
@@ -387,6 +412,16 @@ export class WorldState {
       for (const cell of spring.cells) {
         if (this.occupancy[cell] === NO_BUILDING) {
           this.occupancy[cell] = SPRING_GROUND;
+        }
+      }
+    }
+  }
+
+  #markCrossingGround(): void {
+    for (const crossing of this.crossings) {
+      for (const cell of crossingCells(this.grid, crossing, LOG_ROOT_BEHIND)) {
+        if (this.occupancy[cell] === NO_BUILDING && !this.isWater(cell)) {
+          this.occupancy[cell] = CROSSING_GROUND;
         }
       }
     }

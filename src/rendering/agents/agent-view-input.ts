@@ -1,5 +1,6 @@
 import type { Frustum, PerspectiveCamera } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
+import { footingOn } from "../../world/crossings.ts";
 import type { AgentMarkers } from "./agent-markers.ts";
 
 export interface AgentViewInput {
@@ -20,6 +21,8 @@ export interface LevelDistances {
 }
 
 export const HIDDEN_LEVEL = -1;
+
+const ANKLE_DEPTH = 0.18;
 export const NO_SELECTION = -1;
 
 export function detailLevel(distance: number, limits: LevelDistances, detail: number): number {
@@ -43,5 +46,16 @@ export function farthestFigure(limits: LevelDistances, detail: number): number {
 }
 
 export function standingHeight(mirror: WorldMirror, x: number, z: number, wadingDepth: number): number {
-  return Math.max(mirror.heightAt(x, z), mirror.surfaceAt(x, z) - wadingDepth);
+  const ground = mirror.heightAt(x, z);
+  const crossing = mirror.crossingAt(x, z);
+
+  if (crossing !== null) {
+    return footingOn(crossing, x, z, ground, mirror.waterLevelAt(x, z));
+  }
+
+  if (mirror.isBrookAt(x, z)) {
+    return Math.max(ground, mirror.surfaceAt(x, z) - ANKLE_DEPTH);
+  }
+
+  return Math.max(ground, mirror.surfaceAt(x, z) - wadingDepth);
 }

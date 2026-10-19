@@ -30,6 +30,7 @@ import {
 import { createRenderOutput, type RenderOutput } from "./render-output.ts";
 import type { RenderQuality } from "./render-quality.ts";
 import { BuildingView } from "./structures/building-view.ts";
+import { CrossingView } from "./structures/crossing-view.ts";
 import { IslandBase } from "./terrain/island-base.ts";
 import { islandPlinthHeight } from "./terrain/island-base-geometry.ts";
 import { TerrainTextures } from "./terrain/terrain-textures.ts";
@@ -85,6 +86,7 @@ export class WorldRenderer {
   readonly #buildings = new BuildingView();
   readonly #changes: WorldChangeReader;
   readonly #crops: CropField;
+  readonly #crossings: CrossingView;
   readonly #effects: EffectView;
   readonly #fire: FireView;
   readonly #fireGlow: FireGlow;
@@ -126,6 +128,7 @@ export class WorldRenderer {
     this.#springs.rebuild(mirror);
     this.#vegetation = new VegetationView(mirror, this.#textures, this.#fireGlow);
     this.#crops = new CropField(mirror, this.#vegetation.weather);
+    this.#crossings = new CrossingView(mirror, this.#textures);
     this.#understory = new UnderstoryField(mirror);
 
     this.#grass = new GrassField({
@@ -163,6 +166,7 @@ export class WorldRenderer {
       this.#springs.mesh,
       this.#vegetation.group,
       this.#crops.group,
+      this.#crossings.group,
       this.#grass.mesh,
       this.#people.group,
       this.#animals.group,
@@ -196,6 +200,10 @@ export class WorldRenderer {
 
     if (changes.groundRuns.length > 0) {
       this.#crops.groundChanged(changes.groundRuns);
+    }
+
+    if (changes.heightRegion !== null || changes.hasWaterChanged) {
+      this.#crossings.rebuild();
     }
 
     if (changes.vegetationIndices.length > 0) {
@@ -241,6 +249,7 @@ export class WorldRenderer {
     this.#water.update(view.camera, this.#quality.terrainDetail, this.#terrain.patchLevels);
     this.#vegetation.update(view.camera, this.#atmosphere.sun, this.#quality.vegetationDetail, frame.calendar.season);
     this.#crops.update(view.camera, this.#quality.vegetationDetail);
+    this.#crossings.update(view.camera, this.#quality.vegetationDetail);
     this.#grass.update(view.camera, view.viewDistance);
     this.#updateAgents(view);
     this.#markSelection();
@@ -259,6 +268,7 @@ export class WorldRenderer {
     this.#animals.dispose();
     this.#markers.dispose();
     this.#buildings.dispose();
+    this.#crossings.dispose();
     this.#vegetation.dispose();
     this.#crops.dispose();
     this.#grass.dispose();

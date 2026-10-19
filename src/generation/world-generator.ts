@@ -2,6 +2,7 @@ import { Ground } from "../content/grounds.ts";
 import { lerp, smoothstep } from "../shared/math.ts";
 import { createRandom } from "../shared/random.ts";
 import { isOnIsland } from "../world/coast.ts";
+import type { Crossing } from "../world/crossings.ts";
 import type { Deposit } from "../world/deposits.ts";
 import { createIslandShape, type IslandShapeKind, measureCoastDistances } from "../world/island-shape.ts";
 import type { Monument } from "../world/monuments.ts";
@@ -10,6 +11,7 @@ import { VegetationStore } from "../world/vegetation-store.ts";
 import type { Spring, WaterFeatures } from "../world/water.ts";
 import { DEFAULT_GRID_DIMENSIONS, type GridDimensions, WorldGrid } from "../world/world-grid.ts";
 import { buildClimate } from "./climate.ts";
+import { planCrossings } from "./crossings.ts";
 import { exposeDeposits, planDeposits } from "./deposits.ts";
 import {
   type ErosionPlan,
@@ -47,6 +49,7 @@ export const DEFAULT_GENERATION_OPTIONS: GenerationOptions = {
 };
 
 export interface GeneratedWorld {
+  crossings: readonly Crossing[];
   deposits: readonly Deposit[];
   dimensions: GridDimensions;
   monuments: readonly Monument[];
@@ -227,6 +230,13 @@ export function generateWorld(
   openWoodland(terrain, grid, seed);
 
   const ruins = planMonuments(grid, terrain, seed);
+  const crossings = planCrossings({
+    grid,
+    isBlocked: (cell) => ruins.ground[cell] === 1,
+    lakeIds: hydrology.lakeIds,
+    terrain,
+    water: hydrology.features,
+  });
   const vegetation = new VegetationStore(grid, Math.round(grid.cellCount * VEGETATION_CAPACITY_PER_CELL));
 
   const reserved = reservedGround(ruins.ground, hydrology.features.springs);
@@ -243,6 +253,7 @@ export function generateWorld(
   vegetation.discardChanges();
 
   return {
+    crossings,
     deposits,
     dimensions: options.dimensions,
     monuments: ruins.monuments,

@@ -5,7 +5,7 @@ import { nearestPlant } from "../resources.ts";
 import type { PersonTick } from "../society-context.ts";
 import { learn, markScarce } from "../tribe.ts";
 import { DeliverJob } from "./deliver-job.ts";
-import { Errand, headToWork, type Job, plantTarget } from "./job.ts";
+import { canWorkAt, Errand, headToWork, type Job, plantTarget } from "./job.ts";
 
 const GATHERING_SECONDS = 4;
 const GATHERING_REACH = 0.35;
@@ -47,8 +47,24 @@ function gatheringArea(tick: PersonTick): SearchArea {
   return { radius: ADULT_SEARCH_RADIUS, x: person.mover.x, z: person.mover.z };
 }
 
+function nearestReachableBush(tick: PersonTick, area: SearchArea): number | null {
+  const { navigation, world } = tick.context;
+  const { mover } = tick.person;
+
+  const isRipe = isRipeBush(tick);
+
+  return nearestPlant(world, {
+    ...area,
+    accepts: (plant) => {
+      const target = plantTarget(world.vegetation, plant, GATHERING_REACH);
+
+      return isRipe(plant) && canWorkAt(world, target, mover) && navigation.isWithinWalk(mover, target);
+    },
+  });
+}
+
 export function findBerries(tick: PersonTick): GatherJob | null {
-  const bush = nearestPlant(tick.context.world, { ...gatheringArea(tick), accepts: isRipeBush(tick) });
+  const bush = nearestReachableBush(tick, gatheringArea(tick));
 
   if (bush === null) {
     markScarce(tick.tribe, "berries", tick.context.environment.day);
@@ -74,7 +90,15 @@ class GatherJob implements Job {
   }
 
   update(tick: PersonTick): Job | null {
-    if (this.#errand.update(tick) !== "finished") {
+    const progress = this.#errand.update(tick);
+
+    if (progress === "abandoned") {
+      tick.tribe.claimedPlants.delete(this.claimedPlant);
+
+      return null;
+    }
+
+    if (progress !== "finished") {
       return this;
     }
 
@@ -108,12 +132,7 @@ function nextStep(tick: PersonTick): Job {
 
   const { mover } = tick.person;
 
-  const nextBush = nearestPlant(tick.context.world, {
-    accepts: isRipeBush(tick),
-    radius: NEXT_BUSH_RADIUS,
-    x: mover.x,
-    z: mover.z,
-  });
+  const nextBush = nearestReachableBush(tick, { radius: NEXT_BUSH_RADIUS, x: mover.x, z: mover.z });
 
   if (nextBush === null) {
     return new DeliverJob(tick);
@@ -126,6 +145,13 @@ export function findFruit(tick: PersonTick): PickJob | null {
   const tree = ripestFruitTree(tick.tribe, tick.context.world, tick.tribe.claimedPlants);
 
   if (tree === null) {
+    return null;
+  }
+
+  const { navigation, world } = tick.context;
+  const target = plantTarget(world.vegetation, tree, GATHERING_REACH);
+
+  if (!(canWorkAt(world, target, tick.person.mover) && navigation.isWithinWalk(tick.person.mover, target))) {
     return null;
   }
 
@@ -147,7 +173,15 @@ class PickJob implements Job {
   }
 
   update(tick: PersonTick): Job | null {
-    if (this.#errand.update(tick) !== "finished") {
+    const progress = this.#errand.update(tick);
+
+    if (progress === "abandoned") {
+      tick.tribe.claimedPlants.delete(this.claimedPlant);
+
+      return null;
+    }
+
+    if (progress !== "finished") {
       return this;
     }
 

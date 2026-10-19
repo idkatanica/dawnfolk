@@ -3,7 +3,8 @@ import type { PersonPose } from "../../../world/agent-poses.ts";
 import type { VegetationStore } from "../../../world/vegetation-store.ts";
 import { faceTowards, moveAlong, setDestination, stopMoving } from "../../agents/movement.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
-import { nearestWalkableSpot } from "../../agents/walkable-ground.ts";
+import { dryStandSpot, nearestDrySpot } from "../../agents/walkable-ground.ts";
+import type { WorldState } from "../../world/world-state.ts";
 import { isCarryingAnything, type Person, walkSpeed } from "../person.ts";
 import type { PersonTick, SocietyContext } from "../society-context.ts";
 
@@ -11,6 +12,7 @@ const RUNNING_SPEED = 3.4;
 const DRY_DESTINATION_RADIUS = 40;
 const WORK_ARRIVAL_DISTANCE = 0.3;
 const SHORTEST_APPROACH = 0.01;
+const WORKPLACE_TOLERANCE = 3;
 
 export type JobKind =
   | "build"
@@ -107,21 +109,36 @@ function approachDirection(person: Person, target: WorkTarget): Waypoint {
   return { x: awayX / distance, z: awayZ / distance };
 }
 
-export function headToWork(person: Person, target: WorkTarget, context: SocietyContext): void {
-  const direction = approachDirection(person, target);
-  const standOff = target.radius + target.reach;
+export function canWorkAt(world: WorldState, target: WorkTarget, from: Waypoint): boolean {
+  return dryStandSpot(world, target, target.radius + target.reach, from) !== null;
+}
 
+export function headToWork(person: Person, target: WorkTarget, context: SocietyContext): void {
+  const standOff = target.radius + target.reach;
+  const standing = dryStandSpot(context.world, target, standOff, person.mover);
+
+  if (standing !== null) {
+    setDestination(person.mover, standing, context.navigation, { arrivalDistance: WORK_ARRIVAL_DISTANCE });
+
+    return;
+  }
+
+  const direction = approachDirection(person, target);
   const spot = { x: target.x + direction.x * standOff, z: target.z + direction.z * standOff };
 
-  const drySpot = nearestWalkableSpot(context.world, spot, DRY_DESTINATION_RADIUS);
-
-  setDestination(person.mover, drySpot, context.navigation, { arrivalDistance: WORK_ARRIVAL_DISTANCE });
+  setDestination(person.mover, nearestDrySpot(context.world, spot, DRY_DESTINATION_RADIUS), context.navigation, {
+    arrivalDistance: WORK_ARRIVAL_DISTANCE,
+  });
 }
 
 export function headTo(person: Person, destination: Waypoint, context: SocietyContext): void {
-  const dryDestination = nearestWalkableSpot(context.world, destination, DRY_DESTINATION_RADIUS);
+  const dryDestination = nearestDrySpot(context.world, destination, DRY_DESTINATION_RADIUS);
 
   setDestination(person.mover, dryDestination, context.navigation);
+}
+
+export function headToBank(person: Person, bank: Waypoint, context: SocietyContext): void {
+  setDestination(person.mover, bank, context.navigation, { arrivalDistance: WORK_ARRIVAL_DISTANCE });
 }
 
 export function walk(tick: PersonTick, speed: number): boolean {
@@ -145,9 +162,9 @@ export function standStill(person: Person, pose: PersonPose): void {
   stopMoving(person.mover);
 }
 
-type ErrandProgress = "finished" | "travelling" | "working";
+type ErrandProgress = "abandoned" | "finished" | "travelling" | "working";
 
-type ErrandPhase = "travel" | "work";
+type ErrandPhase = "abandoned" | "travel" | "work";
 
 export class Errand {
   readonly #focus: Waypoint | null;
@@ -163,8 +180,16 @@ export class Errand {
   }
 
   update(tick: PersonTick): ErrandProgress {
-    if (!this.#isAtWorkplace(tick)) {
+    if (this.#phase === "travel") {
+      this.#travel(tick);
+    }
+
+    if (this.#phase === "travel") {
       return "travelling";
+    }
+
+    if (this.#phase === "abandoned") {
+      return "abandoned";
     }
 
     standStill(tick.person, this.#workPose);
@@ -192,17 +217,15 @@ export class Errand {
     faceTowards(tick.person.mover, focus.x, focus.z);
   }
 
-  #isAtWorkplace(tick: PersonTick): boolean {
-    if (this.#phase === "work") {
-      return true;
-    }
-
+  #travel(tick: PersonTick): void {
     if (!walk(tick, walkSpeed(tick.person))) {
-      return false;
+      return;
     }
 
-    this.#phase = "work";
+    const { mover } = tick.person;
 
-    return true;
+    const isThere = Math.hypot(mover.goalX - mover.x, mover.goalZ - mover.z) <= WORKPLACE_TOLERANCE;
+
+    this.#phase = isThere ? "work" : "abandoned";
   }
 }

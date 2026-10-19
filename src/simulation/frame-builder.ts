@@ -87,6 +87,7 @@ export class FrameBuilder {
     this.#sentSurface = surface.data.slice();
 
     return {
+      crossings: world.crossings,
       dimensions: { cellSize: world.grid.cellSize, cellsPerSide: world.grid.cellsPerSide },
       frame: this.build(),
       ground: ground.data,

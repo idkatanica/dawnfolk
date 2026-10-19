@@ -17,6 +17,7 @@ export const PERSON_POSES = [
   "dead",
   "shoot",
   "mine",
+  "leap",
 ] as const;
 
 export type PersonPose = (typeof PERSON_POSES)[number];

@@ -1,3 +1,4 @@
+import { refreshCrossings } from "../../generation/crossings.ts";
 import { computeHydrology, RESHAPED_LAND_HYDROLOGY } from "../../generation/hydrology.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { hasWater, type Lake, NO_WATER } from "../../world/water.ts";
@@ -87,7 +88,19 @@ export class WaterRecomputation {
     terrain.riverStrength.set(hydrology.riverStrength);
     this.#filling = this.#startFilling(hydrology.lakeIds, hydrology.features.lakes, previousLevels);
     this.#settleWater();
-    this.#world.replaceWater(hydrology.features);
+
+    const crossings = refreshCrossings(
+      {
+        grid,
+        isBlocked: (cell) => this.#world.isObstructed(cell),
+        lakeIds: hydrology.lakeIds,
+        terrain,
+        water: hydrology.features,
+      },
+      this.#world.crossings
+    );
+
+    this.#world.replaceWater(hydrology.features, crossings);
 
     if (changedRegion !== null) {
       this.#world.finishHeightEdit(changedRegion);

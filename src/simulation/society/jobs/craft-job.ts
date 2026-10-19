@@ -98,7 +98,15 @@ export class CraftJob implements Job {
       return null;
     }
 
-    if (this.#errand.update(tick) !== "finished") {
+    const progress = this.#errand.update(tick);
+
+    if (progress === "abandoned") {
+      addResources(tick.tribe.stock, this.#order.inputs);
+
+      return null;
+    }
+
+    if (progress !== "finished") {
       return this;
     }
 

@@ -6,7 +6,7 @@ import type { PersonTick } from "../society-context.ts";
 import { workSeconds } from "../tools.ts";
 import { learn, markScarce } from "../tribe.ts";
 import { DeliverJob } from "./deliver-job.ts";
-import { Errand, headToWork, type Job, plantTarget, type WorkTarget } from "./job.ts";
+import { canWorkAt, Errand, headToWork, type Job, plantTarget, type WorkTarget } from "./job.ts";
 
 const QUARRYING_SECONDS = 9;
 const STONE_PER_TRIP = 5;
@@ -18,13 +18,20 @@ const CLIFF_FACE_RADIUS = 0.5;
 
 export function findStone(tick: PersonTick): Job | null {
   const { person, tribe } = tick;
-  const { world } = tick.context;
+  const { navigation, world } = tick.context;
 
   const boulder = nearestPlant(world, {
     accepts: (plant) => {
       const isBoulder = plantSpeciesDefinition(world.vegetation.species[plant]).form === "stone";
+      const target = plantTarget(world.vegetation, plant, PICK_REACH);
 
-      return isBoulder && world.vegetation.isAlive(plant) && !tribe.claimedPlants.has(plant);
+      return (
+        isBoulder &&
+        world.vegetation.isAlive(plant) &&
+        !tribe.claimedPlants.has(plant) &&
+        canWorkAt(world, target, person.mover) &&
+        navigation.isWithinWalk(person.mover, target)
+      );
     },
     radius: BOULDER_SEARCH_RADIUS,
     x: person.mover.x,
@@ -71,7 +78,15 @@ class BoulderJob implements Job {
   }
 
   update(tick: PersonTick): Job | null {
-    if (this.#errand.update(tick) !== "finished") {
+    const progress = this.#errand.update(tick);
+
+    if (progress === "abandoned") {
+      tick.tribe.claimedPlants.delete(this.claimedPlant);
+
+      return null;
+    }
+
+    if (progress !== "finished") {
       return this;
     }
 
@@ -106,7 +121,13 @@ class QuarryJob implements Job {
   }
 
   update(tick: PersonTick): Job | null {
-    if (this.#errand.update(tick) !== "finished") {
+    const progress = this.#errand.update(tick);
+
+    if (progress === "abandoned") {
+      return null;
+    }
+
+    if (progress !== "finished") {
       return this;
     }
 

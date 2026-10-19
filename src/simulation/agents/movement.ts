@@ -1,33 +1,37 @@
 import { groundDefinition } from "../../content/grounds.ts";
 import { wrapAngle } from "../../shared/math.ts";
 import type { WorldState } from "../world/world-state.ts";
+import { continueHop, type Hop, isInOpenWater, planHop, type Splash } from "./hops.ts";
 import type { NavigationGrid, Waypoint } from "./navigation.ts";
 
-const SHORT_TRIP = 90;
 const FINAL_ARRIVAL_DISTANCE = 1.2;
 const WAYPOINT_ARRIVAL_DISTANCE = 6;
+const CLOSE_ARRIVAL_DISTANCE = 0.4;
 const SWIMMING_SPEED = 0.45;
 const DEFLECTIONS: readonly number[] = [0, 0.6, -0.6, 1.2, -1.2, 1.9, -1.9];
 const PROBE_DISTANCE = 2.5;
+const WATER_SAMPLE_SPACING = 0.25;
 const CLIMBABLE_SLOPE = 1.2;
-const WADING_DEPTH = 1.1;
 const GIVE_UP_SECONDS = 2.5;
 const TURN_RATE = 8;
 const UPHILL_DRAG = 1.6;
 const DEFLECTION_FRUSTRATION = 0.3;
 const REPLAN_PROGRESS = 2;
 const MAXIMUM_FUTILE_REPLANS = 3;
+const HOP_DEFLECTION = 0.7;
 
 export interface Mover {
   arrivalDistance: number;
-  canWade: boolean;
   closestReplanDistance: number;
   futileReplans: number;
   goalX: number;
   goalZ: number;
   heading: number;
+  hop: Hop | null;
+  hopSpeed: number;
   path: Waypoint[];
   pathIndex: number;
+  splash: Splash | null;
   stuckSeconds: number;
   velocityX: number;
   velocityZ: number;
@@ -38,14 +42,16 @@ export interface Mover {
 export function createMover(x: number, z: number, heading: number): Mover {
   return {
     arrivalDistance: FINAL_ARRIVAL_DISTANCE,
-    canWade: false,
     closestReplanDistance: Number.POSITIVE_INFINITY,
     futileReplans: 0,
     goalX: x,
     goalZ: z,
     heading,
+    hop: null,
+    hopSpeed: 0,
     path: [],
     pathIndex: 0,
+    splash: null,
     stuckSeconds: 0,
     velocityX: 0,
     velocityZ: 0,
@@ -67,7 +73,7 @@ export function setDestination(
 ): void {
   const { arrivalDistance = FINAL_ARRIVAL_DISTANCE, mayPlanRoute = true } = options;
 
-  const landing = navigation.landingSpot(destination, mover.canWade ? WADING_DEPTH : 0);
+  const landing = navigation.reachableSpot(mover, navigation.landingSpot(destination));
 
   mover.arrivalDistance = arrivalDistance;
   mover.goalX = landing.x;
@@ -79,9 +85,7 @@ export function setDestination(
 }
 
 function planRoute(mover: Mover, destination: Waypoint, navigation: NavigationGrid, mayPlanRoute: boolean): Waypoint[] {
-  const distance = Math.hypot(destination.x - mover.x, destination.z - mover.z);
-
-  if (distance < SHORT_TRIP || !mayPlanRoute) {
+  if (!mayPlanRoute) {
     return [{ x: destination.x, z: destination.z }];
   }
 
@@ -108,17 +112,7 @@ export function faceTowards(mover: Mover, x: number, z: number): void {
 }
 
 export function isStranded(mover: Mover, world: WorldState): boolean {
-  const cell = world.grid.cellAt(mover.x, mover.z);
-
-  return cell >= 0 && isOutOfDepth(mover, cell, world);
-}
-
-function isOutOfDepth(mover: Mover, cell: number, world: WorldState): boolean {
-  if (!world.isWater(cell)) {
-    return false;
-  }
-
-  return !mover.canWade || world.waterDepth(cell) >= WADING_DEPTH;
+  return mover.hop === null && isInOpenWater(world, mover.x, mover.z);
 }
 
 export function moveAlong(
@@ -128,10 +122,16 @@ export function moveAlong(
   world: WorldState,
   navigation: NavigationGrid
 ): boolean {
+  if (mover.hop !== null) {
+    continueHop(mover, seconds);
+
+    return false;
+  }
+
   if (isStranded(mover, world)) {
     wadeAshore(
       mover,
-      { isEscapingWater: true, isLeavingWater: true, seconds, step: speed * SWIMMING_SPEED * seconds },
+      { isEscapingWater: true, isLeavingWater: true, seconds, speed, step: speed * SWIMMING_SPEED * seconds },
       world,
       navigation
     );
@@ -146,12 +146,9 @@ export function moveAlong(
   }
 
   const waypoint = mover.path[mover.pathIndex];
-  const isFinalWaypoint = mover.pathIndex === mover.path.length - 1;
 
   const distanceLeft = Math.hypot(waypoint.x - mover.x, waypoint.z - mover.z);
-  const arrivalDistance = isFinalWaypoint ? mover.arrivalDistance : WAYPOINT_ARRIVAL_DISTANCE;
-
-  if (distanceLeft < arrivalDistance) {
+  if (distanceLeft < arrivalDistanceAt(mover, distanceLeft, world, navigation)) {
     mover.pathIndex += 1;
     stopMoving(mover);
 
@@ -162,7 +159,13 @@ export function moveAlong(
   const desiredHeading = Math.atan2(waypoint.x - mover.x, waypoint.z - mover.z);
 
   if (
-    !tryStep(mover, desiredHeading, { isEscapingWater: false, isLeavingWater: false, seconds, step }, world, navigation)
+    !tryStep(
+      mover,
+      desiredHeading,
+      { isEscapingWater: false, isLeavingWater: false, seconds, speed, step },
+      world,
+      navigation
+    )
   ) {
     stopMoving(mover);
     mover.stuckSeconds += seconds;
@@ -175,10 +178,29 @@ export function moveAlong(
   return replan(mover, navigation);
 }
 
+function arrivalDistanceAt(mover: Mover, distanceLeft: number, world: WorldState, navigation: NavigationGrid): number {
+  const waypoint = mover.path[mover.pathIndex];
+  const next = mover.path[mover.pathIndex + 1];
+
+  if (next === undefined) {
+    return mover.arrivalDistance;
+  }
+
+  if (world.crossingAt(waypoint.x, waypoint.z) !== null || world.crossingAt(mover.x, mover.z) !== null) {
+    return CLOSE_ARRIVAL_DISTANCE;
+  }
+
+  if (distanceLeft >= WAYPOINT_ARRIVAL_DISTANCE || navigation.isClear(mover, next)) {
+    return WAYPOINT_ARRIVAL_DISTANCE;
+  }
+
+  return CLOSE_ARRIVAL_DISTANCE;
+}
+
 function terrainSpeedFactor(mover: Mover, world: WorldState): number {
   const cell = world.grid.cellAt(mover.x, mover.z);
 
-  if (cell < 0) {
+  if (cell < 0 || world.crossingAt(mover.x, mover.z) !== null) {
     return 1;
   }
 
@@ -193,6 +215,7 @@ interface StepAttempt {
   isEscapingWater: boolean;
   isLeavingWater: boolean;
   seconds: number;
+  speed: number;
   step: number;
 }
 
@@ -272,6 +295,14 @@ function stepTowards(mover: Mover, desiredHeading: number, attempt: StepAttempt,
     const probeZ = mover.z + directionZ * probe;
 
     if (!mayStepTo(mover, probeX, probeZ, attempt, world)) {
+      if (
+        Math.abs(deflection) <= HOP_DEFLECTION &&
+        !attempt.isEscapingWater &&
+        startHop(mover, heading, attempt, world)
+      ) {
+        return true;
+      }
+
       continue;
     }
 
@@ -289,6 +320,19 @@ function stepTowards(mover: Mover, desiredHeading: number, attempt: StepAttempt,
   return false;
 }
 
+function startHop(mover: Mover, heading: number, attempt: StepAttempt, world: WorldState): boolean {
+  const hop = planHop(mover, heading, PROBE_DISTANCE, Math.max(attempt.speed, mover.hopSpeed), world);
+
+  if (hop === null) {
+    return false;
+  }
+
+  mover.hop = hop;
+  continueHop(mover, attempt.seconds);
+
+  return true;
+}
+
 function uphillSlowdown(rise: number, run: number): number {
   if (rise <= 0) {
     return 1;
@@ -304,7 +348,7 @@ function mayStepTo(mover: Mover, x: number, z: number, attempt: StepAttempt, wor
 
   const target = world.grid.cellAt(x, z);
 
-  return world.isOnIsland(target) && world.slope(target) <= CLIMBABLE_SLOPE && !isOutOfDepth(mover, target, world);
+  return world.isOnIsland(target) && world.slope(target) <= CLIMBABLE_SLOPE && !isInOpenWater(world, x, z);
 }
 
 function canEnter(mover: Mover, x: number, z: number, isEscapingWater: boolean, world: WorldState): boolean {
@@ -314,17 +358,11 @@ function canEnter(mover: Mover, x: number, z: number, isEscapingWater: boolean, 
     return false;
   }
 
-  if (world.isObstructedBetween(mover.x, mover.z, x, z)) {
+  if (world.isObstructedBetween(mover.x, mover.z, x, z) || wouldWadeOnTheWay(mover, x, z, world)) {
     return false;
   }
 
-  if (!world.isWater(target)) {
-    return true;
-  }
-
-  const depth = world.waterDepth(target);
-
-  if (mover.canWade && depth < WADING_DEPTH) {
+  if (!world.isWater(target) || world.crossingAt(x, z) !== null) {
     return true;
   }
 
@@ -334,15 +372,34 @@ function canEnter(mover: Mover, x: number, z: number, isEscapingWater: boolean, 
     return isEscapingWater;
   }
 
-  return depth < waterDepthIn(here, world);
+  return world.waterDepth(target) < waterDepthUnder(mover, world);
 }
 
-function waterDepthIn(cell: number, world: WorldState): number {
-  if (cell < 0 || !world.isWater(cell)) {
+function wouldWadeOnTheWay(mover: Mover, x: number, z: number, world: WorldState): boolean {
+  if (isInOpenWater(world, mover.x, mover.z)) {
+    return false;
+  }
+
+  const samples = Math.ceil(Math.hypot(x - mover.x, z - mover.z) / WATER_SAMPLE_SPACING);
+
+  for (let sample = 1; sample < samples; sample += 1) {
+    const sampleX = mover.x + ((x - mover.x) * sample) / samples;
+    const sampleZ = mover.z + ((z - mover.z) * sample) / samples;
+
+    if (isInOpenWater(world, sampleX, sampleZ)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function waterDepthUnder(mover: Mover, world: WorldState): number {
+  if (!isInOpenWater(world, mover.x, mover.z)) {
     return 0;
   }
 
-  return world.waterDepth(cell);
+  return world.waterDepth(world.grid.cellAt(mover.x, mover.z));
 }
 
 function forgetReplans(mover: Mover): void {

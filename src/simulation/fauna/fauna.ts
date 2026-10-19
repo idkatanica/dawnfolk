@@ -3,6 +3,7 @@ import type { WorldRules } from "../../content/world-rules.ts";
 import { clamp, distanceSquared, FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import type { AnimalPose } from "../../world/agent-poses.ts";
+import { isHopping } from "../agents/hops.ts";
 import {
   createMover,
   hasArrived,
@@ -236,7 +237,7 @@ export class FaunaSystem {
       id: this.#identifiers.next(),
       isAlive: true,
       kind: herd.kind,
-      mover: createMover(start.x, start.z, random.next() * FULL_TURN),
+      mover: { ...createMover(start.x, start.z, random.next() * FULL_TURN), hopSpeed: hopSpeedOf(herd.kind) },
       offsetX: random.signed() * HERD_SPREAD * 0.5,
       offsetZ: random.signed() * HERD_SPREAD * 0.5,
       phase: random.next() * 10,
@@ -396,7 +397,9 @@ export class FaunaSystem {
 
     this.#lookForThreats(animal, tick);
 
-    if (isStranded(animal.mover, this.#world)) {
+    if (isHopping(animal.mover)) {
+      this.#keepHopping(animal, tick);
+    } else if (isStranded(animal.mover, this.#world)) {
       this.#swimAshore(animal, tick);
     } else if (animal.fear > CALM_FEAR) {
       this.#flee(animal, tick);
@@ -406,6 +409,14 @@ export class FaunaSystem {
 
     animal.phase += tick.seconds * animal.speed * phaseRate(animal.kind);
     this.#keepOnIsland(animal);
+  }
+
+  #keepHopping(animal: Animal, tick: FaunaTick): void {
+    const { hop } = animal.mover;
+
+    animal.pose = animal.kind === "mammoth" ? "walk" : "run";
+    animal.speed = hop === null ? 0 : hop.speed;
+    moveAlong(animal.mover, tick.seconds, animal.speed, this.#world, this.#navigation);
   }
 
   #sufferFire(animal: Animal, tick: FaunaTick): void {
@@ -607,4 +618,10 @@ function phaseRate(kind: AnimalKind): number {
   }
 
   return 1;
+}
+
+function hopSpeedOf(kind: AnimalKind): number {
+  const { runSpeed, walkSpeed } = ANIMALS[kind];
+
+  return kind === "mammoth" ? walkSpeed : runSpeed;
 }
