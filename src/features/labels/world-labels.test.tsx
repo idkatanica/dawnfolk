@@ -3,7 +3,7 @@ import { render } from "vitest-browser-react";
 import type { Landmark } from "../../game/landmarks.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
 import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
-import { createTribe, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { createRelation, createTribe, resetWorld, showWorld } from "../testing/world-fixtures.ts";
 import { WorldLabels } from "./world-labels.tsx";
 
 const PEAK: Landmark = { detail: "1460 m", id: "peak", kind: "peak", lift: 30, name: "Greycrown", x: 40, z: -20 };
@@ -52,6 +52,31 @@ describe("world labels", () => {
     expect(banner.element().closest("li")?.style.transform).toBe(
       "translate3d(240px, 320px, 0px) translate(-50%, -100%)"
     );
+  });
+
+  it("marks the banners of tribes at war", async () => {
+    const { placeLabel, renderFrame } = await startTestEngine();
+
+    placeLabel.mockReturnValue(ON_SCREEN);
+    showWorld({
+      rivalry: { raids: [], relations: [createRelation({ firstId: 1, secondId: 2, stance: "hostile" })] },
+      tribes: [
+        createTribe({ id: 1, name: "Bear Clan" }),
+        createTribe({ id: 2, name: "Wolf Clan" }),
+        createTribe({ id: 3, name: "Elk Clan" }),
+      ],
+    });
+
+    const screen = await render(<WorldLabels />);
+
+    renderFrame();
+
+    await expect
+      .element(screen.getByRole("button", { exact: false, name: "Bear Clan" }).getByLabelText("In a feud"))
+      .toBeVisible();
+    await expect
+      .element(screen.getByRole("button", { exact: false, name: "Elk Clan" }).getByLabelText("In a feud"))
+      .not.toBeInTheDocument();
   });
 
   it("hides the banners the engine cannot place", async () => {

@@ -2,11 +2,13 @@ import { ScrollArea } from "@base-ui/react/scroll-area";
 import { Tabs } from "@base-ui/react/tabs";
 import type { ReactNode } from "react";
 import { type JournalTab, useInterfaceStore } from "../interface/interface-store.ts";
+import { RelationList } from "../rivalry/relation-list.tsx";
 import { ChronicleList } from "./chronicle-list.tsx";
 import { TribeList } from "./tribe-list.tsx";
 
 const TABS: readonly { readonly label: string; readonly value: JournalTab }[] = [
   { label: "Tribes", value: "tribes" },
+  { label: "Relations", value: "relations" },
   { label: "Chronicle", value: "chronicle" },
 ];
 
@@ -67,6 +69,10 @@ export function JournalPanel() {
 
       <ScrollingPanel value="tribes">
         <TribeList />
+      </ScrollingPanel>
+
+      <ScrollingPanel value="relations">
+        <RelationList />
       </ScrollingPanel>
 
       <ScrollingPanel value="chronicle">

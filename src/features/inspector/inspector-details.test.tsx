@@ -1,12 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import {
   createAnimalInspection,
   createBuildingInspection,
   createCellInspection,
   createPersonInspection,
+  createRaid,
+  createRelation,
   createStock,
   createTribe,
+  resetWorld,
+  showWorld,
 } from "../testing/world-fixtures.ts";
 import { AnimalDetails, BuildingDetails, CellDetails, PersonDetails, TribeDetails } from "./inspector-details.tsx";
 
@@ -271,5 +275,41 @@ describe("tribe details", () => {
 
     await expect.element(screen.getByText("Gathering", { exact: true })).toBeVisible();
     await expect.element(screen.getByText("Fire making", { exact: true })).toBeVisible();
+  });
+});
+
+describe("tribe neighbours", () => {
+  afterEach(() => {
+    resetWorld();
+  });
+
+  it("lists the other tribes by how they stand with this one", async () => {
+    showWorld({
+      rivalry: {
+        raids: [createRaid({ attackerId: 2, defenderId: 1, phase: "march" })],
+        relations: [
+          createRelation({ firstId: 1, isKin: true, secondId: 3, stance: "friendly" }),
+          createRelation({ feudDays: 1, firstId: 1, secondId: 2, stance: "hostile" }),
+          createRelation({ firstId: 2, secondId: 3, stance: "wary" }),
+        ],
+      },
+      tribes: [
+        createTribe({ id: 1, name: "Bear Clan" }),
+        createTribe({ id: 2, name: "Wolf Clan" }),
+        createTribe({ id: 3, name: "Elk Clan" }),
+      ],
+    });
+
+    const screen = await render(<TribeDetails tribe={{ kind: "tribe", summary: createTribe({ id: 1 }) }} />);
+
+    const neighbours = screen.getByRole("region", { name: "Neighbours" });
+
+    await expect.element(neighbours.getByText("Raided by the Wolf Clan · On the march")).toBeVisible();
+    expect(
+      neighbours
+        .getByRole("listitem")
+        .elements()
+        .map((item) => item.textContent)
+    ).toEqual(["Wolf ClanFeud for 1 dHostile", "Elk ClanKinFriendly"]);
   });
 });

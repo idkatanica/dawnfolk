@@ -14,6 +14,7 @@ import type {
   PlantDescription,
   TribeInspection,
 } from "../../simulation/inspection.ts";
+import { TribeRelations } from "../rivalry/tribe-relations.tsx";
 import { BuildingList } from "../tribes/building-list.tsx";
 import { StockList } from "../tribes/stock-list.tsx";
 
@@ -265,6 +266,8 @@ export function TribeDetails({ tribe }: { readonly tribe: TribeInspection }) {
           <FactList facts={land} />
         </Section>
       ) : null}
+
+      <TribeRelations tribeId={summary.id} />
 
       <div className="flex flex-wrap gap-1.5">
         {summary.technologies.map((name) => (
