@@ -2,7 +2,7 @@ import { Color, type Group, Sphere, Vector3 } from "three/webgpu";
 import { TOOL_MATERIALS, type ToolMaterial, WEAPON_KINDS, type WeaponKind } from "../../content/weapons.ts";
 import { MaterialSlot } from "../../models/materials.ts";
 import { type PersonAppearance, personAppearance, type TribeLook } from "../../models/people/appearance.ts";
-import { applyHumanClip, type HumanClipContext } from "../../models/people/human-clips.ts";
+import { applyHumanClip, HUMAN_CLIPS, type HumanClipContext } from "../../models/people/human-clips.ts";
 import { HUMAN_DETAILS } from "../../models/people/human-detail.ts";
 import { activityParts, appearanceParts, buildHumanParts, humanPartIndex } from "../../models/people/human-model.ts";
 import { FIGURE_SCALE, humanBoneScales } from "../../models/people/human-proportions.ts";
@@ -61,6 +61,7 @@ const GEAR_COLOR_INDEX = PERSON_LAYOUT.colorSlots.indexOf(MaterialSlot.Metal);
 const WADING_DEPTH = 1.1;
 const DEFAULT_TRIBE: TribeLook = { accent: 0xc4_55_3a, fur: 0x6b_4a_33, id: -1 };
 const MARKER_LIFT = 1;
+const WAR_PAINT = humanPartIndex("warPaint");
 
 interface PersonVisual {
   readonly appearance: PersonAppearance;
@@ -225,6 +226,8 @@ export class PeopleView {
       this.#batches.add(level, part, row);
     }
 
+    this.#drawWarPaint(people, offset, level, row);
+
     return true;
   }
 
@@ -241,6 +244,14 @@ export class PeopleView {
     input.markers.add(anchor, style, farthestFigure(LEVEL_DISTANCES, input.detail), isSelected);
   }
 
+  #drawWarPaint(people: Float32Array, offset: number, level: number, row: number): void {
+    if (people[offset + PersonField.IsRaiding] < 0.5) {
+      return;
+    }
+
+    this.#batches.add(level, WAR_PAINT, row);
+  }
+
   #animate(input: AgentViewInput, visual: PersonVisual, people: Float32Array, offset: number): void {
     const clipCode = people[offset + PersonField.Pose];
     const speed = Math.hypot(people[offset + PersonField.VelocityX], people[offset + PersonField.VelocityZ]);
@@ -249,6 +260,7 @@ export class PeopleView {
       clip: clipCode,
       gameSeconds: input.gameSeconds,
       heading: people[offset + PersonField.Heading],
+      isOnce: HUMAN_CLIPS[PERSON_POSES[clipCode]].timing.kind === "once",
       rate: this.#strides.cyclesPerSecond(PERSON_POSES[clipCode], speed, visual.appearance),
       realSeconds: input.realSeconds,
     });

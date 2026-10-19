@@ -7,9 +7,16 @@ import { NavigationGrid, type Waypoint } from "../agents/navigation.ts";
 import { IdentifierSource } from "../identifiers.ts";
 import { createTestWorld, floodCells } from "../testing/test-world.ts";
 import type { WorldState } from "../world/world-state.ts";
+import type { PeopleSense } from "./beast-instincts.ts";
 import { FaunaSystem, type FaunaThreats, type FaunaTick } from "./fauna.ts";
 
-const NO_THREATS: FaunaThreats = { dangerNear: () => null, hunterNear: () => null };
+const NO_PEOPLE: PeopleSense = {
+  findQuarry: () => null,
+  locate: () => null,
+  nearest: () => null,
+  wound: () => undefined,
+};
+const NO_THREATS: FaunaThreats = { dangerNear: () => null, hunterNear: () => null, people: NO_PEOPLE };
 const SUMMER = 1.6;
 const SPRING = 0.5;
 
@@ -22,6 +29,7 @@ function createFauna(world: WorldState = createTestWorld({ dimensions: { cellSiz
 function tickOf(overrides: Partial<FaunaTick> = {}): FaunaTick {
   return {
     days: 0.1 / 240,
+    hours: 12,
     random: createRandom(4),
     rules: DEFAULT_WORLD_RULES,
     season: SUMMER,
@@ -85,7 +93,7 @@ describe("animals", () => {
 
     const danger: Waypoint = { x: deer.mover.x - 30, z: deer.mover.z };
 
-    runFor(fauna, 3, { threats: { dangerNear: () => danger, hunterNear: () => null } });
+    runFor(fauna, 3, { threats: { dangerNear: () => danger, hunterNear: () => null, people: NO_PEOPLE } });
 
     expect(deer.pose).toBe("run");
     expect(deer.mover.x - danger.x).toBeGreaterThan(40);
@@ -186,7 +194,7 @@ describe("kinds of animals", () => {
 
   it("send a chased ibex bounding uphill while a deer runs straight away", () => {
     const danger: Waypoint = { x: 0, z: 40 };
-    const threats: FaunaThreats = { dangerNear: () => danger, hunterNear: () => null };
+    const threats: FaunaThreats = { dangerNear: () => danger, hunterNear: () => null, people: NO_PEOPLE };
 
     const climbers = slopedFauna();
     const runners = slopedFauna();

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import { useInterfaceStore } from "../interface/interface-store.ts";
-import { createChronicleEntry, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { createChronicleEntry, createRelation, resetWorld, showWorld } from "../testing/world-fixtures.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { JournalPanel } from "./journal-panel.tsx";
 
@@ -48,6 +48,18 @@ describe("journal panel", () => {
     expect(useInterfaceStore.getState().journalTab).toBe("chronicle");
     await expect.element(screen.getByText("The Bear Clan arrives on the island.")).toBeVisible();
     await expect.element(screen.getByText("Bear Clan", { exact: true })).not.toBeInTheDocument();
+  });
+
+  it("shows how the tribes stand with each other", async () => {
+    showWorld({ rivalry: { raids: [], relations: [createRelation({ stance: "hostile" })] } });
+
+    const screen = await render(<JournalPanel />);
+
+    await screen.getByRole("tab", { name: "Relations" }).click();
+
+    expect(useInterfaceStore.getState().journalTab).toBe("relations");
+    await expect.element(screen.getByText("Bear Clan · Wolf Clan")).toBeVisible();
+    await expect.element(screen.getByText("Hostile")).toBeVisible();
   });
 
   it("follows tab changes made elsewhere", async () => {

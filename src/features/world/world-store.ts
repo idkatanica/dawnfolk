@@ -4,11 +4,13 @@ import type { ChronicleCategory, ChronicleEntry } from "../../simulation/chronic
 import type { SimulationFrame, SimulationStatistics, TribeSummary, WeatherView } from "../../simulation/frame.ts";
 import type { Inspection } from "../../simulation/inspection.ts";
 import type { CalendarView } from "../../simulation/nature/calendar.ts";
+import type { RivalryView } from "../../simulation/society/rivalry/rivalry-system.ts";
 
 export interface WorldSnapshot {
   readonly calendar: CalendarView;
   readonly inspection: Inspection | null;
   readonly isPaused: boolean;
+  readonly rivalry: RivalryView;
   readonly rules: WorldRules;
   readonly speed: number;
   readonly statistics: SimulationStatistics;
@@ -40,8 +42,12 @@ const REFRESH_MILLISECONDS = 125;
 const MAXIMUM_NOTICES = 4;
 const ANNOUNCED_CATEGORIES: ReadonlySet<ChronicleCategory> = new Set([
   "arrival",
+  "beast",
   "discovery",
   "era",
+  "feud",
+  "peace",
+  "raid",
   "split",
   "warning",
 ]);
@@ -58,6 +64,7 @@ function snapshotOf(frame: SimulationFrame): WorldSnapshot {
     calendar: frame.calendar,
     inspection: frame.inspection,
     isPaused: frame.isPaused,
+    rivalry: frame.rivalry,
     rules: frame.rules,
     speed: frame.speed,
     statistics: frame.statistics,

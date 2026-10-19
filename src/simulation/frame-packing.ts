@@ -213,7 +213,7 @@ export function packVegetationChanges(changes: readonly PlantChange[]): Vegetati
   return patch;
 }
 
-const ARMED_JOBS: ReadonlySet<string> = new Set(["hunt"]);
+const ARMED_JOBS: ReadonlySet<string> = new Set(["defend", "fight", "hunt", "raid"]);
 
 function shownWeapon(person: Person): number {
   const { job, weapon } = person;
@@ -263,6 +263,7 @@ export function packPeople(people: readonly Person[], tribes: ReadonlyMap<number
     buffer[offset + PersonField.Weapon] = shownWeapon(person);
     buffer[offset + PersonField.Gear] = gearOf(person, tribe);
     buffer[offset + PersonField.Era] = tribe === undefined ? 0 : tribe.eraIndex;
+    buffer[offset + PersonField.IsRaiding] = person.job?.kind === "raid" ? 1 : 0;
   }
 
   return buffer;

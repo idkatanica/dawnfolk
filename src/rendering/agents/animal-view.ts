@@ -248,6 +248,7 @@ export class AnimalView {
       clip: clipCode,
       gameSeconds: input.gameSeconds,
       heading: animals[offset + AnimalField.Heading],
+      isOnce: QUADRUPED_CLIPS[ANIMAL_POSES[clipCode]].timing.kind === "once",
       rate: this.#cyclesPerSecond(kindView, ANIMAL_POSES[clipCode], speed, visual.appearance),
       realSeconds: input.realSeconds,
     });
@@ -256,7 +257,7 @@ export class AnimalView {
   #cyclesPerSecond(kindView: AnimalKindView, clip: AnimalPose, speed: number, appearance: AnimalAppearance): number {
     const { timing } = QUADRUPED_CLIPS[clip];
 
-    if (timing.kind === "seconds") {
+    if (timing.kind !== "stride") {
       return 1 / timing.cycleSeconds;
     }
 

@@ -16,6 +16,7 @@ import type { ChronicleEntry } from "./chronicle.ts";
 import type { SimulationEffect } from "./effects.ts";
 import type { Inspection } from "./inspection.ts";
 import type { CalendarView } from "./nature/calendar.ts";
+import type { RivalryView } from "./society/rivalry/rivalry-system.ts";
 
 export interface PackedRows {
   data: Uint8Array;
@@ -176,6 +177,7 @@ export interface SimulationFrame {
   notices: string[];
   people: Float32Array;
   personCount: number;
+  rivalry: RivalryView;
   rules: WorldRules;
   secondsSinceTick: number;
   speed: number;

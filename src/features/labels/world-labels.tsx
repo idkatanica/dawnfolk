@@ -1,11 +1,14 @@
+import { Swords } from "lucide-react";
 import { useRef } from "react";
 import { useEngine } from "../../app/use-engine.ts";
 import { cn } from "../../design/cn.ts";
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import type { Landmark } from "../../game/landmarks.ts";
 import type { TribeSummary } from "../../simulation/frame.ts";
+import type { RivalryView } from "../../simulation/society/rivalry/rivalry-system.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
 import { useShowTribe } from "../journal/use-focus-camera.ts";
+import { isFeuding, raidOf } from "../rivalry/stance-looks.ts";
 import { useWorldStore, type WorldSnapshot } from "../world/world-store.ts";
 import { useLabelLayout } from "./use-label-layout.ts";
 
@@ -52,12 +55,39 @@ function LandmarkLabel({ landmark }: { readonly landmark: Landmark }) {
   );
 }
 
+type TribeMood = "calm" | "feuding" | "raiding";
+
 interface TribeLabelProps {
   readonly isSelected: boolean;
+  readonly mood: TribeMood;
   readonly tribe: TribeSummary;
 }
 
-function TribeLabel({ isSelected, tribe }: TribeLabelProps) {
+function moodOf(rivalry: RivalryView | undefined, tribeId: number): TribeMood {
+  if (rivalry === undefined) {
+    return "calm";
+  }
+
+  if (raidOf(rivalry, tribeId) !== null) {
+    return "raiding";
+  }
+
+  return isFeuding(rivalry, tribeId) ? "feuding" : "calm";
+}
+
+function FeudMark({ mood }: { readonly mood: TribeMood }) {
+  if (mood === "calm") {
+    return null;
+  }
+
+  return (
+    <span className="flex items-center text-ember" title={mood === "raiding" ? "Raid under way" : "In a feud"}>
+      <Swords aria-label={mood === "raiding" ? "Raid under way" : "In a feud"} size={12} />
+    </span>
+  );
+}
+
+function TribeLabel({ isSelected, mood, tribe }: TribeLabelProps) {
   const showTribe = useShowTribe(tribe);
 
   return (
@@ -73,7 +103,7 @@ function TribeLabel({ isSelected, tribe }: TribeLabelProps) {
         aria-current={isSelected}
         className={cn(
           "pointer-events-auto flex items-center gap-2 rounded-full bg-veil py-1 pr-3 pl-1.5 text-xs outline-none ring-1 ring-white/40 backdrop-blur-xl backdrop-saturate-150 transition-colors hover:bg-white/75 focus-visible:ring-2 focus-visible:ring-dawn",
-          { "ring-2 ring-dawn": isSelected }
+          { "ring-2 ring-dawn": isSelected, "ring-2 ring-ember/80": mood === "raiding" && !isSelected }
         )}
         onClick={showTribe}
         type="button"
@@ -88,6 +118,8 @@ function TribeLabel({ isSelected, tribe }: TribeLabelProps) {
 
         <span className="font-semibold text-dawn-strong tabular-nums">{tribe.population}</span>
 
+        <FeudMark mood={mood} />
+
         <span className="text-ink-muted group-data-far:hidden">{tribe.eraName}</span>
       </button>
 
@@ -98,6 +130,7 @@ function TribeLabel({ isSelected, tribe }: TribeLabelProps) {
 
 function TribeLabels() {
   const tribes = useWorldStore((state) => state.snapshot?.tribes);
+  const rivalry = useWorldStore((state) => state.snapshot?.rivalry);
   const selectedTribeId = useWorldStore(selectedTribeIdOf);
 
   if (tribes === undefined || tribes.length === 0) {
@@ -107,7 +140,12 @@ function TribeLabels() {
   return (
     <ul aria-label="Tribes">
       {tribes.map((tribe) => (
-        <TribeLabel isSelected={tribe.id === selectedTribeId} key={tribe.id} tribe={tribe} />
+        <TribeLabel
+          isSelected={tribe.id === selectedTribeId}
+          key={tribe.id}
+          mood={moodOf(rivalry, tribe.id)}
+          tribe={tribe}
+        />
       ))}
     </ul>
   );

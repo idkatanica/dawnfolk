@@ -12,6 +12,7 @@ import { FireSystem } from "../nature/fire.ts";
 import { WeatherSystem } from "../nature/weather.ts";
 import { BuildingSystem } from "../society/buildings.ts";
 import type { Person } from "../society/person.ts";
+import { RivalrySystem } from "../society/rivalry/rivalry-system.ts";
 import { SocietySystem } from "../society/society.ts";
 import type { PersonTick, SocietyContext } from "../society/society-context.ts";
 import type { Tribe } from "../society/tribe.ts";
@@ -23,6 +24,7 @@ const SEED = 3;
 
 interface SocietyHarnessOptions {
   day: number;
+  isFaunaAwake: boolean;
   rules: WorldRules;
   world: Partial<TestWorldOptions>;
 }
@@ -32,12 +34,15 @@ export class SocietyHarness {
   readonly calendar: Calendar;
   readonly chronicle = new Chronicle();
   readonly context: SocietyContext;
+  readonly effects = new EffectLog();
   readonly fauna: FaunaSystem;
   readonly fire: FireSystem;
   readonly hazards: HazardMap;
   readonly identifiers = new IdentifierSource();
+  readonly isFaunaAwake: boolean;
   readonly navigation: NavigationGrid;
   readonly random: RandomSource;
+  readonly rivalry: RivalrySystem;
   readonly society: SocietySystem;
   readonly weather = new WeatherSystem();
   readonly world: WorldState;
@@ -45,11 +50,13 @@ export class SocietyHarness {
   constructor(options: Partial<SocietyHarnessOptions> = {}) {
     const settings: SocietyHarnessOptions = {
       day: 0.36,
+      isFaunaAwake: false,
       rules: DEFAULT_WORLD_RULES,
       world: { dimensions: { cellSize: 10, cellsPerSide: 96 } },
       ...options,
     };
 
+    this.isFaunaAwake = settings.isFaunaAwake;
     this.world = new WorldState(createVegetatedWorld(settings.world, SEED));
     this.calendar = new Calendar({ ...DEFAULT_CALENDAR, day: settings.day });
     this.random = createRandom(SEED);
@@ -63,6 +70,7 @@ export class SocietyHarness {
       chronicle: this.chronicle,
       identifiers: this.identifiers,
     });
+    this.rivalry = new RivalrySystem({ chronicle: this.chronicle, effects: this.effects, seed: SEED });
     this.weather.setKind("clear");
     this.context = {
       buildings: this.buildings,
@@ -76,6 +84,7 @@ export class SocietyHarness {
       navigation: this.navigation,
       people: this.society,
       random: this.random,
+      rivalry: this.rivalry,
       rules: settings.rules,
       world: this.world,
     };
@@ -106,7 +115,29 @@ export class SocietyHarness {
       weather: { drought: 0.5, precipitation: 0, windSpeed: 10 },
     });
     this.society.update(TICK_SECONDS, days, this.context);
+    this.rivalry.update(TICK_SECONDS, days, this.context);
+    this.#wakeFauna(days);
     this.hazards.update(TICK_SECONDS);
+  }
+
+  #wakeFauna(days: number): void {
+    if (!this.isFaunaAwake) {
+      return;
+    }
+
+    this.fauna.update({
+      days,
+      hours: this.calendar.hours,
+      random: this.random,
+      rules: this.context.rules,
+      season: this.calendar.season,
+      seconds: TICK_SECONDS,
+      threats: {
+        dangerNear: (x, z, radius) => this.hazards.dangerNear(x, z, radius),
+        hunterNear: () => null,
+        people: this.rivalry.senses(this.context),
+      },
+    });
   }
 
   spawnTribe(people: number): Tribe | null {

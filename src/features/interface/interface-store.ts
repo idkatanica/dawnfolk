@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { storedLabelsShown, storeLabelsShown } from "../../app/preferences.ts";
 import { COMPACT_QUERY } from "../../design/use-media-query.ts";
 
-export type JournalTab = "chronicle" | "tribes";
+export type JournalTab = "chronicle" | "relations" | "tribes";
 
 export type SettingsTab = "graphics" | "time" | "weather" | "world";
 

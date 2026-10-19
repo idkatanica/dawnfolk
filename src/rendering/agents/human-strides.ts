@@ -39,7 +39,7 @@ export class HumanStrides {
   cyclesPerSecond(clip: PersonPose, speed: number, appearance: PersonAppearance): number {
     const { timing } = HUMAN_CLIPS[clip];
 
-    if (timing.kind === "seconds") {
+    if (timing.kind !== "stride") {
       return 1 / timing.cycleSeconds;
     }
 
