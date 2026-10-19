@@ -6,13 +6,13 @@ import { IconButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
 import { useWorldStore } from "../world/world-store.ts";
 
-const SPEEDS = [1, 2, 4, 8] as const;
+const SPEEDS = [1, 2, 4, 8, 16] as const;
 
 function SpeedOption({ speed }: { readonly speed: number }) {
   return (
     <Toggle
       aria-label={`Speed ${speed} times`}
-      className="h-8 min-w-8 rounded-full px-1.5 font-semibold text-ink-soft text-xs tabular-nums outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-pressed:bg-white data-pressed:text-ink sm:min-w-9 sm:px-2"
+      className="h-8 min-w-8 rounded-full px-1.5 font-semibold text-ink-soft text-xs tabular-nums outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-pressed:bg-white data-pressed:text-ink lg:min-w-9 lg:px-2"
       value={String(speed)}
     >
       {speed}×

@@ -5,7 +5,7 @@ import { resetWorld, showWorld } from "../testing/world-fixtures.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { TimeControls } from "./time-controls.tsx";
 
-const SPEEDS = [1, 2, 4, 8] as const;
+const SPEEDS = [1, 2, 4, 8, 16] as const;
 
 describe("time controls", () => {
   afterEach(() => {
