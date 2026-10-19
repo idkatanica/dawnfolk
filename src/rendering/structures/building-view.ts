@@ -25,6 +25,7 @@ import {
 import { BUILDING_KINDS, type BuildingKind, isEnclosure } from "../../content/buildings.ts";
 import { DEPOSIT_KINDS } from "../../content/deposits.ts";
 import { eraDefinition } from "../../content/eras.ts";
+import type { WorldMirror } from "../../game/world-mirror.ts";
 import { MaterialSlot, SLOT_COLOR_TABLE } from "../../models/materials.ts";
 import type { MeshData } from "../../models/mesh/mesh-data.ts";
 import { buildBuildingModel, GLOW_PART } from "../../models/structures/building-models.ts";
@@ -238,7 +239,7 @@ export class BuildingView {
     }
 
     for (const building of frame.buildings) {
-      for (const piece of this.#piecesOf(building)) {
+      for (const piece of this.#piecesOf(building, input.mirror)) {
         this.#place(input, building, piece);
       }
     }
@@ -280,9 +281,9 @@ export class BuildingView {
     });
   }
 
-  #piecesOf(building: BuildingSnapshot): PiecePlacement[] {
+  #piecesOf(building: BuildingSnapshot, mirror: WorldMirror): PiecePlacement[] {
     if (isEnclosure(building.kind)) {
-      return this.#ringOf(building);
+      return this.#ringOf(building, mirror);
     }
 
     const key = building.kind === "mine" ? mineKey(oreOfVariant(building.variant)) : building.kind;
@@ -294,25 +295,39 @@ export class BuildingView {
     ];
   }
 
-  #ringOf(building: BuildingSnapshot): PiecePlacement[] {
+  #ringOf(building: BuildingSnapshot, mirror: WorldMirror): PiecePlacement[] {
     const kind = enclosureKindOf(building.kind);
     const length = this.#segmentLength;
 
     const count = Math.max(SMALLEST_RING, Math.round((FULL_TURN * building.extent) / length));
     const radius = length / (2 * Math.tan(Math.PI / count));
+    const halfStep = Math.PI / count;
 
-    return Array.from({ length: count }, (_, index) => {
+    const pieces: PiecePlacement[] = [];
+
+    for (let index = 0; index < count; index += 1) {
       const angle = building.rotation + (index / count) * FULL_TURN;
 
-      return {
+      const ends = [angle - halfStep, angle, angle + halfStep].map((end) => ({
+        x: building.x + Math.cos(end) * radius,
+        z: building.z + Math.sin(end) * radius,
+      }));
+
+      if (ends.some((end) => mirror.isWaterAt(end.x, end.z))) {
+        continue;
+      }
+
+      pieces.push({
         groundProbes: CENTER_PROBE,
         key: enclosureKey(kind, index === 0 ? "gate" : "segment"),
         progress: saturate(building.progress * count - index),
         rotation: -angle - Math.PI / 2,
         x: building.x + Math.cos(angle) * radius,
         z: building.z + Math.sin(angle) * radius,
-      };
-    });
+      });
+    }
+
+    return pieces;
   }
 
   #place(input: AgentViewInput, building: BuildingSnapshot, piece: PiecePlacement): void {
