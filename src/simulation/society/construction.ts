@@ -3,6 +3,7 @@ import type { MaterialKind } from "../../content/resources.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import { aroundPoint, type Waypoint } from "../agents/navigation.ts";
 import { NO_BUILDING } from "../world/world-state.ts";
+import { type BuildingPad, DEEPEST_LEVELLING, isLevelled, levelPad, planPad } from "./building-pads.ts";
 import { type Building, type BuildingLoss, NO_DEPOSIT } from "./buildings.ts";
 import { type BuildingPlan, buildingPlans } from "./camp-plan.ts";
 import { addFieldIfNeeded } from "./farming.ts";
@@ -21,6 +22,11 @@ const LONGEST_STALL_DAYS = 2.5;
 const PLANS_TO_SAVE_FOR = 3;
 const CLEARING = 4;
 const SLOPE_PROBE = 3;
+
+interface Site {
+  readonly pad: BuildingPad | null;
+  readonly spot: Waypoint;
+}
 
 export function canAfford(tribe: Tribe, kind: BuildingKind): boolean {
   return hasResources(tribe.stock, BUILDINGS[kind].cost);
@@ -108,10 +114,12 @@ export function constructionNeed(tribe: Tribe, context: SocietyContext, resource
 
 function placeBuilding(tribe: Tribe, plan: BuildingPlan, context: SocietyContext): Building | null {
   if (isEnclosure(plan.kind)) {
-    return startBuilding(tribe, plan, plan.origin, context);
+    return startBuilding(tribe, plan, { pad: null, spot: plan.origin }, context);
   }
 
-  const { random } = context;
+  const { random, world } = context;
+
+  let flattest: Site | null = null;
 
   for (let attempt = 0; attempt < PLACEMENT_ATTEMPTS; attempt += 1) {
     const angle = random.next() * FULL_TURN;
@@ -119,12 +127,38 @@ function placeBuilding(tribe: Tribe, plan: BuildingPlan, context: SocietyContext
 
     const spot = aroundPoint(plan.origin, distance, angle);
 
-    if (isBuildable(spot, plan.kind, context) && isDryWay(context.world, plan.origin, spot)) {
-      return startBuilding(tribe, plan, spot, context);
+    if (!(isBuildable(spot, plan.kind, context) && isDryWay(world, plan.origin, spot))) {
+      continue;
+    }
+
+    if (!isLevelled(plan.kind)) {
+      return startBuilding(tribe, plan, { pad: null, spot }, context);
+    }
+
+    const site: Site = { pad: planPad(world, context.buildings.all, spot, plan.kind), spot };
+
+    if (unevenness(site) <= DEEPEST_LEVELLING) {
+      return startBuilding(tribe, plan, site, context);
+    }
+
+    if (flattest === null || unevenness(site) < unevenness(flattest)) {
+      flattest = site;
     }
   }
 
-  return null;
+  if (flattest === null) {
+    return null;
+  }
+
+  return startBuilding(tribe, plan, flattest, context);
+}
+
+function unevenness(site: Site): number {
+  if (site.pad === null) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return site.pad.unevenness;
 }
 
 function isClearOfOthers(spot: Waypoint, kind: BuildingKind, context: SocietyContext): boolean {
@@ -185,7 +219,7 @@ function siteRotation(tribe: Tribe, plan: BuildingPlan, spot: Waypoint, context:
   return Math.atan2(tribe.campX - spot.x, tribe.campZ - spot.z);
 }
 
-function startBuilding(tribe: Tribe, plan: BuildingPlan, spot: Waypoint, context: SocietyContext): Building {
+function startBuilding(tribe: Tribe, plan: BuildingPlan, { pad, spot }: Site, context: SocietyContext): Building {
   const site = context.buildings.add(
     {
       depositId: plan.depositId,
@@ -206,6 +240,10 @@ function startBuilding(tribe: Tribe, plan: BuildingPlan, spot: Waypoint, context
 
   for (const cell of footprintCells(context.world.grid, site.x, site.z, BUILDINGS[plan.kind].footprint + CLEARING)) {
     context.world.clearPlants(cell, false);
+  }
+
+  if (pad !== null) {
+    levelPad(context.world, pad);
   }
 
   return site;

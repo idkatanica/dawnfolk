@@ -1,6 +1,6 @@
 import { Biome } from "../../content/biomes.ts";
 import { Ground } from "../../content/grounds.ts";
-import { saturate, smoothstep } from "../../shared/math.ts";
+import { clamp, saturate, smoothstep } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import type { River, RiverPoint } from "../../world/water.ts";
@@ -120,6 +120,46 @@ export function flattenTerrain(world: WorldState, area: CircleArea, targetHeight
 
 function fillInCarving(world: WorldState, cell: number, amount: number): void {
   world.terrain.carving[cell] *= 1 - amount;
+}
+
+function regionAround(world: WorldState, cells: readonly number[]): CellRegion {
+  const { grid } = world;
+
+  const lastIndex = grid.cellsPerSide - 1;
+  const columns = cells.map((cell) => grid.columnOf(cell));
+  const rows = cells.map((cell) => grid.rowOf(cell));
+
+  return {
+    firstColumn: Math.max(0, Math.min(...columns) - 1),
+    firstRow: Math.max(0, Math.min(...rows) - 1),
+    lastColumn: Math.min(lastIndex, Math.max(...columns) + 1),
+    lastRow: Math.min(lastIndex, Math.max(...rows) + 1),
+  };
+}
+
+interface Levelling {
+  readonly keptRelief: number;
+  readonly largestChange: number;
+  readonly level: number;
+}
+
+export function levelGround(world: WorldState, cells: readonly number[], levelling: Levelling): void {
+  const { keptRelief, largestChange, level } = levelling;
+
+  if (cells.length === 0) {
+    return;
+  }
+
+  for (const cell of cells) {
+    const height = world.terrain.height[cell];
+
+    const change = (level - height) * (1 - keptRelief);
+
+    world.setHeight(cell, height + clamp(change, -largestChange, largestChange));
+    fillInCarving(world, cell, 1);
+  }
+
+  world.finishHeightEdit(regionAround(world, cells));
 }
 
 export function smoothTerrain(world: WorldState, area: CircleArea, strength: number): void {

@@ -93,12 +93,16 @@ function shapeShore(cell: number, reach: number, pond: Spring, targets: PondTarg
   heights[cell] = Math.min(heights[cell], Math.max(beach, deepest));
 }
 
+export function pondShoreReach(pond: Spring): number {
+  return pond.radius * OUTLINE_MARGIN + STRAND_WIDTH + BEACH_WIDTH;
+}
+
 export function carvePond(pond: Spring, targets: PondTargets): void {
   const { grid } = targets;
 
   const wetReach = grid.cellSize * WET_REACH;
 
-  for (const cell of grid.cellsInRadius(pond.x, pond.z, pond.radius * OUTLINE_MARGIN + STRAND_WIDTH + BEACH_WIDTH)) {
+  for (const cell of grid.cellsInRadius(pond.x, pond.z, pondShoreReach(pond))) {
     const x = grid.cellCenterX(cell);
     const z = grid.cellCenterZ(cell);
 
