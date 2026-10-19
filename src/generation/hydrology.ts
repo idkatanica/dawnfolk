@@ -11,6 +11,7 @@ import {
   type Waterfall,
 } from "../world/water.ts";
 import { NEIGHBOR_OFFSETS, type WorldGrid } from "../world/world-grid.ts";
+import { carvePond } from "./ponds.ts";
 import { interpolatePoint, makeSurfaceDescend, smoothRiverPath } from "./river-paths.ts";
 import { spaceRiverChains } from "./river-spacing.ts";
 import { placeSprings } from "./springs.ts";
@@ -1148,6 +1149,12 @@ export function computeHydrology(
 
   for (const channel of springs.channels) {
     carveChannel(channel, targets);
+  }
+
+  for (const spring of springs.springs) {
+    if (spring.kind === "pond") {
+      carvePond(spring, targets);
+    }
   }
 
   keepRiversDescending(rivers, targets);

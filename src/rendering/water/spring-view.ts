@@ -7,23 +7,23 @@ import {
   MeshStandardNodeMaterial,
   Uint32BufferAttribute,
 } from "three/webgpu";
-import { Biome, isBiomeIndex } from "../../content/biomes.ts";
-import { PlantSpecies, ROCK_RULES } from "../../content/plants.ts";
+import { Biome } from "../../content/biomes.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { MaterialSlot } from "../../models/materials.ts";
 import { MeshBuilder } from "../../models/mesh/mesh-builder.ts";
 import type { MeshData } from "../../models/mesh/mesh-data.ts";
-import { isRockModel, meshRock, ROCK_VARIANT_COUNTS } from "../../models/plants/rocks.ts";
 import { type CaveLook, meshCaveMouth } from "../../models/structures/cave-mouth.ts";
-import { FULL_TURN } from "../../shared/math.ts";
-import { createRandom, type RandomSource } from "../../shared/random.ts";
+import { clamp, FULL_TURN, lerp } from "../../shared/math.ts";
 import type { Spring } from "../../world/water.ts";
 import { slotColorTable } from "../node-helpers.ts";
 
-const CAVE_SINK = 0.3;
-const RIM_STONES = [5, 8] as const;
-const OUTLET_GAP = 0.9;
-const STONE_SINK = 0.25;
+const FOOTPRINT_SAMPLES = 5;
+const FOOTPRINT_SHOULDER = 1.9;
+const FOOTPRINT_FRONT = 1;
+const FOOTPRINT_BACK = -12;
+const BURY_MARGIN = 1;
+const SHALLOWEST_BURY = 1.6;
+const DEEPEST_BURY = 14;
 const RISE_REACHES = [6, 10, 14] as const;
 const LAND_REACHES = [20, 40] as const;
 const LAND_SAMPLES = 8;
@@ -53,12 +53,6 @@ class ModelCache {
   }
 }
 
-interface RockyRim {
-  readonly models: ModelCache;
-  readonly random: RandomSource;
-  readonly stones: ReturnType<typeof rimStonesFor>;
-}
-
 function landBiomeNear(mirror: WorldMirror, spring: Spring): number {
   for (const reach of LAND_REACHES) {
     for (let sample = 0; sample < LAND_SAMPLES; sample += 1) {
@@ -75,17 +69,6 @@ function landBiomeNear(mirror: WorldMirror, spring: Spring): number {
   }
 
   return Biome.Meadow;
-}
-
-function rimStonesFor(biome: number) {
-  const rules = isBiomeIndex(biome) ? ROCK_RULES[biome] : [];
-
-  const stones = rules
-    .map((rule) => rule.species)
-    .filter(isRockModel)
-    .filter((species) => species !== PlantSpecies.Crag);
-
-  return stones.length > 0 ? stones : [PlantSpecies.Boulder];
 }
 
 function riseBehind(spring: Spring, mirror: WorldMirror): number {
@@ -128,55 +111,39 @@ function headingOf(spring: Spring): Matrix4 {
   return new Matrix4().makeRotationY(Math.atan2(spring.directionX, spring.directionZ));
 }
 
+function lowestGroundUnder(spring: Spring, mirror: WorldMirror): number {
+  const reach = spring.radius * FOOTPRINT_SHOULDER + 1;
+
+  let lowest = Number.POSITIVE_INFINITY;
+
+  for (let across = 0; across < FOOTPRINT_SAMPLES; across += 1) {
+    for (let along = 0; along < FOOTPRINT_SAMPLES; along += 1) {
+      const side = lerp(-reach, reach, across / (FOOTPRINT_SAMPLES - 1));
+      const ahead = lerp(FOOTPRINT_BACK, FOOTPRINT_FRONT, along / (FOOTPRINT_SAMPLES - 1));
+
+      const x = spring.x + side * spring.directionZ + ahead * spring.directionX;
+      const z = spring.z - side * spring.directionX + ahead * spring.directionZ;
+
+      lowest = Math.min(lowest, mirror.heightAt(x, z));
+    }
+  }
+
+  return lowest;
+}
+
 function addCave(builder: MeshBuilder, spring: Spring, mirror: WorldMirror, models: ModelCache): void {
   const biome = landBiomeNear(mirror, spring);
   const rise = Math.round(riseBehind(spring, mirror) * 2) / 2;
+  const sinking = spring.level - lowestGroundUnder(spring, mirror) + BURY_MARGIN;
+  const bury = Math.round(clamp(sinking, SHALLOWEST_BURY, DEEPEST_BURY) * 2) / 2;
 
-  const cave = models.model(`cave ${spring.seed} ${spring.radius} ${rise} ${biome}`, () =>
-    meshCaveMouth({ look: caveLookFor(biome), rise, seed: spring.seed, width: spring.radius * 2 })
+  const cave = models.model(`cave ${spring.seed} ${spring.radius} ${rise} ${bury} ${biome}`, () =>
+    meshCaveMouth({ bury, look: caveLookFor(biome), rise, seed: spring.seed, width: spring.radius * 2 })
   );
 
-  const placement = new Matrix4()
-    .makeTranslation(spring.x, spring.level - CAVE_SINK, spring.z)
-    .multiply(headingOf(spring));
+  const placement = new Matrix4().makeTranslation(spring.x, spring.level, spring.z).multiply(headingOf(spring));
 
   builder.addMesh(cave, { transform: placement });
-}
-
-function addRimStone(builder: MeshBuilder, spring: Spring, mirror: WorldMirror, rim: RockyRim): void {
-  const { models, random } = rim;
-
-  const outlet = Math.atan2(spring.directionZ, spring.directionX);
-  const angle = outlet + OUTLET_GAP + random.next() * (FULL_TURN - OUTLET_GAP * 2);
-  const reach = spring.radius + random.between(0.4, 1.8);
-
-  const x = spring.x + Math.cos(angle) * reach;
-  const z = spring.z + Math.sin(angle) * reach;
-
-  const species = random.pick(rim.stones);
-  const variant = random.integer(0, ROCK_VARIANT_COUNTS[species]);
-  const seed = random.integer(1, 1_000_000);
-  const size = random.between(1.1, 2.1);
-
-  const stone = models.model(`rock ${species} ${seed} ${variant}`, () => meshRock(species, seed, variant, "medium"));
-
-  const placement = new Matrix4()
-    .makeTranslation(x, mirror.heightAt(x, z) - STONE_SINK, z)
-    .multiply(new Matrix4().makeRotationY(random.next() * FULL_TURN))
-    .multiply(new Matrix4().makeScale(size, size, size));
-
-  builder.addMesh(stone, { transform: placement });
-}
-
-function addRockyRim(builder: MeshBuilder, spring: Spring, mirror: WorldMirror, models: ModelCache): void {
-  const random = createRandom(Math.floor(spring.seed * 1_000_000) + 7);
-
-  const rim: RockyRim = { models, random, stones: rimStonesFor(landBiomeNear(mirror, spring)) };
-  const count = random.integer(RIM_STONES[0], RIM_STONES[1] + 1);
-
-  for (let stone = 0; stone < count; stone += 1) {
-    addRimStone(builder, spring, mirror, rim);
-  }
 }
 
 export class SpringView {
@@ -196,10 +163,6 @@ export class SpringView {
     for (const spring of mirror.water.springs) {
       if (spring.kind === "cave") {
         addCave(builder, spring, mirror, this.#models);
-      }
-
-      if (spring.kind === "rocky") {
-        addRockyRim(builder, spring, mirror, this.#models);
       }
     }
 

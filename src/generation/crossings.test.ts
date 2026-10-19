@@ -108,8 +108,9 @@ describe.each(["round", "square"] as const)("crossings on a %s island", (shape) 
     const { crossings, dimensions, terrain, water } = worldOf(shape);
     const grid = new WorldGrid(dimensions);
 
-    const points = water.rivers.flatMap((river) => river.points);
+    const pondCells = new Set(water.springs.flatMap((spring) => spring.cells));
     const cellOf = (point: { x: number; z: number }) => grid.cellAt(point.x, point.z);
+    const points = water.rivers.flatMap((river) => river.points).filter((point) => !pondCells.has(cellOf(point)));
 
     const narrow = points.filter(
       (point) => point.width <= HOP_WIDTH - WIDTH_MARGIN && isWaterCell(terrain, cellOf(point))

@@ -1,22 +1,21 @@
 import { clamp, hashToUnit } from "../shared/math.ts";
 import { sampleHeight } from "../world/terrain-sampling.ts";
-import type { River, RiverPoint, Spring, SpringKind } from "../world/water.ts";
+import type { River, RiverPoint, Spring } from "../world/water.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
+import { pondFits } from "./ponds.ts";
 
-const CAVE_SLOPE = 0.5;
-const ROCKY_SLOPE = 0.3;
+const CAVE_SLOPE = 0.35;
 const SLOPE_REACHES = [10, 20, 30] as const;
 const DIRECTION_REACH = 25;
 const LAKE_REACH_CELLS = 2;
-const SMALLEST_POOL = 9;
-const LARGEST_POOL = 20;
-const POOL_GROWTH = 2.5;
-const ROCKY_POOL_SHARE = 0.75;
-const POOL_DEPTH = 3.2;
-const POOL_OUTLET_SHARE = 0.6;
-const HIGHEST_POOL_BANK = 5;
-const TIGHTEST_POOL = 4;
-const POOL_SHRINK = 0.8;
+const SMALLEST_POND = 12.5;
+const SMALLEST_WANTED_POND = 19;
+const LARGEST_POND = 25;
+const POND_GROWTH = 3;
+const POND_OUTLET_SHARE = 0.85;
+const POND_SHRINK = 0.85;
+const POND_SIZES = 4;
+const POND_RIM = 5;
 const NARROWEST_CAVE = 6.5;
 const WIDEST_CAVE = 10;
 const CAVE_SETBACK = 3;
@@ -24,8 +23,6 @@ const CAVE_DEPTH = 3;
 const CAVE_FLOOR_DEPTH = 1.2;
 const CAVE_MASS_SETBACK = 3;
 const CAVE_MASS_MARGIN = 6;
-const POOL_RIM = 2;
-const ROCKY_RIM = 4;
 const SPRING_SALT = 83.1;
 const SIZE_SALT = 17.3;
 
@@ -46,14 +43,8 @@ interface Direction {
   readonly z: number;
 }
 
-interface PoolShape {
-  readonly radius: number;
-  readonly x: number;
-  readonly z: number;
-}
-
 interface SpringPlanEntry {
-  readonly channel: readonly RiverPoint[];
+  readonly channel: readonly RiverPoint[] | null;
   readonly spring: Spring;
 }
 
@@ -106,22 +97,13 @@ function isFedByLake(head: RiverPoint, siting: SpringSiting): boolean {
   return grid.cellsInRadius(head.x, head.z, grid.cellSize * LAKE_REACH_CELLS).some((cell) => lakeIds[cell] >= 0);
 }
 
-function kindFor(slope: number): SpringKind {
-  if (slope >= CAVE_SLOPE) {
-    return "cave";
-  }
-
-  return slope >= ROCKY_SLOPE ? "rocky" : "pool";
-}
-
-function poolRadius(site: SpringSite, threshold: number, kind: SpringKind): number {
+function pondRadius(site: SpringSite, threshold: number): number {
   const mouth = site.river.points.at(-1);
   const flow = mouth === undefined ? site.head.flow : mouth.flow;
 
-  const growth = POOL_GROWTH * Math.log2(Math.max(1, flow / threshold));
-  const radius = clamp(SMALLEST_POOL + growth * (0.8 + 0.4 * site.sizing), SMALLEST_POOL, LARGEST_POOL);
+  const growth = POND_GROWTH * Math.log2(Math.max(1, flow / threshold));
 
-  return kind === "rocky" ? Math.max(SMALLEST_POOL, radius * ROCKY_POOL_SHARE) : radius;
+  return clamp(SMALLEST_WANTED_POND + growth * (0.8 + 0.4 * site.sizing), SMALLEST_WANTED_POND, LARGEST_POND);
 }
 
 function caveWidth(site: SpringSite): number {
@@ -132,59 +114,41 @@ function channelPoint(head: RiverPoint, x: number, z: number, width: number, dep
   return { depth, flow: head.flow, surface: head.surface, width, x, z };
 }
 
-function poolAround(site: SpringSite, radius: number): PoolShape {
+function pondAround(site: SpringSite, radius: number, seed: number): Spring {
   const { direction, head } = site;
 
   return {
+    cells: [],
+    directionX: direction.x,
+    directionZ: direction.z,
+    kind: "pond",
+    level: head.surface,
     radius,
-    x: head.x - direction.x * radius * POOL_OUTLET_SHARE,
-    z: head.z - direction.z * radius * POOL_OUTLET_SHARE,
+    river: site.river.id,
+    seed,
+    x: head.x - direction.x * radius * POND_OUTLET_SHARE,
+    z: head.z - direction.z * radius * POND_OUTLET_SHARE,
   };
 }
 
-function highestGroundIn(pool: PoolShape, site: SpringSite, siting: SpringSiting): number {
-  let highest = Number.NEGATIVE_INFINITY;
+function fittedPond(site: SpringSite, siting: SpringSiting, seed: number): Spring | null {
+  const wanted = pondRadius(site, siting.riverThreshold);
 
-  for (const cell of siting.grid.cellsInRadius(pool.x, pool.z, pool.radius)) {
-    highest = Math.max(highest, siting.heights[cell] - site.head.surface);
+  for (let step = 0; step < POND_SIZES; step += 1) {
+    const pond = pondAround(site, Math.max(SMALLEST_POND, wanted * POND_SHRINK ** step), seed);
+
+    if (pondFits(pond, siting.grid, siting.heights)) {
+      return pond;
+    }
   }
 
-  return highest;
+  return null;
 }
 
-function fittedPool(site: SpringSite, siting: SpringSiting, radius: number): PoolShape {
-  let pool = poolAround(site, radius);
-
-  while (pool.radius > TIGHTEST_POOL && highestGroundIn(pool, site, siting) > HIGHEST_POOL_BANK) {
-    pool = poolAround(site, Math.max(TIGHTEST_POOL, pool.radius * POOL_SHRINK));
-  }
-
-  return pool;
-}
-
-function poolSpring(site: SpringSite, siting: SpringSiting, wantedKind: SpringKind, seed: number): SpringPlanEntry {
-  const { direction, head } = site;
-
-  const pool = fittedPool(site, siting, poolRadius(site, siting.riverThreshold, wantedKind));
-
-  const kind = pool.radius < SMALLEST_POOL ? "rocky" : wantedKind;
-  const rim = kind === "rocky" ? ROCKY_RIM : POOL_RIM;
-  const center = channelPoint(head, pool.x, pool.z, pool.radius * 2, POOL_DEPTH);
-
+function pondSpring(pond: Spring, siting: SpringSiting): SpringPlanEntry {
   return {
-    channel: [center, { ...center, x: pool.x + direction.x * 0.01, z: pool.z + direction.z * 0.01 }],
-    spring: {
-      cells: siting.grid.cellsInRadius(pool.x, pool.z, pool.radius + rim),
-      directionX: direction.x,
-      directionZ: direction.z,
-      kind,
-      level: head.surface,
-      radius: pool.radius,
-      river: site.river.id,
-      seed,
-      x: pool.x,
-      z: pool.z,
-    },
+    channel: null,
+    spring: { ...pond, cells: siting.grid.cellsInRadius(pond.x, pond.z, pond.radius + POND_RIM) },
   };
 }
 
@@ -239,6 +203,20 @@ function siteAt(river: River, siting: SpringSiting): SpringSite | null {
   };
 }
 
+function springAt(site: SpringSite, siting: SpringSiting, seed: number): SpringPlanEntry {
+  if (site.slope >= CAVE_SLOPE) {
+    return caveSpring(site, siting, seed);
+  }
+
+  const pond = fittedPond(site, siting, seed);
+
+  if (pond === null) {
+    return caveSpring(site, siting, seed);
+  }
+
+  return pondSpring(pond, siting);
+}
+
 export function placeSprings(rivers: readonly River[], siting: SpringSiting): SpringPlan {
   const channels: (readonly RiverPoint[])[] = [];
   const springs: Spring[] = [];
@@ -250,12 +228,14 @@ export function placeSprings(rivers: readonly River[], siting: SpringSiting): Sp
       continue;
     }
 
-    const kind = kindFor(site.slope);
     const seed = hashToUnit(siting.grid.columnAt(site.head.x), siting.grid.rowAt(site.head.z), SPRING_SALT);
 
-    const entry = kind === "cave" ? caveSpring(site, siting, seed) : poolSpring(site, siting, kind, seed);
+    const entry = springAt(site, siting, seed);
 
-    channels.push(entry.channel);
+    if (entry.channel !== null) {
+      channels.push(entry.channel);
+    }
+
     springs.push(entry.spring);
   }
 

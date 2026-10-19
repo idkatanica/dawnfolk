@@ -7,8 +7,10 @@ export const BANK_SINK = 0.3;
 export const DRY_DEPTH = -1;
 export const MAXIMUM_REACH = 12;
 export const SHORE_CHANNELS = 4;
+export const NOT_POND = Number.POSITIVE_INFINITY;
 
 const CORNER_BRIDGE = 0.25;
+const SOFT_SHORE_SINK = 0.05;
 
 export const ShoreChannel = {
   Depth: 0,
@@ -21,6 +23,7 @@ export interface ShoreSource {
   readonly cellSize: number;
   readonly heights: Float32Array;
   readonly levels: Float32Array;
+  readonly pondDepths: Float32Array;
   readonly size: number;
 }
 
@@ -92,6 +95,14 @@ function cornerDepth(source: ShoreSource, column: number, row: number): number {
   return Math.max(Math.min(west, north), Math.min(north, east), Math.min(east, south), Math.min(south, west));
 }
 
+function bankSink(source: ShoreSource, cell: number, column: number, row: number): number {
+  if (source.pondDepths[cell] !== NOT_POND) {
+    return SOFT_SHORE_SINK;
+  }
+
+  return Math.max(BANK_SINK, deepestBeside(source, column, row));
+}
+
 function flowAcross(before: number, after: number, cellSize: number): number {
   if (!(isWet(before) && isWet(after))) {
     return 0;
@@ -131,7 +142,9 @@ function writeShore(source: ShoreSource, column: number, row: number, target: Fl
   }
 
   const bank = bankLevel(source, column, row);
-  const bankDepth = isWet(bank) ? Math.min(bank - ground, -BANK_SINK, -deepestBeside(source, column, row)) : DRY_DEPTH;
+  const bankDepth = isWet(bank)
+    ? Math.min(bank - ground, -bankSink(source, cell, column, row), source.pondDepths[cell])
+    : DRY_DEPTH;
   const corner = cornerDepth(source, column, row);
 
   target[offset + ShoreChannel.Depth] = corner > 0 ? Math.max(bankDepth, -CORNER_BRIDGE * corner) : bankDepth;

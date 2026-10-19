@@ -37,7 +37,15 @@ function carveValley(wallSlope: number, ridgeHeight = 0) {
   return { carved, grid, result, uncarved };
 }
 
-function waterLevelBeside(grid: WorldGrid, cell: number, carved: Float32Array, waterSurface: Float32Array): number {
+interface CarvedWater {
+  readonly carved: Float32Array;
+  readonly riverStrength: Uint8Array;
+  readonly waterSurface: Float32Array;
+}
+
+function riverLevelBeside(grid: WorldGrid, cell: number, water: CarvedWater): number {
+  const { carved, riverStrength, waterSurface } = water;
+
   let total = 0;
   let count = 0;
 
@@ -51,10 +59,16 @@ function waterLevelBeside(grid: WorldGrid, cell: number, carved: Float32Array, w
 
     const neighbor = grid.index(column, row);
 
-    if (hasWater(waterSurface[neighbor], carved[neighbor])) {
-      total += waterSurface[neighbor];
-      count += 1;
+    if (!hasWater(waterSurface[neighbor], carved[neighbor])) {
+      continue;
     }
+
+    if (riverStrength[neighbor] === 0) {
+      return Number.NaN;
+    }
+
+    total += waterSurface[neighbor];
+    count += 1;
   }
 
   return count > 0 ? total / count : Number.NaN;
@@ -74,7 +88,11 @@ describe("river carving", () => {
         continue;
       }
 
-      const water = waterLevelBeside(grid, cell, carved, result.waterSurface);
+      const water = riverLevelBeside(grid, cell, {
+        carved,
+        riverStrength: result.riverStrength,
+        waterSurface: result.waterSurface,
+      });
 
       if (Number.isFinite(water)) {
         rises.push(carved[cell] - water);

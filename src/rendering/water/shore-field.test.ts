@@ -5,6 +5,7 @@ import {
   buildShoreField,
   DRY_DEPTH,
   MAXIMUM_REACH,
+  NOT_POND,
   SHORE_CHANNELS,
   ShoreChannel,
   type ShoreSource,
@@ -31,7 +32,7 @@ function createSource(): ShoreSource {
     heights[cell] = riverLevel(column) - 1;
   }
 
-  return { cellSize: CELL_SIZE, heights, levels, size: SIZE };
+  return { cellSize: CELL_SIZE, heights, levels, pondDepths: new Float32Array(SIZE * SIZE).fill(NOT_POND), size: SIZE };
 }
 
 function build(source: ShoreSource): Float32Array {
@@ -77,7 +78,13 @@ describe("buildShoreField", () => {
 
     levels[0] = 1;
 
-    const field = build({ cellSize: CELL_SIZE, heights: new Float32Array(size * size), levels, size });
+    const field = build({
+      cellSize: CELL_SIZE,
+      heights: new Float32Array(size * size),
+      levels,
+      pondDepths: new Float32Array(size * size).fill(NOT_POND),
+      size,
+    });
 
     expect(field[(size * size - 1) * SHORE_CHANNELS + ShoreChannel.Reach]).toBe(MAXIMUM_REACH);
   });
@@ -102,6 +109,24 @@ describe("buildShoreField", () => {
     expect((water + bank) / 2).toBeCloseTo(0);
   });
 
+  it("shades the dry shore of a pond by its distance from the pond's outline so the edge can curve", () => {
+    const source = createSource();
+
+    for (let column = 0; column < SIZE; column += 1) {
+      const river = RIVER_ROW * SIZE + column;
+
+      source.heights[river] = riverLevel(column) - 1;
+      source.heights[river - SIZE] = riverLevel(column) + 0.2;
+      source.pondDepths[river - SIZE] = -column * 0.2;
+    }
+
+    const field = build(source);
+
+    expect(valueAt(field, 1, RIVER_ROW - 1, ShoreChannel.Depth)).toBeCloseTo(-0.2);
+    expect(valueAt(field, 4, RIVER_ROW - 1, ShoreChannel.Depth)).toBeCloseTo(-0.8);
+    expect(valueAt(field, 3, RIVER_ROW + 1, ShoreChannel.Depth)).toBeLessThan(-BANK_SINK);
+  });
+
   it("joins water that steps diagonally from cell to cell", () => {
     const heights = new Float32Array(SIZE * SIZE).fill(3);
     const levels = new Float32Array(SIZE * SIZE).fill(NO_WATER);
@@ -111,7 +136,13 @@ describe("buildShoreField", () => {
       heights[index * SIZE + index] = 0;
     }
 
-    const field = build({ cellSize: CELL_SIZE, heights, levels, size: SIZE });
+    const field = build({
+      cellSize: CELL_SIZE,
+      heights,
+      levels,
+      pondDepths: new Float32Array(SIZE * SIZE).fill(NOT_POND),
+      size: SIZE,
+    });
 
     const quadCenter =
       (valueAt(field, 2, 2, ShoreChannel.Depth) +
