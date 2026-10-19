@@ -84,6 +84,7 @@ export interface Tribe {
   memberIds: number[];
   migrationStartDay: number;
   name: string;
+  originId: number | null;
   plots: Plot[];
   postponed: Partial<Record<BuildingKind, number>>;
   stall: PlanStall;
@@ -140,6 +141,7 @@ export function createTribe(founding: TribeFounding): Tribe {
     memberIds: [],
     migrationStartDay: founding.day,
     name: founding.identity.name,
+    originId: null,
     plots: [],
     postponed: {},
     stall: { kind: null, since: founding.day },

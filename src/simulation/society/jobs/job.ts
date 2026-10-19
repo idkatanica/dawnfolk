@@ -19,21 +19,27 @@ export type JobKind =
   | "chop"
   | "clay"
   | "craft"
+  | "defend"
   | "deliver"
   | "eat"
+  | "envoy"
   | "farm"
+  | "fight"
   | "fish"
   | "flee"
   | "gather"
+  | "hide"
   | "hunt"
   | "idle"
   | "migrate"
   | "mine"
+  | "mourn"
   | "pick"
   | "plant"
   | "play"
   | "pray"
   | "quarry"
+  | "raid"
   | "sleep"
   | "tend"
   | "warm";
@@ -43,21 +49,27 @@ export const JOB_LABELS: Readonly<Record<JobKind, string>> = {
   chop: "Chopping wood",
   clay: "Digging clay",
   craft: "Crafting",
+  defend: "Defending the camp",
   deliver: "Carrying goods to camp",
   eat: "Eating",
+  envoy: "Bringing gifts of peace",
   farm: "Working the field",
+  fight: "Fighting",
   fish: "Fishing",
   flee: "Running from danger",
   gather: "Gathering berries",
+  hide: "Running for shelter",
   hunt: "Hunting",
   idle: "Resting",
   migrate: "Moving to a new camp",
   mine: "Mining ore",
+  mourn: "Mourning the fallen",
   pick: "Picking fruit",
   plant: "Planting",
   play: "Playing",
   pray: "Praying at the totem",
   quarry: "Breaking stone",
+  raid: "Raiding",
   sleep: "Sleeping",
   tend: "Feeding the campfire",
   warm: "Warming up by the fire",

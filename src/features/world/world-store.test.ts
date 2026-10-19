@@ -65,6 +65,7 @@ describe("world store", () => {
       calendar: frame.calendar,
       inspection: null,
       isPaused: true,
+      rivalry: frame.rivalry,
       rules: frame.rules,
       speed: 4,
       statistics: frame.statistics,
@@ -123,7 +124,7 @@ describe("world store", () => {
     ]);
   });
 
-  it("announces only arrivals, discoveries, splits and warnings from the chronicle", () => {
+  it("announces arrivals, discoveries, splits and warnings from the chronicle", () => {
     const feed = createFeed();
     const chronicle = [
       createChronicleEntry({ category: "arrival", id: 1, text: "The Bear Clan arrives." }),
@@ -144,6 +145,27 @@ describe("world store", () => {
       ["discovery", "The Bear Clan learns to make fire."],
       ["split", "The Fox Clan leaves the Bear Clan."],
       ["warning", "The Wolf Clan is starving."],
+    ]);
+  });
+
+  it("announces feuds, raids, peace and attacks by beasts", () => {
+    const feed = createFeed();
+    const chronicle = [
+      createChronicleEntry({ category: "feud", id: 1, text: "The Bear Clan and the Wolf Clan became enemies." }),
+      createChronicleEntry({ category: "raid", id: 2, text: "The Wolf Clan raided the Bear Clan." }),
+      createChronicleEntry({ category: "death", id: 3, text: "Ara of the Bear Clan fell to the raiders." }),
+      createChronicleEntry({ category: "peace", id: 4, text: "The Bear Clan and the Wolf Clan made peace." }),
+      createChronicleEntry({ category: "beast", id: 5, text: "Wolves attacked Tor near the river." }),
+    ];
+
+    connectWorldStore(feed);
+    feed.emit(createFrame({ chronicle }));
+
+    expect(useWorldStore.getState().notices.map((notice) => notice.category)).toEqual([
+      "feud",
+      "raid",
+      "peace",
+      "beast",
     ]);
   });
 

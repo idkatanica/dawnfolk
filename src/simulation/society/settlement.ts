@@ -439,6 +439,7 @@ export function considerSplit(
 
   const offshoot = services.createTribe(site.x, site.z);
 
+  offshoot.originId = tribe.id;
   shareWithOffshoot(tribe, offshoot, context);
 
   for (const person of settlers) {

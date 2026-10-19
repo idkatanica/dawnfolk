@@ -15,6 +15,7 @@ import type {
   PersonInspection,
 } from "../../simulation/inspection.ts";
 import type { CalendarView } from "../../simulation/nature/calendar.ts";
+import type { RaidView, RelationView } from "../../simulation/society/rivalry/rivalry-system.ts";
 import { useWorldStore, type WorldSnapshot } from "../world/world-store.ts";
 
 export function createCalendar(overrides: Partial<CalendarView> = {}): CalendarView {
@@ -193,6 +194,37 @@ export function createCellInspection(overrides: Partial<CellInspection> = {}): C
   };
 }
 
+export function createRelation(overrides: Partial<RelationView> = {}): RelationView {
+  return {
+    feudDays: null,
+    firstDeaths: 0,
+    firstId: 1,
+    firstRaids: 0,
+    isKin: false,
+    isTruce: false,
+    secondDeaths: 0,
+    secondId: 2,
+    secondRaids: 0,
+    stance: "neutral",
+    standing: 0,
+    ...overrides,
+  };
+}
+
+export function createRaid(overrides: Partial<RaidView> = {}): RaidView {
+  return {
+    aim: "plunder",
+    attackerId: 2,
+    defenderId: 1,
+    fallenDefenders: 0,
+    fallenRaiders: 0,
+    id: 1,
+    phase: "march",
+    raiders: 4,
+    ...overrides,
+  };
+}
+
 export function createChronicleEntry(overrides: Partial<ChronicleEntry> = {}): ChronicleEntry {
   return {
     category: "arrival",
@@ -211,6 +243,7 @@ function createSnapshot(overrides: Partial<WorldSnapshot> = {}): WorldSnapshot {
     calendar: createCalendar(),
     inspection: null,
     isPaused: false,
+    rivalry: { raids: [], relations: [] },
     rules: DEFAULT_WORLD_RULES,
     speed: 1,
     statistics: createStatistics(),
@@ -238,6 +271,7 @@ export function createFrame(overrides: Partial<SimulationFrame> = {}): Simulatio
     notices: [],
     people: new Float32Array(0),
     personCount: 0,
+    rivalry: { raids: [], relations: [] },
     rules: DEFAULT_WORLD_RULES,
     secondsSinceTick: 0,
     speed: 1,

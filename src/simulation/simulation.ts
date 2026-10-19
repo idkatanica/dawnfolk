@@ -29,6 +29,7 @@ import { naturalStrikeSite, strikeLightning } from "./powers/catastrophes.ts";
 import { type PowerOutcome, type PowerServices, percent } from "./powers/power-handler.ts";
 import { applyPower, parsePowerParameters } from "./powers/power-registry.ts";
 import { type BuildingIncidentKind, BuildingSystem } from "./society/buildings.ts";
+import { RivalrySystem } from "./society/rivalry/rivalry-system.ts";
 import { SocietySystem } from "./society/society.ts";
 import type { Tribe } from "./society/tribe.ts";
 import { drowningText, drownMonuments } from "./world/monument-damage.ts";
@@ -127,6 +128,7 @@ export class Simulation {
   readonly identifiers = new IdentifierSource();
   readonly navigation: NavigationGrid;
   readonly random: RandomSource;
+  readonly rivalry: RivalrySystem;
   readonly services: PowerServices;
   readonly society: SocietySystem;
   readonly surface: SurfaceSystem;
@@ -163,6 +165,7 @@ export class Simulation {
       chronicle: this.chronicle,
       identifiers: this.identifiers,
     });
+    this.rivalry = new RivalrySystem({ chronicle: this.chronicle, effects: this.effects, seed: generated.seed });
     this.services = this.#createServices();
     this.#frames = new FrameBuilder(this);
     this.#isPaused = false;
@@ -392,6 +395,7 @@ export class Simulation {
       navigation: this.navigation,
       people: this.society,
       random: this.random,
+      rivalry: this.rivalry,
       rules: DEFAULT_WORLD_RULES,
       schedule: (delaySeconds, run) => this.schedule(delaySeconds, run),
       society: this.society,
@@ -574,8 +578,10 @@ export class Simulation {
       weather: environment,
     });
     this.society.update(TICK_SECONDS, days, this.services);
+    this.rivalry.update(TICK_SECONDS, days, this.services);
     this.fauna.update({
       days,
+      hours: environment.hours,
       random: this.random,
       rules,
       season: environment.season,
@@ -614,6 +620,7 @@ export class Simulation {
 
         return { x: hunter.mover.x, z: hunter.mover.z };
       },
+      people: this.rivalry.senses(this.services),
     };
   }
 

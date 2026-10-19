@@ -22,12 +22,14 @@ export const worldRulesSchema = z.object({
       birthRate: multiplier("Births", "How often families have children.", 3, 0),
       hungerRate: multiplier("Hunger", "How quickly people get hungry.", 2, 0.3),
       learningSpeed: multiplier("Learning", "How quickly tribes make discoveries.", 5),
+      rivalry: multiplier("Rivalry", "How quickly neighbouring tribes fall out, raid and fight.", 3, 0),
     })
     .prefault({})
     .meta(groupMetadata("People", "How tribes grow, eat and learn.")),
   nature: z
     .object({
       animalBirthRate: multiplier("Animal births", "How fast herds grow in spring.", 3, 0),
+      beastBoldness: multiplier("Beast boldness", "How readily wolves, mammoths and stags attack people.", 3, 0),
       berryGrowth: multiplier("Berries", "How fast bushes bear fruit."),
       forestRegrowth: multiplier("Forest regrowth", "How quickly forests return to open and burnt land.", 3, 0),
     })

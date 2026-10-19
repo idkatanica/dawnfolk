@@ -153,6 +153,7 @@ export class HuntJob implements Job {
 
     if (animal.health > 0) {
       startleAnimal(animal, tick.person.mover.x, tick.person.mover.z, 1);
+      provokeAnimal(tick, animal);
 
       return this;
     }
@@ -181,6 +182,12 @@ function loose(tick: PersonTick, animal: Animal, isHit: boolean): void {
     toX,
     toZ,
   });
+}
+
+function provokeAnimal(tick: PersonTick, animal: Animal): void {
+  const { mover } = tick.person;
+
+  tick.context.fauna.provoke(animal, { id: tick.person.id, x: mover.x, z: mover.z }, tick.context.rules);
 }
 
 function hitChance(tick: PersonTick, animal: Animal, weapon: Weapon): number {

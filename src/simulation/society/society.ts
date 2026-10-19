@@ -15,7 +15,7 @@ import { updateNeeds } from "./needs.ts";
 import { createPerson, type DeathCause, type Person, walkSpeed } from "./person.ts";
 import { syncEra } from "./progress.ts";
 import { findCampSite } from "./settlement.ts";
-import type { PeopleDirectory, PersonTick, SocietyContext } from "./society-context.ts";
+import type { DeathAccount, PeopleDirectory, PersonTick, SocietyContext } from "./society-context.ts";
 import { createTribe, type Tribe } from "./tribe.ts";
 import { type SocietyServices, updateTribe } from "./tribe-life.ts";
 import { TroddenGround } from "./trodden-ground.ts";
@@ -25,9 +25,13 @@ const CORPSE_SECONDS = 40;
 const ARRIVAL_SEARCH_RADIUS = 260;
 const ARRIVAL_SPREAD = 16;
 const POSE_PHASE_RATE = 1.9;
+const FALL_SECONDS = 1.5;
+const VIOLENT_DEATHS: ReadonlySet<DeathCause> = new Set(["battle", "beast", "mammoth"]);
 
 const DEATH_MESSAGES: Readonly<Record<DeathCause, string>> = {
   age: "died of old age",
+  battle: "fell in battle",
+  beast: "was killed by a wild beast",
   blast: "was killed by a blast",
   cold: "froze to death",
   earthquake: "was crushed in an earthquake",
@@ -177,7 +181,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     return tribe;
   }
 
-  kill(person: Person, cause: DeathCause): void {
+  kill(person: Person, cause: DeathCause, account: DeathAccount | null = null): void {
     if (!person.isAlive) {
       return;
     }
@@ -186,7 +190,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
 
     person.isAlive = false;
     person.causeOfDeath = cause;
-    person.pose = "dead";
+    person.pose = VIOLENT_DEATHS.has(cause) ? "fall" : "dead";
     person.speed = 0;
     stopMoving(person.mover);
     this.#deaths += 1;
@@ -199,8 +203,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     tribe.deaths += 1;
     tribe.memberIds = tribe.memberIds.filter((memberId) => memberId !== person.id);
     this.#dependencies.chronicle.record({
-      category: cause === "age" ? "death" : "warning",
-      text: `${person.name} of ${tribe.name} ${DEATH_MESSAGES[cause]}`,
+      ...deathAccountOf(person, tribe, cause, account),
       tribeId: tribe.id,
       x: person.mover.x,
       z: person.mover.z,
@@ -363,6 +366,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
   #updatePerson(person: Person, seconds: number, days: number, context: SocietyContext): void {
     if (!person.isAlive) {
       person.deathSeconds += seconds;
+      settleFall(person);
 
       return;
     }
@@ -416,6 +420,23 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     }
 
     this.#people = this.#people.filter((person) => person.isAlive || person.deathSeconds <= CORPSE_SECONDS);
+  }
+}
+
+function deathAccountOf(person: Person, tribe: Tribe, cause: DeathCause, account: DeathAccount | null): DeathAccount {
+  if (account !== null) {
+    return account;
+  }
+
+  return {
+    category: cause === "age" ? "death" : "warning",
+    text: `${person.name} of ${tribe.name} ${DEATH_MESSAGES[cause]}`,
+  };
+}
+
+function settleFall(person: Person): void {
+  if (person.pose === "fall" && person.deathSeconds > FALL_SECONDS) {
+    person.pose = "dead";
   }
 }
 

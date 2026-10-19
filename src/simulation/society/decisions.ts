@@ -13,6 +13,7 @@ import { WanderJob } from "./jobs/wander-job.ts";
 import { WarmJob } from "./jobs/warm-job.ts";
 import { isStandingInFire } from "./needs.ts";
 import { carriedFood, isCarryingAnything, isChild, type Person } from "./person.ts";
+import { respondToFoes } from "./rivalry/responses.ts";
 import type { PersonTick } from "./society-context.ts";
 import { totalFood } from "./stock.ts";
 import { isWorthLookingFor, type Tribe } from "./tribe.ts";
@@ -35,6 +36,8 @@ const PACKED_MEAL_DISTANCE = 90;
 const HOMEWARD_DISTANCE = 220;
 const STRANDED_RETRY_DAYS = 1;
 const NIGHT_JOBS: ReadonlySet<JobKind> = new Set(["clay", "deliver", "eat", "mine", "sleep", "warm"]);
+const UNWAVERING_JOBS: ReadonlySet<JobKind> = new Set(["flee", "raid"]);
+const STEADFAST_JOBS: ReadonlySet<JobKind> = new Set(["defend", "envoy", "fight", "hide"]);
 
 export function updateMind(tick: PersonTick): void {
   const { person } = tick;
@@ -109,6 +112,19 @@ function reactToDanger(tick: PersonTick): void {
 
   person.dangerCheckSeconds = DANGER_CHECK_SECONDS;
   fleeFrom(tick, DANGER_AWARENESS);
+  answerFoes(tick);
+}
+
+function answerFoes(tick: PersonTick): void {
+  if (tick.person.job?.kind === "flee") {
+    return;
+  }
+
+  const response = respondToFoes(tick);
+
+  if (response !== null) {
+    assignJob(tick, response);
+  }
 }
 
 function fleeFrom(tick: PersonTick, radius: number): void {
@@ -132,8 +148,12 @@ function isStarving(tick: PersonTick): boolean {
 function shouldInterrupt(tick: PersonTick, job: Job): boolean {
   const { environment } = tick.context;
 
-  if (job.kind === "flee") {
+  if (UNWAVERING_JOBS.has(job.kind)) {
     return false;
+  }
+
+  if (STEADFAST_JOBS.has(job.kind)) {
+    return isStarving(tick);
   }
 
   if (job.kind === "migrate") {

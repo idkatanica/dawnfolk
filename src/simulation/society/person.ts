@@ -18,7 +18,17 @@ const ADULT_WALK_SPEED = 2.5;
 const CHILD_RUN_SPEED = 3.8;
 const ADULT_RUN_SPEED = 5.2;
 
-export type DeathCause = "age" | "blast" | "cold" | "earthquake" | "fire" | "hunger" | "lightning" | "mammoth";
+export type DeathCause =
+  | "age"
+  | "battle"
+  | "beast"
+  | "blast"
+  | "cold"
+  | "earthquake"
+  | "fire"
+  | "hunger"
+  | "lightning"
+  | "mammoth";
 
 interface Carrying {
   amount: number;

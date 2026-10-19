@@ -1,4 +1,4 @@
-export const PERSON_STRIDE = 17;
+export const PERSON_STRIDE = 18;
 
 export const PersonField = {
   Age: 9,
@@ -10,6 +10,7 @@ export const PersonField = {
   Health: 13,
   Id: 0,
   IsFemale: 10,
+  IsRaiding: 17,
   Phase: 7,
   Pose: 6,
   TribeId: 8,

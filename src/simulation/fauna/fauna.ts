@@ -1,7 +1,7 @@
 import { ANIMALS, type AnimalKind, animalsAt } from "../../content/animals.ts";
 import type { WorldRules } from "../../content/world-rules.ts";
 import { clamp, distanceSquared, FULL_TURN } from "../../shared/math.ts";
-import type { RandomSource } from "../../shared/random.ts";
+import { createRandom, type RandomSource } from "../../shared/random.ts";
 import type { AnimalPose } from "../../world/agent-poses.ts";
 import { isHopping } from "../agents/hops.ts";
 import {
@@ -16,6 +16,7 @@ import {
 import { aroundPoint, type NavigationGrid, type Waypoint } from "../agents/navigation.ts";
 import type { IdentifierSource } from "../identifiers.ts";
 import type { WorldState } from "../world/world-state.ts";
+import { type Assailant, BeastInstincts, type PeopleSense } from "./beast-instincts.ts";
 
 const HERD_SPREAD = 30;
 const BURNING_GROUND = 0.25;
@@ -33,6 +34,7 @@ const YOUTH_DECAY_PER_DAY = 0.5;
 const PASTURE_ATTEMPTS = 8;
 const ANY_BIOME_ATTEMPT = 6;
 const ESCAPE_TURNS: readonly number[] = [0, -0.6, 0.6, -1.1, 1.1];
+const MENACE_SEARCH_PADDING = 1;
 
 type AnimalDeathCause = "blast" | "fire" | "hunt" | "lightning";
 
@@ -71,10 +73,12 @@ interface Herd {
 export interface FaunaThreats {
   dangerNear: (x: number, z: number, radius: number) => Waypoint | null;
   hunterNear: (x: number, z: number, radius: number) => Waypoint | null;
+  people: PeopleSense;
 }
 
 export interface FaunaTick {
   days: number;
+  hours: number;
   random: RandomSource;
   rules: WorldRules;
   season: number;
@@ -84,6 +88,7 @@ export interface FaunaTick {
 
 export class FaunaSystem {
   readonly #identifiers: IdentifierSource;
+  readonly #instincts: BeastInstincts;
   readonly #navigation: NavigationGrid;
   readonly #world: WorldState;
   #animals: Animal[] = [];
@@ -93,6 +98,7 @@ export class FaunaSystem {
     this.#world = world;
     this.#navigation = navigation;
     this.#identifiers = identifiers;
+    this.#instincts = new BeastInstincts(world, navigation, createRandom(world.seed * 31 + 7));
   }
 
   get animals(): readonly Animal[] {
@@ -191,6 +197,42 @@ export class FaunaSystem {
     }
   }
 
+  wound(animal: Animal, damage: number, assailant: Assailant, rules: WorldRules): boolean {
+    if (!animal.isAlive) {
+      return false;
+    }
+
+    animal.health -= damage;
+
+    if (animal.health <= 0) {
+      this.kill(animal, "hunt");
+
+      return true;
+    }
+
+    this.#instincts.flinch(animal);
+    this.provoke(animal, assailant, rules);
+
+    if (this.#instincts.isHurt(animal) && !this.#instincts.isCharging(animal)) {
+      this.#instincts.abandonHunt(animal.herdId, this.#packOf(animal), assailant);
+      startleAnimal(animal, assailant.x, assailant.z, 1);
+    }
+
+    return false;
+  }
+
+  provoke(animal: Animal, assailant: Assailant, rules: WorldRules): void {
+    this.#instincts.provoke(animal, assailant, this.#packOf(animal), rules.nature.beastBoldness);
+  }
+
+  menaceNear(x: number, z: number, radius: number): Animal | null {
+    return this.nearestAnimal(x, z, radius + MENACE_SEARCH_PADDING, (animal) => this.isMenacing(animal));
+  }
+
+  isMenacing(animal: Animal): boolean {
+    return this.#instincts.isCharging(animal) || this.#instincts.huntOf(animal.herdId) !== null;
+  }
+
   kill(animal: Animal, cause: AnimalDeathCause): void {
     if (!animal.isAlive) {
       return;
@@ -198,7 +240,8 @@ export class FaunaSystem {
 
     animal.isAlive = false;
     animal.causeOfDeath = cause;
-    animal.pose = "dead";
+    animal.pose = cause === "blast" ? "dead" : "fall";
+    this.#instincts.forget(animal);
     animal.speed = 0;
     stopMoving(animal.mover);
 
@@ -213,6 +256,8 @@ export class FaunaSystem {
     for (const herd of this.#herds) {
       this.#steerHerd(herd, tick);
     }
+
+    this.#instincts.steerPacks(this.#herds, (id) => this.findAnimal(id), tick);
 
     for (const animal of this.#animals) {
       this.#updateAnimal(animal, tick);
@@ -381,9 +426,20 @@ export class FaunaSystem {
     return acceptsAnyBiome || isFavouriteBiome(kind, world.terrain.biome[cell]);
   }
 
+  #packOf(animal: Animal): Animal[] {
+    const herd = this.#herds.find((candidate) => candidate.id === animal.herdId);
+
+    if (herd === undefined) {
+      return [];
+    }
+
+    return herd.memberIds.map((id) => this.findAnimal(id)).filter((member) => member !== null);
+  }
+
   #updateAnimal(animal: Animal, tick: FaunaTick): void {
     if (!animal.isAlive) {
       animal.deathSeconds += tick.seconds;
+      settleFall(animal, this.#instincts.fallSeconds());
 
       return;
     }
@@ -395,12 +451,18 @@ export class FaunaSystem {
       return;
     }
 
-    this.#lookForThreats(animal, tick);
+    const packHunt = this.#instincts.huntOf(animal.herdId);
+    const isEngaged = this.#instincts.isEngaged(animal, packHunt);
+
+    this.#lookForThreats(animal, isEngaged, tick);
+    this.#instincts.watchCornered(animal, tick);
 
     if (isHopping(animal.mover)) {
       this.#keepHopping(animal, tick);
     } else if (isStranded(animal.mover, this.#world)) {
       this.#swimAshore(animal, tick);
+    } else if (this.#instincts.isEngaged(animal, packHunt)) {
+      this.#instincts.act(animal, packHunt, tick);
     } else if (animal.fear > CALM_FEAR) {
       this.#flee(animal, tick);
     } else {
@@ -439,7 +501,7 @@ export class FaunaSystem {
     }
   }
 
-  #lookForThreats(animal: Animal, tick: FaunaTick): void {
+  #lookForThreats(animal: Animal, isEngaged: boolean, tick: FaunaTick): void {
     animal.threatCheckSeconds -= tick.seconds;
 
     if (animal.threatCheckSeconds > 0) {
@@ -457,7 +519,7 @@ export class FaunaSystem {
       startleAnimal(animal, fire.x, fire.z, 1);
     }
 
-    if (hunter !== null) {
+    if (hunter !== null && !isEngaged) {
       startleAnimal(animal, hunter.x, hunter.z, 0.8);
     }
   }
@@ -581,6 +643,12 @@ export class FaunaSystem {
 
     this.#animals = this.#animals.filter((animal) => animal.isAlive || animal.deathSeconds <= CORPSE_SECONDS);
     this.#herds = this.#herds.filter((herd) => herd.memberIds.length > 0);
+  }
+}
+
+function settleFall(animal: Animal, fallSeconds: number): void {
+  if (animal.pose === "fall" && animal.deathSeconds > fallSeconds) {
+    animal.pose = "dead";
   }
 }
 

@@ -47,6 +47,7 @@ export class FrameBuilder {
       notices: simulation.takeNotices(),
       people: packPeople(society.people, new Map(society.tribes().map((tribe) => [tribe.id, tribe]))),
       personCount: society.people.length,
+      rivalry: simulation.rivalry.view(simulation.calendar.day),
       rules: simulation.rules,
       secondsSinceTick: simulation.secondsSinceTick,
       speed: simulation.speed,

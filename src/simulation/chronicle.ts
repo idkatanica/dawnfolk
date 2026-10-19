@@ -1,20 +1,24 @@
 export type ChronicleCategory =
   | "arrival"
+  | "beast"
   | "birth"
   | "building"
   | "death"
   | "discovery"
   | "era"
+  | "feud"
   | "fire"
   | "food"
   | "gift"
   | "hunt"
   | "migration"
+  | "peace"
+  | "raid"
   | "split"
   | "warning"
   | "weather";
 
-interface ChronicleRecord {
+export interface ChronicleRecord {
   category: ChronicleCategory;
   text: string;
   tribeId: number | null;
