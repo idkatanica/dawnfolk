@@ -283,7 +283,7 @@ export class WaterRecomputation {
 
     for (let cell = 0; cell < world.grid.cellCount; cell += 1) {
       if (world.touchesWater(cell)) {
-        world.clearPlants(cell, false);
+        world.clearPlants(cell, world.isWater(cell));
       }
 
       if (world.isWater(cell)) {
@@ -303,7 +303,7 @@ export class WaterRecomputation {
         }
 
         this.#calmCell(cell);
-        world.clearPlants(cell, false);
+        world.clearPlants(cell, true);
 
         for (const offset of NEIGHBOR_OFFSETS) {
           const column = grid.columnOf(cell) + offset.column;

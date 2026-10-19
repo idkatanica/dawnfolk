@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { PlantSpecies } from "../../content/plants.ts";
 import {
   DEFAULT_GENERATION_OPTIONS,
   type GeneratedWorld,
@@ -6,6 +7,7 @@ import {
   generateWorld,
 } from "../../generation/world-generator.ts";
 import { type Crossing, crossingLength } from "../../world/crossings.ts";
+import { PlantState } from "../../world/vegetation-store.ts";
 import { createTestWorld } from "../testing/test-world.ts";
 import { flattenTerrain, raiseTerrain } from "./terrain-editing.ts";
 import { WaterRecomputation } from "./water-recomputation.ts";
@@ -76,6 +78,37 @@ describe("water recomputation", () => {
         expect(world.occupancy[cell]).not.toBe(NO_BUILDING);
       }
     }
+  });
+
+  it("clears rocks from the cells the water covers and leaves them on its dry banks", () => {
+    const recomputation = new WaterRecomputation(world);
+    const { grid } = world;
+
+    const wetCells = Array.from({ length: grid.cellCount }, (_, cell) => cell).filter((cell) => world.isWater(cell));
+
+    for (const cell of wetCells.slice(0, 40)) {
+      world.plant({
+        bornDay: 0,
+        height: 1.5,
+        rotation: 0,
+        seed: 0.5,
+        species: PlantSpecies.Boulder,
+        x: grid.cellCenterX(cell),
+        z: grid.cellCenterZ(cell),
+      });
+    }
+
+    recomputation.recompute();
+
+    const wetBoulders = Array.from({ length: world.vegetation.count }, (_, plant) => plant).filter(
+      (plant) =>
+        world.vegetation.species[plant] === PlantSpecies.Boulder &&
+        world.vegetation.state[plant] === PlantState.Alive &&
+        world.isWater(world.vegetation.cell[plant])
+    );
+
+    expect(wetCells.length).toBeGreaterThan(40);
+    expect(wetBoulders).toEqual([]);
   });
 
   it("keeps carving depths positive after an edit", () => {
