@@ -13,11 +13,17 @@ import { MaterialSlot } from "../../models/materials.ts";
 import { MeshBuilder } from "../../models/mesh/mesh-builder.ts";
 import type { MeshData } from "../../models/mesh/mesh-data.ts";
 import { type CaveLook, meshCaveMouth } from "../../models/structures/cave-mouth.ts";
-import { FULL_TURN } from "../../shared/math.ts";
+import { clamp, FULL_TURN, lerp } from "../../shared/math.ts";
 import type { Spring } from "../../world/water.ts";
 import { slotColorTable } from "../node-helpers.ts";
 
-const CAVE_SINK = 0.3;
+const FOOTPRINT_SAMPLES = 5;
+const FOOTPRINT_SHOULDER = 1.9;
+const FOOTPRINT_FRONT = 1;
+const FOOTPRINT_BACK = -12;
+const BURY_MARGIN = 1;
+const SHALLOWEST_BURY = 1.6;
+const DEEPEST_BURY = 14;
 const RISE_REACHES = [6, 10, 14] as const;
 const LAND_REACHES = [20, 40] as const;
 const LAND_SAMPLES = 8;
@@ -105,17 +111,37 @@ function headingOf(spring: Spring): Matrix4 {
   return new Matrix4().makeRotationY(Math.atan2(spring.directionX, spring.directionZ));
 }
 
+function lowestGroundUnder(spring: Spring, mirror: WorldMirror): number {
+  const reach = spring.radius * FOOTPRINT_SHOULDER + 1;
+
+  let lowest = Number.POSITIVE_INFINITY;
+
+  for (let across = 0; across < FOOTPRINT_SAMPLES; across += 1) {
+    for (let along = 0; along < FOOTPRINT_SAMPLES; along += 1) {
+      const side = lerp(-reach, reach, across / (FOOTPRINT_SAMPLES - 1));
+      const ahead = lerp(FOOTPRINT_BACK, FOOTPRINT_FRONT, along / (FOOTPRINT_SAMPLES - 1));
+
+      const x = spring.x + side * spring.directionZ + ahead * spring.directionX;
+      const z = spring.z - side * spring.directionX + ahead * spring.directionZ;
+
+      lowest = Math.min(lowest, mirror.heightAt(x, z));
+    }
+  }
+
+  return lowest;
+}
+
 function addCave(builder: MeshBuilder, spring: Spring, mirror: WorldMirror, models: ModelCache): void {
   const biome = landBiomeNear(mirror, spring);
   const rise = Math.round(riseBehind(spring, mirror) * 2) / 2;
+  const sinking = spring.level - lowestGroundUnder(spring, mirror) + BURY_MARGIN;
+  const bury = Math.round(clamp(sinking, SHALLOWEST_BURY, DEEPEST_BURY) * 2) / 2;
 
-  const cave = models.model(`cave ${spring.seed} ${spring.radius} ${rise} ${biome}`, () =>
-    meshCaveMouth({ look: caveLookFor(biome), rise, seed: spring.seed, width: spring.radius * 2 })
+  const cave = models.model(`cave ${spring.seed} ${spring.radius} ${rise} ${bury} ${biome}`, () =>
+    meshCaveMouth({ bury, look: caveLookFor(biome), rise, seed: spring.seed, width: spring.radius * 2 })
   );
 
-  const placement = new Matrix4()
-    .makeTranslation(spring.x, spring.level - CAVE_SINK, spring.z)
-    .multiply(headingOf(spring));
+  const placement = new Matrix4().makeTranslation(spring.x, spring.level, spring.z).multiply(headingOf(spring));
 
   builder.addMesh(cave, { transform: placement });
 }
