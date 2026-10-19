@@ -61,6 +61,7 @@ const GEAR_COLOR_INDEX = PERSON_LAYOUT.colorSlots.indexOf(MaterialSlot.Metal);
 const WADING_DEPTH = 1.1;
 const DEFAULT_TRIBE: TribeLook = { accent: 0xc4_55_3a, fur: 0x6b_4a_33, id: -1 };
 const MARKER_LIFT = 1;
+const WAR_PAINT = humanPartIndex("warPaint");
 
 interface PersonVisual {
   readonly appearance: PersonAppearance;
@@ -225,6 +226,8 @@ export class PeopleView {
       this.#batches.add(level, part, row);
     }
 
+    this.#drawWarPaint(people, offset, level, row);
+
     return true;
   }
 
@@ -239,6 +242,14 @@ export class PeopleView {
     const isSelected = people[offset + PersonField.Id] === this.#selectedId;
 
     input.markers.add(anchor, style, farthestFigure(LEVEL_DISTANCES, input.detail), isSelected);
+  }
+
+  #drawWarPaint(people: Float32Array, offset: number, level: number, row: number): void {
+    if (people[offset + PersonField.IsRaiding] < 0.5) {
+      return;
+    }
+
+    this.#batches.add(level, WAR_PAINT, row);
   }
 
   #animate(input: AgentViewInput, visual: PersonVisual, people: Float32Array, offset: number): void {
