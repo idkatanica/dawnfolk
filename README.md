@@ -36,16 +36,16 @@
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
-![The island from above: mountains, lakes, rivers and two tribes](.github/screenshots/island.webp)
+![The island floating above the clouds: a mountain, a lake, forests and red desert hills](.github/screenshots/island.webp)
 
-Shape the land, call rain, fire and lightning, and watch small tribes gather, build, learn and survive on a
-procedurally generated island rendered with WebGPU.
+Shape the land, call rain, fire and lightning, and watch small tribes gather, build, feud and climb from the Stone
+Age to the Iron Age on a procedurally generated island rendered with WebGPU.
 
 ## Features
 
 - **A living island.** Every world is named and grown from a seed, round with bays and headlands or square: relief,
-  erosion, rivers, lakes, waterfalls off the edge, climate, biomes and forests with glades, sparse stands and
-  riverside meadows. Nothing grows on cliffs. Seasons change foliage, snow settles and melts, fire spreads with the
+  erosion, rivers that start from a cave or a small pond and pour off the edge as waterfalls, lakes, climate,
+  biomes and forests with glades, sparse stands and riverside meadows. Nothing grows on cliffs. Seasons change foliage, snow settles and melts, fire spreads with the
   wind.
 - **Ruins of a forgotten people.** Every island hides a handful of weathered megaliths on dry, level ground: stone
   circles, rows of standing stones, dolmens, half-buried stone heads, fallen colonnades with a ruined arch, and
@@ -56,6 +56,15 @@ procedurally generated island rendered with WebGPU.
 - **Tribes with their own lives.** People gather, hunt, fish, farm, chop, quarry, build camps and huts, warm
   themselves at campfires, pray, learn technologies, migrate and split into new tribes. Herds of deer, mammoths and
   ibex graze and flee, ibex up the nearest heights, and wolf packs roam far from people.
+- **From stone to iron.** Tribes climb from the Stone Age through the Neolithic and the Copper and Bronze Ages to
+  the Iron Age. They dig clay, fire pottery, weave linen, plough fields of wheat, barley and flax, plant orchards,
+  mine copper, tin and iron, smelt and forge tools and weapons, and build granaries, longhouses, workshops,
+  palisades and stone houses that change style with the era. Buildings stand on levelled ground.
+- **Feuds, raids and peace.** Tribes claim land and hunting grounds, and quarrels over them turn neighbours wary or
+  hostile. War parties raid for food, archers and spearmen fight, defenders rally behind their walls, and weary
+  tribes send envoys with gifts. Wolves stalk lone people at night, and cornered beasts fight back.
+- **Scars that heal.** A meteor or a blast fells and burns the forest around it, a crater on a river fills into a
+  lake, and monuments lean, fall and break. Burnt land grows back over a few years, fireweed first.
 - **Powers with real parameters.** Elements, land and life powers (fire, lightning, rain, snow, explosions,
   meteors, earthquakes, raising and painting land, forests, healing, new tribes and more). Every power is described
   by a schema, so its strength, radius and other settings appear as controls automatically. World rules (how fast
