@@ -39,6 +39,7 @@ import {
   addSpear,
   addToolBasket,
 } from "./human-props.ts";
+import { addWarPaint } from "./war-props.ts";
 import { addBow, addDrawnBow, addPickaxe, addQuiver } from "./weapon-props.ts";
 
 export const HUMAN_PARTS = [
@@ -89,6 +90,7 @@ export const HUMAN_PARTS = [
   "helmet",
   "brooch",
   "buckle",
+  "warPaint",
 ] as const;
 
 export type HumanPart = (typeof HUMAN_PARTS)[number];
@@ -142,6 +144,7 @@ const PART_BUILDERS: Readonly<Record<HumanPart, PartBuilder>> = {
   torsoFemale: addFemaleTorso,
   torsoMale: addMaleTorso,
   tunic: addTunic,
+  warPaint: addWarPaint,
   wrap: addWrap,
 };
 
@@ -183,7 +186,18 @@ const CARRIED_PARTS: Readonly<Record<CarriedItem, HumanPart | null>> = {
   wood: "carriedWood",
 };
 
-const ARMED_POSES: ReadonlySet<PersonPose> = new Set(["idle", "run", "walk"]);
+const ARMED_POSES: ReadonlySet<PersonPose> = new Set([
+  "block",
+  "brawl",
+  "charge",
+  "fall",
+  "flinch",
+  "idle",
+  "march",
+  "run",
+  "thrust",
+  "walk",
+]);
 
 function torsoPart(appearance: PersonAppearance): HumanPart {
   if (appearance.ageGroup === "child") {

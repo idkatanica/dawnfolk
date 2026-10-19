@@ -2,7 +2,7 @@ import { Color, type Group, Sphere, Vector3 } from "three/webgpu";
 import { TOOL_MATERIALS, type ToolMaterial, WEAPON_KINDS, type WeaponKind } from "../../content/weapons.ts";
 import { MaterialSlot } from "../../models/materials.ts";
 import { type PersonAppearance, personAppearance, type TribeLook } from "../../models/people/appearance.ts";
-import { applyHumanClip, type HumanClipContext } from "../../models/people/human-clips.ts";
+import { applyHumanClip, HUMAN_CLIPS, type HumanClipContext } from "../../models/people/human-clips.ts";
 import { HUMAN_DETAILS } from "../../models/people/human-detail.ts";
 import { activityParts, appearanceParts, buildHumanParts, humanPartIndex } from "../../models/people/human-model.ts";
 import { FIGURE_SCALE, humanBoneScales } from "../../models/people/human-proportions.ts";
@@ -249,6 +249,7 @@ export class PeopleView {
       clip: clipCode,
       gameSeconds: input.gameSeconds,
       heading: people[offset + PersonField.Heading],
+      isOnce: HUMAN_CLIPS[PERSON_POSES[clipCode]].timing.kind === "once",
       rate: this.#strides.cyclesPerSecond(PERSON_POSES[clipCode], speed, visual.appearance),
       realSeconds: input.realSeconds,
     });

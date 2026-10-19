@@ -4,12 +4,14 @@ interface MotionStep {
   readonly clip: number;
   readonly gameSeconds: number;
   readonly heading: number;
+  readonly isOnce: boolean;
   readonly rate: number;
   readonly realSeconds: number;
 }
 
 export const BLEND_SECONDS = 0.3;
 export const TURN_RATE = 6;
+export const ONCE_END = 0.999;
 
 export class AgentMotion {
   blend = 1;
@@ -31,22 +33,36 @@ export class AgentMotion {
 
   advance(step: MotionStep): void {
     if (step.clip !== this.clip) {
-      this.#switchClip(step.clip);
+      this.#switchClip(step.clip, step.isOnce);
     }
 
     this.#rate = step.rate;
-    this.phase = fractionalPart(this.phase + step.gameSeconds * step.rate);
+    this.phase = this.#nextPhase(step);
     this.previousPhase = fractionalPart(this.previousPhase + step.gameSeconds * this.#previousRate);
     this.blend = Math.min(1, this.blend + step.realSeconds / BLEND_SECONDS);
     this.#turnToward(step.heading, step.realSeconds);
   }
 
-  #switchClip(clip: number): void {
+  #switchClip(clip: number, isOnce: boolean): void {
     this.previousClip = this.clip;
     this.previousPhase = this.phase;
     this.#previousRate = this.#rate;
     this.clip = clip;
     this.blend = 0;
+
+    if (isOnce) {
+      this.phase = 0;
+    }
+  }
+
+  #nextPhase(step: MotionStep): number {
+    const phase = this.phase + step.gameSeconds * step.rate;
+
+    if (step.isOnce) {
+      return Math.min(ONCE_END, phase);
+    }
+
+    return fractionalPart(phase);
   }
 
   #turnToward(heading: number, realSeconds: number): void {

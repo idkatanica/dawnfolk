@@ -94,7 +94,15 @@ interface InspectionSources {
   world: WorldState;
 }
 
-const ANIMAL_ACTIVITIES = { dead: "Dead", run: "Running away", walk: "Wandering" } as const;
+const ANIMAL_ACTIVITIES = {
+  attack: "Attacking",
+  charge: "Charging",
+  dead: "Dead",
+  fall: "Dead",
+  flinch: "Wounded",
+  run: "Running away",
+  walk: "Wandering",
+} as const;
 
 export function inspect(selection: Selection, sources: InspectionSources): Inspection | null {
   switch (selection.kind) {

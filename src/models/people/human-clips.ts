@@ -3,6 +3,7 @@ import type { CarriedItem, PersonPose } from "../../world/agent-poses.ts";
 import { arc, cosineWave, degrees, type Keyframe, keyframes, pulse, wave } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
 import type { MotionStyle } from "./appearance.ts";
+import { FIGHT_CLIPS } from "./fight-clips.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
 import { HumanBone, otherSide, SIDES, type Side } from "./human-skeleton.ts";
 
@@ -14,9 +15,12 @@ export interface HumanClipContext {
   readonly motion: MotionStyle;
 }
 
-type ClipTiming = { readonly kind: "seconds"; readonly cycleSeconds: number } | { readonly kind: "stride" };
+type ClipTiming =
+  | { readonly kind: "once"; readonly cycleSeconds: number }
+  | { readonly kind: "seconds"; readonly cycleSeconds: number }
+  | { readonly kind: "stride" };
 
-interface HumanClip {
+export interface HumanClip {
   readonly apply: (pose: Pose, phase: number, context: HumanClipContext) => void;
   readonly timing: ClipTiming;
   readonly tool: HumanTool | null;
@@ -602,6 +606,7 @@ export const HUMAN_CLIPS: Readonly<Record<PersonPose, HumanClip>> = {
   sleep: { apply: sleep, timing: seconds(6), tool: null },
   throw: { apply: throwSpear, timing: seconds(1.7), tool: "spear" },
   walk: { apply: walk, timing: STRIDE_TIMING, tool: null },
+  ...FIGHT_CLIPS,
 };
 
 export function applyHumanClip(pose: Pose, clipPose: PersonPose, phase: number, context: HumanClipContext): void {
