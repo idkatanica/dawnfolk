@@ -25,9 +25,9 @@ export interface EnclosurePieces {
 }
 
 export const ENCLOSURE_SEGMENT_LENGTH = 5.6;
+export const ENCLOSURE_FOOTING_DEPTH = 0.3;
 
 const HALF_SEGMENT = ENCLOSURE_SEGMENT_LENGTH / 2;
-const FOOTING_DEPTH = 0.3;
 const STAKE_SALT = 23.7;
 const STONE_SALT = 31.1;
 const RAIL_GRIP = 0.065;
@@ -74,10 +74,10 @@ function stakeRun(context: StructureContext, span: Span): void {
 
     addStake(
       context,
-      [x, -FOOTING_DEPTH, 0],
-      height + FOOTING_DEPTH,
+      [x, -ENCLOSURE_FOOTING_DEPTH, 0],
+      height + ENCLOSURE_FOOTING_DEPTH,
       radius,
-      rising(0.05, 0.82, -FOOTING_DEPTH, 3.5),
+      rising(0.05, 0.82, -ENCLOSURE_FOOTING_DEPTH, 3.5),
       PALISADE_RAILS
     );
   }
@@ -116,10 +116,16 @@ export function palisadeGate(context: StructureContext): void {
         ? { from: -HALF_SEGMENT, to: -GATE_POST_X - postRadius }
         : { from: GATE_POST_X + postRadius, to: HALF_SEGMENT }
     );
-    addLog(context, [side * GATE_POST_X, -FOOTING_DEPTH, 0], [side * GATE_POST_X, GATE_POST_HEIGHT, 0], postRadius, {
-      buildOrder: rising(0.1, 0.7, -FOOTING_DEPTH, GATE_POST_HEIGHT),
-      slot: MaterialSlot.Wood,
-    });
+    addLog(
+      context,
+      [side * GATE_POST_X, -ENCLOSURE_FOOTING_DEPTH, 0],
+      [side * GATE_POST_X, GATE_POST_HEIGHT, 0],
+      postRadius,
+      {
+        buildOrder: rising(0.1, 0.7, -ENCLOSURE_FOOTING_DEPTH, GATE_POST_HEIGHT),
+        slot: MaterialSlot.Wood,
+      }
+    );
   }
 
   addLog(context, [-GATE_POST_X, GATE_LINTEL_HEIGHT, 0], [GATE_POST_X, GATE_LINTEL_HEIGHT, 0], 0.2, {
@@ -130,8 +136,8 @@ export function palisadeGate(context: StructureContext): void {
 }
 
 function stoneCourse(context: StructureContext, span: Span, course: number): void {
-  const bottom = course * COURSE_HEIGHT - FOOTING_DEPTH;
-  const top = Math.min(WALL_TOP, (course + 1) * COURSE_HEIGHT - FOOTING_DEPTH);
+  const bottom = course * COURSE_HEIGHT - ENCLOSURE_FOOTING_DEPTH;
+  const top = Math.min(WALL_TOP, (course + 1) * COURSE_HEIGHT - ENCLOSURE_FOOTING_DEPTH);
 
   let left = span.from;
 
@@ -141,7 +147,7 @@ function stoneCourse(context: StructureContext, span: Span, course: number): voi
     const depth = WALL_THICKNESS * (0.94 + 0.06 * hashToUnit(stone, course, STONE_SALT));
 
     addBlock(context, [right - left, top - bottom, depth], [(left + right) / 2, (bottom + top) / 2, 0], {
-      buildOrder: 0.05 + 0.75 * ((top + FOOTING_DEPTH) / (WALL_TOP + FOOTING_DEPTH)),
+      buildOrder: 0.05 + 0.75 * ((top + ENCLOSURE_FOOTING_DEPTH) / (WALL_TOP + ENCLOSURE_FOOTING_DEPTH)),
       shade: 0.74 + 0.26 * hashToUnit(stone, course + 7, STONE_SALT),
       slot: (course + stone) % 4 === 0 ? MaterialSlot.PaleStone : MaterialSlot.Stone,
     });
@@ -152,7 +158,7 @@ function stoneCourse(context: StructureContext, span: Span, course: number): voi
 
 function stoneRun(context: StructureContext, span: Span): void {
   if (isDetailed(context)) {
-    const courses = Math.ceil((WALL_TOP + FOOTING_DEPTH) / COURSE_HEIGHT);
+    const courses = Math.ceil((WALL_TOP + ENCLOSURE_FOOTING_DEPTH) / COURSE_HEIGHT);
 
     for (let course = 0; course < courses; course += 1) {
       stoneCourse(context, span, course);
@@ -160,9 +166,9 @@ function stoneRun(context: StructureContext, span: Span): void {
   } else {
     addBlock(
       context,
-      [span.to - span.from, WALL_TOP + FOOTING_DEPTH, WALL_THICKNESS],
-      [(span.from + span.to) / 2, (WALL_TOP - FOOTING_DEPTH) / 2, 0],
-      { buildOrder: rising(0.05, 0.8, -FOOTING_DEPTH, WALL_TOP), shade: 0.85, slot: MaterialSlot.Stone }
+      [span.to - span.from, WALL_TOP + ENCLOSURE_FOOTING_DEPTH, WALL_THICKNESS],
+      [(span.from + span.to) / 2, (WALL_TOP - ENCLOSURE_FOOTING_DEPTH) / 2, 0],
+      { buildOrder: rising(0.05, 0.8, -ENCLOSURE_FOOTING_DEPTH, WALL_TOP), shade: 0.85, slot: MaterialSlot.Stone }
     );
   }
 
@@ -188,9 +194,13 @@ export function stoneWallGate(context: StructureContext): void {
     );
     addBlock(
       context,
-      [PILLAR_WIDTH, PILLAR_TOP + FOOTING_DEPTH, WALL_THICKNESS + 0.25],
-      [side * PILLAR_X, (PILLAR_TOP - FOOTING_DEPTH) / 2, 0],
-      { buildOrder: rising(0.08, 0.75, -FOOTING_DEPTH, PILLAR_TOP), shade: 0.95, slot: MaterialSlot.PaleStone }
+      [PILLAR_WIDTH, PILLAR_TOP + ENCLOSURE_FOOTING_DEPTH, WALL_THICKNESS + 0.25],
+      [side * PILLAR_X, (PILLAR_TOP - ENCLOSURE_FOOTING_DEPTH) / 2, 0],
+      {
+        buildOrder: rising(0.08, 0.75, -ENCLOSURE_FOOTING_DEPTH, PILLAR_TOP),
+        shade: 0.95,
+        slot: MaterialSlot.PaleStone,
+      }
     );
   }
 

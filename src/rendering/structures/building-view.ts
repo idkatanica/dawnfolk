@@ -3,18 +3,24 @@ import {
   equal,
   Fn,
   float,
+  fract,
   int,
   mix,
   mx_noise_float,
   normalLocal,
   positionLocal,
+  positionWorld,
   select,
+  smoothstep,
   time,
   varying,
   vec3,
 } from "three/tsl";
 import {
+  BoxGeometry,
+  type BufferGeometry,
   Color,
+  CylinderGeometry,
   Group,
   type InstancedBufferGeometry,
   Mesh,
@@ -29,13 +35,18 @@ import type { WorldMirror } from "../../game/world-mirror.ts";
 import { MaterialSlot, SLOT_COLOR_TABLE } from "../../models/materials.ts";
 import type { MeshData } from "../../models/mesh/mesh-data.ts";
 import { buildBuildingModel, GLOW_PART } from "../../models/structures/building-models.ts";
-import { buildEnclosurePieces, type EnclosureKind } from "../../models/structures/enclosures.ts";
+import {
+  buildEnclosurePieces,
+  ENCLOSURE_FOOTING_DEPTH,
+  ENCLOSURE_SEGMENT_LENGTH,
+  type EnclosureKind,
+} from "../../models/structures/enclosures.ts";
 import { buildMineModel, MINE_SCALE, type MineOre } from "../../models/structures/mine-model.ts";
 import { parseHexColor } from "../../shared/color.ts";
 import { clamp, FULL_TURN, saturate } from "../../shared/math.ts";
 import type { BuildingView as BuildingSnapshot, TribeSummary } from "../../simulation/frame.ts";
 import type { AgentViewInput } from "../agents/agent-view-input.ts";
-import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
+import { geometryFromMeshData, InterleavedInstances, toInstancedGeometry } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import { isLitCampfire } from "./lit-campfire.ts";
 
@@ -47,6 +58,9 @@ const WORKPLACE_GLOW = 0.55;
 const SMALLEST_RING = 10;
 const PLASTERED_STYLE = eraDefinition("copperAge").index;
 const TILED_STYLE = eraDefinition("ironAge").index;
+const STONE_FOOTING_STYLE = eraDefinition("neolithic").index;
+const EARTH = vec3(0.3, 0.23, 0.16);
+const ROUND_KINDS: ReadonlySet<BuildingKind> = new Set(["hut", "kiln", "smelter", "tent"]);
 const GLOWING_KINDS: ReadonlySet<BuildingKind> = new Set(["forge", "kiln", "smelter"]);
 const MINE_ORES: readonly MineOre[] = ["copper", "tin", "iron"];
 const ENCLOSURE_KINDS: readonly EnclosureKind[] = ["palisade", "stoneWall"];
@@ -60,7 +74,22 @@ const BUILDING_FIELDS = [
   { name: "buildingState", size: 4 },
 ] as const;
 
+const PLINTH_FIELDS = [
+  { name: "plinthPlacement", size: 4 },
+  { name: "plinthBox", size: 4 },
+  { name: "plinthLook", size: 4 },
+] as const;
+
 const FLOATS_PER_BUILDING = 12;
+const FLOATS_PER_PLINTH = 12;
+const GROUND_BAND = 0.3;
+const PLINTH_INSET = 0.1;
+const PLINTH_TOP = -0.03;
+const PLINTH_FOOTING = 0.6;
+const TALLEST_PLINTH = 3;
+const SINKING_ALLOWANCE = 0.6;
+const ROUND_PLINTH_SIDES = 14;
+const STONE_COURSE = 0.42;
 const CENTER_PROBE: readonly GroundProbe[] = [[0, 0]];
 const MINE_GROUND_PROBES: readonly GroundProbe[] = [
   [0, 0],
@@ -74,6 +103,34 @@ const MINE_GROUND_PROBES: readonly GroundProbe[] = [
 
 type GroundProbe = readonly [number, number];
 
+interface GroundBox {
+  readonly centerX: number;
+  readonly centerZ: number;
+  readonly isRound: boolean;
+  readonly length: number;
+  readonly width: number;
+}
+
+interface Footing {
+  readonly lift: number;
+  readonly plinth: GroundBox | null;
+  readonly probes: readonly GroundProbe[];
+  readonly sinking: number;
+}
+
+const MINE_FOOTING: Footing = { lift: 0, plinth: null, probes: MINE_GROUND_PROBES, sinking: 0 };
+const CAMPFIRE_FOOTING: Footing = { lift: 0, plinth: null, probes: CENTER_PROBE, sinking: 0 };
+const ENCLOSURE_FOOTING: Footing = {
+  lift: ENCLOSURE_FOOTING_DEPTH,
+  plinth: null,
+  probes: [
+    [-ENCLOSURE_SEGMENT_LENGTH / 2, 0],
+    [0, 0],
+    [ENCLOSURE_SEGMENT_LENGTH / 2, 0],
+  ],
+  sinking: 0,
+};
+
 type ModelKey = string;
 
 interface BuildingBatch {
@@ -84,7 +141,6 @@ interface BuildingBatch {
 }
 
 interface PiecePlacement {
-  readonly groundProbes: readonly GroundProbe[];
   readonly key: ModelKey;
   readonly progress: number;
   readonly rotation: number;
@@ -93,6 +149,7 @@ interface PiecePlacement {
 }
 
 interface ModelSource {
+  readonly footing: (high: MeshData) => Footing;
   readonly key: ModelKey;
   readonly mesh: (level: "high" | "low") => MeshData;
 }
@@ -103,15 +160,63 @@ function slotColor(slot: number): Vector3 {
   return new Vector3(color.r, color.g, color.b);
 }
 
-function groundUnder(input: AgentViewInput, piece: PiecePlacement): number {
+function groundBoxOf(mesh: MeshData, isRound: boolean): GroundBox {
+  const { positions } = mesh;
+
+  let minimumX = Number.POSITIVE_INFINITY;
+  let maximumX = Number.NEGATIVE_INFINITY;
+  let minimumZ = Number.POSITIVE_INFINITY;
+  let maximumZ = Number.NEGATIVE_INFINITY;
+
+  for (let offset = 0; offset < positions.length; offset += 3) {
+    if (positions[offset + 1] < GROUND_BAND) {
+      minimumX = Math.min(minimumX, positions[offset]);
+      maximumX = Math.max(maximumX, positions[offset]);
+      minimumZ = Math.min(minimumZ, positions[offset + 2]);
+      maximumZ = Math.max(maximumZ, positions[offset + 2]);
+    }
+  }
+
+  return {
+    centerX: (minimumX + maximumX) / 2,
+    centerZ: (minimumZ + maximumZ) / 2,
+    isRound,
+    length: Math.max(0, maximumZ - minimumZ - PLINTH_INSET * 2),
+    width: Math.max(0, maximumX - minimumX - PLINTH_INSET * 2),
+  };
+}
+
+function plinthFooting(high: MeshData, isRound: boolean): Footing {
+  const box = groundBoxOf(high, isRound);
+
+  const probes: GroundProbe[] = [];
+
+  for (const sideX of [-0.5, 0, 0.5]) {
+    for (const sideZ of [-0.5, 0, 0.5]) {
+      probes.push([box.centerX + sideX * box.width, box.centerZ + sideZ * box.length]);
+    }
+  }
+
+  return { lift: TALLEST_PLINTH, plinth: box, probes, sinking: SINKING_ALLOWANCE };
+}
+
+interface Seat {
+  readonly floor: number;
+  readonly lowest: number;
+}
+
+function seatOf(input: AgentViewInput, piece: PiecePlacement, footing: Footing): Seat {
   const cosine = Math.cos(piece.rotation);
   const sine = Math.sin(piece.rotation);
 
-  return Math.min(
-    ...piece.groundProbes.map(([localX, localZ]) =>
-      input.mirror.heightAt(piece.x + localX * cosine + localZ * sine, piece.z + localZ * cosine - localX * sine)
-    )
+  const heights = footing.probes.map(([localX, localZ]) =>
+    input.mirror.heightAt(piece.x + localX * cosine + localZ * sine, piece.z + localZ * cosine - localX * sine)
   );
+
+  const lowest = Math.min(...heights);
+  const highest = Math.max(...heights);
+
+  return { floor: Math.max(lowest, Math.min(highest - footing.sinking, lowest + footing.lift)), lowest };
 }
 
 function vectorNode(vector: Vector3) {
@@ -169,6 +274,57 @@ function createBuildingMaterial(): MeshStandardNodeMaterial {
   return material;
 }
 
+function createPlinthMaterial(): MeshStandardNodeMaterial {
+  const material = new MeshStandardNodeMaterial();
+  const placement = attribute("plinthPlacement", "vec4");
+  const box = attribute("plinthBox", "vec4");
+  const look = attribute("plinthLook", "vec4");
+
+  const depth = look.x;
+  const damage = look.y;
+  const style = look.z;
+
+  const local = vec3(
+    positionLocal.x.mul(box.z).add(box.x),
+    positionLocal.y.mul(depth),
+    positionLocal.z.mul(box.w).add(box.y)
+  );
+
+  material.positionNode = Fn(() => {
+    normalLocal.assign(rotateAroundUp(normalLocal, placement.w));
+
+    return rotateAroundUp(local, placement.w).add(placement.xyz);
+  })();
+
+  const grain = mx_noise_float(positionWorld.mul(1.3)).mul(0.22).add(0.86);
+  const mortar = smoothstep(0, 0.1, fract(positionWorld.y.div(STONE_COURSE)))
+    .mul(0.45)
+    .add(0.55);
+  const stone = vectorNode(slotColor(MaterialSlot.Stone)).mul(mortar);
+  const footing = select(style.greaterThanEqual(STONE_FOOTING_STYLE - 0.5), stone, EARTH);
+
+  material.colorNode = mix(footing.mul(grain), CHARCOAL, damage.mul(0.6));
+  material.roughnessNode = float(0.92);
+  material.metalnessNode = float(0);
+
+  return material;
+}
+
+function createPlinthBatch(shape: BufferGeometry, material: MeshStandardNodeMaterial): BuildingBatch {
+  const geometry = toInstancedGeometry(shape.translate(0, -0.5, 0));
+
+  const instances = new InterleavedInstances(geometry, PLINTH_FIELDS, 16);
+  const mesh = new Mesh(geometry, material);
+
+  geometry.instanceCount = 0;
+  mesh.frustumCulled = false;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.visible = false;
+
+  return { count: 0, geometry, instances, mesh };
+}
+
 function mineKey(ore: MineOre): ModelKey {
   return `mine:${ore}`;
 }
@@ -181,16 +337,28 @@ function modelSources(): ModelSource[] {
   const sources: ModelSource[] = [];
 
   for (const kind of BUILDINGS_WITH_ONE_MODEL) {
-    sources.push({ key: kind, mesh: (level) => buildBuildingModel(kind, level) });
+    sources.push({
+      footing: (high) => (kind === "campfire" ? CAMPFIRE_FOOTING : plinthFooting(high, ROUND_KINDS.has(kind))),
+      key: kind,
+      mesh: (level) => buildBuildingModel(kind, level),
+    });
   }
 
   for (const ore of MINE_ORES) {
-    sources.push({ key: mineKey(ore), mesh: (level) => buildMineModel(ore, level) });
+    sources.push({ footing: () => MINE_FOOTING, key: mineKey(ore), mesh: (level) => buildMineModel(ore, level) });
   }
 
   for (const kind of ENCLOSURE_KINDS) {
-    sources.push({ key: enclosureKey(kind, "segment"), mesh: (level) => buildEnclosurePieces(kind, level).segment });
-    sources.push({ key: enclosureKey(kind, "gate"), mesh: (level) => buildEnclosurePieces(kind, level).gate });
+    sources.push({
+      footing: () => ENCLOSURE_FOOTING,
+      key: enclosureKey(kind, "segment"),
+      mesh: (level) => buildEnclosurePieces(kind, level).segment,
+    });
+    sources.push({
+      footing: () => ENCLOSURE_FOOTING,
+      key: enclosureKey(kind, "gate"),
+      mesh: (level) => buildEnclosurePieces(kind, level).gate,
+    });
   }
 
   return sources;
@@ -214,17 +382,31 @@ export class BuildingView {
   readonly group = new Group();
   readonly #batches = new Map<ModelKey, readonly BuildingBatch[]>();
   readonly #bounds = new Sphere(new Vector3(), PIECE_RADIUS);
-  readonly #segmentLength: number;
+  readonly #footings = new Map<ModelKey, Footing>();
+  readonly #plinths: readonly BuildingBatch[];
+  readonly #segmentLength = ENCLOSURE_SEGMENT_LENGTH;
   readonly #tribeAccents = new Map<number, Color>();
 
   constructor() {
     const material = createBuildingMaterial();
 
     for (const source of modelSources()) {
-      this.#batches.set(source.key, this.#createBatches(source, material));
+      const high = source.mesh("high");
+
+      this.#batches.set(source.key, this.#createBatches([high, source.mesh("low")], material));
+      this.#footings.set(source.key, source.footing(high));
     }
 
-    this.#segmentLength = buildEnclosurePieces("palisade", "low").segmentLength;
+    const plinthMaterial = createPlinthMaterial();
+
+    this.#plinths = [
+      createPlinthBatch(new BoxGeometry(1, 1, 1), plinthMaterial),
+      createPlinthBatch(new CylinderGeometry(0.5, 0.5, 1, ROUND_PLINTH_SIDES), plinthMaterial),
+    ];
+
+    for (const plinths of this.#plinths) {
+      this.group.add(plinths.mesh);
+    }
   }
 
   update(input: AgentViewInput): void {
@@ -236,6 +418,10 @@ export class BuildingView {
       for (const batch of batches) {
         batch.count = 0;
       }
+    }
+
+    for (const plinths of this.#plinths) {
+      plinths.count = 0;
     }
 
     for (const building of frame.buildings) {
@@ -254,6 +440,15 @@ export class BuildingView {
         }
       }
     }
+
+    for (const plinths of this.#plinths) {
+      plinths.geometry.instanceCount = plinths.count;
+      plinths.mesh.visible = plinths.count > 0;
+
+      if (plinths.count > 0) {
+        plinths.instances.markUpdated(plinths.count);
+      }
+    }
   }
 
   dispose(): void {
@@ -262,11 +457,15 @@ export class BuildingView {
         batch.geometry.dispose();
       }
     }
+
+    for (const plinths of this.#plinths) {
+      plinths.geometry.dispose();
+    }
   }
 
-  #createBatches(source: ModelSource, material: MeshStandardNodeMaterial): BuildingBatch[] {
-    return (["high", "low"] as const).map((level) => {
-      const geometry = geometryFromMeshData(source.mesh(level), ["buildOrder", "part", "shade", "slot"]);
+  #createBatches(meshes: readonly MeshData[], material: MeshStandardNodeMaterial): BuildingBatch[] {
+    return meshes.map((meshData) => {
+      const geometry = geometryFromMeshData(meshData, ["buildOrder", "part", "shade", "slot"]);
 
       const instances = new InterleavedInstances(geometry, BUILDING_FIELDS, 16);
       const mesh = new Mesh(geometry, material);
@@ -288,11 +487,7 @@ export class BuildingView {
 
     const key = building.kind === "mine" ? mineKey(oreOfVariant(building.variant)) : building.kind;
 
-    const groundProbes = building.kind === "mine" ? MINE_GROUND_PROBES : CENTER_PROBE;
-
-    return [
-      { groundProbes, key, progress: building.progress, rotation: building.rotation, x: building.x, z: building.z },
-    ];
+    return [{ key, progress: building.progress, rotation: building.rotation, x: building.x, z: building.z }];
   }
 
   #ringOf(building: BuildingSnapshot, mirror: WorldMirror): PiecePlacement[] {
@@ -318,7 +513,6 @@ export class BuildingView {
       }
 
       pieces.push({
-        groundProbes: CENTER_PROBE,
         key: enclosureKey(kind, index === 0 ? "gate" : "segment"),
         progress: saturate(building.progress * count - index),
         rotation: -angle - Math.PI / 2,
@@ -331,19 +525,21 @@ export class BuildingView {
   }
 
   #place(input: AgentViewInput, building: BuildingSnapshot, piece: PiecePlacement): void {
-    const y = groundUnder(input, piece);
+    const batches = this.#batches.get(piece.key);
+    const footing = this.#footings.get(piece.key);
+
+    if (batches === undefined || footing === undefined) {
+      return;
+    }
+
+    const seat = seatOf(input, piece, footing);
+    const y = seat.floor;
 
     this.#bounds.center.set(piece.x, y + 2, piece.z);
 
     const distance = input.camera.position.distanceTo(this.#bounds.center);
 
     if (distance > LEVEL_DISTANCES.low * input.detail || !input.frustum.intersectsSphere(this.#bounds)) {
-      return;
-    }
-
-    const batches = this.#batches.get(piece.key);
-
-    if (batches === undefined) {
       return;
     }
 
@@ -361,6 +557,27 @@ export class BuildingView {
     data.set([piece.progress, accent.r, accent.g, accent.b], offset + 4);
     data.set([saturate(1 - building.health), this.#glowOf(building), building.style, 0], offset + 8);
     batch.count += 1;
+
+    if (footing.plinth !== null) {
+      this.#placePlinth(building, piece, footing.plinth, seat);
+    }
+  }
+
+  #placePlinth(building: BuildingSnapshot, piece: PiecePlacement, box: GroundBox, seat: Seat): void {
+    const [boxes, rounds] = this.#plinths;
+
+    const plinths = box.isRound ? rounds : boxes;
+
+    plinths.instances.ensureCapacity(plinths.count + 1);
+
+    const data = plinths.instances.array;
+    const offset = plinths.count * FLOATS_PER_PLINTH;
+    const depth = seat.floor - seat.lowest + PLINTH_FOOTING;
+
+    data.set([piece.x, seat.floor + PLINTH_TOP, piece.z, piece.rotation], offset);
+    data.set([box.centerX, box.centerZ, box.width, box.length], offset + 4);
+    data.set([depth, saturate(1 - building.health), building.style, 0], offset + 8);
+    plinths.count += 1;
   }
 
   #glowOf(building: BuildingSnapshot): number {
