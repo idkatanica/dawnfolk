@@ -36,7 +36,7 @@
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
-https://github.com/user-attachments/assets/9b08c23d-880c-456d-ba26-e48c0087500f
+https://github.com/user-attachments/assets/d04e30b3-ad84-4074-a5a0-45f5a0de384b
 
 Shape the land, call rain, fire and lightning, and watch small tribes gather, build, feud and climb from the Stone
 Age to the Iron Age on a procedurally generated island rendered with WebGPU.
