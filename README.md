@@ -36,7 +36,7 @@
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
-![The island floating above the clouds: a mountain, a lake, forests and red desert hills](.github/screenshots/island.webp)
+https://github.com/user-attachments/assets/9b08c23d-880c-456d-ba26-e48c0087500f
 
 Shape the land, call rain, fire and lightning, and watch small tribes gather, build, feud and climb from the Stone
 Age to the Iron Age on a procedurally generated island rendered with WebGPU.
