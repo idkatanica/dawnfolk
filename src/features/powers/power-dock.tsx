@@ -113,7 +113,7 @@ export function PowerDock() {
   const { category, setCategory } = useCategory();
 
   return (
-    <Island className="max-w-full">
+    <Island className="max-w-full" surface="glass">
       <Tabs.Root className="flex flex-col gap-2 p-2" onValueChange={setCategory} value={category}>
         <Tabs.List aria-label="Kinds of powers" className={cn(SEGMENT_TRACK, "self-center")}>
           {DOCK_CATEGORIES.map((entry) => (

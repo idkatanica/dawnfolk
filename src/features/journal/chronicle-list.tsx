@@ -18,7 +18,7 @@ function ChronicleItem({ entry }: { readonly entry: ChronicleEntry }) {
   return (
     <li>
       <button
-        className="flex w-full items-start gap-3 rounded-xl px-2.5 py-2 text-left outline-none transition-colors hover:bg-veil focus-visible:ring-2 focus-visible:ring-dawn"
+        className="flex w-full items-start gap-3 rounded-xl px-2.5 py-2 text-left outline-none transition-colors hover:bg-paper-hover focus-visible:ring-2 focus-visible:ring-dawn"
         onClick={showPlace}
         type="button"
       >

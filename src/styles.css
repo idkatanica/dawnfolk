@@ -6,7 +6,7 @@
 
   --text-2xs: 0.6875rem;
 
-  --radius-island: 22px;
+  --radius-island: 18px;
   --radius-sheet: 1.75rem;
 
   --container-dialog: min(38rem, calc(100vw - 1.5rem));
@@ -23,6 +23,10 @@
   --color-ink-soft: #46546a;
   --color-ink-muted: #76849a;
   --color-line: rgb(29 39 51 / 0.12);
+  --color-paper: #fbf8f3;
+  --color-paper-edge: rgb(92 70 42 / 0.16);
+  --color-paper-hover: rgb(92 70 42 / 0.07);
+  --color-paper-press: rgb(92 70 42 / 0.12);
   --color-veil: rgb(255 255 255 / 0.55);
   --color-veil-strong: rgb(255 255 255 / 0.78);
   --color-dawn: #dd6f35;
@@ -36,6 +40,8 @@
   --color-gold: #c9952c;
 
   --shadow-segment: 0 1px 2px rgb(29 39 51 / 0.1), 0 0 0 0.5px rgb(29 39 51 / 0.08);
+
+  --shadow-panel: 0 1px 2px rgb(52 40 26 / 0.1), 0 10px 30px -12px rgb(52 40 26 / 0.32);
 
   --shadow-thumb: 0 1px 3px rgb(29 39 51 / 0.28), 0 0 0 0.5px rgb(29 39 51 / 0.16);
 
@@ -87,6 +93,12 @@ body {
   --color-ink-muted: #556175;
 
   pointer-events: auto;
+}
+
+.island-solid {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .island > .glass-surface__content {

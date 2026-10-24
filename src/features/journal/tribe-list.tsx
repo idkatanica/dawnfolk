@@ -83,7 +83,7 @@ function TribeCard({ tribe }: { readonly tribe: TribeSummary }) {
   return (
     <li>
       <button
-        className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left outline-none transition-colors hover:bg-veil focus-visible:ring-2 focus-visible:ring-dawn"
+        className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left outline-none transition-colors hover:bg-paper-hover focus-visible:ring-2 focus-visible:ring-dawn"
         onClick={showTribe}
         type="button"
       >

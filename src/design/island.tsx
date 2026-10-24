@@ -3,11 +3,9 @@ import type { ReactNode } from "react";
 import { cn } from "./cn.ts";
 import { useIsTouch } from "./use-media-query.ts";
 
-const ISLAND_RADIUS = 22;
+const ISLAND_RADIUS = 18;
 
-const PANEL_RADIUS = 28;
-
-type IslandFrost = "clear" | "dense";
+export type IslandSurface = "glass" | "solid";
 
 const REFRACTING_GLASS: Partial<GlassSurfaceOptions> = {
   backgroundOpacity: 0.5,
@@ -20,48 +18,43 @@ const REFRACTING_GLASS: Partial<GlassSurfaceOptions> = {
 
 const FROSTED_GLASS: Partial<GlassSurfaceOptions> = { ...REFRACTING_GLASS, backgroundOpacity: 0.68, refraction: false };
 
-const DENSE_REFRACTING_GLASS: Partial<GlassSurfaceOptions> = {
-  ...REFRACTING_GLASS,
-  backgroundOpacity: 0.66,
-  displace: 4,
-  distortionScale: -70,
-};
-
-const DENSE_FROSTED_GLASS: Partial<GlassSurfaceOptions> = { ...FROSTED_GLASS, backgroundOpacity: 0.8 };
-
-interface GlassLooks {
-  readonly frosted: Partial<GlassSurfaceOptions>;
-  readonly refracting: Partial<GlassSurfaceOptions>;
-}
-
-const GLASS: Readonly<Record<IslandFrost, GlassLooks>> = {
-  clear: { frosted: FROSTED_GLASS, refracting: REFRACTING_GLASS },
-  dense: { frosted: DENSE_FROSTED_GLASS, refracting: DENSE_REFRACTING_GLASS },
-};
-
-const RADIUS: Readonly<Record<IslandFrost, number>> = { clear: ISLAND_RADIUS, dense: PANEL_RADIUS };
-
 interface IslandProps {
   readonly children: ReactNode;
   readonly className?: string | undefined;
-  readonly frost?: IslandFrost | undefined;
+  readonly surface?: IslandSurface | undefined;
 }
 
-export function Island({ children, className, frost = "clear" }: IslandProps) {
+function GlassIsland({ children, className }: Omit<IslandProps, "surface">) {
   const isTouch = useIsTouch();
 
-  const looks = GLASS[frost];
-  const glass = isTouch ? looks.frosted : looks.refracting;
+  const glass = isTouch ? FROSTED_GLASS : REFRACTING_GLASS;
 
   return (
     <GlassSurface
       {...glass}
-      borderRadius={RADIUS[frost]}
+      borderRadius={ISLAND_RADIUS}
       className={cn("island", className)}
       height="auto"
       width="auto"
     >
       {children}
     </GlassSurface>
+  );
+}
+
+export function Island({ children, className, surface = "solid" }: IslandProps) {
+  if (surface === "glass") {
+    return <GlassIsland className={className}>{children}</GlassIsland>;
+  }
+
+  return (
+    <div
+      className={cn(
+        "island island-solid rounded-island border border-paper-edge bg-paper text-ink shadow-panel",
+        className
+      )}
+    >
+      {children}
+    </div>
   );
 }
