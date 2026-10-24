@@ -11,6 +11,7 @@ import { useInterfaceStore } from "../interface/interface-store.ts";
 import { useWorldDraft } from "../new-world/use-world-draft.ts";
 import { NameField, SeedField, ShapeChoice } from "../new-world/world-fields.tsx";
 import { useWorldStore } from "../world/world-store.ts";
+import { GROUP_CLASS, GroupHeading, SettingsGroup } from "./settings-group.tsx";
 
 const QUALITY_LABELS: Readonly<Record<QualityLevel, string>> = { high: "High", low: "Light", medium: "Balanced" };
 
@@ -80,23 +81,23 @@ function QualityChoice() {
   const { applyQuality, changeQuality, hasChanged, quality } = useQualityChoice();
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-veil p-4">
+    <SettingsGroup
+      action={
+        <TextButton className="h-8 px-3.5" disabled={!hasChanged} onClick={applyQuality} tone="accent">
+          Apply
+        </TextButton>
+      }
+      description="The island is rebuilt from its seed to switch the quality."
+      title="Graphics"
+    >
       <ChoiceField
         description="Light suits phones and older laptops; High adds sharper shadows and more detail far away."
-        label="Graphics"
+        label="Quality"
         onChange={changeQuality}
         options={QUALITY_OPTIONS}
         value={quality}
       />
-
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-ink-muted text-xs">The island is rebuilt from its seed to switch the quality.</p>
-
-        <TextButton disabled={!hasChanged} onClick={applyQuality} tone="accent">
-          Apply
-        </TextButton>
-      </div>
-    </div>
+    </SettingsGroup>
   );
 }
 
@@ -105,11 +106,9 @@ function MapLabelsChoice() {
   const setLabelsShown = useInterfaceStore((state) => state.setLabelsShown);
 
   return (
-    <div className="flex flex-col gap-1 rounded-2xl bg-veil p-4">
+    <SettingsGroup description="Tribe banners and the names of peaks and lakes over the island." title="Display">
       <ToggleField isChecked={areLabelsShown} label="Map labels" onChange={setLabelsShown} />
-
-      <p className="text-ink-muted text-xs">Tribe banners and the names of peaks and lakes over the island.</p>
-    </div>
+    </SettingsGroup>
   );
 }
 
@@ -117,12 +116,8 @@ function NewWorld() {
   const { createWorld, draft } = useNewWorld();
 
   return (
-    <form aria-label="New world" className="flex flex-col gap-3 rounded-2xl bg-veil p-4" onSubmit={createWorld}>
-      <div className="flex flex-col gap-0.5">
-        <h3 className="font-semibold text-ink text-sm">New world</h3>
-
-        <p className="text-ink-muted text-xs">Every seed grows a different island. The current one is lost.</p>
-      </div>
+    <form aria-label="New world" className={GROUP_CLASS} onSubmit={createWorld}>
+      <GroupHeading description="Every seed grows a different island. The current one is lost." title="New world" />
 
       <NameField onChange={draft.changeName} onRoll={draft.rollName} value={draft.nameText} />
 
@@ -146,7 +141,7 @@ function NewWorld() {
 
 export function GraphicsSection() {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col">
       <QualityChoice />
 
       <MapLabelsChoice />

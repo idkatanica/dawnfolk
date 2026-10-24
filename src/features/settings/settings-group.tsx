@@ -1,0 +1,41 @@
+import type { ReactNode } from "react";
+import { cn } from "../../design/cn.ts";
+
+export const GROUP_CLASS = "flex flex-col gap-4 border-line border-t py-5 first:border-t-0 first:pt-0 last:pb-0";
+
+interface GroupHeadingProps {
+  readonly action?: ReactNode;
+  readonly description: string;
+  readonly title: string;
+}
+
+export function GroupHeading({ action, description, title }: GroupHeadingProps) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <h3 className="font-semibold text-ink text-sm">{title}</h3>
+
+        <p className="text-ink-soft text-xs leading-relaxed">{description}</p>
+      </div>
+
+      {action}
+    </div>
+  );
+}
+
+interface SettingsGroupProps extends GroupHeadingProps {
+  readonly children: ReactNode;
+  readonly className?: string | undefined;
+}
+
+export function SettingsGroup({ action, children, className, description, title }: SettingsGroupProps) {
+  return (
+    <section className={cn(GROUP_CLASS, className)}>
+      <GroupHeading action={action} description={description} title={title} />
+
+      {children}
+    </section>
+  );
+}
+
+export const FIELD_GRID = "grid gap-x-6 gap-y-4 sm:grid-cols-2";

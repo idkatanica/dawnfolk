@@ -6,6 +6,7 @@ import { RangeField } from "../../design/range-field.tsx";
 import { useHeldDraft } from "../../design/use-held-draft.ts";
 import type { WeatherView } from "../../simulation/frame.ts";
 import { useWorldStore } from "../world/world-store.ts";
+import { FIELD_GRID, SettingsGroup } from "./settings-group.tsx";
 
 const AUTOMATIC = "automatic";
 
@@ -77,49 +78,53 @@ function WeatherControls({ weather }: { readonly weather: WeatherView }) {
   const choice = weather.isAutomatic ? AUTOMATIC : weather.kind;
 
   return (
-    <div className="grid gap-x-5 gap-y-4 rounded-2xl bg-veil p-4 sm:grid-cols-2">
-      <ChoiceField
-        className="sm:col-span-2"
-        description="Pick the weather or let the seasons decide."
-        label="Weather"
-        onChange={changeWeather}
-        options={WEATHER_OPTIONS}
-        value={choice}
-      />
+    <div className="flex flex-col">
+      <SettingsGroup description="Pick the weather or let the seasons decide." title="Sky">
+        <ChoiceField
+          description="Pick the weather or let the seasons decide."
+          label="Weather"
+          onChange={changeWeather}
+          options={WEATHER_OPTIONS}
+          value={choice}
+        />
 
-      <RangeField
-        description="Where the wind blows from."
-        label="Wind from"
-        maximum={359}
-        minimum={0}
-        onChange={changeDirection}
-        step={1}
-        value={Math.round(wind.direction)}
-        valueText={`${compassName(wind.direction)} · ${Math.round(wind.direction)}°`}
-      />
+        <RangeField
+          description="Makes the whole island warmer or colder."
+          label="Temperature"
+          maximum={30}
+          minimum={-30}
+          onChange={changeTemperature}
+          step={1}
+          value={Math.round(weather.userTemperatureOffset)}
+          valueText={formatParameterValue(Math.round(weather.userTemperatureOffset), "celsius")}
+        />
+      </SettingsGroup>
 
-      <RangeField
-        description="Base wind speed before gusts."
-        label="Wind speed"
-        maximum={90}
-        minimum={0}
-        onChange={changeSpeed}
-        step={1}
-        value={Math.round(wind.speed)}
-        valueText={formatParameterValue(wind.speed, "kilometersPerHour")}
-      />
+      <SettingsGroup description="Where the wind blows from and how hard, before gusts." title="Wind">
+        <div className={FIELD_GRID}>
+          <RangeField
+            description="Where the wind blows from."
+            label="Wind from"
+            maximum={359}
+            minimum={0}
+            onChange={changeDirection}
+            step={1}
+            value={Math.round(wind.direction)}
+            valueText={`${compassName(wind.direction)} · ${Math.round(wind.direction)}°`}
+          />
 
-      <RangeField
-        className="sm:col-span-2"
-        description="Makes the whole island warmer or colder."
-        label="Temperature"
-        maximum={30}
-        minimum={-30}
-        onChange={changeTemperature}
-        step={1}
-        value={Math.round(weather.userTemperatureOffset)}
-        valueText={formatParameterValue(Math.round(weather.userTemperatureOffset), "celsius")}
-      />
+          <RangeField
+            description="Base wind speed before gusts."
+            label="Wind speed"
+            maximum={90}
+            minimum={0}
+            onChange={changeSpeed}
+            step={1}
+            value={Math.round(wind.speed)}
+            valueText={formatParameterValue(wind.speed, "kilometersPerHour")}
+          />
+        </div>
+      </SettingsGroup>
     </div>
   );
 }
