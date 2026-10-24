@@ -15,14 +15,14 @@ import {
   addSlab,
   addSpike,
   detail,
-  EMBER_PART,
+  GLOW_PART,
   isDetailed,
   rising,
   type StructureContext,
   stoneShade,
 } from "./structure-parts.ts";
 
-const GLOWING_EMBERS = { part: EMBER_PART, slot: MaterialSlot.Ember } as const;
+const GLOWING_EMBERS = { part: GLOW_PART, slot: MaterialSlot.Ember } as const;
 
 function radiusOf(point: SurfacePoint): number {
   return Math.hypot(point.position.x, point.position.z);

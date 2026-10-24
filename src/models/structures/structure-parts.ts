@@ -18,7 +18,7 @@ export interface StructureContext {
 
 type Order = number | ((point: SurfacePoint) => number);
 
-export const EMBER_PART = 1;
+export const GLOW_PART = 1;
 
 const STRUCTURE_NOISE = createVolumeNoise(createRandom(5151));
 

@@ -24,9 +24,7 @@ import { outermostHit } from "../mesh/surface-probe.ts";
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
 import { longhouse, stoneHouse } from "./era-dwellings.ts";
 import { forge, granary, kiln, smelter, workshop } from "./era-workplaces.ts";
-import { rising, type StructureContext, type StructureLevel, scaledMesh } from "./structure-parts.ts";
-
-export const GLOW_PART = 1;
+import { GLOW_PART, rising, type StructureContext, type StructureLevel, scaledMesh } from "./structure-parts.ts";
 
 const STRUCTURE_NOISE = createVolumeNoise(createRandom(3131));
 
