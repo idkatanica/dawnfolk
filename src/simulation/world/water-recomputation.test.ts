@@ -19,13 +19,13 @@ const TEST_OPTIONS: GenerationOptions = {
   shape: "round",
 };
 
-let world: WorldState;
-
-beforeEach(() => {
-  world = new WorldState(generateWorld(11, TEST_OPTIONS));
-});
-
 describe("water recomputation", () => {
+  let world: WorldState;
+
+  beforeEach(() => {
+    world = new WorldState(generateWorld(11, TEST_OPTIONS));
+  });
+
   it("waits for the land to stay still before recomputing", () => {
     const recomputation = new WaterRecomputation(world);
 
@@ -120,7 +120,9 @@ describe("water recomputation", () => {
     expect(Math.min(...world.terrain.carving)).toBeGreaterThanOrEqual(0);
     expect(world.waterVersion).toBe(1);
   });
+});
 
+describe("water recomputation over levelled land", () => {
   it("reports only the heights that recomputing changed", () => {
     const levelled = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 48 } });
 
