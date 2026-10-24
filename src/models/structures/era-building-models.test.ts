@@ -1,6 +1,7 @@
 import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { BUILDINGS } from "../../content/buildings.ts";
+import { MINED_DEPOSIT_KINDS } from "../../content/deposits.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
@@ -24,7 +25,6 @@ const WORKING_BUILDINGS: readonly SingleModelKind[] = [
   "workshop",
 ];
 const GLOWING_BUILDINGS: readonly SingleModelKind[] = ["forge", "kiln", "smelter"];
-const MINE_ORES: readonly MineOre[] = ["copper", "tin", "iron"];
 const ORE_SLOTS: Readonly<Record<MineOre, MaterialSlotIndex>> = {
   copper: MaterialSlot.CopperOre,
   iron: MaterialSlot.IronOre,
@@ -125,7 +125,7 @@ describe("era buildings", () => {
   });
 });
 
-describe.each(MINE_ORES)("%s mine", (ore) => {
+describe.each(MINED_DEPOSIT_KINDS)("%s mine", (ore) => {
   const high = buildMineModel(ore, "high");
   const low = buildMineModel(ore, "low");
 
@@ -142,7 +142,7 @@ describe.each(MINE_ORES)("%s mine", (ore) => {
   });
 
   it("heaps its own ore and no other", () => {
-    for (const other of MINE_ORES) {
+    for (const other of MINED_DEPOSIT_KINDS) {
       if (other === ore) {
         expect(high.channels.slot).toContain(ORE_SLOTS[other]);
       } else {

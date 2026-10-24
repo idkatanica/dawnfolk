@@ -294,9 +294,9 @@ export function packAnimals(animals: readonly Animal[]): Float32Array {
 }
 
 function buildingVariant(building: Building, world: WorldState): number {
-  const deposit = world.deposits.find((candidate) => candidate.id === building.depositId);
+  const deposit = world.depositById(building.depositId);
 
-  if (deposit === undefined) {
+  if (deposit === null) {
     return 0;
   }
 

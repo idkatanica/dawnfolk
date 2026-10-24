@@ -228,6 +228,16 @@ export class WorldState {
     return this.#crossingIndex.crossingAt(x, z);
   }
 
+  depositById(id: number): Deposit | null {
+    if (id < 0 || id >= this.deposits.length) {
+      return null;
+    }
+
+    const deposit = this.deposits[id];
+
+    return deposit.id === id ? deposit : null;
+  }
+
   isBurning(cell: number): boolean {
     return this.fields.fire[cell] > 0;
   }

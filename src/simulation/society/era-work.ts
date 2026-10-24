@@ -1,4 +1,4 @@
-import { DEPOSITS, type DepositKind } from "../../content/deposits.ts";
+import { DEPOSITS, type DepositKind, MINED_DEPOSIT_KINDS } from "../../content/deposits.ts";
 import type { RecipeId } from "../../content/recipes.ts";
 import { isWinter } from "../../content/seasons.ts";
 import { mineFor } from "./camp-plan.ts";
@@ -17,7 +17,6 @@ import { foodNeed, isWorthIt, type WorkOption } from "./work-needs.ts";
 import { chooseCraft } from "./workshops.ts";
 
 const ORE_TARGETS: Readonly<Record<DepositKind, number>> = { clay: 0, copper: 14, iron: 14, tin: 9 };
-const MINED_ORES: readonly DepositKind[] = ["copper", "tin", "iron"];
 const POTTERY_CLAY = 6;
 const MINERS_SHARE = 8;
 const CRAFT_WEIGHTS: Readonly<Record<RecipeId, number>> = {
@@ -63,7 +62,7 @@ function neediestOre(tick: PersonTick): DepositKind | null {
   let neediest: DepositKind | null = null;
   let neediestNeed = 0;
 
-  for (const kind of MINED_ORES) {
+  for (const kind of MINED_DEPOSIT_KINDS) {
     const need = oreNeed(tick, kind);
 
     if (need > neediestNeed) {

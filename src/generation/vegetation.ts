@@ -3,6 +3,7 @@ import { WILD_BERRY_RULES } from "../content/cultivated-plants.ts";
 import { groundDefinition } from "../content/grounds.ts";
 import {
   canGrowAt,
+  isRockSpecies,
   isTreeSpecies,
   PLANTING_RULES,
   type PlantingRule,
@@ -63,7 +64,7 @@ export function clearingAt(terrain: TerrainData, cell: number): number {
 }
 
 export function plantingChance(rule: PlantingRule, clearing: number, holdsTrees: boolean): number {
-  if (plantSpeciesDefinition(rule.species).form === "stone") {
+  if (isRockSpecies(rule.species)) {
     return rule.chancePerCell;
   }
 

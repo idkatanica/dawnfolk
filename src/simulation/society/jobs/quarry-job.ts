@@ -1,4 +1,4 @@
-import { plantSpeciesDefinition } from "../../../content/plants.ts";
+import { isRockSpecies } from "../../../content/plants.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
 import { pickUp } from "../person.ts";
 import { nearestPlant, nearestQuarry } from "../resources.ts";
@@ -22,7 +22,7 @@ export function findStone(tick: PersonTick): Job | null {
 
   const boulder = nearestPlant(world, {
     accepts: (plant) => {
-      const isBoulder = plantSpeciesDefinition(world.vegetation.species[plant]).form === "stone";
+      const isBoulder = isRockSpecies(world.vegetation.species[plant]);
       const target = plantTarget(world.vegetation, plant, PICK_REACH);
 
       return (

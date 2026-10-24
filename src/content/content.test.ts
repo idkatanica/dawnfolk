@@ -5,9 +5,17 @@ import { BIOMES, Biome } from "./biomes.ts";
 import { BUILDINGS } from "./buildings.ts";
 import { currentEra, ERAS } from "./eras.ts";
 import { GROUNDS, Ground, seasonalGroundColor } from "./grounds.ts";
+import { PIECE_FORMS } from "./monuments.ts";
 import { personName, tribeIdentity } from "./names.ts";
 import { describeParameters } from "./parameters.ts";
-import { isTreeSpecies, PLANT_SPECIES, PLANTING_RULES, PlantSpecies, regrowingSpecies } from "./plants.ts";
+import {
+  isMonumentSpecies,
+  isTreeSpecies,
+  PLANT_SPECIES,
+  PLANTING_RULES,
+  PlantSpecies,
+  regrowingSpecies,
+} from "./plants.ts";
 import { defaultPowerParameters, POWER_ORDER, POWERS, powersInCategory, readPowerParameters } from "./powers.ts";
 import { seasonName, seasonTemperatureOffset } from "./seasons.ts";
 import { nextTechnology, TECHNOLOGIES, type TechnologyId } from "./technologies.ts";
@@ -44,6 +52,14 @@ describe("indexed content", () => {
     expect(regrowingSpecies(Biome.Forest, 10)).not.toContain(PlantSpecies.Bush);
     expect(regrowingSpecies(Biome.Forest, 10)).not.toContain(PlantSpecies.DeadTree);
     expect(regrowingSpecies(Biome.Desert, 20)).toEqual([PlantSpecies.Acacia, PlantSpecies.Palm]);
+  });
+
+  it("shapes every monument species as monument pieces", () => {
+    const monuments = PLANT_SPECIES.filter((species) => isMonumentSpecies(species.index)).map(
+      (species) => species.index
+    );
+
+    expect(monuments).toEqual(Object.keys(PIECE_FORMS).map(Number));
   });
 
   it("asks trees for gentler ground than bushes and keeps everything off cliffs", () => {
