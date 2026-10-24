@@ -75,6 +75,46 @@ describe("vegetation chunks", () => {
     expect(packedPlantCount(chunks)).toBe(alivePlantCount(mirror));
   });
 
+  it("reports every bucket whose plants a repack changed", () => {
+    const mirror = createMirror();
+    const chunks = new VegetationChunks(mirror);
+
+    chunks.repackDirty();
+
+    const before = chunks.chunks.map((chunk) => chunk.buckets.map((bucket) => [...bucket]));
+
+    mirror.vegetation.height[0] *= 1.5;
+    mirror.vegetation.state[1] = PlantState.Removed;
+    chunks.plantsChanged([0, 1]);
+
+    const repacked = chunks.repackDirty();
+
+    expect(repacked.length).toBeGreaterThan(0);
+
+    for (const index of repacked) {
+      const { buckets, changedBuckets } = chunks.chunks[index];
+
+      expect(changedBuckets.length).toBeGreaterThan(0);
+
+      for (const [bucket, data] of buckets.entries()) {
+        if (!changedBuckets.includes(bucket)) {
+          expect([...data]).toEqual(before[index][bucket]);
+        }
+      }
+    }
+  });
+
+  it("reports every bucket after a height change", () => {
+    const chunks = new VegetationChunks(createMirror());
+
+    chunks.repackDirty();
+    chunks.heightsChanged({ firstColumn: 0, firstRow: 0, lastColumn: 0, lastRow: 0 });
+
+    const [chunk] = chunks.repackDirty();
+
+    expect(chunks.chunks[chunk].changedBuckets).toHaveLength(BUCKET_COUNT);
+  });
+
   it("places plants on the ground", () => {
     const mirror = createMirror();
     const chunks = new VegetationChunks(mirror);

@@ -9,7 +9,8 @@ import {
 } from "three/webgpu";
 import { PLANT_SPECIES } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import { buildPlantVariants, PLANT_DETAIL_LEVELS } from "../../models/plants/plant-models.ts";
+import type { VertexChannel } from "../../models/mesh/mesh-data.ts";
+import { buildPlantVariant, PLANT_DETAIL_LEVELS } from "../../models/plants/plant-models.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
 import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
@@ -27,6 +28,8 @@ import {
 const LEVEL_DISTANCES: readonly number[] = [160, 600, 1600, 4200];
 const SHADOW_LEVEL_COUNT = 2;
 const HIDDEN = -1;
+
+const PLANT_CHANNELS: readonly VertexChannel[] = ["flutter", "part", "shade", "slot", "sway"];
 
 const PLANT_FIELDS = [
   { name: "plantPlacement", size: 4 },
@@ -71,6 +74,7 @@ export class VegetationView {
   readonly group = new Group();
   readonly weather = new PlantWeather();
   readonly #batches: readonly (readonly PlantBatch[])[];
+  readonly #changedBuckets: readonly Set<number>[];
   readonly #chunkLevels: Int8Array;
   readonly #chunkShadows: Uint8Array;
   readonly #dirtyLevels = new Set<number>();
@@ -86,20 +90,20 @@ export class VegetationView {
       createPlantMaterial({ glow, grid: mirror.grid, look, textures, weather: this.weather })
     );
 
-    this.#batches = PLANT_DETAIL_LEVELS.map((level, levelIndex) => {
-      const variantsBySpecies = PLANT_SPECIES.map((species) => buildPlantVariants(species.index, level));
-
-      return bucketGroups(level).map((buckets) => {
+    this.#batches = PLANT_DETAIL_LEVELS.map((level, levelIndex) =>
+      bucketGroups(level).map((buckets) => {
         const { species, variant } = PLANT_BUCKETS[buckets[0]];
 
         return this.#createBatch(
-          geometryFromMeshData(variantsBySpecies[species][variant], ["flutter", "part", "shade", "slot", "sway"]),
+          geometryFromMeshData(buildPlantVariant(species, variant, level), PLANT_CHANNELS),
           materials[species],
           levelIndex,
           buckets
         );
-      });
-    });
+      })
+    );
+
+    this.#changedBuckets = this.#batches.map(() => new Set<number>());
 
     for (const level of this.#batches.keys()) {
       this.#dirtyLevels.add(level);
@@ -120,7 +124,7 @@ export class VegetationView {
     const repacked = this.chunks.repackDirty();
 
     this.#assignLevels(camera, frustum, sun, detail);
-    this.#markLevelsOf(repacked);
+    this.#markBucketsOf(repacked);
     this.#refillDirtyLevels();
   }
 
@@ -187,9 +191,17 @@ export class VegetationView {
     }
   }
 
-  #markLevelsOf(chunkIndices: readonly number[]): void {
+  #markBucketsOf(chunkIndices: readonly number[]): void {
     for (const index of chunkIndices) {
-      this.#markDirty(this.#chunkLevels[index]);
+      const level = this.#chunkLevels[index];
+
+      if (level === HIDDEN) {
+        continue;
+      }
+
+      for (const bucket of this.chunks.chunks[index].changedBuckets) {
+        this.#changedBuckets[level].add(bucket);
+      }
     }
   }
 
@@ -210,7 +222,14 @@ export class VegetationView {
   }
 
   #refillDirtyLevels(): void {
-    for (const level of this.#dirtyLevels) {
+    for (const [level, batches] of this.#batches.entries()) {
+      const isWhole = this.#dirtyLevels.has(level);
+      const changed = this.#changedBuckets[level];
+
+      if (!isWhole && changed.size === 0) {
+        continue;
+      }
+
       const casters = this.chunks.chunks.filter(
         (_chunk, index) => this.#chunkLevels[index] === level && this.#chunkShadows[index] === 1
       );
@@ -218,9 +237,15 @@ export class VegetationView {
         (_chunk, index) => this.#chunkLevels[index] === level && this.#chunkShadows[index] === 0
       );
 
-      for (const batch of this.#batches[level]) {
-        this.#fill(batch, [...casters, ...others], casters.length);
+      const chunks = [...casters, ...others];
+
+      for (const batch of batches) {
+        if (isWhole || batch.buckets.some((bucket) => changed.has(bucket))) {
+          this.#fill(batch, chunks, casters.length);
+        }
       }
+
+      changed.clear();
     }
 
     this.#dirtyLevels.clear();

@@ -27,12 +27,14 @@ const FIRST_BUCKETS: readonly number[] = PLANT_SPECIES.map((definition) =>
 );
 
 const NO_CHUNK = -1;
+const NO_BUCKET = -1;
 const EMPTY_BUCKET = new Float32Array(0);
 const corner = new Vector3();
 
 export interface VegetationChunk {
   readonly bounds: Box3;
   buckets: Float32Array[];
+  changedBuckets: number[];
   isDirty: boolean;
   readonly plants: Set<number>;
 }
@@ -79,6 +81,8 @@ export class VegetationChunks {
   readonly chunksPerSide: number;
   readonly #footprints: readonly number[] = PLANT_SPECIES.map((species) => footprintRadius(species.index));
   readonly #mirror: WorldMirror;
+  readonly #touchedBuckets: Set<number>[] = [];
+  #bucketOfPlant = new Int32Array(0);
   #chunkOfPlant = new Int32Array(0);
 
   constructor(mirror: WorldMirror) {
@@ -86,7 +90,8 @@ export class VegetationChunks {
     this.chunksPerSide = Math.ceil(mirror.grid.cellsPerSide / CHUNK_CELLS);
 
     for (let chunk = 0; chunk < this.chunksPerSide * this.chunksPerSide; chunk += 1) {
-      this.chunks.push({ bounds: new Box3(), buckets: [], isDirty: true, plants: new Set() });
+      this.chunks.push({ bounds: new Box3(), buckets: [], changedBuckets: [], isDirty: true, plants: new Set() });
+      this.#touchedBuckets.push(new Set());
     }
 
     const { count } = mirror.vegetation;
@@ -110,7 +115,7 @@ export class VegetationChunks {
 
     for (let row = firstChunkRow; row <= lastChunkRow; row += 1) {
       for (let column = firstChunkColumn; column <= lastChunkColumn; column += 1) {
-        this.chunks[row * this.chunksPerSide + column].isDirty = true;
+        this.#touchAll(row * this.chunksPerSide + column);
       }
     }
   }
@@ -120,7 +125,7 @@ export class VegetationChunks {
 
     for (const [index, chunk] of this.chunks.entries()) {
       if (chunk.isDirty) {
-        this.#repack(chunk);
+        this.#repack(chunk, this.#touchedBuckets[index]);
         repacked.push(index);
       }
     }
@@ -129,21 +134,36 @@ export class VegetationChunks {
   }
 
   #place(plant: number): void {
+    const { vegetation } = this.#mirror;
+
     this.#chunkOfPlant = grownIndexArray(this.#chunkOfPlant, plant + 1, NO_CHUNK);
+    this.#bucketOfPlant = grownIndexArray(this.#bucketOfPlant, plant + 1, NO_BUCKET);
 
     const previous = this.#chunkOfPlant[plant];
     const next = this.#chunkFor(plant);
 
     if (previous !== NO_CHUNK) {
       this.chunks[previous].plants.delete(plant);
-      this.chunks[previous].isDirty = true;
+      this.#touch(previous, this.#bucketOfPlant[plant]);
     }
 
     this.#chunkOfPlant[plant] = next;
+    this.#bucketOfPlant[plant] = bucketOf(vegetation.species[plant], vegetation.seed[plant]);
 
     if (next !== NO_CHUNK) {
       this.chunks[next].plants.add(plant);
-      this.chunks[next].isDirty = true;
+      this.#touch(next, this.#bucketOfPlant[plant]);
+    }
+  }
+
+  #touch(chunk: number, bucket: number): void {
+    this.chunks[chunk].isDirty = true;
+    this.#touchedBuckets[chunk].add(bucket);
+  }
+
+  #touchAll(chunk: number): void {
+    for (let bucket = 0; bucket < BUCKET_COUNT; bucket += 1) {
+      this.#touch(chunk, bucket);
     }
   }
 
@@ -166,7 +186,7 @@ export class VegetationChunks {
     return chunkRow * this.chunksPerSide + chunkColumn;
   }
 
-  #repack(chunk: VegetationChunk): void {
+  #repack(chunk: VegetationChunk, touched: Set<number>): void {
     const { vegetation } = this.#mirror;
 
     const counts = new Array<number>(BUCKET_COUNT).fill(0);
@@ -189,7 +209,9 @@ export class VegetationChunks {
     }
 
     chunk.buckets = buckets;
+    chunk.changedBuckets = [...touched];
     chunk.isDirty = false;
+    touched.clear();
   }
 
   #writePlant(plant: number, target: Float32Array, offset: number, bounds: Box3): void {

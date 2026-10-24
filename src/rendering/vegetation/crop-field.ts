@@ -48,6 +48,7 @@ import { gustAt, type PlantWeather } from "./plant-material.ts";
 const BYTE = 255;
 const HIDDEN = -1;
 const FLOATS_PER_PLANT = 8;
+const GROWTH_OFFSET = 4;
 const FLOATS_PER_FENCE = 8;
 const LEVEL_DISTANCES: readonly number[] = [150, 480];
 const ROW_SPACING = 1;
@@ -104,10 +105,11 @@ interface FieldCell {
   readonly bounds: Sphere;
   fences: Float32Array;
   furrows: Float32Array;
+  growth: number;
   kind: number;
+  layout: string;
   level: number;
   plants: Float32Array;
-  signature: string;
 }
 
 interface FenceSide {
@@ -215,7 +217,8 @@ export class CropField {
   readonly #cells = new Map<number, FieldCell>();
   readonly #cropBatches: readonly (readonly InstanceBatch[])[];
   readonly #fenceBatches: readonly InstanceBatch[];
-  readonly #furrowBatches: readonly InstanceBatch[];
+  readonly #furrowBatch: InstanceBatch;
+  readonly #grownKinds = new Set<number>();
   readonly #mirror: WorldMirror;
   #isDirty = true;
 
@@ -235,9 +238,7 @@ export class CropField {
       this.#createBatch(buildFenceModel(mirror.grid.cellSize, level), fenceMaterial, FENCE_FIELDS, true)
     );
 
-    this.#furrowBatches = CROP_DETAIL_LEVELS.map(() =>
-      this.#createBatch(buildFurrowModel(mirror.grid.cellSize), fenceMaterial, FENCE_FIELDS, false)
-    );
+    this.#furrowBatch = this.#createBatch(buildFurrowModel(mirror.grid.cellSize), fenceMaterial, FENCE_FIELDS, false);
 
     this.#scanRows(0, mirror.grid.cellsPerSide - 1, false);
   }
@@ -255,12 +256,13 @@ export class CropField {
   update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
     const hasNewLevels = this.#assignLevels(camera, frustum, detail);
 
-    if (!(hasNewLevels || this.#isDirty)) {
+    if (!(hasNewLevels || this.#isDirty || this.#grownKinds.size > 0)) {
       return;
     }
 
+    this.#refill(hasNewLevels || this.#isDirty);
     this.#isDirty = false;
-    this.#refill();
+    this.#grownKinds.clear();
   }
 
   #assignLevels(camera: PerspectiveCamera, frustum: Frustum, detail: number): boolean {
@@ -279,7 +281,7 @@ export class CropField {
   }
 
   dispose(): void {
-    for (const batch of [...this.#cropBatches.flat(), ...this.#fenceBatches, ...this.#furrowBatches]) {
+    for (const batch of [...this.#cropBatches.flat(), ...this.#fenceBatches, this.#furrowBatch]) {
       batch.geometry.dispose();
     }
   }
@@ -358,16 +360,32 @@ export class CropField {
 
     const sides = isFencedCode(code) ? this.#fenceSides(column, row) : [];
     const growth = this.#groundAt(column, row, GroundChannel.Crop);
-    const signature = `${code}:${growth}:${sides.map((side) => `${side.column},${side.row}`).join(";")}`;
+    const layout = `${code}:${sides.map((side) => `${side.column},${side.row}`).join(";")}`;
 
     const existing = this.#cells.get(cell);
 
-    if (existing !== undefined && existing.signature === signature && !isForced) {
+    if (existing !== undefined && existing.layout === layout && !isForced) {
+      this.#regrow(existing, growth);
+
       return;
     }
 
-    this.#cells.set(cell, this.#buildCell(column, row, kind, growth / BYTE, sides, signature));
+    this.#cells.set(cell, this.#buildCell(column, row, kind, growth, sides, layout));
     this.#isDirty = true;
+  }
+
+  #regrow(field: FieldCell, growth: number): void {
+    if (field.growth === growth) {
+      return;
+    }
+
+    field.growth = growth;
+
+    for (let offset = GROWTH_OFFSET; offset < field.plants.length; offset += FLOATS_PER_PLANT) {
+      field.plants[offset] = growth / BYTE;
+    }
+
+    this.#grownKinds.add(field.kind);
   }
 
   #fenceSides(column: number, row: number): FenceSide[] {
@@ -398,7 +416,7 @@ export class CropField {
     kind: CropKind | null,
     growth: number,
     sides: readonly FenceSide[],
-    signature: string
+    layout: string
   ): FieldCell {
     const { grid } = this.#mirror;
 
@@ -410,10 +428,11 @@ export class CropField {
       bounds: new Sphere(center, grid.cellSize * CELL_RADIUS_SHARE + 1),
       fences: this.#fenceInstances(sides),
       furrows: this.#furrowInstances(column, row),
+      growth,
       kind: kind === null ? HIDDEN : CROP_KINDS.indexOf(kind),
+      layout,
       level: HIDDEN,
-      plants: kind === null ? new Float32Array(0) : this.#plantInstances(column, row, kind, growth),
-      signature,
+      plants: kind === null ? new Float32Array(0) : this.#plantInstances(column, row, kind, growth / BYTE),
     };
   }
 
@@ -523,19 +542,27 @@ export class CropField {
     return data;
   }
 
-  #refill(): void {
+  #refill(isWhole: boolean): void {
     const fields = [...this.#cells.values()].filter((field) => field.level !== HIDDEN);
 
     for (const [kindIndex, batches] of this.#cropBatches.entries()) {
-      for (const [level, batch] of batches.entries()) {
-        const sources = fields.filter((field) => field.kind === kindIndex && field.level === level);
+      if (!(isWhole || this.#grownKinds.has(kindIndex))) {
+        continue;
+      }
 
+      const ofKind = fields.filter((field) => field.kind === kindIndex);
+
+      for (const [level, batch] of batches.entries()) {
         fill(
           batch,
-          sources.map((field) => field.plants),
+          ofKind.filter((field) => field.level === level).map((field) => field.plants),
           FLOATS_PER_PLANT
         );
       }
+    }
+
+    if (!isWhole) {
+      return;
     }
 
     for (const [level, batch] of this.#fenceBatches.entries()) {
@@ -548,15 +575,11 @@ export class CropField {
       );
     }
 
-    for (const [level, batch] of this.#furrowBatches.entries()) {
-      const sources = fields.filter((field) => field.level === level);
-
-      fill(
-        batch,
-        sources.map((field) => field.furrows),
-        FLOATS_PER_FENCE
-      );
-    }
+    fill(
+      this.#furrowBatch,
+      fields.map((field) => field.furrows),
+      FLOATS_PER_FENCE
+    );
   }
 }
 

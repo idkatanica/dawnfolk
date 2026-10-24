@@ -78,7 +78,7 @@ function variantSeed(species: PlantSpeciesIndex, variant: number): number {
   return species * 1000 + variant * 77 + 13;
 }
 
-function meshVariant(species: PlantSpeciesIndex, variant: number, level: PlantDetailLevel): MeshData {
+export function buildPlantVariant(species: PlantSpeciesIndex, variant: number, level: PlantDetailLevel): MeshData {
   const seed = variantSeed(species, variant);
 
   if (species === PlantSpecies.Cactus) {
@@ -123,7 +123,7 @@ export function farVariantOf(species: PlantSpeciesIndex, variant: number): numbe
 }
 
 export function buildPlantVariants(species: PlantSpeciesIndex, level: PlantDetailLevel): MeshData[] {
-  return Array.from({ length: plantVariantCount(species) }, (_, variant) => meshVariant(species, variant, level));
+  return Array.from({ length: plantVariantCount(species) }, (_, variant) => buildPlantVariant(species, variant, level));
 }
 
 export function canonicalHeight(species: PlantSpeciesIndex): number {
