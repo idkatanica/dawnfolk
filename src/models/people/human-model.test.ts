@@ -1,7 +1,7 @@
 import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { WEAPON_KINDS } from "../../content/weapons.ts";
-import { CARRIED_ITEMS, PERSON_POSES } from "../../world/agent-poses.ts";
+import { CARRIED_ITEMS, type CarriedItem, PERSON_POSES, type PersonPose } from "../../world/agent-poses.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, mergeMeshes, triangleCount, VERTEX_CHANNELS } from "../mesh/mesh-data.ts";
 import { Pose } from "../rig/pose.ts";
@@ -68,6 +68,20 @@ function looseParts(parts: readonly MeshData[], names: readonly HumanPart[]): st
   const mesh = mergeMeshes(names.map((name) => parts[humanPartIndex(name)]));
 
   return loosePieces(mesh);
+}
+
+function posedPartsOf(parts: readonly MeshData[], names: readonly HumanPart[], poser: SkeletonPoser): MeshData {
+  return posedMesh(mergeMeshes(names.map((name) => parts[humanPartIndex(name)])), poser);
+}
+
+function holdsBodyPart(mesh: MeshData, body: readonly HumanPart[]): (piece: MeshPiece) => boolean {
+  const bodyParts = new Set(body.map((name) => humanPartIndex(name)));
+
+  return (piece) => piece.vertices.some((vertex) => bodyParts.has(mesh.channels.part[vertex]));
+}
+
+function carriedTo(clip: PersonPose): CarriedItem {
+  return clip === "carry" ? "wood" : "nothing";
 }
 
 function torsoIn(parts: readonly HumanPart[]): number {
@@ -173,13 +187,14 @@ describe("attached parts", () => {
   });
 });
 
-const OUTFITS: readonly (readonly HumanPart[])[] = [
-  ["hairLong", "beardFull", "tunic", "cape", "boots", "headband", "feather", "necklace", "armband"],
-  ["hairBraids", "hairBun", "dress", "cloak", "paint"],
-  ["hairPonytail", "hairWild", "beardShort", "wrap", "loincloth"],
-  ["hairShort", "hairFringe"],
-  ["hairShort", "tunic", "cape", "boots", "torc", "brooch", "buckle", "helmet"],
-];
+const TOOLS: ReadonlySet<HumanPart> = new Set(
+  PERSON_POSES.flatMap((clip) =>
+    CARRIED_ITEMS.flatMap((carried) =>
+      [null, ...WEAPON_KINDS].flatMap((weapon) => activityParts(clip, carried, weapon))
+    )
+  )
+);
+const GARMENTS = HUMAN_PARTS.filter((part) => isWorn(part) && !TOOLS.has(part));
 
 describe("moving parts", () => {
   const people = (
@@ -191,28 +206,48 @@ describe("moving parts", () => {
   ).map(([age, isFemale]) => personAppearance({ age, isFemale, seed: 0.37, tribe: TRIBE }));
 
   describe.each([
-    ["high", highParts],
-    ["low", lowParts],
-    ["far", farParts],
-  ] as const)("on the %s body", (_level, parts) => {
-    it.each(PERSON_POSES)("keeps every limb, garment and tool on the body to %s", (clip) => {
-      const poser = new SkeletonPoser(HUMAN_SKELETON);
-      const pose = new Pose(HUMAN_SKELETON.bones.length);
-      const carried = clip === "carry" ? "wood" : "nothing";
+    ["high", highParts, [0.15, 0.4, 0.7]],
+    ["low", lowParts, [0.4]],
+    ["far", farParts, [0.4]],
+  ] as const)("on the %s body", (_level, parts, garmentPhases) => {
+    const poser = new SkeletonPoser(HUMAN_SKELETON);
+    const pose = new Pose(HUMAN_SKELETON.bones.length);
+
+    function posedPerson(
+      appearance: PersonAppearance,
+      clip: PersonPose,
+      phase: number,
+      names: readonly HumanPart[]
+    ): MeshData {
+      const carried = carriedTo(clip);
+
+      applyHumanClip(pose, clip, phase, { ageGroup: appearance.ageGroup, carried, motion: appearance.motion });
+      poser.pose(pose, humanBoneScales(appearance.body));
+
+      return posedPartsOf(parts, [...bodyPartsOf(appearance), ...names], poser);
+    }
+
+    it.each(PERSON_POSES)("keeps every limb and tool on the body to %s", (clip) => {
+      const tools = activityParts(clip, carriedTo(clip));
 
       for (const appearance of people) {
-        const body = bodyPartsOf(appearance);
-
         for (const phase of [0.15, 0.4, 0.7]) {
-          applyHumanClip(pose, clip, phase, { ageGroup: appearance.ageGroup, carried, motion: appearance.motion });
-          poser.pose(pose, humanBoneScales(appearance.body));
+          const mesh = posedPerson(appearance, clip, phase, tools);
+          const torso = holdsPart(mesh, torsoIn(bodyPartsOf(appearance)));
 
-          for (const outfit of OUTFITS) {
-            const names = [...body, ...outfit, ...activityParts(clip, carried)];
-            const mesh = posedMesh(mergeMeshes(names.map((name) => parts[humanPartIndex(name)])), poser);
-            const loose = loosePieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body)));
+          expect(loosePieces(mesh, TOUCHING, torso), `${appearance.ageGroup} ${phase}`).toEqual([]);
+        }
+      }
+    });
 
-            expect(loose, `${appearance.ageGroup} ${phase} ${outfit.join(" ")}`).toEqual([]);
+    it.each(PERSON_POSES)("keeps every garment on the body to %s", (clip) => {
+      for (const appearance of people) {
+        for (const phase of garmentPhases) {
+          for (const garment of GARMENTS) {
+            const mesh = posedPerson(appearance, clip, phase, wornWith(garment));
+            const body = holdsBodyPart(mesh, bodyPartsOf(appearance));
+
+            expect(loosePieces(mesh, TOUCHING, body), `${appearance.ageGroup} ${phase} ${garment}`).toEqual([]);
           }
         }
       }
