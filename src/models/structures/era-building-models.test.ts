@@ -1,12 +1,12 @@
 import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
-import { BUILDING_KINDS, BUILDINGS, type BuildingKind, isEnclosure } from "../../content/buildings.ts";
+import { BUILDINGS } from "../../content/buildings.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
-import { buildBuildingModel, GLOW_PART } from "./building-models.ts";
+import { buildBuildingModel, GLOW_PART, SINGLE_MODEL_KINDS, type SingleModelKind } from "./building-models.ts";
 import { buildEnclosurePieces, ENCLOSURE_SEGMENT_LENGTH, type EnclosureKind } from "./enclosures.ts";
 import { buildMineModel, type MineOre } from "./mine-model.ts";
 import { EMBER_PART } from "./structure-parts.ts";
@@ -15,17 +15,16 @@ const TOUCHING = 0.01;
 const END_TOLERANCE = 0.02;
 const LEVELS = ["high", "low"] as const;
 const ENCLOSURES: readonly EnclosureKind[] = ["palisade", "stoneWall"];
-const WORKING_BUILDINGS: readonly BuildingKind[] = [
+const WORKING_BUILDINGS: readonly SingleModelKind[] = [
   "forge",
   "granary",
   "kiln",
   "longhouse",
-  "mine",
   "smelter",
   "stoneHouse",
   "workshop",
 ];
-const GLOWING_BUILDINGS: readonly BuildingKind[] = ["forge", "kiln", "smelter"];
+const GLOWING_BUILDINGS: readonly SingleModelKind[] = ["forge", "kiln", "smelter"];
 const MINE_ORES: readonly MineOre[] = ["copper", "tin", "iron"];
 const ORE_SLOTS: Readonly<Record<MineOre, MaterialSlotIndex>> = {
   copper: MaterialSlot.CopperOre,
@@ -75,7 +74,7 @@ describe("era buildings", () => {
     expect(EMBER_PART).toBe(GLOW_PART);
   });
 
-  it.each(BUILDING_KINDS.filter((kind) => !isEnclosure(kind)))("fits the %s inside its footprint", (kind) => {
+  it.each(SINGLE_MODEL_KINDS)("fits the %s inside its footprint", (kind) => {
     for (const level of LEVELS) {
       expect(widestReach(buildBuildingModel(kind, level))).toBeLessThanOrEqual(BUILDINGS[kind].footprint);
     }
@@ -138,6 +137,11 @@ describe.each(MINE_ORES)("%s mine", (ore) => {
     expect(orderProblems(high)).toEqual([]);
   });
 
+  it("paints the mine in the tribe colour", () => {
+    expect(high.channels.slot).toContain(MaterialSlot.Accent);
+    expect(low.channels.slot).toContain(MaterialSlot.Accent);
+  });
+
   it("heaps its own ore and no other", () => {
     for (const other of MINE_ORES) {
       if (other === ore) {
@@ -150,12 +154,7 @@ describe.each(MINE_ORES)("%s mine", (ore) => {
 
   it("fits inside the mine footprint", () => {
     expect(widestReach(high)).toBeLessThanOrEqual(BUILDINGS.mine.footprint);
-  });
-});
-
-describe("the default mine", () => {
-  it("is a copper mine", () => {
-    expect(buildBuildingModel("mine", "high").channels.slot).toContain(MaterialSlot.CopperOre);
+    expect(widestReach(low)).toBeLessThanOrEqual(BUILDINGS.mine.footprint);
   });
 });
 

@@ -28,13 +28,13 @@ import {
   Sphere,
   Vector3,
 } from "three/webgpu";
-import { BUILDING_KINDS, type BuildingKind, isEnclosure } from "../../content/buildings.ts";
+import { type BuildingKind, isEnclosure } from "../../content/buildings.ts";
 import { DEPOSIT_KINDS } from "../../content/deposits.ts";
 import { eraDefinition } from "../../content/eras.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { MaterialSlot, SLOT_COLOR_TABLE } from "../../models/materials.ts";
 import type { MeshData } from "../../models/mesh/mesh-data.ts";
-import { buildBuildingModel, GLOW_PART } from "../../models/structures/building-models.ts";
+import { buildBuildingModel, GLOW_PART, SINGLE_MODEL_KINDS } from "../../models/structures/building-models.ts";
 import {
   buildEnclosurePieces,
   ENCLOSURE_FOOTING_DEPTH,
@@ -64,9 +64,6 @@ const ROUND_KINDS: ReadonlySet<BuildingKind> = new Set(["hut", "kiln", "smelter"
 const GLOWING_KINDS: ReadonlySet<BuildingKind> = new Set(["forge", "kiln", "smelter"]);
 const MINE_ORES: readonly MineOre[] = ["copper", "tin", "iron"];
 const ENCLOSURE_KINDS: readonly EnclosureKind[] = ["palisade", "stoneWall"];
-const BUILDINGS_WITH_ONE_MODEL: readonly BuildingKind[] = BUILDING_KINDS.filter(
-  (kind) => kind !== "mine" && !isEnclosure(kind)
-);
 
 const BUILDING_FIELDS = [
   { name: "buildingPlacement", size: 4 },
@@ -336,7 +333,7 @@ function enclosureKey(kind: EnclosureKind, piece: "gate" | "segment"): ModelKey 
 function modelSources(): ModelSource[] {
   const sources: ModelSource[] = [];
 
-  for (const kind of BUILDINGS_WITH_ONE_MODEL) {
+  for (const kind of SINGLE_MODEL_KINDS) {
     sources.push({
       footing: (high) => (kind === "campfire" ? CAMPFIRE_FOOTING : plinthFooting(high, ROUND_KINDS.has(kind))),
       key: kind,

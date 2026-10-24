@@ -1,5 +1,5 @@
 import { Vector3 } from "three";
-import type { BuildingKind } from "../../content/buildings.ts";
+import { BUILDING_KINDS, type BuildingKind } from "../../content/buildings.ts";
 import { clamp, FULL_TURN, fractionalPart, lerp, saturate, smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom, type RandomSource } from "../../shared/random.ts";
@@ -22,10 +22,8 @@ import {
 } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
-import { palisadeSegment, stoneWallSegment } from "./enclosures.ts";
 import { longhouse, stoneHouse } from "./era-dwellings.ts";
 import { forge, granary, kiln, smelter, workshop } from "./era-workplaces.ts";
-import { MINE_SCALE, mine } from "./mine-model.ts";
 import { scaledMesh } from "./structure-parts.ts";
 
 type BuildingDetailLevel = "high" | "low";
@@ -634,34 +632,38 @@ function totemSlot(point: SurfacePoint, bottom: number, height: number): Materia
   return isBand || isEye ? MaterialSlot.Accent : MaterialSlot.Wood;
 }
 
-const BUILDERS: Readonly<Record<BuildingKind, (context: StructureContext) => void>> = {
+export type SingleModelKind = Exclude<BuildingKind, "mine" | "palisade" | "stoneWall">;
+
+function hasSingleModel(kind: BuildingKind): kind is SingleModelKind {
+  return kind !== "mine" && kind !== "palisade" && kind !== "stoneWall";
+}
+
+export const SINGLE_MODEL_KINDS: readonly SingleModelKind[] = BUILDING_KINDS.filter(hasSingleModel);
+
+const BUILDERS: Readonly<Record<SingleModelKind, (context: StructureContext) => void>> = {
   campfire,
   forge,
   granary,
   hut,
   kiln,
   longhouse,
-  mine,
-  palisade: palisadeSegment,
   smelter,
   stoneHouse,
-  stoneWall: stoneWallSegment,
   storehouse,
   tent,
   totem,
   workshop,
 };
 
-const BUILDING_SCALES: Readonly<Partial<Record<BuildingKind, number>>> = {
+const BUILDING_SCALES: Readonly<Partial<Record<SingleModelKind, number>>> = {
   campfire: 1.15,
   hut: 1.4,
-  mine: MINE_SCALE,
   storehouse: 1.25,
   tent: 1.55,
   totem: 1.2,
 };
 
-export function buildingScale(kind: BuildingKind): number {
+export function buildingScale(kind: SingleModelKind): number {
   const scale = BUILDING_SCALES[kind];
 
   if (scale === undefined) {
@@ -671,7 +673,7 @@ export function buildingScale(kind: BuildingKind): number {
   return scale;
 }
 
-export function buildBuildingModel(kind: BuildingKind, level: BuildingDetailLevel): MeshData {
+export function buildBuildingModel(kind: SingleModelKind, level: BuildingDetailLevel): MeshData {
   const builder = new MeshBuilder();
 
   BUILDERS[kind]({ builder, level, random: createRandom(kind.length * 31 + 7) });

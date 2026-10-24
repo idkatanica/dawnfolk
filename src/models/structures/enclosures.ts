@@ -92,7 +92,7 @@ function stakeRun(context: StructureContext, span: Span): void {
   }
 }
 
-export function palisadeSegment(context: StructureContext): void {
+function palisadeSegment(context: StructureContext): void {
   stakeRun(context, { from: -HALF_SEGMENT, to: HALF_SEGMENT });
 }
 
@@ -106,7 +106,7 @@ function banner(context: StructureContext, top: number, front: number, order: nu
   });
 }
 
-export function palisadeGate(context: StructureContext): void {
+function palisadeGate(context: StructureContext): void {
   const postRadius = 0.24;
 
   for (const side of [-1, 1]) {
@@ -178,11 +178,11 @@ function stoneRun(context: StructureContext, span: Span): void {
   });
 }
 
-export function stoneWallSegment(context: StructureContext): void {
+function stoneWallSegment(context: StructureContext): void {
   stoneRun(context, { from: -HALF_SEGMENT, to: HALF_SEGMENT });
 }
 
-export function stoneWallGate(context: StructureContext): void {
+function stoneWallGate(context: StructureContext): void {
   const pillarHalf = PILLAR_WIDTH / 2;
 
   for (const side of [-1, 1]) {
