@@ -84,8 +84,8 @@ describe("berries", () => {
     vegetation.discardChanges();
     growFor(world, { days: 0.4, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 0 } }) });
 
-    expect(vegetation.takeChanges().map((change) => change.index)).toEqual(
-      [...bushes].sort((first, second) => first - second)
+    expect(vegetation.takeChanges()?.indices).toEqual(
+      Int32Array.from([...bushes].sort((first, second) => first - second))
     );
     expect(bushes).not.toEqual([...bushes].sort((first, second) => first - second));
   });

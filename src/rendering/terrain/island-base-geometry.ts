@@ -44,7 +44,6 @@ interface BaseOutline {
 
 interface IslandBaseGeometry {
   readonly cliff: BufferGeometry;
-  readonly plinth: number;
   readonly underside: BufferGeometry;
 }
 
@@ -112,18 +111,14 @@ function undersideRings(): RingVertex[] {
   return rings;
 }
 
-function lowestRimHeight(mirror: WorldMirror, points: readonly PerimeterPoint[]): number {
+export function islandPlinthHeight(mirror: WorldMirror, outline: IslandOutline): number {
   let lowest = Number.POSITIVE_INFINITY;
 
-  for (const point of points) {
+  for (const point of islandPerimeter(mirror, outline)) {
     lowest = Math.min(lowest, sampleHeight(mirror.terrain.height, mirror.grid, point.x, point.z));
   }
 
-  return lowest;
-}
-
-export function islandPlinthHeight(mirror: WorldMirror, outline: IslandOutline): number {
-  return lowestRimHeight(mirror, islandPerimeter(mirror, outline)) - CLIFF_DROP;
+  return lowest - CLIFF_DROP;
 }
 
 function undersideReach(depth: number): number {
@@ -271,7 +266,11 @@ function buildUnderside(outline: BaseOutline): BufferGeometry {
   return geometry;
 }
 
-export function buildIslandBaseGeometry(mirror: WorldMirror, outline: IslandOutline): IslandBaseGeometry {
+export function buildIslandBaseGeometry(
+  mirror: WorldMirror,
+  outline: IslandOutline,
+  plinth: number
+): IslandBaseGeometry {
   const points = islandPerimeter(mirror, outline);
   const isSquare = outline.coast === null;
 
@@ -279,11 +278,11 @@ export function buildIslandBaseGeometry(mirror: WorldMirror, outline: IslandOutl
     cliffBands: isSquare ? SQUARE_CLIFF_BANDS : COAST_CLIFF_BANDS,
     grid: mirror.grid,
     noise: createVolumeNoise(createRandom(mirror.seed + 17)),
-    plinth: lowestRimHeight(mirror, points) - CLIFF_DROP,
+    plinth,
     points,
     rimOffset: isSquare ? SQUARE_RIM_OFFSET : COAST_RIM_OFFSET,
     undersideRadius: isSquare ? SQUARE_UNDERSIDE_RADIUS : COAST_UNDERSIDE_RADIUS,
   };
 
-  return { cliff: buildCliff(base), plinth: base.plinth, underside: buildUnderside(base) };
+  return { cliff: buildCliff(base), underside: buildUnderside(base) };
 }

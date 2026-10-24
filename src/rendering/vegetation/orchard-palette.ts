@@ -1,14 +1,11 @@
 import { CultivatedSpecies } from "../../content/cultivated-plants.ts";
 import type { PlantSpeciesIndex } from "../../content/plants.ts";
+import { BARE_BRANCHES, BUDS, FRESH_LEAVES } from "./foliage-colors.ts";
 import type { FoliageKey } from "./plant-palette.ts";
-
-const BARE_TWIGS = 0x7a_6a_44;
-const BUDS = 0x8e_9a_4c;
-const FRESH_LEAVES = 0x9c_c8_52;
 
 function fruitTree(blossom: number, summer: number, autumn: number): readonly FoliageKey[] {
   return [
-    { color: BARE_TWIGS, coverage: 0, season: 0 },
+    { color: BARE_BRANCHES, coverage: 0, season: 0 },
     { color: BUDS, coverage: 0.45, season: 0.07 },
     { color: blossom, coverage: 0.95, season: 0.14 },
     { color: blossom, coverage: 1, season: 0.4 },
@@ -17,8 +14,8 @@ function fruitTree(blossom: number, summer: number, autumn: number): readonly Fo
     { color: summer, coverage: 1, season: 2.05 },
     { color: autumn, coverage: 1, season: 2.45 },
     { color: autumn, coverage: 0.5, season: 2.8 },
-    { color: BARE_TWIGS, coverage: 0, season: 3.1 },
-    { color: BARE_TWIGS, coverage: 0, season: 3.8 },
+    { color: BARE_BRANCHES, coverage: 0, season: 3.1 },
+    { color: BARE_BRANCHES, coverage: 0, season: 3.8 },
   ];
 }
 
@@ -30,8 +27,8 @@ function berryBush(summer: number, autumn: number): readonly FoliageKey[] {
     { color: summer, coverage: 1, season: 2.1 },
     { color: autumn, coverage: 1, season: 2.5 },
     { color: autumn, coverage: 0.5, season: 2.85 },
-    { color: BARE_TWIGS, coverage: 0, season: 3.15 },
-    { color: BARE_TWIGS, coverage: 0, season: 3.8 },
+    { color: BARE_BRANCHES, coverage: 0, season: 3.15 },
+    { color: BARE_BRANCHES, coverage: 0, season: 3.8 },
   ];
 }
 

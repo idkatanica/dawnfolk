@@ -7,7 +7,14 @@ export interface SampledTerrain {
   readonly waterSurface: Float32Array;
 }
 
-export function sampleHeight(heights: Float32Array, grid: WorldGrid, x: number, z: number): number {
+export function sampleCells(
+  values: Float32Array,
+  grid: WorldGrid,
+  x: number,
+  z: number,
+  stride: number,
+  channel: number
+): number {
   const { cellsPerSide, cellSize, halfSize } = grid;
 
   const gridX = clamp((x + halfSize) / cellSize - 0.5, 0, cellsPerSide - 1.001);
@@ -18,12 +25,17 @@ export function sampleHeight(heights: Float32Array, grid: WorldGrid, x: number, 
 
   const amountX = gridX - column;
   const amountZ = gridZ - row;
-  const cell = grid.index(column, row);
+  const first = grid.index(column, row) * stride + channel;
+  const below = first + cellsPerSide * stride;
 
-  const near = heights[cell] * (1 - amountX) + heights[cell + 1] * amountX;
-  const far = heights[cell + cellsPerSide] * (1 - amountX) + heights[cell + cellsPerSide + 1] * amountX;
+  const near = values[first] * (1 - amountX) + values[first + stride] * amountX;
+  const far = values[below] * (1 - amountX) + values[below + stride] * amountX;
 
   return near * (1 - amountZ) + far * amountZ;
+}
+
+export function sampleHeight(heights: Float32Array, grid: WorldGrid, x: number, z: number): number {
+  return sampleCells(heights, grid, x, z, 1, 0);
 }
 
 export function sampleSurface(terrain: SampledTerrain, grid: WorldGrid, x: number, z: number): number {

@@ -121,11 +121,11 @@ export class WorldRenderer {
     this.#renderer = renderer;
     this.#changes = new WorldChangeReader(mirror);
     this.#textures = new TerrainTextures(mirror);
-    this.#fireGlow = new FireGlow(mirror.grid);
-    this.#terrain = new TerrainView(mirror, this.#textures, this.#fireGlow, renderer);
-    this.#islandBase = new IslandBase(mirror, this.#textures);
-    this.#water = new WaterView(mirror, this.#textures);
     this.#plinth = islandPlinthHeight(mirror, this.#textures.outline);
+    this.#fireGlow = new FireGlow(mirror.grid);
+    this.#terrain = new TerrainView(mirror, this.#textures, this.#plinth, this.#fireGlow, renderer);
+    this.#islandBase = new IslandBase(mirror, this.#textures, this.#plinth);
+    this.#water = new WaterView(mirror, this.#textures);
     this.#rebuildWaterfalls();
     this.#springs.rebuild(mirror);
     this.#vegetation = new VegetationView(mirror, this.#textures, this.#fireGlow);

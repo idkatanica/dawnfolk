@@ -9,7 +9,7 @@ import type { Crossing } from "../world/crossings.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import type { Monument } from "../world/monuments.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
-import type { VegetationBuffers } from "../world/vegetation-store.ts";
+import type { VegetationBuffers, VegetationPatch } from "../world/vegetation-store.ts";
 import type { WaterFeatures } from "../world/water.ts";
 import type { GridDimensions } from "../world/world-grid.ts";
 import type { ChronicleEntry } from "./chronicle.ts";
@@ -27,20 +27,6 @@ export interface PackedRows {
 export interface HeightPatch {
   heights: Float32Array;
   region: CellRegion;
-}
-
-export interface VegetationPatch {
-  bornDay: Float32Array;
-  count: number;
-  fruit: Float32Array;
-  height: Float32Array;
-  indices: Int32Array;
-  rotation: Float32Array;
-  seed: Float32Array;
-  species: Uint8Array;
-  state: Uint8Array;
-  x: Float32Array;
-  z: Float32Array;
 }
 
 export interface WaterUpdate {

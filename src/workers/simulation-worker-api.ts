@@ -2,6 +2,7 @@ import { transfer } from "comlink";
 import type { GenerationProgress, WorldRequest } from "../generation/generation-options.ts";
 import type { InitialWorld, SimulationFrame } from "../simulation/frame.ts";
 import { Simulation } from "../simulation/simulation.ts";
+import { VEGETATION_CHANNELS, type VegetationChannels } from "../world/vegetation-store.ts";
 
 export interface SimulationWorkerApi {
   advance: (realSeconds: number, commands: readonly unknown[]) => SimulationFrame;
@@ -16,6 +17,10 @@ function generateSimulation(request: WorldRequest, onProgress: (progress: Genera
   simulation.populate();
 
   return simulation;
+}
+
+function channelBuffers(vegetation: VegetationChannels): ArrayBufferLike[] {
+  return VEGETATION_CHANNELS.map((channel) => vegetation[channel].buffer);
 }
 
 function frameTransferables(frame: SimulationFrame): ArrayBuffer[] {
@@ -37,20 +42,7 @@ function frameTransferables(frame: SimulationFrame): ArrayBuffer[] {
   }
 
   if (frame.vegetation !== null) {
-    const { vegetation } = frame;
-
-    buffers.push(
-      vegetation.bornDay.buffer,
-      vegetation.fruit.buffer,
-      vegetation.height.buffer,
-      vegetation.indices.buffer,
-      vegetation.rotation.buffer,
-      vegetation.seed.buffer,
-      vegetation.species.buffer,
-      vegetation.state.buffer,
-      vegetation.x.buffer,
-      vegetation.z.buffer
-    );
+    buffers.push(...channelBuffers(frame.vegetation), frame.vegetation.indices.buffer);
   }
 
   return uniqueArrayBuffers(buffers);
@@ -76,15 +68,7 @@ function initialWorldTransferables(world: InitialWorld): ArrayBuffer[] {
     terrain.riverStrength.buffer,
     terrain.variation.buffer,
     terrain.waterSurface.buffer,
-    vegetation.bornDay.buffer,
-    vegetation.fruit.buffer,
-    vegetation.height.buffer,
-    vegetation.rotation.buffer,
-    vegetation.seed.buffer,
-    vegetation.species.buffer,
-    vegetation.state.buffer,
-    vegetation.x.buffer,
-    vegetation.z.buffer,
+    ...channelBuffers(vegetation),
   ];
 
   return uniqueArrayBuffers([...buffers, ...frameTransferables(world.frame)]);

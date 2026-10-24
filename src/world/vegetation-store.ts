@@ -19,17 +19,45 @@ export interface PlantPlacement {
   z: number;
 }
 
-export interface VegetationBuffers {
-  bornDay: Float32Array;
+export const VEGETATION_CHANNELS = [
+  "bornDay",
+  "fruit",
+  "height",
+  "rotation",
+  "seed",
+  "species",
+  "state",
+  "x",
+  "z",
+] as const;
+
+export type VegetationChannel = (typeof VEGETATION_CHANNELS)[number];
+
+type ByteChannel = Extract<VegetationChannel, "species" | "state">;
+
+export type VegetationChannels = Record<Exclude<VegetationChannel, ByteChannel>, Float32Array> &
+  Record<ByteChannel, Uint8Array>;
+
+export interface VegetationBuffers extends VegetationChannels {
   count: number;
-  fruit: Float32Array;
-  height: Float32Array;
-  rotation: Float32Array;
-  seed: Float32Array;
-  species: Uint8Array;
-  state: Uint8Array;
-  x: Float32Array;
-  z: Float32Array;
+}
+
+export interface VegetationPatch extends VegetationBuffers {
+  indices: Int32Array;
+}
+
+export function createVegetationChannels(size: number): VegetationChannels {
+  return {
+    bornDay: new Float32Array(size),
+    fruit: new Float32Array(size),
+    height: new Float32Array(size),
+    rotation: new Float32Array(size),
+    seed: new Float32Array(size),
+    species: new Uint8Array(size),
+    state: new Uint8Array(size),
+    x: new Float32Array(size),
+    z: new Float32Array(size),
+  };
 }
 
 interface BurntPlant {
@@ -37,25 +65,12 @@ interface BurntPlant {
   index: number;
 }
 
-export interface PlantChange {
-  bornDay: number;
-  fruit: number;
-  height: number;
-  index: number;
-  rotation: number;
-  seed: number;
-  species: number;
-  state: number;
-  x: number;
-  z: number;
-}
-
 export const NO_PLANT = -1;
 const FRUIT_LEVELS = 4;
 const BURNT_QUEUE_COMPACTION = 1024;
 const INITIAL_BERRY_BUSH_CAPACITY = 1024;
 
-export class VegetationStore {
+export class VegetationStore implements VegetationChannels {
   readonly #burntDay: Float32Array;
   readonly #burntQueue: BurntPlant[] = [];
   readonly #capacity: number;
@@ -329,27 +344,26 @@ export class VegetationStore {
     return trees;
   }
 
-  takeChanges(): PlantChange[] {
-    const changes: PlantChange[] = [];
+  takeChanges(): VegetationPatch | null {
+    if (this.#changed.size === 0) {
+      return null;
+    }
 
-    for (const index of this.#changed) {
-      changes.push({
-        bornDay: this.bornDay[index],
-        fruit: this.fruit[index],
-        height: this.height[index],
-        index,
-        rotation: this.rotation[index],
-        seed: this.seed[index],
-        species: this.species[index],
-        state: this.state[index],
-        x: this.x[index],
-        z: this.z[index],
-      });
+    const indices = Int32Array.from(this.#changed);
+    const patch: VegetationPatch = { ...createVegetationChannels(indices.length), count: indices.length, indices };
+
+    for (const channel of VEGETATION_CHANNELS) {
+      const source = this[channel];
+      const target = patch[channel];
+
+      for (const [position, index] of indices.entries()) {
+        target[position] = source[index];
+      }
     }
 
     this.#changed.clear();
 
-    return changes;
+    return patch;
   }
 
   discardChanges(): void {
@@ -359,18 +373,13 @@ export class VegetationStore {
   exportBuffers(): VegetationBuffers {
     const count = this.#count;
 
-    return {
-      bornDay: this.bornDay.slice(0, count),
-      count,
-      fruit: this.fruit.slice(0, count),
-      height: this.height.slice(0, count),
-      rotation: this.rotation.slice(0, count),
-      seed: this.seed.slice(0, count),
-      species: this.species.slice(0, count),
-      state: this.state.slice(0, count),
-      x: this.x.slice(0, count),
-      z: this.z.slice(0, count),
-    };
+    const buffers: VegetationBuffers = { ...createVegetationChannels(count), count };
+
+    for (const channel of VEGETATION_CHANNELS) {
+      buffers[channel].set(this[channel].subarray(0, count));
+    }
+
+    return buffers;
   }
 
   #allocate(): number {

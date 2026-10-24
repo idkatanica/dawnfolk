@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PlantSpecies } from "../content/plants.ts";
-import { PlantState, VegetationStore } from "./vegetation-store.ts";
+import { PlantState, VEGETATION_CHANNELS, VegetationStore } from "./vegetation-store.ts";
 import { WorldGrid } from "./world-grid.ts";
 
 function plantAt(store: VegetationStore, species: number, x: number): number {
@@ -26,6 +26,27 @@ function createStoreWithOak(): { oak: number; store: VegetationStore } {
 
   return { oak, store };
 }
+
+describe("vegetation changes", () => {
+  it("carry every channel of each changed plant", () => {
+    const { oak, store } = createStoreWithOak();
+
+    const pine = plantAt(store, PlantSpecies.Pine, 5);
+
+    store.discardChanges();
+    store.fell(oak, 2, 1.25);
+    store.setHeight(pine, 6);
+
+    const patch = store.takeChanges();
+
+    expect(patch?.indices).toEqual(Int32Array.of(oak, pine));
+    expect(store.takeChanges()).toBeNull();
+
+    for (const channel of VEGETATION_CHANNELS) {
+      expect(patch?.[channel]).toEqual(store[channel].slice(0, 2));
+    }
+  });
+});
 
 describe("burnt plants", () => {
   it("expire after a fire partway through a day", () => {
@@ -75,7 +96,7 @@ describe("berry bushes", () => {
     store.discardChanges();
     store.changeBerryFruit(-0.25);
 
-    expect(store.takeChanges().map((change) => change.index)).toEqual(bushes);
+    expect(store.takeChanges()?.indices).toEqual(Int32Array.from(bushes));
     expect(bushes.every((bush) => store.fruit[bush] === 0.75)).toBe(true);
     expect(bushes.length).toBeGreaterThan(1024);
   });

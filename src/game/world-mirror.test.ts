@@ -8,7 +8,7 @@ import {
   floodStrip,
   fordAcross,
 } from "../simulation/testing/test-world.ts";
-import type { VegetationBuffers } from "../world/vegetation-store.ts";
+import { createVegetationChannels, VEGETATION_CHANNELS, type VegetationBuffers } from "../world/vegetation-store.ts";
 import { MirroredVegetation, WorldMirror } from "./world-mirror.ts";
 
 const STEP_SECONDS = 0.05;
@@ -44,18 +44,11 @@ function strokeFor(simulation: Simulation, mirror: WorldMirror, command: StrokeC
 }
 
 function emptyVegetation(count: number): VegetationBuffers {
-  return {
-    bornDay: new Float32Array(count),
-    count,
-    fruit: new Float32Array(count),
-    height: new Float32Array(count).fill(3),
-    rotation: new Float32Array(count),
-    seed: new Float32Array(count),
-    species: new Uint8Array(count),
-    state: new Uint8Array(count),
-    x: new Float32Array(count),
-    z: new Float32Array(count),
-  };
+  const vegetation = { ...createVegetationChannels(count), count };
+
+  vegetation.height.fill(3);
+
+  return vegetation;
 }
 
 describe("world mirror", () => {
@@ -235,7 +228,7 @@ describe("mirrored vegetation", () => {
   it("keeps existing plants when it grows for a patch beyond its size", () => {
     const vegetation = new MirroredVegetation(emptyVegetation(2));
 
-    vegetation.apply({
+    const patch = {
       bornDay: Float32Array.of(4),
       count: 1,
       fruit: Float32Array.of(0.5),
@@ -244,15 +237,19 @@ describe("mirrored vegetation", () => {
       rotation: Float32Array.of(1),
       seed: Float32Array.of(0.25),
       species: Uint8Array.of(3),
-      state: Uint8Array.of(0),
+      state: Uint8Array.of(1),
       x: Float32Array.of(40),
       z: Float32Array.of(-40),
-    });
+    };
+
+    vegetation.apply(patch);
 
     expect(vegetation.count).toBe(10);
     expect(vegetation.height[0]).toBe(3);
-    expect(vegetation.height[9]).toBe(12);
-    expect(vegetation.x[9]).toBe(40);
     expect(vegetation.version).toBe(1);
+
+    for (const channel of VEGETATION_CHANNELS) {
+      expect(vegetation[channel][9]).toBe(patch[channel][0]);
+    }
   });
 });

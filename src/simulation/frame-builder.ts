@@ -11,7 +11,6 @@ import {
   packHeightPatch,
   packPeople,
   packSurfaceRows,
-  packVegetationChanges,
 } from "./frame-packing.ts";
 import { type Inspection, inspect } from "./inspection.ts";
 import type { Simulation } from "./simulation.ts";
@@ -55,7 +54,7 @@ export class FrameBuilder {
       surfaceRows: this.#changedSurfaceRows(),
       tick: simulation.tick,
       tribes: society.tribes().map((tribe) => describeTribe(tribe, society.membersOf(tribe), { buildings, world })),
-      vegetation: packVegetationChanges(world.vegetation.takeChanges()),
+      vegetation: world.vegetation.takeChanges(),
       water: simulation.takeWaterUpdate(),
       weather: describeWeather(simulation.weather, simulation.environment),
     };

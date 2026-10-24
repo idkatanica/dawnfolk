@@ -1,11 +1,6 @@
+import { GROWTH_FACTOR } from "../shared/growth.ts";
 import { clamp } from "../shared/math.ts";
-import type {
-  InitialWorld,
-  PackedRows,
-  SimulationFrame,
-  TerrainSnapshot,
-  VegetationPatch,
-} from "../simulation/frame.ts";
+import type { InitialWorld, PackedRows, SimulationFrame, TerrainSnapshot } from "../simulation/frame.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../world/agent-buffers.ts";
 import { isBrookCell } from "../world/brooks.ts";
 import { RegionChangeTracker, RowChangeTracker } from "../world/change-tracking.ts";
@@ -13,22 +8,31 @@ import { type Crossing, CrossingIndex } from "../world/crossings.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import type { Monument } from "../world/monuments.ts";
 import { isWaterAtPoint, sampleHeight, sampleSurface, sampleWaterLevel } from "../world/terrain-sampling.ts";
-import type { VegetationBuffers } from "../world/vegetation-store.ts";
+import {
+  createVegetationChannels,
+  VEGETATION_CHANNELS,
+  type VegetationBuffers,
+  type VegetationChannel,
+  type VegetationChannels,
+  type VegetationPatch,
+} from "../world/vegetation-store.ts";
 import type { WaterFeatures } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 
-const GROWTH_FACTOR = 1.5;
 const MILLISECONDS_PER_SECOND = 1000;
 const LONGEST_EXTRAPOLATION_SECONDS = 0.1;
 const CROSSING_LOOKUP_MARGIN = 0.6;
 
-function grown<Values extends Float32Array | Uint8Array>(previous: Values, next: Values): Values {
-  next.set(previous);
-
-  return next;
+function moveChannel<Channel extends VegetationChannel>(
+  channels: VegetationChannels,
+  grown: VegetationChannels,
+  channel: Channel
+): void {
+  grown[channel].set(channels[channel]);
+  channels[channel] = grown[channel];
 }
 
-export class MirroredVegetation {
+export class MirroredVegetation implements VegetationChannels {
   bornDay: Float32Array;
   count: number;
   fruit: Float32Array;
@@ -60,19 +64,17 @@ export class MirroredVegetation {
 
     this.#ensureCapacity(highestIndex + 1);
 
-    for (let position = 0; position < patch.count; position += 1) {
-      const index = patch.indices[position];
+    for (const channel of VEGETATION_CHANNELS) {
+      const source = patch[channel];
+      const target = this[channel];
 
-      this.bornDay[index] = patch.bornDay[position];
-      this.fruit[index] = patch.fruit[position];
-      this.height[index] = patch.height[position];
-      this.rotation[index] = patch.rotation[position];
-      this.seed[index] = patch.seed[position];
-      this.species[index] = patch.species[position];
-      this.state[index] = patch.state[position];
-      this.x[index] = patch.x[position];
-      this.z[index] = patch.z[position];
-      this.#changedIndices.add(index);
+      for (let position = 0; position < patch.count; position += 1) {
+        target[patch.indices[position]] = source[position];
+      }
+    }
+
+    for (let position = 0; position < patch.count; position += 1) {
+      this.#changedIndices.add(patch.indices[position]);
     }
 
     this.count = Math.max(this.count, highestIndex + 1);
@@ -92,17 +94,11 @@ export class MirroredVegetation {
       return;
     }
 
-    const capacity = Math.ceil(size * GROWTH_FACTOR);
+    const grown = createVegetationChannels(Math.ceil(size * GROWTH_FACTOR));
 
-    this.bornDay = grown(this.bornDay, new Float32Array(capacity));
-    this.fruit = grown(this.fruit, new Float32Array(capacity));
-    this.height = grown(this.height, new Float32Array(capacity));
-    this.rotation = grown(this.rotation, new Float32Array(capacity));
-    this.seed = grown(this.seed, new Float32Array(capacity));
-    this.species = grown(this.species, new Uint8Array(capacity));
-    this.state = grown(this.state, new Uint8Array(capacity));
-    this.x = grown(this.x, new Float32Array(capacity));
-    this.z = grown(this.z, new Float32Array(capacity));
+    for (const channel of VEGETATION_CHANNELS) {
+      moveChannel(this, grown, channel);
+    }
   }
 }
 
