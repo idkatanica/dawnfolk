@@ -1,11 +1,10 @@
 import {
   Box3,
-  Frustum,
+  type Frustum,
   Group,
   InstancedBufferAttribute,
   type InstancedBufferGeometry,
   type Material,
-  Matrix4,
   Mesh,
   type PerspectiveCamera,
 } from "three/webgpu";
@@ -74,11 +73,9 @@ export class PatchGrid {
   readonly group = new Group();
   readonly #chosenLevels: Int8Array;
   readonly #counts: number[][];
-  readonly #frustum = new Frustum();
   readonly #grid: WorldGrid;
   readonly #levelDistances: readonly number[];
   readonly #levels: readonly (readonly PatchLevel[])[];
-  readonly #matrix = new Matrix4();
   readonly #measure: PatchMeasure;
   readonly #patches: Patch[] = [];
   readonly #previousLevels: Int8Array;
@@ -118,19 +115,16 @@ export class PatchGrid {
     }
   }
 
-  update(camera: PerspectiveCamera, detail: number, sharedLevels?: Readonly<Int8Array>): void {
+  update(camera: PerspectiveCamera, frustum: Frustum, detail: number, sharedLevels?: Readonly<Int8Array>): void {
     this.#previousLevels.set(this.#chosenLevels);
     this.#chosenLevels.fill(NO_LEVEL);
-    this.#frustum.setFromProjectionMatrix(
-      this.#matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
-    );
 
     for (const counts of this.#counts) {
       counts.fill(0);
     }
 
     for (const [index, patch] of this.#patches.entries()) {
-      if (!this.#isVisible(patch)) {
+      if (!this.#isVisible(patch, frustum)) {
         continue;
       }
 
@@ -169,8 +163,8 @@ export class PatchGrid {
     }
   }
 
-  #isVisible(patch: Patch): boolean {
-    return patch.pieces.length > 0 && this.#frustum.intersectsBox(patch.bounds);
+  #isVisible(patch: Patch, frustum: Frustum): boolean {
+    return patch.pieces.length > 0 && frustum.intersectsBox(patch.bounds);
   }
 
   #levelFor(distance: number, detail: number): number {

@@ -59,6 +59,7 @@ export class AgentMarkers {
   readonly #colors = new Map<number, Color>();
   readonly #eye = new Vector3();
   readonly #forward = new Vector3();
+  readonly #frustum = new Frustum();
   readonly #geometry: InstancedBufferGeometry;
   readonly #ground: SightGround;
   readonly #herds = new Map<number, GatheredHerd>();
@@ -70,7 +71,6 @@ export class AgentMarkers {
   readonly #reach = new Sphere();
   readonly #staged: StagedMarker[] = [];
   #count = 0;
-  #frustum = new Frustum();
   #pixelScale = 0;
   #stagedCount = 0;
 
@@ -99,7 +99,7 @@ export class AgentMarkers {
     this.#eye.setFromMatrixPosition(camera.matrixWorld);
     camera.getWorldDirection(this.#forward);
     this.#pixelScale = 2 / (camera.projectionMatrix.elements[5] * Math.max(1, viewportHeight));
-    this.#frustum = frustum;
+    this.#frustum.copy(frustum);
     this.#stagedCount = 0;
   }
 

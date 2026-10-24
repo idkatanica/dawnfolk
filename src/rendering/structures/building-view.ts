@@ -43,18 +43,17 @@ import {
   type EnclosurePiece,
 } from "../../models/structures/enclosures.ts";
 import { buildMineModel, MINE_SCALE, type MineOre } from "../../models/structures/mine-model.ts";
-import { parseHexColor } from "../../shared/color.ts";
 import { clamp, FULL_TURN, saturate } from "../../shared/math.ts";
-import type { BuildingView as BuildingSnapshot, TribeSummary } from "../../simulation/frame.ts";
-import type { AgentViewInput } from "../agents/agent-view-input.ts";
+import type { BuildingView as BuildingSnapshot } from "../../simulation/frame.ts";
 import { geometryFromMeshData, InterleavedInstances, toInstancedGeometry } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import type { TribeLooks } from "../tribe-looks.ts";
+import type { ViewInput } from "../view-input.ts";
 import { isLitCampfire } from "./lit-campfire.ts";
 
 const LEVEL_DISTANCES = { high: 320, low: 3200 } as const;
 const PIECE_RADIUS = 9;
 const CHARCOAL = vec3(0.04, 0.035, 0.03);
-const NEUTRAL_ACCENT = new Color(0xc4_55_3a);
 const WORKPLACE_GLOW = 0.55;
 const SMALLEST_RING = 10;
 const PLASTERED_STYLE = eraDefinition("copperAge").index;
@@ -204,7 +203,7 @@ interface Seat {
   readonly lowest: number;
 }
 
-function seatOf(input: AgentViewInput, piece: PiecePlacement, footing: Footing): Seat {
+function seatOf(input: ViewInput, piece: PiecePlacement, footing: Footing): Seat {
   const cosine = Math.cos(piece.rotation);
   const sine = Math.sin(piece.rotation);
 
@@ -380,9 +379,11 @@ export class BuildingView {
   readonly #bounds = new Sphere(new Vector3(), PIECE_RADIUS);
   readonly #footings = new Map<ModelKey, Footing>();
   readonly #plinths: readonly BuildingBatch[];
-  readonly #tribeAccents = new Map<number, Color>();
+  readonly #tribes: TribeLooks;
 
-  constructor() {
+  constructor(tribes: TribeLooks) {
+    this.#tribes = tribes;
+
     const material = createBuildingMaterial();
 
     for (const source of modelSources()) {
@@ -404,10 +405,8 @@ export class BuildingView {
     }
   }
 
-  update(input: AgentViewInput): void {
+  update(input: ViewInput): void {
     const { frame } = input.mirror;
-
-    this.#rememberTribes(frame.tribes);
 
     for (const batches of this.#batches.values()) {
       for (const batch of batches) {
@@ -519,7 +518,7 @@ export class BuildingView {
     return pieces;
   }
 
-  #place(input: AgentViewInput, building: BuildingSnapshot, piece: PiecePlacement): void {
+  #place(input: ViewInput, building: BuildingSnapshot, piece: PiecePlacement): void {
     const batches = this.#batches.get(piece.key);
     const footing = this.#footings.get(piece.key);
 
@@ -539,7 +538,7 @@ export class BuildingView {
     }
 
     const level = distance < LEVEL_DISTANCES.high * input.detail ? 0 : 1;
-    const accent = this.#accentOf(building.tribeId);
+    const accent = this.#tribes.accent(building.tribeId);
 
     const batch = batches[level];
 
@@ -585,23 +584,5 @@ export class BuildingView {
     }
 
     return clamp(building.fuel * 1.5, 0.35, 1);
-  }
-
-  #accentOf(tribeId: number): Color {
-    const accent = this.#tribeAccents.get(tribeId);
-
-    if (accent === undefined) {
-      return NEUTRAL_ACCENT;
-    }
-
-    return accent;
-  }
-
-  #rememberTribes(tribes: readonly TribeSummary[]): void {
-    for (const tribe of tribes) {
-      if (!this.#tribeAccents.has(tribe.id)) {
-        this.#tribeAccents.set(tribe.id, new Color(parseHexColor(tribe.color)));
-      }
-    }
   }
 }

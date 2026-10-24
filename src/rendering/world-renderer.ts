@@ -35,6 +35,7 @@ import { IslandBase } from "./terrain/island-base.ts";
 import { islandPlinthHeight } from "./terrain/island-base-geometry.ts";
 import { TerrainTextures } from "./terrain/terrain-textures.ts";
 import { TerrainView } from "./terrain/terrain-view.ts";
+import { TribeLooks } from "./tribe-looks.ts";
 import { CropField } from "./vegetation/crop-field.ts";
 import { GrassField } from "./vegetation/grass-field.ts";
 import { UnderstoryField } from "./vegetation/understory-field.ts";
@@ -83,7 +84,7 @@ export class WorldRenderer {
   readonly #animals = new AnimalView();
   readonly #atmosphere: Atmosphere;
   readonly #axes = new CameraAxes();
-  readonly #buildings = new BuildingView();
+  readonly #buildings: BuildingView;
   readonly #changes: WorldChangeReader;
   readonly #crops: CropField;
   readonly #crossings: CrossingView;
@@ -97,7 +98,7 @@ export class WorldRenderer {
   readonly #matrix = new Matrix4();
   readonly #mirror: WorldMirror;
   readonly #output: RenderOutput;
-  readonly #people = new PeopleView();
+  readonly #people: PeopleView;
   readonly #quality: RenderQuality;
   readonly #renderer: WebGPURenderer;
   readonly #selectionRing: GroundRing;
@@ -106,6 +107,7 @@ export class WorldRenderer {
   readonly #terrain: TerrainView;
   readonly #plinth: number;
   readonly #textures: TerrainTextures;
+  readonly #tribes = new TribeLooks();
   readonly #understory: UnderstoryField;
   readonly #vegetation: VegetationView;
   readonly #viewport = new Vector2();
@@ -130,6 +132,8 @@ export class WorldRenderer {
     this.#crops = new CropField(mirror, this.#vegetation.weather);
     this.#crossings = new CrossingView(mirror, this.#textures);
     this.#understory = new UnderstoryField(mirror);
+    this.#people = new PeopleView(this.#tribes);
+    this.#buildings = new BuildingView(this.#tribes);
 
     this.#grass = new GrassField({
       clumpsPerSide: quality.grassClumpsPerSide,
@@ -244,12 +248,21 @@ export class WorldRenderer {
     this.#paintWater(wind, strength, rainfall, view.realSeconds);
     this.#vegetation.weather.blow(wind.directionX, wind.directionZ, wind.metersPerSecond, view.realSeconds);
     view.camera.updateMatrixWorld();
-    this.#terrain.update(view.camera, this.#quality.terrainDetail);
+    this.#frustum.setFromProjectionMatrix(
+      this.#matrix.multiplyMatrices(view.camera.projectionMatrix, view.camera.matrixWorldInverse)
+    );
+    this.#terrain.update(view.camera, this.#frustum, this.#quality.terrainDetail);
     this.#islandBase.followPatchLevels(this.#terrain.patchLevels);
-    this.#water.update(view.camera, this.#quality.terrainDetail, this.#terrain.patchLevels);
-    this.#vegetation.update(view.camera, this.#atmosphere.sun, this.#quality.vegetationDetail, frame.calendar.season);
-    this.#crops.update(view.camera, this.#quality.vegetationDetail);
-    this.#crossings.update(view.camera, this.#quality.vegetationDetail);
+    this.#water.update(view.camera, this.#frustum, this.#quality.terrainDetail, this.#terrain.patchLevels);
+    this.#vegetation.update(
+      view.camera,
+      this.#frustum,
+      this.#atmosphere.sun,
+      this.#quality.vegetationDetail,
+      frame.calendar.season
+    );
+    this.#crops.update(view.camera, this.#frustum, this.#quality.vegetationDetail);
+    this.#crossings.update(view.camera, this.#frustum, this.#quality.vegetationDetail);
     this.#grass.update(view.camera, view.viewDistance);
     this.#updateAgents(view);
     this.#markSelection();
@@ -312,10 +325,6 @@ export class WorldRenderer {
     const { frame } = mirror;
     const { camera } = view;
 
-    this.#frustum.setFromProjectionMatrix(
-      this.#matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
-    );
-
     const input: AgentViewInput = {
       camera,
       detail: this.#quality.agentDetail,
@@ -327,6 +336,7 @@ export class WorldRenderer {
       secondsSinceTick: mirror.gameSecondsSinceTick(view.now),
     };
 
+    this.#tribes.remember(frame.tribes);
     this.#markers.brightness.value = lerp(NIGHT_MARKER_BRIGHTNESS, 1, this.#atmosphere.daylight);
     this.#markers.begin(camera, this.#frustum, this.#renderer.getSize(this.#viewport).y);
     this.#people.update(input);

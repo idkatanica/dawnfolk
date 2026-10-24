@@ -20,10 +20,9 @@ import {
   vec3,
 } from "three/tsl";
 import {
-  Frustum,
+  type Frustum,
   Group,
   type InstancedBufferGeometry,
-  Matrix4,
   Mesh,
   MeshStandardNodeMaterial,
   type Node,
@@ -142,8 +141,6 @@ function yawToward(directionX: number, directionZ: number): number {
 export class CrossingView {
   readonly group = new Group();
   readonly #batches: readonly (readonly CrossingBatch[])[];
-  readonly #frustum = new Frustum();
-  readonly #matrix = new Matrix4();
   readonly #mirror: WorldMirror;
   #placed: PlacedCrossing[] = [];
 
@@ -165,11 +162,7 @@ export class CrossingView {
     this.#placed = this.#mirror.crossings.map((crossing) => this.#place(crossing));
   }
 
-  update(camera: PerspectiveCamera, detail: number): void {
-    this.#frustum.setFromProjectionMatrix(
-      this.#matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
-    );
-
+  update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
     for (const level of this.#batches) {
       for (const batch of level) {
         batch.count = 0;
@@ -177,7 +170,7 @@ export class CrossingView {
     }
 
     for (const crossing of this.#placed) {
-      const level = this.#levelOf(crossing, camera, detail);
+      const level = this.#levelOf(crossing, camera, frustum, detail);
 
       if (level !== HIDDEN) {
         this.#fill(crossing, this.#batches[level]);
@@ -218,8 +211,8 @@ export class CrossingView {
     return { count: 0, geometry, instances, mesh };
   }
 
-  #levelOf(crossing: PlacedCrossing, camera: PerspectiveCamera, detail: number): number {
-    if (crossing.pieces.length === 0 || !this.#frustum.intersectsSphere(crossing.bounds)) {
+  #levelOf(crossing: PlacedCrossing, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
+    if (crossing.pieces.length === 0 || !frustum.intersectsSphere(crossing.bounds)) {
       return HIDDEN;
     }
 

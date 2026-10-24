@@ -1,9 +1,8 @@
 import {
   type DirectionalLight,
-  Frustum,
+  type Frustum,
   Group,
   type InstancedBufferGeometry,
-  Matrix4,
   Mesh,
   type MeshStandardNodeMaterial,
   type PerspectiveCamera,
@@ -75,9 +74,7 @@ export class VegetationView {
   readonly #chunkLevels: Int8Array;
   readonly #chunkShadows: Uint8Array;
   readonly #dirtyLevels = new Set<number>();
-  readonly #frustum = new Frustum();
   readonly #looks: readonly SpeciesLook[];
-  readonly #matrix = new Matrix4();
 
   constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow) {
     this.chunks = new VegetationChunks(mirror);
@@ -117,12 +114,12 @@ export class VegetationView {
     this.chunks.heightsChanged(region);
   }
 
-  update(camera: PerspectiveCamera, sun: DirectionalLight, detail: number, season: number): void {
+  update(camera: PerspectiveCamera, frustum: Frustum, sun: DirectionalLight, detail: number, season: number): void {
     this.#paintSeason(season);
 
     const repacked = this.chunks.repackDirty();
 
-    this.#assignLevels(camera, sun, detail);
+    this.#assignLevels(camera, frustum, sun, detail);
     this.#markLevelsOf(repacked);
     this.#refillDirtyLevels();
   }
@@ -169,15 +166,11 @@ export class VegetationView {
     }
   }
 
-  #assignLevels(camera: PerspectiveCamera, sun: DirectionalLight, detail: number): void {
-    this.#frustum.setFromProjectionMatrix(
-      this.#matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
-    );
-
+  #assignLevels(camera: PerspectiveCamera, frustum: Frustum, sun: DirectionalLight, detail: number): void {
     const shadowFrustum = shadowFrustumOf(sun);
 
     for (const [index, chunk] of this.chunks.chunks.entries()) {
-      const level = this.#levelOf(chunk, camera, detail);
+      const level = this.#levelOf(chunk, camera, frustum, detail);
       const castsShadow = castsShadowAt(chunk, level, shadowFrustum) ? 1 : 0;
       const previous = this.#chunkLevels[index];
 
@@ -206,8 +199,8 @@ export class VegetationView {
     }
   }
 
-  #levelOf(chunk: VegetationChunk, camera: PerspectiveCamera, detail: number): number {
-    if (chunk.plants.size === 0 || !this.#frustum.intersectsBox(chunk.bounds)) {
+  #levelOf(chunk: VegetationChunk, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
+    if (chunk.plants.size === 0 || !frustum.intersectsBox(chunk.bounds)) {
       return HIDDEN;
     }
 

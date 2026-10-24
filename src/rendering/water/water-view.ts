@@ -1,4 +1,4 @@
-import type { Group, MeshStandardNodeMaterial, PerspectiveCamera } from "three/webgpu";
+import type { Frustum, Group, MeshStandardNodeMaterial, PerspectiveCamera } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { NO_WATER } from "../../world/water.ts";
 import {
@@ -43,8 +43,8 @@ export class WaterView {
     this.#patches.remeasure(null);
   }
 
-  update(camera: PerspectiveCamera, detail: number, terrainLevels: Readonly<Int8Array>): void {
-    this.#patches.update(camera, detail, terrainLevels);
+  update(camera: PerspectiveCamera, frustum: Frustum, detail: number, terrainLevels: Readonly<Int8Array>): void {
+    this.#patches.update(camera, frustum, detail, terrainLevels);
   }
 
   dispose(): void {

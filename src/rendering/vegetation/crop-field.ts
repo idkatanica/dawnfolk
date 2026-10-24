@@ -15,10 +15,9 @@ import {
   vec3,
 } from "three/tsl";
 import {
-  Frustum,
+  type Frustum,
   Group,
   type InstancedBufferGeometry,
-  Matrix4,
   Mesh,
   MeshStandardNodeMaterial,
   type PerspectiveCamera,
@@ -217,8 +216,6 @@ export class CropField {
   readonly #cropBatches: readonly (readonly InstanceBatch[])[];
   readonly #fenceBatches: readonly InstanceBatch[];
   readonly #furrowBatches: readonly InstanceBatch[];
-  readonly #frustum = new Frustum();
-  readonly #matrix = new Matrix4();
   readonly #mirror: WorldMirror;
   #isDirty = true;
 
@@ -255,12 +252,8 @@ export class CropField {
     this.#scanRows(region.firstRow - 1, region.lastRow + 1, true);
   }
 
-  update(camera: PerspectiveCamera, detail: number): void {
-    this.#frustum.setFromProjectionMatrix(
-      this.#matrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
-    );
-
-    const hasNewLevels = this.#assignLevels(camera, detail);
+  update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
+    const hasNewLevels = this.#assignLevels(camera, frustum, detail);
 
     if (!(hasNewLevels || this.#isDirty)) {
       return;
@@ -270,11 +263,11 @@ export class CropField {
     this.#refill();
   }
 
-  #assignLevels(camera: PerspectiveCamera, detail: number): boolean {
+  #assignLevels(camera: PerspectiveCamera, frustum: Frustum, detail: number): boolean {
     let hasChanged = false;
 
     for (const field of this.#cells.values()) {
-      const level = this.#levelOf(field, camera, detail);
+      const level = this.#levelOf(field, camera, frustum, detail);
 
       if (level !== field.level) {
         field.level = level;
@@ -311,8 +304,8 @@ export class CropField {
     return { geometry, instances, mesh };
   }
 
-  #levelOf(field: FieldCell, camera: PerspectiveCamera, detail: number): number {
-    if (!this.#frustum.intersectsSphere(field.bounds)) {
+  #levelOf(field: FieldCell, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
+    if (!frustum.intersectsSphere(field.bounds)) {
       return HIDDEN;
     }
 
