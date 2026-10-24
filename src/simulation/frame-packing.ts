@@ -17,7 +17,6 @@ import {
 import { animalPoseCode, carriedItemCode, personPoseCode } from "../world/agent-poses.ts";
 import type { CellRegion, RowRun } from "../world/change-tracking.ts";
 import { gearCode, NO_WEAPON_CODE, weaponCode } from "../world/gear.ts";
-import type { PlantChange } from "../world/vegetation-store.ts";
 import type { Animal } from "./fauna/fauna.ts";
 import type {
   BuildingCount,
@@ -28,7 +27,6 @@ import type {
   HeightPatch,
   PackedRows,
   TribeSummary,
-  VegetationPatch,
   WeatherView,
 } from "./frame.ts";
 import type { Environment } from "./nature/environment.ts";
@@ -173,43 +171,6 @@ export function packHeightPatch(world: WorldState, region: CellRegion): HeightPa
   }
 
   return { heights, region };
-}
-
-export function packVegetationChanges(changes: readonly PlantChange[]): VegetationPatch | null {
-  if (changes.length === 0) {
-    return null;
-  }
-
-  const count = changes.length;
-
-  const patch: VegetationPatch = {
-    bornDay: new Float32Array(count),
-    count,
-    fruit: new Float32Array(count),
-    height: new Float32Array(count),
-    indices: new Int32Array(count),
-    rotation: new Float32Array(count),
-    seed: new Float32Array(count),
-    species: new Uint8Array(count),
-    state: new Uint8Array(count),
-    x: new Float32Array(count),
-    z: new Float32Array(count),
-  };
-
-  for (const [position, change] of changes.entries()) {
-    patch.bornDay[position] = change.bornDay;
-    patch.fruit[position] = change.fruit;
-    patch.height[position] = change.height;
-    patch.indices[position] = change.index;
-    patch.rotation[position] = change.rotation;
-    patch.seed[position] = change.seed;
-    patch.species[position] = change.species;
-    patch.state[position] = change.state;
-    patch.x[position] = change.x;
-    patch.z[position] = change.z;
-  }
-
-  return patch;
 }
 
 const ARMED_JOBS: ReadonlySet<string> = new Set(["defend", "fight", "hunt", "raid"]);

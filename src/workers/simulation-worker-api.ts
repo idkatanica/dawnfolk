@@ -6,6 +6,7 @@ import {
 } from "../generation/world-generator.ts";
 import type { InitialWorld, SimulationFrame } from "../simulation/frame.ts";
 import { Simulation } from "../simulation/simulation.ts";
+import { VEGETATION_CHANNELS, type VegetationChannels } from "../world/vegetation-store.ts";
 
 export interface WorldRequest {
   options: GenerationOptions;
@@ -29,6 +30,10 @@ function generateSimulation(request: WorldRequest, onProgress: (progress: Genera
   return simulation;
 }
 
+function channelBuffers(vegetation: VegetationChannels): ArrayBufferLike[] {
+  return VEGETATION_CHANNELS.map((channel) => vegetation[channel].buffer);
+}
+
 function frameTransferables(frame: SimulationFrame): ArrayBuffer[] {
   const buffers: ArrayBufferLike[] = [
     frame.people.buffer,
@@ -48,20 +53,7 @@ function frameTransferables(frame: SimulationFrame): ArrayBuffer[] {
   }
 
   if (frame.vegetation !== null) {
-    const { vegetation } = frame;
-
-    buffers.push(
-      vegetation.bornDay.buffer,
-      vegetation.fruit.buffer,
-      vegetation.height.buffer,
-      vegetation.indices.buffer,
-      vegetation.rotation.buffer,
-      vegetation.seed.buffer,
-      vegetation.species.buffer,
-      vegetation.state.buffer,
-      vegetation.x.buffer,
-      vegetation.z.buffer
-    );
+    buffers.push(...channelBuffers(frame.vegetation), frame.vegetation.indices.buffer);
   }
 
   return uniqueArrayBuffers(buffers);
@@ -87,15 +79,7 @@ function initialWorldTransferables(world: InitialWorld): ArrayBuffer[] {
     terrain.riverStrength.buffer,
     terrain.variation.buffer,
     terrain.waterSurface.buffer,
-    vegetation.bornDay.buffer,
-    vegetation.fruit.buffer,
-    vegetation.height.buffer,
-    vegetation.rotation.buffer,
-    vegetation.seed.buffer,
-    vegetation.species.buffer,
-    vegetation.state.buffer,
-    vegetation.x.buffer,
-    vegetation.z.buffer,
+    ...channelBuffers(vegetation),
   ];
 
   return uniqueArrayBuffers([...buffers, ...frameTransferables(world.frame)]);
