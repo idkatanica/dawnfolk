@@ -10,7 +10,6 @@ export type DepositKind = (typeof DEPOSIT_KINDS)[number];
 export interface DepositDefinition {
   countPerIsland: number;
   ground: GroundIndex;
-  isMined: boolean;
   name: string;
   radius: number;
   reach: number;
@@ -22,7 +21,6 @@ export const DEPOSITS: Readonly<Record<DepositKind, DepositDefinition>> = {
   clay: {
     countPerIsland: 30,
     ground: DepositGround.Clay,
-    isMined: false,
     name: "Clay bank",
     radius: 28,
     reach: 900,
@@ -32,7 +30,6 @@ export const DEPOSITS: Readonly<Record<DepositKind, DepositDefinition>> = {
   copper: {
     countPerIsland: 30,
     ground: DepositGround.CopperOre,
-    isMined: true,
     name: "Copper vein",
     radius: 30,
     reach: 1500,
@@ -42,7 +39,6 @@ export const DEPOSITS: Readonly<Record<DepositKind, DepositDefinition>> = {
   iron: {
     countPerIsland: 30,
     ground: DepositGround.IronOre,
-    isMined: true,
     name: "Iron vein",
     radius: 34,
     reach: 1500,
@@ -52,7 +48,6 @@ export const DEPOSITS: Readonly<Record<DepositKind, DepositDefinition>> = {
   tin: {
     countPerIsland: 24,
     ground: DepositGround.TinOre,
-    isMined: true,
     name: "Tin vein",
     radius: 26,
     reach: 1500,

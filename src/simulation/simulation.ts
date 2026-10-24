@@ -133,7 +133,6 @@ export class Simulation {
   readonly services: PowerServices;
   readonly society: SocietySystem;
   readonly surface: SurfaceSystem;
-  readonly vegetationGrowth: VegetationGrowthSystem;
   readonly waterRecomputation: WaterRecomputation;
   readonly weather = new WeatherSystem();
   readonly world: WorldState;
@@ -146,6 +145,7 @@ export class Simulation {
   #tasks: ScheduledTask[] = [];
   #tick = 0;
   #tickBacklog = 0;
+  readonly #vegetationGrowth: VegetationGrowthSystem;
   #viewFocus: Waypoint = { x: 0, z: 0 };
   #waterUpdate: WaterUpdate | null = null;
 
@@ -157,7 +157,7 @@ export class Simulation {
     this.hazards = new HazardMap(this.world, this.fire);
     this.embers = new EmberSystem(this.world);
     this.surface = new SurfaceSystem(this.world);
-    this.vegetationGrowth = new VegetationGrowthSystem(this.world);
+    this.#vegetationGrowth = new VegetationGrowthSystem(this.world);
     this.waterRecomputation = new WaterRecomputation(this.world);
     this.fauna = new FaunaSystem(this.world, this.navigation, this.identifiers);
     this.buildings = new BuildingSystem(this.world, this.identifiers);
@@ -539,7 +539,7 @@ export class Simulation {
 
     this.embers.update(TICK_SECONDS, (ember) => this.#landEmber(ember));
     this.surface.update(TICK_SECONDS, days, environment, rules);
-    this.vegetationGrowth.update(days, environment, rules, this.random);
+    this.#vegetationGrowth.update(days, environment, rules, this.random);
   }
 
   #launchEmber(cell: number, environment: Environment): void {

@@ -28,7 +28,7 @@ export const SPRING_GROUND = -3;
 export const PLOT_GROUND = -4;
 export const CROSSING_GROUND = -5;
 export const SNOW_CAPACITY = 1.2;
-export const TRODDEN_GROUND = 0.35;
+const TRODDEN_GROUND = 0.35;
 
 const MAXIMUM_TERRAIN_HEIGHT = 3200;
 const CROSSING_TOLERANCE = 0.01;

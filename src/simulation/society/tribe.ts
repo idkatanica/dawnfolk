@@ -161,10 +161,6 @@ export function eraOf(tribe: Tribe): EraDefinition {
   return currentEra(tribe.technologies);
 }
 
-export function eraName(tribe: Tribe): string {
-  return eraOf(tribe).name;
-}
-
 export function upcomingTechnology(tribe: Tribe): TechnologyDefinition | undefined {
   return nextTechnology(tribe.technologies);
 }

@@ -96,16 +96,6 @@ function savingGoals(tribe: Tribe, plans: readonly BuildingPlan[], context: Soci
   return plans.filter((plan) => !isStalled(tribe, plan.kind, context.environment.day));
 }
 
-export function plannedBuilding(tribe: Tribe, context: SocietyContext): BuildingKind | null {
-  const goal = savingGoals(tribe, buildingPlans(tribe, context), context).at(0);
-
-  if (goal === undefined) {
-    return null;
-  }
-
-  return goal.kind;
-}
-
 export function constructionNeed(tribe: Tribe, context: SocietyContext, resource: MaterialKind): number {
   return savingGoals(tribe, buildingPlans(tribe, context), context)
     .slice(0, PLANS_TO_SAVE_FOR)
@@ -176,7 +166,7 @@ function isClearOfOthers(spot: Waypoint, kind: BuildingKind, context: SocietyCon
   });
 }
 
-export function isBuildable(spot: Waypoint, kind: BuildingKind, context: SocietyContext): boolean {
+function isBuildable(spot: Waypoint, kind: BuildingKind, context: SocietyContext): boolean {
   const { world } = context;
   const { footprint, steepestSlope } = BUILDINGS[kind];
 

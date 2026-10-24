@@ -52,12 +52,4 @@ export class CellSet {
   values(): Int32Array {
     return this.#cells.subarray(0, this.#size);
   }
-
-  clear(): void {
-    for (const cell of this.values()) {
-      this.#isMember[cell] = 0;
-    }
-
-    this.#size = 0;
-  }
 }

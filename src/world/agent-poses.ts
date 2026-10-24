@@ -1,4 +1,4 @@
-export const FIGHT_POSES = ["march", "charge", "thrust", "brawl", "block", "flinch", "fall"] as const;
+const FIGHT_POSES = ["march", "charge", "thrust", "brawl", "block", "flinch", "fall"] as const;
 
 export type FightPose = (typeof FIGHT_POSES)[number];
 
@@ -27,7 +27,7 @@ export const PERSON_POSES = [
 
 export type PersonPose = (typeof PERSON_POSES)[number];
 
-export const ANIMAL_FIGHT_POSES = ["attack", "charge", "flinch", "fall"] as const;
+const ANIMAL_FIGHT_POSES = ["attack", "charge", "flinch", "fall"] as const;
 
 export type AnimalFightPose = (typeof ANIMAL_FIGHT_POSES)[number];
 

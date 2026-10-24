@@ -181,7 +181,7 @@ export function abandonPlots(tribe: Tribe, world: WorldState): void {
   tribe.plots = [];
 }
 
-export function isSpotEmpty(spot: PlotSpot, world: WorldState): boolean {
+function isSpotEmpty(spot: PlotSpot, world: WorldState): boolean {
   return spot.plant === NO_PLANT || !world.vegetation.isAlive(spot.plant);
 }
 
@@ -252,7 +252,7 @@ export function plantSpot(tribe: Tribe, spot: PlotSpot, context: SocietyContext)
   spot.plantedDay = environment.day;
 }
 
-export function plotAge(spot: PlotSpot, plotKind: PlotKind, day: number): number {
+function plotAge(spot: PlotSpot, plotKind: PlotKind, day: number): number {
   return saturate((day - spot.plantedDay) / matureDays(spot, plotKind));
 }
 

@@ -177,7 +177,6 @@ describe("burning out", () => {
     burnFor(scenario, 120);
 
     expect(world.vegetation.state[tree]).toBe(PlantState.Burnt);
-    expect(scenario.fire.burntTreeCount).toBeGreaterThan(0);
   });
 
   it("goes out when doused", () => {

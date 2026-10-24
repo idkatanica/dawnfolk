@@ -19,7 +19,6 @@ const ELDER_LEARNING = 5;
 const FAITH_LEARNING = 0.05;
 const DISCOVERY_EFFORT = 0.15;
 const OPEN_FOOD_STORAGE = 40;
-const OPEN_MATERIAL_STORAGE = 60;
 const PLANNING_SECONDS = 3;
 const BIRTH_CHECK_DAYS = 0.25;
 const DAILY_CHECK_DAYS = 0.5;
@@ -106,7 +105,7 @@ function discoverUpcoming(tribe: Tribe, context: SocietyContext): void {
   discover(tribe, upcoming.id, `${tribe.name} discovered ${upcoming.name.toLowerCase()}`, context);
 }
 
-export function storageOf(tribe: Tribe, context: SocietyContext): Storage {
+function storageOf(tribe: Tribe, context: SocietyContext): Storage {
   const stores = tribeBuildings(tribe, context).filter(
     (building) => building.progress >= 1 && BUILDINGS[building.kind].storage > 0
   );
@@ -117,7 +116,6 @@ export function storageOf(tribe: Tribe, context: SocietyContext): Storage {
     foodCapacity: OPEN_FOOD_STORAGE + extra,
     hasGranary: stores.some((building) => building.kind === "granary"),
     hasStorehouse: stores.some((building) => building.kind === "storehouse"),
-    materialCapacity: OPEN_MATERIAL_STORAGE + extra,
     pottery: tribe.stock.pottery,
   };
 }

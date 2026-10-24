@@ -1,6 +1,6 @@
 import type { TechnologyId } from "./technologies.ts";
 
-export const ERA_IDS = ["wanderers", "stoneAge", "neolithic", "copperAge", "bronzeAge", "ironAge"] as const;
+const ERA_IDS = ["wanderers", "stoneAge", "neolithic", "copperAge", "bronzeAge", "ironAge"] as const;
 
 export type EraId = (typeof ERA_IDS)[number];
 
@@ -89,8 +89,4 @@ export function nextEra(era: EraDefinition): EraDefinition | null {
   }
 
   return following;
-}
-
-export function isEraReached(known: ReadonlySet<TechnologyId>, id: EraId): boolean {
-  return currentEra(known).index >= eraDefinition(id).index;
 }

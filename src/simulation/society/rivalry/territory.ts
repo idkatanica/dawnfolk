@@ -45,7 +45,7 @@ export function claimOf(tribe: Tribe, population: number, buildings: readonly Bu
   return { radius, range: radius * RANGE_SCALE, tribeId: tribe.id, x: tribe.campX, z: tribe.campZ };
 }
 
-export function distanceBetween(first: Claim, second: Claim): number {
+function distanceBetween(first: Claim, second: Claim): number {
   return Math.hypot(first.x - second.x, first.z - second.z);
 }
 

@@ -28,6 +28,7 @@ const FLEE_REPLAN_SECONDS = 2.5;
 const FIRE_AWARENESS = 60;
 const WANDER_DISTANCE_TO_FOLLOW = 35;
 const CORPSE_SECONDS = 30;
+const FALL_SECONDS = 1.3;
 const EDGE_MARGIN = 4;
 const YOUTH_DECAY_PER_DAY = 0.5;
 const PASTURE_ATTEMPTS = 8;
@@ -579,7 +580,7 @@ export class FaunaSystem {
   #updateAnimal(animal: Animal, tick: FaunaTick): void {
     if (!animal.isAlive) {
       animal.deathSeconds += tick.seconds;
-      settleFall(animal, this.#instincts.fallSeconds());
+      settleFall(animal);
 
       return;
     }
@@ -905,6 +906,7 @@ export class FaunaSystem {
     for (const herd of this.#herds) {
       if (herd.memberIds.length === 0) {
         this.#herdsById.delete(herd.id);
+        this.#instincts.forgetPack(herd.id);
       }
     }
 
@@ -918,8 +920,8 @@ export class FaunaSystem {
   }
 }
 
-function settleFall(animal: Animal, fallSeconds: number): void {
-  if (animal.pose === "fall" && animal.deathSeconds > fallSeconds) {
+function settleFall(animal: Animal): void {
+  if (animal.pose === "fall" && animal.deathSeconds > FALL_SECONDS) {
     animal.pose = "dead";
   }
 }
