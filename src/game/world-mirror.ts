@@ -3,7 +3,7 @@ import { clamp } from "../shared/math.ts";
 import type { InitialWorld, PackedRows, SimulationFrame, TerrainSnapshot } from "../simulation/frame.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../world/agent-buffers.ts";
 import { isBrookCell } from "../world/brooks.ts";
-import { RegionChangeTracker, RowChangeTracker } from "../world/change-tracking.ts";
+import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../world/change-tracking.ts";
 import { type Crossing, CrossingIndex } from "../world/crossings.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import type { Monument } from "../world/monuments.ts";
@@ -112,6 +112,7 @@ export class WorldMirror {
   readonly surfaceChanges: RowChangeTracker;
   readonly terrain: TerrainSnapshot;
   readonly vegetation: MirroredVegetation;
+  readonly waterLevelChanges = new RegionChangeTracker();
   crossings: readonly Crossing[];
   frame: SimulationFrame;
   frameReceivedAt: number;
@@ -144,12 +145,16 @@ export class WorldMirror {
     this.#copyGroundIndices(frame.groundRows);
     this.#applyHeights(frame);
     this.#applyWater(frame);
+    this.#applyWaterLevels(frame);
 
     if (frame.vegetation !== null) {
       this.vegetation.apply(frame.vegetation);
     }
 
-    if (frame.groundRows.length > 0 || frame.heightPatch !== null || frame.water !== null) {
+    const hasLandChanged =
+      frame.groundRows.length > 0 || frame.heightPatch !== null || frame.water !== null || frame.waterLevels !== null;
+
+    if (hasLandChanged) {
       this.landVersion += 1;
     }
 
@@ -223,17 +228,29 @@ export class WorldMirror {
       return;
     }
 
-    const { region } = patch;
+    this.#writeRegion(this.terrain.height, patch.heights, patch.region);
+    this.heightChanges.markRegion(patch.region);
+  }
 
+  #applyWaterLevels(frame: SimulationFrame): void {
+    const patch = frame.waterLevels;
+
+    if (patch === null) {
+      return;
+    }
+
+    this.#writeRegion(this.terrain.waterSurface, patch.levels, patch.region);
+    this.waterLevelChanges.markRegion(patch.region);
+  }
+
+  #writeRegion(target: Float32Array, values: Float32Array, region: CellRegion): void {
     const width = region.lastColumn - region.firstColumn + 1;
 
     for (let row = region.firstRow; row <= region.lastRow; row += 1) {
       const start = (row - region.firstRow) * width;
 
-      this.terrain.height.set(patch.heights.subarray(start, start + width), this.grid.index(region.firstColumn, row));
+      target.set(values.subarray(start, start + width), this.grid.index(region.firstColumn, row));
     }
-
-    this.heightChanges.markRegion(region);
   }
 
   #applyWater(frame: SimulationFrame): void {

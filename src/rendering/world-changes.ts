@@ -7,6 +7,7 @@ export interface WorldChanges {
   readonly heightRegion: CellRegion | null;
   readonly surfaceRuns: readonly RowRun[];
   readonly vegetationIndices: readonly number[];
+  readonly waterLevelRegion: CellRegion | null;
 }
 
 export class WorldChangeReader {
@@ -31,6 +32,7 @@ export class WorldChangeReader {
       heightRegion: mirror.heightChanges.takeRegion(),
       surfaceRuns: mirror.surfaceChanges.takeRuns(),
       vegetationIndices: mirror.vegetation.takeChangedIndices(),
+      waterLevelRegion: mirror.waterLevelChanges.takeRegion(),
     };
   }
 }

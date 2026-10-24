@@ -22,8 +22,11 @@ interface RisingLake {
 interface Filling {
   elapsedSeconds: number;
   readonly lakes: readonly RisingLake[];
+  readonly region: CellRegion;
   secondsSinceStep: number;
 }
+
+export type WaterChange = "features" | "levels" | "none";
 
 function easeOut(amount: number): number {
   return 1 - (1 - amount) * (1 - amount);
@@ -46,7 +49,7 @@ export class WaterRecomputation {
     return this.#quietSeconds !== null || this.#filling !== null;
   }
 
-  update(realSeconds: number): boolean {
+  update(realSeconds: number): WaterChange {
     if (this.#world.heightVersion !== this.#observedHeightVersion) {
       return this.#noticeHeightEdit();
     }
@@ -58,12 +61,12 @@ export class WaterRecomputation {
     this.#quietSeconds += realSeconds;
 
     if (this.#quietSeconds < QUIET_SECONDS_BEFORE_RECOMPUTE) {
-      return false;
+      return "none";
     }
 
     this.recompute();
 
-    return true;
+    return "features";
   }
 
   recompute(): void {
@@ -112,17 +115,17 @@ export class WaterRecomputation {
     this.#quietSeconds = null;
   }
 
-  #noticeHeightEdit(): boolean {
+  #noticeHeightEdit(): WaterChange {
     this.#observedHeightVersion = this.#world.heightVersion;
     this.#quietSeconds = 0;
 
     if (!this.#world.takeSuddenHeightEdit()) {
-      return false;
+      return "none";
     }
 
     this.recompute();
 
-    return true;
+    return "features";
   }
 
   #uncarvedHeights(): Float32Array {
@@ -174,7 +177,12 @@ export class WaterRecomputation {
       return null;
     }
 
-    const filling: Filling = { elapsedSeconds: 0, lakes: rising, secondsSinceStep: 0 };
+    const filling: Filling = {
+      elapsedSeconds: 0,
+      lakes: rising,
+      region: this.#regionOf(rising),
+      secondsSinceStep: 0,
+    };
 
     this.#applyFill(filling, 0);
 
@@ -193,11 +201,31 @@ export class WaterRecomputation {
     return { cells, floor, keptLevels: Float32Array.from(cells, (cell) => previousLevels[cell]), level };
   }
 
-  #fill(realSeconds: number): boolean {
+  #regionOf(lakes: readonly RisingLake[]): CellRegion {
+    const { grid } = this.#world;
+
+    const region = { firstColumn: grid.cellsPerSide, firstRow: grid.cellsPerSide, lastColumn: 0, lastRow: 0 };
+
+    for (const lake of lakes) {
+      for (const cell of lake.cells) {
+        const column = grid.columnOf(cell);
+        const row = grid.rowOf(cell);
+
+        region.firstColumn = Math.min(region.firstColumn, column);
+        region.firstRow = Math.min(region.firstRow, row);
+        region.lastColumn = Math.max(region.lastColumn, column);
+        region.lastRow = Math.max(region.lastRow, row);
+      }
+    }
+
+    return region;
+  }
+
+  #fill(realSeconds: number): WaterChange {
     const filling = this.#filling;
 
     if (filling === null) {
-      return false;
+      return "none";
     }
 
     filling.elapsedSeconds += realSeconds;
@@ -209,19 +237,19 @@ export class WaterRecomputation {
       this.#settleWater();
       this.#world.markWaterChanged();
 
-      return true;
+      return "features";
     }
 
     if (filling.secondsSinceStep < FILL_STEP_SECONDS) {
-      return false;
+      return "none";
     }
 
     filling.secondsSinceStep = 0;
     this.#applyFill(filling, filling.elapsedSeconds / FILL_SECONDS);
     this.#settleRisingLakes(filling);
-    this.#world.markWaterChanged();
+    this.#world.markWaterLevelsChanged(filling.region);
 
-    return true;
+    return "levels";
   }
 
   #applyFill(filling: Filling, progress: number): void {

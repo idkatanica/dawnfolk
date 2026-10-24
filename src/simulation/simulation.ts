@@ -6,6 +6,7 @@ import { type GeneratedWorld, generateWorld } from "../generation/world-generato
 import { clamp } from "../shared/math.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
 import { HazardMap } from "./agents/hazards.ts";
+import type { Mover } from "./agents/movement.ts";
 import { NavigationGrid, type Waypoint } from "./agents/navigation.ts";
 import { Chronicle } from "./chronicle.ts";
 import { type CommandOf, readCommand, type Selection, type SimulationCommandType } from "./commands.ts";
@@ -130,6 +131,7 @@ export class Simulation {
   readonly waterRecomputation: WaterRecomputation;
   readonly weather = new WeatherSystem();
   readonly world: WorldState;
+  readonly #faunaThreats: FaunaThreats;
   readonly #frames: FrameBuilder;
   #isPaused: boolean;
   #notices: string[] = [];
@@ -162,6 +164,7 @@ export class Simulation {
     });
     this.rivalry = new RivalrySystem({ chronicle: this.chronicle, effects: this.effects, seed: generated.seed });
     this.services = this.#createServices();
+    this.#faunaThreats = this.#createFaunaThreats();
     this.#frames = new FrameBuilder(this);
     this.#isPaused = false;
   }
@@ -458,17 +461,22 @@ export class Simulation {
   }
 
   #recomputeWaterWhenSettled(seconds: number): void {
-    if (!this.waterRecomputation.update(seconds)) {
+    const change = this.waterRecomputation.update(seconds);
+
+    if (change === "none") {
       return;
     }
 
-    this.navigation.rebuild();
-    this.#waterUpdate = {
-      crossings: this.world.crossings,
-      features: this.world.water,
-      riverStrength: Uint8Array.from(this.world.terrain.riverStrength),
-      waterSurface: Float32Array.from(this.world.terrain.waterSurface),
-    };
+    if (change === "features") {
+      this.navigation.rebuild();
+      this.#waterUpdate = {
+        crossings: this.world.crossings,
+        features: this.world.water,
+        riverStrength: Uint8Array.from(this.world.terrain.riverStrength),
+        waterSurface: Float32Array.from(this.world.terrain.waterSurface),
+      };
+    }
+
     this.#settleNewWater();
   }
 
@@ -571,7 +579,7 @@ export class Simulation {
       rules,
       season: environment.season,
       seconds: TICK_SECONDS,
-      threats: this.#faunaThreats(),
+      threats: this.#faunaThreats,
     });
     this.hazards.update(TICK_SECONDS);
     this.#recordBuildingIncidents();
@@ -579,17 +587,25 @@ export class Simulation {
   }
 
   #recordSplashes(): void {
-    const movers = [...this.society.people, ...this.fauna.animals].map((walker) => walker.mover);
+    for (const person of this.society.people) {
+      this.#recordSplash(person.mover);
+    }
 
-    for (const mover of movers) {
-      if (mover.splash !== null) {
-        this.effects.add({ ...mover.splash, kind: "splash" });
-        mover.splash = null;
-      }
+    for (const animal of this.fauna.animals) {
+      this.#recordSplash(animal.mover);
     }
   }
 
-  #faunaThreats(): FaunaThreats {
+  #recordSplash(mover: Mover): void {
+    if (mover.splash === null) {
+      return;
+    }
+
+    this.effects.add({ ...mover.splash, kind: "splash" });
+    mover.splash = null;
+  }
+
+  #createFaunaThreats(): FaunaThreats {
     return {
       dangerNear: (x, z, radius) => this.hazards.dangerNear(x, z, radius),
       hunterNear: (x, z, radius) => {
