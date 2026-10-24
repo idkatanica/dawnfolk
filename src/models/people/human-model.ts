@@ -5,7 +5,7 @@ import type { MeshData } from "../mesh/mesh-data.ts";
 import type { HairStyle, PersonAppearance } from "./appearance.ts";
 import { addCarriedClay, addCarriedFruit, addCarriedOre } from "./carried-props.ts";
 import { addBrooch, addBuckle, addHelmet, addTorc } from "./era-props.ts";
-import { addBody, addChildTorso, addFemaleTorso, addMaleTorso } from "./human-anatomy.ts";
+import { addChildBody, addFemaleBody, addMaleBody } from "./human-anatomy.ts";
 import { HUMAN_CLIPS } from "./human-clips.ts";
 import { addBoots, addCape, addCloak, addDress, addLoincloth, addTunic, addWrap } from "./human-clothing.ts";
 import type { HumanDetail } from "./human-detail.ts";
@@ -42,10 +42,9 @@ import { addWarPaint } from "./war-props.ts";
 import { addBow, addDrawnBow, addPickaxe, addQuiver } from "./weapon-props.ts";
 
 export const HUMAN_PARTS = [
-  "body",
-  "torsoMale",
-  "torsoFemale",
-  "torsoChild",
+  "bodyMale",
+  "bodyFemale",
+  "bodyChild",
   "hairShort",
   "hairLong",
   "hairBraids",
@@ -102,7 +101,9 @@ const PART_BUILDERS: Readonly<Record<HumanPart, PartBuilder>> = {
   basket: addToolBasket,
   beardFull: addFullBeard,
   beardShort: addShortBeard,
-  body: addBody,
+  bodyChild: addChildBody,
+  bodyFemale: addFemaleBody,
+  bodyMale: addMaleBody,
   boots: addBoots,
   bow: addBow,
   brooch: addBrooch,
@@ -139,9 +140,6 @@ const PART_BUILDERS: Readonly<Record<HumanPart, PartBuilder>> = {
   quiver: addQuiver,
   spear: addSpear,
   torc: addTorc,
-  torsoChild: addChildTorso,
-  torsoFemale: addFemaleTorso,
-  torsoMale: addMaleTorso,
   tunic: addTunic,
   warPaint: addWarPaint,
   wrap: addWrap,
@@ -198,12 +196,12 @@ const ARMED_POSES: ReadonlySet<PersonPose> = new Set([
   "walk",
 ]);
 
-function torsoPart(appearance: PersonAppearance): HumanPart {
+function bodyPart(appearance: PersonAppearance): HumanPart {
   if (appearance.ageGroup === "child") {
-    return "torsoChild";
+    return "bodyChild";
   }
 
-  return appearance.isFemale ? "torsoFemale" : "torsoMale";
+  return appearance.isFemale ? "bodyFemale" : "bodyMale";
 }
 
 function beardPart(appearance: PersonAppearance): HumanPart | null {
@@ -216,8 +214,7 @@ function beardPart(appearance: PersonAppearance): HumanPart | null {
 
 export function appearanceParts(appearance: PersonAppearance): HumanPart[] {
   const parts: (HumanPart | null)[] = [
-    "body",
-    torsoPart(appearance),
+    bodyPart(appearance),
     HAIR_PARTS[appearance.hair],
     beardPart(appearance),
     appearance.outfit,
