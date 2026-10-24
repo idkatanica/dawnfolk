@@ -66,16 +66,12 @@ class ChopJob implements Job {
     const tree = this.claimedPlant;
 
     if (!world.vegetation.isAlive(tree)) {
-      tick.tribe.claimedPlants.delete(tree);
-
       return null;
     }
 
     const progress = this.#errand.update(tick);
 
     if (progress === "abandoned") {
-      tick.tribe.claimedPlants.delete(tree);
-
       return null;
     }
 
@@ -83,7 +79,6 @@ class ChopJob implements Job {
       return this;
     }
 
-    tick.tribe.claimedPlants.delete(tree);
     pickUp(tick.person, "wood", plantSpeciesDefinition(world.vegetation.species[tree]).wood * FELLING_YIELD, "wood");
     world.removePlant(tree);
     learn(tick.tribe, 0.4, tick.context.rules);

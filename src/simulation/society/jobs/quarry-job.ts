@@ -81,8 +81,6 @@ class BoulderJob implements Job {
     const progress = this.#errand.update(tick);
 
     if (progress === "abandoned") {
-      tick.tribe.claimedPlants.delete(this.claimedPlant);
-
       return null;
     }
 
@@ -95,7 +93,6 @@ class BoulderJob implements Job {
     const boulder = this.claimedPlant;
     const uses = previousUses(people.quarryUses, boulder) + 1;
 
-    tick.tribe.claimedPlants.delete(boulder);
     pickUp(tick.person, "stone", STONE_PER_TRIP, "stone");
     people.quarryUses.set(boulder, uses);
     learn(tick.tribe, 0.4, tick.context.rules);

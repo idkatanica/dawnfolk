@@ -9,7 +9,7 @@ import type { Chronicle } from "../chronicle.ts";
 import type { IdentifierSource } from "../identifiers.ts";
 import type { BuildingSystem } from "./buildings.ts";
 import { handleBuildingLoss } from "./construction.ts";
-import { dropJob, updateMind } from "./decisions.ts";
+import { advanceJob, dropJob, updateMind } from "./decisions.ts";
 import { walk } from "./jobs/job.ts";
 import { updateNeeds } from "./needs.ts";
 import { createPerson, type DeathCause, type Person, walkSpeed } from "./person.ts";
@@ -390,20 +390,10 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
       walk(tick, walkSpeed(person));
     } else {
       updateMind(tick);
-      this.#act(tick);
+      advanceJob(tick);
     }
 
     person.phase += seconds * person.speed * POSE_PHASE_RATE;
-  }
-
-  #act(tick: PersonTick): void {
-    const { person } = tick;
-
-    if (person.job === null) {
-      return;
-    }
-
-    person.job = person.job.update(tick);
   }
 
   #removeRemains(seconds: number): void {

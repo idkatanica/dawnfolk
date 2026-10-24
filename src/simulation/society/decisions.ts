@@ -76,6 +76,30 @@ export function assignJob(tick: PersonTick, job: Job): void {
   tick.person.job = job;
 }
 
+export function advanceJob(tick: PersonTick): void {
+  const { person } = tick;
+
+  const current = person.job;
+
+  if (current === null) {
+    return;
+  }
+
+  const next = current.update(tick);
+
+  person.job = next;
+
+  if (next === current) {
+    return;
+  }
+
+  if (next !== null && next.claimedPlant === current.claimedPlant) {
+    return;
+  }
+
+  releaseClaim(tick.tribe, current);
+}
+
 export function dropJob(tribe: Tribe, person: Person): void {
   releaseClaim(tribe, person.job);
   person.job = null;
