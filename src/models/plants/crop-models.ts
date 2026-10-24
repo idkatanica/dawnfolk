@@ -7,6 +7,8 @@ import type { MeshData } from "../mesh/mesh-data.ts";
 import { deformShape, type Shape } from "../mesh/shape.ts";
 import { box, cylinder, lathe, type TubePoint, tube } from "../mesh/shapes.ts";
 import { segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
+import { plantSway } from "./tree-mesher.ts";
+import { GOLDEN_ANGLE } from "./tree-structure.ts";
 
 export type CropDetailLevel = "high" | "low";
 
@@ -23,9 +25,7 @@ export const CROP_HEIGHTS: Readonly<Record<CropKind, number>> = {
   wheat: 0.95,
 };
 
-const SWAY_GROWTH = 1.4;
 const STALK_SIDES = 3;
-const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const FENCE_POST_SPACING = 2.5;
 const FENCE_POST_RADIUS = 0.06;
 const FENCE_POST_SINK = 0.25;
@@ -57,16 +57,12 @@ interface ClumpContext {
 
 type ClumpBuilder = (context: ClumpContext) => void;
 
-function sway(height: number): (point: { readonly position: Vector3 }) => number {
-  return (point) => saturate(point.position.y / height) ** SWAY_GROWTH;
-}
-
 function plantStyle(context: ClumpContext, slot: MaterialSlotIndex, part: number): VertexStyle {
   return {
     part,
     shade: (point) => 0.72 + 0.28 * saturate(point.position.y / context.height),
     slot,
-    sway: sway(context.height),
+    sway: (point) => plantSway(point.position.y, context.height),
   };
 }
 

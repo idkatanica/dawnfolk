@@ -2,8 +2,8 @@ import { Vector3 } from "three";
 import { CultivatedSpecies } from "../../content/cultivated-plants.ts";
 import type { PlantSpeciesIndex } from "../../content/plants.ts";
 import { clamp, FULL_TURN, lerp, smoothstep } from "../../shared/math.ts";
-import { createVolumeNoise, type VolumeNoise } from "../../shared/noise.ts";
-import { createRandom, type RandomSource } from "../../shared/random.ts";
+import { createVolumeNoise } from "../../shared/noise.ts";
+import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { MeshBuilder, type VertexStyle } from "../mesh/mesh-builder.ts";
 import { type MeshData, mergeMeshes } from "../mesh/mesh-data.ts";
@@ -11,6 +11,7 @@ import type { Shape } from "../mesh/shape.ts";
 import { blob, icosphere, lathe, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { transformOf } from "../mesh/transforms.ts";
+import { addBlob, addLimb, addTrunk, BLOB_TINT, createGrowth, finish, type Growth } from "./tree-growth.ts";
 import {
   FOLIAGE_FLUTTER,
   isDistantLevel,
@@ -20,15 +21,11 @@ import {
   type TreeLook,
 } from "./tree-mesher.ts";
 import {
-  type Branch,
-  directionAlong,
-  type Foliage,
   type FoliageBlob,
   GOLDEN_ANGLE,
   growBranch,
   jitter,
   pointAlong,
-  sideDirection,
   type TreeStructure,
   tipOf,
   toVector,
@@ -68,33 +65,6 @@ interface FruitLook {
   readonly slot: MaterialSlotIndex;
 }
 
-interface Growth {
-  readonly branches: Branch[];
-  readonly foliage: Foliage[];
-  readonly noise: VolumeNoise;
-  readonly random: RandomSource;
-}
-
-interface TrunkOptions {
-  readonly forks: boolean;
-  readonly height: number;
-  readonly lean: number;
-  readonly radiusBottom: number;
-  readonly radiusTop: number;
-  readonly wobble: number;
-}
-
-interface LimbOptions {
-  readonly bend: number;
-  readonly depth: number;
-  readonly gravity: number;
-  readonly length: number;
-  readonly radiusEnd: number;
-  readonly segments: number;
-  readonly tilt: number;
-  readonly wobble: number;
-}
-
 interface StemOptions {
   readonly gravity: number;
   readonly length: number;
@@ -105,10 +75,7 @@ interface StemOptions {
   readonly wobble: number;
 }
 
-const ROOT_DEPTH = 0.3;
-const ROOT_FLARE = 1.35;
 const TRUNK_SEGMENTS = 3;
-const BLOB_TINT = 0.12;
 const FRUIT_SEGMENTS = 5;
 const FRUIT_RINGS = 3;
 const HANGING_STEP = 1.45;
@@ -178,71 +145,6 @@ const FRUIT_LOOKS: Readonly<Record<OrchardSpecies, FruitLook>> = {
   },
 };
 
-function createGrowth(seed: number): Growth {
-  const random = createRandom(seed);
-
-  return { branches: [], foliage: [], noise: createVolumeNoise(random.derive(1)), random };
-}
-
-function finish(growth: Growth, species: OrchardSpecies): TreeStructure {
-  return { branches: growth.branches, foliage: growth.foliage, height: ORCHARD_HEIGHTS[species] };
-}
-
-function addTrunk(growth: Growth, options: TrunkOptions): TubePoint[] {
-  const { random } = growth;
-
-  const leanAngle = random.next() * FULL_TURN;
-  const direction = new Vector3(Math.cos(leanAngle) * options.lean, 1, Math.sin(leanAngle) * options.lean);
-
-  const points = growBranch({
-    bend: 0.004,
-    direction,
-    gravity: 0,
-    length: options.height,
-    noise: growth.noise,
-    radiusEnd: options.radiusTop,
-    radiusStart: options.radiusBottom,
-    segments: TRUNK_SEGMENTS,
-    start: new Vector3(),
-    wobble: options.wobble,
-  });
-
-  const flared = points.map((point, index) => (index === 0 ? { ...point, radius: point.radius * ROOT_FLARE } : point));
-  const [base] = flared;
-
-  growth.branches.push({ depth: 0, forks: options.forks, points: [{ ...base, y: base.y - ROOT_DEPTH }, ...flared] });
-
-  return flared;
-}
-
-function addLimb(
-  growth: Growth,
-  parent: readonly TubePoint[],
-  along: number,
-  azimuth: number,
-  options: LimbOptions
-): TubePoint[] {
-  const base = pointAlong(parent, along);
-  const axis = directionAlong(parent, along);
-
-  const points = growBranch({
-    bend: options.bend,
-    direction: sideDirection(axis, azimuth, options.tilt),
-    gravity: options.gravity,
-    length: options.length,
-    noise: growth.noise,
-    radiusEnd: options.radiusEnd,
-    radiusStart: Math.min(base.radius * lerp(0.75, 0.85, smoothstep(0.85, 1, along)), options.radiusEnd * 4 + 0.02),
-    segments: options.segments,
-    start: toVector(base),
-    wobble: options.wobble,
-  });
-
-  growth.branches.push({ depth: options.depth, points });
-
-  return points;
-}
-
 function growStem(growth: Growth, azimuth: number, options: StemOptions): TubePoint[] {
   const { random } = growth;
 
@@ -266,16 +168,6 @@ function growStem(growth: Growth, azimuth: number, options: StemOptions): TubePo
   });
 }
 
-function addBlob(growth: Growth, center: Vector3, radius: number, squash: number): void {
-  growth.foliage.push({
-    center: center.toArray(),
-    kind: "blob",
-    radius,
-    squash,
-    tint: jitter(growth.random, BLOB_TINT),
-  });
-}
-
 function apple(seed: number): TreeStructure {
   const growth = createGrowth(seed);
 
@@ -287,6 +179,7 @@ function apple(seed: number): TreeStructure {
     lean: random.between(0.03, 0.15),
     radiusBottom: 0.245,
     radiusTop: 0.17,
+    segments: TRUNK_SEGMENTS,
     wobble: 0.3,
   });
 
@@ -323,7 +216,7 @@ function apple(seed: number): TreeStructure {
 
   addBlob(growth, toVector(tipOf(trunk)).add(new Vector3(0, 2.5, 0)), random.between(1.3, 1.5), 0.75);
 
-  return finish(growth, CultivatedSpecies.AppleTree);
+  return finish(growth, ORCHARD_HEIGHTS[CultivatedSpecies.AppleTree]);
 }
 
 function pear(seed: number): TreeStructure {
@@ -337,6 +230,7 @@ function pear(seed: number): TreeStructure {
     lean: random.between(0, 0.06),
     radiusBottom: 0.225,
     radiusTop: 0.15,
+    segments: TRUNK_SEGMENTS,
     wobble: 0.15,
   });
 
@@ -372,7 +266,7 @@ function pear(seed: number): TreeStructure {
 
   addBlob(growth, toVector(tipOf(leader)).add(new Vector3(0, 0.25, 0)), random.between(0.8, 0.95), 1.2);
 
-  return finish(growth, CultivatedSpecies.PearTree);
+  return finish(growth, ORCHARD_HEIGHTS[CultivatedSpecies.PearTree]);
 }
 
 function plum(seed: number): TreeStructure {
@@ -386,6 +280,7 @@ function plum(seed: number): TreeStructure {
     lean: random.between(0.03, 0.15),
     radiusBottom: 0.205,
     radiusTop: 0.15,
+    segments: TRUNK_SEGMENTS,
     wobble: 0.3,
   });
 
@@ -410,7 +305,7 @@ function plum(seed: number): TreeStructure {
 
   addBlob(growth, toVector(tipOf(trunk)).add(new Vector3(0, 2.5, 0)), random.between(1.1, 1.3), 0.85);
 
-  return finish(growth, CultivatedSpecies.PlumTree);
+  return finish(growth, ORCHARD_HEIGHTS[CultivatedSpecies.PlumTree]);
 }
 
 interface BushLeaf {
