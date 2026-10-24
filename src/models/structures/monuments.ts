@@ -403,7 +403,7 @@ function drumShape(context: MonumentContext, height: number, broken: boolean): S
 const PLINTH: Placement = { position: [0, 0.1, 0] };
 const DRUM_HEIGHT = 1.15;
 
-function addColumn(context: MonumentContext, drums: number, broken: boolean): void {
+function addColumn(context: MonumentContext, drums: number): void {
   const { random } = context;
 
   addPiece(context, blockShape(context, { depth: 1.36, height: 0.52, width: 1.36 }), PLINTH, WORKED_STONE);
@@ -413,7 +413,7 @@ function addColumn(context: MonumentContext, drums: number, broken: boolean): vo
 
     addPiece(
       context,
-      drumShape(context, DRUM_HEIGHT, broken && isTop),
+      drumShape(context, DRUM_HEIGHT, isTop),
       {
         position: [random.signed() * 0.03, 0.34 + drum * (DRUM_HEIGHT - 0.02), random.signed() * 0.03],
         rotation: [random.signed() * 0.015, random.next() * FULL_TURN, random.signed() * 0.015],
@@ -427,12 +427,12 @@ function pillar(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Pi
   const { random } = context;
 
   if (form === "standing") {
-    addColumn(context, 3, true);
+    addColumn(context, 3);
 
     return;
   }
 
-  addColumn(context, 1, true);
+  addColumn(context, 1);
 
   if (form === "stump") {
     return;
