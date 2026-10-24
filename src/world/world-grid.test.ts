@@ -22,6 +22,23 @@ describe("world grid", () => {
     expect(columnsAndRows(grid.cellsAlong(3, 3, 4, 4))).toEqual(["4,4"]);
   });
 
+  it("stops at the first cell along a segment that matches", () => {
+    const visited: string[] = [];
+
+    const isFound = grid.someCellAlong(-35, -35, -5, -35, (cell) => {
+      visited.push(`${grid.columnOf(cell)},${grid.rowOf(cell)}`);
+
+      return grid.columnOf(cell) === 1;
+    });
+
+    expect(isFound).toBe(true);
+    expect(visited).toEqual(["0,0", "1,0"]);
+  });
+
+  it("finds nothing along a segment when no cell matches", () => {
+    expect(grid.someCellAlong(-35, -35, -5, -35, (cell) => grid.rowOf(cell) === 1)).toBe(false);
+  });
+
   it("clamps the bounds of a circle to the grid", () => {
     expect(grid.circleBounds(-35, 30, 12)).toEqual({ firstColumn: 0, firstRow: 5, lastColumn: 1, lastRow: 7 });
   });
