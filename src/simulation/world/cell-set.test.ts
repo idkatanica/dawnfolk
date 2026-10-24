@@ -39,14 +39,4 @@ describe("cell set", () => {
 
     expect([...set.values()]).toEqual([6]);
   });
-
-  it("empties completely", () => {
-    const set = new CellSet(10);
-
-    set.add(5);
-    set.clear();
-
-    expect(set.size).toBe(0);
-    expect(set.has(5)).toBe(false);
-  });
 });

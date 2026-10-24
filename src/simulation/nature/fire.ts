@@ -50,7 +50,6 @@ export class FireSystem {
   readonly #heated: CellSet;
   readonly #windFactors = new Float32Array(NEIGHBOR_OFFSETS.length);
   readonly #world: WorldState;
-  #burntTreeCount = 0;
   #downwindColumn = 0;
   #downwindRow = 0;
   #downwindWeight = 0;
@@ -65,10 +64,6 @@ export class FireSystem {
 
   get burningCount(): number {
     return this.#burning.size;
-  }
-
-  get burntTreeCount(): number {
-    return this.#burntTreeCount;
   }
 
   get windStrength(): number {
@@ -98,20 +93,10 @@ export class FireSystem {
     this.#windStrength = strength;
   }
 
-  canBurn(cell: number): boolean {
-    const { canopyFuel, fields } = this.#world;
-
-    if (this.#world.isWater(cell)) {
-      return false;
-    }
-
-    return fields.fuel[cell] > BURNABLE_GROUND_FUEL || canopyFuel[cell] > BURNABLE_CANOPY_FUEL;
-  }
-
   ignite(cell: number, intensity: number): boolean {
     const { fields } = this.#world;
 
-    if (cell < 0 || !this.canBurn(cell) || fields.snow[cell] > SNOW_BLOCKING_IGNITION) {
+    if (cell < 0 || !this.#canBurn(cell) || fields.snow[cell] > SNOW_BLOCKING_IGNITION) {
       return false;
     }
 
@@ -166,6 +151,16 @@ export class FireSystem {
     this.#heated.retain((cell) => this.#heatCell(cell, tick));
 
     return tick.emberCells;
+  }
+
+  #canBurn(cell: number): boolean {
+    const { canopyFuel, fields } = this.#world;
+
+    if (this.#world.isWater(cell)) {
+      return false;
+    }
+
+    return fields.fuel[cell] > BURNABLE_GROUND_FUEL || canopyFuel[cell] > BURNABLE_CANOPY_FUEL;
   }
 
   #burnCell(cell: number, tick: FireTick): boolean {
@@ -233,7 +228,7 @@ export class FireSystem {
     }
 
     if (canopyFuel[cell] < crownThreshold && canopyBefore >= crownThreshold) {
-      this.#burntTreeCount += vegetation.burnTreesInCell(cell, tick.conditions.day);
+      vegetation.burnTreesInCell(cell, tick.conditions.day);
       this.#world.markDisturbed(cell, tick.conditions.day);
     }
 
@@ -260,7 +255,7 @@ export class FireSystem {
     if (fuelLeft <= BURNT_OUT_FUEL) {
       fields.scorch[cell] = 1;
       canopyFuel[cell] = 0;
-      this.#burntTreeCount += vegetation.burnTreesInCell(cell, day);
+      vegetation.burnTreesInCell(cell, day);
     }
 
     initialCanopyFuel[cell] = canopyFuel[cell];
@@ -343,7 +338,7 @@ export class FireSystem {
   #igniteFromHeat(cell: number, heat: number, tick: FireTick): void {
     const { fields } = this.#world;
 
-    if (fields.fire[cell] > 0 || !this.canBurn(cell)) {
+    if (fields.fire[cell] > 0 || !this.#canBurn(cell)) {
       return;
     }
 

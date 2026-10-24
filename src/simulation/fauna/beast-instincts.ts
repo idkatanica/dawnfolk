@@ -112,7 +112,6 @@ const BITE_DAMAGE: readonly [number, number] = [0.12, 0.19];
 const BITE_SECONDS: readonly [number, number] = [0.9, 1.4];
 const RETARGET_SECONDS = 0.5;
 const FLINCH_SECONDS = 0.45;
-const FALL_SECONDS = 1.3;
 const STALKING_SPEED_SHARE = 0.85;
 const CHARGE_SECONDS = 7;
 const CHARGE_GIVE_UP_DISTANCE = 50;
@@ -303,6 +302,10 @@ export class BeastInstincts {
     this.#strikes.delete(animal.id);
   }
 
+  forgetPack(packId: number): void {
+    this.#moods.delete(packId);
+  }
+
   abandonHunt(packId: number, members: readonly Animal[], from: Waypoint): void {
     const mood = this.#moods.get(packId);
 
@@ -313,10 +316,6 @@ export class BeastInstincts {
     mood.hunt = null;
     mood.restDays = REST_AFTER_FAILURE_DAYS;
     scatter(members, from);
-  }
-
-  fallSeconds(): number {
-    return FALL_SECONDS;
   }
 
   #steerPack(pack: Pack, members: readonly Animal[], tick: FaunaTick): void {

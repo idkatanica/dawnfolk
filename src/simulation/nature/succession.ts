@@ -14,7 +14,7 @@ import { NO_PLANT, type PlantPlacement } from "../../world/vegetation-store.ts";
 import { NO_BUILDING, type WorldState } from "../world/world-state.ts";
 import type { Nursery } from "./nursery.ts";
 
-export const SHRUB_GROWING_DAYS = 3;
+const SHRUB_GROWING_DAYS = 3;
 export const TREE_GROWING_DAYS = 14;
 
 const VISITS_PER_CELL_PER_DAY = 2;

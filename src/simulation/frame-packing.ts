@@ -332,7 +332,7 @@ function technologyProgress(tribe: Tribe): TechnologyProgress | null {
   return { cost: upcoming.cost, name: upcoming.name };
 }
 
-export interface TribeSources {
+interface TribeSources {
   buildings: BuildingSystem;
   world: WorldState;
 }

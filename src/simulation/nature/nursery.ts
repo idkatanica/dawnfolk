@@ -25,17 +25,13 @@ export class Nursery {
     this.#world = world;
   }
 
-  get size(): number {
-    return this.#seedlings.length;
-  }
-
-  plant(placement: PlantPlacement, growingDays: number): number {
+  plant(placement: PlantPlacement, growingDays: number): void {
     const world = this.#world;
 
     const index = world.plant({ ...placement, height: placement.height * SEEDLING_SHARE });
 
     if (index === NO_PLANT) {
-      return NO_PLANT;
+      return;
     }
 
     this.#seedlings.push({
@@ -46,8 +42,6 @@ export class Nursery {
       species: placement.species,
       targetHeight: placement.height,
     });
-
-    return index;
   }
 
   grow(days: number): void {

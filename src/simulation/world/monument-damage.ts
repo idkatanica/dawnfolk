@@ -28,6 +28,8 @@ const FRAGMENT_SALT = 7.7;
 
 type DamageOdds = readonly [readonly number[], readonly number[], readonly number[]];
 
+type HarmLevel = Exclude<MonumentDamageLevel, typeof MonumentDamage.Standing>;
+
 interface Ruination {
   readonly odds: DamageOdds;
   readonly order: readonly number[];
@@ -106,8 +108,7 @@ const CATASTROPHE_NAMES: Readonly<Record<Catastrophe, string>> = {
   meteor: "The meteor",
 };
 
-const RUIN_VERBS: Readonly<Record<MonumentDamageLevel, string>> = {
-  [MonumentDamage.Standing]: "spared",
+const RUIN_VERBS: Readonly<Record<HarmLevel, string>> = {
   [MonumentDamage.Leaning]: "cracked",
   [MonumentDamage.Fallen]: "toppled",
   [MonumentDamage.Rubble]: "shattered",
@@ -122,11 +123,11 @@ export interface Shock {
 }
 
 export interface MonumentHarm {
-  readonly damage: MonumentDamageLevel;
+  readonly damage: HarmLevel;
   readonly monument: Monument;
 }
 
-function damageFrom(shock: Shock, monument: Monument): MonumentDamageLevel {
+function damageFrom(shock: Shock, monument: Monument): HarmLevel | null {
   const distance = Math.hypot(monument.x - shock.x, monument.z - shock.z);
 
   const intensity = shock.strength * (1 - distance / shock.reach);
@@ -139,7 +140,7 @@ function damageFrom(shock: Shock, monument: Monument): MonumentDamageLevel {
     return MonumentDamage.Fallen;
   }
 
-  return intensity >= LEANING_INTENSITY ? MonumentDamage.Leaning : MonumentDamage.Standing;
+  return intensity >= LEANING_INTENSITY ? MonumentDamage.Leaning : null;
 }
 
 export function shakeMonuments(world: WorldState, shock: Shock, day: number): MonumentHarm[] {
@@ -150,7 +151,7 @@ export function shakeMonuments(world: WorldState, shock: Shock, day: number): Mo
 
     const damage = damageFrom(shock, monument);
 
-    if (damage <= condition.damage) {
+    if (damage === null || damage <= condition.damage) {
       continue;
     }
 
@@ -162,7 +163,7 @@ export function shakeMonuments(world: WorldState, shock: Shock, day: number): Mo
   return harms;
 }
 
-function layRuins(world: WorldState, monument: Monument, damage: MonumentDamageLevel, shock: Shock, day: number): void {
+function layRuins(world: WorldState, monument: Monument, damage: HarmLevel, shock: Shock, day: number): void {
   const pieces = piecesOf(world, monument);
 
   for (const piece of pieces) {
@@ -208,12 +209,12 @@ function chosenRank(odds: readonly number[], roll: number): number {
   return odds.length - 1;
 }
 
-function breakPiece(world: WorldState, plant: number, damage: MonumentDamageLevel, shock: Shock): void {
+function breakPiece(world: WorldState, plant: number, damage: HarmLevel, shock: Shock): void {
   const { vegetation } = world;
 
   const species = vegetation.species[plant];
 
-  if (!isMonumentPiece(species) || damage === MonumentDamage.Standing) {
+  if (!isMonumentPiece(species)) {
     return;
   }
 
