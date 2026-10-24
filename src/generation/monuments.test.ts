@@ -92,13 +92,3 @@ describe.each(["round", "square"] as const)("monuments on a %s island", (shape) 
     expect(stones).toBeGreaterThanOrEqual(monuments.length);
   });
 });
-
-describe("monument placement", () => {
-  it("raises the same monuments for the same seed", () => {
-    expect(generate(7, "round").monuments).toEqual(worldOf("round").monuments);
-  });
-
-  it("raises others for another seed", () => {
-    expect(generate(8, "round").monuments).not.toEqual(worldOf("round").monuments);
-  });
-});

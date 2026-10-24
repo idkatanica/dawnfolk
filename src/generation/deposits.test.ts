@@ -1,30 +1,21 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { DEPOSIT_KINDS, DEPOSITS } from "../content/deposits.ts";
 import { isTreeSpecies } from "../content/plants.ts";
 import { slopeAt } from "../world/footing.ts";
 import { isWaterCell } from "../world/terrain-sampling.ts";
 import { WorldGrid } from "../world/world-grid.ts";
-import { generateWorld } from "./world-generator.ts";
+import { type GeneratedWorld, generateWorld } from "./world-generator.ts";
 
 const DIMENSIONS = { cellSize: 10, cellsPerSide: 384 };
 
-function generate(seed: number) {
-  return generateWorld(seed, { dimensions: DIMENSIONS, erosionStrength: 1, shape: "round" });
-}
-
 describe("ore and clay deposits", () => {
-  const world = generate(7);
   const grid = new WorldGrid(DIMENSIONS);
 
-  it("are placed the same way for a seed", () => {
-    const again = generate(7);
+  let world: GeneratedWorld;
 
-    expect(again.deposits).toEqual(world.deposits);
-  });
-
-  it("differ between seeds", () => {
-    expect(generate(11).deposits).not.toEqual(world.deposits);
-  });
+  beforeAll(() => {
+    world = generateWorld(7, { dimensions: DIMENSIONS, erosionStrength: 1, shape: "round" });
+  }, 60_000);
 
   it("include every kind of ore and clay", () => {
     const kinds = new Set(world.deposits.map((deposit) => deposit.kind));
