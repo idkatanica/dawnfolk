@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import type { WeatherKind } from "../../content/weather.ts";
 import { cn } from "../../design/cn.ts";
+import { Divider } from "../../design/divider.tsx";
 import { formatClock } from "../../design/format.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
-import { Island } from "../../design/island.tsx";
 import type { CalendarView } from "../../simulation/nature/calendar.ts";
 import { useWorldStore } from "../world/world-store.ts";
 
@@ -45,23 +45,15 @@ interface ReadingProps {
 
 function Reading({ detail, icon, title, value }: ReadingProps) {
   return (
-    <div className="flex items-center gap-2.5 whitespace-nowrap text-ink-soft" title={title}>
-      <GameIcon name={icon} size={26} />
+    <div className="flex items-center gap-2 whitespace-nowrap text-ink-soft" title={title}>
+      <GameIcon name={icon} size={24} />
 
-      <span className="flex flex-col gap-1 leading-none">
+      <span className="flex flex-col gap-0.5 leading-none">
         <span className="font-semibold text-ink text-sm tabular-nums">{value}</span>
 
         <span className="flex items-center gap-1 text-ink-muted text-xs max-lg:hidden">{detail}</span>
       </span>
     </div>
-  );
-}
-
-function StatusIsland({ children }: { readonly children: ReactNode }) {
-  return (
-    <Island>
-      <div className="flex h-13 pointer-coarse:h-14 items-center px-4">{children}</div>
-    </Island>
   );
 }
 
@@ -83,7 +75,9 @@ function WeatherReading() {
   }
 
   return (
-    <StatusIsland>
+    <>
+      <Divider />
+
       <Reading
         detail={
           <>
@@ -95,7 +89,7 @@ function WeatherReading() {
         icon={WEATHER_ICONS[weather.kind]}
         value={weather.name}
       />
-    </StatusIsland>
+    </>
   );
 }
 
@@ -107,15 +101,19 @@ function PopulationReading() {
     return null;
   }
 
+  const tribeCount = tribes === 1 ? "1 tribe" : `${tribes} tribes`;
+
   return (
-    <StatusIsland>
+    <>
+      <Divider />
+
       <Reading
-        detail={tribes === 1 ? "1 tribe" : `${tribes} tribes`}
+        detail={tribeCount}
         icon="population"
-        title={`${tribes} tribes`}
+        title={`${population} people in ${tribeCount}`}
         value={population}
       />
-    </StatusIsland>
+    </>
   );
 }
 
@@ -142,7 +140,7 @@ export function CompactClock({ className }: { readonly className?: string | unde
   );
 }
 
-export function WorldStatus() {
+export function WorldStatus({ className }: { readonly className?: string | undefined }) {
   const calendar = useWorldStore((state) => state.snapshot?.calendar);
 
   if (calendar === undefined) {
@@ -150,10 +148,8 @@ export function WorldStatus() {
   }
 
   return (
-    <div className="flex items-start gap-3">
-      <StatusIsland>
-        <ClockReading calendar={calendar} />
-      </StatusIsland>
+    <div className={cn("flex items-center gap-3 lg:gap-4", className)}>
+      <ClockReading calendar={calendar} />
 
       <WeatherReading />
 
