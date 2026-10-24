@@ -3,8 +3,8 @@ import { FULL_TURN } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import { segmentsAtLeast } from "../level-of-detail.ts";
-import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
-import type { MeshBuilder, VertexStyle } from "../mesh/mesh-builder.ts";
+import { MaterialSlot } from "../materials.ts";
+import type { MeshBuilder } from "../mesh/mesh-builder.ts";
 import type { Shape } from "../mesh/shape.ts";
 import { blob, box, cone, cylinder, type LoftSection, lathe, loft, sphere, torus, tube } from "../mesh/shapes.ts";
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
@@ -13,48 +13,11 @@ import { forEachSide, headShape, headStroke } from "./human-anatomy.ts";
 import { type HumanDetail, trimSegments } from "./human-detail.ts";
 import { armStyle, FLEXIBLE_TORSO_STYLE } from "./human-rigging.ts";
 import { HumanBone } from "./human-skeleton.ts";
+import { addRod, CRADLE, inLeftHand, inRightHand, LEFT_FIST, onChest, RIGHT_FIST } from "./prop-placement.ts";
 
 const PROP_NOISE = createVolumeNoise(createRandom(4242));
 
-const RIGHT_FIST: Triple = [-0.217, 0.832, 0.018];
-const LEFT_FIST: Triple = [0.217, 0.832, 0.018];
-const CRADLE: Triple = [0, 1.29, 0.28];
 const SHOULDER_GRIP: Triple = [0.25, 1.46, 0.21];
-
-function inRightHand(slot: MaterialSlotIndex): VertexStyle {
-  return { ...rigidStyle(HumanBone.HandRight), slot };
-}
-
-function inLeftHand(slot: MaterialSlotIndex): VertexStyle {
-  return { ...rigidStyle(HumanBone.HandLeft), slot };
-}
-
-function onChest(slot: MaterialSlotIndex): VertexStyle {
-  return { ...rigidStyle(HumanBone.Chest), slot };
-}
-
-interface Rod {
-  readonly end: Triple;
-  readonly radius: number;
-  readonly start: Triple;
-}
-
-function addRod(builder: MeshBuilder, detail: HumanDetail, rod: Rod, style: VertexStyle): void {
-  const { end, radius, start } = rod;
-
-  builder.add(
-    cylinder({
-      height: segmentLength(start, end),
-      radialSegments: trimSegments(detail, 6),
-      radiusBottom: radius,
-      radiusTop: radius * 0.9,
-    }),
-    {
-      style,
-      transform: segmentTransform(start, end),
-    }
-  );
-}
 
 function ring(detail: HumanDetail, radius: number, thickness: number, segments: number): Shape {
   return torus(radius, thickness, trimSegments(detail, segments), trimSegments(detail, 4));

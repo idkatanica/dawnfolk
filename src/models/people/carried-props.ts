@@ -2,18 +2,14 @@ import { FULL_TURN } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
-import type { MeshBuilder, VertexStyle } from "../mesh/mesh-builder.ts";
+import type { MeshBuilder } from "../mesh/mesh-builder.ts";
 import type { Shape } from "../mesh/shape.ts";
 import { blob, lathe, sphere, torus } from "../mesh/shapes.ts";
 import { type Triple, transformOf } from "../mesh/transforms.ts";
-import { rigidStyle } from "../rig/skin-weights.ts";
 import { type HumanDetail, trimSegments } from "./human-detail.ts";
-import { HumanBone } from "./human-skeleton.ts";
+import { CRADLE, inLeftHand, LEFT_FIST, onChest } from "./prop-placement.ts";
 
 const LOAD_NOISE = createVolumeNoise(createRandom(5151));
-
-const LEFT_FIST: Triple = [0.217, 0.832, 0.018];
-const CRADLE: Triple = [0, 1.29, 0.28];
 
 interface Lump {
   readonly offset: Triple;
@@ -28,14 +24,6 @@ const ORE_LUMPS: readonly Lump[] = [
   { offset: [-0.03, 0.05, 0.05], radius: 0.035, slot: MaterialSlot.IronOre },
   { offset: [0.05, 0.03, 0.05], radius: 0.03, slot: MaterialSlot.CopperOre },
 ];
-
-function onChest(slot: MaterialSlotIndex): VertexStyle {
-  return { ...rigidStyle(HumanBone.Chest), slot };
-}
-
-function inLeftHand(slot: MaterialSlotIndex): VertexStyle {
-  return { ...rigidStyle(HumanBone.HandLeft), slot };
-}
 
 export function addCarriedOre(builder: MeshBuilder, detail: HumanDetail): void {
   const [x, y, z] = CRADLE;
