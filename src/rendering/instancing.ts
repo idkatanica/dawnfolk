@@ -10,8 +10,7 @@ import {
   Vector3,
 } from "three/webgpu";
 import type { MeshData, VertexChannel } from "../models/mesh/mesh-data.ts";
-
-const GROWTH_FACTOR = 1.5;
+import { GROWTH_FACTOR } from "../shared/growth.ts";
 
 interface InterleavedField {
   readonly name: string;

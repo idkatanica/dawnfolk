@@ -1,3 +1,4 @@
+import { GROWTH_FACTOR } from "../shared/growth.ts";
 import { clamp } from "../shared/math.ts";
 import type {
   InitialWorld,
@@ -17,7 +18,6 @@ import type { VegetationBuffers } from "../world/vegetation-store.ts";
 import type { WaterFeatures } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 
-const GROWTH_FACTOR = 1.5;
 const MILLISECONDS_PER_SECOND = 1000;
 const LONGEST_EXTRAPOLATION_SECONDS = 0.1;
 const CROSSING_LOOKUP_MARGIN = 0.6;

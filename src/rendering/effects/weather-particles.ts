@@ -1,6 +1,5 @@
 import {
   abs,
-  attribute,
   cameraPosition,
   clamp,
   cos,
@@ -24,24 +23,13 @@ import {
   vec2,
   vec3,
 } from "three/tsl";
-import {
-  Color,
-  Float32BufferAttribute,
-  Group,
-  InstancedBufferGeometry,
-  Mesh,
-  MeshBasicNodeMaterial,
-  type PerspectiveCamera,
-  Uint16BufferAttribute,
-  Vector2,
-  type Vector3,
-} from "three/webgpu";
+import { Color, Group, Mesh, MeshBasicNodeMaterial, type PerspectiveCamera, Vector2, type Vector3 } from "three/webgpu";
 import { fallsAsSnow, type WeatherKind } from "../../content/weather.ts";
 import { fractionalPart, saturate } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
-import type { CameraAxes } from "./billboards.ts";
+import { billboardNodes, type CameraAxes, createQuadGeometry, distanceFromBillboardCenter } from "./billboards.ts";
 import { type LatticeArea, LatticeCover, latticeElement, scramble, unitHash } from "./precipitation-lattice.ts";
 
 const NEAREST_SPAN = 70;
@@ -157,28 +145,17 @@ interface DropSources {
   readonly uniforms: DropUniforms;
 }
 
-function createDropGeometry(): InstancedBufferGeometry {
-  const geometry = new InstancedBufferGeometry();
-
-  geometry.setAttribute("position", new Float32BufferAttribute(new Float32Array(12), 3));
-  geometry.setAttribute("dropCorner", new Float32BufferAttribute([-0.5, 0, 0.5, 0, 0.5, 1, -0.5, 1], 2));
-  geometry.setIndex(new Uint16BufferAttribute([0, 1, 2, 0, 2, 3], 1));
-  geometry.instanceCount = 0;
-
-  return geometry;
-}
-
 class DropOctave {
   readonly mesh: Mesh;
   readonly #cover = new LatticeCover();
-  readonly #geometry = createDropGeometry();
+  readonly #geometry = createQuadGeometry();
   readonly #level = uniform(0);
   readonly #material = new MeshBasicNodeMaterial({ depthWrite: false, fog: false, transparent: true });
   readonly #scale = uniform(1);
 
   constructor({ axes, grid, textures, uniforms }: DropSources) {
     const material = this.#material;
-    const corner = attribute("dropCorner", "vec2");
+    const { corner } = billboardNodes();
     const last = grid.cellsPerSide - 1;
     const scale = this.#scale;
 
@@ -256,7 +233,7 @@ class DropOctave {
 
     const across = smoothstep(0.5, 0.15, abs(shape.x));
     const streak = across.mul(smoothstep(0, 0.15, shape.y)).mul(smoothstep(1, 0.35, shape.y));
-    const flake = smoothstep(0.5, 0.2, length(vec2(shape.x, shape.y.sub(0.5))));
+    const flake = smoothstep(0.5, 0.2, distanceFromBillboardCenter(shape));
 
     material.colorNode = uniforms.color;
     material.opacityNode = mix(streak, flake, uniforms.isSnow).mul(fade).mul(uniforms.opacity);

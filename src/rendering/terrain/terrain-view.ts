@@ -10,7 +10,6 @@ import type { WorldMirror } from "../../game/world-mirror.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
 import { GroundWarp } from "./ground-warp.ts";
-import { islandPlinthHeight } from "./island-base-geometry.ts";
 import type { GroundArea, IslandOutline } from "./island-outline.ts";
 import { type HeightRange, type PatchContent, type PatchCorner, PatchGrid, type PatchPiece } from "./patch-grid.ts";
 import { createTerrainMaterial } from "./terrain-material.ts";
@@ -35,7 +34,13 @@ export class TerrainView {
   readonly #outline: IslandOutline;
   readonly #warp: GroundWarp;
 
-  constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow, renderer: WebGPURenderer) {
+  constructor(
+    mirror: WorldMirror,
+    textures: TerrainTextures,
+    plinth: number,
+    glow: FireGlow,
+    renderer: WebGPURenderer
+  ) {
     const { grid } = mirror;
 
     this.#mirror = mirror;
@@ -46,7 +51,7 @@ export class TerrainView {
     const options = {
       glow,
       grid,
-      plinth: islandPlinthHeight(mirror, textures.outline),
+      plinth,
       textures,
       warp: this.#warp,
     };

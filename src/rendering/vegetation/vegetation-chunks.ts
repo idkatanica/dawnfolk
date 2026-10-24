@@ -3,6 +3,7 @@ import { isMonumentSpecies, PLANT_SPECIES, type PlantSpeciesIndex } from "../../
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { canonicalHeight, farVariantOf, footprintRadius, plantVariantCount } from "../../models/plants/plant-models.ts";
 import { isDistantLevel, type PlantDetailLevel } from "../../models/plants/tree-mesher.ts";
+import { grownIndexArray } from "../../shared/growth.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 
@@ -128,7 +129,7 @@ export class VegetationChunks {
   }
 
   #place(plant: number): void {
-    this.#ensureCapacity(plant + 1);
+    this.#chunkOfPlant = grownIndexArray(this.#chunkOfPlant, plant + 1, NO_CHUNK);
 
     const previous = this.#chunkOfPlant[plant];
     const next = this.#chunkFor(plant);
@@ -163,17 +164,6 @@ export class VegetationChunks {
     const chunkRow = Math.floor(grid.rowOf(cell) / CHUNK_CELLS);
 
     return chunkRow * this.chunksPerSide + chunkColumn;
-  }
-
-  #ensureCapacity(size: number): void {
-    if (size <= this.#chunkOfPlant.length) {
-      return;
-    }
-
-    const grown = new Int32Array(Math.max(size, Math.ceil(this.#chunkOfPlant.length * 1.5))).fill(NO_CHUNK);
-
-    grown.set(this.#chunkOfPlant);
-    this.#chunkOfPlant = grown;
   }
 
   #repack(chunk: VegetationChunk): void {

@@ -2,6 +2,7 @@ import { PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
 import { SEASON_COUNT } from "../../content/seasons.ts";
 import { mixColors } from "../../shared/color.ts";
 import { lerp } from "../../shared/math.ts";
+import { BARE_BRANCHES, BUDS, FRESH_LEAVES } from "./foliage-colors.ts";
 import { ORCHARD_FOLIAGE_KEYS } from "./orchard-palette.ts";
 
 interface FoliageLook {
@@ -15,13 +16,10 @@ export interface FoliageKey {
   readonly season: number;
 }
 
-const BARE_BRANCHES = 0x7a_6a_44;
-const BUDS = 0x8e_9a_4c;
-
 function deciduous(summer: number, autumn: number): readonly FoliageKey[] {
   return [
     { color: BUDS, coverage: 0.4, season: 0 },
-    { color: 0x9c_c8_52, coverage: 0.85, season: 0.2 },
+    { color: FRESH_LEAVES, coverage: 0.85, season: 0.2 },
     { color: 0x86_b8_48, coverage: 1, season: 0.45 },
     { color: summer, coverage: 1, season: 1.2 },
     { color: summer, coverage: 1, season: 2 },

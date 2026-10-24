@@ -1,6 +1,7 @@
 import { ClampToEdgeWrapping, DataTexture, LinearFilter, RedFormat, UnsignedByteType } from "three/webgpu";
 import { isTreeSpecies } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
+import { grownIndexArray } from "../../shared/growth.ts";
 import { smoothstep } from "../../shared/math.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { slopeAt } from "../../world/footing.ts";
@@ -12,7 +13,6 @@ const STEEP_GRASS_START = 0.7;
 const STEEP_GRASS_END = 0.95;
 const SHADE_PER_TREE = 0.45;
 const DEEPEST_SHADE = 0.85;
-const GROWTH_FACTOR = 1.5;
 
 export class UnderstoryField {
   readonly texture: DataTexture;
@@ -85,7 +85,7 @@ export class UnderstoryField {
   }
 
   #place(plant: number): boolean {
-    this.#ensureCapacity(plant + 1);
+    this.#cellOfTree = grownIndexArray(this.#cellOfTree, plant + 1, NO_CELL);
 
     const previous = this.#cellOfTree[plant];
     const next = this.#treeCell(plant);
@@ -127,16 +127,5 @@ export class UnderstoryField {
     const shade = Math.min(DEEPEST_SHADE, this.#trees[cell] * SHADE_PER_TREE);
 
     this.#cover[cell] = Math.round(BYTE * footing * (1 - shade));
-  }
-
-  #ensureCapacity(size: number): void {
-    if (size <= this.#cellOfTree.length) {
-      return;
-    }
-
-    const grown = new Int32Array(Math.max(size, Math.ceil(this.#cellOfTree.length * GROWTH_FACTOR))).fill(NO_CELL);
-
-    grown.set(this.#cellOfTree);
-    this.#cellOfTree = grown;
   }
 }

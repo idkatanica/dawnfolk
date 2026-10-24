@@ -152,18 +152,18 @@ export class IslandBase {
   readonly #steps: DataTexture;
   readonly #underside: Mesh;
 
-  constructor(mirror: WorldMirror, textures: TerrainTextures) {
+  constructor(mirror: WorldMirror, textures: TerrainTextures, plinth: number) {
     const patchesPerSide = Math.ceil(mirror.grid.cellsPerSide / PATCH_CELLS);
-    const geometry = buildIslandBaseGeometry(mirror, textures.outline);
+    const geometry = buildIslandBaseGeometry(mirror, textures.outline, plinth);
 
     this.#stepData = new Float32Array(patchesPerSide * patchesPerSide).fill(1);
     this.#steps = createStepTexture(this.#stepData, patchesPerSide);
 
-    this.mesh = new Mesh(geometry.cliff, createCliffMaterial(textures, this.#steps, mirror.grid, geometry.plinth));
+    this.mesh = new Mesh(geometry.cliff, createCliffMaterial(textures, this.#steps, mirror.grid, plinth));
     this.mesh.receiveShadow = true;
     this.mesh.frustumCulled = false;
 
-    this.#underside = new Mesh(geometry.underside, createUndersideMaterial(geometry.plinth));
+    this.#underside = new Mesh(geometry.underside, createUndersideMaterial(plinth));
     this.#underside.frustumCulled = false;
     this.mesh.add(this.#underside);
   }
