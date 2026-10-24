@@ -28,7 +28,7 @@ export const MarkerPass = {
   Ring: 1,
 } as const;
 
-export type MarkerPassCode = (typeof MarkerPass)[keyof typeof MarkerPass];
+type MarkerPassCode = (typeof MarkerPass)[keyof typeof MarkerPass];
 
 interface MarkerPaint {
   readonly color: Node<"vec3">;
