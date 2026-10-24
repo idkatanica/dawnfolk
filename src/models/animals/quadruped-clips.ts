@@ -2,6 +2,15 @@ import type { AnimalPose } from "../../world/agent-poses.ts";
 import { cosineWave, degrees, keyframes, pulse, wave } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
 import { QUADRUPED_FIGHT_CLIPS } from "./quadruped-fight-clips.ts";
+import {
+  bendBone,
+  GALLOP_PHASES,
+  type LegPhases,
+  LYING_SPREAD,
+  LYING_SWING,
+  sideName,
+  WALK_PHASES,
+} from "./quadruped-motion.ts";
 import { LEG_ENDS, LEG_SIDES, type LegEnd, type LegSide, legBones, QuadrupedBone } from "./quadruped-skeleton.ts";
 
 type RunKind = "amble" | "gallop" | "hop";
@@ -35,17 +44,7 @@ export interface AnimalClip {
   readonly timing: AnimalClipTiming;
 }
 
-const WALK_PHASES: Readonly<Record<LegEnd, Readonly<Record<"left" | "right", number>>>> = {
-  front: { left: 0.25, right: 0.75 },
-  hind: { left: 0, right: 0.5 },
-};
-
-const GALLOP_PHASES: Readonly<Record<LegEnd, Readonly<Record<"left" | "right", number>>>> = {
-  front: { left: 0.42, right: 0.52 },
-  hind: { left: 0, right: 0.09 },
-};
-
-const HOP_PHASES: Readonly<Record<LegEnd, Readonly<Record<"left" | "right", number>>>> = {
+const HOP_PHASES: LegPhases = {
   front: { left: 0.5, right: 0.58 },
   hind: { left: 0, right: 0.03 },
 };
@@ -54,18 +53,6 @@ const WALKING_HOP = 0.45;
 const HOP_HEIGHT = 0.1;
 
 const GRAZING_STANCE: Readonly<Record<LegEnd, number>> = { front: degrees(4), hind: -degrees(3) };
-
-const LYING_SWING: Readonly<Record<LegEnd, number>> = { front: degrees(18), hind: -degrees(22) };
-
-const LYING_SPREAD: Readonly<Record<"left" | "right", number>> = { left: degrees(4), right: -degrees(10) };
-
-function sideName(side: LegSide): "left" | "right" {
-  return side === 1 ? "left" : "right";
-}
-
-function bendTrunkBone(pose: Pose, bone: number, forward: number, toLeft = 0, turnLeft = 0): void {
-  pose.rotate(bone, forward, -toLeft, turnLeft);
-}
 
 interface LegMotion {
   readonly fold: number;
@@ -91,7 +78,7 @@ function moveLeg(pose: Pose, end: LegEnd, side: LegSide, motion: LegMotion): voi
   pose.rotate(bones.hoof, fold, 0, 0);
 }
 
-function stepLegs(pose: Pose, phase: number, swing: number, fold: number, offsets: typeof WALK_PHASES): void {
+function stepLegs(pose: Pose, phase: number, swing: number, fold: number, offsets: LegPhases): void {
   for (const end of LEG_ENDS) {
     for (const side of LEG_SIDES) {
       const legPhase = phase + offsets[end][sideName(side)];
@@ -105,18 +92,18 @@ function stepLegs(pose: Pose, phase: number, swing: number, fold: number, offset
 }
 
 function swishTail(pose: Pose, phase: number, amount: number): void {
-  bendTrunkBone(pose, QuadrupedBone.Tail, degrees(10), amount * wave(phase * 2));
+  bendBone(pose, QuadrupedBone.Tail, degrees(10), amount * wave(phase * 2));
 }
 
 function hop(pose: Pose, phase: number, context: AnimalClipContext, effort: number): void {
   const { gait } = context;
 
   stepLegs(pose, phase, gait.runSwing * effort, gait.lowerFlex * (0.6 + 0.6 * effort), HOP_PHASES);
-  bendTrunkBone(pose, QuadrupedBone.Pelvis, degrees(12) * effort * wave(phase, 0.1));
-  bendTrunkBone(pose, QuadrupedBone.Spine, -degrees(14) * effort * wave(phase));
-  bendTrunkBone(pose, QuadrupedBone.Chest, degrees(6) * effort * wave(phase, 0.2));
-  bendTrunkBone(pose, QuadrupedBone.Neck, -degrees(4) + gait.headBob * wave(phase, 0.3));
-  bendTrunkBone(pose, QuadrupedBone.Tail, -degrees(25) * effort);
+  bendBone(pose, QuadrupedBone.Pelvis, degrees(12) * effort * wave(phase, 0.1));
+  bendBone(pose, QuadrupedBone.Spine, -degrees(14) * effort * wave(phase));
+  bendBone(pose, QuadrupedBone.Chest, degrees(6) * effort * wave(phase, 0.2));
+  bendBone(pose, QuadrupedBone.Neck, -degrees(4) + gait.headBob * wave(phase, 0.3));
+  bendBone(pose, QuadrupedBone.Tail, -degrees(25) * effort);
   pose.height = HOP_HEIGHT * effort * Math.max(0, wave(phase, -0.62));
 }
 
@@ -130,9 +117,9 @@ function walk(pose: Pose, phase: number, context: AnimalClipContext): void {
   }
 
   stepLegs(pose, phase, gait.walkSwing, gait.lowerFlex, WALK_PHASES);
-  bendTrunkBone(pose, QuadrupedBone.Pelvis, 0, degrees(1.5) * wave(phase), degrees(2) * wave(phase));
-  bendTrunkBone(pose, QuadrupedBone.Neck, gait.headBob * cosineWave(phase * 2));
-  bendTrunkBone(pose, QuadrupedBone.Head, -gait.headBob * 0.5 * cosineWave(phase * 2));
+  bendBone(pose, QuadrupedBone.Pelvis, 0, degrees(1.5) * wave(phase), degrees(2) * wave(phase));
+  bendBone(pose, QuadrupedBone.Neck, gait.headBob * cosineWave(phase * 2));
+  bendBone(pose, QuadrupedBone.Head, -gait.headBob * 0.5 * cosineWave(phase * 2));
   swishTail(pose, phase, gait.tailSwish * 0.4);
 }
 
@@ -140,11 +127,11 @@ function gallop(pose: Pose, phase: number, context: AnimalClipContext): void {
   const { gait } = context;
 
   stepLegs(pose, phase, gait.runSwing, gait.lowerFlex * 1.4, GALLOP_PHASES);
-  bendTrunkBone(pose, QuadrupedBone.Pelvis, degrees(6) * wave(phase, 0.1));
-  bendTrunkBone(pose, QuadrupedBone.Spine, -degrees(8) * wave(phase));
-  bendTrunkBone(pose, QuadrupedBone.Chest, degrees(5) * wave(phase, 0.2));
-  bendTrunkBone(pose, QuadrupedBone.Neck, degrees(10) + degrees(8) * wave(phase, 0.3));
-  bendTrunkBone(pose, QuadrupedBone.Tail, -degrees(30));
+  bendBone(pose, QuadrupedBone.Pelvis, degrees(6) * wave(phase, 0.1));
+  bendBone(pose, QuadrupedBone.Spine, -degrees(8) * wave(phase));
+  bendBone(pose, QuadrupedBone.Chest, degrees(5) * wave(phase, 0.2));
+  bendBone(pose, QuadrupedBone.Neck, degrees(10) + degrees(8) * wave(phase, 0.3));
+  bendBone(pose, QuadrupedBone.Tail, -degrees(30));
   pose.height = 0.16 * Math.max(0, wave(phase, -0.62));
 }
 
@@ -152,8 +139,8 @@ function amble(pose: Pose, phase: number, context: AnimalClipContext): void {
   const { gait } = context;
 
   stepLegs(pose, phase, gait.runSwing, gait.lowerFlex * 1.25, WALK_PHASES);
-  bendTrunkBone(pose, QuadrupedBone.Pelvis, degrees(2), degrees(2.5) * wave(phase), degrees(3) * wave(phase));
-  bendTrunkBone(pose, QuadrupedBone.Neck, degrees(4) + gait.headBob * 1.5 * cosineWave(phase * 2));
+  bendBone(pose, QuadrupedBone.Pelvis, degrees(2), degrees(2.5) * wave(phase), degrees(3) * wave(phase));
+  bendBone(pose, QuadrupedBone.Neck, degrees(4) + gait.headBob * 1.5 * cosineWave(phase * 2));
   swishTail(pose, phase, gait.tailSwish);
 }
 
@@ -186,15 +173,15 @@ function graze(pose: Pose, phase: number, context: AnimalClipContext): void {
 
   const chew = wave(phase * 9) * (1 - alert);
 
-  bendTrunkBone(pose, QuadrupedBone.Neck, gait.grazeReach * (1 - alert) - degrees(8) * alert, 0, degrees(18) * alert);
-  bendTrunkBone(
+  bendBone(pose, QuadrupedBone.Neck, gait.grazeReach * (1 - alert) - degrees(8) * alert, 0, degrees(18) * alert);
+  bendBone(
     pose,
     QuadrupedBone.Head,
     degrees(20) * (1 - alert) + degrees(3) * chew,
     0,
     degrees(10) * alert * wave(phase * 3)
   );
-  bendTrunkBone(pose, QuadrupedBone.Chest, degrees(4) * (1 - alert));
+  bendBone(pose, QuadrupedBone.Chest, degrees(4) * (1 - alert));
 
   for (const end of LEG_ENDS) {
     for (const side of LEG_SIDES) {
@@ -207,9 +194,9 @@ function graze(pose: Pose, phase: number, context: AnimalClipContext): void {
 
 function dead(pose: Pose, _phase: number, context: AnimalClipContext): void {
   pose.grounding = "body";
-  bendTrunkBone(pose, QuadrupedBone.Pelvis, 0, degrees(88));
-  bendTrunkBone(pose, QuadrupedBone.Neck, degrees(30), degrees(10));
-  bendTrunkBone(pose, QuadrupedBone.Head, degrees(15), context.gait.deadHeadRoll);
+  bendBone(pose, QuadrupedBone.Pelvis, 0, degrees(88));
+  bendBone(pose, QuadrupedBone.Neck, degrees(30), degrees(10));
+  bendBone(pose, QuadrupedBone.Head, degrees(15), context.gait.deadHeadRoll);
 
   for (const end of LEG_ENDS) {
     for (const side of LEG_SIDES) {
