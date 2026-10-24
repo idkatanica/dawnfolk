@@ -27,7 +27,6 @@ import healing from "./icons/healing.webp";
 import heat from "./icons/heat.webp";
 import hut from "./icons/hut.webp";
 import ibex from "./icons/ibex.webp";
-import inspect from "./icons/inspect.webp";
 import inspiration from "./icons/inspiration.webp";
 import iron from "./icons/iron.webp";
 import ironOre from "./icons/iron-ore.webp";
@@ -109,7 +108,6 @@ export const GAME_ICON_SOURCES = {
   heat,
   hut,
   ibex,
-  inspect,
   inspiration,
   iron,
   "iron-ore": ironOre,

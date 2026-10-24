@@ -13,7 +13,6 @@ import { usePowerStore, withDefaults } from "./power-store.ts";
 
 const USAGE_HINTS = {
   brush: "Hold and drag over the land.",
-  inspect: "Tap anything on the island.",
   point: "Tap a spot on the island.",
 } as const;
 

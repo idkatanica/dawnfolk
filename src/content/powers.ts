@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { choiceParameter, rangeParameter, toggleParameter } from "./parameters.ts";
 
-export type PowerCategory = "elements" | "land" | "life" | "observe";
+export type PowerCategory = "elements" | "land" | "life";
 
-type PowerUsage = "brush" | "inspect" | "point";
+type PowerUsage = "brush" | "point";
 
 interface PowerDefinition {
   category: PowerCategory;
@@ -22,7 +22,6 @@ export const POWER_CATEGORIES: readonly PowerCategoryDefinition[] = [
   { id: "elements", name: "Elements" },
   { id: "land", name: "Land" },
   { id: "life", name: "Life" },
-  { id: "observe", name: "Observe" },
 ];
 
 function brushRadius(defaultValue: number, maximum: number) {
@@ -192,13 +191,6 @@ export const POWERS = {
       }),
     }),
     usage: "point",
-  },
-  inspect: {
-    category: "observe",
-    description: "Select a person, animal, building or patch of land to see its details.",
-    name: "Inspect",
-    parameters: z.object({}),
-    usage: "inspect",
   },
   inspiration: {
     category: "life",
@@ -417,7 +409,6 @@ export const POWER_ORDER: readonly PowerId[] = [
   "abundance",
   "inspiration",
   "healing",
-  "inspect",
 ];
 
 export function isPowerId(value: string): value is PowerId {

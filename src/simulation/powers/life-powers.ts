@@ -150,7 +150,3 @@ export const healingPower: PowerHandler<"healing"> = {
     return APPLIED;
   },
 };
-
-export const inspectPower: PowerHandler<"inspect"> = {
-  apply: () => APPLIED,
-};

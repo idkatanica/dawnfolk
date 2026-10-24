@@ -128,7 +128,6 @@ describe("powers", () => {
       "meteor",
       "earthquake",
     ]);
-    expect(powersInCategory("observe")).toEqual(["inspect"]);
   });
 
   it("falls back to defaults for invalid parameters", () => {

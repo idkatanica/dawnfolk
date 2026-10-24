@@ -131,6 +131,12 @@ describe("stored power parameters", () => {
     expect(parameters).toEqual({ rain: { intensity: 40, radius: 90 } });
   });
 
+  it("skips the parameters of a power that was removed", () => {
+    const parameters = readStoredParameters({ parameters: { inspect: {}, rain: { intensity: 40, radius: 90 } } });
+
+    expect(parameters).toEqual({ rain: { intensity: 40, radius: 90 } });
+  });
+
   it("fills in missing values with the defaults", () => {
     const parameters = readStoredParameters({ parameters: { rain: { intensity: 40 } } });
 
