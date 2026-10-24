@@ -2,7 +2,7 @@ import { Vector3 } from "three";
 import { BUILDING_KINDS, type BuildingKind } from "../../content/buildings.ts";
 import { clamp, FULL_TURN, fractionalPart, lerp, saturate, smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
-import { createRandom, type RandomSource } from "../../shared/random.ts";
+import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { MeshBuilder, type SurfacePoint } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
@@ -24,23 +24,11 @@ import { outermostHit } from "../mesh/surface-probe.ts";
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
 import { longhouse, stoneHouse } from "./era-dwellings.ts";
 import { forge, granary, kiln, smelter, workshop } from "./era-workplaces.ts";
-import { scaledMesh } from "./structure-parts.ts";
-
-type BuildingDetailLevel = "high" | "low";
+import { rising, type StructureContext, type StructureLevel, scaledMesh } from "./structure-parts.ts";
 
 export const GLOW_PART = 1;
 
 const STRUCTURE_NOISE = createVolumeNoise(createRandom(3131));
-
-interface StructureContext {
-  readonly builder: MeshBuilder;
-  readonly level: BuildingDetailLevel;
-  readonly random: RandomSource;
-}
-
-function stage(from: number, to: number, height: number): (point: SurfacePoint) => number {
-  return (point) => lerp(from, to, saturate(point.position.y / height));
-}
 
 function addLog(
   context: StructureContext,
@@ -227,7 +215,7 @@ function tent(context: StructureContext): void {
 
   builder.add(lathe(profile, sides), {
     style: {
-      buildOrder: stage(0.4, 1, TENT_HEIGHT),
+      buildOrder: rising(0.4, 1, 0, TENT_HEIGHT),
       shade: (point) => 0.75 + 0.25 * smoothstep(0, 1.5, point.position.y),
       slot: tentSlot,
     },
@@ -673,7 +661,7 @@ export function buildingScale(kind: SingleModelKind): number {
   return scale;
 }
 
-export function buildBuildingModel(kind: SingleModelKind, level: BuildingDetailLevel): MeshData {
+export function buildBuildingModel(kind: SingleModelKind, level: StructureLevel): MeshData {
   const builder = new MeshBuilder();
 
   BUILDERS[kind]({ builder, level, random: createRandom(kind.length * 31 + 7) });
