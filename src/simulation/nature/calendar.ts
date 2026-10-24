@@ -4,6 +4,8 @@ import { FULL_TURN, fractionalPart } from "../../shared/math.ts";
 export const DEFAULT_DAY_SECONDS = 240;
 export const MINIMUM_DAY_SECONDS = 60;
 export const MAXIMUM_DAY_SECONDS = 1800;
+export const MINIMUM_DAYS_PER_SEASON = 1;
+export const MAXIMUM_DAYS_PER_SEASON = 30;
 
 const DEFAULT_DAYS_PER_SEASON = 3;
 const START_TIME_OF_DAY = 0.36;

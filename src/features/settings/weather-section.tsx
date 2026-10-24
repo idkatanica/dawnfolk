@@ -1,5 +1,12 @@
 import { useSendCommand } from "../../app/use-engine.ts";
-import { WEATHER, WEATHER_KINDS, type WeatherKind } from "../../content/weather.ts";
+import {
+  MAXIMUM_TEMPERATURE_OFFSET,
+  MAXIMUM_WIND_SPEED,
+  MINIMUM_TEMPERATURE_OFFSET,
+  WEATHER,
+  WEATHER_KINDS,
+  type WeatherKind,
+} from "../../content/weather.ts";
 import { ChoiceField } from "../../design/choice-field.tsx";
 import { formatParameterValue } from "../../design/format.ts";
 import { RangeField } from "../../design/range-field.tsx";
@@ -91,8 +98,8 @@ function WeatherControls({ weather }: { readonly weather: WeatherView }) {
         <RangeField
           description="Makes the whole island warmer or colder."
           label="Temperature"
-          maximum={30}
-          minimum={-30}
+          maximum={MAXIMUM_TEMPERATURE_OFFSET}
+          minimum={MINIMUM_TEMPERATURE_OFFSET}
           onChange={changeTemperature}
           step={1}
           value={Math.round(weather.userTemperatureOffset)}
@@ -116,7 +123,7 @@ function WeatherControls({ weather }: { readonly weather: WeatherView }) {
           <RangeField
             description="Base wind speed before gusts."
             label="Wind speed"
-            maximum={90}
+            maximum={MAXIMUM_WIND_SPEED}
             minimum={0}
             onChange={changeSpeed}
             step={1}

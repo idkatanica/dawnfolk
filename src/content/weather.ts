@@ -12,6 +12,10 @@ export const WEATHER_KINDS = [
 
 export type WeatherKind = (typeof WEATHER_KINDS)[number];
 
+export const MINIMUM_TEMPERATURE_OFFSET = -30;
+export const MAXIMUM_TEMPERATURE_OFFSET = 30;
+export const MAXIMUM_WIND_SPEED = 90;
+
 interface WeatherDefinition {
   cloudCover: number;
   fog: number;

@@ -5,9 +5,8 @@ import { useSendCommand } from "../../app/use-engine.ts";
 import { IconButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
 import { SEGMENT, SEGMENT_TRACK } from "../../design/segmented.ts";
+import { SIMULATION_SPEEDS } from "../../simulation/tick.ts";
 import { useWorldStore } from "../world/world-store.ts";
-
-const SPEEDS = [1, 2, 4, 8, 16] as const;
 
 function SpeedOption({ speed }: { readonly speed: number }) {
   return (
@@ -68,7 +67,7 @@ export function TimeControls({ className }: { readonly className?: string | unde
         onValueChange={changeSpeed}
         value={pressedSpeeds}
       >
-        {SPEEDS.map((option) => (
+        {SIMULATION_SPEEDS.map((option) => (
           <SpeedOption key={option} speed={option} />
         ))}
       </ToggleGroup>

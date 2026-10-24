@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
+import { SIMULATION_SPEEDS } from "../../simulation/tick.ts";
 import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
 import { resetWorld, showWorld } from "../testing/world-fixtures.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { TimeControls } from "./time-controls.tsx";
-
-const SPEEDS = [1, 2, 4, 8, 16] as const;
 
 describe("time controls", () => {
   afterEach(() => {
@@ -20,7 +19,7 @@ describe("time controls", () => {
     await expect.element(screen.getByRole("button", { exact: true, name: "Resume" })).toBeVisible();
 
     await Promise.all(
-      SPEEDS.map((speed) =>
+      SIMULATION_SPEEDS.map((speed) =>
         expect
           .element(screen.getByRole("button", { exact: true, name: `Speed ${speed} times` }))
           .toHaveAttribute("aria-pressed", "false")
