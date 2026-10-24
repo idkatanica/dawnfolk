@@ -84,7 +84,13 @@ export class EffectView {
     this.#sinks.dust.begin();
     this.#sinks.glow.begin();
 
-    for (const [index, effect] of [...this.#active.entries()].reverse()) {
+    for (let index = this.#active.length - 1; index >= 0; index -= 1) {
+      const effect = this.#active[index];
+
+      if (effect === undefined) {
+        continue;
+      }
+
       if (!effect.update(realSeconds, this.#sinks)) {
         this.#finish(index, effect);
       }
@@ -98,8 +104,12 @@ export class EffectView {
   }
 
   dispose(): void {
-    for (const [index, effect] of [...this.#active.entries()].reverse()) {
-      this.#finish(index, effect);
+    for (let index = this.#active.length - 1; index >= 0; index -= 1) {
+      const effect = this.#active[index];
+
+      if (effect !== undefined) {
+        this.#finish(index, effect);
+      }
     }
 
     for (const ring of this.#idleRings.splice(0)) {
