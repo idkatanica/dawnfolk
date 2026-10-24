@@ -1,8 +1,8 @@
 import { Vector3 } from "three";
-import { clamp, inverseLerp, lerp } from "../../shared/math.ts";
+import { inverseLerp, lerp } from "../../shared/math.ts";
 import type { VolumeNoise } from "../../shared/noise.ts";
 import type { RandomSource } from "../../shared/random.ts";
-import type { TubePoint } from "../mesh/shapes.ts";
+import { pointAlong, type TubePoint } from "../mesh/shapes.ts";
 import type { Triple } from "../mesh/transforms.ts";
 
 export interface Branch {
@@ -92,21 +92,6 @@ export function growBranch(growth: BranchGrowth): TubePoint[] {
   }
 
   return points;
-}
-
-export function pointAlong(points: readonly TubePoint[], amount: number): TubePoint {
-  const scaled = clamp(amount * (points.length - 1), 0, points.length - 1.000_001);
-  const index = Math.floor(scaled);
-  const fraction = scaled - index;
-  const from = points[index];
-  const to = points[index + 1];
-
-  return {
-    radius: lerp(from.radius, to.radius, fraction),
-    x: lerp(from.x, to.x, fraction),
-    y: lerp(from.y, to.y, fraction),
-    z: lerp(from.z, to.z, fraction),
-  };
 }
 
 export function directionAlong(points: readonly TubePoint[], amount: number): Vector3 {

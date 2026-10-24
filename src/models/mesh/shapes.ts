@@ -1,5 +1,5 @@
 import { Vector3 } from "three";
-import { FULL_TURN } from "../../shared/math.ts";
+import { clamp, FULL_TURN, lerp } from "../../shared/math.ts";
 import type { VolumeNoise } from "../../shared/noise.ts";
 import { GrowableFloatArray, GrowableIndexArray } from "./growable-array.ts";
 import { computeSmoothNormals, displaceShape, type Shape, transformShape } from "./shape.ts";
@@ -571,6 +571,21 @@ export interface TubePoint {
   readonly x: number;
   readonly y: number;
   readonly z: number;
+}
+
+export function pointAlong(points: readonly TubePoint[], amount: number): TubePoint {
+  const scaled = clamp(amount * (points.length - 1), 0, points.length - 1.000_001);
+  const index = Math.floor(scaled);
+  const fraction = scaled - index;
+  const from = points[index];
+  const to = points[index + 1];
+
+  return {
+    radius: lerp(from.radius, to.radius, fraction),
+    x: lerp(from.x, to.x, fraction),
+    y: lerp(from.y, to.y, fraction),
+    z: lerp(from.z, to.z, fraction),
+  };
 }
 
 interface TubeOptions {

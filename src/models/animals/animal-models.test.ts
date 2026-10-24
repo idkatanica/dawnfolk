@@ -2,12 +2,12 @@ import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { ANIMAL_KINDS } from "../../content/animals.ts";
 import { ANIMAL_POSES } from "../../world/agent-poses.ts";
-import { mergeMeshes } from "../mesh/mesh-data.ts";
+import { type MeshData, mergeMeshes } from "../mesh/mesh-data.ts";
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { measureStride } from "../rig/stride.ts";
 import { meshProblems, openEdgeCount, thinnestPiece } from "../testing/mesh-checks.ts";
-import { loosePieces, type MeshPiece, meshPieces, TOUCHING } from "../testing/mesh-connectivity.ts";
+import { isInsidePiece, loosePieces, type MeshPiece, meshPieces, TOUCHING } from "../testing/mesh-connectivity.ts";
 import { posedMesh } from "../testing/moved-mesh.ts";
 import { animalAppearance } from "./animal-appearance.ts";
 import { ANIMAL_SPECIES, buildAnimalParts, poseAnimal, visibleAnimalParts } from "./animal-models.ts";
@@ -168,6 +168,38 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     });
 
     expect(stride + leapPerStride(species.gait, "walk")).toBeGreaterThan(0.5);
+  });
+});
+
+describe("deer antlers", () => {
+  function sinksInto(mesh: MeshData, tine: MeshPiece, beams: readonly MeshPiece[]): boolean {
+    return tine.vertices.some((vertex) => {
+      const point: readonly [number, number, number] = [
+        mesh.positions[vertex * 3],
+        mesh.positions[vertex * 3 + 1],
+        mesh.positions[vertex * 3 + 2],
+      ];
+
+      return beams.some((beam) => isInsidePiece(mesh, beam, point));
+    });
+  }
+
+  it.each(["antlersSmall", "antlersLarge"])("grows every tine of %s out of its beam", (name) => {
+    const part = ANIMAL_SPECIES.deer.parts.findIndex((candidate) => candidate.name === name);
+
+    for (const level of LEVELS) {
+      const mesh = buildAnimalParts("deer", level)[part];
+
+      const [first, second, ...tines] = meshPieces(mesh).toSorted(
+        (left, right) => right.vertices.length - left.vertices.length
+      );
+
+      expect(tines, level).toHaveLength(6);
+
+      for (const tine of tines) {
+        expect(sinksInto(mesh, tine, [first, second]), level).toBe(true);
+      }
+    }
   });
 });
 

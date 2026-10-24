@@ -2,7 +2,7 @@ import { Vector3 } from "three";
 import { PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
 import { FULL_TURN, lerp } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
-import type { TubePoint } from "../mesh/shapes.ts";
+import { pointAlong, type TubePoint } from "../mesh/shapes.ts";
 import { addBlob, addLimb, addTrunk, createGrowth, finish, type Growth, rooted } from "./tree-growth.ts";
 import {
   endedBelow,
@@ -10,7 +10,6 @@ import {
   GOLDEN_ANGLE,
   growBranch,
   jitter,
-  pointAlong,
   type TreeStructure,
   tipOf,
   toVector,

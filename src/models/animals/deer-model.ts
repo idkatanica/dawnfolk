@@ -4,7 +4,7 @@ import { alongPath, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts"
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, SurfacePoint } from "../mesh/mesh-builder.ts";
 import { type Shape, transformShape } from "../mesh/shape.ts";
-import { type BodySection, lengthwiseLoft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
+import { type BodySection, lengthwiseLoft, pointAlong, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { outermostHit, surfaceTransform } from "../mesh/surface-probe.ts";
 import { combine, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
 import { degrees } from "../rig/curves.ts";
@@ -230,40 +230,45 @@ function antlerBeam(scale: number): TubePoint[] {
   ];
 }
 
-function antlerTine(start: Triple, end: Triple): TubePoint[] {
+interface AntlerTine {
+  readonly along: number;
+  readonly reach: Triple;
+}
+
+const TINE_RADIUS = 0.014;
+
+const ANTLER_TINES: readonly AntlerTine[] = [
+  { along: 0.27, reach: [0.02, 0.05, 0.14] },
+  { along: 0.48, reach: [0.04, 0.05, 0.13] },
+  { along: 0.66, reach: [0.06, 0.12, 0.07] },
+];
+
+function antlerTine(beam: readonly TubePoint[], tine: AntlerTine, scale: number): TubePoint[] {
+  const root = pointAlong(beam, tine.along);
+  const [x, y, z] = tine.reach;
+
   return [
-    { radius: 0.014, x: start[0], y: start[1], z: start[2] },
-    { radius: 0, x: end[0], y: end[1], z: end[2] },
+    { radius: Math.min(TINE_RADIUS, root.radius), x: root.x, y: root.y, z: root.z },
+    { radius: 0, x: root.x + x * scale, y: root.y + y * scale, z: root.z + z * scale },
   ];
 }
 
 function addAntlers(builder: MeshBuilder, detail: AnimalDetail, scale: number): void {
   const style = { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Antler };
+  const beam = antlerBeam(scale);
 
   for (const side of LEG_SIDES) {
     const mirror = sideMirror(side);
 
-    builder.add(tube(antlerBeam(scale), { radialSegments: segmentsAtLeast(detail, 4, detail.segments - 3) }), {
+    builder.add(tube(beam, { radialSegments: segmentsAtLeast(detail, 4, detail.segments - 3) }), {
       style,
       transform: mirror,
     });
 
-    for (const [start, end] of antlerTines(scale)) {
-      builder.add(tube(antlerTine(start, end), { radialSegments: 4 }), { style, transform: mirror });
+    for (const tine of ANTLER_TINES) {
+      builder.add(tube(antlerTine(beam, tine, scale), { radialSegments: 4 }), { style, transform: mirror });
     }
   }
-}
-
-function antlerTines(scale: number): (readonly [Triple, Triple])[] {
-  function point(x: number, rise: number, z: number): Triple {
-    return [x, 1.74 + rise * scale, z];
-  }
-
-  return [
-    [point(0.08, 0.06, 0.79), point(0.1, 0.11, 0.93)],
-    [point(0.13, 0.24, 0.73), point(0.17, 0.29, 0.86)],
-    [point(0.2, 0.38, 0.65), point(0.26, 0.5, 0.72)],
-  ];
 }
 
 export function addSmallAntlers(builder: MeshBuilder, detail: AnimalDetail): void {

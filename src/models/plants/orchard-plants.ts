@@ -8,7 +8,7 @@ import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { MeshBuilder, type VertexStyle } from "../mesh/mesh-builder.ts";
 import { type MeshData, mergeMeshes } from "../mesh/mesh-data.ts";
 import type { Shape } from "../mesh/shape.ts";
-import { blob, icosphere, lathe, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
+import { blob, icosphere, lathe, pointAlong, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { transformOf } from "../mesh/transforms.ts";
 import { addBlob, addLimb, addTrunk, BLOB_TINT, createGrowth, finish, type Growth } from "./tree-growth.ts";
@@ -25,7 +25,6 @@ import {
   GOLDEN_ANGLE,
   growBranch,
   jitter,
-  pointAlong,
   type TreeStructure,
   tipOf,
   toVector,
