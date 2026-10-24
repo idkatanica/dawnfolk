@@ -1,6 +1,5 @@
 import { useEngine } from "../../app/use-engine.ts";
 import type { Inspection } from "../../simulation/inspection.ts";
-import { useInspectorStore } from "../inspector/inspector-store.ts";
 import { type JournalTab, useInterfaceStore } from "../interface/interface-store.ts";
 import { useWorldStore } from "../world/world-store.ts";
 
@@ -35,14 +34,11 @@ export function useSidePanel() {
   const journalTab = useInterfaceStore((state) => state.journalTab);
   const showJournal = useInterfaceStore((state) => state.openJournal);
   const hideJournal = useInterfaceStore((state) => state.closeJournal);
-  const setFollowing = useInspectorStore((state) => state.setFollowing);
 
   function clearSelection(): void {
     if (engine !== null) {
       engine.clearSelection();
     }
-
-    setFollowing(false);
   }
 
   function close(): void {

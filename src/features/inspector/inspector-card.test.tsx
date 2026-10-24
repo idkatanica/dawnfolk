@@ -10,9 +10,6 @@ import {
   createTribe,
 } from "../testing/world-fixtures.ts";
 import { InspectorCard } from "./inspector-card.tsx";
-import { useInspectorStore } from "./inspector-store.ts";
-
-const initialInspectorState = useInspectorStore.getState();
 
 const FOLLOW_LABEL = "Follow with the camera";
 
@@ -25,10 +22,6 @@ function renderInspection(inspection: Inspection, onBack?: () => void) {
 }
 
 describe("inspector card", () => {
-  afterEach(() => {
-    useInspectorStore.setState(initialInspectorState, true);
-  });
-
   it("titles a person with their name, age and tribe", async () => {
     const screen = await renderInspection(createPersonInspection());
 
@@ -85,22 +78,14 @@ describe("inspector card", () => {
     await expect.element(screen.getByRole("button", { exact: true, name: FOLLOW_LABEL })).not.toBeInTheDocument();
   });
 
-  it("shows that the camera follows the selection", async () => {
-    useInspectorStore.getState().setFollowing(true);
-
-    const screen = await renderInspection(createPersonInspection());
-
-    await expect
-      .element(screen.getByRole("button", { exact: true, name: FOLLOW_LABEL }))
-      .toHaveAttribute("aria-pressed", "true");
-  });
-
   it("does not start following while no game is running", async () => {
     const screen = await renderInspection(createPersonInspection());
 
-    await screen.getByRole("button", { exact: true, name: FOLLOW_LABEL }).click();
+    const follow = screen.getByRole("button", { exact: true, name: FOLLOW_LABEL });
 
-    expect(useInspectorStore.getState().isFollowing).toBe(false);
+    await follow.click();
+
+    await expect.element(follow).toHaveAttribute("aria-pressed", "false");
   });
 
   it("closes from its close button", async () => {
@@ -131,26 +116,59 @@ describe("inspector card", () => {
 });
 
 describe("inspector card in a running game", () => {
-  afterEach(() => {
-    stopTestEngine();
-    useInspectorStore.setState(initialInspectorState, true);
+  afterEach(stopTestEngine);
+
+  it("shows that the camera follows the selection", async () => {
+    const { setFollowing } = await startTestEngine();
+
+    setFollowing(true);
+
+    const screen = await renderInspection(createPersonInspection());
+
+    await expect
+      .element(screen.getByRole("button", { exact: true, name: FOLLOW_LABEL }))
+      .toHaveAttribute("aria-pressed", "true");
   });
 
   it("follows the selected person with the camera and stops again", async () => {
-    const { followSelection, stopFollowing } = await startTestEngine();
+    const { followSelection, renderFrame, stopFollowing } = await startTestEngine();
 
     const screen = await renderInspection(createPersonInspection());
 
     const follow = screen.getByRole("button", { exact: true, name: FOLLOW_LABEL });
 
     await follow.click();
+    renderFrame();
 
     expect(followSelection).toHaveBeenCalledOnce();
     await expect.element(follow).toHaveAttribute("aria-pressed", "true");
 
     await follow.click();
+    renderFrame();
 
     expect(stopFollowing).toHaveBeenCalledOnce();
     await expect.element(follow).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("lets go of the button when the camera stops following on its own", async () => {
+    const { followSelection, renderFrame, setFollowing } = await startTestEngine();
+
+    const screen = await renderInspection(createPersonInspection());
+
+    const follow = screen.getByRole("button", { exact: true, name: FOLLOW_LABEL });
+
+    await follow.click();
+    renderFrame();
+
+    await expect.element(follow).toHaveAttribute("aria-pressed", "true");
+
+    setFollowing(false);
+    renderFrame();
+
+    await expect.element(follow).toHaveAttribute("aria-pressed", "false");
+
+    await follow.click();
+
+    expect(followSelection).toHaveBeenCalledTimes(2);
   });
 });

@@ -2,14 +2,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import type { TribeInspection } from "../../simulation/inspection.ts";
-import { useInspectorStore } from "../inspector/inspector-store.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
 import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
 import { createAnimalInspection, createTribe, resetWorld, showWorld } from "../testing/world-fixtures.ts";
 import { SidePanel } from "./side-panel.tsx";
 
 const initialInterfaceState = useInterfaceStore.getState();
-const initialInspectorState = useInspectorStore.getState();
 
 const BEAR_CLAN: TribeInspection = { kind: "tribe", summary: createTribe() };
 
@@ -17,7 +15,6 @@ function resetPanel(): void {
   stopTestEngine();
   resetWorld();
   useInterfaceStore.setState(initialInterfaceState, true);
-  useInspectorStore.setState(initialInspectorState, true);
 }
 
 describe("side panel", () => {
@@ -121,7 +118,6 @@ describe("side panel in a running game", () => {
 
     showWorld({ inspection: BEAR_CLAN });
     useInterfaceStore.getState().openJournal("relations");
-    useInspectorStore.getState().setFollowing(true);
 
     const screen = await render(<SidePanel />);
 
@@ -129,6 +125,5 @@ describe("side panel in a running game", () => {
 
     expect(clearSelection).toHaveBeenCalledOnce();
     expect(useInterfaceStore.getState().isJournalOpen).toBe(false);
-    expect(useInspectorStore.getState().isFollowing).toBe(false);
   });
 });

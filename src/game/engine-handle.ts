@@ -6,6 +6,7 @@ import type { PowerSelection } from "./tools/power-tool.ts";
 
 interface EngineCamera {
   readonly groundFootprint: (reach: number) => readonly GroundPoint[];
+  readonly isFollowing: boolean;
   readonly state: CameraState;
 }
 

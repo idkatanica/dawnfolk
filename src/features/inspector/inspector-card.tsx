@@ -1,4 +1,5 @@
 import { ChevronLeft, Crosshair, X } from "lucide-react";
+import { useSyncExternalStore } from "react";
 import { useEngine } from "../../app/use-engine.ts";
 import { type AgeGroup, ageGroupOf } from "../../content/life-stages.ts";
 import { IconButton, TextButton } from "../../design/buttons.tsx";
@@ -7,7 +8,6 @@ import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
 import type { Inspection, PersonInspection } from "../../simulation/inspection.ts";
 import { AnimalDetails, BuildingDetails, CellDetails, PersonDetails, TribeDetails } from "./inspector-details.tsx";
-import { useInspectorStore } from "./inspector-store.ts";
 
 const KIND_ICONS: Readonly<Record<Inspection["kind"], GameIconName>> = {
   animal: "paw",
@@ -80,21 +80,35 @@ function isFollowable(inspection: Inspection): boolean {
 
 function useFollowing() {
   const engine = useEngine();
-  const isFollowing = useInspectorStore((state) => state.isFollowing);
-  const setFollowing = useInspectorStore((state) => state.setFollowing);
+
+  function subscribe(onChange: () => void): () => void {
+    if (engine === null) {
+      return () => undefined;
+    }
+
+    return engine.subscribeToRenders(onChange);
+  }
+
+  function isFollowingNow(): boolean {
+    if (engine === null) {
+      return false;
+    }
+
+    return engine.camera.isFollowing;
+  }
+
+  const isFollowing = useSyncExternalStore(subscribe, isFollowingNow);
 
   function toggleFollowing(): void {
     if (engine === null) {
       return;
     }
 
-    if (isFollowing) {
+    if (engine.camera.isFollowing) {
       engine.stopFollowing();
     } else {
       engine.followSelection();
     }
-
-    setFollowing(!isFollowing);
   }
 
   return { isFollowing, toggleFollowing };

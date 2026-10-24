@@ -124,7 +124,7 @@ describe("tribe list in a running game", () => {
 
     await screen.getByRole("button", { exact: false, name: "Fox Clan" }).click();
 
-    expect(stopFollowing).toHaveBeenCalledOnce();
+    expect(stopFollowing).not.toHaveBeenCalled();
     expect(focusOn).toHaveBeenCalledExactlyOnceWith(120, -40, 260);
     expect(send).toHaveBeenCalledExactlyOnceWith({ selection: { id: 3, kind: "tribe" }, type: "setSelection" });
   });

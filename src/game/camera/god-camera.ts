@@ -70,6 +70,10 @@ export class GodCamera {
     this.#targetHeight = heightAt(0, 0);
   }
 
+  get isFollowing(): boolean {
+    return this.#follow !== null;
+  }
+
   get state(): CameraState {
     return { ...this.#current };
   }
