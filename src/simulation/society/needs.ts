@@ -75,28 +75,29 @@ function updateHealth(person: Person, needSeconds: number, days: number): void {
 }
 
 function sufferFlames(tick: PersonTick): void {
-  const { person } = tick;
-  const { world } = tick.context;
+  const fire = fireUnder(tick);
 
-  const cell = world.grid.cellAt(person.mover.x, person.mover.z);
-
-  if (cell < 0 || world.fields.fire[cell] <= BURNING_GROUND) {
+  if (fire <= BURNING_GROUND) {
     return;
   }
 
-  person.health -= tick.seconds * BURN_DAMAGE_PER_SECOND * (0.5 + world.fields.fire[cell]);
+  tick.person.health -= tick.seconds * BURN_DAMAGE_PER_SECOND * (0.5 + fire);
 }
 
 export function isStandingInFire(tick: PersonTick): boolean {
+  return fireUnder(tick) > BURNING_GROUND;
+}
+
+function fireUnder(tick: PersonTick): number {
   const { world } = tick.context;
 
   const cell = world.grid.cellAt(tick.person.mover.x, tick.person.mover.z);
 
   if (cell < 0) {
-    return false;
+    return 0;
   }
 
-  return world.fields.fire[cell] > BURNING_GROUND;
+  return world.fields.fire[cell];
 }
 
 function causeOfDeath(person: Person): DeathCause | null {

@@ -318,7 +318,7 @@ function shatter(plant: number, blast: Blast, services: PowerServices): void {
 }
 
 function hurlBurningDebris(blast: Blast, services: PowerServices): void {
-  const { effects, embers, random } = services;
+  const { embers, random } = services;
 
   const scale = reachScale(blast);
   const count = Math.round(clamp(blast.radius * blast.power * DEBRIS_PER_METER, FEWEST_DEBRIS, MOST_DEBRIS));
@@ -328,16 +328,13 @@ function hurlBurningDebris(blast: Blast, services: PowerServices): void {
     const distance = blast.radius * random.between(FELLING_REACH * scale, DEBRIS_REACH * scale);
     const durationSeconds = random.between(1.2, 3.2);
 
-    const hurl = {
+    embers.hurl({
       durationSeconds,
       fromX: blast.x,
       fromZ: blast.z,
       toX: blast.x + Math.cos(angle) * distance,
       toZ: blast.z + Math.sin(angle) * distance,
-    };
-
-    embers.hurl(hurl);
-    effects.add({ ...hurl, kind: "ember" });
+    });
   }
 }
 

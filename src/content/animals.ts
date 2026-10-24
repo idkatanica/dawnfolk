@@ -4,6 +4,8 @@ export const ANIMAL_KINDS = ["deer", "mammoth", "ibex", "wolf", "hare"] as const
 
 export type AnimalKind = (typeof ANIMAL_KINDS)[number];
 
+export const ADULT_YOUTH = 0.3;
+
 interface Breeding {
   litterSize: readonly [number, number];
   perDay: number;

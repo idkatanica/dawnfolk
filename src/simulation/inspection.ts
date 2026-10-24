@@ -1,4 +1,4 @@
-import { ANIMALS } from "../content/animals.ts";
+import { ADULT_YOUTH, ANIMALS } from "../content/animals.ts";
 import { Biome, biomeDefinition } from "../content/biomes.ts";
 import { BUILDINGS } from "../content/buildings.ts";
 import { groundDefinition } from "../content/grounds.ts";
@@ -187,7 +187,7 @@ function inspectAnimal(id: number, sources: InspectionSources): AnimalInspection
     health: animal.health / ANIMALS[animal.kind].health,
     id: animal.id,
     isAlive: animal.isAlive,
-    isYoung: animal.youth > 0.2,
+    isYoung: animal.youth > ADULT_YOUTH,
     kind: "animal",
     name: ANIMALS[animal.kind].name,
     x: animal.mover.x,

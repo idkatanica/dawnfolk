@@ -37,7 +37,7 @@ const HOMEWARD_DISTANCE = 220;
 const STRANDED_RETRY_DAYS = 1;
 const NIGHT_JOBS: ReadonlySet<JobKind> = new Set(["clay", "deliver", "eat", "mine", "sleep", "warm"]);
 const UNWAVERING_JOBS: ReadonlySet<JobKind> = new Set(["flee", "raid"]);
-const STEADFAST_JOBS: ReadonlySet<JobKind> = new Set(["defend", "envoy", "fight", "hide"]);
+const STEADFAST_JOBS: ReadonlySet<JobKind> = new Set(["defend", "envoy", "fight", "hide", "migrate"]);
 
 export function updateMind(tick: PersonTick): void {
   const { person } = tick;
@@ -177,10 +177,6 @@ function shouldInterrupt(tick: PersonTick, job: Job): boolean {
   }
 
   if (STEADFAST_JOBS.has(job.kind)) {
-    return isStarving(tick);
-  }
-
-  if (job.kind === "migrate") {
     return isStarving(tick);
   }
 

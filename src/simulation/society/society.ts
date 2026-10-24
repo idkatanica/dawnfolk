@@ -332,10 +332,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
   #dissolve(tribe: Tribe): void {
     const { buildings, chronicle } = this.#dependencies;
 
-    for (const building of buildings.all.filter((candidate) => candidate.tribeId === tribe.id)) {
-      buildings.remove(building, "abandoned");
-    }
-
+    buildings.abandonTribe(tribe.id);
     this.#tribes = this.#tribes.filter((candidate) => candidate !== tribe);
     this.#tribesById.delete(tribe.id);
     chronicle.record({

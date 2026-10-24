@@ -155,7 +155,7 @@ export class Simulation {
     this.navigation = new NavigationGrid(this.world);
     this.fire = new FireSystem(this.world);
     this.hazards = new HazardMap(this.world, this.fire);
-    this.embers = new EmberSystem(this.world);
+    this.embers = new EmberSystem(this.world, this.effects);
     this.surface = new SurfaceSystem(this.world);
     this.#vegetationGrowth = new VegetationGrowthSystem(this.world);
     this.waterRecomputation = new WaterRecomputation(this.world);
@@ -533,28 +533,15 @@ export class Simulation {
 
     this.fire.setWind(environment.windX, environment.windZ, environment.windSpeed, rules);
 
+    const wind = { strength: this.fire.windStrength, x: environment.windX, z: environment.windZ };
+
     for (const cell of this.fire.update(TICK_SECONDS, environment, rules, this.random)) {
-      this.#launchEmber(cell, environment);
+      this.embers.launch(cell, wind, this.random);
     }
 
     this.embers.update(TICK_SECONDS, (ember) => this.#landEmber(ember));
     this.surface.update(TICK_SECONDS, days, environment, rules);
     this.#vegetationGrowth.update(days, environment, rules, this.random);
-  }
-
-  #launchEmber(cell: number, environment: Environment): void {
-    const wind = { strength: this.fire.windStrength, x: environment.windX, z: environment.windZ };
-
-    const ember = this.embers.launch(cell, wind, this.random);
-
-    this.effects.add({
-      durationSeconds: ember.durationSeconds,
-      fromX: ember.fromX,
-      fromZ: ember.fromZ,
-      kind: "ember",
-      toX: ember.toX,
-      toZ: ember.toZ,
-    });
   }
 
   #landEmber(ember: Ember): void {
