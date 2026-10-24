@@ -2,9 +2,9 @@ import { FOOD_KINDS, RESOURCES, type ResourceKind } from "../../content/resource
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
 import type { TribeSummary } from "../../simulation/frame.ts";
+import { useShowTribe } from "../inspector/use-focus-camera.ts";
 import { RESOURCE_ICONS } from "../tribes/tribe-icons.ts";
 import { useWorldStore } from "../world/world-store.ts";
-import { useShowTribe } from "./use-focus-camera.ts";
 
 const SHOWN_METALS: readonly ResourceKind[] = ["iron", "bronze", "copper"];
 

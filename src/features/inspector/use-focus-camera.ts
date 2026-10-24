@@ -1,7 +1,7 @@
 import { useEngine } from "../../app/use-engine.ts";
 import type { Selection } from "../../simulation/commands.ts";
 import type { TribeSummary } from "../../simulation/frame.ts";
-import { useInspectorStore } from "../inspector/inspector-store.ts";
+import { useInspectorStore } from "./inspector-store.ts";
 
 const FOCUS_DISTANCE = 260;
 

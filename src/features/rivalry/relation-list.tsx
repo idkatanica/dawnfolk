@@ -4,7 +4,7 @@ import { GameIcon } from "../../design/game-icon.tsx";
 import type { TribeSummary } from "../../simulation/frame.ts";
 import type { Stance } from "../../simulation/society/rivalry/relations.ts";
 import type { RaidView, RelationView } from "../../simulation/society/rivalry/rivalry-system.ts";
-import { useFocusCamera } from "../journal/use-focus-camera.ts";
+import { useFocusCamera } from "../inspector/use-focus-camera.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { byStance, RAID_PHASE_LABELS, relationNote, STANCE_LOOKS } from "./stance-looks.ts";
 
