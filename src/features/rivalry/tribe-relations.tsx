@@ -1,19 +1,10 @@
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { TribeSummary } from "../../simulation/frame.ts";
 import type { RelationView } from "../../simulation/society/rivalry/rivalry-system.ts";
+import { TribeDot } from "../tribes/tribe-dot.tsx";
 import { useWorldStore } from "../world/world-store.ts";
-import { StanceBadge } from "./relation-list.tsx";
-import { byStance, isRelationOf, otherTribeOf, RAID_PHASE_LABELS, raidOf, relationNote } from "./stance-looks.ts";
-
-function NeighbourNote({ relation }: { readonly relation: RelationView }) {
-  const note = relationNote(relation);
-
-  if (note === null) {
-    return null;
-  }
-
-  return <span className="truncate text-ink-muted text-xs">{note}</span>;
-}
+import { RelationNote, StanceBadge } from "./rivalry-parts.tsx";
+import { byStance, isRelationOf, otherTribeOf, RAID_PHASE_LABELS, raidOf } from "./stance-looks.ts";
 
 function Neighbour({
   relation,
@@ -32,16 +23,12 @@ function Neighbour({
 
   return (
     <li className="flex items-center gap-2.5 py-1.5">
-      <span
-        aria-hidden="true"
-        className="size-2.5 shrink-0 rounded-full ring-2 ring-white"
-        style={{ backgroundColor: other.color }}
-      />
+      <TribeDot color={other.color} size="small" />
 
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-medium text-ink text-sm">{other.name}</span>
 
-        <NeighbourNote relation={relation} />
+        <RelationNote relation={relation} />
       </span>
 
       <StanceBadge stance={relation.stance} />

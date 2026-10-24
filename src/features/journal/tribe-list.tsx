@@ -3,6 +3,7 @@ import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
 import type { TribeSummary } from "../../simulation/frame.ts";
 import { useShowTribe } from "../inspector/use-focus-camera.ts";
+import { GoalNeed } from "../tribes/goal-need.tsx";
 import { RESOURCE_ICONS } from "../tribes/tribe-icons.ts";
 import { useWorldStore } from "../world/world-store.ts";
 
@@ -23,21 +24,6 @@ function MigrationMark({ tribe }: { readonly tribe: TribeSummary }) {
     <span className="flex items-center gap-1 text-ink-muted text-xs">
       <GameIcon name="migration" size={18} />
       On the move
-    </span>
-  );
-}
-
-function GoalMark({ tribe }: { readonly tribe: TribeSummary }) {
-  const { goal } = tribe;
-
-  if (goal === null || !goal.isBlocked || goal.need === null) {
-    return null;
-  }
-
-  return (
-    <span className="flex items-center gap-1 text-dawn-strong text-xs">
-      <GameIcon name="workshop" size={18} />
-      {`Needs ${goal.need}`}
     </span>
   );
 }
@@ -96,7 +82,7 @@ function TribeCard({ tribe }: { readonly tribe: TribeSummary }) {
 
           <StockLine tribe={tribe} />
 
-          <GoalMark tribe={tribe} />
+          <GoalNeed goal={tribe.goal} />
 
           <MigrationMark tribe={tribe} />
         </span>

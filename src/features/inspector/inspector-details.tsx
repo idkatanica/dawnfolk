@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import { TOOL_MATERIAL_DEFINITIONS } from "../../content/weapons.ts";
+import { Badge } from "../../design/badge.tsx";
 import { cn } from "../../design/cn.ts";
 import { FactList } from "../../design/fact-list.tsx";
 import { formatPercent } from "../../design/format.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
 import { MeterBar } from "../../design/meter-bar.tsx";
-import type { EraView, GoalView } from "../../simulation/frame.ts";
+import type { EraView } from "../../simulation/frame.ts";
 import type {
   AnimalInspection,
   BuildingInspection,
@@ -16,23 +17,10 @@ import type {
 } from "../../simulation/inspection.ts";
 import { TribeRelations } from "../rivalry/tribe-relations.tsx";
 import { BuildingList } from "../tribes/building-list.tsx";
+import { GoalNeed } from "../tribes/goal-need.tsx";
 import { StockList } from "../tribes/stock-list.tsx";
 
 const LIT_FUEL = 0.02;
-
-function Badge({ children, tone }: { readonly children: string; readonly tone: "ember" | "meadow" | "muted" }) {
-  return (
-    <span
-      className={cn("inline-flex h-6 items-center rounded-full px-2.5 font-medium text-xs", {
-        "bg-ember-soft text-ember": tone === "ember",
-        "bg-ink/8 text-ink-soft": tone === "muted",
-        "bg-meadow-soft text-meadow": tone === "meadow",
-      })}
-    >
-      {children}
-    </span>
-  );
-}
 
 export function PersonDetails({ person }: { readonly person: PersonInspection }) {
   return (
@@ -148,19 +136,6 @@ export function CellDetails({ cell }: { readonly cell: CellInspection }) {
 
       <PlantList plants={cell.plants} />
     </div>
-  );
-}
-
-function GoalNeed({ goal }: { readonly goal: GoalView }) {
-  if (!goal.isBlocked || goal.need === null) {
-    return null;
-  }
-
-  return (
-    <p className="flex items-center gap-1.5 font-medium text-dawn-strong text-xs">
-      <GameIcon name="workshop" size={20} />
-      {`Needs ${goal.need}`}
-    </p>
   );
 }
 
