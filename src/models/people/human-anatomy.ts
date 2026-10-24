@@ -11,7 +11,9 @@ import type { HumanDetail } from "./human-detail.ts";
 import { armStyle, FLEXIBLE_TORSO_STYLE, legStyle, TORSO_STYLE } from "./human-rigging.ts";
 import { HumanBone, HumanJoint, SIDES, type Side, sideBones } from "./human-skeleton.ts";
 
-const HEAD_SECTIONS: readonly LoftSection[] = [
+export const HEAD_CROWN = 1.753;
+
+export const HEAD_SECTIONS: readonly LoftSection[] = [
   { centerZ: 0.052, radiusX: 0, radiusZ: 0, y: 1.512 },
   { centerZ: 0.054, radiusX: 0.03, radiusZ: 0.024, y: 1.521 },
   { centerZ: 0.03, radiusX: 0.062, radiusZ: 0.07, y: 1.545 },
@@ -21,7 +23,7 @@ const HEAD_SECTIONS: readonly LoftSection[] = [
   { centerZ: -0.012, radiusX: 0.088, radiusZ: 0.099, y: 1.7 },
   { centerZ: -0.014, radiusX: 0.066, radiusZ: 0.076, y: 1.732 },
   { centerZ: -0.012, radiusX: 0.035, radiusZ: 0.04, y: 1.748 },
-  { centerZ: -0.01, radiusX: 0, radiusZ: 0, y: 1.753 },
+  { centerZ: -0.01, radiusX: 0, radiusZ: 0, y: HEAD_CROWN },
 ];
 
 const MALE_TORSO: readonly LoftSection[] = [
@@ -139,7 +141,7 @@ export function headShape(detail: HumanDetail): Shape {
   return loft(alongPath(HEAD_SECTIONS, detail), detail.headSegments);
 }
 
-const HEAD_AXIS_Z = -0.01;
+export const HEAD_AXIS_Z = -0.01;
 
 function onHead(head: Shape, point: Triple, lift: number): Vector3 {
   const [x, y, z] = point;
