@@ -1,8 +1,5 @@
 # Security policy
 
-This page covers how to report a vulnerability in Dawnfolk and what is
-supported. [CONTRIBUTING.md](CONTRIBUTING.md) covers every other contribution.
-
 ## Supported versions
 
 | Version | Supported |

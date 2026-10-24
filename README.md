@@ -43,42 +43,45 @@ Age to the Iron Age on a procedurally generated island rendered with WebGPU.
 
 ## Features
 
-- **A living island.** Every world is named and grown from a seed, round with bays and headlands or square: relief,
-  erosion, rivers that start from a cave or a small pond and pour off the edge as waterfalls, lakes, climate,
-  biomes and forests with glades, sparse stands and riverside meadows. Nothing grows on cliffs. Seasons change foliage, snow settles and melts, fire spreads with the
-  wind.
-- **Ruins of a forgotten people.** Every island hides a handful of weathered megaliths on dry, level ground: stone
-  circles, rows of standing stones, dolmens, half-buried stone heads, fallen colonnades with a ruined arch, and
-  cairns. People and animals walk around them, and nothing is built or planted where they stand.
-- **Brooks, fords and fallen logs.** People and animals keep out of rivers and lakes. They hop over a brook
-  anywhere, and cross a wider river every half kilometre or so: on a row of stepping stones over shallow water or a
-  fallen, debarked trunk over a narrow stretch. Where nothing leads across, they stay on their own bank.
-- **Tribes with their own lives.** People gather, hunt, fish, farm, chop, quarry, build camps and huts, warm
-  themselves at campfires, pray, learn technologies, migrate and split into new tribes. Herds of deer, mammoths and
-  ibex graze and flee, ibex up the nearest heights. Hares nibble meadows and forest edges, breed fast, live short
-  lives and bolt at the first threat, and wolf packs roam far from people and run hares down when hungry.
-- **From stone to iron.** Tribes climb from the Stone Age through the Neolithic and the Copper and Bronze Ages to
-  the Iron Age. They dig clay, fire pottery, weave linen, plough fields of wheat, barley and flax, plant orchards,
-  mine copper, tin and iron, smelt and forge tools and weapons, and build granaries, longhouses, workshops,
-  palisades and stone houses that change style with the era. Buildings stand on levelled ground.
-- **Feuds, raids and peace.** Tribes claim land and hunting grounds, and quarrels over them turn neighbours wary or
-  hostile. War parties raid for food, archers and spearmen fight, defenders rally behind their walls, and weary
-  tribes send envoys with gifts. Wolves stalk lone people at night, and cornered beasts fight back.
-- **Scars that heal.** A meteor or a blast fells and burns the forest around it, a crater on a river fills into a
-  lake, and monuments lean, fall and break. Burnt land grows back over a few years, fireweed first.
-- **Powers with real parameters.** Elements, land and life powers (fire, lightning, rain, snow, explosions,
-  meteors, earthquakes, raising and painting land, forests, healing, new tribes and more). Every power is described
-  by a schema, so its strength, radius and other settings appear as controls automatically. World rules (how fast
-  fire spreads, how far embers fly, how hungry people get) are adjustable in the settings.
-- **A model engine.** People, animals, trees, rocks and buildings are built procedurally from seeds: varied bodies,
-  clothes, hair and tools; skeletal animation with blended clips; tree species with seasonal foliage, palms,
-  dead snags, four kinds of cactus and desert shrubs; boulders, flat slabs, crags, scree, mossy forest rocks,
-  layered sandstone and frosted rocks, all of which people quarry for stone.
-- **Map labels.** Tribe banners with population and era float over their camps (click one to fly there), and the
-  highest peak, the largest lakes and every ruin carry names drawn from the seed. From afar, people show as outlined
-  markers in their tribe's colour and herds as one marker each, wolves as red warning triangles, on the island and the
-  minimap alike; forests never hide them.
-- **Glass islands UI.** Every panel floats on its own island of refracting glass
+### The island
+
+- Every world is named and grown from a seed, round with bays and headlands or square.
+- Rivers rise from caves and ponds, run into lakes and pour off the edge as waterfalls.
+- Climate and biomes shape forests with glades and riverside meadows; nothing grows on cliffs.
+- Seasons turn the foliage, and snow settles and melts.
+- Fire spreads with the wind; burnt land grows back over a few years, fireweed first.
+- Weathered megaliths of a forgotten people: stone circles, dolmens, half-buried stone heads, ruined colonnades.
+- People and animals hop brooks and cross wider rivers on stepping stones or fallen logs, every half kilometre or so.
+
+### The tribes
+
+- People gather, hunt, fish, farm, chop, quarry, build, pray, learn technologies, migrate and split into new tribes.
+- Tribes climb from the Stone Age through the Neolithic and the Copper and Bronze Ages to the Iron Age.
+- They fire pottery, weave linen, plough fields, plant orchards, mine, smelt and forge tools and weapons.
+- Camps and huts grow into longhouses, workshops, palisades and stone houses that change style with the era.
+- Quarrels over land turn neighbours hostile: archers and spearmen raid, defenders rally, envoys bring gifts.
+
+### Animals
+
+- Deer, mammoths and ibex graze in herds and flee; ibex climb to the nearest heights.
+- Hares breed fast, live short lives and bolt at the first threat.
+- Wolf packs roam far from people, run hares down and stalk lone people at night; cornered beasts fight back.
+
+### Powers
+
+- Fire, lightning, rain, snow, explosions, meteors, earthquakes, raising and painting land, forests, healing,
+  animals and new tribes.
+- Each power is a schema, so its strength, radius and other settings appear as controls.
+- Meteors and blasts fell and burn the forest, a crater on a river fills into a lake, and monuments lean and break.
+- World rules, such as how fast fire spreads or how hungry people get, are adjustable in the settings.
+
+### Look and interface
+
+- People, animals, plants, rocks and buildings are built procedurally from seeds and animated with skeletal clips.
+- Tribe banners show population and era, and a click flies to the camp; peaks, lakes and ruins carry names.
+- From afar, people, herds and wolves show as markers on the island and the minimap.
+- Powers, resources, buildings, weather and events have painted icons.
+- Every panel floats on its own island of refracting glass
   ([`@svidskiy/glass-surface`](https://github.com/svidskiy/glass-surface)), with a compact layout for phones.
 
 ## Stack
@@ -89,26 +92,19 @@ Vitest 5 (node and browser projects) · Playwright · Lefthook.
 
 ## Getting started
 
+You need [Bun](https://bun.sh) 1.4 or later and a browser with WebGPU or WebGL 2.
+
 ```sh
+git clone https://github.com/svidskiy/dawnfolk.git
+cd dawnfolk
 bun install
 bun run dev          # http://localhost:5173
 ```
 
 Without parameters the game opens on a start screen that names the world and picks its shape. URL parameters skip
-it and help when exploring: `?seed=7&shape=round|square&name=Ashvale&quality=low|medium|high&hours=21&paused=1&camera=x,z,distance,pitch,yaw`.
+it and make a scene reproducible: `?seed=7&shape=round|square&name=Ashvale&quality=low|medium|high&hours=21&paused=1&camera=x,z,distance,pitch,yaw`.
 
-| Script | What it does |
-| --- | --- |
-| `bun run dev` | Development server |
-| `bun run build` / `bun run preview` | Production build and its preview |
-| `bun run check` / `bun run fix` | Format and lint with Biome (Ultracite preset) |
-| `bun run typecheck` | `tsc --build` over the engine, app and tooling projects |
-| `bun run test` | Unit tests (node) and browser tests (Chromium) |
-| `bun run test:e2e` | Playwright smoke tests against the production build |
-| `bun run validate` | Check, typecheck and test in one go |
-| `bun run deploy` | Build and deploy to Cloudflare Workers as static assets |
-
-Browser tests and Playwright need Chromium; set `CHROMIUM_EXECUTABLE_PATH` to use a system Chromium.
+[CONTRIBUTING.md](CONTRIBUTING.md) has the other scripts, the checks and the code style.
 
 ## Architecture
 
@@ -118,29 +114,26 @@ src/
   content/     data registries: grounds, biomes, plants, animals, weather, technologies, buildings, powers,
                world rules — powers and rules are zod schemas with UI metadata
   world/       world grid and the data shared by the simulation and the renderer
-  generation/  relief → erosion → hydrology → climate and biomes → vegetation → river crossings
-  simulation/  deterministic fixed-tick simulation in a Web Worker: nature (calendar, weather, fire, embers,
-               surface, growth), agents (navigation, movement), fauna, society (people, jobs, tribes,
-               buildings, settlement), powers, commands, frames
+  generation/  relief → erosion → hydrology → climate and biomes → ruins and river crossings → vegetation →
+               ore deposits
+  simulation/  deterministic fixed-tick simulation: nature (calendar, weather, fire, embers, surface, growth),
+               agents (navigation, movement), fauna, society (people, jobs, tribes, buildings, settlement,
+               rivalry), powers, commands, frames
   workers/     the simulation worker (Comlink)
   game/        main thread: worker connection, world mirror, session, engine loop, input, power tools
-  models/      procedural model engine: mesh builder, rig and clips, people, animals, plants, buildings, crossings
-  rendering/   WebGPU renderer: sky, height fog and atmosphere, terrain and water patches, vegetation chunks and
-               grass, skinned agents with far markers, buildings, fire glow, flames, smoke and effects, bloom
-  design/      design system: glass islands, buttons, fields, meters, tooltips, formatting
-  features/    UI features with their stores: time, powers, inspector, journal, minimap, map labels, notices,
-               settings
-  app/         app shell, engine launch, HUD layouts
+  models/      procedural model engine: mesh builder, rig and clips, people, animals, plants and rocks,
+               buildings, monuments, crossings
+  rendering/   WebGPU renderer: sky, height fog and atmosphere, terrain and water patches, waterfalls, vegetation
+               chunks and grass, skinned agents with far markers, buildings, fire, smoke, weather, bloom
+  design/      design system: glass islands, game icons, buttons, fields, meters, tooltips, formatting
+  features/    UI features with their stores: time, powers, inspector, journal, tribes and rivalry, minimap,
+               map labels, notices, settings, new world
+  app/         app shell, start screen, engine launch, HUD layouts
 ```
 
-The engine never imports React. The UI subscribes to the game session through small stores, and sends commands
-back; commands are validated with zod at the worker boundary.
-
-## Code style
-
-Biome with the Ultracite preset (line width 120) and strictest TypeScript, plus a few house rules: full-word
-names, a blank line between logical blocks, no `??`, no `&&` for control flow, no `as` casts or `!` assertions,
-early returns instead of nested conditions, and comments only for workarounds of specific bugs.
+The simulation runs in a Web Worker and posts frames; the main thread mirrors them for the renderer and the HUD,
+and the HUD sends commands back. [AGENTS.md](AGENTS.md#rules-that-are-easy-to-miss) has the rules that keep these
+parts apart.
 
 ## License
 
