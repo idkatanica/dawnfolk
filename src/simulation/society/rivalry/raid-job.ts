@@ -230,7 +230,7 @@ export class RaidJob implements Job {
   }
 
   #plunder(raid: Raid, victims: Tribe): void {
-    const taken = plunderSurplus(victims.stock, PLUNDER_SHARE, victims.memberIds.length * FOOD_RESERVE);
+    const taken = plunderSurplus(victims.stock, PLUNDER_SHARE, victims.memberCount * FOOD_RESERVE);
 
     unpack(raid.loot, { ...taken });
     unpack(this.#loot, taken);

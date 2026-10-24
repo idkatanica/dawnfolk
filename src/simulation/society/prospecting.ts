@@ -37,7 +37,7 @@ function isReadyToTravel(tribe: Tribe, context: SocietyContext): boolean {
     return false;
   }
 
-  return totalFood(tribe.stock) >= tribe.memberIds.length * FOOD_PER_MEMBER_FOR_THE_ROAD;
+  return totalFood(tribe.stock) >= tribe.memberCount * FOOD_PER_MEMBER_FOR_THE_ROAD;
 }
 
 function promisingDeposit(context: SocietyContext, kind: DepositKind, from: Waypoint): Deposit | null {

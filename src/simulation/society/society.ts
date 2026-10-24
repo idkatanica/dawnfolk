@@ -122,14 +122,14 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
 
   addPerson(tribe: Tribe, person: Person): void {
     person.tribeId = tribe.id;
-    tribe.memberIds.push(person.id);
+    tribe.memberCount += 1;
     this.#people.push(person);
   }
 
   moveToTribe(person: Person, from: Tribe, to: Tribe): void {
     dropJob(from, person);
-    from.memberIds = from.memberIds.filter((memberId) => memberId !== person.id);
-    to.memberIds.push(person.id);
+    from.memberCount -= 1;
+    to.memberCount += 1;
     person.tribeId = to.id;
     person.homeId = null;
   }
@@ -195,7 +195,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
 
     dropJob(tribe, person);
     tribe.deaths += 1;
-    tribe.memberIds = tribe.memberIds.filter((memberId) => memberId !== person.id);
+    tribe.memberCount -= 1;
     this.#dependencies.chronicle.record({
       ...deathAccountOf(person, tribe, cause, account),
       tribeId: tribe.id,
@@ -203,7 +203,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
       z: person.mover.z,
     });
 
-    if (tribe.memberIds.length === 0) {
+    if (tribe.memberCount === 0) {
       this.#dissolve(tribe);
     }
   }

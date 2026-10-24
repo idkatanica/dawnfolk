@@ -86,7 +86,7 @@ function treadCamp(wear: Wear, tribe: Tribe, context: SocietyContext): void {
 
   const { world } = context;
 
-  const core = Math.min(LARGEST_CORE, CAMP_CORE + tribe.memberIds.length * CORE_PER_MEMBER);
+  const core = Math.min(LARGEST_CORE, CAMP_CORE + tribe.memberCount * CORE_PER_MEMBER);
 
   treadPatch(wear, world, { radius: core, wear: 1, x: tribe.campX, z: tribe.campZ });
 

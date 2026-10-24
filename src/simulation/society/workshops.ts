@@ -43,7 +43,7 @@ function nextToolMaterial(tribe: Tribe): ToolMaterial | null {
 
 function isWanted(tribe: Tribe, context: SocietyContext, recipe: RecipeId): boolean {
   const { stock } = tribe;
-  const members = tribe.memberIds.length;
+  const members = tribe.memberCount;
 
   switch (recipe) {
     case "arrows":

@@ -48,7 +48,7 @@ function knownCrops(tribe: Tribe): CropKind[] {
 function wantedFields(tribe: Tribe): number {
   const ploughed = knows(tribe, "ploughing") ? PLOUGHED_FIELDS : 0;
 
-  return Math.min(MAXIMUM_FIELDS, FIRST_FIELDS + ploughed + tribe.memberIds.length * FIELDS_PER_MEMBER);
+  return Math.min(MAXIMUM_FIELDS, FIRST_FIELDS + ploughed + tribe.memberCount * FIELDS_PER_MEMBER);
 }
 
 function isFarmable(tribe: Tribe, cell: number, context: SocietyContext): boolean {

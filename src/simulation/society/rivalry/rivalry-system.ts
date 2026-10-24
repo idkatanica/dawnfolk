@@ -334,7 +334,7 @@ export class RivalrySystem implements Battleground {
       (building) => building.tribeId === tribe.id && completedBuilding(context.buildings, building.id) !== null
     );
 
-    return claimOf(tribe, tribe.memberIds.length, buildings);
+    return claimOf(tribe, tribe.memberCount, buildings);
   }
 
   #rub(relation: Relation, days: number, context: SocietyContext): void {
@@ -506,15 +506,15 @@ export class RivalrySystem implements Battleground {
   #mayRaid(attacker: Tribe, defender: Tribe, context: SocietyContext): boolean {
     const { day } = context.environment;
 
-    if (attacker.isMigrating || defender.isMigrating || defender.memberIds.length < SMALLEST_VICTIM_TRIBE) {
+    if (attacker.isMigrating || defender.isMigrating || defender.memberCount < SMALLEST_VICTIM_TRIBE) {
       return false;
     }
 
-    if (totalFood(defender.stock) < defender.memberIds.length * FOOD_RESERVE) {
+    if (totalFood(defender.stock) < defender.memberCount * FOOD_RESERVE) {
       return false;
     }
 
-    if (attacker.memberIds.length < SMALLEST_RAIDING_TRIBE || context.environment.season >= RAIDING_SEASON_END) {
+    if (attacker.memberCount < SMALLEST_RAIDING_TRIBE || context.environment.season >= RAIDING_SEASON_END) {
       return false;
     }
 
@@ -567,7 +567,7 @@ export class RivalrySystem implements Battleground {
 
     const provisions = rations * warriors.length * PROVISIONED_SHARE;
 
-    if (totalFood(attacker.stock) < provisions + attacker.memberIds.length * FOOD_RESERVE) {
+    if (totalFood(attacker.stock) < provisions + attacker.memberCount * FOOD_RESERVE) {
       return null;
     }
 
@@ -784,7 +784,7 @@ export class RivalrySystem implements Battleground {
   }
 
   #sendEnvoy(relation: Relation, seeker: Tribe, host: Tribe, context: SocietyContext): boolean {
-    const surplus = totalFood(seeker.stock) - seeker.memberIds.length * FOOD_RESERVE;
+    const surplus = totalFood(seeker.stock) - seeker.memberCount * FOOD_RESERVE;
     const giftAmount = Math.min(LARGEST_GIFT, surplus * GIFT_SHARE);
 
     const envoy = context.people

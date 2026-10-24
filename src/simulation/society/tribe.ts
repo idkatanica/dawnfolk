@@ -80,7 +80,7 @@ export interface Tribe {
   isMigrating: boolean;
   knowledge: number;
   lastScarcity: Record<ScarceResource, number>;
-  memberIds: number[];
+  memberCount: number;
   migrationStartDay: number;
   name: string;
   originId: number | null;
@@ -136,7 +136,7 @@ export function createTribe(founding: TribeFounding): Tribe {
     isMigrating: false,
     knowledge: 0,
     lastScarcity: { berries: NEVER, clay: NEVER, fish: NEVER, fruit: NEVER, game: NEVER, stone: NEVER, wood: NEVER },
-    memberIds: [],
+    memberCount: 0,
     migrationStartDay: founding.day,
     name: founding.identity.name,
     originId: null,

@@ -103,7 +103,7 @@ const WORK_OPTIONS: readonly WorkOption[] = [
         return 6;
       }
 
-      const isUnprovisioned = totalFood(tick.tribe.stock) < tick.tribe.memberIds.length * EXPEDITION_MEALS_PER_PERSON;
+      const isUnprovisioned = totalFood(tick.tribe.stock) < tick.tribe.memberCount * EXPEDITION_MEALS_PER_PERSON;
 
       if (
         !isExpeditionSeason(tick.context.environment.season) ||

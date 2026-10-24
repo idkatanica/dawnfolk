@@ -18,7 +18,7 @@ describe("arriving tribes", () => {
 
     const tribe = settle(harness, 7);
 
-    expect(tribe.memberIds).toHaveLength(7);
+    expect(tribe.memberCount).toBe(7);
     expect(harness.society.population).toBe(7);
     expect(harness.chronicle.takeEntries()).toEqual([expect.objectContaining({ category: "arrival" })]);
   });
