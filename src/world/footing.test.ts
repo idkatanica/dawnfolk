@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PlantSpecies } from "../content/plants.ts";
-import { landEverywhere } from "./coast.ts";
 import { admitsWildPlant, canGrowWild, canStandOn, type FootingTerrain, isOpenGround, slopeAt } from "./footing.ts";
+import { landEverywhere } from "./testing/terrain-fixtures.ts";
 import { NO_WATER } from "./water.ts";
 import { WorldGrid } from "./world-grid.ts";
 
