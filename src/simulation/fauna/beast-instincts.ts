@@ -158,7 +158,7 @@ function between(random: RandomSource, range: readonly [number, number]): number
   return random.between(range[0], range[1]);
 }
 
-export function packBoldness(hunger: number, packSize: number, tick: FaunaTick): number {
+function packBoldness(hunger: number, packSize: number, tick: FaunaTick): number {
   const winter = isWinter(tick.season) ? 2 : 1;
   const strength = clamp(packSize / 4, 0.4, 1.2);
 

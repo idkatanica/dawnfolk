@@ -2,7 +2,7 @@ export const FOOD_KINDS = ["berries", "fruit", "meat", "fish", "grain", "vegetab
 
 export type FoodKind = (typeof FOOD_KINDS)[number];
 
-export const MATERIAL_KINDS = [
+const MATERIAL_KINDS = [
   "wood",
   "stone",
   "clay",
@@ -18,9 +18,7 @@ export const MATERIAL_KINDS = [
 
 export type MaterialKind = (typeof MATERIAL_KINDS)[number];
 
-export const ARM_KINDS = ["spears", "bows", "arrows"] as const;
-
-export type ArmKind = (typeof ARM_KINDS)[number];
+const ARM_KINDS = ["spears", "bows", "arrows"] as const;
 
 export const RESOURCE_KINDS = [...FOOD_KINDS, ...MATERIAL_KINDS, ...ARM_KINDS] as const;
 

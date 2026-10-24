@@ -13,7 +13,7 @@ import { knows, type Tribe } from "../tribe.ts";
 import { completedBuilding, litCampfireOf } from "../tribe-places.ts";
 import { armForHunt, type CarriedWeapon, carriedWeapon } from "../weapons.ts";
 import { ArrowFlights } from "./arrows.ts";
-import { BeastEncounters, type BeastTally } from "./beast-encounters.ts";
+import { BeastEncounters } from "./beast-encounters.ts";
 import { CombatLedger } from "./combat-ledger.ts";
 import { EnvoyJob, MournJob } from "./defense-jobs.ts";
 import type { Foe } from "./foes.ts";
@@ -108,23 +108,14 @@ interface RivalryDependencies {
   readonly seed: number;
 }
 
-export interface RivalryTally {
-  feuds: number;
-  peaces: number;
-  raidDeaths: number;
-  raids: number;
-}
-
 export interface RelationView {
   readonly feudDays: number | null;
   readonly firstDeaths: number;
   readonly firstId: number;
-  readonly firstRaids: number;
   readonly isKin: boolean;
   readonly isTruce: boolean;
   readonly secondDeaths: number;
   readonly secondId: number;
-  readonly secondRaids: number;
   readonly stance: Stance;
   readonly standing: number;
 }
@@ -172,7 +163,6 @@ export class RivalrySystem implements Battleground {
   readonly ledger = new CombatLedger();
   readonly random: RandomSource;
   readonly relations = new RelationBook();
-  readonly tally: RivalryTally = { feuds: 0, peaces: 0, raidDeaths: 0, raids: 0 };
   readonly #arrows: ArrowFlights;
   readonly #chronicle: Chronicle;
   readonly #mourningUntil = new Map<number, number>();
@@ -192,24 +182,6 @@ export class RivalrySystem implements Battleground {
 
   get raids(): readonly Raid[] {
     return this.#raids;
-  }
-
-  get beastTally(): BeastTally {
-    if (this.#encounters === null) {
-      return { attacks: 0, deaths: 0 };
-    }
-
-    return this.#encounters.tally;
-  }
-
-  claimOf(tribeId: number): Claim | null {
-    const claim = this.#claims.get(tribeId);
-
-    if (claim === undefined) {
-      return null;
-    }
-
-    return claim;
   }
 
   raidOf(id: number): Raid | null {
@@ -258,7 +230,6 @@ export class RivalrySystem implements Battleground {
     }
 
     people.kill(victim, "battle", { category: "death", text: this.#fallText(victim, victimTribe, slayerTribe, raid) });
-    this.tally.raidDeaths += 1;
     this.#recordFall(victim, raid);
 
     const relation = this.relations.find(victimTribe.id, slayerTribe.id);
@@ -324,12 +295,10 @@ export class RivalrySystem implements Battleground {
         feudDays: relation.feudStartDay === null ? null : day - relation.feudStartDay,
         firstDeaths: relation.first.deaths,
         firstId: relation.first.tribeId,
-        firstRaids: relation.first.raids,
         isKin: relation.isKin,
         isTruce: isTruce(relation, day),
         secondDeaths: relation.second.deaths,
         secondId: relation.second.tribeId,
-        secondRaids: relation.second.raids,
         stance: relation.stance,
         standing: relation.standing,
       })),
@@ -472,7 +441,6 @@ export class RivalrySystem implements Battleground {
 
     if (relation.stance === "hostile") {
       relation.feudStartDay = context.environment.day;
-      this.tally.feuds += 1;
       this.#chronicle.record({
         category: "feud",
         text: capitalized(`${pair} became enemies ${GRUDGE_REASONS[relation.lastGrudge]}`),
@@ -589,7 +557,6 @@ export class RivalrySystem implements Battleground {
       phaseSeconds: 0,
       rally,
       routedIds: new Set(),
-      startDay: context.environment.day,
       struckIds: new Set(),
       target: { x: defender.campX, z: defender.campZ },
       warriorIds: warriors.map((warrior) => warrior.id),
@@ -608,8 +575,6 @@ export class RivalrySystem implements Battleground {
     this.#nextRaidId += 1;
     this.#raids.push(raid);
     this.#restingUntil.set(attacker.id, context.environment.day + RAID_REST_DAYS);
-    sideOf(relation, attacker.id).raids += 1;
-    this.tally.raids += 1;
 
     for (const [slot, warrior] of warriors.entries()) {
       armForHunt(warrior, attacker);
@@ -848,7 +813,6 @@ export class RivalrySystem implements Battleground {
     relation.feudStartDay = null;
     relation.envoyId = null;
     relation.stance = stanceFor(PEACE_STANDING, "neutral");
-    this.tally.peaces += 1;
 
     for (const side of [relation.first, relation.second]) {
       side.grievance = 0;

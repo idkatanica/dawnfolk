@@ -7,7 +7,6 @@ export type Grudge = "blood" | "hunting" | "land" | "plunder" | "trespass";
 export interface RelationSide {
   deaths: number;
   grievance: number;
-  raids: number;
   readonly tribeId: number;
   weariness: number;
 }
@@ -46,7 +45,7 @@ function pairKey(firstId: number, secondId: number): string {
 }
 
 function createSide(tribeId: number): RelationSide {
-  return { deaths: 0, grievance: 0, raids: 0, tribeId, weariness: 0 };
+  return { deaths: 0, grievance: 0, tribeId, weariness: 0 };
 }
 
 export function stanceFor(standing: number, current: Stance): Stance {
@@ -77,7 +76,7 @@ export function isTruce(relation: Relation, day: number): boolean {
   return day < relation.truceUntilDay;
 }
 
-export function shiftStanding(relation: Relation, amount: number): void {
+function shiftStanding(relation: Relation, amount: number): void {
   relation.standing = clamp(relation.standing + amount, LOWEST_STANDING, HIGHEST_STANDING);
 }
 

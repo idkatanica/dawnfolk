@@ -25,7 +25,7 @@ const BOWS_PER_MEMBER = 0.2;
 const TOOL_ORDER: readonly ToolMaterial[] = ["iron", "bronze", "copper"];
 const CRAFT_ORDER: readonly RecipeId[] = ["tools", "pottery", "copper", "bronze", "iron", "spears", "bows", "arrows"];
 
-export function nextToolMaterial(tribe: Tribe): ToolMaterial | null {
+function nextToolMaterial(tribe: Tribe): ToolMaterial | null {
   for (const material of TOOL_ORDER) {
     const { metal, technology } = TOOL_MATERIAL_DEFINITIONS[material];
 

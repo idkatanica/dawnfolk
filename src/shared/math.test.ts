@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clamp,
-  distanceToPolyline,
+  distanceToSegment,
   fractionalPart,
   hashToUnit,
   inverseLerp,
@@ -43,14 +43,9 @@ describe("math helpers", () => {
     expect(fractionalPart(-0.25)).toBe(0.75);
   });
 
-  it("measures the distance to a polyline", () => {
-    const line: [number, number][] = [
-      [0, 0],
-      [10, 0],
-      [10, 10],
-    ];
-
-    expect(distanceToPolyline(5, 3, line)).toBe(3);
-    expect(distanceToPolyline(14, 5, line)).toBe(4);
+  it("measures the distance to a segment", () => {
+    expect(distanceToSegment(5, 3, [0, 0], [10, 0])).toBe(3);
+    expect(distanceToSegment(14, 5, [10, 0], [10, 10])).toBe(4);
+    expect(distanceToSegment(13, -4, [0, 0], [10, 0])).toBe(5);
   });
 });

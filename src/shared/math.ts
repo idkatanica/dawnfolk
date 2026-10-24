@@ -57,16 +57,6 @@ export function gaussian(x: number, z: number, centerX: number, centerZ: number,
   return Math.exp(-distanceSquared(x, z, centerX, centerZ) / (2 * spread * spread));
 }
 
-export function distanceToPolyline(x: number, z: number, points: readonly (readonly [number, number])[]): number {
-  let best = Number.POSITIVE_INFINITY;
-
-  for (let pointIndex = 1; pointIndex < points.length; pointIndex += 1) {
-    best = Math.min(best, distanceToSegment(x, z, points[pointIndex - 1], points[pointIndex]));
-  }
-
-  return best;
-}
-
 export function distanceToSegment(
   x: number,
   z: number,

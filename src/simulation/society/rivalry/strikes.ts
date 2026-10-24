@@ -28,7 +28,7 @@ const SPARED_HEALTH = 0.1;
 const BEAST_DAMAGE_SCALE = 3;
 const FIGHTING_JOBS: ReadonlySet<JobKind> = new Set(["defend", "fight", "raid"]);
 
-export function isFighting(person: Person): boolean {
+function isFighting(person: Person): boolean {
   const { job } = person;
 
   return job !== null && FIGHTING_JOBS.has(job.kind);

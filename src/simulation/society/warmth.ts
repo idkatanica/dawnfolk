@@ -61,7 +61,7 @@ export function chillPerDay(tick: PersonTick): number {
   return coldness * CHILL_RATE * clothing(tick.tribe);
 }
 
-export function warmPlaces(tick: PersonTick): WarmPlace[] {
+function warmPlaces(tick: PersonTick): WarmPlace[] {
   const campfire = litCampfireOf(tick.tribe, tick.context.buildings);
 
   const hearths = tribeBuildings(tick.tribe, tick.context)

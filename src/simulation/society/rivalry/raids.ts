@@ -25,7 +25,6 @@ export interface Raid {
   phaseSeconds: number;
   readonly rally: Waypoint;
   readonly routedIds: Set<number>;
-  readonly startDay: number;
   readonly struckIds: Set<number>;
   readonly target: Waypoint;
   readonly warriorIds: readonly number[];
@@ -53,7 +52,7 @@ export function isFitToDefend(person: Person): boolean {
   return canFight(person) && person.hunger < DEFENDING_HUNGER;
 }
 
-export function isFitForRaid(person: Person): boolean {
+function isFitForRaid(person: Person): boolean {
   return canFight(person) && person.health >= FIGHTING_HEALTH && person.hunger < FIGHTING_HUNGER;
 }
 
@@ -63,7 +62,7 @@ export function rationsFor(distance: number, hungerRate: number): number {
   return Math.ceil(((seconds / NEED_SECONDS) * hungerRate) / RATION_RELIEF);
 }
 
-export function partySize(ableCount: number): number {
+function partySize(ableCount: number): number {
   if (ableCount < SMALLEST_PARTY) {
     return 0;
   }

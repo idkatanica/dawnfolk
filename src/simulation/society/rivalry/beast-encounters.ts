@@ -24,11 +24,6 @@ const PAIRED_FRAILTY = 0.4;
 const WOUNDED_HEALTH = 0.5;
 const STEADFAST_JOBS: ReadonlySet<JobKind> = new Set(["defend", "fight", "flee", "hide", "raid"]);
 
-export interface BeastTally {
-  attacks: number;
-  deaths: number;
-}
-
 function isSheltered(person: Person, tribe: Tribe, context: SocietyContext): boolean {
   const { x, z } = person.mover;
 
@@ -57,9 +52,9 @@ function frailtyOf(person: Person): number {
   return carriedWeapon(person).kind === "none" ? UNARMED_FRAILTY : ARMED_FRAILTY;
 }
 
-function beastName(blow: BeastBlow, isPlural: boolean): string {
+function beastName(blow: BeastBlow): string {
   if (blow.attacker.kind === "wolf") {
-    return isPlural ? "wolves" : "a wolf";
+    return "wolves";
   }
 
   if (blow.attacker.kind === "mammoth") {
@@ -83,7 +78,6 @@ const KILLING_DEEDS: Readonly<Record<BeastBlow["kind"], Deed>> = {
 const ATTACK: Deed = { ending: "", verb: "attacked" };
 
 export class BeastEncounters implements PeopleSense {
-  readonly tally: BeastTally = { attacks: 0, deaths: 0 };
   readonly #context: SocietyContext;
 
   constructor(context: SocietyContext) {
@@ -152,10 +146,6 @@ export class BeastEncounters implements PeopleSense {
     person.health -= blow.damage;
     context.rivalry.ledger.stagger(person.id, blow.attacker.id);
 
-    if (blow.isFirst) {
-      this.tally.attacks += 1;
-    }
-
     if (person.health <= 0) {
       this.#mourn(person, tribe, blow);
 
@@ -180,14 +170,13 @@ export class BeastEncounters implements PeopleSense {
     const place = describePlace(this.#context.world, person.mover.x, person.mover.z, tribe);
 
     return capitalized(
-      `${beastName(blow, true)} ${deed.verb} ${person.name} of ${theTribe(tribe.name)}${deed.ending} ${place}`
+      `${beastName(blow)} ${deed.verb} ${person.name} of ${theTribe(tribe.name)}${deed.ending} ${place}`
     );
   }
 
   #mourn(person: Person, tribe: Tribe, blow: BeastBlow): void {
     const text = this.#tell(blow, KILLING_DEEDS[blow.kind], person, tribe);
 
-    this.tally.deaths += 1;
     this.#context.people.kill(person, blow.kind === "trample" ? "mammoth" : "beast", { category: "beast", text });
   }
 

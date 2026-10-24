@@ -15,7 +15,7 @@ export function pointInsideCell(world: WorldState, cell: number, x: number, z: n
   return { x: clamp(x, centerX - reach, centerX + reach), z: clamp(z, centerZ - reach, centerZ + reach) };
 }
 
-export function isDryFooting(world: WorldState, cell: number): boolean {
+function isDryFooting(world: WorldState, cell: number): boolean {
   return world.isWalkable(cell) && !world.touchesWater(cell);
 }
 

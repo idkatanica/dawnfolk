@@ -7,7 +7,6 @@ export interface Storage {
   foodCapacity: number;
   hasGranary: boolean;
   hasStorehouse: boolean;
-  materialCapacity: number;
   pottery: number;
 }
 

@@ -1,4 +1,5 @@
 import {
+  CROP_CODE_NONE,
   CROP_KINDS,
   CROPS,
   type CropKind,
@@ -40,7 +41,7 @@ const NEIGHBOR_STEPS: readonly (readonly [number, number])[] = [
 
 export type FieldTask = "harvest" | "sow" | "tend";
 
-export function knownCrops(tribe: Tribe): CropKind[] {
+function knownCrops(tribe: Tribe): CropKind[] {
   return CROP_KINDS.filter((kind) => knows(tribe, CROPS[kind].technology));
 }
 
@@ -143,9 +144,9 @@ function openField(tribe: Tribe, cell: number, world: WorldState): void {
   showField(field, world);
 }
 
-export function abandonField(field: Field, world: WorldState): void {
+function abandonField(field: Field, world: WorldState): void {
   world.setCrop(field.cell, 0);
-  world.setCropCode(field.cell, 0);
+  world.setCropCode(field.cell, CROP_CODE_NONE);
   world.setGround(field.cell, field.previousGround);
 
   if (world.occupancy[field.cell] === PLOT_GROUND) {
@@ -240,7 +241,7 @@ export function abandonFloodedFields(tribe: Tribe, world: WorldState): void {
   tribe.fields = tribe.fields.filter((field) => !flooded.includes(field));
 }
 
-export function cropToSow(tribe: Tribe, field: Field, season: number): CropKind | null {
+function cropToSow(tribe: Tribe, field: Field, season: number): CropKind | null {
   const sowable = knownCrops(tribe).filter((kind) => isSowingTime(kind, season));
 
   if (sowable.length === 0) {

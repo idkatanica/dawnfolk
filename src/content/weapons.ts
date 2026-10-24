@@ -25,14 +25,10 @@ export const TOOL_MATERIAL_DEFINITIONS: Readonly<Record<ToolMaterial, ToolMateri
   wood: { hitBonus: 0, metal: null, name: "Wood", technology: null, workSpeed: 0.9 },
 };
 
-export const METAL_TOOL_MATERIALS: readonly ToolMaterial[] = ["copper", "bronze", "iron"];
-
-export function toolMaterialRank(material: ToolMaterial): number {
+function toolMaterialRank(material: ToolMaterial): number {
   return TOOL_MATERIALS.indexOf(material);
 }
 
 export function isBetterMaterial(candidate: ToolMaterial, current: ToolMaterial): boolean {
   return toolMaterialRank(candidate) > toolMaterialRank(current);
 }
-
-export const WEAPON_NAMES: Readonly<Record<WeaponKind, string>> = { bow: "Bow", spear: "Spear" };

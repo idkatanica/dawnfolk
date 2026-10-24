@@ -2,7 +2,7 @@ import type { BuildingKind } from "./buildings.ts";
 import type { ResourceKind } from "./resources.ts";
 import type { TechnologyId } from "./technologies.ts";
 
-export const RECIPE_IDS = ["pottery", "copper", "bronze", "iron", "spears", "bows", "arrows", "tools"] as const;
+const RECIPE_IDS = ["pottery", "copper", "bronze", "iron", "spears", "bows", "arrows", "tools"] as const;
 
 export type RecipeId = (typeof RECIPE_IDS)[number];
 

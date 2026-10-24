@@ -32,14 +32,6 @@ export function foeMover(foe: Foe): Mover {
   return foe.animal.mover;
 }
 
-export function foeId(foe: Foe): number {
-  if (foe.kind === "person") {
-    return foe.person.id;
-  }
-
-  return foe.animal.id;
-}
-
 export function foeGirth(foe: Foe): number {
   if (foe.kind === "person") {
     return PERSON_GIRTH;

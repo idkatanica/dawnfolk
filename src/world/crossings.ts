@@ -51,7 +51,7 @@ export interface FallenLog {
   readonly tipZ: number;
 }
 
-export const CROSSING_HALF_WIDTH: Readonly<Record<CrossingKind, number>> = { ford: 0.85, log: 0.55 };
+const CROSSING_HALF_WIDTH: Readonly<Record<CrossingKind, number>> = { ford: 0.85, log: 0.55 };
 export const STONE_RISE = 0.18;
 export const STEPPING_STONE_VARIANTS = 4;
 export const LOG_ROOT_BEHIND = 1.5;
@@ -134,13 +134,13 @@ export function footingOn(crossing: Crossing, x: number, z: number, ground: numb
   return lerp(deck, ground, smoothstep(0, LOG_STEP_OFF, Math.max(beside, beyond)));
 }
 
-export function logRootRadius(length: number, seed: number): number {
+function logRootRadius(length: number, seed: number): number {
   const radius = clamp(LOG_THINNEST + (length - LOG_SHORTEST) * LOG_THICKNESS_PER_METER, LOG_THINNEST, LOG_THICKEST);
 
   return radius * (0.94 + 0.12 * seed);
 }
 
-export function isRootAtStart(crossing: CrossingSpan): boolean {
+function isRootAtStart(crossing: CrossingSpan): boolean {
   return crossing.seed < 0.5;
 }
 

@@ -23,7 +23,7 @@ export interface BuildingPlan {
 
 type Planner = (tribe: Tribe, context: SocietyContext) => BuildingPlan | null;
 
-export const DWELLING_LADDER: readonly BuildingKind[] = ["tent", "hut", "longhouse", "stoneHouse"];
+const DWELLING_LADDER: readonly BuildingKind[] = ["tent", "hut", "longhouse", "stoneHouse"];
 
 const MINED_DEPOSITS: readonly DepositKind[] = ["copper", "tin", "iron"];
 const MAXIMUM_SHELTERS = 12;
@@ -238,7 +238,7 @@ function bestEnclosure(tribe: Tribe): BuildingKind | null {
   return null;
 }
 
-export function enclosureOf(tribe: Tribe, context: SocietyContext): Building | null {
+function enclosureOf(tribe: Tribe, context: SocietyContext): Building | null {
   const enclosure = tribeBuildings(tribe, context).find((building) => isEnclosure(building.kind));
 
   if (enclosure === undefined) {
@@ -350,16 +350,4 @@ export function buildingPlans(tribe: Tribe, context: SocietyContext): BuildingPl
   }
 
   return plans;
-}
-
-export function nextBuildingPlan(tribe: Tribe, context: SocietyContext): BuildingPlan | null {
-  for (const planner of PLANNERS) {
-    const plan = planner(tribe, context);
-
-    if (plan !== null) {
-      return keptInside(plan, tribe, context);
-    }
-  }
-
-  return null;
 }

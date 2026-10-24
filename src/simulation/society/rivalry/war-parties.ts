@@ -1,6 +1,6 @@
 import { FULL_TURN } from "../../../shared/math.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
-import { isChild, isElder, type Person } from "../person.ts";
+import type { Person } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
 import { type Foe, personFoe } from "./foes.ts";
 import { canFight } from "./raids.ts";
@@ -24,11 +24,7 @@ export function offsetFrom(point: Waypoint, offset: Waypoint, scale: number): Wa
   return { x: point.x + offset.x * scale, z: point.z + offset.z * scale };
 }
 
-export function isNonCombatant(person: Person): boolean {
-  return isChild(person) || isElder(person) || !canFight(person);
-}
-
-export function isStandingFoe(person: Person): boolean {
+function isStandingFoe(person: Person): boolean {
   if (!canFight(person)) {
     return false;
   }
