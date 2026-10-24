@@ -72,7 +72,6 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
     followSelection,
     landmarks,
     placeLabel,
-    quality: "medium",
     selectPower: vi.fn<(selection: PowerSelection | null) => void>(),
     session,
     stopFollowing,

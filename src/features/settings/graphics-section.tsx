@@ -1,29 +1,18 @@
 import { type FormEvent, useState } from "react";
 import { type LaunchChanges, useLaunchStore } from "../../app/launch-store.ts";
 import { storeQuality } from "../../app/preferences.ts";
-import { useEngine } from "../../app/use-engine.ts";
 import { TextButton } from "../../design/buttons.tsx";
 import { ChoiceField } from "../../design/choice-field.tsx";
 import { ToggleField } from "../../design/toggle-field.tsx";
-import type { EngineHandle } from "../../game/engine-handle.ts";
 import { isQualityLevel, QUALITY_LEVELS, type QualityLevel } from "../../rendering/render-quality.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
 import { useWorldDraft } from "../new-world/use-world-draft.ts";
 import { NameField, SeedField, ShapeChoice } from "../new-world/world-fields.tsx";
-import { useWorldStore } from "../world/world-store.ts";
 import { GROUP_CLASS, GroupHeading, SettingsGroup } from "./settings-group.tsx";
 
 const QUALITY_LABELS: Readonly<Record<QualityLevel, string>> = { high: "High", low: "Light", medium: "Balanced" };
 
 const QUALITY_OPTIONS = QUALITY_LEVELS.map((level) => ({ label: QUALITY_LABELS[level], value: level }));
-
-function activeQuality(engine: EngineHandle | null): QualityLevel {
-  if (engine === null) {
-    return "medium";
-  }
-
-  return engine.quality;
-}
 
 function useRelaunch() {
   const relaunch = useLaunchStore((state) => state.relaunch);
@@ -36,10 +25,8 @@ function useRelaunch() {
 }
 
 function useQualityChoice() {
-  const engine = useEngine();
+  const active = useLaunchStore((state) => state.launch.quality);
   const relaunch = useRelaunch();
-
-  const active = activeQuality(engine);
 
   const [quality, setQuality] = useState(active);
 
@@ -61,10 +48,9 @@ function useQualityChoice() {
 
 function useNewWorld() {
   const launch = useLaunchStore((state) => state.launch);
-  const currentSeed = useWorldStore((state) => state.seed);
   const relaunch = useRelaunch();
 
-  const draft = useWorldDraft({ name: launch.name, seed: currentSeed, shape: launch.shape });
+  const draft = useWorldDraft({ name: launch.name, seed: launch.seed, shape: launch.shape });
 
   function createWorld(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
