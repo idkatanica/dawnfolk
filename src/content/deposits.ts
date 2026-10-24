@@ -3,7 +3,11 @@ import type { GroundIndex } from "./grounds.ts";
 import type { MaterialKind } from "./resources.ts";
 import type { TechnologyId } from "./technologies.ts";
 
-export const DEPOSIT_KINDS = ["copper", "tin", "iron", "clay"] as const;
+export const MINED_DEPOSIT_KINDS = ["copper", "tin", "iron"] as const;
+
+export type MinedDepositKind = (typeof MINED_DEPOSIT_KINDS)[number];
+
+export const DEPOSIT_KINDS = [...MINED_DEPOSIT_KINDS, "clay"] as const;
 
 export type DepositKind = (typeof DEPOSIT_KINDS)[number];
 

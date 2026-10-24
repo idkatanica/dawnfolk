@@ -1,4 +1,5 @@
 import type { RandomSource } from "../../shared/random.ts";
+import type { EffectLog } from "../effects.ts";
 import type { WorldState } from "../world/world-state.ts";
 
 const EMBER_DRAG = 0.35;
@@ -30,10 +31,12 @@ interface Hurl {
 }
 
 export class EmberSystem {
+  readonly #effects: EffectLog;
   readonly #embers: Ember[] = [];
   readonly #world: WorldState;
 
-  constructor(world: WorldState) {
+  constructor(world: WorldState, effects: EffectLog) {
+    this.#effects = effects;
     this.#world = world;
   }
 
@@ -62,17 +65,13 @@ export class EmberSystem {
       toZ: fromZ + wind.z * reach + wind.x * scatter,
     };
 
-    this.#embers.push(ember);
+    this.#track(ember);
 
     return ember;
   }
 
-  hurl(hurl: Hurl): Ember {
-    const ember: Ember = { ...hurl, isGlowing: true, remainingSeconds: hurl.durationSeconds };
-
-    this.#embers.push(ember);
-
-    return ember;
+  hurl(hurl: Hurl): void {
+    this.#track({ ...hurl, isGlowing: true, remainingSeconds: hurl.durationSeconds });
   }
 
   update(seconds: number, onLanding: (ember: Ember) => void): void {
@@ -90,5 +89,17 @@ export class EmberSystem {
     }
 
     this.#embers.length = kept;
+  }
+
+  #track(ember: Ember): void {
+    this.#embers.push(ember);
+    this.#effects.add({
+      durationSeconds: ember.durationSeconds,
+      fromX: ember.fromX,
+      fromZ: ember.fromZ,
+      kind: "ember",
+      toX: ember.toX,
+      toZ: ember.toZ,
+    });
   }
 }

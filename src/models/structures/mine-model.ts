@@ -1,3 +1,4 @@
+import type { MinedDepositKind } from "../../content/deposits.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { MeshBuilder } from "../mesh/mesh-builder.ts";
@@ -17,7 +18,7 @@ import {
   scaledMesh,
 } from "./structure-parts.ts";
 
-export type MineOre = "copper" | "iron" | "tin";
+export type MineOre = MinedDepositKind;
 
 export const MINE_SCALE = 1.5;
 

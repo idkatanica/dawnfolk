@@ -168,6 +168,12 @@ export class BuildingSystem {
     this.#losses.push({ building, reason });
   }
 
+  abandonTribe(tribeId: number): void {
+    for (const building of this.#buildings.filter((candidate) => candidate.tribeId === tribeId)) {
+      this.remove(building, "abandoned");
+    }
+  }
+
   takeLosses(): BuildingLoss[] {
     const losses = this.#losses;
 

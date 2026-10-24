@@ -1,4 +1,4 @@
-import { ANIMAL_KINDS, ANIMALS, type AnimalKind, animalsAt } from "../../content/animals.ts";
+import { ADULT_YOUTH, ANIMAL_KINDS, ANIMALS, type AnimalKind, animalsAt } from "../../content/animals.ts";
 import type { WorldRules } from "../../content/world-rules.ts";
 import { clamp, distanceSquared, FULL_TURN } from "../../shared/math.ts";
 import { createRandom, type RandomSource } from "../../shared/random.ts";
@@ -17,12 +17,12 @@ import { aroundPoint, type NavigationGrid, type Waypoint } from "../agents/navig
 import type { IdentifierSource } from "../identifiers.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { type Assailant, BeastInstincts, type PeopleSense } from "./beast-instincts.ts";
+import { CALM_FEAR, startleAnimal } from "./fear.ts";
 
 const HERD_SPREAD = 30;
 const BURNING_GROUND = 0.25;
 const FIRE_DAMAGE_PER_SECOND = 0.5;
 const FEAR_DECAY_PER_SECOND = 0.12;
-const CALM_FEAR = 0.1;
 const FLEE_DISTANCE = 120;
 const FLEE_REPLAN_SECONDS = 2.5;
 const FIRE_AWARENESS = 60;
@@ -46,7 +46,6 @@ const SMALL_GAME_GROUP_LIMIT = 34;
 const DISPERSAL_PER_DAY = 0.8;
 const DISPERSAL_RANGE: readonly [number, number] = [120, 420];
 const DISPERSING_MEMBERS = 2;
-const GROWN_YOUTH = 0.3;
 
 type AnimalDeathCause = "age" | "blast" | "fire" | "hunt" | "lightning" | "prey";
 
@@ -837,7 +836,7 @@ export class FaunaSystem {
     const leader = this.#firstMember(herd);
 
     const grown = this.#membersOf(herd)
-      .filter((member) => member !== leader && member.youth <= GROWN_YOUTH)
+      .filter((member) => member !== leader && member.youth <= ADULT_YOUTH)
       .slice(-DISPERSING_MEMBERS);
 
     if (leader === null || grown.length < DISPERSING_MEMBERS) {
@@ -920,12 +919,6 @@ function settleFall(animal: Animal): void {
   if (animal.pose === "fall" && animal.deathSeconds > FALL_SECONDS) {
     animal.pose = "dead";
   }
-}
-
-export function startleAnimal(animal: Animal, fromX: number, fromZ: number, strength: number): void {
-  animal.fear = Math.max(animal.fear, strength);
-  animal.fleeFromX = fromX;
-  animal.fleeFromZ = fromZ;
 }
 
 function kindForBiome(biome: number, random: RandomSource): AnimalKind | null {

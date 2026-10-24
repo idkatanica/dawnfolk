@@ -347,10 +347,7 @@ function moveCamp(
   reason: string,
   context: SocietyContext
 ): void {
-  for (const building of context.buildings.all.filter((candidate) => candidate.tribeId === tribe.id)) {
-    context.buildings.remove(building, "abandoned");
-  }
-
+  context.buildings.abandonTribe(tribe.id);
   tribe.campX = site.x;
   tribe.campZ = site.z;
   tribe.isMigrating = true;

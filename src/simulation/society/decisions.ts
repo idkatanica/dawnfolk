@@ -37,7 +37,7 @@ const HOMEWARD_DISTANCE = 220;
 const STRANDED_RETRY_DAYS = 1;
 const NIGHT_JOBS: ReadonlySet<JobKind> = new Set(["clay", "deliver", "eat", "mine", "sleep", "warm"]);
 const UNWAVERING_JOBS: ReadonlySet<JobKind> = new Set(["flee", "raid"]);
-const STEADFAST_JOBS: ReadonlySet<JobKind> = new Set(["defend", "envoy", "fight", "hide"]);
+const STEADFAST_JOBS: ReadonlySet<JobKind> = new Set(["defend", "envoy", "fight", "hide", "migrate"]);
 
 export function updateMind(tick: PersonTick): void {
   const { person } = tick;
@@ -74,6 +74,30 @@ function isOnTheRoad(job: Job): boolean {
 export function assignJob(tick: PersonTick, job: Job): void {
   releaseClaim(tick.tribe, tick.person.job);
   tick.person.job = job;
+}
+
+export function advanceJob(tick: PersonTick): void {
+  const { person } = tick;
+
+  const current = person.job;
+
+  if (current === null) {
+    return;
+  }
+
+  const next = current.update(tick);
+
+  person.job = next;
+
+  if (next === current) {
+    return;
+  }
+
+  if (next !== null && next.claimedPlant === current.claimedPlant) {
+    return;
+  }
+
+  releaseClaim(tick.tribe, current);
 }
 
 export function dropJob(tribe: Tribe, person: Person): void {
@@ -153,10 +177,6 @@ function shouldInterrupt(tick: PersonTick, job: Job): boolean {
   }
 
   if (STEADFAST_JOBS.has(job.kind)) {
-    return isStarving(tick);
-  }
-
-  if (job.kind === "migrate") {
     return isStarving(tick);
   }
 

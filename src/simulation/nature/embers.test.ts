@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createRandom } from "../../shared/random.ts";
+import { EffectLog } from "../effects.ts";
 import { centerCell, createTestWorld } from "../testing/test-world.ts";
 import { type Ember, EmberSystem } from "./embers.ts";
 
@@ -9,12 +10,23 @@ describe("embers", () => {
     const random = createRandom(1);
     const landed: Ember[] = [];
 
-    const embers = new EmberSystem(world);
+    const effects = new EffectLog();
+    const embers = new EmberSystem(world, effects);
 
     const ember = embers.launch(centerCell(world), { strength: 0.8, x: 1, z: 0 }, random);
 
     embers.update(ember.durationSeconds / 2, (landing) => landed.push(landing));
 
+    expect(effects.takeEffects()).toEqual([
+      {
+        durationSeconds: ember.durationSeconds,
+        fromX: ember.fromX,
+        fromZ: ember.fromZ,
+        kind: "ember",
+        toX: ember.toX,
+        toZ: ember.toZ,
+      },
+    ]);
     expect(landed).toHaveLength(0);
     expect(embers.flying).toHaveLength(1);
 

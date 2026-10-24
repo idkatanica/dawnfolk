@@ -9,7 +9,7 @@ import type { Chronicle } from "../chronicle.ts";
 import type { IdentifierSource } from "../identifiers.ts";
 import type { BuildingSystem } from "./buildings.ts";
 import { handleBuildingLoss } from "./construction.ts";
-import { dropJob, updateMind } from "./decisions.ts";
+import { advanceJob, dropJob, updateMind } from "./decisions.ts";
 import { walk } from "./jobs/job.ts";
 import { updateNeeds } from "./needs.ts";
 import { createPerson, type DeathCause, type Person, walkSpeed } from "./person.ts";
@@ -332,10 +332,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
   #dissolve(tribe: Tribe): void {
     const { buildings, chronicle } = this.#dependencies;
 
-    for (const building of buildings.all.filter((candidate) => candidate.tribeId === tribe.id)) {
-      buildings.remove(building, "abandoned");
-    }
-
+    buildings.abandonTribe(tribe.id);
     this.#tribes = this.#tribes.filter((candidate) => candidate !== tribe);
     this.#tribesById.delete(tribe.id);
     chronicle.record({
@@ -390,20 +387,10 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
       walk(tick, walkSpeed(person));
     } else {
       updateMind(tick);
-      this.#act(tick);
+      advanceJob(tick);
     }
 
     person.phase += seconds * person.speed * POSE_PHASE_RATE;
-  }
-
-  #act(tick: PersonTick): void {
-    const { person } = tick;
-
-    if (person.job === null) {
-      return;
-    }
-
-    person.job = person.job.update(tick);
   }
 
   #removeRemains(seconds: number): void {

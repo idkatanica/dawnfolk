@@ -1,4 +1,4 @@
-import { plantSpeciesDefinition } from "../../../content/plants.ts";
+import { isRockSpecies } from "../../../content/plants.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
 import { pickUp } from "../person.ts";
 import { nearestPlant, nearestQuarry } from "../resources.ts";
@@ -22,7 +22,7 @@ export function findStone(tick: PersonTick): Job | null {
 
   const boulder = nearestPlant(world, {
     accepts: (plant) => {
-      const isBoulder = plantSpeciesDefinition(world.vegetation.species[plant]).form === "stone";
+      const isBoulder = isRockSpecies(world.vegetation.species[plant]);
       const target = plantTarget(world.vegetation, plant, PICK_REACH);
 
       return (
@@ -81,8 +81,6 @@ class BoulderJob implements Job {
     const progress = this.#errand.update(tick);
 
     if (progress === "abandoned") {
-      tick.tribe.claimedPlants.delete(this.claimedPlant);
-
       return null;
     }
 
@@ -95,7 +93,6 @@ class BoulderJob implements Job {
     const boulder = this.claimedPlant;
     const uses = previousUses(people.quarryUses, boulder) + 1;
 
-    tick.tribe.claimedPlants.delete(boulder);
     pickUp(tick.person, "stone", STONE_PER_TRIP, "stone");
     people.quarryUses.set(boulder, uses);
     learn(tick.tribe, 0.4, tick.context.rules);

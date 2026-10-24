@@ -149,11 +149,13 @@ export class LandAreas {
 
   isClear(from: Point, to: Point): boolean {
     const passageOf = (cell: number, enter: number, leave: number): Passage => {
-      if (this.#walkable[cell] === 1 || this.#staysOnDeck(from, to, enter, leave)) {
-        return Passage.Ground;
+      const passage = this.#passageOf(cell);
+
+      if (passage === Passage.Ground) {
+        return passage;
       }
 
-      return this.#world.isBrook(cell) ? Passage.Brook : Passage.Blocked;
+      return this.#staysOnDeck(from, to, enter, leave) ? Passage.Ground : passage;
     };
 
     return traceHops(this.#world.grid, from, to, passageOf) !== NOT_CLEAR;

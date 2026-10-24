@@ -1,4 +1,4 @@
-import { ANIMALS } from "../../content/animals.ts";
+import { ADULT_YOUTH, ANIMALS } from "../../content/animals.ts";
 import { isWinter } from "../../content/seasons.ts";
 import { clamp } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
@@ -6,6 +6,7 @@ import { faceTowards, moveAlong, setDestination, stopMoving } from "../agents/mo
 import type { NavigationGrid, Waypoint } from "../agents/navigation.ts";
 import type { WorldState } from "../world/world-state.ts";
 import type { Animal, FaunaTick } from "./fauna.ts";
+import { CALM_FEAR, startleAnimal } from "./fear.ts";
 
 export interface Quarry {
   readonly companions: number;
@@ -126,8 +127,6 @@ const HERD_GUARD_RADIUS = 45;
 const STAG_NOTICE_RADIUS = 5;
 const STAG_CHANCE = 0.4;
 const CORNERED_SECONDS = 0.3;
-const ADULT_YOUTH = 0.3;
-const CALM_FEAR = 0.1;
 const CHASE_HUNGER = 0.3;
 const CHASE_CHANCE = 0.7;
 const CHASE_START_DISTANCE = 45;
@@ -605,7 +604,7 @@ export class BeastInstincts {
     this.#strikes.delete(animal.id);
 
     if (from !== null) {
-      scatter([animal], from);
+      startleAnimal(animal, from.x, from.z, 1);
     }
   }
 
@@ -692,10 +691,8 @@ export class BeastInstincts {
   }
 }
 
-export function scatter(animals: readonly Animal[], from: Waypoint): void {
+function scatter(animals: readonly Animal[], from: Waypoint): void {
   for (const animal of animals) {
-    animal.fear = 1;
-    animal.fleeFromX = from.x;
-    animal.fleeFromZ = from.z;
+    startleAnimal(animal, from.x, from.z, 1);
   }
 }

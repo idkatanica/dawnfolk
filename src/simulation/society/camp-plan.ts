@@ -1,5 +1,5 @@
 import { BUILDINGS, type BuildingKind, isEnclosure } from "../../content/buildings.ts";
-import { DEPOSITS, type DepositKind } from "../../content/deposits.ts";
+import { DEPOSITS, type DepositKind, MINED_DEPOSIT_KINDS } from "../../content/deposits.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import type { Deposit } from "../../world/deposits.ts";
 import type { Waypoint } from "../agents/navigation.ts";
@@ -25,7 +25,6 @@ type Planner = (tribe: Tribe, context: SocietyContext) => BuildingPlan | null;
 
 const DWELLING_LADDER: readonly BuildingKind[] = ["tent", "hut", "longhouse", "stoneHouse"];
 
-const MINED_DEPOSITS: readonly DepositKind[] = ["copper", "tin", "iron"];
 const MAXIMUM_SHELTERS = 12;
 const SPARE_BEDS = 2;
 
@@ -168,9 +167,9 @@ export function nearestDeposit(world: WorldState, kind: DepositKind, origin: Way
 
 export function mineFor(tribe: Tribe, context: SocietyContext, kind: DepositKind): Building | null {
   const mine = buildingsOfKind(tribe, context, "mine").find((building) => {
-    const deposit = context.world.deposits.find((candidate) => candidate.id === building.depositId);
+    const deposit = context.world.depositById(building.depositId);
 
-    return deposit !== undefined && deposit.kind === kind;
+    return deposit !== null && deposit.kind === kind;
   });
 
   if (mine === undefined) {
@@ -185,7 +184,7 @@ function minePlan(tribe: Tribe, context: SocietyContext): BuildingPlan | null {
     return null;
   }
 
-  for (const kind of MINED_DEPOSITS) {
+  for (const kind of MINED_DEPOSIT_KINDS) {
     if (!knows(tribe, DEPOSITS[kind].technology) || mineFor(tribe, context, kind) !== null) {
       continue;
     }

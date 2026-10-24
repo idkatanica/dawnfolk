@@ -1,6 +1,7 @@
 import { ANIMALS, animalWithArticle } from "../../../content/animals.ts";
 import { faceTowards } from "../../agents/movement.ts";
-import { type Animal, startleAnimal } from "../../fauna/fauna.ts";
+import type { Animal } from "../../fauna/fauna.ts";
+import { startleAnimal } from "../../fauna/fear.ts";
 import { pickUp, type Weapon, walkSpeed } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
 import { learn, markScarce } from "../tribe.ts";

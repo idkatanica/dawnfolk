@@ -93,8 +93,6 @@ class GatherJob implements Job {
     const progress = this.#errand.update(tick);
 
     if (progress === "abandoned") {
-      tick.tribe.claimedPlants.delete(this.claimedPlant);
-
       return null;
     }
 
@@ -176,8 +174,6 @@ class PickJob implements Job {
     const progress = this.#errand.update(tick);
 
     if (progress === "abandoned") {
-      tick.tribe.claimedPlants.delete(this.claimedPlant);
-
       return null;
     }
 

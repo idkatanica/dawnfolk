@@ -29,7 +29,7 @@ import {
   Vector3,
 } from "three/webgpu";
 import { type BuildingKind, isEnclosure } from "../../content/buildings.ts";
-import { DEPOSIT_KINDS } from "../../content/deposits.ts";
+import { DEPOSIT_KINDS, MINED_DEPOSIT_KINDS } from "../../content/deposits.ts";
 import { eraDefinition } from "../../content/eras.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { MaterialSlot, SLOT_COLOR_TABLE } from "../../models/materials.ts";
@@ -63,7 +63,6 @@ const STONE_FOOTING_STYLE = eraDefinition("neolithic").index;
 const EARTH = vec3(0.3, 0.23, 0.16);
 const ROUND_KINDS: ReadonlySet<BuildingKind> = new Set(["hut", "kiln", "smelter", "tent"]);
 const GLOWING_KINDS: ReadonlySet<BuildingKind> = new Set(["forge", "kiln", "smelter"]);
-const MINE_ORES: readonly MineOre[] = ["copper", "tin", "iron"];
 const ENCLOSURE_KINDS: readonly EnclosureKind[] = ["palisade", "stoneWall"];
 const ENCLOSURE_PIECES: readonly EnclosurePiece[] = ["segment", "gate"];
 
@@ -343,7 +342,7 @@ function modelSources(): ModelSource[] {
     });
   }
 
-  for (const ore of MINE_ORES) {
+  for (const ore of MINED_DEPOSIT_KINDS) {
     sources.push({ footing: () => MINE_FOOTING, key: mineKey(ore), mesh: (level) => buildMineModel(ore, level) });
   }
 

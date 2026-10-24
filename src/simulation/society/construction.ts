@@ -4,7 +4,7 @@ import { FULL_TURN } from "../../shared/math.ts";
 import { aroundPoint, type Waypoint } from "../agents/navigation.ts";
 import { NO_BUILDING } from "../world/world-state.ts";
 import { type BuildingPad, DEEPEST_LEVELLING, isLevelled, levelPad, planPad } from "./building-pads.ts";
-import { type Building, type BuildingLoss, NO_DEPOSIT } from "./buildings.ts";
+import type { Building, BuildingLoss } from "./buildings.ts";
 import { type BuildingPlan, buildingPlans } from "./camp-plan.ts";
 import { addFieldIfNeeded } from "./farming.ts";
 import { footprintCells, isDryWay } from "./footprints.ts";
@@ -309,9 +309,9 @@ function constructionMessage(tribe: Tribe, site: Building, context: SocietyConte
 }
 
 function depositName(site: Building, context: SocietyContext): string {
-  const deposit = context.world.deposits.find((candidate) => candidate.id === site.depositId);
+  const deposit = context.world.depositById(site.depositId);
 
-  if (deposit === undefined || site.depositId === NO_DEPOSIT) {
+  if (deposit === null) {
     return "hills";
   }
 
