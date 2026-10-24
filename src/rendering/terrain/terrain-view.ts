@@ -1,4 +1,5 @@
 import {
+  type Frustum,
   Group,
   type Material,
   type MeshStandardNodeMaterial,
@@ -79,15 +80,15 @@ export class TerrainView {
     }
   }
 
-  update(camera: PerspectiveCamera, detail: number): void {
-    this.#inland.update(camera, detail);
+  update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
+    this.#inland.update(camera, frustum, detail);
     this.#levels.set(this.#inland.chosenLevels);
 
     if (this.#coast === null) {
       return;
     }
 
-    this.#coast.update(camera, detail);
+    this.#coast.update(camera, frustum, detail);
 
     for (const [patch, level] of this.#coast.chosenLevels.entries()) {
       if (level >= 0) {

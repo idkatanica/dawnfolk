@@ -46,9 +46,9 @@ import { buildMineModel, MINE_SCALE, type MineOre } from "../../models/structure
 import { parseHexColor } from "../../shared/color.ts";
 import { clamp, FULL_TURN, saturate } from "../../shared/math.ts";
 import type { BuildingView as BuildingSnapshot, TribeSummary } from "../../simulation/frame.ts";
-import type { AgentViewInput } from "../agents/agent-view-input.ts";
 import { geometryFromMeshData, InterleavedInstances, toInstancedGeometry } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import type { ViewInput } from "../view-input.ts";
 import { isLitCampfire } from "./lit-campfire.ts";
 
 const LEVEL_DISTANCES = { high: 320, low: 3200 } as const;
@@ -204,7 +204,7 @@ interface Seat {
   readonly lowest: number;
 }
 
-function seatOf(input: AgentViewInput, piece: PiecePlacement, footing: Footing): Seat {
+function seatOf(input: ViewInput, piece: PiecePlacement, footing: Footing): Seat {
   const cosine = Math.cos(piece.rotation);
   const sine = Math.sin(piece.rotation);
 
@@ -404,7 +404,7 @@ export class BuildingView {
     }
   }
 
-  update(input: AgentViewInput): void {
+  update(input: ViewInput): void {
     const { frame } = input.mirror;
 
     this.#rememberTribes(frame.tribes);
@@ -519,7 +519,7 @@ export class BuildingView {
     return pieces;
   }
 
-  #place(input: AgentViewInput, building: BuildingSnapshot, piece: PiecePlacement): void {
+  #place(input: ViewInput, building: BuildingSnapshot, piece: PiecePlacement): void {
     const batches = this.#batches.get(piece.key);
     const footing = this.#footings.get(piece.key);
 

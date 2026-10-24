@@ -1,15 +1,11 @@
-import type { Frustum, PerspectiveCamera } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { footingOn } from "../../world/crossings.ts";
+import type { ViewInput } from "../view-input.ts";
 import type { AgentMarkers } from "./agent-markers.ts";
 
-export interface AgentViewInput {
-  readonly camera: PerspectiveCamera;
-  readonly detail: number;
-  readonly frustum: Frustum;
+export interface AgentViewInput extends ViewInput {
   readonly gameSeconds: number;
   readonly markers: AgentMarkers;
-  readonly mirror: WorldMirror;
   readonly realSeconds: number;
   readonly secondsSinceTick: number;
 }
