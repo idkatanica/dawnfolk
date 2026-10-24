@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { PlantSpecies } from "../../content/plants.ts";
-import {
-  DEFAULT_GENERATION_OPTIONS,
-  type GeneratedWorld,
-  type GenerationOptions,
-  generateWorld,
-} from "../../generation/world-generator.ts";
+import { DEFAULT_GENERATION_OPTIONS, type GenerationOptions } from "../../generation/generation-options.ts";
+import { type GeneratedWorld, generateWorld } from "../../generation/world-generator.ts";
 import { type Crossing, crossingLength } from "../../world/crossings.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 import { createTestWorld } from "../testing/test-world.ts";

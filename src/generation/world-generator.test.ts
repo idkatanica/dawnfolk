@@ -9,12 +9,8 @@ import type { TerrainData } from "../world/terrain-data.ts";
 import { sampleHeight } from "../world/terrain-sampling.ts";
 import { hasWater, NO_WATER, type River, type RiverPoint, SPRING_KINDS } from "../world/water.ts";
 import { NEIGHBOR_OFFSETS, WorldGrid } from "../world/world-grid.ts";
-import {
-  DEFAULT_GENERATION_OPTIONS,
-  type GeneratedWorld,
-  type GenerationProgress,
-  generateWorld,
-} from "./world-generator.ts";
+import { DEFAULT_GENERATION_OPTIONS, type GenerationProgress } from "./generation-options.ts";
+import { type GeneratedWorld, generateWorld } from "./world-generator.ts";
 
 const TEST_DIMENSIONS = { cellSize: 40, cellsPerSide: 128 };
 const DETERMINISM_DIMENSIONS = { cellSize: 20, cellsPerSide: 128 };

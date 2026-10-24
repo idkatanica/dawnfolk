@@ -1,7 +1,6 @@
 import type { EngineHandle } from "../game/engine-handle.ts";
 import type { GameEngine } from "../game/game-engine.ts";
-import type { GenerationProgress } from "../generation/world-generator.ts";
-import { DEFAULT_WORLD_REQUEST } from "../workers/simulation-worker-api.ts";
+import { DEFAULT_GENERATION_OPTIONS, type GenerationProgress } from "../generation/generation-options.ts";
 import { exposeEngineForDebugging } from "./debug-handle.ts";
 import type { LaunchOptions } from "./launch-options.ts";
 
@@ -71,7 +70,7 @@ export class EngineLauncher {
       canvas: this.#canvas,
       onProgress: (progress) => this.#progress(progress),
       quality: launch.quality,
-      request: { options: { ...DEFAULT_WORLD_REQUEST.options, shape: launch.shape }, seed: launch.seed },
+      request: { options: { ...DEFAULT_GENERATION_OPTIONS, shape: launch.shape }, seed: launch.seed },
     });
 
     if (this.#state === "cancelled") {

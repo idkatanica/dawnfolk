@@ -1,12 +1,8 @@
 import { proxy, type Remote, wrap } from "comlink";
-import type { GenerationProgress } from "../generation/world-generator.ts";
+import type { GenerationProgress, WorldRequest } from "../generation/generation-options.ts";
 import type { SimulationCommand } from "../simulation/commands.ts";
 import type { InitialWorld, SimulationFrame } from "../simulation/frame.ts";
-import {
-  createSimulationWorkerApi,
-  type SimulationWorkerApi,
-  type WorldRequest,
-} from "../workers/simulation-worker-api.ts";
+import type { SimulationWorkerApi } from "../workers/simulation-worker-api.ts";
 
 export interface SimulationConnection {
   advance: (realSeconds: number) => Promise<SimulationFrame>;
@@ -73,7 +69,7 @@ export class LocalSimulationConnection implements SimulationConnection {
   readonly #api: SimulationWorkerApi;
   readonly #queue = new CommandQueue();
 
-  constructor(api: SimulationWorkerApi = createSimulationWorkerApi()) {
+  constructor(api: SimulationWorkerApi) {
     this.#api = api;
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, onTestFinished } from "vitest";
-import type { GenerationStage } from "../generation/world-generator.ts";
+import type { GenerationStage } from "../generation/generation-options.ts";
 import { WorkerSimulationConnection } from "./simulation-connection.ts";
 
 const SMALL_WORLD = {

@@ -9,7 +9,7 @@ import type { Monument } from "../world/monuments.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { VegetationStore } from "../world/vegetation-store.ts";
 import type { Spring, WaterFeatures } from "../world/water.ts";
-import { DEFAULT_GRID_DIMENSIONS, type GridDimensions, WorldGrid } from "../world/world-grid.ts";
+import { type GridDimensions, WorldGrid } from "../world/world-grid.ts";
 import { buildClimate } from "./climate.ts";
 import { planCrossings } from "./crossings.ts";
 import { exposeDeposits, planDeposits } from "./deposits.ts";
@@ -21,6 +21,7 @@ import {
   relaxSlopes,
   smoothHeights,
 } from "./erosion.ts";
+import { DEFAULT_GENERATION_OPTIONS, type GenerationOptions, type GenerationProgress } from "./generation-options.ts";
 import { computeHydrology } from "./hydrology.ts";
 import { digRiverLakes, fillSinks } from "./lake-basins.ts";
 import { planMonuments } from "./monuments.ts";
@@ -28,25 +29,6 @@ import { createRelief, islandPointAt, type Relief } from "./relief.ts";
 import { carveValleys } from "./valleys.ts";
 import { plantInitialVegetation } from "./vegetation.ts";
 import { openWoodland } from "./woodland.ts";
-
-export type GenerationStage = "climate" | "erosion" | "relief" | "vegetation" | "water";
-
-export interface GenerationProgress {
-  progress: number;
-  stage: GenerationStage;
-}
-
-export interface GenerationOptions {
-  dimensions: GridDimensions;
-  erosionStrength: number;
-  shape: IslandShapeKind;
-}
-
-export const DEFAULT_GENERATION_OPTIONS: GenerationOptions = {
-  dimensions: DEFAULT_GRID_DIMENSIONS,
-  erosionStrength: 1,
-  shape: "round",
-};
 
 export interface GeneratedWorld {
   crossings: readonly Crossing[];

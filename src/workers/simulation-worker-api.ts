@@ -1,18 +1,7 @@
 import { transfer } from "comlink";
-import {
-  DEFAULT_GENERATION_OPTIONS,
-  type GenerationOptions,
-  type GenerationProgress,
-} from "../generation/world-generator.ts";
+import type { GenerationProgress, WorldRequest } from "../generation/generation-options.ts";
 import type { InitialWorld, SimulationFrame } from "../simulation/frame.ts";
 import { Simulation } from "../simulation/simulation.ts";
-
-export interface WorldRequest {
-  options: GenerationOptions;
-  seed: number;
-}
-
-export const DEFAULT_WORLD_REQUEST: WorldRequest = { options: DEFAULT_GENERATION_OPTIONS, seed: 1 };
 
 export interface SimulationWorkerApi {
   advance: (realSeconds: number, commands: readonly unknown[]) => SimulationFrame;
