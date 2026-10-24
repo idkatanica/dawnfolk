@@ -103,23 +103,21 @@ function placeLabels(engine: EngineHandle, layer: HTMLElement): void {
   }
 }
 
-function viewKey(engine: EngineHandle): string {
-  const { distance, pitch, targetX, targetZ, yaw } = engine.camera.state;
-
+function viewOf(engine: EngineHandle): number[] {
   return [
-    distance,
-    pitch,
-    targetX,
-    targetZ,
-    yaw,
+    ...engine.camera.camera.matrixWorld.elements,
     window.innerWidth,
     window.innerHeight,
-    engine.session.frame.tick,
-  ].join();
+    engine.session.mirror.landVersion,
+  ];
+}
+
+function isSameView(first: readonly number[], second: readonly number[]): boolean {
+  return first.length === second.length && first.every((value, index) => value === second[index]);
 }
 
 function keepLabelsPlaced(engine: EngineHandle, layer: HTMLElement): () => void {
-  let placedKey = "";
+  let placedView: readonly number[] = [];
   let haveLabelsChanged = true;
 
   const observer = new MutationObserver(() => {
@@ -127,13 +125,13 @@ function keepLabelsPlaced(engine: EngineHandle, layer: HTMLElement): () => void 
   });
 
   function place(): void {
-    const key = viewKey(engine);
+    const view = viewOf(engine);
 
-    if (!haveLabelsChanged && key === placedKey) {
+    if (!haveLabelsChanged && isSameView(view, placedView)) {
       return;
     }
 
-    placedKey = key;
+    placedView = view;
     haveLabelsChanged = false;
     placeLabels(engine, layer);
   }
