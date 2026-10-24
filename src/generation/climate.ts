@@ -6,10 +6,10 @@ import { createRandom } from "../shared/random.ts";
 import { gradientZAt, slopeAt } from "../world/footing.ts";
 import { hasWater } from "../world/water.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
-import { type IslandPoint, islandPointAt } from "./relief.ts";
+import { islandPointAt } from "./relief.ts";
 
 interface ClimateInputs {
-  desertAt: (point: IslandPoint) => number;
+  desert: Float64Array;
   grid: WorldGrid;
   heights: Float32Array;
   lakeIds: Int32Array;
@@ -374,7 +374,7 @@ export function buildClimate(inputs: ClimateInputs): ClimateResult {
       const slope = slopes.slope[cell];
 
       const height = heights[cell];
-      const desert = inputs.desertAt(point);
+      const desert = inputs.desert[cell];
       const moistureNoise = 0.28 * noise.fractal(point.x * 1.3 + 11, point.z * 1.3 - 7, { octaves: 4 });
       const waterInfluence = 0.36 * Math.exp(-waterDistance[cell] / 13);
 

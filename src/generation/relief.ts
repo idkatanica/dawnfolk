@@ -78,11 +78,16 @@ export function islandPointAt(grid: WorldGrid, column: number, row: number): Isl
   return { x: grid.centerX(column) / grid.halfSize, z: grid.centerZ(row) / grid.halfSize };
 }
 
+interface ReliefSample {
+  coastDistance: number;
+  desert: number;
+  height: number;
+}
+
 export interface Relief {
   basinDepthAt: (point: IslandPoint) => number;
   boundaryDistanceAt: (point: IslandPoint) => number;
-  desertAt: (point: IslandPoint) => number;
-  heightAt: (point: IslandPoint) => number;
+  sampleAt: (point: IslandPoint) => ReliefSample;
 }
 
 interface ReliefNoise {
@@ -185,19 +190,18 @@ function centralLake(point: IslandPoint): number {
   return gaussian(point.x * 0.8, point.z, 0, 0.1, 0.17);
 }
 
-function boundaryDistance(noise: ReliefNoise, island: IslandShape, point: IslandPoint): number {
+function boundaryDistance(noise: ReliefNoise, island: IslandShape, point: IslandPoint, coastDistance: number): number {
   if (island.kind === "square") {
     return distanceToBoundary(noise.secondary, point);
   }
 
-  return island.coastDistanceAt(point.x, point.z);
+  return coastDistance;
 }
 
-function landformHeight(noise: ReliefNoise, point: IslandPoint, boundary: number): number {
+function landformHeight(noise: ReliefNoise, point: IslandPoint, boundary: number, desert: number): number {
   const warped = warpPoint(noise.primary, point, 3, 0.13);
   const outline = warpPoint(noise.primary, point, 1, 0.07);
   const lake = centralLake(point);
-  const desert = desertMask(noise.desert, point);
 
   const inland = smoothstep(INLAND_START, INLAND_END, boundary);
   const ridges = noise.shape.erodedRidged(
@@ -251,15 +255,17 @@ function coastalHeight(noise: ReliefNoise, point: IslandPoint, inland: number, c
   return lerp(shore, inland, smoothstep(0, width * (0.7 + 0.6 * cliffs), coastDistance));
 }
 
-function reliefHeight(noise: ReliefNoise, island: IslandShape, point: IslandPoint): number {
-  const boundary = boundaryDistance(noise, island, point);
-  const landform = landformHeight(noise, point, boundary);
+function reliefSample(noise: ReliefNoise, island: IslandShape, point: IslandPoint): ReliefSample {
+  const coastDistance = island.coastDistanceAt(point.x, point.z);
+  const boundary = boundaryDistance(noise, island, point, coastDistance);
+  const desert = desertMask(noise.desert, point);
+  const landform = landformHeight(noise, point, boundary, desert);
 
   if (island.kind === "square") {
-    return landform;
+    return { coastDistance, desert, height: landform };
   }
 
-  return coastalHeight(noise, point, landform, boundary);
+  return { coastDistance, desert, height: coastalHeight(noise, point, landform, boundary) };
 }
 
 export function createRelief(seed: number, island: IslandShape): Relief {
@@ -282,8 +288,7 @@ export function createRelief(seed: number, island: IslandShape): Relief {
 
   return {
     basinDepthAt: (point) => CENTRAL_LAKE_DEPTH * centralLake(point),
-    boundaryDistanceAt: (point) => boundaryDistance(noise, island, point),
-    desertAt: (point) => desertMask(noise.desert, point),
-    heightAt: (point) => reliefHeight(noise, island, point),
+    boundaryDistanceAt: (point) => boundaryDistance(noise, island, point, island.coastDistanceAt(point.x, point.z)),
+    sampleAt: (point) => reliefSample(noise, island, point),
   };
 }

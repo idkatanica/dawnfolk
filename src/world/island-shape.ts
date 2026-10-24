@@ -1,7 +1,6 @@
 import { clamp } from "../shared/math.ts";
 import { createNoiseSampler, type NoiseSampler } from "../shared/noise.ts";
 import { createRandom } from "../shared/random.ts";
-import type { WorldGrid } from "./world-grid.ts";
 
 export const ISLAND_SHAPES = ["round", "square"] as const;
 
@@ -57,19 +56,4 @@ export function createIslandShape(kind: IslandShapeKind, seed: number): IslandSh
   }
 
   return roundShape(seed);
-}
-
-export function measureCoastDistances(grid: WorldGrid, shape: IslandShape): Float32Array {
-  const distances = new Float32Array(grid.cellCount);
-
-  for (let row = 0; row < grid.cellsPerSide; row += 1) {
-    for (let column = 0; column < grid.cellsPerSide; column += 1) {
-      const x = grid.centerX(column) / grid.halfSize;
-      const z = grid.centerZ(row) / grid.halfSize;
-
-      distances[grid.index(column, row)] = shape.coastDistanceAt(x, z) * grid.halfSize;
-    }
-  }
-
-  return distances;
 }

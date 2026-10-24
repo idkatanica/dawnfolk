@@ -4,7 +4,7 @@ import { createRandom } from "../shared/random.ts";
 import { isOnIsland } from "../world/coast.ts";
 import type { Crossing } from "../world/crossings.ts";
 import type { Deposit } from "../world/deposits.ts";
-import { createIslandShape, type IslandShapeKind, measureCoastDistances } from "../world/island-shape.ts";
+import { createIslandShape, type IslandShapeKind } from "../world/island-shape.ts";
 import type { Monument } from "../world/monuments.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { VegetationStore } from "../world/vegetation-store.ts";
@@ -120,17 +120,18 @@ function buildRelief(
 ) {
   const shape = createIslandShape(shapeKind, seed);
   const relief = createRelief(seed, shape);
-  const coastDistance = measureCoastDistances(grid, shape);
+  const coastDistance = new Float32Array(grid.cellCount);
+  const desert = new Float64Array(grid.cellCount);
   const heights = new Float32Array(grid.cellCount);
-  const dryness = new Float32Array(grid.cellCount);
 
   for (let row = 0; row < grid.cellsPerSide; row += 1) {
     for (let column = 0; column < grid.cellsPerSide; column += 1) {
-      const point = islandPointAt(grid, column, row);
+      const sample = relief.sampleAt(islandPointAt(grid, column, row));
       const cell = grid.index(column, row);
 
-      heights[cell] = relief.heightAt(point);
-      dryness[cell] = relief.desertAt(point);
+      coastDistance[cell] = sample.coastDistance * grid.halfSize;
+      desert[cell] = sample.desert;
+      heights[cell] = sample.height;
     }
 
     if (row % 32 === 0) {
@@ -138,7 +139,7 @@ function buildRelief(
     }
   }
 
-  return { coastDistance, dryness, heights, relief };
+  return { coastDistance, desert, dryness: Float32Array.from(desert), heights, relief };
 }
 
 function reservedGround(monuments: Uint8Array, springs: readonly Spring[]): Uint8Array {
@@ -169,7 +170,7 @@ export function generateWorld(
   const grid = new WorldGrid(options.dimensions);
   const size = grid.cellsPerSide;
 
-  const { coastDistance, dryness, heights, relief } = buildRelief(grid, seed, options.shape, onProgress);
+  const { coastDistance, desert, dryness, heights, relief } = buildRelief(grid, seed, options.shape, onProgress);
 
   const talus = talusSlopes(heights, dryness);
 
@@ -201,7 +202,7 @@ export function generateWorld(
   onProgress({ progress: 0, stage: "climate" });
 
   const climate = buildClimate({
-    desertAt: relief.desertAt,
+    desert,
     grid,
     heights,
     lakeIds: hydrology.lakeIds,
