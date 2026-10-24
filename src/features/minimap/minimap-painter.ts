@@ -1,7 +1,9 @@
+import type { GroundPoint } from "../../game/camera/god-camera.ts";
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import { MarkerShape, type MarkerShapeCode } from "../../rendering/agents/marker-look.ts";
 import { paintMinimapTerrain } from "../../rendering/minimap-image.ts";
 import { herdMarks, personMarks } from "../../rendering/minimap-marks.ts";
+import type { SimulationFrame } from "../../simulation/frame.ts";
 
 export const MAP_PIXELS = 176;
 
@@ -52,6 +54,13 @@ function traceMark(
   context.closePath();
 }
 
+function isSameFootprint(first: readonly GroundPoint[], second: readonly GroundPoint[]): boolean {
+  return (
+    first.length === second.length &&
+    first.every((point, index) => point.x === second[index]?.x && point.z === second[index]?.z)
+  );
+}
+
 export class MinimapPainter {
   readonly #canvas: HTMLCanvasElement;
   readonly #engine: EngineHandle;
@@ -59,6 +68,8 @@ export class MinimapPainter {
   #frameRequest = 0;
   #lastOverlay = 0;
   #lastTerrain = Number.NEGATIVE_INFINITY;
+  #paintedFootprint: readonly GroundPoint[] = [];
+  #paintedFrame: SimulationFrame | null = null;
   #paintedLandVersion = -1;
   #paintedSeason = Number.NEGATIVE_INFINITY;
 
@@ -95,18 +106,31 @@ export class MinimapPainter {
     }
 
     const size = this.#canvas.width;
+    const { frame, grid } = this.#engine.session.mirror;
 
-    if (this.#isTerrainStale(time, size)) {
+    const footprint = this.#engine.camera.groundFootprint(grid.worldSize * FOOTPRINT_REACH_IN_WORLDS);
+
+    const isTerrainStale = this.#isTerrainStale(time, size);
+    const isOverlayCurrent = frame === this.#paintedFrame && isSameFootprint(footprint, this.#paintedFootprint);
+
+    if (!isTerrainStale && isOverlayCurrent) {
+      return;
+    }
+
+    if (isTerrainStale) {
       this.#refreshTerrain(size);
       this.#lastTerrain = time;
     }
+
+    this.#paintedFrame = frame;
+    this.#paintedFootprint = footprint;
 
     context.clearRect(0, 0, size, size);
     context.drawImage(this.#terrain, 0, 0);
     this.#drawFires(context, size);
     this.#drawAgents(context, size);
     this.#drawTribes(context, size);
-    this.#drawView(context, size);
+    this.#drawView(context, size, footprint);
   }
 
   #isTerrainStale(time: number, size: number): boolean {
@@ -195,11 +219,7 @@ export class MinimapPainter {
     }
   }
 
-  #drawView(context: CanvasRenderingContext2D, size: number): void {
-    const { grid } = this.#engine.session.mirror;
-
-    const footprint = this.#engine.camera.groundFootprint(grid.worldSize * FOOTPRINT_REACH_IN_WORLDS);
-
+  #drawView(context: CanvasRenderingContext2D, size: number, footprint: readonly GroundPoint[]): void {
     if (footprint.length === 0) {
       return;
     }

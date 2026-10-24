@@ -1,3 +1,4 @@
+import { Matrix4 } from "three/webgpu";
 import { type Mock, type MockInstance, vi } from "vitest";
 import { useEngineStore } from "../../app/engine-store.ts";
 import type { CameraState } from "../../game/camera/god-camera.ts";
@@ -46,6 +47,7 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
   const session = await createTestSession();
   const renderListeners = new Set<() => void>();
   const camera = {
+    camera: { matrixWorld: new Matrix4() },
     groundFootprint: () => [],
     isFollowing: false,
     state: { ...TEST_CAMERA, distance: cameraDistance },

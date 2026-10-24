@@ -214,6 +214,44 @@ describe("world labels", () => {
     await expect.element(screen.getByText("Mirror Lake", { exact: true })).not.toBeVisible();
   });
 
+  it("places the labels again only once the camera moves", async () => {
+    const { engine, placeLabel, renderFrame } = await startTestEngine({ landmarks: [PEAK] });
+
+    placeLabel.mockReturnValue(ON_SCREEN);
+    showWorld({ tribes: [] });
+
+    const screen = await render(<WorldLabels />);
+
+    renderFrame();
+    await expect.element(screen.getByText("Greycrown", { exact: true })).toBeVisible();
+    placeLabel.mockClear();
+    renderFrame();
+
+    expect(placeLabel).not.toHaveBeenCalled();
+
+    engine.camera.camera.matrixWorld.setPosition(10, 120, 40);
+    renderFrame();
+
+    expect(placeLabel).toHaveBeenCalledExactlyOnceWith(40, -20, 30);
+  });
+
+  it("places the labels again once the ground changes", async () => {
+    const { engine, placeLabel, renderFrame } = await startTestEngine({ landmarks: [PEAK] });
+
+    placeLabel.mockReturnValue(ON_SCREEN);
+    showWorld({ tribes: [] });
+
+    const screen = await render(<WorldLabels />);
+
+    renderFrame();
+    await expect.element(screen.getByText("Greycrown", { exact: true })).toBeVisible();
+    placeLabel.mockClear();
+    engine.session.mirror.landVersion += 1;
+    renderFrame();
+
+    expect(placeLabel).toHaveBeenCalledExactlyOnceWith(40, -20, 30);
+  });
+
   it("stays away while the labels are turned off", async () => {
     await startTestEngine({ landmarks: [PEAK] });
 
