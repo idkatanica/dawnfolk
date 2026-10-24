@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
-import { LARGEST_SEED, type LaunchOptions } from "../../app/launch-options.ts";
+import type { LaunchOptions } from "../../app/launch-options.ts";
 import { useLaunchStore } from "../../app/launch-store.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
+import { LARGEST_SEED } from "../new-world/seeds.ts";
 import { resetWorld } from "../testing/world-fixtures.ts";
 import { GraphicsSection } from "./graphics-section.tsx";
 

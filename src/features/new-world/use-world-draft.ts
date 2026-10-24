@@ -1,22 +1,12 @@
 import { type ChangeEvent, useState } from "react";
-import { LARGEST_SEED, randomSeed } from "../../app/launch-options.ts";
 import { type IslandShapeKind, isIslandShapeKind } from "../../world/island-shape.ts";
+import { randomSeed, readSeed } from "./seeds.ts";
 import { readWorldName, worldNameFor } from "./world-names.ts";
 
 interface WorldChoice {
   readonly name: string;
   readonly seed: number;
   readonly shape: IslandShapeKind;
-}
-
-function readSeed(text: string): number | null {
-  const seed = Number(text.trim());
-
-  if (!Number.isInteger(seed) || seed < 1 || seed > LARGEST_SEED) {
-    return null;
-  }
-
-  return seed;
 }
 
 export function useWorldDraft(initial: WorldChoice) {
