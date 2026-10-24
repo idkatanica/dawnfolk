@@ -46,7 +46,6 @@ function noticeTexts(): string[] {
 
 describe("world store", () => {
   afterEach(() => {
-    vi.restoreAllMocks();
     resetWorld();
   });
 

@@ -8,7 +8,6 @@ describe("saved preferences", () => {
   afterEach(() => {
     localStorage.removeItem(QUALITY_KEY);
     localStorage.removeItem(LABELS_KEY);
-    vi.restoreAllMocks();
   });
 
   it("has no saved quality at first", () => {

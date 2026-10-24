@@ -1,24 +1,10 @@
-import { defineConfig, devices, type LaunchOptions } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
+import { createChromiumLaunchOptions, readEnvironmentVariable } from "./tests/chromium.ts";
 
 const PREVIEW_PORT = 4173;
 
-function readEnvironmentVariable(name: string): string | undefined {
-  return process.env[name];
-}
-
-function createLaunchOptions(): LaunchOptions {
-  const launchArguments = ["--enable-unsafe-webgpu", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"];
-  const executablePath = readEnvironmentVariable("CHROMIUM_EXECUTABLE_PATH");
-
-  if (executablePath === undefined) {
-    return { args: launchArguments };
-  }
-
-  return { args: launchArguments, executablePath };
-}
-
 const isContinuousIntegration = readEnvironmentVariable("CI") !== undefined;
-const launchOptions = createLaunchOptions();
+const launchOptions = createChromiumLaunchOptions();
 
 export default defineConfig({
   expect: { timeout: 20_000 },

@@ -3,23 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { configDefaults, defineConfig, type ViteUserConfig } from "vitest/config";
-
-const chromiumLaunchOptions = createChromiumLaunchOptions();
-
-function readEnvironmentVariable(name: string): string | undefined {
-  return process.env[name];
-}
-
-function createChromiumLaunchOptions(): { args: string[]; executablePath?: string } {
-  const launchArguments = ["--enable-unsafe-webgpu", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"];
-  const executablePath = readEnvironmentVariable("CHROMIUM_EXECUTABLE_PATH");
-
-  if (executablePath === undefined) {
-    return { args: launchArguments };
-  }
-
-  return { args: launchArguments, executablePath };
-}
+import { createChromiumLaunchOptions } from "./tests/chromium.ts";
 
 const configuration: ViteUserConfig = defineConfig({
   base: "./",
@@ -81,7 +65,7 @@ const configuration: ViteUserConfig = defineConfig({
             enabled: true,
             headless: true,
             instances: [{ browser: "chromium" }],
-            provider: playwright({ launchOptions: chromiumLaunchOptions }),
+            provider: playwright({ launchOptions: createChromiumLaunchOptions() }),
           },
           include: ["src/**/*.browser.test.ts", "src/**/*.test.tsx"],
           name: "browser",
@@ -90,6 +74,7 @@ const configuration: ViteUserConfig = defineConfig({
         },
       },
     ],
+    restoreMocks: true,
   },
   worker: {
     format: "es",

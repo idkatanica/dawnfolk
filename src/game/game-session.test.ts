@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { GenerationProgress } from "../generation/world-generator.ts";
 import { Simulation } from "../simulation/simulation.ts";
 import { createVegetatedWorld } from "../simulation/testing/test-world.ts";
@@ -37,10 +37,6 @@ async function advanceSession(session: GameSession, seconds: number): Promise<vo
 
   await session.whenIdle();
 }
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
 
 describe("creating a session", () => {
   it("generates the world and reports the progress", async () => {
