@@ -1,5 +1,6 @@
-import { Footprints, type LucideIcon, Pickaxe } from "lucide-react";
 import { FOOD_KINDS, RESOURCES, type ResourceKind } from "../../content/resources.ts";
+import { GameIcon } from "../../design/game-icon.tsx";
+import type { GameIconName } from "../../design/game-icon-sources.ts";
 import type { TribeSummary } from "../../simulation/frame.ts";
 import { RESOURCE_ICONS } from "../tribes/tribe-icons.ts";
 import { useWorldStore } from "../world/world-store.ts";
@@ -9,7 +10,7 @@ const SHOWN_METALS: readonly ResourceKind[] = ["iron", "bronze", "copper"];
 
 interface StockHighlight {
   readonly amount: number;
-  readonly icon: LucideIcon;
+  readonly icon: GameIconName;
   readonly name: string;
 }
 
@@ -20,7 +21,7 @@ function MigrationMark({ tribe }: { readonly tribe: TribeSummary }) {
 
   return (
     <span className="flex items-center gap-1 text-ink-muted text-xs">
-      <Footprints aria-hidden="true" size={12} />
+      <GameIcon name="migration" size={18} />
       On the move
     </span>
   );
@@ -35,7 +36,7 @@ function GoalMark({ tribe }: { readonly tribe: TribeSummary }) {
 
   return (
     <span className="flex items-center gap-1 text-dawn-strong text-xs">
-      <Pickaxe aria-hidden="true" size={12} />
+      <GameIcon name="workshop" size={18} />
       {`Needs ${goal.need}`}
     </span>
   );
@@ -63,19 +64,15 @@ function highlights(tribe: TribeSummary): StockHighlight[] {
 function StockLine({ tribe }: { readonly tribe: TribeSummary }) {
   return (
     <span className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-ink-muted text-xs">
-      {highlights(tribe).map((highlight) => {
-        const Icon = highlight.icon;
+      {highlights(tribe).map((highlight) => (
+        <span className="flex items-center gap-1 tabular-nums" key={highlight.name} title={highlight.name}>
+          <GameIcon name={highlight.icon} size={18} />
 
-        return (
-          <span className="flex items-center gap-1 tabular-nums" key={highlight.name} title={highlight.name}>
-            <Icon aria-hidden="true" size={12} />
+          <span className="sr-only">{highlight.name}</span>
 
-            <span className="sr-only">{highlight.name}</span>
-
-            <span>{Math.round(highlight.amount)}</span>
-          </span>
-        );
-      })}
+          <span>{Math.round(highlight.amount)}</span>
+        </span>
+      ))}
     </span>
   );
 }

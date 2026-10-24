@@ -69,7 +69,10 @@ top (`src/features`, `src/design`, `src/app`).
   returns, braces on every `if` and loop.
 - A blank line separates the steps of a function, and every pair of sibling
   JSX elements. In `index.html`, closely related head tags stay together.
-- Icons come from `lucide-react` and take the text color; don't tint them.
+- Game things (powers, resources, buildings, weather, events) use
+  `design/game-icon.tsx` with the painted 128×128 WebP icons in `design/icons`;
+  keep their colors and commit only the final WebP, not masters. Interface
+  controls use `lucide-react` and take the text color; don't tint them.
 - The interface is glass islands from `@svidskiy/glass-surface-react` through
   `design/island.tsx`. Every island in a row has the same height.
 - Commits follow Conventional Commits with a scope from

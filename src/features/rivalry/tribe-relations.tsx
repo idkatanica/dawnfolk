@@ -1,4 +1,4 @@
-import { Swords } from "lucide-react";
+import { GameIcon } from "../../design/game-icon.tsx";
 import type { TribeSummary } from "../../simulation/frame.ts";
 import type { RelationView } from "../../simulation/society/rivalry/rivalry-system.ts";
 import { useWorldStore } from "../world/world-store.ts";
@@ -62,7 +62,7 @@ function RaidLine({ tribeId, tribes }: { readonly tribeId: number; readonly trib
 
   return (
     <p className="flex items-center gap-2 rounded-xl bg-ember-soft px-2.5 py-2 font-medium text-ember text-sm">
-      <Swords aria-hidden="true" className="shrink-0" size={15} />
+      <GameIcon name="raid" size={22} />
       {isAttacker ? `Raiding ${otherName}` : `Raided by ${otherName}`} · {RAID_PHASE_LABELS[raid.phase]}
     </p>
   );

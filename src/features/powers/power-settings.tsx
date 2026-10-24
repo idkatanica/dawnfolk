@@ -4,6 +4,7 @@ import { describeParameters } from "../../content/parameters.ts";
 import { type ParameterValue, POWERS, type PowerId } from "../../content/powers.ts";
 import { IconButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
+import { GameIcon } from "../../design/game-icon.tsx";
 import { Island } from "../../design/island.tsx";
 import { useIsCompact } from "../../design/use-media-query.ts";
 import { ParameterControl } from "../parameters/parameter-control.tsx";
@@ -51,7 +52,6 @@ function PowerSettingsContent({ powerId }: { readonly powerId: PowerId }) {
   const { areFieldsShown, isCompact, toggleFields } = useFieldDisclosure();
 
   const power = POWERS[powerId];
-  const Icon = POWER_ICONS[powerId];
 
   const fields = describeParameters(power.parameters);
 
@@ -59,7 +59,7 @@ function PowerSettingsContent({ powerId }: { readonly powerId: PowerId }) {
     <section aria-label={`${power.name} settings`} className="flex w-full flex-col gap-3 p-3 md:w-72">
       <header className="flex items-center gap-2.5">
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-ink/6 text-ink-soft">
-          <Icon aria-hidden="true" size={18} />
+          <GameIcon name={POWER_ICONS[powerId]} size={28} />
         </span>
 
         <div className="flex min-w-0 flex-1 flex-col">

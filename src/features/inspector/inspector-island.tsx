@@ -1,19 +1,21 @@
-import { Crosshair, Flag, House, type LucideIcon, Map as MapIcon, PawPrint, User, X } from "lucide-react";
+import { Crosshair, X } from "lucide-react";
 import { useEngine } from "../../app/use-engine.ts";
 import { type AgeGroup, ageGroupOf } from "../../content/life-stages.ts";
 import { IconButton } from "../../design/buttons.tsx";
+import { GameIcon } from "../../design/game-icon.tsx";
+import type { GameIconName } from "../../design/game-icon-sources.ts";
 import { Island } from "../../design/island.tsx";
 import type { Inspection, PersonInspection } from "../../simulation/inspection.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { AnimalDetails, BuildingDetails, CellDetails, PersonDetails, TribeDetails } from "./inspector-details.tsx";
 import { useInspectorStore } from "./inspector-store.ts";
 
-const KIND_ICONS: Readonly<Record<Inspection["kind"], LucideIcon>> = {
-  animal: PawPrint,
-  building: House,
-  cell: MapIcon,
-  person: User,
-  tribe: Flag,
+const KIND_ICONS: Readonly<Record<Inspection["kind"], GameIconName>> = {
+  animal: "paw",
+  building: "hut",
+  cell: "smooth",
+  person: "person",
+  tribe: "tent",
 };
 
 const PERSON_NOUNS: Readonly<Record<AgeGroup, { readonly female: string; readonly male: string }>> = {
@@ -127,13 +129,11 @@ function FollowButton({ inspection }: { readonly inspection: Inspection }) {
 function InspectorContent({ inspection }: { readonly inspection: Inspection }) {
   const { close } = useInspectorActions();
 
-  const Icon = KIND_ICONS[inspection.kind];
-
   return (
     <section aria-label="Selection details" className="flex w-full flex-col gap-4 p-4 md:w-80">
       <header className="flex items-center gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-ink/6 text-ink-soft">
-          <Icon aria-hidden="true" size={19} />
+          <GameIcon name={KIND_ICONS[inspection.kind]} size={30} />
         </span>
 
         <div className="flex min-w-0 flex-1 flex-col">

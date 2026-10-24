@@ -72,10 +72,10 @@ describe("world labels", () => {
     renderFrame();
 
     await expect
-      .element(screen.getByRole("button", { exact: false, name: "Bear Clan" }).getByLabelText("In a feud"))
+      .element(screen.getByRole("button", { exact: false, name: "Bear Clan" }).getByRole("img", { name: "In a feud" }))
       .toBeVisible();
     await expect
-      .element(screen.getByRole("button", { exact: false, name: "Elk Clan" }).getByLabelText("In a feud"))
+      .element(screen.getByRole("button", { exact: false, name: "Elk Clan" }).getByRole("img", { name: "In a feud" }))
       .not.toBeInTheDocument();
   });
 

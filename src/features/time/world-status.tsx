@@ -1,67 +1,52 @@
-import {
-  Cloud,
-  CloudFog,
-  CloudLightning,
-  CloudRain,
-  CloudSnow,
-  Cloudy,
-  type LucideIcon,
-  Moon,
-  Snowflake,
-  Sun,
-  Sunrise,
-  Sunset,
-  ThermometerSun,
-  Users,
-  Wind,
-} from "lucide-react";
 import type { ReactNode } from "react";
 import type { WeatherKind } from "../../content/weather.ts";
 import { cn } from "../../design/cn.ts";
 import { formatClock } from "../../design/format.ts";
+import { GameIcon } from "../../design/game-icon.tsx";
+import type { GameIconName } from "../../design/game-icon-sources.ts";
 import { Island } from "../../design/island.tsx";
 import type { CalendarView } from "../../simulation/nature/calendar.ts";
 import { useWorldStore } from "../world/world-store.ts";
 
-const WEATHER_ICONS: Readonly<Record<WeatherKind, LucideIcon>> = {
-  blizzard: Snowflake,
-  clear: Sun,
-  cloudy: Cloud,
-  fog: CloudFog,
-  heat: ThermometerSun,
-  overcast: Cloudy,
-  rain: CloudRain,
-  snow: CloudSnow,
-  storm: CloudLightning,
+const WEATHER_ICONS: Readonly<Record<WeatherKind, GameIconName>> = {
+  blizzard: "snow",
+  clear: "sun",
+  cloudy: "cloud",
+  fog: "fog",
+  heat: "heat",
+  overcast: "overcast",
+  rain: "rain",
+  snow: "snow-cloud",
+  storm: "storm",
 };
 
-function daylightIcon(hours: number): LucideIcon {
+function daylightIcon(hours: number): GameIconName {
   if (hours >= 5 && hours < 8) {
-    return Sunrise;
+    return "sunrise";
   }
 
   if (hours >= 8 && hours < 18) {
-    return Sun;
+    return "sun";
   }
 
   if (hours >= 18 && hours < 21) {
-    return Sunset;
+    return "sunset";
   }
 
-  return Moon;
+  return "moon";
 }
 
 interface ReadingProps {
   readonly detail: ReactNode;
-  readonly icon: LucideIcon;
+  readonly icon: GameIconName;
   readonly title?: string | undefined;
   readonly value: ReactNode;
 }
 
-function Reading({ detail, icon: Icon, title, value }: ReadingProps) {
+function Reading({ detail, icon, title, value }: ReadingProps) {
   return (
     <div className="flex items-center gap-2.5 whitespace-nowrap text-ink-soft" title={title}>
-      <Icon aria-hidden="true" className="shrink-0" size={18} />
+      <GameIcon name={icon} size={26} />
 
       <span className="flex flex-col gap-1 leading-none">
         <span className="font-semibold text-ink text-sm tabular-nums">{value}</span>
@@ -102,7 +87,7 @@ function WeatherReading() {
       <Reading
         detail={
           <>
-            <Wind aria-hidden="true" size={11} />
+            <GameIcon name="wind" size={14} />
 
             <span className="tabular-nums">{Math.round(weather.windSpeed)} km/h</span>
           </>
@@ -126,7 +111,7 @@ function PopulationReading() {
     <StatusIsland>
       <Reading
         detail={tribes === 1 ? "1 tribe" : `${tribes} tribes`}
-        icon={Users}
+        icon="population"
         title={`${tribes} tribes`}
         value={population}
       />
@@ -141,11 +126,9 @@ export function CompactClock({ className }: { readonly className?: string | unde
     return null;
   }
 
-  const DaylightIcon = daylightIcon(calendar.hours);
-
   return (
     <div className={cn("@container flex min-w-0 items-center gap-2", className)}>
-      <DaylightIcon aria-hidden="true" className="@max-[6.5rem]:hidden shrink-0" size={18} />
+      <GameIcon className="@max-[6.5rem]:hidden" name={daylightIcon(calendar.hours)} size={24} />
 
       <div className="flex min-w-0 flex-col leading-none">
         <span className="font-semibold text-ink text-sm tabular-nums">{formatClock(calendar.hours)}</span>

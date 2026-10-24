@@ -1,4 +1,5 @@
 import { RESOURCE_GROUPS, RESOURCES, type ResourceGroup, resourcesInGroup } from "../../content/resources.ts";
+import { GameIcon } from "../../design/game-icon.tsx";
 import type { StockView } from "../../simulation/frame.ts";
 import { RESOURCE_ICONS } from "./tribe-icons.ts";
 
@@ -29,11 +30,11 @@ function StockGroup({ group, stock }: { readonly group: ResourceGroup; readonly 
 
       <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
         {kinds.map((kind) => {
-          const Icon = RESOURCE_ICONS[kind];
+          const icon = RESOURCE_ICONS[kind];
 
           return (
             <li className="flex min-w-0 items-center gap-1.5 text-ink-soft" key={kind}>
-              <Icon aria-hidden="true" className="shrink-0" size={14} />
+              <GameIcon name={icon} size={22} />
 
               <span className="truncate text-xs">{RESOURCES[kind].name}</span>
 
