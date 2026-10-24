@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Biome } from "../../content/biomes.ts";
-import { Ground } from "../../content/grounds.ts";
+import { Biome, type BiomeIndex } from "../../content/biomes.ts";
+import { Ground, type GroundIndex } from "../../content/grounds.ts";
 import { isLivingTreeSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import { DEFAULT_WORLD_RULES } from "../../content/world-rules.ts";
 import { createRandom } from "../../shared/random.ts";
@@ -22,10 +22,8 @@ interface Census {
   youngTrees: number;
 }
 
-function burntForest(): WorldState {
-  const world = new WorldState(
-    createVegetatedWorld({ biome: Biome.Forest, dimensions: { cellSize: 10, cellsPerSide: 64 }, ground: Ground.Forest })
-  );
+function burntForest(biome: BiomeIndex = Biome.Forest, ground: GroundIndex = Ground.Forest): WorldState {
+  const world = new WorldState(createVegetatedWorld({ biome, dimensions: { cellSize: 10, cellsPerSide: 64 }, ground }));
 
   for (const cell of world.grid.cellsInRadius(0, 0, BURNT_RADIUS)) {
     world.vegetation.burnTreesInCell(cell, 0);
@@ -169,6 +167,38 @@ describe("succession after a fire", () => {
       )
     ).toBe(true);
     expect(SEEDLING_SHARE).toBeLessThan(0.5);
+  });
+
+  it("stands dead trees back at their full height", () => {
+    const world = burntForest(Biome.Swamp, Ground.Swamp);
+    const { grid, vegetation } = world;
+
+    new Seasons(world).pass(DAYS_PER_YEAR * 0.6);
+
+    const snags = grid.cellsInRadius(0, 0, BURNT_RADIUS - 20).flatMap((cell) => {
+      const heights: number[] = [];
+
+      for (
+        let plant = vegetation.firstPlantInCell(cell);
+        plant !== NO_PLANT;
+        plant = vegetation.nextPlantInCell(plant)
+      ) {
+        if (vegetation.isAlive(plant) && plantSpeciesDefinition(vegetation.species[plant]).form === "deadwood") {
+          heights.push(vegetation.height[plant]);
+        }
+      }
+
+      return heights.map((height) => ({ cell, height }));
+    });
+
+    const fullHeights = snags.map(({ cell }) =>
+      climaxOf(world, cell)
+        .trees.filter((placement) => plantSpeciesDefinition(placement.species).form === "deadwood")
+        .map((placement) => Math.fround(placement.height))
+    );
+
+    expect(snags.length).toBeGreaterThan(0);
+    expect(snags.every(({ height }, index) => fullHeights[index]?.includes(height))).toBe(true);
   });
 
   it("brings glades back open and stands back thin", () => {

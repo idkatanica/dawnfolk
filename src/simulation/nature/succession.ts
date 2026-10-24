@@ -109,10 +109,20 @@ export class Succession {
     const isTreeTime = age >= TREE_DELAY_DAYS && scorch <= TREE_SCORCH;
 
     if (cover.trees < climax.trees.length && isTreeTime && this.#random.chance(this.#seedingChance(cell, day))) {
-      this.#nursery.plant({ ...climax.trees[cover.trees], bornDay: day }, TREE_GROWING_DAYS);
+      this.#plantTree({ ...climax.trees[cover.trees], bornDay: day });
     }
 
     return cover.trees >= climax.trees.length && cover.shrubs >= climax.shrubs.length && scorch <= 0;
+  }
+
+  #plantTree(placement: PlantPlacement): void {
+    if (isLivingTreeSpecies(placement.species)) {
+      this.#nursery.plant(placement, TREE_GROWING_DAYS);
+
+      return;
+    }
+
+    this.#world.plant(placement);
   }
 
   #seedingChance(cell: number, day: number): number {
