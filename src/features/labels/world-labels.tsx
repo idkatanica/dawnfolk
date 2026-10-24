@@ -1,7 +1,7 @@
-import { Swords } from "lucide-react";
 import { useRef } from "react";
 import { useEngine } from "../../app/use-engine.ts";
 import { cn } from "../../design/cn.ts";
+import { GameIcon } from "../../design/game-icon.tsx";
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import type { Landmark } from "../../game/landmarks.ts";
 import type { TribeSummary } from "../../simulation/frame.ts";
@@ -82,7 +82,7 @@ function FeudMark({ mood }: { readonly mood: TribeMood }) {
 
   return (
     <span className="flex items-center text-ember" title={mood === "raiding" ? "Raid under way" : "In a feud"}>
-      <Swords aria-label={mood === "raiding" ? "Raid under way" : "In a feud"} size={12} />
+      <GameIcon label={mood === "raiding" ? "Raid under way" : "In a feud"} name="raid" size={18} />
     </span>
   );
 }

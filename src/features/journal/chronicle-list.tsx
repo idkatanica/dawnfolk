@@ -1,3 +1,4 @@
+import { GameIcon } from "../../design/game-icon.tsx";
 import type { ChronicleEntry } from "../../simulation/chronicle.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { CHRONICLE_ICONS } from "./chronicle-icons.ts";
@@ -14,8 +15,6 @@ function useShowPlace(entry: ChronicleEntry) {
 function ChronicleItem({ entry }: { readonly entry: ChronicleEntry }) {
   const showPlace = useShowPlace(entry);
 
-  const Icon = CHRONICLE_ICONS[entry.category];
-
   return (
     <li>
       <button
@@ -23,9 +22,7 @@ function ChronicleItem({ entry }: { readonly entry: ChronicleEntry }) {
         onClick={showPlace}
         type="button"
       >
-        <span className="flex h-5 shrink-0 items-center text-ink-soft">
-          <Icon aria-hidden="true" size={16} />
-        </span>
+        <GameIcon name={CHRONICLE_ICONS[entry.category]} size={24} />
 
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="text-ink text-sm leading-snug">{entry.text}</span>

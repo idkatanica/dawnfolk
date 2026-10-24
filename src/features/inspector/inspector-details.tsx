@@ -1,9 +1,9 @@
-import { Flame, Pickaxe } from "lucide-react";
 import type { ReactNode } from "react";
 import { TOOL_MATERIAL_DEFINITIONS } from "../../content/weapons.ts";
 import { cn } from "../../design/cn.ts";
 import { FactList } from "../../design/fact-list.tsx";
 import { formatPercent } from "../../design/format.ts";
+import { GameIcon } from "../../design/game-icon.tsx";
 import { MeterBar } from "../../design/meter-bar.tsx";
 import type { EraView, GoalView } from "../../simulation/frame.ts";
 import type {
@@ -123,7 +123,7 @@ function FireWarning({ cell }: { readonly cell: CellInspection }) {
 
   return (
     <p className="flex items-center gap-1.5 font-medium text-ember text-sm">
-      <Flame aria-hidden="true" size={15} />
+      <GameIcon name="fire" size={22} />
       Burning
     </p>
   );
@@ -158,7 +158,7 @@ function GoalNeed({ goal }: { readonly goal: GoalView }) {
 
   return (
     <p className="flex items-center gap-1.5 font-medium text-dawn-strong text-xs">
-      <Pickaxe aria-hidden="true" size={14} />
+      <GameIcon name="workshop" size={20} />
       {`Needs ${goal.need}`}
     </p>
   );

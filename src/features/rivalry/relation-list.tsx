@@ -1,5 +1,6 @@
-import { ArrowRight, Swords } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { cn } from "../../design/cn.ts";
+import { GameIcon } from "../../design/game-icon.tsx";
 import type { TribeSummary } from "../../simulation/frame.ts";
 import type { Stance } from "../../simulation/society/rivalry/relations.ts";
 import type { RaidView, RelationView } from "../../simulation/society/rivalry/rivalry-system.ts";
@@ -12,13 +13,11 @@ const QUIET_ISLAND = "Every tribe keeps to itself for now. Rivalries grow where 
 export function StanceBadge({ stance }: { readonly stance: Stance }) {
   const look = STANCE_LOOKS[stance];
 
-  const Icon = look.icon;
-
   return (
     <span
       className={cn("inline-flex h-6 shrink-0 items-center gap-1 rounded-full px-2 font-medium text-xs", look.tone)}
     >
-      <Icon aria-hidden="true" size={13} />
+      <GameIcon name={look.icon} size={18} />
       {look.label}
     </span>
   );
@@ -104,7 +103,7 @@ function RaidRow({ entry }: { readonly entry: RaidEntry }) {
         onClick={showCamp}
         type="button"
       >
-        <Swords aria-hidden="true" className="shrink-0" size={18} />
+        <GameIcon name="raid" size={24} />
 
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex items-center gap-1 truncate font-semibold text-ink text-sm">

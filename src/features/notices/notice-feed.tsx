@@ -1,6 +1,7 @@
 import { Info } from "lucide-react";
 import { useEffect } from "react";
 import { cn } from "../../design/cn.ts";
+import { GameIcon } from "../../design/game-icon.tsx";
 import { CHRONICLE_ICONS } from "../journal/chronicle-icons.ts";
 import { dismissNotice, useWorldStore, type WorldNotice } from "../world/world-store.ts";
 
@@ -15,13 +16,11 @@ function useDismissLater(id: number): void {
 }
 
 function NoticeIcon({ notice }: { readonly notice: WorldNotice }) {
-  const Icon = notice.category === "notice" ? Info : CHRONICLE_ICONS[notice.category];
+  if (notice.category === "notice") {
+    return <Info aria-hidden="true" className="shrink-0 text-ink-soft" size={20} />;
+  }
 
-  return (
-    <span className="shrink-0 text-ink-soft">
-      <Icon aria-hidden="true" size={16} />
-    </span>
-  );
+  return <GameIcon name={CHRONICLE_ICONS[notice.category]} size={24} />;
 }
 
 function NoticeItem({ notice }: { readonly notice: WorldNotice }) {

@@ -2,6 +2,7 @@ import { Tabs } from "@base-ui/react/tabs";
 import { MousePointer2 } from "lucide-react";
 import { POWER_CATEGORIES, POWERS, type PowerCategory, type PowerId, powersInCategory } from "../../content/powers.ts";
 import { cn } from "../../design/cn.ts";
+import { GameIcon } from "../../design/game-icon.tsx";
 import { Island } from "../../design/island.tsx";
 import { SEGMENT, SEGMENT_TRACK } from "../../design/segmented.ts";
 import { WithTooltip } from "../../design/tooltip.tsx";
@@ -11,7 +12,7 @@ import { usePowerStore } from "./power-store.ts";
 const DOCK_CATEGORIES = POWER_CATEGORIES.filter((category) => category.id !== "observe");
 
 const TILE_CLASS =
-  "flex h-16 w-19 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl text-ink-soft outline-none transition-colors duration-150 hover:bg-veil hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn pointer-coarse:h-17";
+  "flex h-16 w-19 shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl text-ink-soft outline-none transition-colors duration-150 hover:bg-veil hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn pointer-coarse:h-17";
 
 function usePowerSelection(powerId: PowerId) {
   const isSelected = usePowerStore((state) => state.selectedPowerId === powerId);
@@ -28,19 +29,18 @@ function PowerTile({ powerId }: { readonly powerId: PowerId }) {
   const { isSelected, toggle } = usePowerSelection(powerId);
 
   const power = POWERS[powerId];
-  const Icon = POWER_ICONS[powerId];
 
   return (
     <WithTooltip content={power.description}>
       <button
         aria-pressed={isSelected}
         className={cn(TILE_CLASS, {
-          "bg-dawn text-white hover:bg-dawn-strong hover:text-white": isSelected,
+          "bg-white/80 text-ink ring-1 ring-dawn/60 hover:bg-white": isSelected,
         })}
         onClick={toggle}
         type="button"
       >
-        <Icon aria-hidden="true" size={22} strokeWidth={1.9} />
+        <GameIcon name={POWER_ICONS[powerId]} size={34} />
 
         <span className="max-w-full truncate px-1 font-medium text-2xs leading-none tracking-tight">{power.name}</span>
       </button>
@@ -70,7 +70,9 @@ function SelectTile() {
         onClick={clearPower}
         type="button"
       >
-        <MousePointer2 aria-hidden="true" size={22} strokeWidth={1.9} />
+        <span className="grid size-8.5 place-items-center">
+          <MousePointer2 aria-hidden="true" size={22} strokeWidth={1.9} />
+        </span>
 
         <span className="font-medium text-2xs leading-none">Select</span>
       </button>
