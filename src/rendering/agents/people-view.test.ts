@@ -8,6 +8,7 @@ import { PersonField } from "../../world/agent-buffers.ts";
 import { personPoseCode } from "../../world/agent-poses.ts";
 import { gearCode, weaponCode } from "../../world/gear.ts";
 import { CameraAxes } from "../effects/billboards.ts";
+import { TribeLooks } from "../tribe-looks.ts";
 import { AgentMarkers } from "./agent-markers.ts";
 import type { AgentViewInput } from "./agent-view-input.ts";
 import { PeopleView } from "./people-view.ts";
@@ -52,7 +53,11 @@ function inputFrom(mirror: WorldMirror, height: number): AgentViewInput {
 }
 
 function drawPeople(input: AgentViewInput): PeopleView {
-  const people = new PeopleView();
+  const tribes = new TribeLooks();
+
+  tribes.remember(input.mirror.frame.tribes);
+
+  const people = new PeopleView(tribes);
 
   input.markers.begin(input.camera, input.frustum, VIEWPORT_HEIGHT);
   people.update(input);

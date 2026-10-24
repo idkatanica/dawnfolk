@@ -1,7 +1,7 @@
 import { Color, type Group, Sphere, Vector3 } from "three/webgpu";
 import { TOOL_MATERIALS, type ToolMaterial, WEAPON_KINDS, type WeaponKind } from "../../content/weapons.ts";
 import { MaterialSlot } from "../../models/materials.ts";
-import { type PersonAppearance, personAppearance, type TribeLook } from "../../models/people/appearance.ts";
+import { type PersonAppearance, personAppearance } from "../../models/people/appearance.ts";
 import { applyHumanClip, HUMAN_CLIPS, type HumanClipContext } from "../../models/people/human-clips.ts";
 import { HUMAN_DETAILS } from "../../models/people/human-detail.ts";
 import { activityParts, appearanceParts, buildHumanParts, humanPartIndex } from "../../models/people/human-model.ts";
@@ -9,13 +9,12 @@ import { FIGURE_SCALE, humanBoneScales } from "../../models/people/human-proport
 import { HUMAN_BONE_COUNT, HUMAN_SKELETON } from "../../models/people/human-skeleton.ts";
 import { Pose } from "../../models/rig/pose.ts";
 import { SkeletonPoser } from "../../models/rig/skeleton-poser.ts";
-import { parseHexColor } from "../../shared/color.ts";
 import { smoothstep } from "../../shared/math.ts";
-import type { TribeSummary } from "../../simulation/frame.ts";
 import type { Inspection } from "../../simulation/inspection.ts";
 import { PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
 import { CARRIED_ITEMS, type CarriedItem, PERSON_POSES } from "../../world/agent-poses.ts";
 import { gearOfCode, weaponOfCode } from "../../world/gear.ts";
+import type { TribeLooks } from "../tribe-looks.ts";
 import { AgentMotion } from "./agent-motion.ts";
 import { AgentPalette } from "./agent-palette.ts";
 import {
@@ -59,7 +58,6 @@ const BODY_CENTER = 0.9 * FIGURE_SCALE;
 const WEAPON_CHOICES: readonly (WeaponKind | null)[] = [null, ...WEAPON_KINDS];
 const GEAR_COLOR_INDEX = PERSON_LAYOUT.colorSlots.indexOf(MaterialSlot.Metal);
 const WADING_DEPTH = 1.1;
-const DEFAULT_TRIBE: TribeLook = { accent: 0xc4_55_3a, fur: 0x6b_4a_33, id: -1 };
 const MARKER_LIFT = 1;
 const WAR_PAINT = humanPartIndex("warPaint");
 
@@ -82,10 +80,6 @@ function activityTable(): readonly (readonly (readonly (readonly number[])[])[])
 
 function gearColors(): readonly Color[] {
   return TOOL_MATERIALS.map((material) => new Color(GEAR_COLORS[material]));
-}
-
-function tribeLookOf(tribe: TribeSummary): TribeLook {
-  return { accent: parseHexColor(tribe.color), fur: parseHexColor(tribe.furColor), id: tribe.id };
 }
 
 function colorsOf(appearance: PersonAppearance): Color[] {
@@ -120,13 +114,15 @@ export class PeopleView {
   readonly #previousPose = new Pose(HUMAN_BONE_COUNT);
   readonly #seen = new Set<number>();
   readonly #strides = new HumanStrides();
-  readonly #tribes = new Map<number, TribeLook>();
+  readonly #tribes: TribeLooks;
   readonly #visuals = new Map<number, PersonVisual>();
   #figureCount = 0;
   #selectedId = NO_SELECTION;
   #uploadedRows = 0;
 
-  constructor() {
+  constructor(tribes: TribeLooks) {
+    this.#tribes = tribes;
+
     const material = createSkinnedMaterial(this.#palette, PERSON_LAYOUT);
 
     const farParts = buildHumanParts(HUMAN_DETAILS.far);
@@ -154,7 +150,6 @@ export class PeopleView {
 
     this.#seen.clear();
     this.#selectedId = selectedPersonId(frame.inspection);
-    this.#rememberTribes(frame.tribes);
     this.#batches.begin();
 
     let rows = 0;
@@ -337,7 +332,7 @@ export class PeopleView {
       era,
       isFemale: people[offset + PersonField.IsFemale] > 0.5,
       seed: people[offset + PersonField.AppearanceSeed],
-      tribe: this.#tribeLook(tribeId),
+      tribe: this.#tribes.look(tribeId),
     });
 
     const visual: PersonVisual = {
@@ -367,7 +362,7 @@ export class PeopleView {
   }
 
   #markerStyle(tribeId: number): MarkerStyle {
-    const { accent } = this.#tribeLook(tribeId);
+    const { accent } = this.#tribes.look(tribeId);
 
     const known = this.#markerStyles.get(accent);
 
@@ -380,24 +375,6 @@ export class PeopleView {
     this.#markerStyles.set(accent, style);
 
     return style;
-  }
-
-  #tribeLook(tribeId: number): TribeLook {
-    const look = this.#tribes.get(tribeId);
-
-    if (look === undefined) {
-      return DEFAULT_TRIBE;
-    }
-
-    return look;
-  }
-
-  #rememberTribes(tribes: readonly TribeSummary[]): void {
-    for (const tribe of tribes) {
-      if (!this.#tribes.has(tribe.id)) {
-        this.#tribes.set(tribe.id, tribeLookOf(tribe));
-      }
-    }
   }
 
   #forgetMissing(): void {
