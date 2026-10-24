@@ -1,3 +1,4 @@
+import type { ResourceAmounts } from "../../content/recipes.ts";
 import type { Job, JobKind } from "./jobs/job.ts";
 import type { PersonTick } from "./society-context.ts";
 import { totalFood } from "./stock.ts";
@@ -7,8 +8,8 @@ const PRE_WINTER_SEASON = 1.6;
 
 export interface WorkOption {
   kind: JobKind;
-  start: (tick: PersonTick) => Job | null;
-  weight: (tick: PersonTick) => number;
+  start: (tick: PersonTick, construction: ResourceAmounts) => Job | null;
+  weight: (tick: PersonTick, construction: ResourceAmounts) => number;
 }
 
 export function foodNeed(tick: PersonTick): number {

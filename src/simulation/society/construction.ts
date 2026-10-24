@@ -1,5 +1,5 @@
 import { BUILDINGS, type BuildingKind, isEnclosure } from "../../content/buildings.ts";
-import type { MaterialKind } from "../../content/resources.ts";
+import type { ResourceAmounts } from "../../content/recipes.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import { aroundPoint, type Waypoint } from "../agents/navigation.ts";
 import { NO_BUILDING } from "../world/world-state.ts";
@@ -11,7 +11,7 @@ import { footprintCells, isDryWay } from "./footprints.ts";
 import { assignHomes } from "./housing.ts";
 import { addPlotIfNeeded } from "./plots.ts";
 import type { SocietyContext } from "./society-context.ts";
-import { amountOf, hasResources, spendResources } from "./stock.ts";
+import { addResources, emptyStock, hasResources, spendResources } from "./stock.ts";
 import { learn, type Tribe } from "./tribe.ts";
 
 const PLACEMENT_ATTEMPTS = 36;
@@ -96,10 +96,14 @@ function savingGoals(tribe: Tribe, plans: readonly BuildingPlan[], context: Soci
   return plans.filter((plan) => !isStalled(tribe, plan.kind, context.environment.day));
 }
 
-export function constructionNeed(tribe: Tribe, context: SocietyContext, resource: MaterialKind): number {
-  return savingGoals(tribe, buildingPlans(tribe, context), context)
-    .slice(0, PLANS_TO_SAVE_FOR)
-    .reduce((total, plan) => total + amountOf(BUILDINGS[plan.kind].cost, resource), 0);
+export function constructionNeeds(tribe: Tribe, context: SocietyContext): ResourceAmounts {
+  const needs = emptyStock();
+
+  for (const plan of savingGoals(tribe, buildingPlans(tribe, context), context).slice(0, PLANS_TO_SAVE_FOR)) {
+    addResources(needs, BUILDINGS[plan.kind].cost);
+  }
+
+  return needs;
 }
 
 function placeBuilding(tribe: Tribe, plan: BuildingPlan, context: SocietyContext): Building | null {
@@ -197,9 +201,21 @@ function downhillRotation(spot: Waypoint, context: SocietyContext): number {
   return Math.atan2(-slopeX, -slopeZ);
 }
 
+function gateAngle(tribe: Tribe, context: SocietyContext): number {
+  const [field] = tribe.fields;
+
+  if (field === undefined) {
+    return context.random.next() * FULL_TURN;
+  }
+
+  const { grid } = context.world;
+
+  return Math.atan2(grid.cellCenterZ(field.cell) - tribe.campZ, grid.cellCenterX(field.cell) - tribe.campX);
+}
+
 function siteRotation(tribe: Tribe, plan: BuildingPlan, spot: Waypoint, context: SocietyContext): number {
   if (isEnclosure(plan.kind)) {
-    return plan.gateAngle;
+    return gateAngle(tribe, context);
   }
 
   if (BUILDINGS[plan.kind].role === "mine") {

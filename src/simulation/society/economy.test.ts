@@ -5,7 +5,7 @@ import { firstMemberTick, SocietyHarness, settle } from "../testing/test-society
 import { depositAround } from "../testing/test-world.ts";
 import type { Building } from "./buildings.ts";
 import { buildingsOfKind } from "./camp-plan.ts";
-import { planConstruction } from "./construction.ts";
+import { constructionNeeds, planConstruction } from "./construction.ts";
 import { CraftJob } from "./jobs/craft-job.ts";
 import type { Job } from "./jobs/job.ts";
 import { findMineWork } from "./jobs/mine-job.ts";
@@ -194,7 +194,7 @@ describe("smelting and tools", () => {
     tribe.stock.wood = 20;
 
     for (let batch = 0; batch < 3; batch += 1) {
-      const order = chooseCraft(tribe, harness.context);
+      const order = chooseCraft(tribe, harness.context, constructionNeeds(tribe, harness.context));
 
       expect(order?.recipe).toBe("copper");
 
@@ -208,7 +208,7 @@ describe("smelting and tools", () => {
     expect(tribe.stock.copper).toBe(6);
     expect(tribe.stock.copperOre).toBe(0);
 
-    const tools = chooseCraft(tribe, harness.context);
+    const tools = chooseCraft(tribe, harness.context, constructionNeeds(tribe, harness.context));
 
     expect(tools?.recipe).toBe("tools");
 
@@ -238,7 +238,7 @@ describe("smelting and tools", () => {
     tribe.stock.arrows = 100;
     tribe.stock.bows = 10;
 
-    const order = chooseCraft(tribe, harness.context);
+    const order = chooseCraft(tribe, harness.context, constructionNeeds(tribe, harness.context));
 
     expect(order?.recipe).toBe("spears");
     expect(order?.material).toBe("bronze");

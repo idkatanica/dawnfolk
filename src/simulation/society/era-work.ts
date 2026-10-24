@@ -1,8 +1,7 @@
 import { DEPOSITS, type DepositKind, MINED_DEPOSIT_KINDS } from "../../content/deposits.ts";
-import type { RecipeId } from "../../content/recipes.ts";
+import type { RecipeId, ResourceAmounts } from "../../content/recipes.ts";
 import { isWinter } from "../../content/seasons.ts";
 import { mineFor } from "./camp-plan.ts";
-import { constructionNeed } from "./construction.ts";
 import { isExpeditionSeason } from "./jobs/build-job.ts";
 import { findClay } from "./jobs/clay-job.ts";
 import { findCraftWork } from "./jobs/craft-job.ts";
@@ -12,6 +11,7 @@ import { findPlanting } from "./jobs/plant-job.ts";
 import { carriedAmount } from "./person.ts";
 import { emptySpot, ripestFruitTree } from "./plots.ts";
 import type { PersonTick } from "./society-context.ts";
+import { amountOf } from "./stock.ts";
 import { knows } from "./tribe.ts";
 import { foodNeed, isWorthIt, type WorkOption } from "./work-needs.ts";
 import { chooseCraft } from "./workshops.ts";
@@ -30,12 +30,12 @@ const CRAFT_WEIGHTS: Readonly<Record<RecipeId, number>> = {
   tools: 2.6,
 };
 
-function clayWanted(tick: PersonTick): number {
+function clayWanted(tick: PersonTick, construction: ResourceAmounts): number {
   const { tribe } = tick;
 
   const forPottery = tribe.stock.pottery < 12 ? POTTERY_CLAY : 0;
 
-  return constructionNeed(tribe, tick.context, "clay") + forPottery;
+  return amountOf(construction, "clay") + forPottery;
 }
 
 function oreOnTheWay(tick: PersonTick, kind: DepositKind): number {
@@ -78,8 +78,8 @@ export const ERA_WORK_OPTIONS: readonly WorkOption[] = [
   {
     kind: "clay",
     start: findClay,
-    weight: (tick) => {
-      const wanted = clayWanted(tick);
+    weight: (tick, construction) => {
+      const wanted = clayWanted(tick, construction);
       const { season } = tick.context.environment;
 
       if (!knows(tick.tribe, "pottery") || wanted <= 0 || !isWorthIt(tick, "clay", 1) || !isExpeditionSeason(season)) {
@@ -113,8 +113,8 @@ export const ERA_WORK_OPTIONS: readonly WorkOption[] = [
   {
     kind: "craft",
     start: findCraftWork,
-    weight: (tick) => {
-      const order = chooseCraft(tick.tribe, tick.context);
+    weight: (tick, construction) => {
+      const order = chooseCraft(tick.tribe, tick.context, construction);
 
       if (order === null) {
         return 0;
