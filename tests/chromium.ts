@@ -1,4 +1,4 @@
-export function readEnvironmentVariable(name: string): string | undefined {
+function readEnvironmentVariable(name: string): string | undefined {
   return process.env[name];
 }
 
