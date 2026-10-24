@@ -1,7 +1,39 @@
 import { describe, expect, it } from "vitest";
-import { SocietyHarness } from "../testing/test-society.ts";
+import { SocietyHarness, settle } from "../testing/test-society.ts";
 import { floodStrip, fordAcross } from "../testing/test-world.ts";
-import { scoreSite, siteSearchNear } from "./settlement.ts";
+import type { Person } from "./person.ts";
+import { considerSplit, scoreSite, siteSearchNear } from "./settlement.ts";
+import type { Tribe } from "./tribe.ts";
+
+interface SplittingTribe {
+  harness: SocietyHarness;
+  members: Person[];
+  tribe: Tribe;
+}
+
+function settleSplittingTribe(youngestAge: number): SplittingTribe {
+  const harness = new SocietyHarness();
+  const tribe = settle(harness, 20);
+  const members = harness.society.membersOf(tribe);
+
+  for (const person of members) {
+    person.age = 40;
+  }
+
+  for (const person of members.slice(0, 4)) {
+    person.age = youngestAge;
+  }
+
+  return { harness, members, tribe };
+}
+
+function nextDrawAfterSplitCheck(youngestAge: number): number {
+  const { harness, members, tribe } = settleSplittingTribe(youngestAge);
+
+  considerSplit(tribe, members, harness.context, harness.society);
+
+  return harness.random.next();
+}
 
 describe("camp sites", () => {
   it("are only chosen where the tribe can walk before its migration runs out", () => {
@@ -17,5 +49,14 @@ describe("camp sites", () => {
 
     expect(scoreSite({ x: 100, z: -300 }, search, harness.context, [])).toBe(Number.NEGATIVE_INFINITY);
     expect(scoreSite({ x: -100, z: -100 }, search, harness.context, [])).toBeGreaterThan(Number.NEGATIVE_INFINITY);
+  });
+});
+
+describe("splits", () => {
+  it("search for a camp site only when young settlers can leave", () => {
+    const idleDraw = settleSplittingTribe(40).harness.random.next();
+
+    expect(nextDrawAfterSplitCheck(40)).toBe(idleDraw);
+    expect(nextDrawAfterSplitCheck(20)).not.toBe(idleDraw);
   });
 });
