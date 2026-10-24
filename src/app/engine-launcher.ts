@@ -1,22 +1,25 @@
 import type { EngineHandle } from "../game/engine-handle.ts";
 import type { GameEngine } from "../game/game-engine.ts";
+import type { GameSession } from "../game/game-session.ts";
 import { DEFAULT_GENERATION_OPTIONS, type GenerationProgress } from "../generation/generation-options.ts";
+import { toError } from "../shared/errors.ts";
 import { exposeEngineForDebugging } from "./debug-handle.ts";
 import type { LaunchOptions } from "./launch-options.ts";
 
 export type EngineStatus =
   | { readonly engine: EngineHandle; readonly kind: "ready" }
   | { readonly kind: "failed"; readonly message: string }
-  | { readonly kind: "loading"; readonly progress: GenerationProgress | null };
+  | { readonly kind: "loading"; readonly progress: GenerationProgress | null }
+  | { readonly kind: "stopped"; readonly message: string };
 
 type EngineStatusListener = (status: EngineStatus) => void;
 
-function describeFailure(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return String(error);
+export function reportStop(session: GameSession, onStatus: EngineStatusListener): void {
+  session.subscribeToStatus((status) => {
+    if (status.kind === "failed") {
+      onStatus({ kind: "stopped", message: status.error.message });
+    }
+  });
 }
 
 function createCanvas(container: HTMLElement): HTMLCanvasElement {
@@ -83,6 +86,10 @@ export class EngineLauncher {
     this.#engine = engine;
     this.#applyLaunchTime(engine, launch);
     exposeEngineForDebugging(engine);
+    reportStop(engine.session, (status) => {
+      engine.stop();
+      this.#onStatus(status);
+    });
     this.#onStatus({ engine, kind: "ready" });
   }
 
@@ -111,6 +118,6 @@ export class EngineLauncher {
       return;
     }
 
-    this.#onStatus({ kind: "failed", message: describeFailure(error) });
+    this.#onStatus({ kind: "failed", message: toError(error).message });
   }
 }

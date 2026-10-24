@@ -1,5 +1,8 @@
+import { RotateCcw } from "lucide-react";
+import { TextButton } from "../design/buttons.tsx";
 import { Logo } from "../design/logo.tsx";
 import type { GenerationProgress, GenerationStage } from "../generation/generation-options.ts";
+import type { EngineStatus } from "./engine-launcher.ts";
 import { useEngineStore } from "./engine-store.ts";
 import { useLaunchStore } from "./launch-store.ts";
 
@@ -36,19 +39,55 @@ function LoadingMessage({ name, progress }: LoadingMessageProps) {
   );
 }
 
-function FailureMessage({ message }: { readonly message: string }) {
+interface FailureMessageProps {
+  readonly message: string;
+  readonly title: string;
+}
+
+function FailureMessage({ message, title }: FailureMessageProps) {
   return (
     <div className="flex max-w-md flex-col items-center gap-3 text-center" role="alert">
-      <p className="text-3xl text-ink">The island could not rise</p>
+      <p className="text-3xl text-ink">{title}</p>
 
       <p className="text-ink-soft text-sm">{message}</p>
     </div>
   );
 }
 
+function startAgain(): void {
+  useLaunchStore.getState().relaunch({});
+}
+
+function StoppedMessage({ message }: { readonly message: string }) {
+  return (
+    <div className="flex flex-col items-center gap-5">
+      <FailureMessage message={message} title="The simulation stopped" />
+
+      <TextButton onClick={startAgain} tone="accent">
+        <RotateCcw aria-hidden="true" size={16} />
+        Start again
+      </TextButton>
+    </div>
+  );
+}
+
+function StatusMessage({ status }: { readonly status: Exclude<EngineStatus, { kind: "ready" }> }) {
+  const name = useLaunchStore((state) => state.launch.name);
+
+  switch (status.kind) {
+    case "failed":
+      return <FailureMessage message={status.message} title="The island could not rise" />;
+    case "loading":
+      return <LoadingMessage name={name} progress={status.progress} />;
+    case "stopped":
+      return <StoppedMessage message={status.message} />;
+    default:
+      return status satisfies never;
+  }
+}
+
 export function LoadingScreen() {
   const status = useEngineStore((state) => state.status);
-  const name = useLaunchStore((state) => state.launch.name);
 
   if (status.kind === "ready") {
     return null;
@@ -56,11 +95,7 @@ export function LoadingScreen() {
 
   return (
     <div className="absolute inset-0 grid place-items-center bg-sky p-6">
-      {status.kind === "failed" ? (
-        <FailureMessage message={status.message} />
-      ) : (
-        <LoadingMessage name={name} progress={status.progress} />
-      )}
+      <StatusMessage status={status} />
     </div>
   );
 }
