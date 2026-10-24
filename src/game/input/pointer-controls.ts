@@ -83,12 +83,12 @@ export class PointerControls {
   #gesture: Gesture = { kind: "idle" };
   #holdTimer: number | null = null;
 
-  constructor(canvas: HTMLCanvasElement, camera: GodCamera, picker: GroundPicker, handlers: ToolGestures & TapHandler) {
+  constructor(canvas: HTMLCanvasElement, camera: GodCamera, picker: GroundPicker, tool: ToolGestures, tap: TapHandler) {
     this.#canvas = canvas;
     this.#camera = camera;
     this.#picker = picker;
-    this.#tool = handlers;
-    this.#tap = handlers;
+    this.#tool = tool;
+    this.#tap = tap;
 
     const options = { signal: this.#abort.signal };
 
