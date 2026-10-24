@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import type { GenerationProgress } from "../generation/world-generator.ts";
+import { DEFAULT_WORLD_REQUEST, type GenerationProgress } from "../generation/generation-options.ts";
 import { Simulation } from "../simulation/simulation.ts";
 import { createVegetatedWorld } from "../simulation/testing/test-world.ts";
-import { createSimulationWorkerApi, DEFAULT_WORLD_REQUEST } from "../workers/simulation-worker-api.ts";
+import { createSimulationWorkerApi } from "../workers/simulation-worker-api.ts";
 import { CHRONICLE_HISTORY_LIMIT, GameSession, type SessionStatus } from "./game-session.ts";
 import { LocalSimulationConnection } from "./simulation-connection.ts";
 
@@ -41,7 +41,7 @@ async function advanceSession(session: GameSession, seconds: number): Promise<vo
 describe("creating a session", () => {
   it("generates the world and reports the progress", async () => {
     const stages = new Set<string>();
-    const connection = new LocalSimulationConnection();
+    const connection = new LocalSimulationConnection(createSimulationWorkerApi());
 
     const session = await GameSession.create(
       connection,

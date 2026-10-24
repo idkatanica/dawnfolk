@@ -8,8 +8,9 @@ import type { River } from "../world/water.ts";
 import { NO_WATER } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 import { planCrossings, refreshCrossings } from "./crossings.ts";
+import { DEFAULT_GENERATION_OPTIONS } from "./generation-options.ts";
 import { computeHydrology } from "./hydrology.ts";
-import { DEFAULT_GENERATION_OPTIONS, type GeneratedWorld, generateWorld } from "./world-generator.ts";
+import { type GeneratedWorld, generateWorld } from "./world-generator.ts";
 
 const LONG_WIDE_STRETCH = 1000;
 const WATERFALL_CLEARANCE = 100;

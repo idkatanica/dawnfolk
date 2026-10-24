@@ -1,9 +1,8 @@
-import type { GenerationProgress } from "../generation/world-generator.ts";
+import type { GenerationProgress, WorldRequest } from "../generation/generation-options.ts";
 import type { ChronicleEntry } from "../simulation/chronicle.ts";
 import type { SimulationCommand } from "../simulation/commands.ts";
 import type { SimulationEffect } from "../simulation/effects.ts";
 import type { SimulationFrame } from "../simulation/frame.ts";
-import type { WorldRequest } from "../workers/simulation-worker-api.ts";
 import type { SimulationConnection } from "./simulation-connection.ts";
 import { WorldMirror } from "./world-mirror.ts";
 

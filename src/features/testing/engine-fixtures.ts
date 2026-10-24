@@ -7,10 +7,11 @@ import type { LabelPlacement } from "../../game/label-projector.ts";
 import type { Landmark } from "../../game/landmarks.ts";
 import { LocalSimulationConnection } from "../../game/simulation-connection.ts";
 import type { PowerSelection } from "../../game/tools/power-tool.ts";
+import { DEFAULT_WORLD_REQUEST } from "../../generation/generation-options.ts";
 import type { SimulationCommand } from "../../simulation/commands.ts";
 import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
-import { createSimulationWorkerApi, DEFAULT_WORLD_REQUEST } from "../../workers/simulation-worker-api.ts";
+import { createSimulationWorkerApi } from "../../workers/simulation-worker-api.ts";
 
 interface TestEngine {
   readonly clearSelection: Mock<() => void>;

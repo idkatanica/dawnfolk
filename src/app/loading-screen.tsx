@@ -1,5 +1,5 @@
 import { Logo } from "../design/logo.tsx";
-import type { GenerationProgress, GenerationStage } from "../generation/world-generator.ts";
+import type { GenerationProgress, GenerationStage } from "../generation/generation-options.ts";
 import { useEngineStore } from "./engine-store.ts";
 import { useLaunchStore } from "./launch-store.ts";
 

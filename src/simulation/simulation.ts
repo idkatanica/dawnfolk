@@ -1,12 +1,8 @@
 import type { PowerId } from "../content/powers.ts";
 import type { WeatherKind } from "../content/weather.ts";
 import { DEFAULT_WORLD_RULES, readWorldRules, type WorldRules } from "../content/world-rules.ts";
-import {
-  type GeneratedWorld,
-  type GenerationOptions,
-  type GenerationProgress,
-  generateWorld,
-} from "../generation/world-generator.ts";
+import type { GenerationOptions, GenerationProgress } from "../generation/generation-options.ts";
+import { type GeneratedWorld, generateWorld } from "../generation/world-generator.ts";
 import { clamp } from "../shared/math.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
 import { HazardMap } from "./agents/hazards.ts";

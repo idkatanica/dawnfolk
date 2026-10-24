@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_GENERATION_OPTIONS, generateWorld } from "../generation/world-generator.ts";
+import { DEFAULT_GENERATION_OPTIONS } from "../generation/generation-options.ts";
+import { generateWorld } from "../generation/world-generator.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import { isHopping } from "./agents/hops.ts";
 import { Simulation, TICK_SECONDS } from "./simulation.ts";
