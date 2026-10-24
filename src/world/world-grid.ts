@@ -1,3 +1,5 @@
+import type { CellRegion } from "./change-tracking.ts";
+
 export interface GridDimensions {
   cellSize: number;
   cellsPerSide: number;
@@ -103,42 +105,27 @@ export class WorldGrid {
   }
 
   cellsAlong(fromX: number, fromZ: number, toX: number, toZ: number): number[] {
-    const deltaX = toX - fromX;
-    const deltaZ = toZ - fromZ;
-    const stepColumn = Math.sign(deltaX);
-    const stepRow = Math.sign(deltaZ);
-    const strideX = deltaX === 0 ? Number.POSITIVE_INFINITY : this.cellSize / Math.abs(deltaX);
-    const strideZ = deltaZ === 0 ? Number.POSITIVE_INFINITY : this.cellSize / Math.abs(deltaZ);
-    const lastColumn = this.columnAt(toX);
-    const lastRow = this.rowAt(toZ);
     const cells: number[] = [];
 
-    let column = this.columnAt(fromX);
-    let row = this.rowAt(fromZ);
-    let crossingX = this.#firstCrossing(fromX, deltaX, column, stepColumn);
-    let crossingZ = this.#firstCrossing(fromZ, deltaZ, row, stepRow);
+    this.#walk(fromX, fromZ, toX, toZ, false, (cell) => {
+      cells.push(cell);
 
-    while (this.contains(column, row)) {
-      cells.push(this.index(column, row));
-
-      if (column === lastColumn && row === lastRow) {
-        break;
-      }
-
-      if (crossingX < crossingZ) {
-        column += stepColumn;
-        crossingX += strideX;
-      } else {
-        row += stepRow;
-        crossingZ += strideZ;
-      }
-
-      if (Math.min(crossingX, crossingZ) > 1 + strideX + strideZ) {
-        break;
-      }
-    }
+      return true;
+    });
 
     return cells;
+  }
+
+  someCellAlong(fromX: number, fromZ: number, toX: number, toZ: number, predicate: (cell: number) => boolean): boolean {
+    let isFound = false;
+
+    this.#walk(fromX, fromZ, toX, toZ, false, (cell) => {
+      isFound = predicate(cell);
+
+      return !isFound;
+    });
+
+    return isFound;
   }
 
   traceAlong(
@@ -146,6 +133,17 @@ export class WorldGrid {
     fromZ: number,
     toX: number,
     toZ: number,
+    visit: (cell: number, enter: number, leave: number) => boolean
+  ): boolean {
+    return this.#walk(fromX, fromZ, toX, toZ, true, visit);
+  }
+
+  #walk(
+    fromX: number,
+    fromZ: number,
+    toX: number,
+    toZ: number,
+    stopsAtSegmentEnd: boolean,
     visit: (cell: number, enter: number, leave: number) => boolean
   ): boolean {
     const deltaX = toX - fromX;
@@ -171,7 +169,11 @@ export class WorldGrid {
         return false;
       }
 
-      if (isLast || left >= 1) {
+      if (isLast) {
+        return true;
+      }
+
+      if (stopsAtSegmentEnd && left >= 1) {
         return true;
       }
 
@@ -183,6 +185,10 @@ export class WorldGrid {
       } else {
         row += stepRow;
         crossingZ += strideZ;
+      }
+
+      if (Math.min(crossingX, crossingZ) > 1 + strideX + strideZ) {
+        return true;
       }
     }
 
@@ -199,18 +205,26 @@ export class WorldGrid {
     return (edge - from) / delta;
   }
 
+  circleBounds(x: number, z: number, radius: number): CellRegion {
+    const lastIndex = this.cellsPerSide - 1;
+
+    return {
+      firstColumn: Math.max(0, this.columnAt(x - radius)),
+      firstRow: Math.max(0, this.rowAt(z - radius)),
+      lastColumn: Math.min(lastIndex, this.columnAt(x + radius)),
+      lastRow: Math.min(lastIndex, this.rowAt(z + radius)),
+    };
+  }
+
   cellsInRadius(x: number, z: number, radius: number): number[] {
     const cells: number[] = [];
-    const firstColumn = Math.max(0, this.columnAt(x - radius));
-    const lastColumn = Math.min(this.cellsPerSide - 1, this.columnAt(x + radius));
-    const firstRow = Math.max(0, this.rowAt(z - radius));
-    const lastRow = Math.min(this.cellsPerSide - 1, this.rowAt(z + radius));
+    const bounds = this.circleBounds(x, z, radius);
     const radiusSquared = radius * radius;
 
-    for (let row = firstRow; row <= lastRow; row += 1) {
+    for (let row = bounds.firstRow; row <= bounds.lastRow; row += 1) {
       const deltaZ = this.centerZ(row) - z;
 
-      for (let column = firstColumn; column <= lastColumn; column += 1) {
+      for (let column = bounds.firstColumn; column <= bounds.lastColumn; column += 1) {
         const deltaX = this.centerX(column) - x;
 
         if (deltaX * deltaX + deltaZ * deltaZ <= radiusSquared) {

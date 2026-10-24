@@ -217,7 +217,7 @@ export class WorldState {
       return false;
     }
 
-    return this.grid.cellsAlong(fromX, fromZ, toX, toZ).some((cell) => this.isObstructed(cell));
+    return this.grid.someCellAlong(fromX, fromZ, toX, toZ, (cell) => this.isObstructed(cell));
   }
 
   isWalkableAt(x: number, z: number): boolean {
