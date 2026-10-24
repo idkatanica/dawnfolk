@@ -60,7 +60,8 @@ Age to the Iron Age on a procedurally generated island rendered with WebGPU.
   skeletal clips.
 - **A readable map.** Named peaks, lakes and ruins, tribe banners that fly you to their camp, and far markers on the
   island and the minimap.
-- **A calm HUD.** Painted icons for game things and a compact layout for phones.
+- **A calm HUD.** Solid panels that read over any terrain, glass only for the power dock and the minimap, painted
+  icons for game things, and a compact layout for phones.
 
 ## Stack
 
@@ -103,7 +104,7 @@ src/
                buildings, monuments, crossings
   rendering/   WebGPU renderer: sky, height fog and atmosphere, terrain and water patches, waterfalls, vegetation
                chunks and grass, skinned agents with far markers, buildings, fire, smoke, weather, bloom
-  design/      design system: glass islands, game icons, buttons, fields, meters, tooltips, formatting
+  design/      design system: paper and glass islands, game icons, buttons, fields, meters, tooltips, formatting
   features/    UI features with their stores: time, powers, inspector, journal, tribes and rivalry, minimap,
                map labels, notices, settings, new world
   app/         app shell, start screen, engine launch, HUD layouts

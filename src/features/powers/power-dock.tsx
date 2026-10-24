@@ -1,18 +1,32 @@
-import { Tabs } from "@base-ui/react/tabs";
+import { Toolbar } from "@base-ui/react/toolbar";
 import { MousePointer2 } from "lucide-react";
+import { type RefObject, useEffect, useRef } from "react";
 import { POWER_CATEGORIES, POWERS, type PowerCategory, type PowerId, powersInCategory } from "../../content/powers.ts";
 import { cn } from "../../design/cn.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
 import { Island } from "../../design/island.tsx";
-import { SEGMENT, SEGMENT_TRACK } from "../../design/segmented.ts";
 import { WithTooltip } from "../../design/tooltip.tsx";
 import { POWER_ICONS } from "./power-icons.tsx";
 import { usePowerStore } from "./power-store.ts";
 
 const DOCK_CATEGORIES = POWER_CATEGORIES.filter((category) => category.id !== "observe");
 
+const SELECT_HINT = "Tap people, animals, buildings or land to see their details.";
+
 const TILE_CLASS =
-  "flex h-16 w-19 shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl text-ink-soft outline-none transition-colors duration-150 hover:bg-veil hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn pointer-coarse:h-17";
+  "grid size-10.5 shrink-0 snap-start place-items-center rounded-xl outline-none transition-[background-color,box-shadow,scale] duration-150 hover:bg-white/55 focus-visible:ring-2 focus-visible:ring-dawn active:scale-95 pointer-coarse:size-12";
+
+const CHOSEN_TILE_CLASS = "bg-white shadow-segment hover:bg-white";
+
+function TileHint({ description, name }: { readonly description: string; readonly name: string }) {
+  return (
+    <span className="flex flex-col gap-0.5">
+      <span className="font-semibold">{name}</span>
+
+      <span className="text-white/75">{description}</span>
+    </span>
+  );
+}
 
 function usePowerSelection(powerId: PowerId) {
   const isSelected = usePowerStore((state) => state.selectedPowerId === powerId);
@@ -31,19 +45,15 @@ function PowerTile({ powerId }: { readonly powerId: PowerId }) {
   const power = POWERS[powerId];
 
   return (
-    <WithTooltip content={power.description}>
-      <button
+    <WithTooltip content={<TileHint description={power.description} name={power.name} />}>
+      <Toolbar.Button
+        aria-label={power.name}
         aria-pressed={isSelected}
-        className={cn(TILE_CLASS, {
-          "bg-white/80 text-ink ring-1 ring-dawn/60 hover:bg-white": isSelected,
-        })}
+        className={cn(TILE_CLASS, { [`${CHOSEN_TILE_CLASS} ring-2 ring-dawn`]: isSelected })}
         onClick={toggle}
-        type="button"
       >
         <GameIcon name={POWER_ICONS[powerId]} size={34} />
-
-        <span className="max-w-full truncate px-1 font-medium text-2xs leading-none tracking-tight">{power.name}</span>
-      </button>
+      </Toolbar.Button>
     </WithTooltip>
   );
 }
@@ -63,74 +73,80 @@ function SelectTile() {
   const { clearPower, isSelecting } = useClearPower();
 
   return (
-    <WithTooltip content="Tap people, animals, buildings or land to see their details.">
-      <button
+    <WithTooltip content={<TileHint description={SELECT_HINT} name="Select" />}>
+      <Toolbar.Button
+        aria-label="Select"
         aria-pressed={isSelecting}
-        className={cn(TILE_CLASS, { "bg-white text-ink shadow-segment hover:bg-white": isSelecting })}
+        className={cn(TILE_CLASS, "text-ink-soft hover:text-ink", { [`${CHOSEN_TILE_CLASS} text-ink`]: isSelecting })}
         onClick={clearPower}
-        type="button"
       >
-        <span className="grid size-8.5 place-items-center">
-          <MousePointer2 aria-hidden="true" size={22} strokeWidth={1.9} />
-        </span>
-
-        <span className="font-medium text-2xs leading-none">Select</span>
-      </button>
+        <MousePointer2 aria-hidden="true" size={22} strokeWidth={1.9} />
+      </Toolbar.Button>
     </WithTooltip>
   );
 }
 
-function CategoryTab({ category }: { readonly category: (typeof DOCK_CATEGORIES)[number] }) {
+function CategoryGroup({ category, name }: { readonly category: PowerCategory; readonly name: string }) {
   return (
-    <Tabs.Tab className={cn(SEGMENT, "px-3.5")} value={category.id}>
-      {category.name}
-    </Tabs.Tab>
+    <>
+      <Toolbar.Separator className="mx-1 h-7 w-px shrink-0 bg-ink/15" orientation="vertical" />
+
+      <Toolbar.Group aria-label={name} className="flex shrink-0 items-center gap-0.5">
+        {powersInCategory(category).map((powerId) => (
+          <PowerTile key={powerId} powerId={powerId} />
+        ))}
+      </Toolbar.Group>
+    </>
   );
 }
 
-function CategoryPanel({ category }: { readonly category: PowerCategory }) {
+function useWheelScrollsSideways(rowReference: RefObject<HTMLDivElement | null>): void {
+  useEffect(() => {
+    const row = rowReference.current;
+
+    if (row === null) {
+      return;
+    }
+
+    const scroller = row;
+
+    function scrollSideways(event: WheelEvent): void {
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+        return;
+      }
+
+      if (scroller.scrollWidth <= scroller.clientWidth) {
+        return;
+      }
+
+      event.preventDefault();
+      scroller.scrollLeft += event.deltaY;
+    }
+
+    row.addEventListener("wheel", scrollSideways, { passive: false });
+
+    return () => row.removeEventListener("wheel", scrollSideways);
+  }, [rowReference]);
+}
+
+export function PowerDock({ className }: { readonly className?: string | undefined }) {
+  const rowReference = useRef<HTMLDivElement>(null);
+
+  useWheelScrollsSideways(rowReference);
+
   return (
-    <Tabs.Panel className="flex gap-1 outline-none" value={category}>
-      {powersInCategory(category).map((powerId) => (
-        <PowerTile key={powerId} powerId={powerId} />
-      ))}
-    </Tabs.Panel>
-  );
-}
+    <Island className={cn("max-w-full", className)} surface="glass">
+      <Toolbar.Root
+        aria-label="Powers"
+        className="scrollbar-none flex snap-x snap-mandatory scroll-px-1.5 items-center gap-0.5 overflow-x-auto overscroll-x-contain p-1.5"
+        ref={rowReference}
+      >
+        <SelectTile />
 
-function DockDivider() {
-  return <div aria-hidden="true" className="w-px shrink-0 self-stretch bg-line" />;
-}
-
-function useCategory() {
-  const category = usePowerStore((state) => state.category);
-  const setCategory = usePowerStore((state) => state.setCategory);
-
-  return { category, setCategory };
-}
-
-export function PowerDock() {
-  const { category, setCategory } = useCategory();
-
-  return (
-    <Island className="max-w-full">
-      <Tabs.Root className="flex flex-col gap-2 p-2" onValueChange={setCategory} value={category}>
-        <Tabs.List aria-label="Kinds of powers" className={cn(SEGMENT_TRACK, "self-center")}>
-          {DOCK_CATEGORIES.map((entry) => (
-            <CategoryTab category={entry} key={entry.id} />
-          ))}
-        </Tabs.List>
-
-        <div className="scrollbar-none flex gap-2 overflow-x-auto">
-          <SelectTile />
-
-          <DockDivider />
-
-          {DOCK_CATEGORIES.map((entry) => (
-            <CategoryPanel category={entry.id} key={entry.id} />
-          ))}
-        </div>
-      </Tabs.Root>
+        {DOCK_CATEGORIES.map((entry) => (
+          <CategoryGroup category={entry.id} key={entry.id} name={entry.name} />
+        ))}
+      </Toolbar.Root>
     </Island>
   );
 }

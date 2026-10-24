@@ -27,10 +27,9 @@ describe("power store", () => {
     localStorage.clear();
   });
 
-  it("starts on the elements with no power selected", () => {
+  it("starts with no power selected", () => {
     const state = usePowerStore.getState();
 
-    expect(state.category).toBe("elements");
     expect(state.selectedPowerId).toBeNull();
     expect(state.parameters).toEqual({});
   });
@@ -43,12 +42,6 @@ describe("power store", () => {
     usePowerStore.getState().selectPower(null);
 
     expect(usePowerStore.getState().selectedPowerId).toBeNull();
-  });
-
-  it("switches the category of the dock", () => {
-    usePowerStore.getState().setCategory("land");
-
-    expect(usePowerStore.getState().category).toBe("land");
   });
 
   it("changes one parameter and keeps the defaults of the others", () => {
@@ -88,7 +81,6 @@ describe("power store", () => {
 
   it("saves only the parameters between visits", () => {
     usePowerStore.getState().selectPower("fire");
-    usePowerStore.getState().setCategory("land");
     usePowerStore.getState().setParameter("fire", "intensity", 80);
 
     expect(readSavedSettings()).toEqual({

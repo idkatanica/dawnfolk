@@ -2,6 +2,7 @@ import { BookOpen, Map as MapIcon, Maximize2, Minimize2, Settings } from "lucide
 import { IconButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
 import { WithTooltip } from "../../design/tooltip.tsx";
+import { useSidePanel } from "../journal/use-side-panel.ts";
 import { useInterfaceStore } from "./interface-store.ts";
 import { useFullscreen } from "./use-fullscreen.ts";
 
@@ -23,9 +24,8 @@ function FullscreenButton() {
 }
 
 function useMenuActions() {
-  const isJournalOpen = useInterfaceStore((state) => state.isJournalOpen);
+  const { isJournalOpen, toggleJournal } = useSidePanel();
   const isMapOpen = useInterfaceStore((state) => state.isMapOpen);
-  const toggleJournal = useInterfaceStore((state) => state.toggleJournal);
   const toggleMap = useInterfaceStore((state) => state.toggleMap);
   const openSettings = useInterfaceStore((state) => state.openSettings);
 

@@ -1,36 +1,56 @@
 import { Drawer } from "@base-ui/react/drawer";
-import { useInterfaceStore } from "../interface/interface-store.ts";
-import { JournalPanel } from "./journal-panel.tsx";
+import { useRef, useState } from "react";
+import { titleOf } from "../inspector/inspector-card.tsx";
+import { type PanelContents, SidePanelContent, usePanelFocus } from "./side-panel.tsx";
+import { useSidePanel } from "./use-side-panel.ts";
+
+function useShownContents(contents: PanelContents, isOpen: boolean): PanelContents {
+  const [shown, setShown] = useState(contents);
+
+  const isChanged = shown.inspection !== contents.inspection || shown.isJournalOpen !== contents.isJournalOpen;
+
+  if (isOpen && isChanged) {
+    setShown(contents);
+  }
+
+  return isOpen ? contents : shown;
+}
 
 function useJournalSheet() {
-  const isOpen = useInterfaceStore((state) => state.isJournalOpen);
-  const closeJournal = useInterfaceStore((state) => state.closeJournal);
+  const { back, close, inspection, isJournalOpen, view } = useSidePanel();
+  const panelReference = useRef<HTMLDivElement>(null);
+
+  const isOpen = view !== "closed";
+  const contents = useShownContents({ inspection, isJournalOpen }, isOpen);
+
+  usePanelFocus({ isOpeningManaged: false, panelReference, view });
 
   function changeOpen(open: boolean): void {
     if (!open) {
-      closeJournal();
+      close();
     }
   }
 
-  return { changeOpen, isOpen };
+  const label = contents.inspection === null ? "Journal" : titleOf(contents.inspection);
+
+  return { back, changeOpen, close, contents, isOpen, label, panelReference };
 }
 
 export function JournalSheet() {
-  const { changeOpen, isOpen } = useJournalSheet();
+  const { back, changeOpen, close, contents, isOpen, label, panelReference } = useJournalSheet();
 
   return (
-    <Drawer.Root onOpenChange={changeOpen} open={isOpen}>
+    <Drawer.Root disablePointerDismissal={true} modal={false} onOpenChange={changeOpen} open={isOpen}>
       <Drawer.Portal>
-        <Drawer.Backdrop className="fixed inset-0 z-40 bg-ink/20 transition-opacity duration-300 data-ending-style:opacity-0 data-starting-style:opacity-0" />
+        <Drawer.Viewport className="pointer-events-none fixed inset-0 z-30 flex items-end">
+          <Drawer.Popup
+            aria-label={label}
+            className="pointer-events-auto flex max-h-sheet w-full flex-col gap-2 rounded-t-sheet border-paper-edge border-t bg-paper px-4 pt-2 pb-sheet shadow-panel outline-none transition-transform duration-450 ease-glide [transform:translateY(var(--drawer-swipe-movement-y))] data-ending-style:[transform:translateY(100%)] data-starting-style:[transform:translateY(100%)]"
+          >
+            <div aria-hidden="true" className="h-1 w-10 shrink-0 self-center rounded-full bg-ink/20" />
 
-        <Drawer.Viewport className="fixed inset-0 z-50 flex items-end">
-          <Drawer.Popup className="flex w-full flex-col gap-2 rounded-t-sheet bg-white/92 px-3 pt-2 pb-sheet outline-none backdrop-blur-2xl transition-transform duration-450 ease-glide [transform:translateY(var(--drawer-swipe-movement-y))] data-ending-style:[transform:translateY(100%)] data-starting-style:[transform:translateY(100%)]">
-            <div aria-hidden="true" className="h-1 w-10 self-center rounded-full bg-ink/20" />
-
-            <Drawer.Content className="flex flex-col gap-2">
-              <Drawer.Title className="px-1 font-semibold text-ink text-lg">Journal</Drawer.Title>
-
-              <JournalPanel />
+            <Drawer.Content className="flex min-h-0 flex-1 flex-col" ref={panelReference}>
+              <SidePanelContent className="flex-1" contents={contents} onBack={back} onClose={close} />
             </Drawer.Content>
           </Drawer.Popup>
         </Drawer.Viewport>

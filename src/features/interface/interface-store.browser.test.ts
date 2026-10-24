@@ -27,21 +27,16 @@ describe("interface store", () => {
     expect(state.journalTab).toBe("chronicle");
   });
 
-  it("toggles and closes the journal", () => {
-    const { closeJournal, toggleJournal } = useInterfaceStore.getState();
+  it("closes the journal and keeps its tab", () => {
+    const { closeJournal, openJournal } = useInterfaceStore.getState();
 
-    toggleJournal();
-
-    expect(useInterfaceStore.getState().isJournalOpen).toBe(true);
-
-    toggleJournal();
-
-    expect(useInterfaceStore.getState().isJournalOpen).toBe(false);
-
-    toggleJournal();
+    openJournal("relations");
     closeJournal();
 
-    expect(useInterfaceStore.getState().isJournalOpen).toBe(false);
+    const state = useInterfaceStore.getState();
+
+    expect(state.isJournalOpen).toBe(false);
+    expect(state.journalTab).toBe("relations");
   });
 
   it("switches journal tabs without opening the journal", () => {

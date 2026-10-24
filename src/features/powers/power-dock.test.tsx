@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { POWERS, powersInCategory } from "../../content/powers.ts";
 import { PowerDock } from "./power-dock.tsx";
 import { usePowerStore } from "./power-store.ts";
 
@@ -7,6 +9,7 @@ const initialState = usePowerStore.getState();
 
 const ELEMENT_POWERS = ["Fire", "Lightning", "Rain", "Snow", "Explosion", "Meteor", "Earthquake"] as const;
 const LAND_POWERS = ["Raise land", "Lower land", "Flatten", "Smooth", "Forest", "Paint ground"] as const;
+const LIFE_POWERS = powersInCategory("life").map((powerId) => POWERS[powerId].name);
 
 describe("power dock", () => {
   afterEach(() => {
@@ -14,44 +17,58 @@ describe("power dock", () => {
     localStorage.clear();
   });
 
-  it("opens on the elements", async () => {
+  it("shows every power in one row, grouped by kind, with Select first", async () => {
     const screen = await render(<PowerDock />);
 
-    await expect.element(screen.getByRole("tab", { name: "Elements" })).toHaveAttribute("aria-selected", "true");
+    const row = screen.getByRole("toolbar", { name: "Powers" });
+    const buttons = row.getByRole("button").elements();
+
+    expect(buttons[0]?.getAttribute("aria-label")).toBe("Select");
+    expect(buttons).toHaveLength(1 + ELEMENT_POWERS.length + LAND_POWERS.length + LIFE_POWERS.length);
 
     await Promise.all(
-      ELEMENT_POWERS.map((name) => expect.element(screen.getByRole("button", { exact: true, name })).toBeVisible())
+      [
+        { name: "Elements", powers: ELEMENT_POWERS },
+        { name: "Land", powers: LAND_POWERS },
+        { name: "Life", powers: LIFE_POWERS },
+      ].flatMap((group) =>
+        group.powers.map((name) =>
+          expect
+            .element(row.getByRole("group", { name: group.name }).getByRole("button", { exact: true, name }))
+            .toBeInTheDocument()
+        )
+      )
     );
   });
 
   it("keeps the observing tools out of the dock", async () => {
     const screen = await render(<PowerDock />);
 
-    expect(screen.getByRole("tab").elements()).toHaveLength(3);
-    await expect.element(screen.getByRole("tab", { name: "Observe" })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("group", { name: "Observe" })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { exact: true, name: "Inspect" })).not.toBeInTheDocument();
   });
 
-  it("switches the category through its tabs", async () => {
+  it("shows icons alone and names each power in its tooltip", async () => {
     const screen = await render(<PowerDock />);
 
-    await screen.getByRole("tab", { name: "Land" }).click();
+    const rain = screen.getByRole("button", { exact: true, name: "Rain" });
 
-    expect(usePowerStore.getState().category).toBe("land");
+    expect(rain.element().textContent).toBe("");
 
-    await Promise.all(
-      LAND_POWERS.map((name) => expect.element(screen.getByRole("button", { exact: true, name })).toBeVisible())
-    );
+    await rain.hover();
 
-    await expect.element(screen.getByRole("button", { exact: true, name: "Fire" })).not.toBeInTheDocument();
+    await expect.element(screen.getByText(POWERS.rain.description)).toBeVisible();
   });
 
-  it("opens on the category kept in the store", async () => {
-    usePowerStore.getState().setCategory("life");
-
+  it("moves between the tiles with the arrow keys", async () => {
     const screen = await render(<PowerDock />);
 
-    await expect.element(screen.getByRole("tab", { name: "Life" })).toHaveAttribute("aria-selected", "true");
-    await expect.element(screen.getByRole("button", { exact: true, name: "Tribe" })).toBeVisible();
+    const select = screen.getByRole("button", { exact: true, name: "Select" });
+
+    select.element().focus();
+    await userEvent.keyboard("{ArrowRight}");
+
+    await expect.element(screen.getByRole("button", { exact: true, name: "Fire" })).toHaveFocus();
   });
 
   it("selects a power and puts it away when selected again", async () => {

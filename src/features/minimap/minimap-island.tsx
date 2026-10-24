@@ -79,7 +79,7 @@ export function MinimapIsland({ className }: { readonly className?: string | und
   }
 
   return (
-    <Island className={className}>
+    <Island className={className} surface="glass">
       <div className="p-1.5">
         <MinimapCanvas engine={engine} />
       </div>

@@ -29,13 +29,13 @@ function JournalTabButton({ label, value }: { readonly label: string; readonly v
 
 function ScrollingPanel({ children, value }: { readonly children: ReactNode; readonly value: JournalTab }) {
   return (
-    <Tabs.Panel className="outline-none" value={value}>
-      <ScrollArea.Root className="relative">
-        <ScrollArea.Viewport className="max-h-journal overscroll-contain pr-2.5 outline-none">
+    <Tabs.Panel className="flex min-h-0 flex-1 flex-col outline-none" value={value}>
+      <ScrollArea.Root className="relative flex min-h-0 flex-1 flex-col">
+        <ScrollArea.Viewport className="scroll-fade min-h-0 flex-1 overscroll-contain outline-none">
           {children}
         </ScrollArea.Viewport>
 
-        <ScrollArea.Scrollbar className="w-1.5 rounded-full py-1 opacity-0 transition-opacity data-hovering:opacity-100 data-scrolling:opacity-100">
+        <ScrollArea.Scrollbar className="-mr-2 w-1.5 rounded-full py-1 opacity-0 transition-opacity data-hovering:opacity-100 data-scrolling:opacity-100">
           <ScrollArea.Thumb className="w-full rounded-full bg-ink/25" />
         </ScrollArea.Scrollbar>
       </ScrollArea.Root>
@@ -60,7 +60,7 @@ export function JournalPanel() {
   const { changeTab, journalTab } = useJournalTab();
 
   return (
-    <Tabs.Root className="flex flex-col gap-2" onValueChange={changeTab} value={journalTab}>
+    <Tabs.Root className="flex min-h-0 flex-1 flex-col gap-2" onValueChange={changeTab} value={journalTab}>
       <Tabs.List aria-label="Journal" className="flex gap-1 rounded-full bg-ink/8 p-1">
         {TABS.map((tab) => (
           <JournalTabButton key={tab.value} label={tab.label} value={tab.value} />

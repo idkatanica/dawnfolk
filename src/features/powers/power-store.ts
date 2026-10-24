@@ -6,7 +6,6 @@ import {
   isPowerId,
   type ParameterValue,
   type ParameterValueMap,
-  type PowerCategory,
   type PowerId,
   readPowerParameters,
 } from "../../content/powers.ts";
@@ -14,12 +13,10 @@ import {
 type StoredParameters = Readonly<Partial<Record<PowerId, ParameterValueMap>>>;
 
 export interface PowerStore {
-  readonly category: PowerCategory;
   readonly parameters: StoredParameters;
   readonly resetParameters: (powerId: PowerId) => void;
   readonly selectedPowerId: PowerId | null;
   readonly selectPower: (powerId: PowerId | null) => void;
-  readonly setCategory: (category: PowerCategory) => void;
   readonly setParameter: (powerId: PowerId, key: string, value: ParameterValue) => void;
 }
 
@@ -70,13 +67,11 @@ export function parametersOf(parameters: StoredParameters, powerId: PowerId): Pa
 export const usePowerStore = create<PowerStore>()(
   persist(
     (set) => ({
-      category: "elements",
       parameters: {},
       resetParameters: (powerId) =>
         set((state) => ({ parameters: { ...state.parameters, [powerId]: defaultPowerParameters(powerId) } })),
       selectedPowerId: null,
       selectPower: (powerId) => set({ selectedPowerId: powerId }),
-      setCategory: (category) => set({ category }),
       setParameter: (powerId, key, value) =>
         set((state) => {
           const current = parametersOf(state.parameters, powerId);

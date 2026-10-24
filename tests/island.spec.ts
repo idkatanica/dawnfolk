@@ -10,7 +10,7 @@ test.describe("the island", () => {
 
   test("shows the time controls and the power dock once the world has risen", async ({ page }) => {
     await expect(page.getByRole("button", { exact: true, name: "Resume" })).toBeVisible();
-    await expect(page.getByRole("tablist", { name: "Kinds of powers" })).toBeVisible();
+    await expect(page.getByRole("toolbar", { name: "Powers" })).toBeVisible();
     await expect(page.getByRole("button", { exact: true, name: "Select" })).toHaveAttribute("aria-pressed", "true");
   });
 
