@@ -46,7 +46,7 @@ function createRig(): Rig {
 
   const tool = { begin: vi.fn(), end: vi.fn(), hover: vi.fn(), isActive: () => true, move: vi.fn(), tap: vi.fn() };
   const picker = new GroundPicker(perspective, () => 0, WORLD_HALF_SIZE);
-  const rig = { camera, canvas, controls: new PointerControls(canvas, camera, picker, tool), tool };
+  const rig = { camera, canvas, controls: new PointerControls(canvas, camera, picker, tool, tool), tool };
 
   rigs.push(rig);
 

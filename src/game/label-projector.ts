@@ -1,6 +1,7 @@
 import { type PerspectiveCamera, Vector3 } from "three/webgpu";
 import { lerp } from "../shared/math.ts";
 import type { HeightField, ViewportSize } from "./input/ground-picker.ts";
+import { normalizedToPixels, projectToNormalized } from "./input/screen-projection.ts";
 
 export interface LabelPlacement {
   readonly left: number;
@@ -25,7 +26,6 @@ export class LabelProjector {
   readonly #camera: PerspectiveCamera;
   readonly #ground: LabelGround;
   readonly #projected = new Vector3();
-  readonly #viewPoint = new Vector3();
   readonly #worldHalfSize: number;
 
   constructor(camera: PerspectiveCamera, ground: LabelGround, worldHalfSize: number) {
@@ -37,22 +37,15 @@ export class LabelProjector {
   place(x: number, z: number, lift: number, viewport: ViewportSize): LabelPlacement | null {
     const y = this.#ground.surfaceAt(x, z) + lift;
 
-    const viewPoint = this.#viewPoint.set(x, y, z).applyMatrix4(this.#camera.matrixWorldInverse);
+    const projected = projectToNormalized(this.#camera, x, y, z, this.#projected);
 
-    if (viewPoint.z >= 0) {
+    if (projected === null || !isOnScreen(projected) || this.#isBehindTerrain(x, y, z)) {
       return null;
     }
 
-    const projected = this.#projected.copy(viewPoint).applyMatrix4(this.#camera.projectionMatrix);
+    const pixels = normalizedToPixels(projected, viewport);
 
-    if (!isOnScreen(projected) || this.#isBehindTerrain(x, y, z)) {
-      return null;
-    }
-
-    return {
-      left: (projected.x * 0.5 + 0.5) * viewport.width,
-      top: (0.5 - projected.y * 0.5) * viewport.height,
-    };
+    return { left: pixels.x, top: pixels.y };
   }
 
   #isBehindTerrain(x: number, y: number, z: number): boolean {

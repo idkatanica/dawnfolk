@@ -4,6 +4,7 @@ import type { Selection } from "../../simulation/commands.ts";
 import type { SimulationFrame } from "../../simulation/frame.ts";
 import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
 import type { HeightField, ScreenPoint, ViewportSize } from "./ground-picker.ts";
+import { normalizedToPixels, projectToNormalized } from "./screen-projection.ts";
 
 const PICK_RADIUS_PIXELS = 26;
 const PERSON_CENTER_HEIGHT = 0.9 * FIGURE_SCALE;
@@ -127,17 +128,14 @@ export class EntityPicker {
     const point = this.#point.set(x, this.#heightAt(x, z) + lift, z);
 
     const reach = this.#camera.position.distanceTo(point);
-    const viewPoint = this.#projected.copy(point).applyMatrix4(this.#camera.matrixWorldInverse);
+    const projected = projectToNormalized(this.#camera, point.x, point.y, point.z, this.#projected);
 
-    if (viewPoint.z >= 0) {
+    if (projected === null) {
       return { distance: Number.POSITIVE_INFINITY, reach };
     }
 
-    const projected = viewPoint.applyMatrix4(this.#camera.projectionMatrix);
+    const pixels = normalizedToPixels(projected, viewport);
 
-    const screenX = ((projected.x + 1) / 2) * viewport.width;
-    const screenY = ((1 - projected.y) / 2) * viewport.height;
-
-    return { distance: Math.hypot(screenX - screen.x, screenY - screen.y), reach };
+    return { distance: Math.hypot(pixels.x - screen.x, pixels.y - screen.y), reach };
   }
 }

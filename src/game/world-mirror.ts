@@ -41,7 +41,6 @@ export class MirroredVegetation implements VegetationChannels {
   seed: Float32Array;
   species: Uint8Array;
   state: Uint8Array;
-  version = 0;
   x: Float32Array;
   z: Float32Array;
   readonly #changedIndices = new Set<number>();
@@ -78,7 +77,6 @@ export class MirroredVegetation implements VegetationChannels {
     }
 
     this.count = Math.max(this.count, highestIndex + 1);
-    this.version += 1;
   }
 
   takeChangedIndices(): number[] {

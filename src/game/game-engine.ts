@@ -122,16 +122,14 @@ export class GameEngine implements EngineHandle {
 
     const groundPicker = new GroundPicker(perspective, heightAt, mirror.grid.halfSize);
 
-    this.powers = new PowerTool(
-      (command) => this.session.send(command),
-      {
-        hide: () => this.#world.cursor.hide(),
-        show: (point, radius, isPressed) => this.#showCursor(point, radius, isPressed),
-      },
-      (point, screen) => this.#selectAt(point, screen)
-    );
+    this.powers = new PowerTool((command) => this.session.send(command), {
+      hide: () => this.#world.cursor.hide(),
+      show: (point, radius, isPressed) => this.#showCursor(point, radius, isPressed),
+    });
 
-    this.#pointer = new PointerControls(parts.canvas, this.camera, groundPicker, this.powers);
+    this.#pointer = new PointerControls(parts.canvas, this.camera, groundPicker, this.powers, {
+      tap: (point, screen) => this.#selectAt(point, screen),
+    });
     this.#keyboard = new KeyboardControls(window, this.camera);
     this.#resizeObserver = new ResizeObserver(() => this.#resize());
     this.#resizeObserver.observe(parts.canvas);

@@ -1,8 +1,7 @@
 import type { Vector3 } from "three/webgpu";
 import { type ParameterValueMap, POWERS, type PowerId } from "../../content/powers.ts";
 import type { SimulationCommand } from "../../simulation/commands.ts";
-import type { ScreenPoint } from "../input/ground-picker.ts";
-import type { TapHandler, ToolGestures } from "../input/pointer-controls.ts";
+import type { ToolGestures } from "../input/pointer-controls.ts";
 
 export interface PowerSelection {
   readonly parameters: ParameterValueMap;
@@ -15,8 +14,6 @@ interface BrushCursor {
 }
 
 type CommandSink = (command: SimulationCommand) => void;
-
-type TapSelector = (point: Vector3 | null, screen: ScreenPoint) => void;
 
 type StrokeState = "idle" | "stroking";
 
@@ -52,17 +49,15 @@ function cursorRadius(selection: PowerSelection): number {
   return Math.max(MARKER_RADIUS, scatter);
 }
 
-export class PowerTool implements ToolGestures, TapHandler {
+export class PowerTool implements ToolGestures {
   readonly #cursor: BrushCursor;
   readonly #send: CommandSink;
-  readonly #selectAt: TapSelector;
   #selection: PowerSelection | null = null;
   #stroke: StrokeState = "idle";
 
-  constructor(send: CommandSink, cursor: BrushCursor, selectAt: TapSelector) {
+  constructor(send: CommandSink, cursor: BrushCursor) {
     this.#send = send;
     this.#cursor = cursor;
-    this.#selectAt = selectAt;
   }
 
   get selection(): PowerSelection | null {
@@ -136,9 +131,5 @@ export class PowerTool implements ToolGestures, TapHandler {
     }
 
     this.#cursor.show(point, cursorRadius(selection), false);
-  }
-
-  tap(point: Vector3 | null, screen: ScreenPoint): void {
-    this.#selectAt(point, screen);
   }
 }

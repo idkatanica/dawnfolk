@@ -246,7 +246,6 @@ describe("mirrored vegetation", () => {
 
     expect(vegetation.count).toBe(10);
     expect(vegetation.height[0]).toBe(3);
-    expect(vegetation.version).toBe(1);
 
     for (const channel of VEGETATION_CHANNELS) {
       expect(vegetation[channel][9]).toBe(patch[channel][0]);
