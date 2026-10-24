@@ -1,6 +1,5 @@
 import { BUILDINGS, type BuildingKind, isEnclosure } from "../../content/buildings.ts";
 import { DEPOSITS, type DepositKind, MINED_DEPOSIT_KINDS } from "../../content/deposits.ts";
-import { FULL_TURN } from "../../shared/math.ts";
 import type { Deposit } from "../../world/deposits.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import type { WorldState } from "../world/world-state.ts";
@@ -14,7 +13,6 @@ export interface BuildingPlan {
   depositId: number;
   extent: number;
   farthest: number;
-  gateAngle: number;
   kind: BuildingKind;
   nearest: number;
   origin: Waypoint;
@@ -42,7 +40,6 @@ function campPlan(tribe: Tribe, kind: BuildingKind, nearest: number, farthest: n
     depositId: NO_DEPOSIT,
     extent: 0,
     farthest,
-    gateAngle: 0,
     kind,
     nearest,
     origin: campPoint(tribe),
@@ -263,18 +260,6 @@ function campReach(tribe: Tribe, context: SocietyContext): number {
   return reach;
 }
 
-function gateAngle(tribe: Tribe, context: SocietyContext): number {
-  const [field] = tribe.fields;
-
-  if (field === undefined) {
-    return context.random.next() * FULL_TURN;
-  }
-
-  const { grid } = context.world;
-
-  return Math.atan2(grid.cellCenterZ(field.cell) - tribe.campZ, grid.cellCenterX(field.cell) - tribe.campX);
-}
-
 function enclosurePlan(tribe: Tribe, context: SocietyContext): BuildingPlan | null {
   const best = bestEnclosure(tribe);
 
@@ -301,7 +286,6 @@ function enclosurePlan(tribe: Tribe, context: SocietyContext): BuildingPlan | nu
   return {
     ...campPlan(tribe, best, 0, 0),
     extent,
-    gateAngle: gateAngle(tribe, context),
     replacesId: existing === null ? null : existing.id,
   };
 }

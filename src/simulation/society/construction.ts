@@ -197,9 +197,21 @@ function downhillRotation(spot: Waypoint, context: SocietyContext): number {
   return Math.atan2(-slopeX, -slopeZ);
 }
 
+function gateAngle(tribe: Tribe, context: SocietyContext): number {
+  const [field] = tribe.fields;
+
+  if (field === undefined) {
+    return context.random.next() * FULL_TURN;
+  }
+
+  const { grid } = context.world;
+
+  return Math.atan2(grid.cellCenterZ(field.cell) - tribe.campZ, grid.cellCenterX(field.cell) - tribe.campX);
+}
+
 function siteRotation(tribe: Tribe, plan: BuildingPlan, spot: Waypoint, context: SocietyContext): number {
   if (isEnclosure(plan.kind)) {
-    return plan.gateAngle;
+    return gateAngle(tribe, context);
   }
 
   if (BUILDINGS[plan.kind].role === "mine") {
