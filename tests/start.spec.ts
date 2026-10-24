@@ -14,6 +14,6 @@ test.describe("the start screen", () => {
     await expect(page).toHaveURL(SQUARE_WORLD_ADDRESS);
     await expect(page).toHaveTitle("Old Ford · Dawnfolk");
     await expect(page.getByRole("status")).toBeHidden({ timeout: WORLD_RISING_TIMEOUT });
-    await expect(page.getByRole("tablist", { name: "Kinds of powers" })).toBeVisible();
+    await expect(page.getByRole("toolbar", { name: "Powers" })).toBeVisible();
   });
 });

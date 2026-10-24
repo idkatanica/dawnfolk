@@ -123,6 +123,10 @@ body {
   );
 }
 
+@utility scrollbar-none {
+  scrollbar-width: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

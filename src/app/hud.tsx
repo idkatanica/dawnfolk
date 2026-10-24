@@ -30,13 +30,13 @@ function WideHud() {
       </div>
 
       <div className="flex items-end gap-3">
-        <div className="flex flex-1">
+        <div className="flex min-w-fit flex-1 basis-0">
           <MinimapIsland />
         </div>
 
-        <PowerDock />
+        <PowerDock className="min-w-0" />
 
-        <div aria-hidden="true" className="flex-1" />
+        <div aria-hidden="true" className="flex-1 basis-0" />
       </div>
     </div>
   );
