@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { landEverywhere } from "../world/coast.ts";
+import { landEverywhere } from "../world/testing/terrain-fixtures.ts";
 import { hasWater } from "../world/water.ts";
 import { NEIGHBOR_OFFSETS, WorldGrid } from "../world/world-grid.ts";
 import { computeHydrology, DEFAULT_HYDROLOGY } from "./hydrology.ts";

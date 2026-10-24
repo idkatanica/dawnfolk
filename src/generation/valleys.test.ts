@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { landEverywhere } from "../world/coast.ts";
+import { landEverywhere } from "../world/testing/terrain-fixtures.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 import { analyzeDrainage } from "./hydrology.ts";
 import { carveValleys } from "./valleys.ts";

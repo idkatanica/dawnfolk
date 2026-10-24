@@ -7,7 +7,7 @@ import type { GeneratedWorld } from "../../generation/world-generator.ts";
 import type { Crossing, Ford } from "../../world/crossings.ts";
 import type { Deposit } from "../../world/deposits.ts";
 import type { Monument } from "../../world/monuments.ts";
-import { createTerrainData } from "../../world/terrain-data.ts";
+import { createTerrainData } from "../../world/testing/terrain-fixtures.ts";
 import { VegetationStore } from "../../world/vegetation-store.ts";
 import { NO_WATER } from "../../world/water.ts";
 import { type GridDimensions, WorldGrid } from "../../world/world-grid.ts";

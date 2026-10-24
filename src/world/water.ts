@@ -42,7 +42,7 @@ export interface Waterfall {
 
 export const SPRING_KINDS = ["pond", "cave"] as const;
 
-export type SpringKind = (typeof SPRING_KINDS)[number];
+type SpringKind = (typeof SPRING_KINDS)[number];
 
 export interface Spring {
   readonly cells: readonly number[];
