@@ -3,6 +3,7 @@ import { MousePointer2 } from "lucide-react";
 import { POWER_CATEGORIES, POWERS, type PowerCategory, type PowerId, powersInCategory } from "../../content/powers.ts";
 import { cn } from "../../design/cn.ts";
 import { Island } from "../../design/island.tsx";
+import { SEGMENT, SEGMENT_TRACK } from "../../design/segmented.ts";
 import { WithTooltip } from "../../design/tooltip.tsx";
 import { POWER_ICONS } from "./power-icons.tsx";
 import { usePowerStore } from "./power-store.ts";
@@ -41,7 +42,7 @@ function PowerTile({ powerId }: { readonly powerId: PowerId }) {
       >
         <Icon aria-hidden="true" size={22} strokeWidth={1.9} />
 
-        <span className="max-w-full truncate px-1 font-medium text-2xs leading-none">{power.name}</span>
+        <span className="max-w-full truncate px-1 font-medium text-2xs leading-none tracking-tight">{power.name}</span>
       </button>
     </WithTooltip>
   );
@@ -65,7 +66,7 @@ function SelectTile() {
     <WithTooltip content="Tap people, animals, buildings or land to see their details.">
       <button
         aria-pressed={isSelecting}
-        className={cn(TILE_CLASS, { "bg-ink text-white hover:bg-ink hover:text-white": isSelecting })}
+        className={cn(TILE_CLASS, { "bg-white text-ink shadow-segment hover:bg-white": isSelecting })}
         onClick={clearPower}
         type="button"
       >
@@ -79,10 +80,7 @@ function SelectTile() {
 
 function CategoryTab({ category }: { readonly category: (typeof DOCK_CATEGORIES)[number] }) {
   return (
-    <Tabs.Tab
-      className="h-7 rounded-full px-3 font-semibold text-ink-muted text-xs uppercase tracking-wider outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink"
-      value={category.id}
-    >
+    <Tabs.Tab className={cn(SEGMENT, "px-3.5")} value={category.id}>
       {category.name}
     </Tabs.Tab>
   );
@@ -115,7 +113,7 @@ export function PowerDock() {
   return (
     <Island className="max-w-full">
       <Tabs.Root className="flex flex-col gap-2 p-2" onValueChange={setCategory} value={category}>
-        <Tabs.List aria-label="Kinds of powers" className="flex justify-center gap-1">
+        <Tabs.List aria-label="Kinds of powers" className={cn(SEGMENT_TRACK, "self-center")}>
           {DOCK_CATEGORIES.map((entry) => (
             <CategoryTab category={entry} key={entry.id} />
           ))}

@@ -5,6 +5,9 @@ import { X } from "lucide-react";
 import type { ComponentType } from "react";
 import { useLaunchStore } from "../../app/launch-store.ts";
 import { IconButton } from "../../design/buttons.tsx";
+import { cn } from "../../design/cn.ts";
+import { Island } from "../../design/island.tsx";
+import { SEGMENT, SEGMENT_TRACK } from "../../design/segmented.ts";
 import { type SettingsTab, useInterfaceStore } from "../interface/interface-store.ts";
 import { GraphicsSection } from "./graphics-section.tsx";
 import { TimeSection } from "./time-section.tsx";
@@ -30,10 +33,7 @@ function isSettingsTab(value: unknown): value is SettingsTab {
 
 function SectionTab({ section }: { readonly section: SettingsSection }) {
   return (
-    <Tabs.Tab
-      className="h-8 flex-1 rounded-full px-3 font-semibold text-ink-soft text-sm outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink"
-      value={section.value}
-    >
+    <Tabs.Tab className={cn(SEGMENT, "h-8 flex-1 text-sm")} value={section.value}>
       {section.label}
     </Tabs.Tab>
   );
@@ -71,45 +71,55 @@ export function SettingsDialog() {
   return (
     <Dialog.Root onOpenChange={setOpen} open={isOpen}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-40 bg-ink/18 transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0" />
+        <Dialog.Backdrop className="fixed inset-0 z-40 bg-ink/12 transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0" />
 
-        <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-dialog -translate-x-1/2 -translate-y-1/2 outline-none transition-[scale,opacity] duration-200 ease-glide data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
-          <div className="rounded-island bg-white/55 ring-1 ring-white/40 backdrop-blur-xl backdrop-saturate-150">
-            <Tabs.Root className="flex max-h-dialog flex-col gap-3 p-4" onValueChange={changeTab} value={tab}>
-              <header className="flex items-center justify-between gap-3">
-                <div>
-                  <Dialog.Title className="font-semibold text-ink text-xl">Settings</Dialog.Title>
+        <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center px-3 pt-(--dialog-inset-top) pb-(--dialog-inset-bottom)">
+          <Dialog.Popup className="w-dialog outline-none transition-[scale,opacity] duration-200 ease-glide data-ending-style:scale-97 data-starting-style:scale-97 data-ending-style:opacity-0 data-starting-style:opacity-0">
+            <Island className="max-h-dialog" frost="dense">
+              <Tabs.Root className="flex max-h-[inherit] flex-col" onValueChange={changeTab} value={tab}>
+                <header className="flex items-start justify-between gap-4 px-5 pt-5 pb-4 sm:px-6">
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <Dialog.Title className="font-semibold text-ink text-lg leading-tight">Settings</Dialog.Title>
 
-                  <Dialog.Description className="text-ink-muted text-sm">
-                    Shape how the world of {worldName} behaves.
-                  </Dialog.Description>
+                    <Dialog.Description className="text-ink-soft text-sm">
+                      Shape how the world of {worldName} behaves.
+                    </Dialog.Description>
+                  </div>
+
+                  <Dialog.Close
+                    render={
+                      <IconButton
+                        className="-mt-1.5 -mr-2 pointer-coarse:size-10 size-9"
+                        icon={<X aria-hidden="true" size={18} />}
+                        label="Close settings"
+                      />
+                    }
+                  />
+                </header>
+
+                <div className="px-5 pb-3 sm:px-6">
+                  <Tabs.List aria-label="Settings sections" className={SEGMENT_TRACK}>
+                    {SECTIONS.map((section) => (
+                      <SectionTab key={section.value} section={section} />
+                    ))}
+                  </Tabs.List>
                 </div>
 
-                <Dialog.Close
-                  render={<IconButton icon={<X aria-hidden="true" size={18} />} label="Close settings" />}
-                />
-              </header>
+                <ScrollArea.Root className="relative flex min-h-0 flex-auto flex-col">
+                  <ScrollArea.Viewport className="scroll-fade min-h-0 flex-auto overscroll-contain px-5 pt-2 pb-5 outline-none sm:px-6">
+                    {SECTIONS.map((section) => (
+                      <SectionPanel key={section.value} section={section} />
+                    ))}
+                  </ScrollArea.Viewport>
 
-              <Tabs.List aria-label="Settings sections" className="flex gap-1 rounded-full bg-ink/8 p-1">
-                {SECTIONS.map((section) => (
-                  <SectionTab key={section.value} section={section} />
-                ))}
-              </Tabs.List>
-
-              <ScrollArea.Root className="relative min-h-0 flex-1">
-                <ScrollArea.Viewport className="h-full max-h-dialog-body overscroll-contain pr-2.5 outline-none">
-                  {SECTIONS.map((section) => (
-                    <SectionPanel key={section.value} section={section} />
-                  ))}
-                </ScrollArea.Viewport>
-
-                <ScrollArea.Scrollbar className="w-1.5 rounded-full py-1 opacity-0 transition-opacity data-hovering:opacity-100 data-scrolling:opacity-100">
-                  <ScrollArea.Thumb className="w-full rounded-full bg-ink/25" />
-                </ScrollArea.Scrollbar>
-              </ScrollArea.Root>
-            </Tabs.Root>
-          </div>
-        </Dialog.Popup>
+                  <ScrollArea.Scrollbar className="mr-1 mb-4 w-1 rounded-full opacity-0 transition-opacity data-hovering:opacity-100 data-scrolling:opacity-100">
+                    <ScrollArea.Thumb className="w-full rounded-full bg-ink/25" />
+                  </ScrollArea.Scrollbar>
+                </ScrollArea.Root>
+              </Tabs.Root>
+            </Island>
+          </Dialog.Popup>
+        </Dialog.Viewport>
       </Dialog.Portal>
     </Dialog.Root>
   );

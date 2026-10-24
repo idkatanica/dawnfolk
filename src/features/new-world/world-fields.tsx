@@ -12,7 +12,7 @@ const SHAPE_OPTIONS: readonly ChoiceOption[] = [
 ];
 
 const FIELD =
-  "flex min-w-0 flex-1 items-center gap-2 rounded-full bg-white/70 px-4 text-sm focus-within:ring-2 focus-within:ring-dawn";
+  "flex min-w-0 flex-1 items-center gap-2 rounded-full bg-white/60 px-4 text-sm ring-1 ring-ink/8 ring-inset focus-within:ring-2 focus-within:ring-dawn";
 
 interface RolledFieldProps {
   readonly className?: string | undefined;

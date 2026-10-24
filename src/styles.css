@@ -9,13 +9,12 @@
   --radius-island: 22px;
   --radius-sheet: 1.75rem;
 
-  --container-dialog: min(40rem, calc(100vw - 1.5rem));
+  --container-dialog: min(38rem, calc(100vw - 1.5rem));
   --container-journal: min(21rem, calc(100vw - 2rem));
   --container-notice: min(26rem, calc(100vw - 2rem));
 
   --max-height-details: 38dvh;
-  --max-height-dialog: min(44rem, calc(100dvh - 1.5rem));
-  --max-height-dialog-body: min(34rem, calc(100dvh - 12rem));
+  --max-height-dialog: min(46rem, calc(100dvh - var(--dialog-inset-top) - var(--dialog-inset-bottom)));
   --max-height-journal: min(28rem, 55vh);
 
   --color-pine: #193a32;
@@ -35,6 +34,10 @@
   --color-ember-soft: rgb(207 68 54 / 0.14);
   --color-lake: #3577b8;
   --color-gold: #c9952c;
+
+  --shadow-segment: 0 1px 2px rgb(29 39 51 / 0.1), 0 0 0 0.5px rgb(29 39 51 / 0.08);
+
+  --shadow-thumb: 0 1px 3px rgb(29 39 51 / 0.28), 0 0 0 0.5px rgb(29 39 51 / 0.16);
 
   --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
 
@@ -60,7 +63,17 @@
 }
 
 :root {
+  --dialog-inset-top: 0.75rem;
+  --dialog-inset-bottom: 0.75rem;
+
   color-scheme: light;
+}
+
+@media (min-height: 34rem) {
+  :root {
+    --dialog-inset-top: 5.25rem;
+    --dialog-inset-bottom: 9.5rem;
+  }
 }
 
 body {
@@ -84,6 +97,18 @@ body {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+}
+
+@utility scroll-fade {
+  --fade-size: 1.5rem;
+
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black min(var(--fade-size), var(--scroll-area-overflow-y-start, 0px)),
+    black calc(100% - min(var(--fade-size), var(--scroll-area-overflow-y-end, 0px))),
+    transparent 100%
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {

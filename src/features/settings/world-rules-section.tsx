@@ -6,6 +6,7 @@ import { TextButton } from "../../design/buttons.tsx";
 import { useHeldDraft } from "../../design/use-held-draft.ts";
 import { ParameterControl } from "../parameters/parameter-control.tsx";
 import { useWorldStore } from "../world/world-store.ts";
+import { FIELD_GRID, GROUP_CLASS, GroupHeading } from "./settings-group.tsx";
 
 const RULE_GROUPS = describeParameterGroups(worldRulesSchema);
 
@@ -81,16 +82,12 @@ function RuleGroup({
   readonly rules: WorldRules;
 }) {
   return (
-    <fieldset className="flex flex-col gap-3 rounded-2xl bg-veil p-4">
+    <fieldset className={GROUP_CLASS}>
       <legend className="sr-only">{group.metadata.label}</legend>
 
-      <div className="flex flex-col gap-0.5">
-        <h3 className="font-semibold text-ink text-sm">{group.metadata.label}</h3>
+      <GroupHeading description={group.metadata.description} title={group.metadata.label} />
 
-        <p className="text-ink-muted text-xs">{group.metadata.description}</p>
-      </div>
-
-      <div className="grid gap-x-5 gap-y-3 sm:grid-cols-2">
+      <div className={FIELD_GRID}>
         {group.fields.map((field) => (
           <RuleControl field={field} group={group} key={field.key} onChange={onChange} rules={rules} />
         ))}
@@ -107,18 +104,20 @@ export function WorldRulesSection() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-col">
+      <div className="flex items-center justify-between gap-3 pb-4">
         <p className="text-ink-soft text-sm">Tune how nature and people behave on this island.</p>
 
-        <TextButton onClick={resetRules} tone="quiet">
+        <TextButton className="-mr-3 h-8 px-3" onClick={resetRules} tone="quiet">
           Reset all
         </TextButton>
       </div>
 
-      {RULE_GROUPS.map((group) => (
-        <RuleGroup group={group} key={group.key} onChange={changeRule} rules={rules} />
-      ))}
+      <div className="flex flex-col border-line border-t pt-5">
+        {RULE_GROUPS.map((group) => (
+          <RuleGroup group={group} key={group.key} onChange={changeRule} rules={rules} />
+        ))}
+      </div>
     </div>
   );
 }

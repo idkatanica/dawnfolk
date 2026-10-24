@@ -4,6 +4,7 @@ import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { Check, ChevronsUpDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "./cn.ts";
+import { SEGMENT, SEGMENT_TRACK } from "./segmented.ts";
 
 export interface ChoiceOption {
   readonly icon?: ReactNode;
@@ -24,10 +25,7 @@ const SEGMENTED_LIMIT = 3;
 
 function SegmentOption({ option }: { readonly option: ChoiceOption }) {
   return (
-    <Toggle
-      className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full px-3 font-medium text-ink-soft text-xs outline-none transition-colors duration-150 hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-pressed:bg-white data-pressed:text-ink"
-      value={option.value}
-    >
+    <Toggle className={cn(SEGMENT, "h-8 flex-1")} value={option.value}>
       {option.icon}
 
       {option.label}
@@ -57,12 +55,7 @@ function SegmentedChoice({ label, onChange, options, value }: ChoiceFieldProps) 
   const handleChange = useSegmentChange(onChange);
 
   return (
-    <ToggleGroup
-      aria-label={label}
-      className="flex gap-1 rounded-full bg-ink/8 p-1"
-      onValueChange={handleChange}
-      value={[value]}
-    >
+    <ToggleGroup aria-label={label} className={SEGMENT_TRACK} onValueChange={handleChange} value={[value]}>
       {options.map((option) => (
         <SegmentOption key={option.value} option={option} />
       ))}
@@ -92,7 +85,7 @@ function ListChoice({ label, onChange, options, value }: ChoiceFieldProps) {
     <Select.Root items={options} onValueChange={handleChange} value={value}>
       <Select.Trigger
         aria-label={label}
-        className="flex h-9 w-full items-center justify-between gap-3 rounded-full bg-veil px-4 text-ink text-sm outline-none transition-colors hover:bg-veil-strong focus-visible:ring-2 focus-visible:ring-dawn"
+        className="flex h-9 w-full items-center justify-between gap-3 rounded-full bg-white/60 px-4 text-ink text-sm outline-none ring-1 ring-ink/8 ring-inset transition-colors hover:bg-white/80 focus-visible:ring-2 focus-visible:ring-dawn"
       >
         <Select.Value />
 
@@ -128,7 +121,7 @@ export function ChoiceField(props: ChoiceFieldProps) {
   const { className, description, label } = props;
 
   return (
-    <div className={cn("flex flex-col gap-1.5", className)} title={description}>
+    <div className={cn("flex flex-col gap-2", className)} title={description}>
       <span className="font-medium text-ink text-sm">{label}</span>
 
       <ChoiceControl {...props} />
