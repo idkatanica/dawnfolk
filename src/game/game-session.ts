@@ -3,12 +3,12 @@ import type { ChronicleEntry } from "../simulation/chronicle.ts";
 import type { SimulationCommand } from "../simulation/commands.ts";
 import type { SimulationEffect } from "../simulation/effects.ts";
 import type { SimulationFrame } from "../simulation/frame.ts";
+import { TICK_SECONDS } from "../simulation/tick.ts";
 import type { SimulationConnection } from "./simulation-connection.ts";
 import { WorldMirror } from "./world-mirror.ts";
 
 export const CHRONICLE_HISTORY_LIMIT = 300;
 
-const TICK_SECONDS = 0.1;
 const LONGEST_QUIET_SECONDS = 1;
 
 export type SessionStatus = { kind: "closed" } | { error: Error; kind: "failed" } | { kind: "running" };

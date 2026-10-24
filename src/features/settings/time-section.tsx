@@ -4,7 +4,13 @@ import { ChoiceField } from "../../design/choice-field.tsx";
 import { formatClock, formatParameterValue } from "../../design/format.ts";
 import { RangeField } from "../../design/range-field.tsx";
 import { ToggleField } from "../../design/toggle-field.tsx";
-import { type CalendarView, MAXIMUM_DAY_SECONDS, MINIMUM_DAY_SECONDS } from "../../simulation/nature/calendar.ts";
+import {
+  type CalendarView,
+  MAXIMUM_DAY_SECONDS,
+  MAXIMUM_DAYS_PER_SEASON,
+  MINIMUM_DAY_SECONDS,
+  MINIMUM_DAYS_PER_SEASON,
+} from "../../simulation/nature/calendar.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { FIELD_GRID, SettingsGroup } from "./settings-group.tsx";
 
@@ -82,8 +88,8 @@ function TimeControls({ calendar }: { readonly calendar: CalendarView }) {
 
           <RangeField
             label="Season length"
-            maximum={30}
-            minimum={1}
+            maximum={MAXIMUM_DAYS_PER_SEASON}
+            minimum={MINIMUM_DAYS_PER_SEASON}
             onChange={changeSeasonLength}
             step={1}
             value={calendar.daysPerSeason}

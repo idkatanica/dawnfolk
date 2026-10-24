@@ -1,9 +1,20 @@
 import { z } from "zod";
 import { isPowerId, type PowerId } from "../content/powers.ts";
-import { WEATHER_KINDS } from "../content/weather.ts";
-import { MAXIMUM_DAY_SECONDS, MINIMUM_DAY_SECONDS } from "./nature/calendar.ts";
+import {
+  MAXIMUM_TEMPERATURE_OFFSET,
+  MAXIMUM_WIND_SPEED,
+  MINIMUM_TEMPERATURE_OFFSET,
+  WEATHER_KINDS,
+} from "../content/weather.ts";
+import {
+  MAXIMUM_DAY_SECONDS,
+  MAXIMUM_DAYS_PER_SEASON,
+  MINIMUM_DAY_SECONDS,
+  MINIMUM_DAYS_PER_SEASON,
+} from "./nature/calendar.ts";
+import { SIMULATION_SPEEDS } from "./tick.ts";
 
-const MAXIMUM_SPEED = 16;
+const MAXIMUM_SPEED = Math.max(...SIMULATION_SPEEDS);
 
 const coordinate = z.number();
 
@@ -47,12 +58,18 @@ const commandSchema = z.discriminatedUnion("type", [
   z.object({ speed: z.number().min(0).max(MAXIMUM_SPEED), type: z.literal("setSpeed") }),
   z.object({ isPaused: z.boolean(), type: z.literal("setPaused") }),
   z.object({ type: z.literal("setWeather"), weather: z.enum([...WEATHER_KINDS, "automatic"]) }),
-  z.object({ direction: z.number(), speed: z.number().min(0).max(90), type: z.literal("setWind") }),
-  z.object({ offset: z.number().min(-30).max(30), type: z.literal("setTemperatureOffset") }),
+  z.object({ direction: z.number(), speed: z.number().min(0).max(MAXIMUM_WIND_SPEED), type: z.literal("setWind") }),
+  z.object({
+    offset: z.number().min(MINIMUM_TEMPERATURE_OFFSET).max(MAXIMUM_TEMPERATURE_OFFSET),
+    type: z.literal("setTemperatureOffset"),
+  }),
   z.object({ hours: z.number().min(0).max(24), type: z.literal("setHours") }),
   z.object({ season: z.number().min(0).max(4), type: z.literal("setSeason") }),
   z.object({ seconds: z.number().min(MINIMUM_DAY_SECONDS).max(MAXIMUM_DAY_SECONDS), type: z.literal("setDaySeconds") }),
-  z.object({ days: z.number().int().min(1).max(30), type: z.literal("setDaysPerSeason") }),
+  z.object({
+    days: z.number().int().min(MINIMUM_DAYS_PER_SEASON).max(MAXIMUM_DAYS_PER_SEASON),
+    type: z.literal("setDaysPerSeason"),
+  }),
   z.object({ isFrozen: z.boolean(), type: z.literal("setTimeFrozen") }),
   z.object({ rules: z.unknown(), type: z.literal("setWorldRules") }),
   z.object({ type: z.literal("setViewFocus"), x: coordinate, z: coordinate }),

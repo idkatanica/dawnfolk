@@ -16,10 +16,10 @@ import { RivalrySystem } from "../society/rivalry/rivalry-system.ts";
 import { SocietySystem } from "../society/society.ts";
 import type { PersonTick, SocietyContext } from "../society/society-context.ts";
 import type { Tribe } from "../society/tribe.ts";
+import { TICK_SECONDS } from "../tick.ts";
 import { WorldState } from "../world/world-state.ts";
 import { createVegetatedWorld, type TestWorldOptions } from "./test-world.ts";
 
-const TICK_SECONDS = 0.1;
 const SEED = 3;
 
 interface SocietyHarnessOptions {

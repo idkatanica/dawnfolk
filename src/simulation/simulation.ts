@@ -28,11 +28,10 @@ import { type BuildingIncidentKind, BuildingSystem } from "./society/buildings.t
 import { RivalrySystem } from "./society/rivalry/rivalry-system.ts";
 import { SocietySystem } from "./society/society.ts";
 import type { Tribe } from "./society/tribe.ts";
+import { TICK_SECONDS } from "./tick.ts";
 import { drowningText, drownMonuments } from "./world/monument-damage.ts";
 import { WaterRecomputation } from "./world/water-recomputation.ts";
 import { WorldState } from "./world/world-state.ts";
-
-export const TICK_SECONDS = 0.1;
 
 const MAXIMUM_REAL_SECONDS = 0.25;
 const MAXIMUM_TICKS_PER_ADVANCE = 40;

@@ -1,12 +1,11 @@
 import { SEASON_COUNT } from "../../content/seasons.ts";
-import { WEATHER, WEATHER_KINDS, type WeatherKind } from "../../content/weather.ts";
+import { MAXIMUM_WIND_SPEED, WEATHER, WEATHER_KINDS, type WeatherKind } from "../../content/weather.ts";
 import type { WorldRules } from "../../content/world-rules.ts";
 import { clamp, lerp } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 
 const EASING_PER_SECOND = 0.12;
 const SETTLED_DIFFERENCE = 0.002;
-const MAXIMUM_WIND_SPEED = 90;
 const STORM_LIGHTNING_THRESHOLD = 0.5;
 
 interface WeatherState {
