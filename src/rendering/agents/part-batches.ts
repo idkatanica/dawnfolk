@@ -1,9 +1,11 @@
 import { Group, type InstancedBufferGeometry, type Material, Mesh } from "three/webgpu";
 import { type MeshData, triangleCount } from "../../models/mesh/mesh-data.ts";
-import { geometryFromMeshData, InstanceAttribute } from "../instancing.ts";
+import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
 import { SHADOW_ONLY_LAYER } from "../shadow-only-layer.ts";
 
 const SKINNED_CHANNELS = ["boneA", "boneB", "boneWeight", "shade", "slot"] as const;
+
+const ROW_FIELDS = [{ name: "agentRow", size: 1 }];
 
 interface PartLevel {
   readonly parts: readonly MeshData[];
@@ -14,7 +16,7 @@ interface PartBatch {
   count: number;
   readonly geometry: InstancedBufferGeometry;
   readonly mesh: Mesh;
-  readonly rows: InstanceAttribute;
+  readonly rows: InterleavedInstances;
 }
 
 type BatchRow = readonly (PartBatch | null)[];
@@ -93,7 +95,7 @@ export class PartBatches {
 
     const geometry = geometryFromMeshData(part, SKINNED_CHANNELS);
 
-    const rows = new InstanceAttribute(geometry, "agentRow", 1, 32);
+    const rows = new InterleavedInstances(geometry, ROW_FIELDS, 32);
     const mesh = new Mesh(geometry, material);
 
     mesh.frustumCulled = false;

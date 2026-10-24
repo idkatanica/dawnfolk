@@ -2,7 +2,6 @@ import {
   type BufferGeometry,
   DynamicDrawUsage,
   Float32BufferAttribute,
-  InstancedBufferAttribute,
   InstancedBufferGeometry,
   InstancedInterleavedBuffer,
   InterleavedBufferAttribute,
@@ -54,63 +53,6 @@ export function geometryFromMeshData(mesh: MeshData, channels: readonly VertexCh
   geometry.instanceCount = 0;
 
   return geometry;
-}
-
-export class InstanceAttribute {
-  readonly itemSize: number;
-  readonly #geometry: InstancedBufferGeometry;
-  readonly #name: string;
-  #attribute: InstancedBufferAttribute;
-
-  constructor(geometry: InstancedBufferGeometry, name: string, itemSize: number, capacity: number) {
-    this.itemSize = itemSize;
-    this.#geometry = geometry;
-    this.#name = name;
-    this.#attribute = this.#create(Math.max(1, capacity));
-  }
-
-  get array(): Float32Array {
-    const { array } = this.#attribute;
-
-    if (array instanceof Float32Array) {
-      return array;
-    }
-
-    throw new TypeError(`Instance attribute ${this.#name} must hold 32-bit floats`);
-  }
-
-  get capacity(): number {
-    return this.#attribute.count;
-  }
-
-  ensureCapacity(count: number): void {
-    if (count <= this.capacity) {
-      return;
-    }
-
-    const previous = this.array;
-    const next = this.#create(Math.ceil(count * GROWTH_FACTOR));
-
-    next.array.set(previous);
-  }
-
-  markUpdated(count: number): void {
-    const attribute = this.#attribute;
-
-    attribute.clearUpdateRanges();
-    attribute.addUpdateRange(0, Math.max(1, count) * this.itemSize);
-    attribute.needsUpdate = true;
-  }
-
-  #create(capacity: number): InstancedBufferAttribute {
-    const attribute = new InstancedBufferAttribute(new Float32Array(capacity * this.itemSize), this.itemSize);
-
-    attribute.setUsage(DynamicDrawUsage);
-    this.#geometry.setAttribute(this.#name, attribute);
-    this.#attribute = attribute;
-
-    return attribute;
-  }
 }
 
 export class InterleavedInstances {
