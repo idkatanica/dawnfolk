@@ -13,5 +13,66 @@
     "formatter": {
       "lineWidth": 120
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/game/**", "src/models/**", "src/rendering/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["react", "react/**", "react-dom", "react-dom/**", "zustand", "zustand/**"],
+                    "message": "The engine never imports React or the UI stores."
+                  },
+                  {
+                    "group": ["**/app/**", "**/design/**", "**/features/**"],
+                    "message": "The engine never imports the interface."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/content/**",
+        "src/generation/**",
+        "src/shared/**",
+        "src/simulation/**",
+        "src/workers/**",
+        "src/world/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["react", "react/**", "react-dom", "react-dom/**", "zustand", "zustand/**"],
+                    "message": "The engine never imports React or the UI stores."
+                  },
+                  {
+                    "group": ["**/app/**", "**/design/**", "**/features/**"],
+                    "message": "The engine never imports the interface."
+                  },
+                  {
+                    "group": ["three", "three/**", "**/game/**", "**/models/**", "**/rendering/**"],
+                    "message": "The simulation and generation never import rendering or the main thread."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
