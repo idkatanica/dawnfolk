@@ -123,7 +123,7 @@ function shelterPlan(tribe: Tribe, context: SocietyContext): BuildingPlan | null
     return null;
   }
 
-  if (housingCapacity(tribe, context) >= tribe.memberIds.length + SPARE_BEDS) {
+  if (housingCapacity(tribe, context) >= tribe.memberCount + SPARE_BEDS) {
     return null;
   }
 

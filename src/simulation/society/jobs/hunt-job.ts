@@ -37,7 +37,7 @@ function strikingRange(weapon: Weapon): number {
 export function findGame(tick: PersonTick): HuntJob | null {
   const { tribe } = tick;
 
-  const hunters = tribe.memberIds.length;
+  const hunters = tribe.memberCount;
   const weapon = armForHunt(tick.person, tribe);
 
   if (weapon === null) {

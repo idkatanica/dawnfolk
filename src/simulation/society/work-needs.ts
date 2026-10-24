@@ -17,7 +17,7 @@ export function foodNeed(tick: PersonTick): number {
 
   const daysOfFood = season >= PRE_WINTER_SEASON ? 7 : 4;
 
-  const target = tribe.memberIds.length * daysOfFood + 6;
+  const target = tribe.memberCount * daysOfFood + 6;
 
   return Math.max(0.15, 1 - totalFood(tribe.stock) / target);
 }
