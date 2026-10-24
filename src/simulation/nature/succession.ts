@@ -3,6 +3,7 @@ import { groundDefinition } from "../../content/grounds.ts";
 import {
   canGrowAt,
   isLivingTreeSpecies,
+  isShrubSpecies,
   isTreeSpecies,
   PLANTING_RULES,
   plantSpeciesDefinition,
@@ -171,11 +172,9 @@ function coverOf(world: WorldState, cell: number): Cover {
       continue;
     }
 
-    const { form } = plantSpeciesDefinition(vegetation.species[plant]);
-
     if (isTreeSpecies(vegetation.species[plant])) {
       cover.trees += 1;
-    } else if (form === "shrub" || form === "succulent") {
+    } else if (isShrubSpecies(vegetation.species[plant])) {
       cover.shrubs += 1;
     }
   }

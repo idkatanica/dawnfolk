@@ -1,4 +1,4 @@
-import { isTreeSpecies, PlantSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
+import { isShrubSpecies, isTreeSpecies, PlantSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import { clamp, FULL_TURN, hashToUnit, lerp, smoothstep } from "../../shared/math.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
 import type { Waypoint } from "../agents/navigation.ts";
@@ -241,7 +241,7 @@ function flatten(cell: number, blast: Blast, remoteness: number, services: Power
 
     if (isTreeSpecies(vegetation.species[plant])) {
       world.fellPlant(plant, environment.day, fallingAway(plant, blast, world));
-    } else if (form === "shrub" || form === "succulent") {
+    } else if (isShrubSpecies(vegetation.species[plant])) {
       world.removePlant(plant);
     } else if (form === "stone" && remoteness < SHATTERING_REACH) {
       shatter(plant, blast, services);
