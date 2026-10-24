@@ -22,7 +22,6 @@ function readSavedSettings(): unknown {
 
 describe("power store", () => {
   afterEach(() => {
-    vi.restoreAllMocks();
     usePowerStore.setState(initialState, true);
     localStorage.clear();
   });
@@ -121,10 +120,6 @@ describe("power store", () => {
 });
 
 describe("stored power parameters", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("reads the parameters of every known power", () => {
     const parameters = readStoredParameters({ parameters: { rain: { intensity: 40, radius: 90 } } });
 

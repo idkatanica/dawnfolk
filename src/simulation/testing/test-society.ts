@@ -75,7 +75,7 @@ export class SocietyHarness {
     this.context = {
       buildings: this.buildings,
       chronicle: this.chronicle,
-      effects: new EffectLog(),
+      effects: this.effects,
       environment: describeEnvironment(this.calendar, this.weather),
       fauna: this.fauna,
       fire: this.fire,

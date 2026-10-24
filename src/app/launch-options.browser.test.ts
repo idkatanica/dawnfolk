@@ -11,7 +11,6 @@ function silenceWarnings() {
 describe("launch options", () => {
   afterEach(() => {
     localStorage.removeItem(QUALITY_KEY);
-    vi.restoreAllMocks();
   });
 
   it("reads the seed, quality, time, pause and camera from the address", () => {

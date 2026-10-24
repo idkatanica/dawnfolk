@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { TechnologyId } from "../content/technologies.ts";
 import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../world/agent-buffers.ts";
 import { Simulation, TICK_SECONDS } from "./simulation.ts";
@@ -30,10 +30,6 @@ function advanceFor(simulation: Simulation, seconds: number): void {
     simulation.advance(0.05);
   }
 }
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
 
 describe("time", () => {
   it("runs fixed ticks in proportion to the speed", () => {
