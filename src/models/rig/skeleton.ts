@@ -51,7 +51,3 @@ export function createSkeleton(definition: SkeletonDefinition): Skeleton {
 export function contactsFor(skeleton: Skeleton, grounding: Grounding): readonly ContactPoint[] {
   return grounding === "feet" ? skeleton.footContacts : skeleton.allContacts;
 }
-
-export function uniformScales(skeleton: Skeleton): Float32Array {
-  return new Float32Array(skeleton.bones.length * 3).fill(1);
-}

@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { ANIMAL_KINDS } from "../../content/animals.ts";
 import { ANIMAL_POSES } from "../../world/agent-poses.ts";
 import { mergeMeshes } from "../mesh/mesh-data.ts";
-import { hasPart } from "../part-mask.ts";
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { measureStride } from "../rig/stride.ts";
@@ -11,7 +10,7 @@ import { meshProblems, openEdgeCount, thinnestPiece } from "../testing/mesh-chec
 import { describePiece, detachedPieces, type MeshPiece, meshPieces } from "../testing/mesh-connectivity.ts";
 import { posedMesh } from "../testing/moved-mesh.ts";
 import { animalAppearance } from "./animal-appearance.ts";
-import { ANIMAL_SPECIES, animalPartMask, buildAnimalParts, poseAnimal } from "./animal-models.ts";
+import { ANIMAL_SPECIES, buildAnimalParts, poseAnimal, visibleAnimalParts } from "./animal-models.ts";
 import { leapPerStride } from "./quadruped-clips.ts";
 import { QuadrupedBone } from "./quadruped-skeleton.ts";
 
@@ -195,11 +194,11 @@ describe("animal appearance", () => {
     );
     const kid = animalAppearance({ kind: "ibex", seed: 0.3, youth: 1 });
 
-    const masks = adults.map((ibex) => animalPartMask("ibex", ibex));
+    const visible = adults.map((ibex) => visibleAnimalParts("ibex", ibex));
 
-    expect(masks.filter((mask) => hasPart(mask, 2)).length).toBeGreaterThan(5);
-    expect(masks.filter((mask) => hasPart(mask, 1)).length).toBeGreaterThan(5);
-    expect(hasPart(animalPartMask("ibex", kid), 1)).toBe(false);
+    expect(visible.filter((parts) => parts.includes(2)).length).toBeGreaterThan(5);
+    expect(visible.filter((parts) => parts.includes(1)).length).toBeGreaterThan(5);
+    expect(visibleAnimalParts("ibex", kid)).not.toContain(1);
   });
 
   it("gives grown wolves a thick ruff now and then but never a pup", () => {
@@ -218,10 +217,10 @@ describe("animal appearance", () => {
     for (let index = 0; index < 20; index += 1) {
       const fawn = animalAppearance({ kind: "deer", seed: index / 20, youth: 0.9 });
 
-      const mask = animalPartMask("deer", fawn);
+      const visible = visibleAnimalParts("deer", fawn);
 
       expect(fawn.hasAntlers).toBe(false);
-      expect(hasPart(mask, 3)).toBe(true);
+      expect(visible).toContain(3);
       expect(fawn.size).toBeLessThan(0.6);
     }
   });
@@ -241,6 +240,6 @@ describe("animal appearance", () => {
     const calf = animalAppearance({ kind: "mammoth", seed: 0.4, youth: 1 });
 
     expect(calf.tuskLength).toBeLessThan(0.3);
-    expect(hasPart(animalPartMask("mammoth", calf), 2)).toBe(false);
+    expect(visibleAnimalParts("mammoth", calf)).not.toContain(2);
   });
 });

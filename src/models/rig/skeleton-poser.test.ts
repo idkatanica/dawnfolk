@@ -1,9 +1,10 @@
 import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { HUMAN_SKELETON, HumanBone } from "../people/human-skeleton.ts";
+import { uniformScales } from "../testing/uniform-scales.ts";
 import { degrees } from "./curves.ts";
 import { Pose } from "./pose.ts";
-import { createSkeleton, NO_PARENT, uniformScales } from "./skeleton.ts";
+import { createSkeleton, NO_PARENT } from "./skeleton.ts";
 import { PALETTE_FLOATS_PER_BONE, SkeletonPoser } from "./skeleton-poser.ts";
 
 const IDENTITY_ROWS = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];

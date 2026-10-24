@@ -18,11 +18,7 @@ import {
 
 export type EnclosureKind = "palisade" | "stoneWall";
 
-export interface EnclosurePieces {
-  gate: MeshData;
-  segment: MeshData;
-  segmentLength: number;
-}
+export type EnclosurePiece = "gate" | "segment";
 
 export const ENCLOSURE_SEGMENT_LENGTH = 5.6;
 export const ENCLOSURE_FOOTING_DEPTH = 0.3;
@@ -92,7 +88,7 @@ function stakeRun(context: StructureContext, span: Span): void {
   }
 }
 
-export function palisadeSegment(context: StructureContext): void {
+function palisadeSegment(context: StructureContext): void {
   stakeRun(context, { from: -HALF_SEGMENT, to: HALF_SEGMENT });
 }
 
@@ -106,7 +102,7 @@ function banner(context: StructureContext, top: number, front: number, order: nu
   });
 }
 
-export function palisadeGate(context: StructureContext): void {
+function palisadeGate(context: StructureContext): void {
   const postRadius = 0.24;
 
   for (const side of [-1, 1]) {
@@ -178,11 +174,11 @@ function stoneRun(context: StructureContext, span: Span): void {
   });
 }
 
-export function stoneWallSegment(context: StructureContext): void {
+function stoneWallSegment(context: StructureContext): void {
   stoneRun(context, { from: -HALF_SEGMENT, to: HALF_SEGMENT });
 }
 
-export function stoneWallGate(context: StructureContext): void {
+function stoneWallGate(context: StructureContext): void {
   const pillarHalf = PILLAR_WIDTH / 2;
 
   for (const side of [-1, 1]) {
@@ -211,26 +207,28 @@ export function stoneWallGate(context: StructureContext): void {
   banner(context, PILLAR_TOP - 0.1, WALL_THICKNESS / 2 + 0.03, 0.96);
 }
 
-function buildPiece(level: StructureLevel, seed: number, build: (context: StructureContext) => void): MeshData {
+interface PieceBuilder {
+  readonly build: (context: StructureContext) => void;
+  readonly seed: number;
+}
+
+const PIECE_BUILDERS: Readonly<Record<EnclosureKind, Readonly<Record<EnclosurePiece, PieceBuilder>>>> = {
+  palisade: {
+    gate: { build: palisadeGate, seed: 71 },
+    segment: { build: palisadeSegment, seed: 73 },
+  },
+  stoneWall: {
+    gate: { build: stoneWallGate, seed: 79 },
+    segment: { build: stoneWallSegment, seed: 83 },
+  },
+};
+
+export function buildEnclosurePiece(kind: EnclosureKind, piece: EnclosurePiece, level: StructureLevel): MeshData {
+  const { build, seed } = PIECE_BUILDERS[kind][piece];
+
   const builder = new MeshBuilder();
 
   build({ builder, level, random: createRandom(seed) });
 
   return builder.build();
-}
-
-export function buildEnclosurePieces(kind: EnclosureKind, level: StructureLevel): EnclosurePieces {
-  if (kind === "palisade") {
-    return {
-      gate: buildPiece(level, 71, palisadeGate),
-      segment: buildPiece(level, 73, palisadeSegment),
-      segmentLength: ENCLOSURE_SEGMENT_LENGTH,
-    };
-  }
-
-  return {
-    gate: buildPiece(level, 79, stoneWallGate),
-    segment: buildPiece(level, 83, stoneWallSegment),
-    segmentLength: ENCLOSURE_SEGMENT_LENGTH,
-  };
 }

@@ -2,7 +2,6 @@ import type { AnimalKind } from "../../content/animals.ts";
 import type { AnimalPose } from "../../world/agent-poses.ts";
 import { MeshBuilder } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
-import { maskOf, type PartMask } from "../part-mask.ts";
 import type { Pose } from "../rig/pose.ts";
 import type { Skeleton } from "../rig/skeleton.ts";
 import type { AnimalAppearance } from "./animal-appearance.ts";
@@ -175,12 +174,12 @@ export function buildAnimalParts(kind: AnimalKind, level: AnimalDetailLevel): Me
   });
 }
 
-export function animalPartMask(kind: AnimalKind, appearance: AnimalAppearance): PartMask {
+export function visibleAnimalParts(kind: AnimalKind, appearance: AnimalAppearance): number[] {
   const species = ANIMAL_SPECIES[kind];
 
-  const names = species.parts.map((part) => part.name);
+  const visible = species.visibleParts(appearance);
 
-  return maskOf(species.visibleParts(appearance).map((name) => names.indexOf(name)));
+  return species.parts.flatMap((part, index) => (visible.includes(part.name) ? [index] : []));
 }
 
 export function poseAnimal(

@@ -164,16 +164,12 @@ function heaps(context: StructureContext, ore: MineOre): void {
   addOreHeap(context, [-1.7, 0, 1.4], 0.5, oreLook(ore, ORE_RICHNESS[ore] * 2.5));
 }
 
-export function mineWith(context: StructureContext, ore: MineOre): void {
+function mineWith(context: StructureContext, ore: MineOre): void {
   hill(context, ore);
   portal(context);
   track(context);
   cart(context, ore);
   heaps(context, ore);
-}
-
-export function mine(context: StructureContext): void {
-  mineWith(context, "copper");
 }
 
 export function buildMineModel(ore: MineOre, level: StructureLevel): MeshData {

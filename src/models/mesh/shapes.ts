@@ -919,7 +919,7 @@ export function card(width: number, height: number): Shape {
   return writer.finish();
 }
 
-export function disc(radius: number, segments = 12): Shape {
+export function disc(radius: number, segments: number): Shape {
   const writer = new ShapeWriter();
   const normal = new Vector3(0, 1, 0);
   const ring: number[] = [];

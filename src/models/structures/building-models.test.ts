@@ -1,18 +1,16 @@
 import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
-import { BUILDING_KINDS, isEnclosure } from "../../content/buildings.ts";
 import { MaterialSlot } from "../materials.ts";
 import { triangleCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
-import { buildBuildingModel, buildingScale, GLOW_PART } from "./building-models.ts";
+import { buildBuildingModel, buildingScale, GLOW_PART, SINGLE_MODEL_KINDS } from "./building-models.ts";
 
 const TOUCHING = 0.01;
 const FLOAT_SLACK = 1e-4;
-const DEEPEST_FOOTING = -0.5;
 
-describe.each(BUILDING_KINDS)("%s model", (kind) => {
+describe.each(SINGLE_MODEL_KINDS)("%s model", (kind) => {
   const high = buildBuildingModel(kind, "high");
   const low = buildBuildingModel(kind, "low");
 
@@ -41,7 +39,7 @@ describe.each(BUILDING_KINDS)("%s model", (kind) => {
     expect(Math.min(...orders)).toBeLessThan(0.3);
     expect(Math.max(...orders)).toBeGreaterThan(0.85);
     expect(orders.every((order) => order >= 0 && order <= 1)).toBe(true);
-    expect(high.bounds.minimum[1]).toBeGreaterThan(isEnclosure(kind) ? DEEPEST_FOOTING : -0.1);
+    expect(high.bounds.minimum[1]).toBeGreaterThan(-0.1);
   });
 });
 

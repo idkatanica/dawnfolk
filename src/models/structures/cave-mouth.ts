@@ -12,7 +12,7 @@ export interface CaveLook {
   readonly moss: number;
 }
 
-export interface CaveMouthOptions {
+interface CaveMouthOptions {
   readonly bury: number;
   readonly look: CaveLook;
   readonly rise: number;
