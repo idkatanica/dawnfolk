@@ -1,78 +1,66 @@
 # Contributing
 
-This page covers the setup, the checks a change passes, and the rules for
-code, commits, and pull requests.
-
 ## Ways to contribute
 
-- **Report a bug** with the bug report form. Include the seed, the quality
-  level, and the browser and GPU.
-- **Propose a feature** with the feature request form. Describe the problem
-  before the solution.
+- **Report a bug or propose a feature** with the issue forms.
 - **Report a vulnerability** privately, as described in
   [SECURITY.md](SECURITY.md).
 - **Send a pull request** for an open issue. Comment on the issue first for
   anything larger than a fix, so the approach is agreed before the work.
 
-## Development setup
+## Setup
 
-You need [Bun](https://bun.sh) 1.4 or later and a browser with WebGPU.
-
-```sh
-git clone https://github.com/svidskiy/dawnfolk.git
-cd dawnfolk
-bun install
-bun run dev
-```
-
+Install and run the game as in [Getting started](README.md#getting-started).
 `bun install` also installs the Git hooks through
-[Lefthook](https://lefthook.dev). `bun run dev` opens the game at
-`http://localhost:5173`. URL parameters such as `?seed=7&paused=1` make a
-scene reproducible; the README lists them all.
+[Lefthook](https://lefthook.dev): pre-commit runs `ultracite fix` on the staged
+files, and pre-push runs `bun run typecheck` and `bun run test`.
 
-## Checks
+## Scripts and checks
 
-CI runs the checks below in this order on every pull request and every push to
-`main`. The pre-commit hook runs `ultracite fix` on the staged files.
+| Command | What it does |
+| --- | --- |
+| `bun run dev` | Serves the game at `http://localhost:5173`, or the next free port |
+| `bun run check` | Lints and checks formatting with Biome (Ultracite preset); `bun run fix` fixes what it can |
+| `bun run typecheck` | Runs `tsc --build` over the engine, app and tooling projects |
+| `bun run test` | Runs unit tests in Node and browser tests in Chromium; `bun run test:watch` reruns them on change |
+| `bun run build` | Builds for production; `bun run preview` serves the build |
+| `bun run test:e2e` | Runs Playwright smoke tests of the wide and phone layouts against the production build |
+| `bun run validate` | Runs `check`, `typecheck` and `test` in one go |
+| `bun run deploy` | Builds and deploys to Cloudflare Workers as static assets |
 
-| Command | Tool | Fails on |
-| --- | --- | --- |
-| `bun run check` | Ultracite (Biome) | Any lint error or formatting difference; `bun run fix` fixes what it can |
-| `bun run typecheck` | TypeScript | Any type error under `@tsconfig/bases/strictest` |
-| `bun run test` | Vitest | A failing unit test (Node) or browser test (Chromium) |
-| `bun run build` | Vite | A build error |
-| `bun run test:e2e` | Playwright | A failing smoke test of the wide or phone layout |
+CI runs `check`, `typecheck`, `test` and `build` on every pull request and
+every push to `main`, and deploys `main`; run them before you push. Fix the
+code rather than the rule.
 
-Browser tests and Playwright need Chromium; set `CHROMIUM_EXECUTABLE_PATH` to
-use a system Chromium. Fix the code rather than the rule.
+`src/**/*.test.ts` runs in Node; `src/**/*.browser.test.ts` and
+`src/**/*.test.tsx` run in Chromium. Browser tests and Playwright need
+Chromium; without Playwright's own browser, point them at a system one:
+`CHROMIUM_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`.
 
 ## Code
 
-### Naming and files
+Biome formats and lints with the Ultracite preset at a line width of 120, and
+TypeScript runs under `@tsconfig/bases/strictest`. On top of that:
 
-- Write names in full words, without abbreviations: `distanceFromCenter`, not
-  `dist`; `column`, not `x`.
-- Name a file after what it holds, in kebab case, such as `water-material.ts`.
-- The engine never imports React; the UI talks to it through small stores and
-  commands.
-- No comments in code, except for workarounds of specific bugs.
-
-### Control flow
-
+- Write names in full words: `distanceFromCenter`, not `dist`; `column`, not
+  `x`. Name a file after what it holds, in kebab case: `water-material.ts`.
 - Declare functions with `function`, never as arrow functions assigned to a
   name. Inline callbacks may be arrows.
-- Keep the happy path at the left margin: check preconditions at the top and
-  return early.
-- Every `if` and loop body goes in braces, even for a single `return`.
-- Don't use `??` or `&&` to pick values or render conditionally, and don't
-  use `as` casts or `!` assertions.
-
-### Layout
-
+- Check preconditions at the top and return early, so the happy path stays at
+  the left margin.
+- Put every `if` and loop body in braces, even a single `return`.
+- Don't use `??`, don't use `&&` to pick values or render conditionally, and
+  don't use `as` casts or `!` assertions.
 - Separate the steps of a function with one blank line: the destructuring, the
   values it prepares, the work, and the result. Statements of one kind stay
   together.
-- Separate sibling elements in JSX with one blank line.
+- Separate sibling JSX elements with one blank line. In `index.html`, closely
+  related head tags stay together.
+- No comments in code, except for workarounds of specific bugs.
+
+The architectural rules that are easy to break, such as determinism, the water
+rule and level of detail, are in
+[AGENTS.md](AGENTS.md#rules-that-are-easy-to-miss).
 
 ## Commits
 
@@ -105,16 +93,15 @@ Commits follow
 
 ## Pull requests
 
-- One pull request is one standalone change.
+- One pull request is one standalone change, and CI has to pass.
 - GitHub merges a pull request with a merge commit whose subject is its title
   and whose body is its body. Write the title in commit form and the body as a
-  commit body, then end it with `Verified:` and the checks you ran.
+  commit body, then end it with `Verified:` and the checks you ran, and
+  `Fixes #N` when it closes an issue.
 - Attach screenshots for visible changes in a comment, so they stay out of the
   merge commit.
-- CI has to pass.
 
-## Licensing of contributions
+## License
 
-Dawnfolk is licensed under the MIT license, whose text is in
-[LICENSE](LICENSE). By submitting a contribution, you agree that it is licensed
-under the same terms.
+Dawnfolk is under the [MIT license](LICENSE). By submitting a contribution, you
+agree that it is licensed under the same terms.

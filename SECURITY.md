@@ -1,8 +1,5 @@
 # Security policy
 
-This page covers how to report a vulnerability in Dawnfolk and what is
-supported. [CONTRIBUTING.md](CONTRIBUTING.md) covers every other contribution.
-
 ## Supported versions
 
 | Version | Supported |
@@ -13,7 +10,7 @@ supported. [CONTRIBUTING.md](CONTRIBUTING.md) covers every other contribution.
 ## Reporting a vulnerability
 
 Report vulnerabilities through
-[GitHub private vulnerability reporting](https://github.com/svidskiy/dawnfolk/security/advisories/new).
+[GitHub private vulnerability reporting](https://github.com/imsvidskiy/dawnfolk/security/advisories/new).
 Don't open a public issue, pull request, or discussion for a security problem.
 
 Include what helps reproduce and assess the issue:
