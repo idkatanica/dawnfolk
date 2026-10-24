@@ -255,7 +255,7 @@ export function addPitchedRoof(context: StructureContext, roof: PitchedRoof): vo
   }
 }
 
-export interface PitchedRoof {
+interface PitchedRoof {
   readonly eave: number;
   readonly length: number;
   readonly ridge: number;
