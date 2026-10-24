@@ -1,19 +1,16 @@
 import { Vector3 } from "three";
 import { PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
-import { FULL_TURN, lerp, smoothstep } from "../../shared/math.ts";
-import { createVolumeNoise, type VolumeNoise } from "../../shared/noise.ts";
-import { createRandom, type RandomSource } from "../../shared/random.ts";
+import { FULL_TURN, lerp } from "../../shared/math.ts";
+import type { RandomSource } from "../../shared/random.ts";
 import type { TubePoint } from "../mesh/shapes.ts";
+import { addBlob, addLimb, addTrunk, createGrowth, finish, type Growth, rooted } from "./tree-growth.ts";
 import {
-  type Branch,
-  directionAlong,
   endedBelow,
   type Foliage,
   GOLDEN_ANGLE,
   growBranch,
   jitter,
   pointAlong,
-  sideDirection,
   type TreeStructure,
   tipOf,
   toVector,
@@ -34,116 +31,6 @@ export const TREE_HEIGHTS = {
   [PlantSpecies.Spruce]: 24,
   [PlantSpecies.Willow]: 12,
 } as const satisfies Readonly<Partial<Record<PlantSpeciesIndex, number>>>;
-
-interface Growth {
-  readonly branches: Branch[];
-  readonly foliage: Foliage[];
-  readonly noise: VolumeNoise;
-  readonly random: RandomSource;
-}
-
-function createGrowth(seed: number): Growth {
-  const random = createRandom(seed);
-
-  return { branches: [], foliage: [], noise: createVolumeNoise(random.derive(1)), random };
-}
-
-function finish(growth: Growth, height: number): TreeStructure {
-  return { branches: growth.branches, foliage: growth.foliage, height };
-}
-
-interface TrunkOptions {
-  readonly forks: boolean;
-  readonly height: number;
-  readonly lean: number;
-  readonly radiusBottom: number;
-  readonly radiusTop: number;
-  readonly segments: number;
-  readonly wobble: number;
-}
-
-function addTrunk(growth: Growth, options: TrunkOptions, start = new Vector3()): TubePoint[] {
-  const { random } = growth;
-
-  const leanAngle = random.next() * FULL_TURN;
-  const direction = new Vector3(Math.cos(leanAngle) * options.lean, 1, Math.sin(leanAngle) * options.lean);
-
-  const points = growBranch({
-    bend: 0.004,
-    direction,
-    gravity: 0,
-    length: options.height,
-    noise: growth.noise,
-    radiusEnd: options.radiusTop,
-    radiusStart: options.radiusBottom,
-    segments: options.segments,
-    start,
-    wobble: options.wobble,
-  });
-
-  const flared = points.map((point, index) => (index === 0 ? { ...point, radius: point.radius * 1.35 } : point));
-
-  growth.branches.push({ depth: 0, forks: options.forks, points: rooted(flared) });
-
-  return flared;
-}
-
-const ROOT_DEPTH = 0.3;
-
-function rooted(points: readonly TubePoint[]): TubePoint[] {
-  const [base] = points;
-
-  return [{ ...base, y: base.y - ROOT_DEPTH }, ...points];
-}
-
-interface LimbOptions {
-  readonly bend: number;
-  readonly depth: number;
-  readonly gravity: number;
-  readonly length: number;
-  readonly radiusEnd: number;
-  readonly segments: number;
-  readonly tilt: number;
-  readonly wobble: number;
-}
-
-function addLimb(
-  growth: Growth,
-  parent: readonly TubePoint[],
-  along: number,
-  azimuth: number,
-  options: LimbOptions
-): TubePoint[] {
-  const base = pointAlong(parent, along);
-  const axis = directionAlong(parent, along);
-
-  const points = growBranch({
-    bend: options.bend,
-    direction: sideDirection(axis, azimuth, options.tilt),
-    gravity: options.gravity,
-    length: options.length,
-    noise: growth.noise,
-    radiusEnd: options.radiusEnd,
-    radiusStart: Math.min(base.radius * lerp(0.75, 0.85, smoothstep(0.85, 1, along)), options.radiusEnd * 4 + 0.02),
-    segments: options.segments,
-    start: toVector(base),
-    wobble: options.wobble,
-  });
-
-  growth.branches.push({ depth: options.depth, points });
-
-  return points;
-}
-
-function addBlob(growth: Growth, center: Vector3, radius: number, squash: number): void {
-  growth.foliage.push({
-    center: center.toArray(),
-    kind: "blob",
-    radius,
-    squash,
-    tint: jitter(growth.random, 0.12),
-  });
-}
 
 function oak(seed: number): TreeStructure {
   const growth = createGrowth(seed);

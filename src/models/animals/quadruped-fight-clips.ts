@@ -2,29 +2,8 @@ import type { AnimalFightPose } from "../../world/agent-poses.ts";
 import { cosineWave, degrees, type Keyframe, keyframes, pulse, wave } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
 import type { AnimalClip, AnimalClipContext } from "./quadruped-clips.ts";
+import { bendBone, GALLOP_PHASES, LYING_SPREAD, LYING_SWING, sideName, WALK_PHASES } from "./quadruped-motion.ts";
 import { LEG_ENDS, LEG_SIDES, type LegEnd, type LegSide, legBones, QuadrupedBone } from "./quadruped-skeleton.ts";
-
-const GALLOP_OFFSETS: Readonly<Record<LegEnd, Readonly<Record<"left" | "right", number>>>> = {
-  front: { left: 0.42, right: 0.52 },
-  hind: { left: 0, right: 0.09 },
-};
-
-const AMBLE_OFFSETS: Readonly<Record<LegEnd, Readonly<Record<"left" | "right", number>>>> = {
-  front: { left: 0.25, right: 0.75 },
-  hind: { left: 0, right: 0.5 },
-};
-
-const LYING_SWING: Readonly<Record<LegEnd, number>> = { front: degrees(18), hind: -degrees(22) };
-
-const LYING_SPREAD: Readonly<Record<"left" | "right", number>> = { left: degrees(4), right: -degrees(10) };
-
-function sideName(side: LegSide): "left" | "right" {
-  return side === 1 ? "left" : "right";
-}
-
-function bendBone(pose: Pose, bone: number, forward: number, toLeft = 0, turnLeft = 0): void {
-  pose.rotate(bone, forward, -toLeft, turnLeft);
-}
 
 function moveLeg(pose: Pose, end: LegEnd, side: LegSide, swing: number, fold: number, outward = 0): void {
   const bones = legBones(end, side);
@@ -73,7 +52,7 @@ function attack(pose: Pose, phase: number, context: AnimalClipContext): void {
 function charge(pose: Pose, phase: number, context: AnimalClipContext): void {
   const { gait } = context;
 
-  const offsets = gait.runKind === "gallop" ? GALLOP_OFFSETS : AMBLE_OFFSETS;
+  const offsets = gait.runKind === "gallop" ? GALLOP_PHASES : WALK_PHASES;
   const fold = gait.lowerFlex * (gait.runKind === "gallop" ? 1.4 : 1.25);
 
   for (const end of LEG_ENDS) {

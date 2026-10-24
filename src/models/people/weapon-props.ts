@@ -2,12 +2,9 @@ import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import type { MeshBuilder, VertexStyle } from "../mesh/mesh-builder.ts";
 import { box, cone, cylinder, lathe, type TubePoint, tube } from "../mesh/shapes.ts";
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
-import { rigidStyle } from "../rig/skin-weights.ts";
 import { type HumanDetail, trimSegments } from "./human-detail.ts";
 import { HumanBone } from "./human-skeleton.ts";
-
-const RIGHT_FIST: Triple = [-0.217, 0.832, 0.018];
-const LEFT_FIST: Triple = [0.217, 0.832, 0.018];
+import { addRod, inLeftHand, inRightHand, LEFT_FIST, onChest, RIGHT_FIST } from "./prop-placement.ts";
 
 const BOW_HALF_LENGTH = 0.6;
 const BOW_BEND = 0.085;
@@ -27,35 +24,8 @@ const FAR_QUIVER_SINK = 0.035;
 const PICK_HAFT_LENGTH = 0.62;
 const PICK_HAFT_RADIUS = 0.017;
 
-function inHand(bone: number, slot: MaterialSlotIndex): VertexStyle {
-  return { ...rigidStyle(bone), slot };
-}
-
 function betweenHands(slot: MaterialSlotIndex): VertexStyle {
   return { boneA: HumanBone.HandLeft, boneB: HumanBone.HandRight, boneWeight: (point) => point.along, slot };
-}
-
-function onBack(slot: MaterialSlotIndex): VertexStyle {
-  return { ...rigidStyle(HumanBone.Chest), slot };
-}
-
-function addRod(
-  builder: MeshBuilder,
-  detail: HumanDetail,
-  rod: { readonly end: Triple; readonly radius: number; readonly start: Triple },
-  style: VertexStyle
-): void {
-  const { end, radius, start } = rod;
-
-  builder.add(
-    cylinder({
-      height: segmentLength(start, end),
-      radialSegments: trimSegments(detail, 6),
-      radiusBottom: radius,
-      radiusTop: radius * 0.9,
-    }),
-    { style, transform: segmentTransform(start, end) }
-  );
 }
 
 function bowPoint(along: number): TubePoint {
@@ -83,13 +53,13 @@ function addBowStave(builder: MeshBuilder, detail: HumanDetail): void {
   const points = Array.from({ length: samples }, (_, index) => bowPoint((index / (samples - 1)) * 2 - 1));
 
   builder.add(tube(points, { radialSegments: trimSegments(detail, 6) }), {
-    style: inHand(HumanBone.HandLeft, MaterialSlot.Wood),
+    style: inLeftHand(MaterialSlot.Wood),
   });
 
   const [x, y, z] = LEFT_FIST;
 
   builder.add(cylinder({ height: 0.1, radialSegments: 6, radiusBottom: 0.021, radiusTop: 0.021 }), {
-    style: inHand(HumanBone.HandLeft, MaterialSlot.Hide),
+    style: inLeftHand(MaterialSlot.Hide),
     transform: transformOf({ position: [x, y, z - 0.05], rotation: [Math.PI / 2, 0, 0] }),
   });
 }
@@ -104,7 +74,7 @@ function stringPoints(from: Triple, to: Triple): TubePoint[] {
 export function addBow(builder: MeshBuilder, detail: HumanDetail): void {
   addBowStave(builder, detail);
   builder.add(tube(stringPoints(bowTip(-1), bowTip(1)), { radialSegments: 4 }), {
-    style: inHand(HumanBone.HandLeft, MaterialSlot.Rope),
+    style: inLeftHand(MaterialSlot.Rope),
   });
 }
 
@@ -143,7 +113,7 @@ export function addDrawnBow(builder: MeshBuilder, detail: HumanDetail): void {
   ];
 
   builder.add(cone(0.016, segmentLength(grip, tip), trimSegments(detail, 5)), {
-    style: inHand(HumanBone.HandLeft, MaterialSlot.Metal),
+    style: inLeftHand(MaterialSlot.Metal),
     transform: segmentTransform(grip, tip),
   });
 }
@@ -171,7 +141,7 @@ function addQuiverArrow(builder: MeshBuilder, index: number, detail: HumanDetail
   const base: Triple = [baseX + spread, baseY, baseZ + spread * 0.4];
   const end: Triple = [endX + spread * 1.8, endY, endZ + spread * 0.8];
 
-  addRod(builder, detail, { end, radius: 0.0055, start: base }, onBack(MaterialSlot.Wood));
+  addRod(builder, detail, { end, radius: 0.0055, start: base }, onChest(MaterialSlot.Wood));
 
   if (!detail.hasFineDetails) {
     return;
@@ -184,7 +154,7 @@ function addQuiverArrow(builder: MeshBuilder, index: number, detail: HumanDetail
   ];
 
   builder.add(box(0.026, 0.05, 0.006), {
-    style: onBack(MaterialSlot.Accent),
+    style: onChest(MaterialSlot.Accent),
     transform: segmentTransform(fletching, end),
   });
 }
@@ -206,7 +176,7 @@ export function addQuiver(builder: MeshBuilder, detail: HumanDetail): void {
       segments
     ),
     {
-      style: onBack(MaterialSlot.Hide),
+      style: onChest(MaterialSlot.Hide),
       transform: segmentTransform(quiverEnd(QUIVER_BOTTOM, detail), quiverEnd(QUIVER_TOP, detail)),
     }
   );
@@ -229,7 +199,7 @@ export function addPickaxe(builder: MeshBuilder, detail: HumanDetail): void {
     builder,
     detail,
     { end: [x, y, end], radius: PICK_HAFT_RADIUS, start: [x, y, z - 0.09] },
-    inHand(HumanBone.HandRight, MaterialSlot.Wood)
+    inRightHand(MaterialSlot.Wood)
   );
   builder.add(
     tube(
@@ -242,6 +212,6 @@ export function addPickaxe(builder: MeshBuilder, detail: HumanDetail): void {
       ],
       { radialSegments: trimSegments(detail, 6) }
     ),
-    { style: inHand(HumanBone.HandRight, MaterialSlot.Metal) }
+    { style: inRightHand(MaterialSlot.Metal) }
   );
 }

@@ -9,26 +9,16 @@ import { type LoftSection, loft, panel, sphere, type TubePoint, torus, tube } fr
 import { combine, transformOf } from "../mesh/transforms.ts";
 import { triangleWave } from "../rig/curves.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
-import { forEachSide } from "./human-anatomy.ts";
+import { forEachSide, HEAD_AXIS_Z, HEAD_CROWN, HEAD_SECTIONS } from "./human-anatomy.ts";
 import { type HumanDetail, trimSegments } from "./human-detail.ts";
 import { headToChestStyle } from "./human-rigging.ts";
 import { HumanBone } from "./human-skeleton.ts";
-
-const HEAD_CROWN = 1.753;
 
 const HAIR = { ...rigidStyle(HumanBone.Head), slot: MaterialSlot.Hair };
 
 const HAIR_NOISE = createVolumeNoise(createRandom(911));
 
-const HEAD_PROFILE: readonly LoftSection[] = [
-  { centerZ: 0.03, radiusX: 0.062, radiusZ: 0.07, y: 1.545 },
-  { centerZ: 0.013, radiusX: 0.083, radiusZ: 0.094, y: 1.58 },
-  { centerZ: 0.003, radiusX: 0.093, radiusZ: 0.104, y: 1.62 },
-  { centerZ: -0.006, radiusX: 0.096, radiusZ: 0.107, y: 1.66 },
-  { centerZ: -0.012, radiusX: 0.088, radiusZ: 0.099, y: 1.7 },
-  { centerZ: -0.014, radiusX: 0.066, radiusZ: 0.076, y: 1.732 },
-  { centerZ: -0.012, radiusX: 0.035, radiusZ: 0.04, y: 1.748 },
-];
+const HEAD_PROFILE = HEAD_SECTIONS.slice(2, -1);
 
 function sectionAt(sections: readonly LoftSection[], y: number): LoftSection {
   const upperIndex = sections.findIndex((section) => section.y >= y);
@@ -99,13 +89,14 @@ function headShell(detail: HumanDetail, options: ShellOptions): Shape {
 }
 
 function frontness(vertex: ShapeVertex): number {
-  const length = Math.hypot(vertex.x, vertex.z + 0.01);
+  const forward = vertex.z - HEAD_AXIS_Z;
+  const length = Math.hypot(vertex.x, forward);
 
   if (length === 0) {
     return 0;
   }
 
-  return Math.max(0, (vertex.z + 0.01) / length);
+  return Math.max(0, forward / length);
 }
 
 function hairlineCoverage(front: number, side: number): (vertex: ShapeVertex) => number {
