@@ -87,6 +87,7 @@ export class VegetationStore implements VegetationChannels {
   readonly seed: Float32Array;
   readonly species: Uint8Array;
   readonly state: Uint8Array;
+  readonly wear: Uint8Array;
   readonly x: Float32Array;
   readonly z: Float32Array;
   #aliveCount = 0;
@@ -110,6 +111,7 @@ export class VegetationStore implements VegetationChannels {
     this.fruit = new Float32Array(capacity);
     this.species = new Uint8Array(capacity);
     this.state = new Uint8Array(capacity).fill(PlantState.Removed);
+    this.wear = new Uint8Array(capacity);
     this.cell = new Int32Array(capacity).fill(NO_PLANT);
     this.#nextInCell = new Int32Array(capacity).fill(NO_PLANT);
     this.#firstInCell = new Int32Array(grid.cellCount).fill(NO_PLANT);
@@ -138,6 +140,7 @@ export class VegetationStore implements VegetationChannels {
     this.bornDay[index] = placement.bornDay;
     this.species[index] = placement.species;
     this.state[index] = PlantState.Alive;
+    this.wear[index] = 0;
     this.fruit[index] = this.#initialFruit(placement.species);
     this.#linkToCell(index, this.#grid.cellAt(placement.x, placement.z));
     this.#aliveCount += 1;
@@ -279,6 +282,16 @@ export class VegetationStore implements VegetationChannels {
 
     this.#burntQueue.splice(0, this.#burntQueueStart);
     this.#burntQueueStart = 0;
+  }
+
+  wearDown(index: number): number {
+    if (this.state[index] !== PlantState.Alive) {
+      return 0;
+    }
+
+    this.wear[index] += 1;
+
+    return this.wear[index];
   }
 
   isAlive(index: number): boolean {
