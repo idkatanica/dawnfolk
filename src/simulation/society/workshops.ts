@@ -2,7 +2,6 @@ import { RECIPES, type RecipeId, type ResourceAmounts } from "../../content/reci
 import { isBetterMaterial, TOOL_MATERIAL_DEFINITIONS, type ToolMaterial } from "../../content/weapons.ts";
 import type { Building } from "./buildings.ts";
 import { completedOfKind } from "./camp-plan.ts";
-import { constructionNeed } from "./construction.ts";
 import type { SocietyContext } from "./society-context.ts";
 import { amountOf, hasResources } from "./stock.ts";
 import { knows, type Tribe } from "./tribe.ts";
@@ -41,7 +40,7 @@ function nextToolMaterial(tribe: Tribe): ToolMaterial | null {
   return null;
 }
 
-function isWanted(tribe: Tribe, context: SocietyContext, recipe: RecipeId): boolean {
+function isWanted(tribe: Tribe, recipe: RecipeId, construction: ResourceAmounts): boolean {
   const { stock } = tribe;
   const members = tribe.memberCount;
 
@@ -57,7 +56,7 @@ function isWanted(tribe: Tribe, context: SocietyContext, recipe: RecipeId): bool
     case "iron":
       return stock.iron < METAL_TARGET;
     case "pottery":
-      return stock.pottery < POTTERY_TARGET + constructionNeed(tribe, context, "pottery");
+      return stock.pottery < POTTERY_TARGET + amountOf(construction, "pottery");
     case "spears":
       return stock.spears < 2 + members * SPEARS_PER_MEMBER;
     case "tools":
@@ -141,9 +140,9 @@ function orderFor(tribe: Tribe, recipe: RecipeId, station: Building | null): Cra
   return { inputs: headedInputs(definition.inputs, material), material, outputs: definition.outputs, recipe, station };
 }
 
-export function chooseCraft(tribe: Tribe, context: SocietyContext): CraftOrder | null {
+export function chooseCraft(tribe: Tribe, context: SocietyContext, construction: ResourceAmounts): CraftOrder | null {
   for (const recipe of CRAFT_ORDER) {
-    if (!isWanted(tribe, context, recipe)) {
+    if (!isWanted(tribe, recipe, construction)) {
       continue;
     }
 

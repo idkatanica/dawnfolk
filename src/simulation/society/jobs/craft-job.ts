@@ -1,5 +1,5 @@
 import { BUILDINGS } from "../../../content/buildings.ts";
-import { RECIPES } from "../../../content/recipes.ts";
+import { RECIPES, type ResourceAmounts } from "../../../content/recipes.ts";
 import { TOOL_MATERIAL_DEFINITIONS } from "../../../content/weapons.ts";
 import type { PersonTick, SocietyContext } from "../society-context.ts";
 import { addResources, spendResources } from "../stock.ts";
@@ -14,8 +14,8 @@ const CAMP_WORK_SPREAD = 5;
 const STATION_REACH = 0.7;
 const STATION_SHARE = 0.8;
 
-export function findCraftWork(tick: PersonTick): CraftJob | null {
-  const order = chooseCraft(tick.tribe, tick.context);
+export function findCraftWork(tick: PersonTick, construction: ResourceAmounts): CraftJob | null {
+  const order = chooseCraft(tick.tribe, tick.context, construction);
 
   if (order === null) {
     return null;

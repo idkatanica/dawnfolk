@@ -1,6 +1,7 @@
+import type { ResourceAmounts } from "../../content/recipes.ts";
 import { isWinter } from "../../content/seasons.ts";
 import type { Building } from "./buildings.ts";
-import { constructionNeed } from "./construction.ts";
+import { constructionNeeds } from "./construction.ts";
 import { ERA_WORK_OPTIONS } from "./era-work.ts";
 import { type FieldTask, fieldTask, neediestField } from "./farming.ts";
 import { BuildJob, isExpeditionSeason, isFarSite } from "./jobs/build-job.ts";
@@ -15,7 +16,7 @@ import { findStone } from "./jobs/quarry-job.ts";
 import { TendJob } from "./jobs/tend-job.ts";
 import { isElder } from "./person.ts";
 import type { PersonTick } from "./society-context.ts";
-import { totalFood } from "./stock.ts";
+import { amountOf, totalFood } from "./stock.ts";
 import { type Field, knows } from "./tribe.ts";
 import { completedBuilding } from "./tribe-places.ts";
 import { hasWeaponsToHunt } from "./weapons.ts";
@@ -61,23 +62,23 @@ function fireWoodReserve(season: number): number {
   return FIRE_WOOD;
 }
 
-function woodNeed(tick: PersonTick): number {
+function woodNeed(tick: PersonTick, construction: ResourceAmounts): number {
   const { tribe } = tick;
 
   const fireWood = knows(tribe, "fire") ? fireWoodReserve(tick.context.environment.season) : 0;
   const craftWood = knows(tribe, "pottery") ? CRAFTING_WOOD : 0;
 
-  const wanted = 6 + constructionNeed(tribe, tick.context, "wood") + fireWood + craftWood;
+  const wanted = 6 + amountOf(construction, "wood") + fireWood + craftWood;
 
   return Math.max(0.1, 1 - tribe.stock.wood / wanted);
 }
 
-function stoneWanted(tick: PersonTick): number {
+function stoneWanted(tick: PersonTick, construction: ResourceAmounts): number {
   const { tribe } = tick;
 
   const reserve = knows(tribe, "masonry") ? MASONRY_STONE : 4;
 
-  return constructionNeed(tribe, tick.context, "stone") + reserve + 2;
+  return amountOf(construction, "stone") + reserve + 2;
 }
 
 const WORK_OPTIONS: readonly WorkOption[] = [
@@ -198,19 +199,19 @@ const WORK_OPTIONS: readonly WorkOption[] = [
   {
     kind: "chop",
     start: findTree,
-    weight: (tick) => {
+    weight: (tick, construction) => {
       if (!isWorthIt(tick, "wood", 0.4)) {
         return 0;
       }
 
-      return 3.4 * woodNeed(tick);
+      return 3.4 * woodNeed(tick, construction);
     },
   },
   {
     kind: "quarry",
     start: findStone,
-    weight: (tick) => {
-      const wanted = stoneWanted(tick);
+    weight: (tick, construction) => {
+      const wanted = stoneWanted(tick, construction);
 
       if (!(knows(tick.tribe, "huts") && isWorthIt(tick, "stone", 0.5)) || tick.tribe.stock.stone >= wanted) {
         return 0;
@@ -241,8 +242,8 @@ const WORK_OPTIONS: readonly WorkOption[] = [
   ...ERA_WORK_OPTIONS,
 ];
 
-function adjustedWeight(option: WorkOption, tick: PersonTick): number {
-  const weight = option.weight(tick);
+function adjustedWeight(option: WorkOption, tick: PersonTick, construction: ResourceAmounts): number {
+  const weight = option.weight(tick, construction);
 
   if (isElder(tick.person) && HEAVY_WORK.has(option.kind)) {
     return weight * ELDER_HEAVY_WORK;
@@ -252,7 +253,9 @@ function adjustedWeight(option: WorkOption, tick: PersonTick): number {
 }
 
 export function chooseWork(tick: PersonTick): Job | null {
-  const candidates = WORK_OPTIONS.map((option) => ({ option, weight: adjustedWeight(option, tick) }));
+  const construction = constructionNeeds(tick.tribe, tick.context);
+
+  const candidates = WORK_OPTIONS.map((option) => ({ option, weight: adjustedWeight(option, tick, construction) }));
 
   const weighted = candidates.filter((candidate) => candidate.weight > 0);
 
@@ -268,7 +271,7 @@ export function chooseWork(tick: PersonTick): Job | null {
     remaining -= candidate.weight;
 
     if (remaining <= 0) {
-      return candidate.option.start(tick);
+      return candidate.option.start(tick, construction);
     }
   }
 
