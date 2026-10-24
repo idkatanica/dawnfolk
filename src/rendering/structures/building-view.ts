@@ -45,7 +45,7 @@ import {
 import { buildMineModel, MINE_SCALE, type MineOre } from "../../models/structures/mine-model.ts";
 import { GLOW_PART } from "../../models/structures/structure-parts.ts";
 import { clamp, FULL_TURN, saturate } from "../../shared/math.ts";
-import type { BuildingView as BuildingSnapshot } from "../../simulation/frame.ts";
+import type { BuildingView as BuildingSnapshot, SimulationFrame } from "../../simulation/frame.ts";
 import { geometryFromMeshData, InterleavedInstances, toInstancedGeometry } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import type { TribeLooks } from "../tribe-looks.ts";
@@ -146,6 +146,17 @@ interface PiecePlacement {
   readonly z: number;
 }
 
+interface PlacedPiece {
+  readonly batches: readonly BuildingBatch[];
+  readonly building: BuildingSnapshot;
+  readonly plinth: GroundBox | null;
+  readonly progress: number;
+  readonly rotation: number;
+  readonly seat: Seat;
+  readonly x: number;
+  readonly z: number;
+}
+
 interface ModelSource {
   readonly footing: (high: MeshData) => Footing;
   readonly key: ModelKey;
@@ -203,12 +214,12 @@ interface Seat {
   readonly lowest: number;
 }
 
-function seatOf(input: ViewInput, piece: PiecePlacement, footing: Footing): Seat {
+function seatOf(mirror: WorldMirror, piece: PiecePlacement, footing: Footing): Seat {
   const cosine = Math.cos(piece.rotation);
   const sine = Math.sin(piece.rotation);
 
   const heights = footing.probes.map(([localX, localZ]) =>
-    input.mirror.heightAt(piece.x + localX * cosine + localZ * sine, piece.z + localZ * cosine - localX * sine)
+    mirror.heightAt(piece.x + localX * cosine + localZ * sine, piece.z + localZ * cosine - localX * sine)
   );
 
   const lowest = Math.min(...heights);
@@ -380,6 +391,8 @@ export class BuildingView {
   readonly #footings = new Map<ModelKey, Footing>();
   readonly #plinths: readonly BuildingBatch[];
   readonly #tribes: TribeLooks;
+  #laidOutFrame: SimulationFrame | null = null;
+  #pieces: PlacedPiece[] = [];
 
   constructor(tribes: TribeLooks) {
     this.#tribes = tribes;
@@ -406,7 +419,7 @@ export class BuildingView {
   }
 
   update(input: ViewInput): void {
-    const { frame } = input.mirror;
+    this.#layOut(input.mirror);
 
     for (const batches of this.#batches.values()) {
       for (const batch of batches) {
@@ -418,10 +431,8 @@ export class BuildingView {
       plinths.count = 0;
     }
 
-    for (const building of frame.buildings) {
-      for (const piece of this.#piecesOf(building, input.mirror)) {
-        this.#place(input, building, piece);
-      }
+    for (const piece of this.#pieces) {
+      this.#place(input, piece);
     }
 
     for (const batches of this.#batches.values()) {
@@ -474,6 +485,43 @@ export class BuildingView {
     });
   }
 
+  #layOut(mirror: WorldMirror): void {
+    const { frame } = mirror;
+
+    if (frame === this.#laidOutFrame) {
+      return;
+    }
+
+    this.#laidOutFrame = frame;
+    this.#pieces = [];
+
+    for (const building of frame.buildings) {
+      for (const piece of this.#piecesOf(building, mirror)) {
+        this.#addPiece(mirror, building, piece);
+      }
+    }
+  }
+
+  #addPiece(mirror: WorldMirror, building: BuildingSnapshot, piece: PiecePlacement): void {
+    const batches = this.#batches.get(piece.key);
+    const footing = this.#footings.get(piece.key);
+
+    if (batches === undefined || footing === undefined) {
+      return;
+    }
+
+    this.#pieces.push({
+      batches,
+      building,
+      plinth: footing.plinth,
+      progress: piece.progress,
+      rotation: piece.rotation,
+      seat: seatOf(mirror, piece, footing),
+      x: piece.x,
+      z: piece.z,
+    });
+  }
+
   #piecesOf(building: BuildingSnapshot, mirror: WorldMirror): PiecePlacement[] {
     if (isEnclosure(building.kind)) {
       return this.#ringOf(building, mirror);
@@ -518,15 +566,9 @@ export class BuildingView {
     return pieces;
   }
 
-  #place(input: ViewInput, building: BuildingSnapshot, piece: PiecePlacement): void {
-    const batches = this.#batches.get(piece.key);
-    const footing = this.#footings.get(piece.key);
+  #place(input: ViewInput, piece: PlacedPiece): void {
+    const { building, seat } = piece;
 
-    if (batches === undefined || footing === undefined) {
-      return;
-    }
-
-    const seat = seatOf(input, piece, footing);
     const y = seat.floor;
 
     this.#bounds.center.set(piece.x, y + 2, piece.z);
@@ -540,7 +582,7 @@ export class BuildingView {
     const level = distance < LEVEL_DISTANCES.high * input.detail ? 0 : 1;
     const accent = this.#tribes.accent(building.tribeId);
 
-    const batch = batches[level];
+    const batch = piece.batches[level];
 
     batch.instances.ensureCapacity(batch.count + 1);
 
@@ -552,12 +594,13 @@ export class BuildingView {
     data.set([saturate(1 - building.health), this.#glowOf(building), building.style, 0], offset + 8);
     batch.count += 1;
 
-    if (footing.plinth !== null) {
-      this.#placePlinth(building, piece, footing.plinth, seat);
+    if (piece.plinth !== null) {
+      this.#placePlinth(piece, piece.plinth);
     }
   }
 
-  #placePlinth(building: BuildingSnapshot, piece: PiecePlacement, box: GroundBox, seat: Seat): void {
+  #placePlinth(piece: PlacedPiece, box: GroundBox): void {
+    const { building, seat } = piece;
     const [boxes, rounds] = this.#plinths;
 
     const plinths = box.isRound ? rounds : boxes;
