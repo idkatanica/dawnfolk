@@ -215,7 +215,7 @@ export class CropField {
   readonly #cells = new Map<number, FieldCell>();
   readonly #cropBatches: readonly (readonly InstanceBatch[])[];
   readonly #fenceBatches: readonly InstanceBatch[];
-  readonly #furrowBatches: readonly InstanceBatch[];
+  readonly #furrowBatch: InstanceBatch;
   readonly #mirror: WorldMirror;
   #isDirty = true;
 
@@ -235,9 +235,7 @@ export class CropField {
       this.#createBatch(buildFenceModel(mirror.grid.cellSize, level), fenceMaterial, FENCE_FIELDS, true)
     );
 
-    this.#furrowBatches = CROP_DETAIL_LEVELS.map(() =>
-      this.#createBatch(buildFurrowModel(mirror.grid.cellSize), fenceMaterial, FENCE_FIELDS, false)
-    );
+    this.#furrowBatch = this.#createBatch(buildFurrowModel(mirror.grid.cellSize), fenceMaterial, FENCE_FIELDS, false);
 
     this.#scanRows(0, mirror.grid.cellsPerSide - 1, false);
   }
@@ -279,7 +277,7 @@ export class CropField {
   }
 
   dispose(): void {
-    for (const batch of [...this.#cropBatches.flat(), ...this.#fenceBatches, ...this.#furrowBatches]) {
+    for (const batch of [...this.#cropBatches.flat(), ...this.#fenceBatches, this.#furrowBatch]) {
       batch.geometry.dispose();
     }
   }
@@ -548,15 +546,11 @@ export class CropField {
       );
     }
 
-    for (const [level, batch] of this.#furrowBatches.entries()) {
-      const sources = fields.filter((field) => field.level === level);
-
-      fill(
-        batch,
-        sources.map((field) => field.furrows),
-        FLOATS_PER_FENCE
-      );
-    }
+    fill(
+      this.#furrowBatch,
+      fields.map((field) => field.furrows),
+      FLOATS_PER_FENCE
+    );
   }
 }
 

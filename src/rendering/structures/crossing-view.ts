@@ -89,6 +89,7 @@ interface PlacedPiece {
 
 interface PlacedCrossing {
   readonly bounds: Sphere;
+  level: number;
   readonly pieces: readonly PlacedPiece[];
 }
 
@@ -142,6 +143,7 @@ export class CrossingView {
   readonly group = new Group();
   readonly #batches: readonly (readonly CrossingBatch[])[];
   readonly #mirror: WorldMirror;
+  #isDirty = true;
   #placed: PlacedCrossing[] = [];
 
   constructor(mirror: WorldMirror, textures: TerrainTextures) {
@@ -160,9 +162,44 @@ export class CrossingView {
 
   rebuild(): void {
     this.#placed = this.#mirror.crossings.map((crossing) => this.#place(crossing));
+    this.#isDirty = true;
   }
 
   update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
+    const hasNewLevels = this.#assignLevels(camera, frustum, detail);
+
+    if (!(hasNewLevels || this.#isDirty)) {
+      return;
+    }
+
+    this.#isDirty = false;
+    this.#refill();
+  }
+
+  dispose(): void {
+    for (const level of this.#batches) {
+      for (const batch of level) {
+        batch.geometry.dispose();
+      }
+    }
+  }
+
+  #assignLevels(camera: PerspectiveCamera, frustum: Frustum, detail: number): boolean {
+    let hasChanged = false;
+
+    for (const crossing of this.#placed) {
+      const level = this.#levelOf(crossing, camera, frustum, detail);
+
+      if (level !== crossing.level) {
+        crossing.level = level;
+        hasChanged = true;
+      }
+    }
+
+    return hasChanged;
+  }
+
+  #refill(): void {
     for (const level of this.#batches) {
       for (const batch of level) {
         batch.count = 0;
@@ -170,10 +207,8 @@ export class CrossingView {
     }
 
     for (const crossing of this.#placed) {
-      const level = this.#levelOf(crossing, camera, frustum, detail);
-
-      if (level !== HIDDEN) {
-        this.#fill(crossing, this.#batches[level]);
+      if (crossing.level !== HIDDEN) {
+        this.#fill(crossing, this.#batches[crossing.level]);
       }
     }
 
@@ -185,14 +220,6 @@ export class CrossingView {
         if (batch.count > 0) {
           batch.instances.markUpdated(batch.count);
         }
-      }
-    }
-  }
-
-  dispose(): void {
-    for (const level of this.#batches) {
-      for (const batch of level) {
-        batch.geometry.dispose();
       }
     }
   }
@@ -242,7 +269,7 @@ export class CrossingView {
       crossingLength(crossing) / 2 + 4
     );
 
-    return { bounds, pieces };
+    return { bounds, level: HIDDEN, pieces };
   }
 
   #stonesOf(ford: Ford): PlacedPiece[] {

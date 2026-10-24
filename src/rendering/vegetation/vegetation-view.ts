@@ -9,7 +9,8 @@ import {
 } from "three/webgpu";
 import { PLANT_SPECIES } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import { buildPlantVariants, PLANT_DETAIL_LEVELS } from "../../models/plants/plant-models.ts";
+import type { VertexChannel } from "../../models/mesh/mesh-data.ts";
+import { buildPlantVariant, PLANT_DETAIL_LEVELS } from "../../models/plants/plant-models.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
 import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
@@ -27,6 +28,8 @@ import {
 const LEVEL_DISTANCES: readonly number[] = [160, 600, 1600, 4200];
 const SHADOW_LEVEL_COUNT = 2;
 const HIDDEN = -1;
+
+const PLANT_CHANNELS: readonly VertexChannel[] = ["flutter", "part", "shade", "slot", "sway"];
 
 const PLANT_FIELDS = [
   { name: "plantPlacement", size: 4 },
@@ -86,20 +89,18 @@ export class VegetationView {
       createPlantMaterial({ glow, grid: mirror.grid, look, textures, weather: this.weather })
     );
 
-    this.#batches = PLANT_DETAIL_LEVELS.map((level, levelIndex) => {
-      const variantsBySpecies = PLANT_SPECIES.map((species) => buildPlantVariants(species.index, level));
-
-      return bucketGroups(level).map((buckets) => {
+    this.#batches = PLANT_DETAIL_LEVELS.map((level, levelIndex) =>
+      bucketGroups(level).map((buckets) => {
         const { species, variant } = PLANT_BUCKETS[buckets[0]];
 
         return this.#createBatch(
-          geometryFromMeshData(variantsBySpecies[species][variant], ["flutter", "part", "shade", "slot", "sway"]),
+          geometryFromMeshData(buildPlantVariant(species, variant, level), PLANT_CHANNELS),
           materials[species],
           levelIndex,
           buckets
         );
-      });
-    });
+      })
+    );
 
     for (const level of this.#batches.keys()) {
       this.#dirtyLevels.add(level);
