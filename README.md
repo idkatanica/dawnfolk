@@ -99,7 +99,7 @@ src/
                agents (navigation, movement), fauna, society (people, jobs, tribes, buildings, settlement,
                rivalry), powers, commands, frames
   workers/     the simulation worker (Comlink)
-  game/        main thread: worker connection, world mirror, session, engine loop, input, power tools
+  game/        main thread: worker connection, world mirror, session, engine loop, god camera, input, power tools
   models/      procedural model engine: mesh builder, rig and clips, people, animals, plants and rocks,
                buildings, monuments, crossings
   rendering/   WebGPU renderer: sky, height fog and atmosphere, terrain and water patches, waterfalls, vegetation

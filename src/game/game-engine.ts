@@ -1,11 +1,11 @@
 import { Matrix4, PerspectiveCamera, type Vector3, type WebGPURenderer } from "three/webgpu";
 import type { GenerationProgress } from "../generation/world-generator.ts";
-import { type CameraState, GodCamera } from "../rendering/camera/god-camera.ts";
 import { createRenderer, type GraphicsBackend } from "../rendering/create-renderer.ts";
 import { type QualityLevel, RENDER_QUALITY } from "../rendering/render-quality.ts";
 import { WorldRenderer } from "../rendering/world-renderer.ts";
 import { clamp } from "../shared/math.ts";
 import type { WorldRequest } from "../workers/simulation-worker-api.ts";
+import { type CameraState, GodCamera } from "./camera/god-camera.ts";
 import type { EngineHandle } from "./engine-handle.ts";
 import { FramePacer } from "./frame-pacer.ts";
 import { GameSession } from "./game-session.ts";

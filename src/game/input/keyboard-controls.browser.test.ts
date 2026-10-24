@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from "three/webgpu";
 import { afterEach, describe, expect, it } from "vitest";
-import { GodCamera } from "../../rendering/camera/god-camera.ts";
+import { GodCamera } from "../camera/god-camera.ts";
 import { KeyboardControls } from "./keyboard-controls.ts";
 
 const WORLD_HALF_SIZE = 4000;

@@ -1,5 +1,5 @@
 import type { Vector3 } from "three/webgpu";
-import type { GodCamera } from "../../rendering/camera/god-camera.ts";
+import type { GodCamera } from "../camera/god-camera.ts";
 import type { GroundPicker, ScreenPoint } from "./ground-picker.ts";
 
 export interface ToolGestures {

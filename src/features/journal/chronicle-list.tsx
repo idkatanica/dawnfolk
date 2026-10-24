@@ -1,8 +1,8 @@
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { ChronicleEntry } from "../../simulation/chronicle.ts";
+import { useFocusCamera } from "../inspector/use-focus-camera.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { CHRONICLE_ICONS } from "./chronicle-icons.ts";
-import { useFocusCamera } from "./use-focus-camera.ts";
 
 const SHOWN_ENTRIES = 120;
 

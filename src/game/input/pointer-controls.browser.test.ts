@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from "three/webgpu";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { GodCamera } from "../../rendering/camera/god-camera.ts";
+import { GodCamera } from "../camera/god-camera.ts";
 import { GroundPicker } from "./ground-picker.ts";
 import { PointerControls } from "./pointer-controls.ts";
 
