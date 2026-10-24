@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TOUCH_QUERY } from "../design/use-media-query.ts";
-import { LONGEST_WORLD_NAME, worldNameFor } from "../features/new-world/world-names.ts";
+import { randomSeed, readSeed } from "../features/new-world/seeds.ts";
+import { readWorldName, worldNameFor } from "../features/new-world/world-names.ts";
 import type { CameraState } from "../game/camera/god-camera.ts";
 import { QUALITY_LEVELS, type QualityLevel } from "../rendering/render-quality.ts";
 import { ISLAND_SHAPES, type IslandShapeKind } from "../world/island-shape.ts";
@@ -16,8 +17,6 @@ export interface LaunchOptions {
   readonly shape: IslandShapeKind;
 }
 
-export const LARGEST_SEED = 999_999;
-
 const cameraSchema = z
   .string()
   .transform((text) => text.split(",").map(Number))
@@ -27,16 +26,12 @@ const cameraSchema = z
 const launchSchema = z.object({
   camera: cameraSchema.optional(),
   hours: z.coerce.number().min(0).max(24).optional(),
-  name: z.string().trim().min(1).max(LONGEST_WORLD_NAME).optional(),
+  name: z.string().transform(readWorldName).pipe(z.string()).optional(),
   paused: z.enum(["0", "1"]).optional(),
   quality: z.enum(QUALITY_LEVELS).optional(),
-  seed: z.coerce.number().int().min(1).max(LARGEST_SEED).optional(),
+  seed: z.string().transform(readSeed).pipe(z.number()).optional(),
   shape: z.enum(ISLAND_SHAPES).optional(),
 });
-
-export function randomSeed(): number {
-  return 1 + Math.floor(Math.random() * LARGEST_SEED);
-}
 
 function defaultQuality(): QualityLevel {
   const stored = storedQuality();

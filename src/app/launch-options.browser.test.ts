@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { choosesWorld, LARGEST_SEED, randomSeed, readLaunchOptions } from "./launch-options.ts";
+import { LARGEST_SEED, randomSeed } from "../features/new-world/seeds.ts";
+import { choosesWorld, readLaunchOptions } from "./launch-options.ts";
 import { storeQuality } from "./preferences.ts";
 
 const QUALITY_KEY = "dawnfolk.quality";
@@ -32,6 +33,10 @@ describe("launch options", () => {
 
     expect(options.name).toBe("Old Ford");
     expect(options.shape).toBe("square");
+  });
+
+  it("reads a world name from the address as the new-world form does", () => {
+    expect(readLaunchOptions("?seed=7&name=Old%20%20%20Ford").name).toBe("Old Ford");
   });
 
   it("names a world after its seed until it is given a name", () => {

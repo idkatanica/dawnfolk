@@ -1,27 +1,14 @@
 import { ArrowRight } from "lucide-react";
-import { cn } from "../../design/cn.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { TribeSummary } from "../../simulation/frame.ts";
-import type { Stance } from "../../simulation/society/rivalry/relations.ts";
 import type { RaidView, RelationView } from "../../simulation/society/rivalry/rivalry-system.ts";
 import { useFocusCamera } from "../inspector/use-focus-camera.ts";
+import { TribeDot } from "../tribes/tribe-dot.tsx";
 import { useWorldStore } from "../world/world-store.ts";
-import { byStance, RAID_PHASE_LABELS, relationNote, STANCE_LOOKS } from "./stance-looks.ts";
+import { RelationNote, StanceBadge } from "./rivalry-parts.tsx";
+import { byStance, RAID_PHASE_LABELS } from "./stance-looks.ts";
 
 const QUIET_ISLAND = "Every tribe keeps to itself for now. Rivalries grow where lands and hunting grounds meet.";
-
-export function StanceBadge({ stance }: { readonly stance: Stance }) {
-  const look = STANCE_LOOKS[stance];
-
-  return (
-    <span
-      className={cn("inline-flex h-6 shrink-0 items-center gap-1 rounded-full px-2 font-medium text-xs", look.tone)}
-    >
-      <GameIcon name={look.icon} size={18} />
-      {look.label}
-    </span>
-  );
-}
 
 interface RaidEntry {
   readonly attacker: TribeSummary;
@@ -35,24 +22,14 @@ interface RelationEntry {
   readonly second: TribeSummary;
 }
 
-function tribeById(tribes: readonly TribeSummary[], id: number): TribeSummary | null {
-  const tribe = tribes.find((candidate) => candidate.id === id);
-
-  if (tribe === undefined) {
-    return null;
-  }
-
-  return tribe;
-}
-
 function raidEntries(raids: readonly RaidView[], tribes: readonly TribeSummary[]): RaidEntry[] {
   const entries: RaidEntry[] = [];
 
   for (const raid of raids) {
-    const attacker = tribeById(tribes, raid.attackerId);
-    const defender = tribeById(tribes, raid.defenderId);
+    const attacker = tribes.find((tribe) => tribe.id === raid.attackerId);
+    const defender = tribes.find((tribe) => tribe.id === raid.defenderId);
 
-    if (attacker !== null && defender !== null) {
+    if (attacker !== undefined && defender !== undefined) {
       entries.push({ attacker, defender, raid });
     }
   }
@@ -64,10 +41,10 @@ function relationEntries(relations: readonly RelationView[], tribes: readonly Tr
   const entries: RelationEntry[] = [];
 
   for (const relation of relations.toSorted(byStance)) {
-    const first = tribeById(tribes, relation.firstId);
-    const second = tribeById(tribes, relation.secondId);
+    const first = tribes.find((tribe) => tribe.id === relation.firstId);
+    const second = tribes.find((tribe) => tribe.id === relation.secondId);
 
-    if (first !== null && second !== null) {
+    if (first !== undefined && second !== undefined) {
       entries.push({ first, relation, second });
     }
   }
@@ -79,16 +56,6 @@ function useShowSpot(x: number, z: number) {
   const focus = useFocusCamera();
 
   return () => focus(x, z);
-}
-
-function TribeDot({ tribe }: { readonly tribe: TribeSummary }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="size-3 shrink-0 rounded-full ring-2 ring-white"
-      style={{ backgroundColor: tribe.color }}
-    />
-  );
 }
 
 function RaidRow({ entry }: { readonly entry: RaidEntry }) {
@@ -125,16 +92,6 @@ function RaidRow({ entry }: { readonly entry: RaidEntry }) {
   );
 }
 
-function RelationNote({ relation }: { readonly relation: RelationView }) {
-  const note = relationNote(relation);
-
-  if (note === null) {
-    return null;
-  }
-
-  return <span className="truncate text-ink-muted text-xs">{note}</span>;
-}
-
 function RelationRow({ entry }: { readonly entry: RelationEntry }) {
   const { first, relation, second } = entry;
 
@@ -148,9 +105,9 @@ function RelationRow({ entry }: { readonly entry: RelationEntry }) {
         type="button"
       >
         <span className="flex shrink-0 gap-0.5">
-          <TribeDot tribe={first} />
+          <TribeDot color={first.color} />
 
-          <TribeDot tribe={second} />
+          <TribeDot color={second.color} />
         </span>
 
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">

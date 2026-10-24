@@ -9,6 +9,7 @@ import type { RivalryView } from "../../simulation/society/rivalry/rivalry-syste
 import { useShowTribe } from "../inspector/use-focus-camera.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
 import { isFeuding, raidOf } from "../rivalry/stance-looks.ts";
+import { TribeDot } from "../tribes/tribe-dot.tsx";
 import { useWorldStore, type WorldSnapshot } from "../world/world-store.ts";
 import { useLabelLayout } from "./use-label-layout.ts";
 
@@ -108,11 +109,7 @@ function TribeLabel({ isSelected, mood, tribe }: TribeLabelProps) {
         onClick={showTribe}
         type="button"
       >
-        <span
-          aria-hidden="true"
-          className="size-3 shrink-0 rounded-full ring-2 ring-white"
-          style={{ backgroundColor: tribe.color }}
-        />
+        <TribeDot color={tribe.color} />
 
         <span className="font-semibold text-ink">{tribe.name}</span>
 

@@ -1,3 +1,4 @@
+import type { BadgeTone } from "../../design/badge.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
 import type { RaidPhase } from "../../simulation/society/rivalry/raids.ts";
 import type { Stance } from "../../simulation/society/rivalry/relations.ts";
@@ -6,14 +7,14 @@ import type { RaidView, RelationView, RivalryView } from "../../simulation/socie
 interface StanceLook {
   readonly icon: GameIconName;
   readonly label: string;
-  readonly tone: string;
+  readonly tone: BadgeTone;
 }
 
 export const STANCE_LOOKS: Readonly<Record<Stance, StanceLook>> = {
-  friendly: { icon: "peace", label: "Friendly", tone: "bg-meadow-soft text-meadow" },
-  hostile: { icon: "raid", label: "Hostile", tone: "bg-ember-soft text-ember" },
-  neutral: { icon: "neutral", label: "Neutral", tone: "bg-ink/8 text-ink-soft" },
-  wary: { icon: "shield", label: "Wary", tone: "bg-dawn-soft text-dawn-strong" },
+  friendly: { icon: "peace", label: "Friendly", tone: "meadow" },
+  hostile: { icon: "raid", label: "Hostile", tone: "ember" },
+  neutral: { icon: "neutral", label: "Neutral", tone: "muted" },
+  wary: { icon: "shield", label: "Wary", tone: "dawn" },
 };
 
 export const RAID_PHASE_LABELS: Readonly<Record<RaidPhase, string>> = {
