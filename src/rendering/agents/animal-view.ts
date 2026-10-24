@@ -3,7 +3,7 @@ import { ANIMAL_KINDS, type AnimalKind } from "../../content/animals.ts";
 import { type AnimalAppearance, animalAppearance } from "../../models/animals/animal-appearance.ts";
 import { ANIMAL_SPECIES, animalPartMask, buildAnimalParts, poseAnimal } from "../../models/animals/animal-models.ts";
 import { MAMMOTH_BONE_COUNT } from "../../models/animals/mammoth-model.ts";
-import { QUADRUPED_CLIPS } from "../../models/animals/quadruped-clips.ts";
+import { leapPerStride, QUADRUPED_CLIPS } from "../../models/animals/quadruped-clips.ts";
 import { MaterialSlot } from "../../models/materials.ts";
 import { hasPart } from "../../models/part-mask.ts";
 import { Pose } from "../../models/rig/pose.ts";
@@ -78,7 +78,7 @@ function measureKindStrides(kind: AnimalKind): Map<AnimalPose, number> {
       skeleton: species.skeleton,
     });
 
-    strides.set(clip, Math.max(SHORTEST_STRIDE, stride));
+    strides.set(clip, Math.max(SHORTEST_STRIDE, stride + leapPerStride(species.gait, clip)));
   }
 
   return strides;

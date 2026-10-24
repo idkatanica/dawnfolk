@@ -75,6 +75,7 @@ export const MAMMOTH_GAIT: GaitStyle = {
   deadHeadRoll: 0,
   grazeReach: degrees(28),
   headBob: degrees(3),
+  leap: 0,
   lowerFlex: degrees(38),
   runKind: "amble",
   runSwing: degrees(24),

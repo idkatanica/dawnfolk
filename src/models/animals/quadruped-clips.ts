@@ -4,12 +4,13 @@ import type { Pose } from "../rig/pose.ts";
 import { QUADRUPED_FIGHT_CLIPS } from "./quadruped-fight-clips.ts";
 import { LEG_ENDS, LEG_SIDES, type LegEnd, type LegSide, legBones, QuadrupedBone } from "./quadruped-skeleton.ts";
 
-type RunKind = "amble" | "gallop";
+type RunKind = "amble" | "gallop" | "hop";
 
 export interface GaitStyle {
   readonly deadHeadRoll: number;
   readonly grazeReach: number;
   readonly headBob: number;
+  readonly leap: number;
   readonly lowerFlex: number;
   readonly runKind: RunKind;
   readonly runSwing: number;
@@ -43,6 +44,14 @@ const GALLOP_PHASES: Readonly<Record<LegEnd, Readonly<Record<"left" | "right", n
   front: { left: 0.42, right: 0.52 },
   hind: { left: 0, right: 0.09 },
 };
+
+const HOP_PHASES: Readonly<Record<LegEnd, Readonly<Record<"left" | "right", number>>>> = {
+  front: { left: 0.5, right: 0.58 },
+  hind: { left: 0, right: 0.03 },
+};
+
+const WALKING_HOP = 0.45;
+const HOP_HEIGHT = 0.1;
 
 const GRAZING_STANCE: Readonly<Record<LegEnd, number>> = { front: degrees(4), hind: -degrees(3) };
 
@@ -99,8 +108,26 @@ function swishTail(pose: Pose, phase: number, amount: number): void {
   bendTrunkBone(pose, QuadrupedBone.Tail, degrees(10), amount * wave(phase * 2));
 }
 
+function hop(pose: Pose, phase: number, context: AnimalClipContext, effort: number): void {
+  const { gait } = context;
+
+  stepLegs(pose, phase, gait.runSwing * effort, gait.lowerFlex * (0.6 + 0.6 * effort), HOP_PHASES);
+  bendTrunkBone(pose, QuadrupedBone.Pelvis, degrees(12) * effort * wave(phase, 0.1));
+  bendTrunkBone(pose, QuadrupedBone.Spine, -degrees(14) * effort * wave(phase));
+  bendTrunkBone(pose, QuadrupedBone.Chest, degrees(6) * effort * wave(phase, 0.2));
+  bendTrunkBone(pose, QuadrupedBone.Neck, -degrees(4) + gait.headBob * wave(phase, 0.3));
+  bendTrunkBone(pose, QuadrupedBone.Tail, -degrees(25) * effort);
+  pose.height = HOP_HEIGHT * effort * Math.max(0, wave(phase, -0.62));
+}
+
 function walk(pose: Pose, phase: number, context: AnimalClipContext): void {
   const { gait } = context;
+
+  if (gait.runKind === "hop") {
+    hop(pose, phase, context, WALKING_HOP);
+
+    return;
+  }
 
   stepLegs(pose, phase, gait.walkSwing, gait.lowerFlex, WALK_PHASES);
   bendTrunkBone(pose, QuadrupedBone.Pelvis, 0, degrees(1.5) * wave(phase), degrees(2) * wave(phase));
@@ -131,6 +158,12 @@ function amble(pose: Pose, phase: number, context: AnimalClipContext): void {
 }
 
 function run(pose: Pose, phase: number, context: AnimalClipContext): void {
+  if (context.gait.runKind === "hop") {
+    hop(pose, phase, context, 1);
+
+    return;
+  }
+
   if (context.gait.runKind === "gallop") {
     gallop(pose, phase, context);
 
@@ -192,6 +225,18 @@ export const QUADRUPED_CLIPS: Readonly<Record<AnimalPose, AnimalClip>> = {
   walk: { apply: walk, timing: { kind: "stride" } },
   ...QUADRUPED_FIGHT_CLIPS,
 };
+
+export function leapPerStride(gait: GaitStyle, clip: AnimalPose): number {
+  if (gait.runKind !== "hop") {
+    return 0;
+  }
+
+  if (clip === "walk") {
+    return gait.leap * WALKING_HOP;
+  }
+
+  return clip === "run" || clip === "charge" ? gait.leap : 0;
+}
 
 export function applyAnimalClip(
   pose: Pose,

@@ -50,6 +50,7 @@ export const WOLF_GAIT: GaitStyle = {
   deadHeadRoll: 0,
   grazeReach: degrees(55),
   headBob: degrees(3),
+  leap: 0,
   lowerFlex: degrees(55),
   runKind: "gallop",
   runSwing: degrees(42),
