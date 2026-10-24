@@ -4,7 +4,6 @@ import { WEAPON_KINDS } from "../../content/weapons.ts";
 import { CARRIED_ITEMS, PERSON_POSES } from "../../world/agent-poses.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, mergeMeshes, triangleCount, VERTEX_CHANNELS } from "../mesh/mesh-data.ts";
-import { MAXIMUM_PARTS } from "../part-mask.ts";
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { meshProblems, openEdgeCount, thinnestPiece } from "../testing/mesh-checks.ts";
@@ -27,7 +26,6 @@ import {
   HUMAN_PARTS,
   type HumanPart,
   humanPartIndex,
-  humanPartMask,
 } from "./human-model.ts";
 import { humanBoneScales } from "./human-proportions.ts";
 import { HUMAN_BONE_COUNT, HUMAN_SKELETON, HumanBone } from "./human-skeleton.ts";
@@ -84,10 +82,6 @@ function torsoIn(parts: readonly HumanPart[]): number {
 }
 
 describe("human model", () => {
-  it("fits every part into a part mask", () => {
-    expect(HUMAN_PARTS.length).toBeLessThanOrEqual(MAXIMUM_PARTS);
-  });
-
   it("builds clean geometry for every part", () => {
     for (const [index, mesh] of highParts.entries()) {
       expect(meshProblems(mesh), HUMAN_PARTS[index]).toEqual([]);
@@ -295,11 +289,6 @@ describe("visible parts", () => {
     expect(activityParts("shoot", "nothing", "bow")).toEqual(["drawnBow", "quiver"]);
     expect(activityParts("throw", "nothing", "spear")).toEqual(["spear"]);
     expect(activityParts("eat", "nothing", "bow")).toEqual([]);
-  });
-
-  it("packs visible parts into the instance mask", () => {
-    expect(humanPartMask(["body"])).toEqual([1, 0]);
-    expect(humanPartMask(["body", "carriedCrops"])).toEqual([1, 2 ** (HUMAN_PARTS.indexOf("carriedCrops") - 24)]);
   });
 });
 

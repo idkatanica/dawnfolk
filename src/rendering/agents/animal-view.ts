@@ -1,11 +1,15 @@
 import { Color, Group, type MeshStandardNodeMaterial, Sphere, Vector3 } from "three/webgpu";
 import { ANIMAL_KINDS, type AnimalKind } from "../../content/animals.ts";
 import { type AnimalAppearance, animalAppearance } from "../../models/animals/animal-appearance.ts";
-import { ANIMAL_SPECIES, animalPartMask, buildAnimalParts, poseAnimal } from "../../models/animals/animal-models.ts";
+import {
+  ANIMAL_SPECIES,
+  buildAnimalParts,
+  poseAnimal,
+  visibleAnimalParts,
+} from "../../models/animals/animal-models.ts";
 import { MAMMOTH_BONE_COUNT } from "../../models/animals/mammoth-model.ts";
 import { leapPerStride, QUADRUPED_CLIPS } from "../../models/animals/quadruped-clips.ts";
 import { MaterialSlot } from "../../models/materials.ts";
-import { hasPart } from "../../models/part-mask.ts";
 import { Pose } from "../../models/rig/pose.ts";
 import { SkeletonPoser } from "../../models/rig/skeleton-poser.ts";
 import { measureStride } from "../../models/rig/stride.ts";
@@ -82,12 +86,6 @@ function measureKindStrides(kind: AnimalKind): Map<AnimalPose, number> {
   }
 
   return strides;
-}
-
-function visiblePartIndices(kind: AnimalKind, appearance: AnimalAppearance): number[] {
-  const mask = animalPartMask(kind, appearance);
-
-  return ANIMAL_SPECIES[kind].parts.map((_, index) => index).filter((index) => hasPart(mask, index));
 }
 
 function selectedAnimalId(inspection: Inspection | null): number {
@@ -338,7 +336,7 @@ export class AnimalView {
       colors: [new Color(appearance.coat), new Color(appearance.coatLight)],
       kind,
       motion: this.#motionFor(existing, animals, offset),
-      parts: visiblePartIndices(kind, appearance),
+      parts: visibleAnimalParts(kind, appearance),
       scales: ANIMAL_SPECIES[kind].boneScales(appearance),
       variation: seed,
     };

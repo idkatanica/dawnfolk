@@ -2,7 +2,6 @@ import type { WeaponKind } from "../../content/weapons.ts";
 import type { CarriedItem, PersonPose } from "../../world/agent-poses.ts";
 import { MeshBuilder } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
-import { maskOf, type PartMask } from "../part-mask.ts";
 import type { HairStyle, PersonAppearance } from "./appearance.ts";
 import { addCarriedClay, addCarriedFruit, addCarriedOre } from "./carried-props.ts";
 import { addBrooch, addBuckle, addHelmet, addTorc } from "./era-props.ts";
@@ -273,8 +272,4 @@ export function activityParts(pose: PersonPose, carried: CarriedItem, weapon: We
   parts.push(...weaponParts(pose, weapon));
 
   return parts;
-}
-
-export function humanPartMask(parts: readonly HumanPart[]): PartMask {
-  return maskOf(parts.map((part) => humanPartIndex(part)));
 }
