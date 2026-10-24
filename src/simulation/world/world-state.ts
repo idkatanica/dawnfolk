@@ -86,6 +86,7 @@ export class WorldState {
   readonly surfaceChanges: RowChangeTracker;
   readonly terrain: TerrainData;
   readonly vegetation: VegetationStore;
+  readonly waterLevelChanges = new RegionChangeTracker();
   crossings: readonly Crossing[];
   heightVersion = 0;
   water: WaterFeatures;
@@ -407,6 +408,11 @@ export class WorldState {
 
   markWaterChanged(): void {
     this.waterVersion += 1;
+  }
+
+  markWaterLevelsChanged(region: CellRegion): void {
+    this.waterLevelChanges.markRegion(region);
+    this.markWaterChanged();
   }
 
   #reserveSprings(springs: readonly Spring[]): void {

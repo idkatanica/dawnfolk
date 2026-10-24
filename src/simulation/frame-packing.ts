@@ -27,6 +27,7 @@ import type {
   HeightPatch,
   PackedRows,
   TribeSummary,
+  WaterLevelPatch,
   WeatherView,
 } from "./frame.ts";
 import type { Environment } from "./nature/environment.ts";
@@ -158,19 +159,27 @@ export function allRows(world: WorldState): RowRun[] {
   return [{ firstRow: 0, rowCount: world.grid.cellsPerSide }];
 }
 
-export function packHeightPatch(world: WorldState, region: CellRegion): HeightPatch {
+function packRegion(world: WorldState, values: Float32Array, region: CellRegion): Float32Array {
   const width = region.lastColumn - region.firstColumn + 1;
   const height = region.lastRow - region.firstRow + 1;
 
-  const heights = new Float32Array(width * height);
+  const packed = new Float32Array(width * height);
 
   for (let row = 0; row < height; row += 1) {
     const start = world.grid.index(region.firstColumn, region.firstRow + row);
 
-    heights.set(world.terrain.height.subarray(start, start + width), row * width);
+    packed.set(values.subarray(start, start + width), row * width);
   }
 
-  return { heights, region };
+  return packed;
+}
+
+export function packHeightPatch(world: WorldState, region: CellRegion): HeightPatch {
+  return { heights: packRegion(world, world.terrain.height, region), region };
+}
+
+export function packWaterLevels(world: WorldState, region: CellRegion): WaterLevelPatch {
+  return { levels: packRegion(world, world.terrain.waterSurface, region), region };
 }
 
 const ARMED_JOBS: ReadonlySet<string> = new Set(["defend", "fight", "hunt", "raid"]);

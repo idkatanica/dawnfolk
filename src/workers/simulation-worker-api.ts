@@ -41,6 +41,10 @@ function frameTransferables(frame: SimulationFrame): ArrayBuffer[] {
     buffers.push(frame.water.riverStrength.buffer, frame.water.waterSurface.buffer);
   }
 
+  if (frame.waterLevels !== null) {
+    buffers.push(frame.waterLevels.levels.buffer);
+  }
+
   if (frame.vegetation !== null) {
     buffers.push(...channelBuffers(frame.vegetation), frame.vegetation.indices.buffer);
   }

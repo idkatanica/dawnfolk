@@ -216,9 +216,11 @@ export class WorldRenderer {
     }
 
     if (changes.hasWaterChanged) {
-      this.#water.waterChanged();
+      this.#water.waterChanged(null);
       this.#rebuildWaterfalls();
       this.#springs.rebuild(this.#mirror);
+    } else if (changes.waterLevelRegion !== null) {
+      this.#water.waterChanged(changes.waterLevelRegion);
     }
 
     const wind = windOf(frame.weather);

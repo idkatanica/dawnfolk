@@ -461,17 +461,22 @@ export class Simulation {
   }
 
   #recomputeWaterWhenSettled(seconds: number): void {
-    if (!this.waterRecomputation.update(seconds)) {
+    const change = this.waterRecomputation.update(seconds);
+
+    if (change === "none") {
       return;
     }
 
-    this.navigation.rebuild();
-    this.#waterUpdate = {
-      crossings: this.world.crossings,
-      features: this.world.water,
-      riverStrength: Uint8Array.from(this.world.terrain.riverStrength),
-      waterSurface: Float32Array.from(this.world.terrain.waterSurface),
-    };
+    if (change === "features") {
+      this.navigation.rebuild();
+      this.#waterUpdate = {
+        crossings: this.world.crossings,
+        features: this.world.water,
+        riverStrength: Uint8Array.from(this.world.terrain.riverStrength),
+        waterSurface: Float32Array.from(this.world.terrain.waterSurface),
+      };
+    }
+
     this.#settleNewWater();
   }
 

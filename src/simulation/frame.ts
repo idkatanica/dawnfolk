@@ -29,6 +29,11 @@ export interface HeightPatch {
   region: CellRegion;
 }
 
+export interface WaterLevelPatch {
+  levels: Float32Array;
+  region: CellRegion;
+}
+
 export interface WaterUpdate {
   crossings: readonly Crossing[];
   features: WaterFeatures;
@@ -158,6 +163,7 @@ export interface SimulationFrame {
   tribes: TribeSummary[];
   vegetation: VegetationPatch | null;
   water: WaterUpdate | null;
+  waterLevels: WaterLevelPatch | null;
   weather: WeatherView;
 }
 

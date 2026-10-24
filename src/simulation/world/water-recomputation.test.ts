@@ -27,10 +27,10 @@ describe("water recomputation", () => {
 
     raiseTerrain(world, { radius: 200, x: 0, z: 0 }, 5);
 
-    expect(recomputation.update(0.1)).toBe(false);
+    expect(recomputation.update(0.1)).toBe("none");
     expect(recomputation.isPending).toBe(true);
-    expect(recomputation.update(0.3)).toBe(false);
-    expect(recomputation.update(0.5)).toBe(true);
+    expect(recomputation.update(0.3)).toBe("none");
+    expect(recomputation.update(0.5)).toBe("features");
     expect(recomputation.isPending).toBe(false);
   });
 

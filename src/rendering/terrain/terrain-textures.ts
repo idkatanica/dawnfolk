@@ -101,7 +101,9 @@ export class TerrainTextures {
       this.height.needsUpdate = true;
     }
 
-    if (changes.hasWaterChanged) {
+    const haveLevelsChanged = changes.hasWaterChanged || changes.waterLevelRegion !== null;
+
+    if (haveLevelsChanged) {
       this.#buildShore();
     } else if (changes.heightRegion !== null) {
       this.#updateShore(changes.heightRegion);
@@ -111,7 +113,7 @@ export class TerrainTextures {
       this.surface.needsUpdate = true;
     }
 
-    if (changes.hasWaterChanged) {
+    if (haveLevelsChanged) {
       this.water.needsUpdate = true;
     }
 

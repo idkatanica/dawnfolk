@@ -1,5 +1,6 @@
 import type { Frustum, Group, MeshStandardNodeMaterial, PerspectiveCamera } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
+import type { CellRegion } from "../../world/change-tracking.ts";
 import { NO_WATER } from "../../world/water.ts";
 import {
   type HeightRange,
@@ -39,8 +40,8 @@ export class WaterView {
     return this.#patches.group;
   }
 
-  waterChanged(): void {
-    this.#patches.remeasure(null);
+  waterChanged(region: CellRegion | null): void {
+    this.#patches.remeasure(region);
   }
 
   update(camera: PerspectiveCamera, frustum: Frustum, detail: number, terrainLevels: Readonly<Int8Array>): void {

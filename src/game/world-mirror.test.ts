@@ -81,6 +81,40 @@ describe("world mirror", () => {
     expect(mirror.water).toEqual(simulation.world.water);
   });
 
+  it("follows a crater lake as it fills by its water levels alone", () => {
+    const simulation = new Simulation(
+      createVegetatedWorld({
+        dimensions: { cellSize: 10, cellsPerSide: 96 },
+        heightAt: (x, z) => 200 + Math.abs(x - 5) * 0.25 + z * 0.02,
+      })
+    );
+
+    simulation.weather.setKind("clear");
+    simulation.waterRecomputation.recompute();
+
+    const mirror = new WorldMirror(simulation.initialWorld(), 0);
+
+    simulation.usePower("meteor", 0, -200, { craterRadius: 140, fallTime: 0.5 });
+    advanceTogether(simulation, mirror, 2);
+
+    const versionWhileFilling = mirror.waterVersion;
+    const crossingsWhileFilling = mirror.crossings;
+
+    mirror.waterLevelChanges.takeRegion();
+    advanceTogether(simulation, mirror, 1);
+
+    expect(mirror.waterVersion).toBe(versionWhileFilling);
+    expect(mirror.crossings).toBe(crossingsWhileFilling);
+    expect(mirror.waterLevelChanges.takeRegion()).not.toBeNull();
+    expect(mirror.terrain.waterSurface).toEqual(simulation.world.terrain.waterSurface);
+
+    advanceTogether(simulation, mirror, 4);
+
+    expect(simulation.waterRecomputation.isPending).toBe(false);
+    expect(mirror.waterVersion).toBe(versionWhileFilling + 1);
+    expect(mirror.terrain.waterSurface).toEqual(simulation.world.terrain.waterSurface);
+  });
+
   it("carries the crossings and drops them when the water they spanned is gone", () => {
     const ford = fordAcross(-24, 24, 0);
     const simulation = new Simulation(

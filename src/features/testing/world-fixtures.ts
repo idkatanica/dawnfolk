@@ -270,6 +270,7 @@ export function createFrame(overrides: Partial<SimulationFrame> = {}): Simulatio
     tribes: [createTribe()],
     vegetation: null,
     water: null,
+    waterLevels: null,
     weather: createWeather(),
     ...overrides,
   };

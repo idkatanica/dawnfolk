@@ -5,6 +5,7 @@ import type {
   SimulationFrame,
   SimulationStatistics,
   TribeSummary,
+  WaterLevelPatch,
 } from "./frame.ts";
 import {
   allRows,
@@ -18,6 +19,7 @@ import {
   packHeightPatch,
   packPeople,
   packSurfaceRows,
+  packWaterLevels,
 } from "./frame-packing.ts";
 import { type Inspection, inspect } from "./inspection.ts";
 import type { Simulation } from "./simulation.ts";
@@ -64,6 +66,7 @@ export class FrameBuilder {
       tribes,
       vegetation: world.vegetation.takeChanges(),
       water: simulation.takeWaterUpdate(),
+      waterLevels: this.#waterLevels(),
       weather: describeWeather(simulation.weather, simulation.environment),
     };
   }
@@ -87,6 +90,7 @@ export class FrameBuilder {
     world.surfaceChanges.takeRuns();
     world.groundChanges.takeRuns();
     world.heightChanges.takeRegion();
+    world.waterLevelChanges.takeRegion();
     world.vegetation.discardChanges();
 
     const [surface] = packSurfaceRows(world, allRows(world));
@@ -129,6 +133,18 @@ export class FrameBuilder {
     }
 
     return packHeightPatch(world, region);
+  }
+
+  #waterLevels(): WaterLevelPatch | null {
+    const { world } = this.#simulation;
+
+    const region = world.waterLevelChanges.takeRegion();
+
+    if (region === null) {
+      return null;
+    }
+
+    return packWaterLevels(world, region);
   }
 
   #inspection(tribes: readonly TribeSummary[]): Inspection | null {
