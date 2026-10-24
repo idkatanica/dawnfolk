@@ -6,7 +6,7 @@ import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../wo
 import { hasRoomFromCoast, isOnIsland } from "../../world/coast.ts";
 import { type Crossing, CrossingIndex, crossingCells, LOG_ROOT_BEHIND } from "../../world/crossings.ts";
 import type { Deposit } from "../../world/deposits.ts";
-import { canGrowWild, canStandOn, isOpenGround, slopeAt, WALKABLE_SLOPE } from "../../world/footing.ts";
+import { canGrowWild, canStandOn, isOpenGround, isWalkableGround, slopeAt } from "../../world/footing.ts";
 import type { IslandShapeKind } from "../../world/island-shape.ts";
 import { type Monument, type MonumentCondition, MonumentDamage } from "../../world/monuments.ts";
 import type { TerrainData } from "../../world/terrain-data.ts";
@@ -193,15 +193,7 @@ export class WorldState {
   }
 
   isWalkable(cell: number): boolean {
-    if (!this.isOnIsland(cell) || this.isWater(cell)) {
-      return false;
-    }
-
-    if (this.isObstructed(cell)) {
-      return false;
-    }
-
-    return this.slope(cell) < WALKABLE_SLOPE;
+    return isWalkableGround(this.terrain, this.grid, cell) && !this.isObstructed(cell);
   }
 
   isBrook(cell: number): boolean {

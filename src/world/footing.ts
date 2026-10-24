@@ -1,7 +1,7 @@
 import { plantSpeciesDefinition, woodlandShare } from "../content/plants.ts";
 import { hashToUnit } from "../shared/math.ts";
 import { hasRoomFromCoast, isOnIsland } from "./coast.ts";
-import { type SampledTerrain, touchesWaterCell } from "./terrain-sampling.ts";
+import { isWaterCell, type SampledTerrain, touchesWaterCell } from "./terrain-sampling.ts";
 import type { WorldGrid } from "./world-grid.ts";
 
 export interface FootingTerrain extends SampledTerrain {
@@ -43,6 +43,14 @@ export function slopeAt(heights: Float32Array, grid: WorldGrid, cell: number): n
   const row = grid.rowOf(cell);
 
   return Math.hypot(gradientX(heights, grid, column, row), gradientZ(heights, grid, column, row));
+}
+
+export function isWalkableGround(terrain: FootingTerrain, grid: WorldGrid, cell: number): boolean {
+  if (!isOnIsland(terrain.coastDistance, cell) || isWaterCell(terrain, cell)) {
+    return false;
+  }
+
+  return slopeAt(terrain.height, grid, cell) < WALKABLE_SLOPE;
 }
 
 export function isOpenGround(terrain: FootingTerrain, grid: WorldGrid, cell: number): boolean {

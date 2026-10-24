@@ -13,7 +13,7 @@ import {
   logRadiusAt,
   pointOnCrossing,
 } from "../world/crossings.ts";
-import { slopeAt, WALKABLE_SLOPE } from "../world/footing.ts";
+import { isWalkableGround, slopeAt } from "../world/footing.ts";
 import { isWaterCell, sampleHeight } from "../world/terrain-sampling.ts";
 import type { River, WaterFeatures } from "../world/water.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
@@ -486,13 +486,7 @@ function passageIn(survey: CrossingSurvey, cell: number): Passage {
     return Passage.Brook;
   }
 
-  const isGround =
-    isOnIsland(terrain.coastDistance, cell) &&
-    !isWaterCell(terrain, cell) &&
-    !isBlocked(cell) &&
-    slopeAt(terrain.height, grid, cell) < WALKABLE_SLOPE;
-
-  return isGround ? Passage.Ground : Passage.Blocked;
+  return isWalkableGround(terrain, grid, cell) && !isBlocked(cell) ? Passage.Ground : Passage.Blocked;
 }
 
 function wideningAlong(survey: CrossingSurvey, course: RiverCourse): number {
@@ -779,11 +773,14 @@ function fitsLog(site: Site): boolean {
   return isShort && lowestLogBottomOverWater(site) >= site.highest + LOG_CLEARANCE;
 }
 
-function fitsFord(site: Site): boolean {
-  const isShallow = site.deepest <= FORD_DEEPEST && waterSpanOf(site) <= FORD_LONGEST_WATER;
-  const isLevel = site.highest - site.lowest <= FORD_LEVEL_SPREAD;
+function isFordableWater(deepest: number, spread: number, span: number): boolean {
+  return deepest <= FORD_DEEPEST && span <= FORD_LONGEST_WATER && spread <= FORD_LEVEL_SPREAD;
+}
 
-  return isShallow && isLevel && Math.max(site.start.rise, site.end.rise) <= FORD_HIGHEST_BANK;
+function fitsFord(site: Site): boolean {
+  const isFordable = isFordableWater(site.deepest, site.highest - site.lowest, waterSpanOf(site));
+
+  return isFordable && Math.max(site.start.rise, site.end.rise) <= FORD_HIGHEST_BANK;
 }
 
 function chooseKind(site: Site): CrossingKind | null {
@@ -932,9 +929,7 @@ function stillStands(survey: CrossingSurvey, crossing: Crossing): boolean {
     return wading.span <= LOG_LONGEST_WATER && logClearsWater(survey, crossing);
   }
 
-  const isShallow = wading.deepest <= FORD_DEEPEST && wading.span <= FORD_LONGEST_WATER;
-
-  return isShallow && wading.highest - wading.lowest <= FORD_LEVEL_SPREAD;
+  return isFordableWater(wading.deepest, wading.highest - wading.lowest, wading.span);
 }
 
 function remeasure(survey: CrossingSurvey, crossing: Crossing): Crossing | null {
