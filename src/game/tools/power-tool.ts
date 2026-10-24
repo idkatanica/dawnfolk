@@ -79,9 +79,7 @@ export class PowerTool implements ToolGestures, TapHandler {
   }
 
   isActive(): boolean {
-    const selection = this.#selection;
-
-    return selection !== null && POWERS[selection.powerId].usage !== "inspect";
+    return this.#selection !== null;
   }
 
   begin(point: Vector3): void {

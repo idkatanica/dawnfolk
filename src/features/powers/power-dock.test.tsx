@@ -41,13 +41,6 @@ describe("power dock", () => {
     );
   });
 
-  it("keeps the observing tools out of the dock", async () => {
-    const screen = await render(<PowerDock />);
-
-    await expect.element(screen.getByRole("group", { name: "Observe" })).not.toBeInTheDocument();
-    await expect.element(screen.getByRole("button", { exact: true, name: "Inspect" })).not.toBeInTheDocument();
-  });
-
   it("shows icons alone and names each power in its tooltip", async () => {
     const screen = await render(<PowerDock />);
 

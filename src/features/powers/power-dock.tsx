@@ -9,8 +9,6 @@ import { WithTooltip } from "../../design/tooltip.tsx";
 import { POWER_ICONS } from "./power-icons.tsx";
 import { usePowerStore } from "./power-store.ts";
 
-const DOCK_CATEGORIES = POWER_CATEGORIES.filter((category) => category.id !== "observe");
-
 const SELECT_HINT = "Tap people, animals, buildings or land to see their details.";
 
 const TILE_CLASS =
@@ -143,7 +141,7 @@ export function PowerDock({ className }: { readonly className?: string | undefin
       >
         <SelectTile />
 
-        {DOCK_CATEGORIES.map((entry) => (
+        {POWER_CATEGORIES.map((entry) => (
           <CategoryGroup category={entry.id} key={entry.id} name={entry.name} />
         ))}
       </Toolbar.Root>
