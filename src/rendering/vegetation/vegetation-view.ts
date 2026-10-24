@@ -74,6 +74,7 @@ export class VegetationView {
   readonly group = new Group();
   readonly weather = new PlantWeather();
   readonly #batches: readonly (readonly PlantBatch[])[];
+  readonly #changedBuckets: readonly Set<number>[];
   readonly #chunkLevels: Int8Array;
   readonly #chunkShadows: Uint8Array;
   readonly #dirtyLevels = new Set<number>();
@@ -102,6 +103,8 @@ export class VegetationView {
       })
     );
 
+    this.#changedBuckets = this.#batches.map(() => new Set<number>());
+
     for (const level of this.#batches.keys()) {
       this.#dirtyLevels.add(level);
     }
@@ -121,7 +124,7 @@ export class VegetationView {
     const repacked = this.chunks.repackDirty();
 
     this.#assignLevels(camera, frustum, sun, detail);
-    this.#markLevelsOf(repacked);
+    this.#markBucketsOf(repacked);
     this.#refillDirtyLevels();
   }
 
@@ -188,9 +191,17 @@ export class VegetationView {
     }
   }
 
-  #markLevelsOf(chunkIndices: readonly number[]): void {
+  #markBucketsOf(chunkIndices: readonly number[]): void {
     for (const index of chunkIndices) {
-      this.#markDirty(this.#chunkLevels[index]);
+      const level = this.#chunkLevels[index];
+
+      if (level === HIDDEN) {
+        continue;
+      }
+
+      for (const bucket of this.chunks.chunks[index].changedBuckets) {
+        this.#changedBuckets[level].add(bucket);
+      }
     }
   }
 
@@ -211,7 +222,14 @@ export class VegetationView {
   }
 
   #refillDirtyLevels(): void {
-    for (const level of this.#dirtyLevels) {
+    for (const [level, batches] of this.#batches.entries()) {
+      const isWhole = this.#dirtyLevels.has(level);
+      const changed = this.#changedBuckets[level];
+
+      if (!isWhole && changed.size === 0) {
+        continue;
+      }
+
       const casters = this.chunks.chunks.filter(
         (_chunk, index) => this.#chunkLevels[index] === level && this.#chunkShadows[index] === 1
       );
@@ -219,9 +237,15 @@ export class VegetationView {
         (_chunk, index) => this.#chunkLevels[index] === level && this.#chunkShadows[index] === 0
       );
 
-      for (const batch of this.#batches[level]) {
-        this.#fill(batch, [...casters, ...others], casters.length);
+      const chunks = [...casters, ...others];
+
+      for (const batch of batches) {
+        if (isWhole || batch.buckets.some((bucket) => changed.has(bucket))) {
+          this.#fill(batch, chunks, casters.length);
+        }
       }
+
+      changed.clear();
     }
 
     this.#dirtyLevels.clear();
