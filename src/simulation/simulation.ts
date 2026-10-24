@@ -26,7 +26,7 @@ import { SurfaceSystem } from "./nature/surface.ts";
 import { VegetationGrowthSystem } from "./nature/vegetation-growth.ts";
 import { WeatherSystem } from "./nature/weather.ts";
 import { naturalStrikeSite, strikeLightning } from "./powers/catastrophes.ts";
-import { type PowerOutcome, type PowerServices, percent } from "./powers/power-handler.ts";
+import { type PowerOutcome, type PowerServices, type PowerTarget, percent } from "./powers/power-handler.ts";
 import { applyPower, parsePowerParameters } from "./powers/power-registry.ts";
 import { type BuildingIncidentKind, BuildingSystem } from "./society/buildings.ts";
 import { RivalrySystem } from "./society/rivalry/rivalry-system.ts";
@@ -56,8 +56,7 @@ const GLOWING_EMBER_INTENSITY = 0.35;
 const COOLING_EMBER_HEAT = 0.22;
 
 interface BrushStroke {
-  parameters: Readonly<Record<string, unknown>>;
-  powerId: PowerId;
+  apply: (target: PowerTarget) => PowerOutcome;
   startHeight: number;
   x: number;
   z: number;
@@ -253,13 +252,23 @@ export class Simulation {
       return;
     }
 
-    const target = { seconds: 0, strokeStartHeight: this.world.surfaceAt(x, z), x, z };
+    const target = { seconds: 0, strokeStartHeight: this.world.heightAt(x, z), x, z };
 
     this.#recordOutcome(applyPower(powerId, parameters, target, this.services));
   }
 
-  beginStroke(powerId: PowerId, x: number, z: number, parameters: Readonly<Record<string, unknown>>): void {
-    this.#stroke = { parameters, powerId, startHeight: this.world.heightAt(x, z), x, z };
+  beginStroke(powerId: PowerId, x: number, z: number, values: Readonly<Record<string, unknown>>): void {
+    const parameters = parsePowerParameters(powerId, values);
+
+    if (parameters === null) {
+      this.#stroke = null;
+
+      return;
+    }
+
+    const apply = (target: PowerTarget) => applyPower(powerId, parameters, target, this.services);
+
+    this.#stroke = { apply, startHeight: this.world.heightAt(x, z), x, z };
     this.#applyStroke(FIRST_STROKE_SECONDS);
   }
 
@@ -430,17 +439,9 @@ export class Simulation {
       return;
     }
 
-    const parameters = parsePowerParameters(stroke.powerId, stroke.parameters);
-
-    if (parameters === null) {
-      this.#stroke = null;
-
-      return;
-    }
-
     const target = { seconds, strokeStartHeight: stroke.startHeight, x: stroke.x, z: stroke.z };
 
-    this.#recordOutcome(applyPower(stroke.powerId, parameters, target, this.services));
+    this.#recordOutcome(stroke.apply(target));
   }
 
   #runTasks(seconds: number): void {
