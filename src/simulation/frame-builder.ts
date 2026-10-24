@@ -142,14 +142,9 @@ export class FrameBuilder {
   }
 
   #statistics(): SimulationStatistics {
-    const { buildings, fauna, fire, society, world } = this.#simulation;
+    const { society } = this.#simulation;
 
     return {
-      animals: fauna.livingCount,
-      buildings: buildings.all.length,
-      burningCells: fire.burningCount,
-      deaths: society.deaths,
-      plants: world.vegetation.aliveCount,
       population: society.population,
       tribes: society.tribes().length,
     };

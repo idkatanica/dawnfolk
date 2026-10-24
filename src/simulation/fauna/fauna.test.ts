@@ -20,6 +20,10 @@ const NO_THREATS: FaunaThreats = { dangerNear: () => null, hunterNear: () => nul
 const SUMMER = 1.6;
 const SPRING = 0.5;
 
+function livingCount(fauna: FaunaSystem): number {
+  return fauna.animals.filter((animal) => animal.isAlive).length;
+}
+
 function createFauna(world: WorldState = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 96 } })) {
   const navigation = new NavigationGrid(world);
 
@@ -54,7 +58,7 @@ describe("herds", () => {
     const herd = fauna.spawnHerd("deer", 0, 0, 5, createRandom(1));
 
     expect(herd?.memberIds).toHaveLength(5);
-    expect(fauna.livingCount).toBe(5);
+    expect(livingCount(fauna)).toBe(5);
   });
 
   it("spread over suitable land when the world is populated", () => {
@@ -105,7 +109,7 @@ describe("animals", () => {
     fauna.spawnHerd("deer", 0, 0, 3, createRandom(1));
     fauna.damageArea(0, 0, 100, 10, "blast");
 
-    expect(fauna.livingCount).toBe(0);
+    expect(livingCount(fauna)).toBe(0);
     expect(fauna.animals.map((animal) => animal.causeOfDeath)).toEqual(["blast", "blast", "blast"]);
 
     runFor(fauna, 35);
@@ -146,11 +150,11 @@ describe("animals", () => {
 
     fauna.spawnHerd("deer", 0, 0, 3, createRandom(1));
 
-    for (let step = 0; step < 5000 && fauna.livingCount === 3; step += 1) {
+    for (let step = 0; step < 5000 && livingCount(fauna) === 3; step += 1) {
       fauna.update(tick);
     }
 
-    expect(fauna.livingCount).toBe(4);
+    expect(livingCount(fauna)).toBe(4);
     expect(fauna.animals.at(-1)?.youth).toBeGreaterThan(0.9);
   });
 
@@ -160,7 +164,7 @@ describe("animals", () => {
     fauna.spawnHerd("deer", 0, 0, 3, createRandom(1));
     runFor(fauna, 240, { days: 0.01, season: SUMMER });
 
-    expect(fauna.livingCount).toBe(3);
+    expect(livingCount(fauna)).toBe(3);
   });
 });
 

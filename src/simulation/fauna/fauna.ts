@@ -137,10 +137,6 @@ export class FaunaSystem {
     return this.#herds;
   }
 
-  get livingCount(): number {
-    return this.#animals.filter((animal) => animal.isAlive).length;
-  }
-
   findAnimal(id: number): Animal | null {
     const animal = this.#animalsById.get(id);
 

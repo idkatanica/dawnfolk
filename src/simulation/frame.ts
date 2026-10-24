@@ -68,15 +68,9 @@ export interface BuildingView {
 
 export type StockView = Readonly<Record<ResourceKind, number>>;
 
-export interface TechnologyProgress {
-  cost: number;
-  name: string;
-}
-
 export interface EraView {
   count: number;
   index: number;
-  name: string;
   nextName: string | null;
 }
 
@@ -107,7 +101,6 @@ export interface FarmlandView {
 }
 
 export interface TribeSummary {
-  armory: ToolMaterial;
   births: number;
   buildings: BuildingCount[];
   campX: number;
@@ -119,14 +112,11 @@ export interface TribeSummary {
   eraName: string;
   faith: number;
   farmland: FarmlandView;
-  foundedDay: number;
   furColor: string;
   goal: GoalView | null;
   id: number;
   isMigrating: boolean;
-  knowledge: number;
   name: string;
-  nextTechnology: TechnologyProgress | null;
   population: number;
   stock: StockView;
   technologies: string[];
@@ -151,11 +141,6 @@ export interface WeatherView {
 }
 
 export interface SimulationStatistics {
-  animals: number;
-  buildings: number;
-  burningCells: number;
-  deaths: number;
-  plants: number;
   population: number;
   tribes: number;
 }

@@ -199,7 +199,7 @@ describe("tribe details", () => {
 
   it("shows how far the tribe has come along the eras", async () => {
     const summary = createTribe({
-      era: { count: 6, index: 3, name: "Copper Age", nextName: "Bronze Age" },
+      era: { count: 6, index: 3, nextName: "Bronze Age" },
       eraName: "Copper Age",
     });
 
@@ -239,7 +239,10 @@ describe("tribe details", () => {
   });
 
   it("shows the faith and the progress towards the next discovery", async () => {
-    const summary = createTribe({ faith: 40, knowledge: 30, nextTechnology: { cost: 60, name: "Fire making" } });
+    const summary = createTribe({
+      faith: 40,
+      goal: { isBlocked: false, need: null, progress: 0.5, technologyName: "Fire making" },
+    });
 
     const screen = await render(<TribeDetails tribe={{ kind: "tribe", summary }} />);
 
@@ -261,7 +264,7 @@ describe("tribe details", () => {
   });
 
   it("says when every discovery is made", async () => {
-    const summary = createTribe({ goal: null, nextTechnology: null });
+    const summary = createTribe({ goal: null });
 
     const screen = await render(<TribeDetails tribe={{ kind: "tribe", summary }} />);
 

@@ -3,6 +3,7 @@ import { Ground } from "../../content/grounds.ts";
 import { PlantSpecies } from "../../content/plants.ts";
 import { POWER_ORDER, POWERS } from "../../content/powers.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
+import type { FaunaSystem } from "../fauna/fauna.ts";
 import { Simulation } from "../simulation.ts";
 import { totalFood } from "../society/stock.ts";
 import {
@@ -14,6 +15,10 @@ import {
   steepeningRamp,
 } from "../testing/test-world.ts";
 import { POWER_HANDLERS, parsePowerParameters } from "./power-registry.ts";
+
+function livingCount(fauna: FaunaSystem): number {
+  return fauna.animals.filter((animal) => animal.isAlive).length;
+}
 
 function createSimulation(baseTemperature = 15): Simulation {
   return new Simulation(createVegetatedWorld({ baseTemperature, dimensions: { cellSize: 10, cellsPerSide: 96 } }));
@@ -77,7 +82,7 @@ describe("elements", () => {
     simulation.usePower("explosion", 0, 0, {});
 
     expect(simulation.world.terrain.height[centerCell(simulation.world)]).toBeLessThan(95);
-    expect(simulation.fauna.livingCount).toBe(0);
+    expect(livingCount(simulation.fauna)).toBe(0);
   });
 
   it("an earthquake shakes the land and breaks buildings", () => {
@@ -234,7 +239,7 @@ describe("life", () => {
     simulation.usePower("deer", 0, 0, { herdSize: 4 });
     simulation.usePower("mammoth", 100, 0, { herdSize: 2 });
 
-    expect(simulation.fauna.livingCount).toBe(6);
+    expect(livingCount(simulation.fauna)).toBe(6);
   });
 
   it("brings hares only to dry ground away from the water", () => {

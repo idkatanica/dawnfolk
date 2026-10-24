@@ -94,7 +94,7 @@ describe("daily life", () => {
     harness.run(30);
 
     expect(harness.society.population).toBeLessThan(3);
-    expect(harness.society.deaths).toBeGreaterThan(0);
+    expect(tribe.deaths).toBeGreaterThan(0);
   });
 });
 
