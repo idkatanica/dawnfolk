@@ -34,9 +34,11 @@ type Gesture =
   | { readonly kind: "orbit" }
   | { readonly kind: "pan"; travel: number }
   | { readonly kind: "tool" }
+  | { readonly kind: "waiting"; readonly point: Vector3 }
   | { distance: number; readonly kind: "pinch"; angle: number; middleX: number; middleY: number };
 
 const MOUSE_PRIMARY = 0;
+const TOUCH_HOLD_MILLISECONDS = 140;
 const TAP_TOLERANCE = 6;
 const ORBIT_YAW_PER_PIXEL = 0.005;
 const ORBIT_PITCH_PER_PIXEL = 0.004;
@@ -79,6 +81,7 @@ export class PointerControls {
   readonly #tool: ToolGestures;
   readonly #abort = new AbortController();
   #gesture: Gesture = { kind: "idle" };
+  #holdTimer: number | null = null;
 
   constructor(canvas: HTMLCanvasElement, camera: GodCamera, picker: GroundPicker, handlers: ToolGestures & TapHandler) {
     this.#canvas = canvas;
@@ -91,14 +94,15 @@ export class PointerControls {
 
     canvas.addEventListener("pointerdown", (event) => this.#down(event), options);
     canvas.addEventListener("pointermove", (event) => this.#move(event), options);
-    canvas.addEventListener("pointerup", (event) => this.#up(event), options);
-    canvas.addEventListener("pointercancel", (event) => this.#up(event), options);
+    canvas.addEventListener("pointerup", (event) => this.#up(event, true), options);
+    canvas.addEventListener("pointercancel", (event) => this.#up(event, false), options);
     canvas.addEventListener("pointerleave", () => this.#tool.hover(null), options);
     canvas.addEventListener("wheel", (event) => this.#wheel(event), { passive: false, signal: this.#abort.signal });
     canvas.addEventListener("contextmenu", (event) => event.preventDefault(), options);
   }
 
   dispose(): void {
+    this.#stopHold();
     this.#abort.abort();
   }
 
@@ -132,20 +136,69 @@ export class PointerControls {
 
     const point = this.#pick(event.offsetX, event.offsetY);
 
-    if (this.#tool.isActive() && point !== null) {
-      this.#gesture = { kind: "tool" };
-      this.#tool.begin(point);
+    if (!this.#tool.isActive() || point === null) {
+      this.#gesture = { kind: "pan", travel: 0 };
 
       return;
     }
 
-    this.#gesture = { kind: "pan", travel: 0 };
+    if (event.pointerType === "touch") {
+      this.#waitForSecondTouch(point);
+
+      return;
+    }
+
+    this.#gesture = { kind: "tool" };
+    this.#tool.begin(point);
+  }
+
+  #waitForSecondTouch(point: Vector3): void {
+    this.#gesture = { kind: "waiting", point };
+    this.#tool.hover(point);
+    this.#holdTimer = window.setTimeout(() => this.#commitTool(this.#onlyPointer()), TOUCH_HOLD_MILLISECONDS);
+  }
+
+  #onlyPointer(): TrackedPointer | null {
+    const [pointer, other] = [...this.#pointers.values()];
+
+    if (pointer === undefined || other !== undefined) {
+      return null;
+    }
+
+    return pointer;
+  }
+
+  #commitTool(pointer: TrackedPointer | null): void {
+    const gesture = this.#gesture;
+
+    this.#stopHold();
+
+    if (gesture.kind !== "waiting" || pointer === null) {
+      return;
+    }
+
+    this.#gesture = { kind: "tool" };
+    this.#tool.begin(gesture.point);
+    this.#continueTool(pointer);
+  }
+
+  #stopHold(): void {
+    if (this.#holdTimer === null) {
+      return;
+    }
+
+    window.clearTimeout(this.#holdTimer);
+    this.#holdTimer = null;
   }
 
   #beginPinch(): void {
+    this.#stopHold();
+
     if (this.#gesture.kind === "tool") {
       this.#tool.end();
     }
+
+    this.#tool.hover(null);
 
     const pinch = measurePinch(this.#pointers);
 
@@ -220,7 +273,7 @@ export class PointerControls {
     gesture.middleY = pinch.middleY;
   }
 
-  #up(event: PointerEvent): void {
+  #up(event: PointerEvent, isReleased: boolean): void {
     const pointer = this.#pointers.get(event.pointerId);
 
     this.#pointers.delete(event.pointerId);
@@ -229,7 +282,11 @@ export class PointerControls {
       return;
     }
 
-    this.#finishGesture(pointer);
+    if (isReleased) {
+      this.#finishGesture(pointer);
+    } else {
+      this.#abandonGesture();
+    }
 
     if (this.#pointers.size === 0) {
       this.#gesture = { kind: "idle" };
@@ -242,7 +299,25 @@ export class PointerControls {
     }
   }
 
+  #abandonGesture(): void {
+    this.#stopHold();
+
+    if (this.#gesture.kind === "tool") {
+      this.#tool.end();
+    }
+
+    if (this.#gesture.kind === "waiting") {
+      this.#tool.hover(null);
+    }
+
+    this.#gesture = { kind: "idle" };
+  }
+
   #finishGesture(pointer: TrackedPointer): void {
+    if (this.#gesture.kind === "waiting") {
+      this.#commitTool(pointer);
+    }
+
     const gesture = this.#gesture;
 
     if (gesture.kind === "tool") {
