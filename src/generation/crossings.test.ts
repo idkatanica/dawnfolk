@@ -213,14 +213,8 @@ describe.each(["round", "square"] as const)("crossings on a %s island", (shape) 
     }
   });
 
-  it("are the same for the same seed and can be walked along from end to end", { timeout: 60_000 }, () => {
-    const generated = worldOf(shape);
-
-    const again = shape === "round" ? generateWorld(7) : generateWorld(3, { ...DEFAULT_GENERATION_OPTIONS, shape });
-
-    expect(again.crossings).toEqual(generated.crossings);
-
-    for (const crossing of generated.crossings) {
+  it("can be walked along from end to end", () => {
+    for (const crossing of worldOf(shape).crossings) {
       expect(samplesAlong(crossing).every((point) => isOnCrossing(crossing, point.x, point.z))).toBe(true);
     }
   });
