@@ -1,5 +1,4 @@
-import { BUILDINGS } from "../../content/buildings.ts";
-import type { BuildingRole } from "../../content/era-buildings.ts";
+import { BUILDINGS, type BuildingRole } from "../../content/buildings.ts";
 import type { Building } from "./buildings.ts";
 import { tribeBuildings } from "./camp-plan.ts";
 import { walkSpeed } from "./person.ts";

@@ -1,5 +1,4 @@
-import { BUILDINGS, isFlammable } from "../../../content/buildings.ts";
-import type { BuildingRole } from "../../../content/era-buildings.ts";
+import { BUILDINGS, type BuildingRole, isFlammable } from "../../../content/buildings.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
 import type { Building } from "../buildings.ts";
 import { isChild, isElder, NEED_SECONDS, type Person } from "../person.ts";
