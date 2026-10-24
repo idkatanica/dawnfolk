@@ -11,9 +11,9 @@
 
 <p align="center">
   <a
-    href="https://github.com/svidskiy/dawnfolk/actions/workflows/ci.yml"
+    href="https://github.com/imsvidskiy/dawnfolk/actions/workflows/ci.yml"
   ><img
-    src="https://github.com/svidskiy/dawnfolk/actions/workflows/ci.yml/badge.svg"
+    src="https://github.com/imsvidskiy/dawnfolk/actions/workflows/ci.yml/badge.svg"
     alt="CI"
   ></a>
   <a
@@ -43,46 +43,24 @@ Age to the Iron Age on a procedurally generated island rendered with WebGPU.
 
 ## Features
 
-### The island
-
-- Every world is named and grown from a seed, round with bays and headlands or square.
-- Rivers rise from caves and ponds, run into lakes and pour off the edge as waterfalls.
-- Climate and biomes shape forests with glades and riverside meadows; nothing grows on cliffs.
-- Seasons turn the foliage, and snow settles and melts.
-- Fire spreads with the wind; burnt land grows back over a few years, fireweed first.
-- Weathered megaliths of a forgotten people: stone circles, dolmens, half-buried stone heads, ruined colonnades.
-- People and animals hop brooks and cross wider rivers on stepping stones or fallen logs, every half kilometre or so.
-
-### The tribes
-
-- People gather, hunt, fish, farm, chop, quarry, build, pray, learn technologies, migrate and split into new tribes.
-- Tribes climb from the Stone Age through the Neolithic and the Copper and Bronze Ages to the Iron Age.
-- They fire pottery, weave linen, plough fields, plant orchards, mine, smelt and forge tools and weapons.
-- Camps and huts grow into longhouses, workshops, palisades and stone houses that change style with the era.
-- Quarrels over land turn neighbours hostile: archers and spearmen raid, defenders rally, envoys bring gifts.
-
-### Animals
-
-- Deer, mammoths and ibex graze in herds and flee; ibex climb to the nearest heights.
-- Hares breed fast, live short lives and bolt at the first threat.
-- Wolf packs roam far from people, run hares down and stalk lone people at night; cornered beasts fight back.
-
-### Powers
-
-- Fire, lightning, rain, snow, explosions, meteors, earthquakes, raising and painting land, forests, healing,
-  animals and new tribes.
-- Each power is a schema, so its strength, radius and other settings appear as controls.
-- Meteors and blasts fell and burn the forest, a crater on a river fills into a lake, and monuments lean and break.
-- World rules, such as how fast fire spreads or how hungry people get, are adjustable in the settings.
-
-### Look and interface
-
-- People, animals, plants, rocks and buildings are built procedurally from seeds and animated with skeletal clips.
-- Tribe banners show population and era, and a click flies to the camp; peaks, lakes and ruins carry names.
-- From afar, people, herds and wolves show as markers on the island and the minimap.
-- Powers, resources, buildings, weather and events have painted icons.
-- Every panel floats on its own island of refracting glass
-  ([`@svidskiy/glass-surface`](https://github.com/svidskiy/glass-surface)), with a compact layout for phones.
+- **A living island.** Named and grown from a seed, round or square, with rivers from caves and ponds, lakes,
+  waterfalls off the edge, biomes, seasons and snow.
+- **Ruins and crossings.** Megaliths of a forgotten people, and stepping stones or fallen logs where rivers can be
+  crossed.
+- **Tribes.** People gather, hunt, fish, farm, build, pray, migrate and split, and climb from the Stone Age to the
+  Iron Age with pottery, linen, fields, mines, smelters and forges.
+- **Feuds and peace.** Quarrels over land lead to raids by archers and spearmen; weary tribes send envoys with gifts.
+- **Wildlife.** Herds of deer, mammoths and ibex, fast-breeding hares, and wolf packs that hunt them and stalk lone
+  people at night.
+- **Powers.** Fire, lightning, rain, snow, meteors, earthquakes, terraforming, forests, healing, animals and new
+  tribes, each with its own settings; world rules are adjustable too.
+- **Scars that heal.** Fire spreads with the wind, craters on rivers fill into lakes, monuments fall, and burnt land
+  grows back over a few years.
+- **Procedural models.** People, animals, plants, rocks and buildings are built from seeds and animated with
+  skeletal clips.
+- **A readable map.** Named peaks, lakes and ruins, tribe banners that fly you to their camp, and far markers on the
+  island and the minimap.
+- **A calm HUD.** Painted icons for game things and a compact layout for phones.
 
 ## Stack
 
@@ -95,7 +73,7 @@ Vitest 5 (node and browser projects) · Playwright · Lefthook.
 You need [Bun](https://bun.sh) 1.4 or later and a browser with WebGPU or WebGL 2.
 
 ```sh
-git clone https://github.com/svidskiy/dawnfolk.git
+git clone https://github.com/imsvidskiy/dawnfolk.git
 cd dawnfolk
 bun install
 bun run dev          # http://localhost:5173
