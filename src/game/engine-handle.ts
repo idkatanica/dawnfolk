@@ -1,5 +1,4 @@
 import type { CameraState, GroundPoint } from "../rendering/camera/god-camera.ts";
-import type { QualityLevel } from "../rendering/render-quality.ts";
 import type { GameSession } from "./game-session.ts";
 import type { LabelPlacement } from "./label-projector.ts";
 import type { Landmark } from "./landmarks.ts";
@@ -17,7 +16,6 @@ export interface EngineHandle {
   readonly followSelection: () => void;
   readonly landmarks: readonly Landmark[];
   readonly placeLabel: (x: number, z: number, lift: number) => LabelPlacement | null;
-  readonly quality: QualityLevel;
   readonly selectPower: (selection: PowerSelection | null) => void;
   readonly session: GameSession;
   readonly stopFollowing: () => void;

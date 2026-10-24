@@ -67,7 +67,6 @@ export class GameEngine implements EngineHandle {
   readonly camera: GodCamera;
   readonly landmarks: readonly Landmark[];
   readonly powers: PowerTool;
-  readonly quality: QualityLevel;
   readonly session: GameSession;
   readonly #canvas: HTMLCanvasElement;
   readonly #activity = new AbortController();
@@ -91,7 +90,6 @@ export class GameEngine implements EngineHandle {
     this.#renderer = parts.renderer;
     this.backend = parts.backend;
     this.session = parts.session;
-    this.quality = parts.quality;
 
     const { mirror } = parts.session;
 

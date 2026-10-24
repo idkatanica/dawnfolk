@@ -27,14 +27,12 @@ export interface WorldNotice {
 export interface WorldFeed {
   readonly chronicle: readonly ChronicleEntry[];
   readonly frame: SimulationFrame;
-  readonly mirror: { readonly seed: number };
   readonly subscribe: (listener: (frame: SimulationFrame) => void) => () => void;
 }
 
 interface WorldStore {
   readonly chronicle: readonly ChronicleEntry[];
   readonly notices: readonly WorldNotice[];
-  readonly seed: number;
   readonly snapshot: WorldSnapshot | null;
 }
 
@@ -55,7 +53,6 @@ const ANNOUNCED_CATEGORIES: ReadonlySet<ChronicleCategory> = new Set([
 export const useWorldStore = create<WorldStore>()(() => ({
   chronicle: [],
   notices: [],
-  seed: 0,
   snapshot: null,
 }));
 
@@ -97,7 +94,6 @@ export function connectWorldStore(feed: WorldFeed): () => void {
   useWorldStore.setState({
     chronicle: [...feed.chronicle],
     notices: [],
-    seed: feed.mirror.seed,
     snapshot: snapshotOf(feed.frame),
   });
 

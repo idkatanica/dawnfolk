@@ -1,10 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
-import { LARGEST_SEED } from "../../app/launch-options.ts";
+import { LARGEST_SEED, type LaunchOptions } from "../../app/launch-options.ts";
 import { useLaunchStore } from "../../app/launch-store.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
 import { resetWorld } from "../testing/world-fixtures.ts";
-import { useWorldStore } from "../world/world-store.ts";
 import { GraphicsSection } from "./graphics-section.tsx";
 
 const QUALITY_KEY = "dawnfolk.quality";
@@ -13,6 +12,10 @@ const WHOLE_NUMBER = /^\d+$/;
 
 const initialLaunch = useLaunchStore.getState();
 const initialInterface = useInterfaceStore.getState();
+
+function launchWith(changes: Partial<LaunchOptions>): void {
+  useLaunchStore.setState({ launch: { ...initialLaunch.launch, ...changes } });
+}
 
 describe("graphics section", () => {
   afterEach(() => {
@@ -23,10 +26,12 @@ describe("graphics section", () => {
     useInterfaceStore.setState(initialInterface, true);
   });
 
-  it("starts at the balanced quality while no island runs", async () => {
+  it("starts at the quality the island was launched with", async () => {
+    launchWith({ quality: "low" });
+
     const screen = await render(<GraphicsSection />);
 
-    await expect.element(screen.getByRole("button", { name: "Balanced", pressed: true })).toBeVisible();
+    await expect.element(screen.getByRole("button", { name: "Light", pressed: true })).toBeVisible();
     await expect.element(screen.getByRole("button", { name: "Apply" })).toBeDisabled();
   });
 
@@ -60,7 +65,7 @@ describe("graphics section", () => {
   });
 
   it("starts the seed field at the seed of the current world", async () => {
-    useWorldStore.setState({ seed: 7 });
+    launchWith({ seed: 7 });
 
     const screen = await render(<GraphicsSection />);
 
@@ -69,7 +74,7 @@ describe("graphics section", () => {
   });
 
   it("only creates worlds from seeds in the allowed range", async () => {
-    useWorldStore.setState({ seed: 7 });
+    launchWith({ seed: 7 });
 
     const screen = await render(<GraphicsSection />);
 
@@ -122,7 +127,7 @@ describe("graphics section", () => {
   });
 
   it("grows a new world with a new name and shape", async () => {
-    useWorldStore.setState({ seed: 7 });
+    launchWith({ seed: 7 });
 
     const screen = await render(<GraphicsSection />);
 
@@ -134,7 +139,7 @@ describe("graphics section", () => {
   });
 
   it("grows a new world from the chosen seed", async () => {
-    useWorldStore.setState({ seed: 7 });
+    launchWith({ seed: 7 });
 
     const screen = await render(<GraphicsSection />);
 

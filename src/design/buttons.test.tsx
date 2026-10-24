@@ -46,7 +46,11 @@ describe("text button", () => {
   it("shows its text and runs its action when clicked", async () => {
     const handleClick = vi.fn();
 
-    const screen = await render(<TextButton onClick={handleClick}>Reset all</TextButton>);
+    const screen = await render(
+      <TextButton onClick={handleClick} tone="quiet">
+        Reset all
+      </TextButton>
+    );
 
     await screen.getByRole("button", { name: "Reset all" }).click();
 

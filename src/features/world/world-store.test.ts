@@ -14,10 +14,9 @@ interface FakeFeed extends WorldFeed {
 interface FeedOptions {
   readonly chronicle?: readonly ChronicleEntry[];
   readonly frame?: SimulationFrame;
-  readonly seed?: number;
 }
 
-function createFeed({ chronicle = [], frame = createFrame(), seed = 7 }: FeedOptions = {}): FakeFeed {
+function createFeed({ chronicle = [], frame = createFrame() }: FeedOptions = {}): FakeFeed {
   const listeners = new Set<FrameListener>();
   const entries = [...chronicle];
 
@@ -37,7 +36,7 @@ function createFeed({ chronicle = [], frame = createFrame(), seed = 7 }: FeedOpt
     };
   }
 
-  return { chronicle: entries, emit, frame, listenerCount: () => listeners.size, mirror: { seed }, subscribe };
+  return { chronicle: entries, emit, frame, listenerCount: () => listeners.size, subscribe };
 }
 
 function noticeTexts(): string[] {
@@ -50,15 +49,14 @@ describe("world store", () => {
     resetWorld();
   });
 
-  it("starts from the seed, the chronicle and the current frame of the feed", () => {
+  it("starts from the chronicle and the current frame of the feed", () => {
     const entry = createChronicleEntry();
     const frame = createFrame({ isPaused: true, speed: 4 });
 
-    connectWorldStore(createFeed({ chronicle: [entry], frame, seed: 42 }));
+    connectWorldStore(createFeed({ chronicle: [entry], frame }));
 
     const state = useWorldStore.getState();
 
-    expect(state.seed).toBe(42);
     expect(state.chronicle).toEqual([entry]);
     expect(state.notices).toEqual([]);
     expect(state.snapshot).toEqual({

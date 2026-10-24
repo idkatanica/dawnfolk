@@ -284,5 +284,5 @@ export function showWorld(overrides: Partial<WorldSnapshot> = {}): WorldSnapshot
 }
 
 export function resetWorld(): void {
-  useWorldStore.setState({ chronicle: [], notices: [], seed: 0, snapshot: null });
+  useWorldStore.setState({ chronicle: [], notices: [], snapshot: null });
 }

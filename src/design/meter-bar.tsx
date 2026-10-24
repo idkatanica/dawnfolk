@@ -12,16 +12,15 @@ const INDICATOR_TONES: Readonly<Record<MeterTone, string>> = {
 };
 
 interface MeterBarProps {
-  readonly className?: string | undefined;
   readonly label: string;
   readonly tone: MeterTone;
   readonly value: number;
   readonly valueText: string;
 }
 
-export function MeterBar({ className, label, tone, value, valueText }: MeterBarProps) {
+export function MeterBar({ label, tone, value, valueText }: MeterBarProps) {
   return (
-    <Meter.Root className={cn("grid grid-cols-2 gap-y-1", className)} max={1} value={value}>
+    <Meter.Root className="grid grid-cols-2 gap-y-1" max={1} value={value}>
       <Meter.Label className="text-ink-soft text-xs">{label}</Meter.Label>
 
       <span className="text-right font-medium text-ink text-xs tabular-nums">{valueText}</span>
