@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, vertexCount } from "../mesh/mesh-data.ts";
-import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
+import { loosePieces } from "../testing/mesh-connectivity.ts";
 import { meshTree, type PlantDetailLevel, plantSway, type TreeLook } from "./tree-mesher.ts";
 import type { TreeStructure } from "./tree-structure.ts";
-
-const TOUCHING = 0.01;
 
 const LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low", "far"];
 
@@ -112,14 +110,14 @@ describe("tree mesher", () => {
   it.each(LEVELS)("grows the crown of a plant without a trunk out of the ground at %s detail", (level) => {
     const mesh = meshTree(SHRUB, LOOK, level);
 
-    expect(detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece))).toEqual([]);
+    expect(loosePieces(mesh)).toEqual([]);
   });
 
   it.each(LEVELS)("drapes a weeping crown in one piece at %s detail", (level) => {
     const mesh = meshTree(WEEPING, LOOK, level);
     const leaves = foliageOf(mesh);
 
-    expect(detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece))).toEqual([]);
+    expect(loosePieces(mesh)).toEqual([]);
     expect(Math.min(...leaves.map((vertex) => heightOf(mesh, vertex)))).toBeLessThan(
       WEEPING_CROWN.center[1] - WEEPING_CROWN.radius * WEEPING_CROWN.squash
     );
@@ -163,13 +161,13 @@ describe("tree mesher", () => {
     );
 
     expect(Math.max(...wood.map((vertex) => heightOf(mesh, vertex)))).toBeGreaterThan(7.5);
-    expect(detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece))).toEqual([]);
+    expect(loosePieces(mesh)).toEqual([]);
   });
 
   it.each(LEVELS)("grows fronds out of the crown on both faces at %s detail", (level) => {
     const mesh = meshTree(FROND_TREE, LOOK, level);
 
-    expect(detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece))).toEqual([]);
+    expect(loosePieces(mesh)).toEqual([]);
   });
 
   it("shades a frond from above and below", () => {

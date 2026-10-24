@@ -4,10 +4,9 @@ import { MaterialSlot } from "../materials.ts";
 import { triangleCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
-import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
+import { loosePieces, TOUCHING } from "../testing/mesh-connectivity.ts";
 import { buildBuildingModel, buildingScale, GLOW_PART, SINGLE_MODEL_KINDS } from "./building-models.ts";
 
-const TOUCHING = 0.01;
 const FLOAT_SLACK = 1e-4;
 
 describe.each(SINGLE_MODEL_KINDS)("%s model", (kind) => {
@@ -24,7 +23,7 @@ describe.each(SINGLE_MODEL_KINDS)("%s model", (kind) => {
     const touching = TOUCHING * buildingScale(kind) + FLOAT_SLACK;
 
     for (const mesh of [high, low]) {
-      expect(detachedPieces(mesh, touching).map((piece) => describePiece(mesh, piece))).toEqual([]);
+      expect(loosePieces(mesh, touching)).toEqual([]);
     }
   });
 

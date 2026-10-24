@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
-import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
+import { loosePieces } from "../testing/mesh-connectivity.ts";
 import {
   buildFallenLogs,
   buildSteppingStones,
@@ -15,7 +15,6 @@ import {
   STEPPING_STONE_HEIGHT,
 } from "./crossings.ts";
 
-const TOUCHING = 0.01;
 const GROUND_LEVEL = 0.05;
 
 const MODELS: readonly (readonly [string, (level: CrossingDetailLevel) => MeshData[]])[] = [
@@ -73,7 +72,7 @@ describe.each(MODELS)("%s", (_name, build) => {
   it("keeps every part of every variant attached to the ground", () => {
     for (const level of CROSSING_DETAIL_LEVELS) {
       for (const [variant, mesh] of build(level).entries()) {
-        const detached = detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece));
+        const detached = loosePieces(mesh);
 
         expect(detached, `${level} variant ${variant}`).toEqual([]);
       }

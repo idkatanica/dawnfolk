@@ -3,13 +3,7 @@ import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefini
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
-import {
-  describePiece,
-  detachedPieces,
-  isInsidePiece,
-  type MeshPiece,
-  meshPieces,
-} from "../testing/mesh-connectivity.ts";
+import { isInsidePiece, loosePieces, type MeshPiece, meshPieces } from "../testing/mesh-connectivity.ts";
 import { windBentMesh } from "../testing/moved-mesh.ts";
 import { BERRY_RADIUS, isBerryPart } from "./berries.ts";
 import { CACTUS_FORMS, cactusForm } from "./cacti.ts";
@@ -22,7 +16,6 @@ import {
 } from "./plant-models.ts";
 import { FOLIAGE_FLUTTER, type PlantDetailLevel, plantSway } from "./tree-mesher.ts";
 
-const TOUCHING = 0.01;
 const RADIUS_TOLERANCE = 0.2;
 const STORM_PUSH = 2;
 const GROUND_LEVEL = 0.05;
@@ -141,7 +134,7 @@ describe.each(SPECIES)("plant species %i", (species) => {
   it("keeps every part of every variant attached to the ground", () => {
     for (const level of PLANT_DETAIL_LEVELS) {
       for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
-        const detached = detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece));
+        const detached = loosePieces(mesh);
 
         expect(detached, `${level} variant ${variant}`).toEqual([]);
       }
@@ -152,7 +145,7 @@ describe.each(SPECIES)("plant species %i", (species) => {
     for (const level of PLANT_DETAIL_LEVELS) {
       for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
         const bent = windBentMesh(mesh, STORM_PUSH);
-        const detached = detachedPieces(bent, TOUCHING).map((piece) => describePiece(bent, piece));
+        const detached = loosePieces(bent);
 
         expect(detached, `${level} variant ${variant}`).toEqual([]);
       }
