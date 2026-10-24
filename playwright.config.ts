@@ -1,20 +1,16 @@
 import { defineConfig, devices } from "@playwright/test";
-import { createChromiumLaunchOptions, readEnvironmentVariable } from "./tests/chromium.ts";
+import { createChromiumLaunchOptions } from "./tests/chromium.ts";
 
 const PREVIEW_PORT = 4173;
 
-const isContinuousIntegration = readEnvironmentVariable("CI") !== undefined;
 const launchOptions = createChromiumLaunchOptions();
 
 export default defineConfig({
   expect: { timeout: 20_000 },
-  forbidOnly: isContinuousIntegration,
   projects: [
     { name: "desktop", testIgnore: "phone.spec.ts", use: { ...devices["Desktop Chrome"], launchOptions } },
     { name: "phone", testIgnore: "desktop.spec.ts", use: { ...devices["Pixel 7"], launchOptions } },
   ],
-  reporter: isContinuousIntegration ? "github" : "list",
-  retries: isContinuousIntegration ? 1 : 0,
   testDir: "tests",
   timeout: 180_000,
   use: {
@@ -24,7 +20,7 @@ export default defineConfig({
   webServer: {
     command: `bun run build && bun run preview --port ${PREVIEW_PORT} --strictPort`,
     port: PREVIEW_PORT,
-    reuseExistingServer: !isContinuousIntegration,
+    reuseExistingServer: true,
     timeout: 300_000,
   },
   workers: 1,
