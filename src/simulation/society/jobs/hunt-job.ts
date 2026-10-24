@@ -24,6 +24,8 @@ const MAMMOTH_REACH = 12;
 const MAMMOTH_COUNTERATTACK = 0.15;
 const MAMMOTH_WOUND = 0.35;
 const HELPER_HIT_BONUS = 0.05;
+const SMALL_GAME_RANGE = 360;
+const SMALL_GAME_PREFERENCE = 0.35;
 
 type HuntPhase = "stalk" | "strike";
 
@@ -41,11 +43,7 @@ export function findGame(tick: PersonTick): HuntJob | null {
     return null;
   }
 
-  const animal = tick.context.fauna.nearestAnimal(tribe.campX, tribe.campZ, HUNTING_RANGE, (candidate) => {
-    const { huntingPartySize } = ANIMALS[candidate.kind];
-
-    return huntingPartySize !== null && hunters >= huntingPartySize;
-  });
+  const animal = chooseGame(tick, hunters);
 
   if (animal === null) {
     markScarce(tribe, "game", tick.context.environment.day);
@@ -54,6 +52,31 @@ export function findGame(tick: PersonTick): HuntJob | null {
   }
 
   return new HuntJob(tick, animal, weapon);
+}
+
+function chooseGame(tick: PersonTick, hunters: number): Animal | null {
+  const { campX, campZ } = tick.tribe;
+  const { fauna } = tick.context;
+
+  function isHuntable(candidate: Animal, isSmallGame: boolean): boolean {
+    const { huntingPartySize } = ANIMALS[candidate.kind];
+
+    return (
+      ANIMALS[candidate.kind].isSmallGame === isSmallGame && huntingPartySize !== null && hunters >= huntingPartySize
+    );
+  }
+
+  const game = fauna.nearestAnimal(campX, campZ, HUNTING_RANGE, (candidate) => isHuntable(candidate, false));
+  const smallGame = fauna.nearestAnimal(campX, campZ, SMALL_GAME_RANGE, (candidate) => isHuntable(candidate, true));
+
+  if (game === null || smallGame === null) {
+    return game === null ? smallGame : game;
+  }
+
+  const gameDistance = Math.hypot(game.mover.x - campX, game.mover.z - campZ);
+  const smallGameDistance = Math.hypot(smallGame.mover.x - campX, smallGame.mover.z - campZ);
+
+  return smallGameDistance < gameDistance * SMALL_GAME_PREFERENCE ? smallGame : game;
 }
 
 export class HuntJob implements Job {
@@ -244,6 +267,11 @@ function bringDown(tick: PersonTick, animal: Animal): Job {
   pickUp(tick.person, "meat", carried, "meat");
   tick.tribe.stock.meat += food - carried;
   learn(tick.tribe, 3, tick.context.rules);
+
+  if (ANIMALS[animal.kind].isSmallGame) {
+    return new DeliverJob(tick);
+  }
+
   tick.context.chronicle.record({
     category: "hunt",
     text: `${tick.tribe.name} hunters brought down ${animalWithArticle(animal.kind)}`,

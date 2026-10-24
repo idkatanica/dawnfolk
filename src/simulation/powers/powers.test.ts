@@ -8,6 +8,7 @@ import { totalFood } from "../society/stock.ts";
 import {
   centerCell,
   createVegetatedWorld,
+  floodCells,
   monumentAround,
   plantsTooSteep,
   steepeningRamp,
@@ -234,6 +235,22 @@ describe("life", () => {
     simulation.usePower("mammoth", 100, 0, { herdSize: 2 });
 
     expect(simulation.fauna.livingCount).toBe(6);
+  });
+
+  it("brings hares only to dry ground away from the water", () => {
+    const simulation = createSimulation();
+
+    const { world } = simulation;
+
+    floodCells(world, world.grid.cellsInRadius(0, 0, 30), 1.2);
+    simulation.navigation.rebuild();
+    simulation.usePower("hare", 35, 0, { herdSize: 3 });
+
+    expect(simulation.takeNotices()).toEqual(["Hares need dry land away from water."]);
+
+    simulation.usePower("hare", 200, 0, {});
+
+    expect(simulation.fauna.animals.map((animal) => animal.kind)).toEqual(["hare", "hare", "hare"]);
   });
 
   it("abundance fills bushes and feeds the nearest tribe", () => {

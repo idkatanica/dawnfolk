@@ -117,6 +117,7 @@ export class AnimalView {
 
     this.#kinds = {
       deer: this.#createKindView("deer", material),
+      hare: this.#createKindView("hare", material),
       ibex: this.#createKindView("ibex", material),
       mammoth: this.#createKindView("mammoth", material),
       wolf: this.#createKindView("wolf", material),

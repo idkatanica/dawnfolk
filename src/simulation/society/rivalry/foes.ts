@@ -7,7 +7,13 @@ export type Foe =
   | { readonly animal: Animal; readonly kind: "animal" }
   | { readonly kind: "person"; readonly person: Person };
 
-const ANIMAL_GIRTH: Readonly<Record<AnimalKind, number>> = { deer: 0.5, ibex: 0.4, mammoth: 2.2, wolf: 0.45 };
+const ANIMAL_GIRTH: Readonly<Record<AnimalKind, number>> = {
+  deer: 0.5,
+  hare: 0.2,
+  ibex: 0.4,
+  mammoth: 2.2,
+  wolf: 0.45,
+};
 const PERSON_GIRTH = 0.3;
 
 export function personFoe(person: Person): Foe {

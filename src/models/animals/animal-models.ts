@@ -8,6 +8,7 @@ import type { Skeleton } from "../rig/skeleton.ts";
 import type { AnimalAppearance } from "./animal-appearance.ts";
 import { ANIMAL_DETAILS, type AnimalDetail, type AnimalDetailLevel } from "./animal-detail.ts";
 import { addDeerBody, addFawnSpots, addLargeAntlers, addSmallAntlers, DEER_FRAME, DEER_GAIT } from "./deer-model.ts";
+import { addHareBody, HARE_FRAME, HARE_GAIT, hareEarMotion } from "./hare-model.ts";
 import { addIbexBody, addLongHorns, addShortHorns, IBEX_FRAME, IBEX_GAIT } from "./ibex-model.ts";
 import {
   addLongTusks,
@@ -61,6 +62,7 @@ const DEER_SKELETON = createQuadrupedSkeleton(DEER_FRAME);
 const MAMMOTH_SKELETON = createQuadrupedSkeleton(MAMMOTH_FRAME);
 const IBEX_SKELETON = createQuadrupedSkeleton(IBEX_FRAME);
 const WOLF_SKELETON = createQuadrupedSkeleton(WOLF_FRAME);
+const HARE_SKELETON = createQuadrupedSkeleton(HARE_FRAME);
 
 function deerParts(appearance: AnimalAppearance): string[] {
   const parts = ["body"];
@@ -117,6 +119,14 @@ export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
     ],
     skeleton: DEER_SKELETON,
     visibleParts: deerParts,
+  },
+  hare: {
+    boneScales: (appearance) => uniformBoneScales(HARE_SKELETON, appearance),
+    extraMotion: hareEarMotion,
+    gait: HARE_GAIT,
+    parts: [{ build: addHareBody, name: "body" }],
+    skeleton: HARE_SKELETON,
+    visibleParts: () => ["body"],
   },
   ibex: {
     boneScales: (appearance) => uniformBoneScales(IBEX_SKELETON, appearance),

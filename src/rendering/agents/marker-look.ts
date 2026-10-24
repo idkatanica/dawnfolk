@@ -40,6 +40,7 @@ const SCATTERED_HERD_EXTENTS = 2.5;
 
 export const ANIMAL_MARKERS: Readonly<Record<AnimalKind, MarkerStyle>> = {
   deer: { color: 0xd9_a5_5c, extent: 13, importance: MarkerImportance.Animal, shape: MarkerShape.Diamond },
+  hare: { color: 0xcf_c6_b2, extent: 10, importance: MarkerImportance.Animal, shape: MarkerShape.Diamond },
   ibex: { color: 0x7a_90_c4, extent: 13, importance: MarkerImportance.Animal, shape: MarkerShape.Diamond },
   mammoth: { color: 0x8f_5f_42, extent: 15, importance: MarkerImportance.Animal, shape: MarkerShape.Diamond },
   wolf: { color: 0xe2_44_3a, extent: 17, importance: MarkerImportance.Predator, shape: MarkerShape.Triangle },

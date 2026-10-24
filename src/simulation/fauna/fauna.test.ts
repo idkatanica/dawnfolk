@@ -8,7 +8,7 @@ import { IdentifierSource } from "../identifiers.ts";
 import { createTestWorld, floodCells } from "../testing/test-world.ts";
 import type { WorldState } from "../world/world-state.ts";
 import type { PeopleSense } from "./beast-instincts.ts";
-import { FaunaSystem, type FaunaThreats, type FaunaTick } from "./fauna.ts";
+import { type Animal, FaunaSystem, type FaunaThreats, type FaunaTick } from "./fauna.ts";
 
 const NO_PEOPLE: PeopleSense = {
   findQuarry: () => null,
@@ -236,5 +236,135 @@ describe("kinds of animals", () => {
 
     expect(Math.hypot(pack.goalX, pack.goalZ)).toBeGreaterThanOrEqual(ANIMALS.wolf.pastureRange[0]);
     expect(ANIMALS.wolf.pastureRange[0]).toBeGreaterThan(ANIMALS.deer.pastureRange[0]);
+  });
+});
+
+const WINTER = 3.5;
+const TAME = { ...DEFAULT_WORLD_RULES, nature: { ...DEFAULT_WORLD_RULES.nature, beastBoldness: 0 } };
+
+function edgedFauna() {
+  const world = createTestWorld({ biome: Biome.Forest, dimensions: { cellSize: 10, cellsPerSide: 96 } });
+
+  for (let cell = 0; cell < world.grid.cellCount; cell += 1) {
+    if (world.grid.cellCenterX(cell) < 0) {
+      world.terrain.biome[cell] = Biome.Meadow;
+    }
+  }
+
+  return createFauna(world);
+}
+
+function hares(fauna: FaunaSystem): Animal[] {
+  return fauna.animals.filter((animal) => animal.kind === "hare");
+}
+
+describe("hares", () => {
+  it("stay out of the big herds that populate the world", () => {
+    const { fauna } = createFauna();
+
+    fauna.populate(6, createRandom(2));
+
+    expect(fauna.herds.some((herd) => herd.kind === "hare")).toBe(false);
+  });
+
+  it("settle on meadows and the forest edge but never by the water", () => {
+    const { fauna, navigation, world } = edgedFauna();
+
+    floodCells(world, world.grid.cellsInRadius(-200, 0, 60), 1.2);
+    navigation.rebuild();
+
+    expect(fauna.populateSmallGame(12)).toBe(12);
+
+    for (const hare of hares(fauna)) {
+      const cell = world.grid.cellAt(hare.mover.x, hare.mover.z);
+
+      expect(hare.mover.x).toBeLessThan(40);
+      expect(world.touchesWater(cell)).toBe(false);
+    }
+  });
+
+  it("draw their chances from a stream of their own", () => {
+    const { fauna } = createFauna();
+    const shared = createRandom(4);
+
+    fauna.populateSmallGame(4);
+    runFor(fauna, 60, { random: shared, season: SPRING });
+
+    expect(hares(fauna).length).toBeGreaterThan(0);
+    expect(shared.next()).toBe(createRandom(4).next());
+  });
+
+  it("refuse to start a group by the water", () => {
+    const { fauna, navigation, world } = createFauna();
+
+    floodCells(world, world.grid.cellsInRadius(0, 0, 30), 1.2);
+    navigation.rebuild();
+
+    expect(fauna.spawnHerd("hare", 35, 0, 3, createRandom(1))).toBeNull();
+    expect(fauna.spawnHerd("hare", 200, 0, 3, createRandom(1))).not.toBeNull();
+  });
+
+  it("raise litters through spring and summer and send grown young off to new ground", () => {
+    const { fauna } = createFauna();
+
+    fauna.spawnHerd("hare", 0, 0, 2, createRandom(1));
+    runFor(fauna, 150, { days: 0.01, season: SUMMER });
+
+    expect(hares(fauna).length).toBeGreaterThan(ANIMALS.hare.maximumHerdSize);
+    expect(fauna.herds.length).toBeGreaterThan(1);
+  });
+
+  it("die of age within a few years while deer live on", () => {
+    const { fauna } = createFauna();
+
+    fauna.spawnHerd("hare", 0, 0, 3, createRandom(1));
+    fauna.spawnHerd("deer", 100, 0, 2, createRandom(1));
+    runFor(fauna, 8, { days: 0.5, season: WINTER });
+
+    expect(hares(fauna).map((hare) => hare.causeOfDeath)).toEqual(["age", "age", "age"]);
+    expect(fauna.animals.filter((animal) => animal.kind === "deer" && animal.isAlive)).toHaveLength(2);
+  });
+
+  it("bolt from a wolf before it is close", () => {
+    const { fauna } = createFauna();
+
+    fauna.spawnHerd("hare", 0, 0, 1, createRandom(1));
+    fauna.spawnHerd("wolf", -35, 0, 1, createRandom(1));
+
+    const [hare] = hares(fauna);
+
+    runFor(fauna, 3, { rules: TAME });
+
+    expect(hare.pose).toBe("run");
+    expect(hare.mover.x).toBeGreaterThan(12);
+  });
+
+  it("feed a hungry wolf pack that runs one down", () => {
+    const { fauna } = createFauna();
+
+    fauna.spawnHerd("wolf", -40, 0, 4, createRandom(1));
+    fauna.spawnHerd("hare", 40, 0, 3, createRandom(1));
+
+    const tick = tickOf();
+
+    for (let step = 0; step < 3000 && !hares(fauna).some((hare) => !hare.isAlive); step += 1) {
+      fauna.update(tick);
+    }
+
+    expect(
+      hares(fauna)
+        .filter((hare) => !hare.isAlive)
+        .map((hare) => hare.causeOfDeath)
+    ).toEqual(["prey"]);
+  });
+
+  it("are left alone by tame wolves", () => {
+    const { fauna } = createFauna();
+
+    fauna.spawnHerd("wolf", -40, 0, 4, createRandom(1));
+    fauna.spawnHerd("hare", 40, 0, 3, createRandom(1));
+    runFor(fauna, 240, { rules: TAME });
+
+    expect(hares(fauna).every((hare) => hare.isAlive)).toBe(true);
   });
 });

@@ -43,6 +43,7 @@ const MAXIMUM_TICKS_PER_ADVANCE = 40;
 const NAVIGATION_CHECK_TICKS = 50;
 const FIRST_STROKE_SECONDS = 1 / 30;
 const STARTING_HERDS = 16;
+const STARTING_SMALL_GAME_GROUPS = 24;
 const STARTING_TRIBES = 2;
 const STARTING_TRIBE_SIZE = 7;
 const STARTING_SPOTS: readonly Waypoint[] = [
@@ -231,6 +232,7 @@ export class Simulation {
     }
 
     this.fauna.populate(STARTING_HERDS, this.random);
+    this.fauna.populateSmallGame(STARTING_SMALL_GAME_GROUPS);
     this.chronicle.takeEntries();
   }
 
