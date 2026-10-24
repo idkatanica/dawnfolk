@@ -31,16 +31,7 @@ interface AreaCell {
 }
 
 function areaRegion(world: WorldState, area: CircleArea): CellRegion {
-  const { grid } = world;
-
-  const lastIndex = grid.cellsPerSide - 1;
-
-  return {
-    firstColumn: Math.max(0, grid.columnAt(area.x - area.radius)),
-    firstRow: Math.max(0, grid.rowAt(area.z - area.radius)),
-    lastColumn: Math.min(lastIndex, grid.columnAt(area.x + area.radius)),
-    lastRow: Math.min(lastIndex, grid.rowAt(area.z + area.radius)),
-  };
+  return world.grid.circleBounds(area.x, area.z, area.radius);
 }
 
 export function cellsInArea(world: WorldState, area: CircleArea): AreaCell[] {

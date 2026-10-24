@@ -1,3 +1,5 @@
+import type { CellRegion } from "./change-tracking.ts";
+
 export interface GridDimensions {
   cellSize: number;
   cellsPerSide: number;
@@ -199,18 +201,26 @@ export class WorldGrid {
     return (edge - from) / delta;
   }
 
+  circleBounds(x: number, z: number, radius: number): CellRegion {
+    const lastIndex = this.cellsPerSide - 1;
+
+    return {
+      firstColumn: Math.max(0, this.columnAt(x - radius)),
+      firstRow: Math.max(0, this.rowAt(z - radius)),
+      lastColumn: Math.min(lastIndex, this.columnAt(x + radius)),
+      lastRow: Math.min(lastIndex, this.rowAt(z + radius)),
+    };
+  }
+
   cellsInRadius(x: number, z: number, radius: number): number[] {
     const cells: number[] = [];
-    const firstColumn = Math.max(0, this.columnAt(x - radius));
-    const lastColumn = Math.min(this.cellsPerSide - 1, this.columnAt(x + radius));
-    const firstRow = Math.max(0, this.rowAt(z - radius));
-    const lastRow = Math.min(this.cellsPerSide - 1, this.rowAt(z + radius));
+    const bounds = this.circleBounds(x, z, radius);
     const radiusSquared = radius * radius;
 
-    for (let row = firstRow; row <= lastRow; row += 1) {
+    for (let row = bounds.firstRow; row <= bounds.lastRow; row += 1) {
       const deltaZ = this.centerZ(row) - z;
 
-      for (let column = firstColumn; column <= lastColumn; column += 1) {
+      for (let column = bounds.firstColumn; column <= bounds.lastColumn; column += 1) {
         const deltaX = this.centerX(column) - x;
 
         if (deltaX * deltaX + deltaZ * deltaZ <= radiusSquared) {

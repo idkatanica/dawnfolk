@@ -21,4 +21,8 @@ describe("world grid", () => {
   it("stays in one cell for a short step inside it", () => {
     expect(columnsAndRows(grid.cellsAlong(3, 3, 4, 4))).toEqual(["4,4"]);
   });
+
+  it("clamps the bounds of a circle to the grid", () => {
+    expect(grid.circleBounds(-35, 30, 12)).toEqual({ firstColumn: 0, firstRow: 5, lastColumn: 1, lastRow: 7 });
+  });
 });
