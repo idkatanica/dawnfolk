@@ -88,14 +88,23 @@ export class BeastEncounters implements PeopleSense {
     let best: Quarry | null = null;
     let bestScore = 0;
 
-    for (const person of this.#context.people.livingWithin(x, z, radius)) {
-      const quarry = this.#quarryOf(person);
+    const context = this.#context;
 
-      if (quarry === null || quarry.isSheltered) {
+    for (const person of context.people.livingWithin(x, z, radius)) {
+      const tribe = context.people.findTribe(person.tribeId);
+
+      if (tribe === null || isSheltered(person, tribe, context)) {
         continue;
       }
 
-      const score = quarry.frailty / (1 + Math.hypot(quarry.x - x, quarry.z - z) / radius);
+      const nearness = 1 + Math.hypot(person.mover.x - x, person.mover.z - z) / radius;
+
+      if (frailtyOf(person) / nearness <= bestScore) {
+        continue;
+      }
+
+      const quarry = this.#describe(person, false);
+      const score = quarry.frailty / nearness;
 
       if (score > bestScore) {
         best = quarry;
@@ -117,20 +126,15 @@ export class BeastEncounters implements PeopleSense {
   }
 
   nearest(x: number, z: number, radius: number): Quarry | null {
-    let nearest: Quarry | null = null;
-    let nearestDistance = radius;
+    const { people } = this.#context;
 
-    for (const person of this.#context.people.livingWithin(x, z, radius)) {
-      const distance = Math.hypot(person.mover.x - x, person.mover.z - z);
-      const quarry = this.#quarryOf(person);
+    const person = people.nearestPerson(x, z, radius, (candidate) => people.findTribe(candidate.tribeId) !== null);
 
-      if (quarry !== null && distance < nearestDistance) {
-        nearest = quarry;
-        nearestDistance = distance;
-      }
+    if (person === null) {
+      return null;
     }
 
-    return nearest;
+    return this.#quarryOf(person);
   }
 
   wound(id: number, blow: BeastBlow): void {
@@ -189,16 +193,20 @@ export class BeastEncounters implements PeopleSense {
       return null;
     }
 
+    return this.#describe(person, isSheltered(person, tribe, context));
+  }
+
+  #describe(person: Person, isPersonSheltered: boolean): Quarry {
     const { x, z } = person.mover;
 
-    const companions = context.people.countNear(x, z, COMPANION_RADIUS, (other) => other !== person);
+    const companions = this.#context.people.countNear(x, z, COMPANION_RADIUS, (other) => other !== person);
     const pairing = companions >= 1 ? PAIRED_FRAILTY : 1;
 
     return {
       companions,
       frailty: frailtyOf(person) * pairing,
       id: person.id,
-      isSheltered: isSheltered(person, tribe, context),
+      isSheltered: isPersonSheltered,
       x,
       z,
     };
