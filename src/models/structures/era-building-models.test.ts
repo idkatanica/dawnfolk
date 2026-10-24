@@ -7,7 +7,7 @@ import { outermostHit } from "../mesh/surface-probe.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
 import { buildBuildingModel, GLOW_PART, SINGLE_MODEL_KINDS, type SingleModelKind } from "./building-models.ts";
-import { buildEnclosurePieces, ENCLOSURE_SEGMENT_LENGTH, type EnclosureKind } from "./enclosures.ts";
+import { buildEnclosurePiece, ENCLOSURE_SEGMENT_LENGTH, type EnclosureKind } from "./enclosures.ts";
 import { buildMineModel, type MineOre } from "./mine-model.ts";
 import { EMBER_PART } from "./structure-parts.ts";
 
@@ -47,6 +47,10 @@ function soundnessProblems(mesh: MeshData): string[] {
   const openEdge = highestOpenEdge(mesh) < 0.05 ? [] : [`open edge at ${highestOpenEdge(mesh).toFixed(2)}`];
 
   return [...meshProblems(mesh), ...detached, ...openEdge];
+}
+
+function enclosurePieces(kind: EnclosureKind, level: (typeof LEVELS)[number]): MeshData[] {
+  return [buildEnclosurePiece(kind, "gate", level), buildEnclosurePiece(kind, "segment", level)];
 }
 
 function orderProblems(mesh: MeshData): string[] {
@@ -160,23 +164,16 @@ describe.each(MINE_ORES)("%s mine", (ore) => {
 
 describe.each(ENCLOSURES)("%s pieces", (kind) => {
   it.each(LEVELS)("butt their %s ends at half a segment either side", (level) => {
-    const pieces = buildEnclosurePieces(kind, level);
-
-    expect(pieces.segmentLength).toBe(ENCLOSURE_SEGMENT_LENGTH);
-    expect(pieces.segmentLength).toBeGreaterThan(0);
-
-    for (const piece of [pieces.gate, pieces.segment]) {
-      expect(piece.bounds.minimum[0]).toBeCloseTo(-pieces.segmentLength / 2, 1);
-      expect(piece.bounds.maximum[0]).toBeCloseTo(pieces.segmentLength / 2, 1);
-      expect(Math.abs(piece.bounds.minimum[0] + pieces.segmentLength / 2)).toBeLessThan(END_TOLERANCE);
-      expect(Math.abs(piece.bounds.maximum[0] - pieces.segmentLength / 2)).toBeLessThan(END_TOLERANCE);
+    for (const piece of enclosurePieces(kind, level)) {
+      expect(piece.bounds.minimum[0]).toBeCloseTo(-ENCLOSURE_SEGMENT_LENGTH / 2, 1);
+      expect(piece.bounds.maximum[0]).toBeCloseTo(ENCLOSURE_SEGMENT_LENGTH / 2, 1);
+      expect(Math.abs(piece.bounds.minimum[0] + ENCLOSURE_SEGMENT_LENGTH / 2)).toBeLessThan(END_TOLERANCE);
+      expect(Math.abs(piece.bounds.maximum[0] - ENCLOSURE_SEGMENT_LENGTH / 2)).toBeLessThan(END_TOLERANCE);
     }
   });
 
   it.each(LEVELS)("stand clean and grounded at %s detail", (level) => {
-    const pieces = buildEnclosurePieces(kind, level);
-
-    for (const piece of [pieces.gate, pieces.segment]) {
+    for (const piece of enclosurePieces(kind, level)) {
       expect(soundnessProblems(piece)).toEqual([]);
       expect(orderProblems(piece)).toEqual([]);
       expect(piece.bounds.minimum[1]).toBeLessThan(0);
@@ -184,15 +181,16 @@ describe.each(ENCLOSURES)("%s pieces", (kind) => {
   });
 
   it("keep fewer triangles far away", () => {
-    const high = buildEnclosurePieces(kind, "high");
-    const low = buildEnclosurePieces(kind, "low");
-
-    expect(triangleCount(low.segment)).toBeLessThan(triangleCount(high.segment));
-    expect(triangleCount(low.gate)).toBeLessThan(triangleCount(high.gate));
+    for (const piece of ["gate", "segment"] as const) {
+      expect(triangleCount(buildEnclosurePiece(kind, piece, "low"))).toBeLessThan(
+        triangleCount(buildEnclosurePiece(kind, piece, "high"))
+      );
+    }
   });
 
   it("leave a way through the gate but not through the wall", () => {
-    const { gate, segment } = buildEnclosurePieces(kind, "high");
+    const gate = buildEnclosurePiece(kind, "gate", "high");
+    const segment = buildEnclosurePiece(kind, "segment", "high");
 
     const origin = new Vector3(0, 1.1, -3);
     const ahead = new Vector3(0, 0, 1);

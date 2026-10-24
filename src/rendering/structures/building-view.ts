@@ -36,10 +36,11 @@ import { MaterialSlot, SLOT_COLOR_TABLE } from "../../models/materials.ts";
 import type { MeshData } from "../../models/mesh/mesh-data.ts";
 import { buildBuildingModel, GLOW_PART, SINGLE_MODEL_KINDS } from "../../models/structures/building-models.ts";
 import {
-  buildEnclosurePieces,
+  buildEnclosurePiece,
   ENCLOSURE_FOOTING_DEPTH,
   ENCLOSURE_SEGMENT_LENGTH,
   type EnclosureKind,
+  type EnclosurePiece,
 } from "../../models/structures/enclosures.ts";
 import { buildMineModel, MINE_SCALE, type MineOre } from "../../models/structures/mine-model.ts";
 import { parseHexColor } from "../../shared/color.ts";
@@ -64,6 +65,7 @@ const ROUND_KINDS: ReadonlySet<BuildingKind> = new Set(["hut", "kiln", "smelter"
 const GLOWING_KINDS: ReadonlySet<BuildingKind> = new Set(["forge", "kiln", "smelter"]);
 const MINE_ORES: readonly MineOre[] = ["copper", "tin", "iron"];
 const ENCLOSURE_KINDS: readonly EnclosureKind[] = ["palisade", "stoneWall"];
+const ENCLOSURE_PIECES: readonly EnclosurePiece[] = ["segment", "gate"];
 
 const BUILDING_FIELDS = [
   { name: "buildingPlacement", size: 4 },
@@ -326,7 +328,7 @@ function mineKey(ore: MineOre): ModelKey {
   return `mine:${ore}`;
 }
 
-function enclosureKey(kind: EnclosureKind, piece: "gate" | "segment"): ModelKey {
+function enclosureKey(kind: EnclosureKind, piece: EnclosurePiece): ModelKey {
   return `${kind}:${piece}`;
 }
 
@@ -346,16 +348,13 @@ function modelSources(): ModelSource[] {
   }
 
   for (const kind of ENCLOSURE_KINDS) {
-    sources.push({
-      footing: () => ENCLOSURE_FOOTING,
-      key: enclosureKey(kind, "segment"),
-      mesh: (level) => buildEnclosurePieces(kind, level).segment,
-    });
-    sources.push({
-      footing: () => ENCLOSURE_FOOTING,
-      key: enclosureKey(kind, "gate"),
-      mesh: (level) => buildEnclosurePieces(kind, level).gate,
-    });
+    for (const piece of ENCLOSURE_PIECES) {
+      sources.push({
+        footing: () => ENCLOSURE_FOOTING,
+        key: enclosureKey(kind, piece),
+        mesh: (level) => buildEnclosurePiece(kind, piece, level),
+      });
+    }
   }
 
   return sources;
@@ -381,7 +380,6 @@ export class BuildingView {
   readonly #bounds = new Sphere(new Vector3(), PIECE_RADIUS);
   readonly #footings = new Map<ModelKey, Footing>();
   readonly #plinths: readonly BuildingBatch[];
-  readonly #segmentLength = ENCLOSURE_SEGMENT_LENGTH;
   readonly #tribeAccents = new Map<number, Color>();
 
   constructor() {
@@ -489,7 +487,7 @@ export class BuildingView {
 
   #ringOf(building: BuildingSnapshot, mirror: WorldMirror): PiecePlacement[] {
     const kind = enclosureKindOf(building.kind);
-    const length = this.#segmentLength;
+    const length = ENCLOSURE_SEGMENT_LENGTH;
 
     const count = Math.max(SMALLEST_RING, Math.round((FULL_TURN * building.extent) / length));
     const radius = length / (2 * Math.tan(Math.PI / count));
