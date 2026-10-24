@@ -7,10 +7,10 @@ import { plantInitialVegetation } from "../../generation/vegetation.ts";
 import { createRandom } from "../../shared/random.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 import { centerCell, createTestWorld, floodCells, plantInCell, type TestWorldOptions } from "../testing/test-world.ts";
+import { TICK_SECONDS } from "../tick.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { FireSystem } from "./fire.ts";
 
-const TICK_SECONDS = 0.1;
 const LARGE_WORLD: Partial<TestWorldOptions> = { dimensions: { cellSize: 10, cellsPerSide: 96 } };
 
 interface FireScenario {

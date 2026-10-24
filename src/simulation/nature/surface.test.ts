@@ -3,10 +3,10 @@ import { Ground, groundDefinition } from "../../content/grounds.ts";
 import { SNOWFALL_TEMPERATURE } from "../../content/weather.ts";
 import { DEFAULT_WORLD_RULES, type WorldRules, worldRulesSchema } from "../../content/world-rules.ts";
 import { centerCell, createTestWorld, floodCells } from "../testing/test-world.ts";
+import { TICK_SECONDS } from "../tick.ts";
 import { SNOW_CAPACITY, type WorldState } from "../world/world-state.ts";
 import { ROWS_PER_TICK, type SurfaceConditions, SurfaceSystem } from "./surface.ts";
 
-const TICK_SECONDS = 0.1;
 const DRY_NOON: SurfaceConditions = { airTemperatureOffset: 0, isSnowfall: false, precipitation: 0, sunlight: 0.8 };
 
 function runSurface(

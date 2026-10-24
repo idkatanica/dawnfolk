@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { TechnologyId } from "../content/technologies.ts";
 import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../world/agent-buffers.ts";
-import { Simulation, TICK_SECONDS } from "./simulation.ts";
+import { Simulation } from "./simulation.ts";
 import { createVegetatedWorld } from "./testing/test-world.ts";
+import { TICK_SECONDS } from "./tick.ts";
 
 const WORLD_OPTIONS = { dimensions: { cellSize: 10, cellsPerSide: 96 } };
 const ADVANCED: readonly TechnologyId[] = [

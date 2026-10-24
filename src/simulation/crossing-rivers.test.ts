@@ -3,8 +3,9 @@ import { DEFAULT_GENERATION_OPTIONS } from "../generation/generation-options.ts"
 import { generateWorld } from "../generation/world-generator.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import { isHopping } from "./agents/hops.ts";
-import { Simulation, TICK_SECONDS } from "./simulation.ts";
+import { Simulation } from "./simulation.ts";
 import { floodCells } from "./testing/test-world.ts";
+import { TICK_SECONDS } from "./tick.ts";
 
 const RUN_SECONDS = 600;
 const LONGEST_SPELL_IN_WATER = 5;
