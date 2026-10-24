@@ -5,13 +5,12 @@ import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
-import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
+import { loosePieces } from "../testing/mesh-connectivity.ts";
 import { buildBuildingModel, GLOW_PART, SINGLE_MODEL_KINDS, type SingleModelKind } from "./building-models.ts";
 import { buildEnclosurePiece, ENCLOSURE_SEGMENT_LENGTH, type EnclosureKind } from "./enclosures.ts";
 import { buildMineModel, type MineOre } from "./mine-model.ts";
 import { EMBER_PART } from "./structure-parts.ts";
 
-const TOUCHING = 0.01;
 const END_TOLERANCE = 0.02;
 const LEVELS = ["high", "low"] as const;
 const ENCLOSURES: readonly EnclosureKind[] = ["palisade", "stoneWall"];
@@ -43,7 +42,7 @@ function widestReach(mesh: MeshData): number {
 }
 
 function soundnessProblems(mesh: MeshData): string[] {
-  const detached = detachedPieces(mesh, TOUCHING).map((piece) => `detached ${describePiece(mesh, piece)}`);
+  const detached = loosePieces(mesh).map((piece) => `detached ${piece}`);
   const openEdge = highestOpenEdge(mesh) < 0.05 ? [] : [`open edge at ${highestOpenEdge(mesh).toFixed(2)}`];
 
   return [...meshProblems(mesh), ...detached, ...openEdge];

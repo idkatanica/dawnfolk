@@ -13,6 +13,8 @@ export interface MeshPiece {
 
 type PieceAnchor = (piece: MeshPiece) => boolean;
 
+export const TOUCHING = 0.01;
+
 const POSITION_GRID = 1e4;
 const RAY_DIRECTION: Point = [0.577_31, 0.577_43, 0.577_37];
 const RAY_EPSILON = 1e-9;
@@ -393,4 +395,12 @@ export function describePiece(mesh: MeshData, piece: MeshPiece): string {
   }
 
   return `${piece.triangles.length} triangles of part ${[...parts].join("/")} slot ${[...slots].join("/")} at x ${range(0)} y ${range(1)} z ${range(2)}`;
+}
+
+export function loosePieces(
+  mesh: MeshData,
+  tolerance = TOUCHING,
+  isAnchor: PieceAnchor = restsOnGround(tolerance)
+): string[] {
+  return detachedPieces(mesh, tolerance, isAnchor).map((piece) => describePiece(mesh, piece));
 }

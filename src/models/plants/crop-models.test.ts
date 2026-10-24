@@ -3,10 +3,9 @@ import { CROP_KINDS } from "../../content/crops.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
 import { meshProblems } from "../testing/mesh-checks.ts";
-import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
+import { loosePieces } from "../testing/mesh-connectivity.ts";
 import { buildCropModel, buildFenceModel, CROP_DETAIL_LEVELS, CROP_HEAD_PART, CROP_HEIGHTS } from "./crop-models.ts";
 
-const TOUCHING = 0.01;
 const FENCE_LENGTH = 10;
 
 const HEAD_SLOTS = {
@@ -30,7 +29,7 @@ describe.each(CROP_KINDS)("%s clump", (kind) => {
       const mesh = buildCropModel(kind, level);
 
       expect(meshProblems(mesh)).toEqual([]);
-      expect(detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece))).toEqual([]);
+      expect(loosePieces(mesh)).toEqual([]);
     }
   });
 
@@ -62,7 +61,7 @@ describe("field fence", () => {
     const fence = buildFenceModel(FENCE_LENGTH, level);
 
     expect(meshProblems(fence)).toEqual([]);
-    expect(detachedPieces(fence, TOUCHING)).toEqual([]);
+    expect(loosePieces(fence)).toEqual([]);
     expect(fence.bounds.minimum[1]).toBeLessThan(0);
     expect(fence.bounds.minimum[0]).toBeLessThan(0);
     expect(fence.bounds.maximum[0]).toBeGreaterThan(FENCE_LENGTH);

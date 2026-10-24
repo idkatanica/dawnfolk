@@ -8,12 +8,12 @@ import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { meshProblems, openEdgeCount, thinnestPiece } from "../testing/mesh-checks.ts";
 import {
-  describePiece,
-  detachedPieces,
   holdsPart,
+  loosePieces,
   type MeshPiece,
   meshPieces,
   piecesTouch,
+  TOUCHING,
 } from "../testing/mesh-connectivity.ts";
 import { posedMesh } from "../testing/moved-mesh.ts";
 import { type PersonAppearance, personAppearance } from "./appearance.ts";
@@ -34,7 +34,6 @@ const highParts = buildHumanParts(HUMAN_DETAILS.high);
 const lowParts = buildHumanParts(HUMAN_DETAILS.low);
 const farParts = buildHumanParts(HUMAN_DETAILS.far);
 
-const TOUCHING = 0.01;
 const TRIBE = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
 const TORSOS = ["torsoChild", "torsoFemale", "torsoMale"] as const satisfies readonly HumanPart[];
 
@@ -68,7 +67,7 @@ function bodyPartsOf(appearance: PersonAppearance): HumanPart[] {
 function looseParts(parts: readonly MeshData[], names: readonly HumanPart[]): string[] {
   const mesh = mergeMeshes(names.map((name) => parts[humanPartIndex(name)]));
 
-  return detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece));
+  return loosePieces(mesh);
 }
 
 function torsoIn(parts: readonly HumanPart[]): number {
@@ -162,9 +161,7 @@ describe("attached parts", () => {
         const mesh = posedMesh(mergeMeshes([...body, ...load].map((name) => highParts[humanPartIndex(name)])), poser);
         const loadParts = new Set(load.map((name) => humanPartIndex(name)));
         const pieces = meshPieces(mesh);
-        const loose = detachedPieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body))).map((piece) =>
-          describePiece(mesh, piece)
-        );
+        const loose = loosePieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body)));
         const arms = pieces.filter((piece) => isArm(mesh, piece));
         const loads = pieces.filter((piece) => loadParts.has(mesh.channels.part[piece.vertices[0]]));
         const isHeld = loads.some((piece) => arms.some((arm) => piecesTouch(mesh, piece, arm, TOUCHING)));
@@ -213,9 +210,7 @@ describe("moving parts", () => {
           for (const outfit of OUTFITS) {
             const names = [...body, ...outfit, ...activityParts(clip, carried)];
             const mesh = posedMesh(mergeMeshes(names.map((name) => parts[humanPartIndex(name)])), poser);
-            const loose = detachedPieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body))).map((piece) =>
-              describePiece(mesh, piece)
-            );
+            const loose = loosePieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body)));
 
             expect(loose, `${appearance.ageGroup} ${phase} ${outfit.join(" ")}`).toEqual([]);
           }
@@ -311,9 +306,7 @@ describe("weapons in hand", () => {
       for (const phase of [0.1, 0.45, 0.8]) {
         const names = [...body, ...activityParts(clip, "nothing", weapon)];
         const mesh = posedParts(clip, phase, names);
-        const loose = detachedPieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body))).map((piece) =>
-          describePiece(mesh, piece)
-        );
+        const loose = loosePieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body)));
 
         expect(loose, `${weapon} ${phase}`).toEqual([]);
       }

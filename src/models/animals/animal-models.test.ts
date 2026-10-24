@@ -7,7 +7,7 @@ import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { measureStride } from "../rig/stride.ts";
 import { meshProblems, openEdgeCount, thinnestPiece } from "../testing/mesh-checks.ts";
-import { describePiece, detachedPieces, type MeshPiece, meshPieces } from "../testing/mesh-connectivity.ts";
+import { loosePieces, type MeshPiece, meshPieces, TOUCHING } from "../testing/mesh-connectivity.ts";
 import { posedMesh } from "../testing/moved-mesh.ts";
 import { animalAppearance } from "./animal-appearance.ts";
 import { ANIMAL_SPECIES, buildAnimalParts, poseAnimal, visibleAnimalParts } from "./animal-models.ts";
@@ -16,7 +16,6 @@ import { QuadrupedBone } from "./quadruped-skeleton.ts";
 
 const ADULT = { seed: 0.31, youth: 0 };
 
-const TOUCHING = 0.01;
 const THINNEST = 0.001;
 const PHASES = [0, 0.25, 0.5, 0.75];
 const LEVELS = ["high", "low", "far"] as const;
@@ -60,7 +59,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
       for (const [index, extra] of extras.entries()) {
         const mesh = mergeMeshes([body, extra]);
 
-        const detached = detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece));
+        const detached = loosePieces(mesh);
 
         expect(detached, `${level} ${species.parts[index + 1].name}`).toEqual([]);
       }
@@ -90,7 +89,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
 
           const posed = posedMesh(mesh, poser);
 
-          const loose = detachedPieces(posed, TOUCHING, isTorso).map((piece) => describePiece(posed, piece));
+          const loose = loosePieces(posed, TOUCHING, isTorso);
 
           expect(loose, `${level} ${clip} ${phase}`).toEqual([]);
         }

@@ -3,12 +3,10 @@ import { CultivatedSpecies } from "../../content/cultivated-plants.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
-import { describePiece, detachedPieces } from "../testing/mesh-connectivity.ts";
+import { loosePieces } from "../testing/mesh-connectivity.ts";
 import { BERRY_PART } from "./berries.ts";
 import { buildPlantVariants, canonicalHeight, PLANT_DETAIL_LEVELS } from "./plant-models.ts";
 import { FOLIAGE_FLUTTER, plantSway } from "./tree-mesher.ts";
-
-const TOUCHING = 0.01;
 
 const FRUIT_SLOTS = [
   [CultivatedSpecies.AppleTree, MaterialSlot.Apple],
@@ -38,7 +36,7 @@ describe.each(FRUIT_SLOTS)("orchard species %i", (species, slot) => {
   it("builds clean geometry that stands on the ground at every level of detail", () => {
     for (const level of PLANT_DETAIL_LEVELS) {
       for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
-        const detached = detachedPieces(mesh, TOUCHING).map((piece) => describePiece(mesh, piece));
+        const detached = loosePieces(mesh);
 
         expect(meshProblems(mesh), `${level} variant ${variant}`).toEqual([]);
         expect(detached, `${level} variant ${variant}`).toEqual([]);
