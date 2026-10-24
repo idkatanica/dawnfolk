@@ -211,6 +211,7 @@ export class MeteorFall implements ActiveEffect {
   readonly meshes: readonly Mesh[] = [];
   readonly #effect: MeteorEffect;
   readonly #from: Vector3;
+  readonly #point = new Vector3();
   readonly #to: Vector3;
   #age = 0;
 
@@ -228,7 +229,7 @@ export class MeteorFall implements ActiveEffect {
 
     const progress = saturate(this.#age / duration);
 
-    const head = this.#from.clone().lerp(this.#to, progress);
+    const head = this.#point.lerpVectors(this.#from, this.#to, progress);
 
     sinks.glow.add([head.x, head.y, head.z, size * 2.4], [1, 0.75, 0.4, 1]);
 
@@ -236,7 +237,7 @@ export class MeteorFall implements ActiveEffect {
       const behind = saturate(progress - sample * 0.012);
       const fade = 1 - sample / TRAIL_SAMPLES;
 
-      const point = this.#from.clone().lerp(this.#to, behind);
+      const point = this.#point.lerpVectors(this.#from, this.#to, behind);
 
       sinks.glow.add([point.x, point.y, point.z, size * (1 + fade)], [1, 0.45, 0.12, fade]);
       sinks.dust.add([point.x, point.y + sample, point.z, size * (1.5 + sample * 0.2)], [0.25, 0.23, 0.22, fade * 0.5]);
@@ -250,6 +251,7 @@ export class EmberFlight implements ActiveEffect {
   readonly meshes: readonly Mesh[] = [];
   readonly #effect: EmberEffect;
   readonly #from: Vector3;
+  readonly #position = new Vector3();
   readonly #to: Vector3;
   #age = 0;
 
@@ -267,7 +269,7 @@ export class EmberFlight implements ActiveEffect {
 
     const progress = saturate(this.#age / duration);
 
-    const position = this.#from.clone().lerp(this.#to, progress);
+    const position = this.#position.lerpVectors(this.#from, this.#to, progress);
 
     position.y += Math.sin(progress * Math.PI) * 22;
     sinks.glow.add([position.x, position.y, position.z, 1.6], [1, 0.5 * flicker, 0.12, flicker]);

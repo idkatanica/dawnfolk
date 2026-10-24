@@ -11,7 +11,6 @@ import {
 } from "three/webgpu";
 import { InterleavedInstances } from "../instancing.ts";
 
-const FLOATS_PER_BILLBOARD = 8;
 const CORNER_ATTRIBUTE = "billboardCorner";
 
 export const BILLBOARD_FIELDS = [
@@ -93,7 +92,7 @@ export class BillboardBatch {
     this.#instances.ensureCapacity(this.#count + 1);
 
     const data = this.#instances.array;
-    const offset = this.#count * FLOATS_PER_BILLBOARD;
+    const offset = this.#count * this.#instances.stride;
 
     data.set(placement, offset);
     data.set(look, offset + 4);
