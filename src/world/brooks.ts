@@ -1,20 +1,15 @@
 import { isWaterCell, type SampledTerrain } from "./terrain-sampling.ts";
+import { riverCodeOfWidth } from "./water.ts";
 import type { WorldGrid } from "./world-grid.ts";
 
 export const HOP_WIDTH = 4;
 export const HOP_REACH = 22;
 export const NOT_CLEAR = -1;
 
-const NARROWEST_RIVER = 3.5;
-const RIVER_WIDTH_PER_STRENGTH = 3.4;
-const RIVER_CODE_AT_SOURCE = 40;
-const RIVER_CODE_PER_STRENGTH = 30;
 const NOT_WET = -1;
 const HOP_SPAN_CELLS = 3.2;
 
-export const BROOK_STRENGTH = Math.floor(
-  RIVER_CODE_AT_SOURCE + (RIVER_CODE_PER_STRENGTH * (HOP_WIDTH - NARROWEST_RIVER)) / RIVER_WIDTH_PER_STRENGTH
-);
+export const BROOK_STRENGTH = Math.floor(riverCodeOfWidth(HOP_WIDTH));
 
 export const Passage = {
   Blocked: 0,

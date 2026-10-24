@@ -1,7 +1,7 @@
 import { plantSpeciesDefinition, woodlandShare } from "../content/plants.ts";
 import { hashToUnit } from "../shared/math.ts";
 import { hasRoomFromCoast, isOnIsland } from "./coast.ts";
-import { type SampledTerrain, touchesWaterCell } from "./terrain-sampling.ts";
+import { isWaterCell, type SampledTerrain, touchesWaterCell } from "./terrain-sampling.ts";
 import type { WorldGrid } from "./world-grid.ts";
 
 export interface FootingTerrain extends SampledTerrain {
@@ -16,19 +16,41 @@ export const WALKABLE_SLOPE = 1.15;
 
 const STAND_SALT = 19.19;
 
-export function slopeAt(heights: Float32Array, grid: WorldGrid, cell: number): number {
-  const { cellSize } = grid;
-
-  const column = grid.columnOf(cell);
-  const row = grid.rowOf(cell);
+function gradientX(heights: Float32Array, grid: WorldGrid, column: number, row: number): number {
   const last = grid.cellsPerSide - 1;
 
   const east = heights[grid.index(Math.min(last, column + 1), row)];
   const west = heights[grid.index(Math.max(0, column - 1), row)];
+
+  return (east - west) / (2 * grid.cellSize);
+}
+
+function gradientZ(heights: Float32Array, grid: WorldGrid, column: number, row: number): number {
+  const last = grid.cellsPerSide - 1;
+
   const south = heights[grid.index(column, Math.min(last, row + 1))];
   const north = heights[grid.index(column, Math.max(0, row - 1))];
 
-  return Math.hypot((east - west) / (2 * cellSize), (south - north) / (2 * cellSize));
+  return (south - north) / (2 * grid.cellSize);
+}
+
+export function gradientZAt(heights: Float32Array, grid: WorldGrid, cell: number): number {
+  return gradientZ(heights, grid, grid.columnOf(cell), grid.rowOf(cell));
+}
+
+export function slopeAt(heights: Float32Array, grid: WorldGrid, cell: number): number {
+  const column = grid.columnOf(cell);
+  const row = grid.rowOf(cell);
+
+  return Math.hypot(gradientX(heights, grid, column, row), gradientZ(heights, grid, column, row));
+}
+
+export function isWalkableGround(terrain: FootingTerrain, grid: WorldGrid, cell: number): boolean {
+  if (!isOnIsland(terrain.coastDistance, cell) || isWaterCell(terrain, cell)) {
+    return false;
+  }
+
+  return slopeAt(terrain.height, grid, cell) < WALKABLE_SLOPE;
 }
 
 export function isOpenGround(terrain: FootingTerrain, grid: WorldGrid, cell: number): boolean {

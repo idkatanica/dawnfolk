@@ -3,6 +3,7 @@ import { Ground, type GroundIndex } from "../content/grounds.ts";
 import { saturate } from "../shared/math.ts";
 import { createNoiseSampler } from "../shared/noise.ts";
 import { createRandom } from "../shared/random.ts";
+import { gradientZAt, slopeAt } from "../world/footing.ts";
 import { hasWater } from "../world/water.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 import { type IslandPoint, islandPointAt } from "./relief.ts";
@@ -220,16 +221,22 @@ interface Slopes {
   slope: Float32Array;
 }
 
+function northFacing(gradientZ: number, slope: number): number {
+  if (slope < 1e-4) {
+    return 0;
+  }
+
+  return (gradientZ / slope) * Math.min(1, slope * 3);
+}
+
 function measureSlopes(grid: WorldGrid, heights: Float32Array): Slopes {
   const slopes: Slopes = { north: new Float32Array(grid.cellCount), slope: new Float32Array(grid.cellCount) };
 
-  for (let row = 0; row < grid.cellsPerSide; row += 1) {
-    for (let column = 0; column < grid.cellsPerSide; column += 1) {
-      const { north, slope } = slopeAt(grid, heights, column, row);
+  for (let cell = 0; cell < grid.cellCount; cell += 1) {
+    const slope = slopeAt(heights, grid, cell);
 
-      slopes.north[grid.index(column, row)] = north;
-      slopes.slope[grid.index(column, row)] = slope;
-    }
+    slopes.north[cell] = northFacing(gradientZAt(heights, grid, cell), slope);
+    slopes.slope[cell] = slope;
   }
 
   return slopes;
@@ -282,30 +289,6 @@ function findRiverBanks(inputs: ClimateInputs, slopes: Float32Array): Uint8Array
   }
 
   return banks;
-}
-
-function slopeAt(
-  grid: WorldGrid,
-  heights: Float32Array,
-  column: number,
-  row: number
-): { north: number; slope: number } {
-  const lastIndex = grid.cellsPerSide - 1;
-  const nextColumnHeight = heights[grid.index(Math.min(lastIndex, column + 1), row)];
-  const previousColumnHeight = heights[grid.index(Math.max(0, column - 1), row)];
-  const nextRowHeight = heights[grid.index(column, Math.min(lastIndex, row + 1))];
-  const previousRowHeight = heights[grid.index(column, Math.max(0, row - 1))];
-
-  const gradientX = (nextColumnHeight - previousColumnHeight) / (2 * grid.cellSize);
-  const gradientZ = (nextRowHeight - previousRowHeight) / (2 * grid.cellSize);
-
-  const slope = Math.hypot(gradientX, gradientZ);
-
-  if (slope < 1e-4) {
-    return { north: 0, slope };
-  }
-
-  return { north: (gradientZ / slope) * Math.min(1, slope * 3), slope };
 }
 
 function isStillWater(inputs: ClimateInputs, cell: number): boolean {

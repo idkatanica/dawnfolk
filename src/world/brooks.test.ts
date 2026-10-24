@@ -41,6 +41,10 @@ function passageIn(terrain: ReturnType<typeof terrainWith>): (cell: number) => P
 }
 
 describe("brooks", () => {
+  it("end at the river code hydrology writes for a stream one hop wide", () => {
+    expect(BROOK_STRENGTH).toBe(44);
+  });
+
   it("are river water no wider than a hop", () => {
     const terrain = terrainWith([
       { fromX: 0, strength: BROOK_STRENGTH, toX: 10 },
