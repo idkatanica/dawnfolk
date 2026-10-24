@@ -21,9 +21,9 @@ interface RolledFieldProps {
   readonly value: string;
 }
 
-export function NameField({ className, onChange, onRoll, value }: RolledFieldProps) {
+export function NameField({ onChange, onRoll, value }: RolledFieldProps) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className="flex items-center gap-2">
       <label className={FIELD}>
         <span className="text-ink-muted">Name</span>
 

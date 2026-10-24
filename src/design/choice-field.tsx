@@ -13,7 +13,6 @@ export interface ChoiceOption {
 }
 
 interface ChoiceFieldProps {
-  readonly className?: string | undefined;
   readonly description?: string | undefined;
   readonly label: string;
   readonly onChange: (value: string) => void;
@@ -118,10 +117,10 @@ function ChoiceControl(props: ChoiceFieldProps) {
 }
 
 export function ChoiceField(props: ChoiceFieldProps) {
-  const { className, description, label } = props;
+  const { description, label } = props;
 
   return (
-    <div className={cn("flex flex-col gap-2", className)} title={description}>
+    <div className="flex flex-col gap-2" title={description}>
       <span className="font-medium text-ink text-sm">{label}</span>
 
       <ChoiceControl {...props} />

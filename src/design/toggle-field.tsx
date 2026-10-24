@@ -1,20 +1,18 @@
 import { Switch } from "@base-ui/react/switch";
 import { useId } from "react";
-import { cn } from "./cn.ts";
 
 interface ToggleFieldProps {
-  readonly className?: string | undefined;
   readonly description?: string | undefined;
   readonly isChecked: boolean;
   readonly label: string;
   readonly onChange: (isChecked: boolean) => void;
 }
 
-export function ToggleField({ className, description, isChecked, label, onChange }: ToggleFieldProps) {
+export function ToggleField({ description, isChecked, label, onChange }: ToggleFieldProps) {
   const labelId = useId();
 
   return (
-    <div className={cn("flex min-h-8 items-center justify-between gap-3 text-sm", className)} title={description}>
+    <div className="flex min-h-8 items-center justify-between gap-3 text-sm" title={description}>
       <span className="font-medium text-ink" id={labelId}>
         {label}
       </span>

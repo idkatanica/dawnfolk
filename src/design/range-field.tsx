@@ -1,10 +1,8 @@
 import { Slider } from "@base-ui/react/slider";
 import { useId } from "react";
-import { cn } from "./cn.ts";
 import { useHeldDraft } from "./use-held-draft.ts";
 
 interface RangeFieldProps {
-  readonly className?: string | undefined;
   readonly description?: string | undefined;
   readonly label: string;
   readonly maximum: number;
@@ -27,7 +25,6 @@ function useHeldRange(value: number, onChange: (value: number) => void) {
 }
 
 export function RangeField({
-  className,
   description,
   label,
   maximum,
@@ -42,7 +39,7 @@ export function RangeField({
   const { change, shown } = useHeldRange(value, onChange);
 
   return (
-    <div className={cn("flex flex-col gap-1", className)} title={description}>
+    <div className="flex flex-col gap-1" title={description}>
       <div className="flex items-baseline justify-between gap-3 text-sm leading-5">
         <span className="font-medium text-ink" id={labelId}>
           {label}

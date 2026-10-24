@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { cn } from "../../design/cn.ts";
 
 export const GROUP_CLASS = "flex flex-col gap-4 border-line border-t py-5 first:border-t-0 first:pt-0 last:pb-0";
 
@@ -25,12 +24,11 @@ export function GroupHeading({ action, description, title }: GroupHeadingProps) 
 
 interface SettingsGroupProps extends GroupHeadingProps {
   readonly children: ReactNode;
-  readonly className?: string | undefined;
 }
 
-export function SettingsGroup({ action, children, className, description, title }: SettingsGroupProps) {
+export function SettingsGroup({ action, children, description, title }: SettingsGroupProps) {
   return (
-    <section className={cn(GROUP_CLASS, className)}>
+    <section className={GROUP_CLASS}>
       <GroupHeading action={action} description={description} title={title} />
 
       {children}

@@ -36,13 +36,13 @@ export function IconButton({ className, icon, isPressed, label, tone = "plain", 
   );
 }
 
-type ButtonTone = "accent" | "plain" | "quiet";
+type ButtonTone = "accent" | "quiet";
 
 interface TextButtonProps extends ComponentProps<typeof BaseButton> {
-  readonly tone?: ButtonTone;
+  readonly tone: ButtonTone;
 }
 
-export function TextButton({ className, tone = "plain", ...props }: TextButtonProps) {
+export function TextButton({ className, tone, ...props }: TextButtonProps) {
   return (
     <BaseButton
       {...props}
@@ -51,7 +51,6 @@ export function TextButton({ className, tone = "plain", ...props }: TextButtonPr
         "disabled:cursor-not-allowed disabled:opacity-50",
         {
           "bg-dawn text-white hover:bg-dawn-strong": tone === "accent",
-          "bg-paper-hover text-ink hover:bg-paper-press": tone === "plain",
           "text-ink-soft hover:bg-paper-hover hover:text-ink": tone === "quiet",
         },
         FOCUS_RING,

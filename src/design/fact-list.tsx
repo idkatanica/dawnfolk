@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { cn } from "./cn.ts";
 
 interface Fact {
   readonly label: string;
@@ -16,15 +15,9 @@ function FactRow({ fact }: { readonly fact: Fact }) {
   );
 }
 
-export function FactList({
-  className,
-  facts,
-}: {
-  readonly className?: string | undefined;
-  readonly facts: readonly Fact[];
-}) {
+export function FactList({ facts }: { readonly facts: readonly Fact[] }) {
   return (
-    <dl className={cn("divide-y divide-line", className)}>
+    <dl className="divide-y divide-line">
       {facts.map((fact) => (
         <FactRow fact={fact} key={fact.label} />
       ))}
