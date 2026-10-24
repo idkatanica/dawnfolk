@@ -5,7 +5,8 @@ import { triangleCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { loosePieces, TOUCHING } from "../testing/mesh-connectivity.ts";
-import { buildBuildingModel, buildingScale, GLOW_PART, SINGLE_MODEL_KINDS } from "./building-models.ts";
+import { buildBuildingModel, buildingScale, SINGLE_MODEL_KINDS } from "./building-models.ts";
+import { GLOW_PART } from "./structure-parts.ts";
 
 const FLOAT_SLACK = 1e-4;
 

@@ -34,7 +34,7 @@ import { eraDefinition } from "../../content/eras.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { MaterialSlot, SLOT_COLOR_TABLE } from "../../models/materials.ts";
 import type { MeshData } from "../../models/mesh/mesh-data.ts";
-import { buildBuildingModel, GLOW_PART, SINGLE_MODEL_KINDS } from "../../models/structures/building-models.ts";
+import { buildBuildingModel, SINGLE_MODEL_KINDS } from "../../models/structures/building-models.ts";
 import {
   buildEnclosurePiece,
   ENCLOSURE_FOOTING_DEPTH,
@@ -43,6 +43,7 @@ import {
   type EnclosurePiece,
 } from "../../models/structures/enclosures.ts";
 import { buildMineModel, MINE_SCALE, type MineOre } from "../../models/structures/mine-model.ts";
+import { GLOW_PART } from "../../models/structures/structure-parts.ts";
 import { clamp, FULL_TURN, saturate } from "../../shared/math.ts";
 import type { BuildingView as BuildingSnapshot } from "../../simulation/frame.ts";
 import { geometryFromMeshData, InterleavedInstances, toInstancedGeometry } from "../instancing.ts";

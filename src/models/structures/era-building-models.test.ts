@@ -6,10 +6,10 @@ import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts"
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { loosePieces } from "../testing/mesh-connectivity.ts";
-import { buildBuildingModel, GLOW_PART, SINGLE_MODEL_KINDS, type SingleModelKind } from "./building-models.ts";
+import { buildBuildingModel, SINGLE_MODEL_KINDS, type SingleModelKind } from "./building-models.ts";
 import { buildEnclosurePiece, ENCLOSURE_SEGMENT_LENGTH, type EnclosureKind } from "./enclosures.ts";
 import { buildMineModel, type MineOre } from "./mine-model.ts";
-import { EMBER_PART } from "./structure-parts.ts";
+import { GLOW_PART } from "./structure-parts.ts";
 
 const END_TOLERANCE = 0.02;
 const LEVELS = ["high", "low"] as const;
@@ -73,10 +73,6 @@ function orderProblems(mesh: MeshData): string[] {
 }
 
 describe("era buildings", () => {
-  it("shares the glow part with the campfire", () => {
-    expect(EMBER_PART).toBe(GLOW_PART);
-  });
-
   it.each(SINGLE_MODEL_KINDS)("fits the %s inside its footprint", (kind) => {
     for (const level of LEVELS) {
       expect(widestReach(buildBuildingModel(kind, level))).toBeLessThanOrEqual(BUILDINGS[kind].footprint);
