@@ -1,24 +1,26 @@
 import {
   attribute,
   dot,
-  equal,
   Fn,
   float,
   int,
   ivec2,
+  max,
   mix,
   normalize,
   normalLocal,
   positionLocal,
   select,
+  uniformArray,
   varying,
   vec3,
   vec4,
 } from "three/tsl";
 import { MeshStandardNodeMaterial, type Node } from "three/webgpu";
+import { SLOT_COLOR_TABLE } from "../../models/materials.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import type { AgentPalette } from "./agent-palette.ts";
-import { colorTexel, type PaletteLayout, rootTexel, TEXELS_PER_BONE } from "./palette-layout.ts";
+import { colorIndexBySlot, colorTexel, type PaletteLayout, rootTexel, TEXELS_PER_BONE } from "./palette-layout.ts";
 
 type BoneRows = readonly [Node<"vec4">, Node<"vec4">, Node<"vec4">];
 
@@ -68,12 +70,13 @@ export function createSkinnedMaterial(palette: AgentPalette, layout: PaletteLayo
   })();
 
   const slotColors = slotColorTable();
+  const colorIndices = uniformArray<"float">(colorIndexBySlot(layout, SLOT_COLOR_TABLE.length), "float");
 
-  const color = layout.colorSlots.reduce<Node<"vec3">>(
-    (current, colorSlot, index) =>
-      select(equal(slot, int(colorSlot)), texelAt(int(colorTexel(layout, index))).xyz, current),
-    slotColors.element(slot)
-  );
+  const colorIndex = colorIndices.element(slot);
+
+  const paletteColor = texelAt(int(colorTexel(layout, 0)).add(int(max(colorIndex, 0)))).xyz;
+
+  const color = select(colorIndex.greaterThanEqual(0), paletteColor, slotColors.element(slot));
 
   material.colorNode = varying(color.mul(shade), "agentColor");
   material.roughnessNode = float(0.82);
