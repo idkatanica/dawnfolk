@@ -422,15 +422,19 @@ export function considerSplit(
     return;
   }
 
+  const settlers = chooseSettlers(members);
+
+  if (settlers.length === 0) {
+    return;
+  }
+
   const search: SiteSearch = {
     ...siteSearchNear(campPoint(tribe), SPLIT_SEARCH_RADIUS, tribe),
     minimumNeighborDistance: SPLIT_NEIGHBOR_DISTANCE,
   };
-  const settlers = chooseSettlers(members);
-
   const site = findCampSite(search, context, services.tribes());
 
-  if (site === null || settlers.length === 0) {
+  if (site === null) {
     return;
   }
 
