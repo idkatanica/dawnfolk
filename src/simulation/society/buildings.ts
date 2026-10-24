@@ -95,6 +95,7 @@ export class BuildingSystem {
   readonly #identifiers: IdentifierSource;
   readonly #world: WorldState;
   readonly #buildings: Building[] = [];
+  readonly #buildingsById = new Map<number, Building>();
   #incidents: BuildingIncident[] = [];
   #losses: BuildingLoss[] = [];
 
@@ -142,12 +143,17 @@ export class BuildingSystem {
     };
 
     this.#buildings.push(building);
+    this.#buildingsById.set(id, building);
 
     return building;
   }
 
   find(id: number | null): Building | null {
-    const building = this.#buildings.find((candidate) => candidate.id === id);
+    if (id === null) {
+      return null;
+    }
+
+    const building = this.#buildingsById.get(id);
 
     if (building === undefined) {
       return null;
@@ -164,6 +170,7 @@ export class BuildingSystem {
     }
 
     this.#buildings.splice(index, 1);
+    this.#buildingsById.delete(building.id);
     this.#releaseCell(building);
     this.#losses.push({ building, reason });
   }

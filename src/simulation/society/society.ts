@@ -58,6 +58,7 @@ interface TribeArrival {
 export class SocietySystem implements PeopleDirectory, SocietyServices {
   readonly quarryUses = new Map<number, number>();
   readonly #dependencies: SocietyDependencies;
+  readonly #peopleById = new Map<number, Person>();
   readonly #tribesById = new Map<number, Tribe>();
   readonly #trodden = new TroddenGround();
   #people: Person[] = [];
@@ -81,7 +82,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
   }
 
   findPerson(id: number): Person | null {
-    const person = this.#people.find((candidate) => candidate.id === id);
+    const person = this.#peopleById.get(id);
 
     if (person === undefined) {
       return null;
@@ -104,6 +105,21 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     return this.#people.filter((person) => person.isAlive && person.tribeId === tribe.id);
   }
 
+  membersOfEach(tribes: readonly Tribe[]): Person[][] {
+    const positions = new Map(tribes.map((tribe, position) => [tribe.id, position]));
+    const members = tribes.map((): Person[] => []);
+
+    for (const person of this.#people) {
+      const position = positions.get(person.tribeId);
+
+      if (person.isAlive && position !== undefined) {
+        members[position].push(person);
+      }
+    }
+
+    return members;
+  }
+
   createTribe(campX: number, campZ: number): Tribe {
     const tribe = createTribe({
       campX,
@@ -124,6 +140,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     person.tribeId = tribe.id;
     tribe.memberCount += 1;
     this.#people.push(person);
+    this.#peopleById.set(person.id, person);
   }
 
   moveToTribe(person: Person, from: Tribe, to: Tribe): void {
@@ -276,7 +293,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     this.#handleBuildingLosses(context);
 
     const tribes = [...this.#tribes];
-    const members = this.#membersOfEach(tribes);
+    const members = this.membersOfEach(tribes);
 
     for (const [position, tribe] of tribes.entries()) {
       updateTribe({ context, days, members: members[position], seconds, services: this, tribe });
@@ -312,21 +329,6 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
       },
       random
     );
-  }
-
-  #membersOfEach(tribes: readonly Tribe[]): Person[][] {
-    const positions = new Map(tribes.map((tribe, position) => [tribe.id, position]));
-    const members = tribes.map((): Person[] => []);
-
-    for (const person of this.#people) {
-      const position = positions.get(person.tribeId);
-
-      if (person.isAlive && position !== undefined) {
-        members[position].push(person);
-      }
-    }
-
-    return members;
   }
 
   #dissolve(tribe: Tribe): void {
@@ -400,7 +402,19 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
       return;
     }
 
-    this.#people = this.#people.filter((person) => person.isAlive || person.deathSeconds <= CORPSE_SECONDS);
+    const remaining: Person[] = [];
+
+    for (const person of this.#people) {
+      if (person.isAlive || person.deathSeconds <= CORPSE_SECONDS) {
+        remaining.push(person);
+
+        continue;
+      }
+
+      this.#peopleById.delete(person.id);
+    }
+
+    this.#people = remaining;
   }
 }
 

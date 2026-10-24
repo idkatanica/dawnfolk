@@ -100,6 +100,22 @@ describe("world store", () => {
     expect(useWorldStore.getState().snapshot?.speed).toBe(4);
   });
 
+  it("keeps the rules object while the rules stay the same", () => {
+    const frame = createFrame();
+    const feed = createFeed({ frame });
+
+    connectWorldStore(feed);
+    feed.emit(createFrame({ notices: ["Rain is coming."], rules: structuredClone(frame.rules) }));
+
+    expect(useWorldStore.getState().snapshot?.rules).toBe(frame.rules);
+
+    const bolder = { ...frame.rules, nature: { ...frame.rules.nature, beastBoldness: 2 } };
+
+    feed.emit(createFrame({ notices: ["Wolves grow bold."], rules: bolder }));
+
+    expect(useWorldStore.getState().snapshot?.rules).toBe(bolder);
+  });
+
   it("copies the chronicle of the feed when new entries arrive", () => {
     const entry = createChronicleEntry({ category: "birth", text: "A child is born to the Bear Clan." });
     const feed = createFeed();
