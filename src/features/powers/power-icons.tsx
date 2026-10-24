@@ -9,7 +9,7 @@ export const POWER_ICONS: Readonly<Record<PowerId, GameIconName>> = {
   fire: "fire",
   flatten: "flatten",
   forest: "forest",
-  hare: "paw",
+  hare: "hare",
   healing: "healing",
   ibex: "ibex",
   inspect: "inspect",

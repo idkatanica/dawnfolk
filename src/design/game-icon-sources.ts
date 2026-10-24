@@ -22,6 +22,7 @@ import fruit from "./icons/fruit.webp";
 import gift from "./icons/gift.webp";
 import grain from "./icons/grain.webp";
 import granary from "./icons/granary.webp";
+import hare from "./icons/hare.webp";
 import healing from "./icons/healing.webp";
 import heat from "./icons/heat.webp";
 import hut from "./icons/hut.webp";
@@ -103,6 +104,7 @@ export const GAME_ICON_SOURCES = {
   gift,
   grain,
   granary,
+  hare,
   healing,
   heat,
   hut,
