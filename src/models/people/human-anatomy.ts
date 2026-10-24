@@ -274,40 +274,24 @@ function addLegs(builder: MeshBuilder, detail: HumanDetail): void {
   });
 }
 
-function torsoShape(sections: readonly LoftSection[], detail: HumanDetail): Shape {
-  return loft(alongPath(sections, detail), detail.torsoSegments);
-}
-
-function addLimbReferences(builder: MeshBuilder, detail: HumanDetail): void {
-  builder.addSeamReference(tube(NECK, { radialSegments: detail.limbSegments }));
-
-  forEachSide((side, mirror) => {
-    builder.addSeamReference(tube(alongPath(ARM, detail), { radialSegments: detail.limbSegments }), mirror);
-    builder.addSeamReference(tube(alongPath(LEG, detail), { radialSegments: detail.limbSegments }), mirror);
-    builder.addSeamReference(loft(alongPath(FOOT_SECTIONS, detail), detail.limbSegments), footTransform(side));
+function addBody(builder: MeshBuilder, torso: readonly LoftSection[], detail: HumanDetail): void {
+  builder.add(loft(alongPath(torso, detail), detail.torsoSegments), {
+    seam: SKIN_SEAM,
+    style: { ...FLEXIBLE_TORSO_STYLE, ...SKIN },
   });
-}
-
-function addTorso(builder: MeshBuilder, sections: readonly LoftSection[], detail: HumanDetail): void {
-  builder.add(torsoShape(sections, detail), { seam: SKIN_SEAM, style: { ...FLEXIBLE_TORSO_STYLE, ...SKIN } });
-  addLimbReferences(builder, detail);
-}
-
-export function addMaleTorso(builder: MeshBuilder, detail: HumanDetail): void {
-  addTorso(builder, MALE_TORSO, detail);
-}
-
-export function addFemaleTorso(builder: MeshBuilder, detail: HumanDetail): void {
-  addTorso(builder, FEMALE_TORSO, detail);
-}
-
-export function addChildTorso(builder: MeshBuilder, detail: HumanDetail): void {
-  addTorso(builder, CHILD_TORSO, detail);
-}
-
-export function addBody(builder: MeshBuilder, detail: HumanDetail): void {
   addHead(builder, detail);
   addArms(builder, detail);
   addLegs(builder, detail);
-  builder.addSeamReference(torsoShape(MALE_TORSO, detail));
+}
+
+export function addMaleBody(builder: MeshBuilder, detail: HumanDetail): void {
+  addBody(builder, MALE_TORSO, detail);
+}
+
+export function addFemaleBody(builder: MeshBuilder, detail: HumanDetail): void {
+  addBody(builder, FEMALE_TORSO, detail);
+}
+
+export function addChildBody(builder: MeshBuilder, detail: HumanDetail): void {
+  addBody(builder, CHILD_TORSO, detail);
 }

@@ -7,14 +7,7 @@ import { type MeshData, mergeMeshes, triangleCount, VERTEX_CHANNELS } from "../m
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { meshProblems, openEdgeCount, thinnestPiece } from "../testing/mesh-checks.ts";
-import {
-  holdsPart,
-  loosePieces,
-  type MeshPiece,
-  meshPieces,
-  piecesTouch,
-  TOUCHING,
-} from "../testing/mesh-connectivity.ts";
+import { loosePieces, type MeshPiece, meshPieces, piecesTouch, TOUCHING } from "../testing/mesh-connectivity.ts";
 import { posedMesh } from "../testing/moved-mesh.ts";
 import { type PersonAppearance, personAppearance } from "./appearance.ts";
 import { applyHumanClip } from "./human-clips.ts";
@@ -35,10 +28,10 @@ const lowParts = buildHumanParts(HUMAN_DETAILS.low);
 const farParts = buildHumanParts(HUMAN_DETAILS.far);
 
 const TRIBE = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
-const TORSOS = ["torsoChild", "torsoFemale", "torsoMale"] as const satisfies readonly HumanPart[];
+const BODIES = ["bodyChild", "bodyFemale", "bodyMale"] as const satisfies readonly HumanPart[];
 
 function isWorn(part: HumanPart): boolean {
-  return part !== "body" && !part.startsWith("torso") && !part.startsWith("carried");
+  return !(part.startsWith("body") || part.startsWith("carried"));
 }
 
 function wornWith(part: HumanPart): HumanPart[] {
@@ -61,7 +54,7 @@ function isArm(mesh: MeshData, piece: MeshPiece): boolean {
 }
 
 function bodyPartsOf(appearance: PersonAppearance): HumanPart[] {
-  return appearanceParts(appearance).filter((part) => part === "body" || part.startsWith("torso"));
+  return appearanceParts(appearance).filter((part) => part.startsWith("body"));
 }
 
 function looseParts(parts: readonly MeshData[], names: readonly HumanPart[]): string[] {
@@ -84,14 +77,8 @@ function carriedTo(clip: PersonPose): CarriedItem {
   return clip === "carry" ? "wood" : "nothing";
 }
 
-function torsoIn(parts: readonly HumanPart[]): number {
-  const torso = parts.find((part) => part.startsWith("torso"));
-
-  if (torso === undefined) {
-    throw new Error("Every person wears a torso");
-  }
-
-  return humanPartIndex(torso);
+function isTorso(piece: MeshPiece): boolean {
+  return piece.vertices.includes(0);
 }
 
 describe("human model", () => {
@@ -127,9 +114,11 @@ describe("human model", () => {
   });
 
   it("closes the body so no hole opens at a shoulder or a joint", () => {
-    expect(openEdgeCount(highParts[humanPartIndex("body")])).toBe(0);
-    expect(openEdgeCount(lowParts[humanPartIndex("body")])).toBe(0);
-    expect(openEdgeCount(farParts[humanPartIndex("body")])).toBe(0);
+    for (const body of BODIES) {
+      expect(openEdgeCount(highParts[humanPartIndex(body)]), body).toBe(0);
+      expect(openEdgeCount(lowParts[humanPartIndex(body)]), body).toBe(0);
+      expect(openEdgeCount(farParts[humanPartIndex(body)]), body).toBe(0);
+    }
   });
 
   it("saves triangles at every lower level of detail", () => {
@@ -148,9 +137,9 @@ describe("attached parts", () => {
     ["low", lowParts],
     ["far", farParts],
   ] as const)("keeps every worn part and tool on the %s body standing on the ground", (_level, parts) => {
-    for (const torso of TORSOS) {
+    for (const body of BODIES) {
       for (const part of HUMAN_PARTS.filter(isWorn)) {
-        expect(looseParts(parts, ["body", torso, ...wornWith(part)]), `${torso} ${part}`).toEqual([]);
+        expect(looseParts(parts, [body, ...wornWith(part)]), `${body} ${part}`).toEqual([]);
       }
     }
   });
@@ -175,7 +164,7 @@ describe("attached parts", () => {
         const mesh = posedMesh(mergeMeshes([...body, ...load].map((name) => highParts[humanPartIndex(name)])), poser);
         const loadParts = new Set(load.map((name) => humanPartIndex(name)));
         const pieces = meshPieces(mesh);
-        const loose = loosePieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body)));
+        const loose = loosePieces(mesh, TOUCHING, isTorso);
         const arms = pieces.filter((piece) => isArm(mesh, piece));
         const loads = pieces.filter((piece) => loadParts.has(mesh.channels.part[piece.vertices[0]]));
         const isHeld = loads.some((piece) => arms.some((arm) => piecesTouch(mesh, piece, arm, TOUCHING)));
@@ -233,9 +222,7 @@ describe("moving parts", () => {
       for (const appearance of people) {
         for (const phase of [0.15, 0.4, 0.7]) {
           const mesh = posedPerson(appearance, clip, phase, tools);
-          const torso = holdsPart(mesh, torsoIn(bodyPartsOf(appearance)));
-
-          expect(loosePieces(mesh, TOUCHING, torso), `${appearance.ageGroup} ${phase}`).toEqual([]);
+          expect(loosePieces(mesh, TOUCHING, isTorso), `${appearance.ageGroup} ${phase}`).toEqual([]);
         }
       }
     });
@@ -288,7 +275,7 @@ describe("resting poses", () => {
 });
 
 describe("visible parts", () => {
-  it("dresses everyone with a body, a torso and an outfit", () => {
+  it("dresses everyone with one body and an outfit", () => {
     for (let index = 0; index < 40; index += 1) {
       const appearance = personAppearance({
         age: 8 + index,
@@ -298,8 +285,7 @@ describe("visible parts", () => {
       });
       const parts = appearanceParts(appearance);
 
-      expect(parts).toContain("body");
-      expect(parts.filter((part) => part.startsWith("torso"))).toHaveLength(1);
+      expect(parts.filter((part) => part.startsWith("body"))).toHaveLength(1);
       expect(parts.some((part) => ["dress", "loincloth", "tunic", "wrap"].includes(part))).toBe(true);
     }
   });
@@ -341,7 +327,7 @@ describe("weapons in hand", () => {
       for (const phase of [0.1, 0.45, 0.8]) {
         const names = [...body, ...activityParts(clip, "nothing", weapon)];
         const mesh = posedParts(clip, phase, names);
-        const loose = loosePieces(mesh, TOUCHING, holdsPart(mesh, torsoIn(body)));
+        const loose = loosePieces(mesh, TOUCHING, isTorso);
 
         expect(loose, `${weapon} ${phase}`).toEqual([]);
       }

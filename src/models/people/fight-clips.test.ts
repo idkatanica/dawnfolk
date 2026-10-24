@@ -4,7 +4,7 @@ import type { FightPose } from "../../world/agent-poses.ts";
 import { mergeMeshes } from "../mesh/mesh-data.ts";
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
-import { holdsPart, loosePieces, TOUCHING } from "../testing/mesh-connectivity.ts";
+import { loosePieces, type MeshPiece, TOUCHING } from "../testing/mesh-connectivity.ts";
 import { posedMesh } from "../testing/moved-mesh.ts";
 import { uniformScales } from "../testing/uniform-scales.ts";
 import { personAppearance } from "./appearance.ts";
@@ -33,6 +33,10 @@ function posed(clip: FightPose, phase: number): SkeletonPoser {
   poser.pose(pose, uniformScales(HUMAN_SKELETON));
 
   return poser;
+}
+
+function isTorso(piece: MeshPiece): boolean {
+  return piece.vertices.includes(0);
 }
 
 function pointOf(poser: SkeletonPoser, bone: number, rest: Vector3): Vector3 {
@@ -108,12 +112,10 @@ describe("fight clips", () => {
         applyHumanClip(pose, clip, phase, ADULT);
         poser.pose(pose, humanBoneScales(appearance.body));
 
-        const names: HumanPart[] = ["body", "torsoMale", ...weapons];
+        const names: HumanPart[] = ["bodyMale", ...weapons];
         const mesh = posedMesh(mergeMeshes(names.map((name) => parts[humanPartIndex(name)])), poser);
 
-        const torso = holdsPart(mesh, humanPartIndex("torsoMale"));
-
-        expect(loosePieces(mesh, TOUCHING, torso), `${clip} ${phase}`).toEqual([]);
+        expect(loosePieces(mesh, TOUCHING, isTorso), `${clip} ${phase}`).toEqual([]);
       }
     }
   });
