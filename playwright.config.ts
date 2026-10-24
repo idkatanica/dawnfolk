@@ -9,7 +9,7 @@ export default defineConfig({
   expect: { timeout: 20_000 },
   projects: [
     { name: "desktop", testIgnore: "phone.spec.ts", use: { ...devices["Desktop Chrome"], launchOptions } },
-    { name: "phone", testIgnore: "desktop.spec.ts", use: { ...devices["Pixel 7"], launchOptions } },
+    { name: "phone", testIgnore: ["desktop.spec.ts", "start.spec.ts"], use: { ...devices["Pixel 7"], launchOptions } },
   ],
   testDir: "tests",
   timeout: 180_000,
