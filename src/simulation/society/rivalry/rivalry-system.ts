@@ -4,13 +4,14 @@ import type { Waypoint } from "../../agents/navigation.ts";
 import type { Chronicle } from "../../chronicle.ts";
 import type { EffectLog } from "../../effects.ts";
 import type { PeopleSense } from "../../fauna/beast-instincts.ts";
+import { isComplete } from "../buildings.ts";
 import { assignJob } from "../decisions.ts";
 import type { Job, JobKind } from "../jobs/job.ts";
 import { isChild, type Person } from "../person.ts";
 import type { PersonTick, SocietyContext } from "../society-context.ts";
 import { emptyStock, type Stock, takeFood, totalFood } from "../stock.ts";
 import { knows, type Tribe } from "../tribe.ts";
-import { completedBuilding, litCampfireOf } from "../tribe-places.ts";
+import { litCampfireOf } from "../tribe-places.ts";
 import { armForHunt, type CarriedWeapon, carriedWeapon } from "../weapons.ts";
 import { ArrowFlights } from "./arrows.ts";
 import { BeastEncounters } from "./beast-encounters.ts";
@@ -330,9 +331,7 @@ export class RivalrySystem implements Battleground {
   }
 
   #claimFor(tribe: Tribe, context: SocietyContext): Claim {
-    const buildings = context.buildings.all.filter(
-      (building) => building.tribeId === tribe.id && completedBuilding(context.buildings, building.id) !== null
-    );
+    const buildings = context.buildings.all.filter((building) => building.tribeId === tribe.id && isComplete(building));
 
     return claimOf(tribe, tribe.memberCount, buildings);
   }

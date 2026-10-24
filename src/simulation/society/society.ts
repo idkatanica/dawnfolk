@@ -58,6 +58,7 @@ interface TribeArrival {
 export class SocietySystem implements PeopleDirectory, SocietyServices {
   readonly quarryUses = new Map<number, number>();
   readonly #dependencies: SocietyDependencies;
+  readonly #peopleById = new Map<number, Person>();
   readonly #tribesById = new Map<number, Tribe>();
   readonly #trodden = new TroddenGround();
   #people: Person[] = [];
@@ -81,7 +82,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
   }
 
   findPerson(id: number): Person | null {
-    const person = this.#people.find((candidate) => candidate.id === id);
+    const person = this.#peopleById.get(id);
 
     if (person === undefined) {
       return null;
@@ -124,6 +125,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     person.tribeId = tribe.id;
     tribe.memberCount += 1;
     this.#people.push(person);
+    this.#peopleById.set(person.id, person);
   }
 
   moveToTribe(person: Person, from: Tribe, to: Tribe): void {
@@ -400,7 +402,19 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
       return;
     }
 
-    this.#people = this.#people.filter((person) => person.isAlive || person.deathSeconds <= CORPSE_SECONDS);
+    const remaining: Person[] = [];
+
+    for (const person of this.#people) {
+      if (person.isAlive || person.deathSeconds <= CORPSE_SECONDS) {
+        remaining.push(person);
+
+        continue;
+      }
+
+      this.#peopleById.delete(person.id);
+    }
+
+    this.#people = remaining;
   }
 }
 
