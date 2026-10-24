@@ -27,7 +27,6 @@ import type {
   GoalView,
   HeightPatch,
   PackedRows,
-  TechnologyProgress,
   TribeSummary,
   VegetationPatch,
   WeatherView,
@@ -39,7 +38,7 @@ import { tribeBuildings } from "./society/camp-plan.ts";
 import { carriedItem, isChild, type Person } from "./society/person.ts";
 import { plantedCount } from "./society/plots.ts";
 import { nextEraName, technologyNames, tribeGoal } from "./society/progress.ts";
-import { eraOf, type Tribe, upcomingTechnology } from "./society/tribe.ts";
+import { eraOf, type Tribe } from "./society/tribe.ts";
 import { SNOW_CAPACITY, type WorldState } from "./world/world-state.ts";
 
 const BYTE = 255;
@@ -322,16 +321,6 @@ export function describeBuilding(building: Building, world: WorldState): Buildin
   };
 }
 
-function technologyProgress(tribe: Tribe): TechnologyProgress | null {
-  const upcoming = upcomingTechnology(tribe);
-
-  if (upcoming === undefined) {
-    return null;
-  }
-
-  return { cost: upcoming.cost, name: upcoming.name };
-}
-
 interface TribeSources {
   buildings: BuildingSystem;
   world: WorldState;
@@ -383,7 +372,6 @@ export function describeTribe(tribe: Tribe, members: readonly Person[], sources:
   const era = eraOf(tribe);
 
   return {
-    armory: tribe.armory,
     births: tribe.births,
     buildings: buildingCounts(tribe, sources),
     campX: tribe.campX,
@@ -391,18 +379,15 @@ export function describeTribe(tribe: Tribe, members: readonly Person[], sources:
     children: members.filter((person) => isChild(person)).length,
     color: tribe.color,
     deaths: tribe.deaths,
-    era: { count: ERA_COUNT, index: era.index, name: era.name, nextName: nextEraName(tribe) },
+    era: { count: ERA_COUNT, index: era.index, nextName: nextEraName(tribe) },
     eraName: era.name,
     faith: tribe.faith,
     farmland: farmland(tribe, sources.world),
-    foundedDay: tribe.foundedDay,
     furColor: tribe.furColor,
     goal: goalView(tribe),
     id: tribe.id,
     isMigrating: tribe.isMigrating,
-    knowledge: tribe.knowledge,
     name: tribe.name,
-    nextTechnology: technologyProgress(tribe),
     population: members.length,
     stock: { ...tribe.stock },
     technologies: technologyNames(tribe),

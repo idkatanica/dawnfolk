@@ -55,11 +55,6 @@ export function createWeather(overrides: Partial<WeatherView> = {}): WeatherView
 
 export function createStatistics(overrides: Partial<SimulationStatistics> = {}): SimulationStatistics {
   return {
-    animals: 30,
-    buildings: 4,
-    burningCells: 0,
-    deaths: 0,
-    plants: 12_000,
     population: 14,
     tribes: 2,
     ...overrides,
@@ -95,7 +90,6 @@ export function createStock(overrides: Partial<Record<ResourceKind, number>> = {
 
 export function createTribe(overrides: Partial<TribeSummary> = {}): TribeSummary {
   return {
-    armory: "stone",
     births: 2,
     buildings: [],
     campX: -851,
@@ -103,18 +97,15 @@ export function createTribe(overrides: Partial<TribeSummary> = {}): TribeSummary
     children: 3,
     color: "#c8553d",
     deaths: 1,
-    era: { count: 6, index: 0, name: "Wanderers", nextName: "Stone Age" },
+    era: { count: 6, index: 0, nextName: "Stone Age" },
     eraName: "Wanderers",
     faith: 40,
     farmland: { crops: [], fields: 0, orchardTrees: 0, woodlotTrees: 0 },
-    foundedDay: 0,
     furColor: "#7a5638",
     goal: { isBlocked: false, need: null, progress: 0.5, technologyName: "Fire making" },
     id: 1,
     isMigrating: false,
-    knowledge: 30,
     name: "Bear Clan",
-    nextTechnology: { cost: 60, name: "Fire making" },
     population: 7,
     stock: createStock({ berries: 10.4, stone: 3, wood: 8.6 }),
     technologies: ["Gathering"],

@@ -60,17 +60,12 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
   readonly #dependencies: SocietyDependencies;
   readonly #tribesById = new Map<number, Tribe>();
   readonly #trodden = new TroddenGround();
-  #deaths = 0;
   #people: Person[] = [];
   #tribeNumber = 0;
   #tribes: Tribe[] = [];
 
   constructor(dependencies: SocietyDependencies) {
     this.#dependencies = dependencies;
-  }
-
-  get deaths(): number {
-    return this.#deaths;
   }
 
   get people(): readonly Person[] {
@@ -193,7 +188,6 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     person.pose = VIOLENT_DEATHS.has(cause) ? "fall" : "dead";
     person.speed = 0;
     stopMoving(person.mover);
-    this.#deaths += 1;
 
     if (tribe === null) {
       return;

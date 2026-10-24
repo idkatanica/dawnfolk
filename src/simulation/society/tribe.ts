@@ -75,7 +75,6 @@ export interface Tribe {
   eraIndex: number;
   faith: number;
   fields: Field[];
-  foundedDay: number;
   furColor: string;
   id: number;
   isMigrating: boolean;
@@ -132,7 +131,6 @@ export function createTribe(founding: TribeFounding): Tribe {
     eraIndex: 0,
     faith: 30,
     fields: [],
-    foundedDay: founding.day,
     furColor: founding.identity.furColor,
     id: founding.id,
     isMigrating: false,
