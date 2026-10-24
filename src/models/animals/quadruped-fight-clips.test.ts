@@ -1,6 +1,6 @@
 import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
-import { ANIMAL_KINDS, type AnimalKind } from "../../content/animals.ts";
+import { ANIMAL_KINDS, ANIMALS, type AnimalKind } from "../../content/animals.ts";
 import type { AnimalPose } from "../../world/agent-poses.ts";
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
@@ -33,7 +33,9 @@ function muzzle(kind: AnimalKind, poser: SkeletonPoser): Vector3 {
   return poser.skinPoint(QuadrupedBone.Head, new Vector3(x, y, z + MUZZLE_REACH), new Vector3());
 }
 
-describe.each(ANIMAL_KINDS)("%s fight clips", (kind) => {
+const FIGHTERS = ANIMAL_KINDS.filter((kind) => !ANIMALS[kind].isSmallGame);
+
+describe.each(FIGHTERS)("%s fight clips", (kind) => {
   it("throws the head into the strike", () => {
     const gathering = posed(kind, "attack", 0.3);
     const striking = posed(kind, "attack", 0.5);
@@ -47,7 +49,9 @@ describe.each(ANIMAL_KINDS)("%s fight clips", (kind) => {
 
     expect(head(charging).y).toBeLessThan(head(running).y);
   });
+});
 
+describe.each(ANIMAL_KINDS)("%s death clips", (kind) => {
   it("collapses into the pose of the dead", () => {
     const fallen = posed(kind, "fall", 0.95);
     const dead = posed(kind, "dead", 0);

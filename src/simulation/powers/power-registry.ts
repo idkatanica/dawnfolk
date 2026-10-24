@@ -13,6 +13,7 @@ import { flattenPower, forestPower, lowerPower, paintPower, raisePower, smoothPo
 import {
   abundancePower,
   deerPower,
+  harePower,
   healingPower,
   ibexPower,
   inspectPower,
@@ -33,6 +34,7 @@ export const POWER_HANDLERS: PowerHandlers = {
   fire: firePower,
   flatten: flattenPower,
   forest: forestPower,
+  hare: harePower,
   healing: healingPower,
   ibex: ibexPower,
   inspect: inspectPower,
@@ -60,6 +62,7 @@ const POWER_SCHEMAS: PowerSchemas = {
   fire: POWERS.fire.parameters,
   flatten: POWERS.flatten.parameters,
   forest: POWERS.forest.parameters,
+  hare: POWERS.hare.parameters,
   healing: POWERS.healing.parameters,
   ibex: POWERS.ibex.parameters,
   inspect: POWERS.inspect.parameters,

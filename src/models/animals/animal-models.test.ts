@@ -12,6 +12,7 @@ import { describePiece, detachedPieces, type MeshPiece, meshPieces } from "../te
 import { posedMesh } from "../testing/moved-mesh.ts";
 import { animalAppearance } from "./animal-appearance.ts";
 import { ANIMAL_SPECIES, animalPartMask, buildAnimalParts, poseAnimal } from "./animal-models.ts";
+import { leapPerStride } from "./quadruped-clips.ts";
 import { QuadrupedBone } from "./quadruped-skeleton.ts";
 
 const ADULT = { seed: 0.31, youth: 0 };
@@ -168,7 +169,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
       skeleton: species.skeleton,
     });
 
-    expect(stride).toBeGreaterThan(0.5);
+    expect(stride + leapPerStride(species.gait, "walk")).toBeGreaterThan(0.5);
   });
 });
 

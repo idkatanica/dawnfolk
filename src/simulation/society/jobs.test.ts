@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ANIMALS } from "../../content/animals.ts";
 import {
   isRockSpecies,
   PLANT_SPECIES,
@@ -287,6 +288,66 @@ describe("choosing game", () => {
     expect(harness.chronicle.takeEntries()).toContainEqual(
       expect.objectContaining({ text: expect.stringContaining("brought down an ibex") })
     );
+  });
+});
+
+describe("small game", () => {
+  function firstOf(harness: SocietyHarness, herd: { memberIds: number[] } | null) {
+    const animal = herd === null ? null : harness.fauna.findAnimal(herd.memberIds[0]);
+
+    if (animal === null) {
+      throw new Error("Expected an animal");
+    }
+
+    return animal;
+  }
+
+  it("takes a hare near camp over deer far away, but walks to deer that are close enough", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+
+    const tribe = settle(harness, 3);
+
+    const tick = firstMemberTick(harness, tribe);
+
+    tribe.stock.spears = 2;
+
+    const hare = firstOf(harness, harness.fauna.spawnHerd("hare", tribe.campX + 50, tribe.campZ, 1, harness.random));
+    const farDeer = firstOf(
+      harness,
+      harness.fauna.spawnHerd("deer", tribe.campX - 300, tribe.campZ, 1, harness.random)
+    );
+
+    expect(findGame(tick)).toBeInstanceOf(HuntJob);
+    expect(tick.person.mover.goalX).toBeCloseTo(hare.mover.x, -1);
+
+    farDeer.mover.x = tribe.campX - 100;
+
+    expect(findGame(tick)).toBeInstanceOf(HuntJob);
+    expect(tick.person.mover.goalX).toBeLessThan(tribe.campX - 60);
+  });
+
+  it("brings home a little meat from a hare without a chronicle entry", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+
+    const tribe = settle(harness, 3);
+
+    const tick = firstMemberTick(harness, tribe);
+
+    const hare = firstOf(harness, harness.fauna.spawnHerd("hare", tribe.campX + 20, tribe.campZ, 1, harness.random));
+
+    const meatBefore = tribe.stock.meat;
+
+    harness.chronicle.takeEntries();
+
+    for (let hunt = 0; hunt < 40 && hare.isAlive; hunt += 1) {
+      tick.person.mover.x = hare.mover.x + 6;
+      tick.person.mover.z = hare.mover.z;
+      runToCompletion(new HuntJob(tick, hare, STONE_SPEAR), tick, 30);
+    }
+
+    expect(hare.isAlive).toBe(false);
+    expect(carriedAmount(tick.person, "meat") + tribe.stock.meat - meatBefore).toBe(ANIMALS.hare.food);
+    expect(harness.chronicle.takeEntries().filter((entry) => entry.category === "hunt")).toEqual([]);
   });
 });
 

@@ -32,7 +32,10 @@ export const tribePower: PowerHandler<"tribe"> = {
   },
 };
 
-function herdPower<Id extends "deer" | "ibex" | "mammoth" | "wolf">(kind: Id, refusal: string): PowerHandler<Id> {
+function herdPower<Id extends "deer" | "hare" | "ibex" | "mammoth" | "wolf">(
+  kind: Id,
+  refusal: string
+): PowerHandler<Id> {
   return {
     apply: (target, parameters, services) => {
       const herd = services.fauna.spawnHerd(kind, target.x, target.z, parameters.herdSize, services.random);
@@ -51,6 +54,8 @@ export const deerPower = herdPower("deer", "Deer need flat, dry land.");
 export const mammothPower = herdPower("mammoth", "Mammoths need flat, dry land.");
 
 export const ibexPower = herdPower("ibex", "Ibex need dry land they can stand on.");
+
+export const harePower = herdPower("hare", "Hares need dry land away from water.");
 
 export const wolfPower = herdPower("wolf", "Wolves need flat, dry land.");
 

@@ -48,6 +48,7 @@ export const IBEX_GAIT: GaitStyle = {
   deadHeadRoll: -degrees(40),
   grazeReach: degrees(62),
   headBob: degrees(4),
+  leap: 0,
   lowerFlex: degrees(52),
   runKind: "gallop",
   runSwing: degrees(36),

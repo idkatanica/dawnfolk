@@ -53,7 +53,28 @@ export interface PackHunt {
   readonly startingSize: number;
 }
 
+export interface PreySense {
+  find: (id: number) => Animal | null;
+  kill: (animal: Animal) => void;
+  nearest: (x: number, z: number, radius: number) => Animal | null;
+}
+
+interface InstinctSources {
+  readonly chaseRandom: RandomSource;
+  readonly navigation: NavigationGrid;
+  readonly prey: PreySense;
+  readonly random: RandomSource;
+  readonly world: WorldState;
+}
+
+interface PreyChase {
+  hasCaught: boolean;
+  readonly preyId: number;
+  seconds: number;
+}
+
 interface PackMood {
+  chase: PreyChase | null;
   checkSeconds: number;
   hunger: number;
   hunt: PackHunt | null;
@@ -108,6 +129,18 @@ const STAG_CHANCE = 0.4;
 const CORNERED_SECONDS = 0.3;
 const ADULT_YOUTH = 0.3;
 const CALM_FEAR = 0.1;
+const CHASE_HUNGER = 0.3;
+const CHASE_CHANCE = 0.7;
+const CHASE_START_DISTANCE = 45;
+const LONGEST_CHASE_SECONDS = 22;
+const CHASE_SPEED_SHARE = 1.15;
+const POUNCE_REACH = 1.6;
+const PREY_LEAD_SECONDS = 0.6;
+const POUNCE_CHANCE = 0.5;
+const POUNCE_SECONDS: readonly [number, number] = [0.4, 0.8];
+const SMALL_PREY_MEAL = 0.45;
+const REST_AFTER_SMALL_PREY_DAYS = 0.2;
+const REST_AFTER_ESCAPE_DAYS = 0.05;
 
 function nightFactor(hours: number): number {
   if (hours >= 20 || hours < 5.5) {
@@ -133,18 +166,22 @@ export function packBoldness(hunger: number, packSize: number, tick: FaunaTick):
 }
 
 export class BeastInstincts {
+  readonly #chaseRandom: RandomSource;
   readonly #charges = new Map<number, Charge>();
   readonly #flinches = new Map<number, number>();
   readonly #moods = new Map<number, PackMood>();
   readonly #navigation: NavigationGrid;
+  readonly #prey: PreySense;
   readonly #random: RandomSource;
   readonly #strikes = new Map<number, Strike>();
   readonly #world: WorldState;
 
-  constructor(world: WorldState, navigation: NavigationGrid, random: RandomSource) {
-    this.#world = world;
-    this.#navigation = navigation;
-    this.#random = random;
+  constructor(sources: InstinctSources) {
+    this.#world = sources.world;
+    this.#navigation = sources.navigation;
+    this.#random = sources.random;
+    this.#chaseRandom = sources.chaseRandom;
+    this.#prey = sources.prey;
   }
 
   huntOf(packId: number): PackHunt | null {
@@ -198,7 +235,12 @@ export class BeastInstincts {
   }
 
   isEngaged(animal: Animal, packHunt: PackHunt | null): boolean {
-    return this.#charges.has(animal.id) || this.#flinches.has(animal.id) || packHunt !== null;
+    return (
+      this.#charges.has(animal.id) ||
+      this.#flinches.has(animal.id) ||
+      packHunt !== null ||
+      this.#chaseOf(animal.herdId) !== null
+    );
   }
 
   act(animal: Animal, packHunt: PackHunt | null, tick: FaunaTick): void {
@@ -218,6 +260,14 @@ export class BeastInstincts {
 
     if (packHunt !== null) {
       this.#hunt(animal, packHunt, tick);
+
+      return;
+    }
+
+    const chase = this.#chaseOf(animal.herdId);
+
+    if (chase !== null) {
+      this.#pursue(animal, chase, tick);
     }
   }
 
@@ -281,6 +331,12 @@ export class BeastInstincts {
       return;
     }
 
+    if (mood.chase !== null) {
+      this.#followChase(mood, mood.chase, members, tick);
+
+      return;
+    }
+
     mood.checkSeconds -= tick.seconds;
 
     if (mood.checkSeconds > 0 || mood.restDays > 0) {
@@ -289,7 +345,112 @@ export class BeastInstincts {
 
     mood.checkSeconds = HUNT_CHECK_SECONDS;
     this.#considerHunt(mood, members, tick);
+
+    if (this.#trackPrey(pack, mood, members, tick)) {
+      return;
+    }
+
     this.#prowl(pack, mood, members, tick);
+  }
+
+  #trackPrey(pack: Pack, mood: PackMood, members: readonly Animal[], tick: FaunaTick): boolean {
+    const [leader] = members;
+
+    const isTame = tick.rules.nature.beastBoldness <= 0;
+
+    if (leader === undefined || mood.hunt !== null || mood.hunger < CHASE_HUNGER || isTame) {
+      return false;
+    }
+
+    const prey = this.#prey.nearest(leader.mover.x, leader.mover.z, SCENT_RADIUS);
+
+    if (prey === null) {
+      return false;
+    }
+
+    const distance = Math.hypot(prey.mover.x - leader.mover.x, prey.mover.z - leader.mover.z);
+
+    if (distance > CHASE_START_DISTANCE) {
+      pack.goalX = prey.mover.x;
+      pack.goalZ = prey.mover.z;
+
+      return true;
+    }
+
+    if (this.#chaseRandom.chance(CHASE_CHANCE)) {
+      mood.chase = { hasCaught: false, preyId: prey.id, seconds: 0 };
+    }
+
+    return true;
+  }
+
+  #followChase(mood: PackMood, chase: PreyChase, members: readonly Animal[], tick: FaunaTick): void {
+    chase.seconds += tick.seconds;
+
+    const prey = this.#prey.find(chase.preyId);
+
+    const isOver = prey === null || !prey.isAlive || chase.seconds > LONGEST_CHASE_SECONDS;
+
+    if (!isOver) {
+      return;
+    }
+
+    mood.chase = null;
+    mood.hunger = chase.hasCaught ? Math.max(0, mood.hunger - SMALL_PREY_MEAL) : mood.hunger;
+    mood.restDays = chase.hasCaught ? REST_AFTER_SMALL_PREY_DAYS : REST_AFTER_ESCAPE_DAYS;
+
+    for (const member of members) {
+      this.#strikes.delete(member.id);
+
+      if (member.pose === "charge" || member.pose === "attack") {
+        member.pose = "walk";
+      }
+    }
+  }
+
+  #pursue(animal: Animal, chase: PreyChase, tick: FaunaTick): void {
+    const prey = this.#prey.find(chase.preyId);
+
+    if (prey === null || !prey.isAlive) {
+      this.#holdStill(animal, "walk");
+
+      return;
+    }
+
+    const { x, z } = prey.mover;
+
+    const distance = Math.hypot(x - animal.mover.x, z - animal.mover.z);
+    const strike = this.#strikeOf(animal, this.#chaseRandom);
+
+    strike.cooldownSeconds -= tick.seconds;
+
+    if (distance > POUNCE_REACH || strike.cooldownSeconds > 0) {
+      const lead = prey.speed * PREY_LEAD_SECONDS;
+      const ahead = { x: x + Math.sin(prey.mover.heading) * lead, z: z + Math.cos(prey.mover.heading) * lead };
+
+      this.#runAt(animal, ahead, strike, ANIMALS[animal.kind].runSpeed * CHASE_SPEED_SHARE, tick);
+
+      return;
+    }
+
+    strike.cooldownSeconds = between(this.#chaseRandom, POUNCE_SECONDS);
+    this.#holdStill(animal, "attack");
+    faceTowards(animal.mover, x, z);
+
+    if (this.#chaseRandom.chance(POUNCE_CHANCE)) {
+      chase.hasCaught = true;
+      this.#prey.kill(prey);
+    }
+  }
+
+  #chaseOf(packId: number): PreyChase | null {
+    const mood = this.#moods.get(packId);
+
+    if (mood === undefined) {
+      return null;
+    }
+
+    return mood.chase;
   }
 
   #prowl(pack: Pack, mood: PackMood, members: readonly Animal[], tick: FaunaTick): void {
@@ -297,7 +458,7 @@ export class BeastInstincts {
 
     const isTame = tick.rules.nature.beastBoldness <= 0;
 
-    if (leader === undefined || mood.hunt !== null || mood.hunger < PROWL_HUNGER || isTame) {
+    if (leader === undefined || mood.hunt !== null || mood.chase !== null || mood.hunger < PROWL_HUNGER || isTame) {
       return;
     }
 
@@ -487,14 +648,14 @@ export class BeastInstincts {
     stopMoving(animal.mover);
   }
 
-  #strikeOf(animal: Animal): Strike {
+  #strikeOf(animal: Animal, random: RandomSource = this.#random): Strike {
     const existing = this.#strikes.get(animal.id);
 
     if (existing !== undefined) {
       return existing;
     }
 
-    const strike: Strike = { cooldownSeconds: this.#random.between(0.2, 0.8), retargetSeconds: 0 };
+    const strike: Strike = { cooldownSeconds: random.between(0.2, 0.8), retargetSeconds: 0 };
 
     this.#strikes.set(animal.id, strike);
 
@@ -509,6 +670,7 @@ export class BeastInstincts {
     }
 
     const mood: PackMood = {
+      chase: null,
       checkSeconds: this.#random.next() * HUNT_CHECK_SECONDS,
       hunger: 0.5,
       hunt: null,

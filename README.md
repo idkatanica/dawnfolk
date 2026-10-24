@@ -55,7 +55,8 @@ Age to the Iron Age on a procedurally generated island rendered with WebGPU.
   fallen, debarked trunk over a narrow stretch. Where nothing leads across, they stay on their own bank.
 - **Tribes with their own lives.** People gather, hunt, fish, farm, chop, quarry, build camps and huts, warm
   themselves at campfires, pray, learn technologies, migrate and split into new tribes. Herds of deer, mammoths and
-  ibex graze and flee, ibex up the nearest heights, and wolf packs roam far from people.
+  ibex graze and flee, ibex up the nearest heights. Hares nibble meadows and forest edges, breed fast, live short
+  lives and bolt at the first threat, and wolf packs roam far from people and run hares down when hungry.
 - **From stone to iron.** Tribes climb from the Stone Age through the Neolithic and the Copper and Bronze Ages to
   the Iron Age. They dig clay, fire pottery, weave linen, plough fields of wheat, barley and flax, plant orchards,
   mine copper, tin and iron, smelt and forge tools and weapons, and build granaries, longhouses, workshops,

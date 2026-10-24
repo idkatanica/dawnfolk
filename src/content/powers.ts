@@ -150,6 +150,23 @@ export const POWERS = {
     }),
     usage: "brush",
   },
+  hare: {
+    category: "life",
+    description: "A few hares. They nibble meadows and forest edges, breed fast and dart away at any threat.",
+    name: "Hares",
+    parameters: z.object({
+      herdSize: rangeParameter({
+        defaultValue: 3,
+        description: "Hares in the group.",
+        label: "Group size",
+        maximum: 7,
+        minimum: 1,
+        step: 1,
+        unit: "count",
+      }),
+    }),
+    usage: "point",
+  },
   healing: {
     category: "life",
     description: "Heals, feeds and warms everyone inside the circle.",
@@ -395,6 +412,7 @@ export const POWER_ORDER: readonly PowerId[] = [
   "deer",
   "mammoth",
   "ibex",
+  "hare",
   "wolf",
   "abundance",
   "inspiration",

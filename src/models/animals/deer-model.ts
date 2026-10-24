@@ -51,6 +51,7 @@ export const DEER_GAIT: GaitStyle = {
   deadHeadRoll: -degrees(55),
   grazeReach: degrees(70),
   headBob: degrees(4),
+  leap: 0,
   lowerFlex: degrees(55),
   runKind: "gallop",
   runSwing: degrees(38),
