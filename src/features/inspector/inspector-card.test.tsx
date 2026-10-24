@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import type { Inspection, TribeInspection } from "../../simulation/inspection.ts";
 import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
@@ -8,10 +8,8 @@ import {
   createCellInspection,
   createPersonInspection,
   createTribe,
-  resetWorld,
-  showWorld,
 } from "../testing/world-fixtures.ts";
-import { InspectorIsland } from "./inspector-island.tsx";
+import { InspectorCard } from "./inspector-card.tsx";
 import { useInspectorStore } from "./inspector-store.ts";
 
 const initialInspectorState = useInspectorStore.getState();
@@ -22,30 +20,13 @@ function createTribeInspection(isMigrating: boolean): TribeInspection {
   return { kind: "tribe", summary: createTribe({ isMigrating }) };
 }
 
-function renderInspection(inspection: Inspection) {
-  showWorld({ inspection });
-
-  return render(<InspectorIsland />);
+function renderInspection(inspection: Inspection, onBack?: () => void) {
+  return render(<InspectorCard inspection={inspection} onBack={onBack} onClose={vi.fn<() => void>()} />);
 }
 
-describe("inspector island", () => {
+describe("inspector card", () => {
   afterEach(() => {
-    resetWorld();
     useInspectorStore.setState(initialInspectorState, true);
-  });
-
-  it("stays empty before the first frame arrives", async () => {
-    const screen = await render(<InspectorIsland />);
-
-    expect(screen.container).toBeEmptyDOMElement();
-  });
-
-  it("stays empty while nothing is selected", async () => {
-    showWorld({ inspection: null });
-
-    const screen = await render(<InspectorIsland />);
-
-    expect(screen.container).toBeEmptyDOMElement();
   });
 
   it("titles a person with their name, age and tribe", async () => {
@@ -122,21 +103,36 @@ describe("inspector island", () => {
     expect(useInspectorStore.getState().isFollowing).toBe(false);
   });
 
-  it("stops following when closed, even while no game is running", async () => {
-    useInspectorStore.getState().setFollowing(true);
+  it("closes from its close button", async () => {
+    const close = vi.fn<() => void>();
 
-    const screen = await renderInspection(createPersonInspection());
+    const screen = await render(<InspectorCard inspection={createPersonInspection()} onClose={close} />);
 
     await screen.getByRole("button", { exact: true, name: "Close" }).click();
 
-    expect(useInspectorStore.getState().isFollowing).toBe(false);
+    expect(close).toHaveBeenCalledOnce();
+  });
+
+  it("goes back to the journal when it was opened from there", async () => {
+    const back = vi.fn<() => void>();
+
+    const screen = await renderInspection(createPersonInspection(), back);
+
+    await screen.getByRole("button", { exact: true, name: "Back to the journal" }).click();
+
+    expect(back).toHaveBeenCalledOnce();
+  });
+
+  it("offers no way back when it was opened from the island", async () => {
+    const screen = await renderInspection(createPersonInspection());
+
+    await expect.element(screen.getByRole("button", { name: "Back to the journal" })).not.toBeInTheDocument();
   });
 });
 
-describe("inspector island in a running game", () => {
+describe("inspector card in a running game", () => {
   afterEach(() => {
     stopTestEngine();
-    resetWorld();
     useInspectorStore.setState(initialInspectorState, true);
   });
 
@@ -156,15 +152,5 @@ describe("inspector island in a running game", () => {
 
     expect(stopFollowing).toHaveBeenCalledOnce();
     await expect.element(follow).toHaveAttribute("aria-pressed", "false");
-  });
-
-  it("clears the selection when closed", async () => {
-    const { clearSelection } = await startTestEngine();
-
-    const screen = await renderInspection(createAnimalInspection());
-
-    await screen.getByRole("button", { exact: true, name: "Close" }).click();
-
-    expect(clearSelection).toHaveBeenCalledOnce();
   });
 });

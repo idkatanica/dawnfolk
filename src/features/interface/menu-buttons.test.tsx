@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
+import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
+import { createAnimalInspection, resetWorld, showWorld } from "../testing/world-fixtures.ts";
 import { useInterfaceStore } from "./interface-store.ts";
 import { MenuButtons } from "./menu-buttons.tsx";
 
@@ -7,6 +9,8 @@ const INITIAL_INTERFACE = useInterfaceStore.getState();
 
 describe("menu buttons", () => {
   afterEach(() => {
+    stopTestEngine();
+    resetWorld();
     useInterfaceStore.setState(INITIAL_INTERFACE, true);
   });
 
@@ -36,6 +40,19 @@ describe("menu buttons", () => {
 
     await expect.element(journal).toHaveAttribute("aria-pressed", "false");
     expect(useInterfaceStore.getState().isJournalOpen).toBe(false);
+  });
+
+  it("puts away the selected card to show the journal", async () => {
+    const { clearSelection } = await startTestEngine();
+
+    showWorld({ inspection: createAnimalInspection() });
+
+    const screen = await render(<MenuButtons />);
+
+    await screen.getByRole("button", { name: "Journal" }).click();
+
+    expect(clearSelection).toHaveBeenCalledOnce();
+    expect(useInterfaceStore.getState().isJournalOpen).toBe(true);
   });
 
   it("shows and hides the map", async () => {

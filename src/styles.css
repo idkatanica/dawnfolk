@@ -15,7 +15,7 @@
 
   --max-height-details: 38dvh;
   --max-height-dialog: min(46rem, calc(100dvh - var(--dialog-inset-top) - var(--dialog-inset-bottom)));
-  --max-height-journal: min(28rem, 55vh);
+  --max-height-sheet: min(72dvh, 40rem);
 
   --color-pine: #193a32;
   --color-sky: #dbe7f1;

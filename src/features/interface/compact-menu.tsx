@@ -2,6 +2,7 @@ import { Menu } from "@base-ui/react/menu";
 import { BookOpen, Map as MapIcon, Maximize2, Menu as MenuIcon, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import { IconButton } from "../../design/buttons.tsx";
+import { useSidePanel } from "../journal/use-side-panel.ts";
 import { useInterfaceStore } from "./interface-store.ts";
 import { useFullscreen } from "./use-fullscreen.ts";
 
@@ -27,7 +28,7 @@ function MenuEntry({
 }
 
 function useCompactMenu() {
-  const openJournal = useInterfaceStore((state) => state.openJournal);
+  const { openJournal } = useSidePanel();
   const toggleMap = useInterfaceStore((state) => state.toggleMap);
   const openSettings = useInterfaceStore((state) => state.openSettings);
   const isMapOpen = useInterfaceStore((state) => state.isMapOpen);

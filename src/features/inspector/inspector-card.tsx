@@ -1,12 +1,11 @@
-import { Crosshair, X } from "lucide-react";
+import { ChevronLeft, Crosshair, X } from "lucide-react";
 import { useEngine } from "../../app/use-engine.ts";
 import { type AgeGroup, ageGroupOf } from "../../content/life-stages.ts";
-import { IconButton } from "../../design/buttons.tsx";
+import { IconButton, TextButton } from "../../design/buttons.tsx";
+import { cn } from "../../design/cn.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
-import { Island } from "../../design/island.tsx";
 import type { Inspection, PersonInspection } from "../../simulation/inspection.ts";
-import { useWorldStore } from "../world/world-store.ts";
 import { AnimalDetails, BuildingDetails, CellDetails, PersonDetails, TribeDetails } from "./inspector-details.tsx";
 import { useInspectorStore } from "./inspector-store.ts";
 
@@ -30,7 +29,7 @@ function personNoun(person: PersonInspection): string {
   return person.isFemale ? nouns.female : nouns.male;
 }
 
-function titleOf(inspection: Inspection): string {
+export function titleOf(inspection: Inspection): string {
   switch (inspection.kind) {
     case "cell":
       return inspection.biomeName;
@@ -79,7 +78,7 @@ function isFollowable(inspection: Inspection): boolean {
   return inspection.kind === "person" || inspection.kind === "animal";
 }
 
-function useInspectorActions() {
+function useFollowing() {
   const engine = useEngine();
   const isFollowing = useInspectorStore((state) => state.isFollowing);
   const setFollowing = useInspectorStore((state) => state.setFollowing);
@@ -98,19 +97,11 @@ function useInspectorActions() {
     setFollowing(!isFollowing);
   }
 
-  function close(): void {
-    if (engine !== null) {
-      engine.clearSelection();
-    }
-
-    setFollowing(false);
-  }
-
-  return { close, isFollowing, toggleFollowing };
+  return { isFollowing, toggleFollowing };
 }
 
 function FollowButton({ inspection }: { readonly inspection: Inspection }) {
-  const { isFollowing, toggleFollowing } = useInspectorActions();
+  const { isFollowing, toggleFollowing } = useFollowing();
 
   if (!isFollowable(inspection)) {
     return null;
@@ -126,42 +117,65 @@ function FollowButton({ inspection }: { readonly inspection: Inspection }) {
   );
 }
 
-function InspectorContent({ inspection }: { readonly inspection: Inspection }) {
-  const { close } = useInspectorActions();
+function CloseButton({ onClose }: { readonly onClose: () => void }) {
+  return <IconButton icon={<X aria-hidden="true" size={18} />} label="Close" onClick={onClose} />;
+}
 
+function BackRow({ onBack, onClose }: { readonly onBack: () => void; readonly onClose: () => void }) {
   return (
-    <section aria-label="Selection details" className="flex w-full flex-col gap-4 p-4 md:w-80">
+    <div className="flex items-center justify-between">
+      <TextButton
+        aria-label="Back to the journal"
+        className="-ml-1 h-8 gap-1 pr-3 pl-1.5"
+        onClick={onBack}
+        tone="quiet"
+      >
+        <ChevronLeft aria-hidden="true" size={18} />
+        Journal
+      </TextButton>
+
+      <CloseButton onClose={onClose} />
+    </div>
+  );
+}
+
+interface InspectorCardProps {
+  readonly className?: string | undefined;
+  readonly inspection: Inspection;
+  readonly onBack?: (() => void) | undefined;
+  readonly onClose: () => void;
+}
+
+export function InspectorCard({ className, inspection, onBack, onClose }: InspectorCardProps) {
+  return (
+    <section aria-label="Selection details" className={cn("flex min-h-0 flex-col gap-3", className)}>
+      {onBack === undefined ? null : <BackRow onBack={onBack} onClose={onClose} />}
+
       <header className="flex items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-ink/6 text-ink-soft">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-paper-hover">
           <GameIcon name={KIND_ICONS[inspection.kind]} size={30} />
         </span>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <h2 className="truncate font-semibold text-ink text-lg leading-tight">{titleOf(inspection)}</h2>
+          <h2
+            className="truncate font-semibold text-ink text-lg leading-tight outline-none"
+            data-panel-heading=""
+            tabIndex={-1}
+          >
+            {titleOf(inspection)}
+          </h2>
 
           <p className="truncate text-ink-muted text-xs">{subtitleOf(inspection)}</p>
         </div>
 
         <FollowButton inspection={inspection} />
 
-        <IconButton icon={<X aria-hidden="true" size={18} />} label="Close" onClick={close} />
+        {onBack === undefined ? <CloseButton onClose={onClose} /> : null}
       </header>
 
-      <InspectionDetails inspection={inspection} />
+      <div className="-mx-1 min-h-0 overflow-y-auto overscroll-contain px-1 pb-1 [scrollbar-width:thin]">
+        <InspectionDetails inspection={inspection} />
+      </div>
     </section>
-  );
-}
-
-export function InspectorIsland({ className }: { readonly className?: string | undefined }) {
-  const inspection = useWorldStore((state) => state.snapshot?.inspection);
-
-  if (inspection === undefined || inspection === null) {
-    return null;
-  }
-
-  return (
-    <Island className={className}>
-      <InspectorContent inspection={inspection} />
-    </Island>
   );
 }

@@ -20,7 +20,6 @@ interface InterfaceStore {
   readonly setSettingsOpen: (isOpen: boolean) => void;
   readonly setSettingsTab: (tab: SettingsTab) => void;
   readonly settingsTab: SettingsTab;
-  readonly toggleJournal: () => void;
   readonly toggleMap: () => void;
 }
 
@@ -41,6 +40,5 @@ export const useInterfaceStore = create<InterfaceStore>()((set) => ({
   setSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
   setSettingsTab: (tab) => set({ settingsTab: tab }),
   settingsTab: "world",
-  toggleJournal: () => set((state) => ({ isJournalOpen: !state.isJournalOpen })),
   toggleMap: () => set((state) => ({ isMapOpen: !state.isMapOpen })),
 }));
