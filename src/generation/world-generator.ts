@@ -196,10 +196,7 @@ export function generateWorld(
   fillSinks(heights, grid, dryness, coastDistance);
   onProgress({ progress: 0, stage: "water" });
 
-  const uncarvedHeights = Float32Array.from(heights);
   const hydrology = computeHydrology(heights, grid, dryness, coastDistance);
-
-  const carving = uncarvedHeights.map((uncarvedHeight, cell) => uncarvedHeight - heights[cell]);
 
   onProgress({ progress: 0, stage: "climate" });
 
@@ -217,7 +214,7 @@ export function generateWorld(
 
   const terrain: TerrainData = {
     ...climate,
-    carving,
+    carving: hydrology.carving,
     coastDistance,
     dryness,
     height: heights,

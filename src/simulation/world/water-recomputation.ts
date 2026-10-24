@@ -82,7 +82,7 @@ export class WaterRecomputation {
       RESHAPED_LAND_HYDROLOGY
     );
 
-    const changedRegion = this.#applyCarving(uncarvedHeights, carvedHeights);
+    const changedRegion = this.#applyCarving(hydrology.carving, carvedHeights);
 
     terrain.waterSurface.set(hydrology.waterSurface);
     terrain.riverStrength.set(hydrology.riverStrength);
@@ -238,9 +238,11 @@ export class WaterRecomputation {
     }
   }
 
-  #applyCarving(uncarvedHeights: Float32Array, carvedHeights: Float32Array): CellRegion | null {
+  #applyCarving(carving: Float32Array, carvedHeights: Float32Array): CellRegion | null {
     const world = this.#world;
     const { grid, terrain } = world;
+
+    terrain.carving.set(carving);
 
     let firstColumn = grid.cellsPerSide;
     let firstRow = grid.cellsPerSide;
@@ -250,7 +252,6 @@ export class WaterRecomputation {
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
       const previousHeight = terrain.height[cell];
 
-      terrain.carving[cell] = uncarvedHeights[cell] - carvedHeights[cell];
       world.setHeight(cell, carvedHeights[cell]);
 
       if (terrain.height[cell] === previousHeight) {

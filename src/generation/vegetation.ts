@@ -1,4 +1,4 @@
-import { isBiomeIndex } from "../content/biomes.ts";
+import { type BiomeIndex, isBiomeIndex } from "../content/biomes.ts";
 import { WILD_BERRY_RULES } from "../content/cultivated-plants.ts";
 import { groundDefinition } from "../content/grounds.ts";
 import {
@@ -48,6 +48,16 @@ function blendedBiome(grid: WorldGrid, terrain: TerrainData, cell: number, seed:
   return terrain.biome[neighbor];
 }
 
+function plantableBiome(grid: WorldGrid, terrain: TerrainData, cell: number, seed: number): BiomeIndex | null {
+  if (touchesWaterCell(terrain, grid, cell) || !isOnIsland(terrain.coastDistance, cell)) {
+    return null;
+  }
+
+  const biome = blendedBiome(grid, terrain, cell, seed);
+
+  return isBiomeIndex(biome) ? biome : null;
+}
+
 export function clearingAt(terrain: TerrainData, cell: number): number {
   return 0.45 + 0.9 * (0.5 + 0.5 * terrain.variation[cell]);
 }
@@ -93,13 +103,9 @@ export function plantInitialVegetation(
   }
 
   for (let cell = 0; cell < grid.cellCount; cell += 1) {
-    if (touchesWaterCell(terrain, grid, cell) || !isOnIsland(terrain.coastDistance, cell)) {
-      continue;
-    }
+    const biome = plantableBiome(grid, terrain, cell, seed);
 
-    const biome = blendedBiome(grid, terrain, cell, seed);
-
-    if (!isBiomeIndex(biome)) {
+    if (biome === null) {
       continue;
     }
 
@@ -134,17 +140,17 @@ function plantWildBerries(
   const berries = createRandom(seed * 3 + 3);
 
   for (let cell = 0; cell < grid.cellCount; cell += 1) {
-    if (reserved[cell] !== 0 || touchesWaterCell(terrain, grid, cell) || !isOnIsland(terrain.coastDistance, cell)) {
+    if (reserved[cell] !== 0) {
       continue;
     }
 
-    const biome = blendedBiome(grid, terrain, cell, seed);
+    const biome = plantableBiome(grid, terrain, cell, seed);
 
-    if (!isBiomeIndex(biome)) {
+    if (biome === null) {
       continue;
     }
 
-    const clearing = 0.45 + 0.9 * (0.5 + 0.5 * terrain.variation[cell]);
+    const clearing = clearingAt(terrain, cell);
 
     for (const rule of WILD_BERRY_RULES[biome]) {
       if (!berries.chance(rule.chancePerCell * clearing)) {

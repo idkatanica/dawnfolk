@@ -7,6 +7,8 @@ import {
   NO_WATER,
   type River,
   type RiverPoint,
+  riverCodeOfStrength,
+  riverWidthOfStrength,
   type WaterFeatures,
   type Waterfall,
 } from "../world/water.ts";
@@ -64,6 +66,7 @@ function toCellThresholds(options: HydrologyOptions, grid: WorldGrid): CellThres
 }
 
 interface HydrologyResult {
+  carving: Float32Array;
   features: WaterFeatures;
   lakeIds: Int32Array;
   riverStrength: Uint8Array;
@@ -444,7 +447,7 @@ function channelGround(cell: number, heights: Float32Array, network: DrainageNet
 }
 
 export function riverWidthFor(flow: number, threshold: number): number {
-  return clamp(3.5 + 3.4 * riverStrengthFor(flow, threshold), 3.5, 26);
+  return riverWidthOfStrength(riverStrengthFor(flow, threshold));
 }
 
 function riverPointFor(
@@ -759,7 +762,7 @@ function carveCell(
 
   targets.waterSurface[cell] = Math.max(targets.waterSurface[cell], point.surface);
 
-  const strength = Math.round(clamp(40 + riverStrengthFor(point.flow, targets.threshold) * 30, 0, 255));
+  const strength = riverCodeOfStrength(riverStrengthFor(point.flow, targets.threshold));
 
   targets.riverStrength[cell] = Math.max(targets.riverStrength[cell], strength);
 }
@@ -1163,6 +1166,7 @@ export function computeHydrology(
   fillPinchedBanks(targets);
 
   return {
+    carving: targets.uncarvedHeights.map((uncarvedHeight, cell) => uncarvedHeight - heights[cell]),
     features: { lakes, rivers, springs: springs.springs, waterfalls: findWaterfalls(rivers) },
     lakeIds,
     riverStrength,

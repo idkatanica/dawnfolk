@@ -1,4 +1,4 @@
-import { FULL_TURN } from "../shared/math.ts";
+import { clamp, FULL_TURN } from "../shared/math.ts";
 
 export const NO_WATER = -10_000;
 
@@ -6,6 +6,11 @@ export const POND_SHORE_SLOPE = 0.3;
 
 const POND_STRETCH = 0.08;
 const POND_RIPPLE = 0.05;
+const NARROWEST_RIVER = 3.5;
+const WIDEST_RIVER = 26;
+const RIVER_WIDTH_PER_STRENGTH = 3.4;
+const RIVER_CODE_AT_SOURCE = 40;
+const RIVER_CODE_PER_STRENGTH = 30;
 
 export interface Lake {
   cellCount: number;
@@ -76,4 +81,16 @@ export function pondEdgeReach(spring: Spring, x: number, z: number): number {
 
 export function hasWater(waterSurface: number, ground: number): boolean {
   return waterSurface !== NO_WATER && waterSurface > ground + 0.05;
+}
+
+export function riverWidthOfStrength(strength: number): number {
+  return clamp(NARROWEST_RIVER + RIVER_WIDTH_PER_STRENGTH * strength, NARROWEST_RIVER, WIDEST_RIVER);
+}
+
+export function riverCodeOfStrength(strength: number): number {
+  return Math.round(clamp(RIVER_CODE_AT_SOURCE + strength * RIVER_CODE_PER_STRENGTH, 0, 255));
+}
+
+export function riverCodeOfWidth(width: number): number {
+  return RIVER_CODE_AT_SOURCE + (RIVER_CODE_PER_STRENGTH * (width - NARROWEST_RIVER)) / RIVER_WIDTH_PER_STRENGTH;
 }
