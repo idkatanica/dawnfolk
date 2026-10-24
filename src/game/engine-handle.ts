@@ -1,4 +1,4 @@
-import type { CameraState, GroundPoint } from "../rendering/camera/god-camera.ts";
+import type { CameraState, GroundPoint } from "./camera/god-camera.ts";
 import type { GameSession } from "./game-session.ts";
 import type { LabelPlacement } from "./label-projector.ts";
 import type { Landmark } from "./landmarks.ts";

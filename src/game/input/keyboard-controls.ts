@@ -1,4 +1,4 @@
-import type { GodCamera } from "../../rendering/camera/god-camera.ts";
+import type { GodCamera } from "../camera/god-camera.ts";
 
 type CameraAction =
   | "back"

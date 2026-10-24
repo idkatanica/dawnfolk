@@ -1,12 +1,12 @@
 import { type Mock, type MockInstance, vi } from "vitest";
 import { useEngineStore } from "../../app/engine-store.ts";
+import type { CameraState } from "../../game/camera/god-camera.ts";
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import { GameSession } from "../../game/game-session.ts";
 import type { LabelPlacement } from "../../game/label-projector.ts";
 import type { Landmark } from "../../game/landmarks.ts";
 import { LocalSimulationConnection } from "../../game/simulation-connection.ts";
 import type { PowerSelection } from "../../game/tools/power-tool.ts";
-import type { CameraState } from "../../rendering/camera/god-camera.ts";
 import type { SimulationCommand } from "../../simulation/commands.ts";
 import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";

@@ -14,11 +14,6 @@ export interface GroundPoint {
   readonly z: number;
 }
 
-interface FollowTarget {
-  readonly x: number;
-  readonly z: number;
-}
-
 type HeightProbe = (x: number, z: number) => number;
 
 const MAXIMUM_DISTANCE = 9000;
@@ -62,7 +57,7 @@ export class GodCamera {
   readonly #target = new Vector3();
   readonly #targetCopy = new Vector3();
   readonly #worldHalfSize: number;
-  #follow: (() => FollowTarget | null) | null = null;
+  #follow: (() => GroundPoint | null) | null = null;
   #shake = 0;
   #targetHeight: number;
 
@@ -120,7 +115,7 @@ export class GodCamera {
     this.#clampGoal();
   }
 
-  zoom(factor: number, focus: FollowTarget | null): void {
+  zoom(factor: number, focus: GroundPoint | null): void {
     const previous = this.#goal.distance;
 
     this.#goal.distance *= factor;
@@ -162,7 +157,7 @@ export class GodCamera {
     this.#clampGoal();
   }
 
-  follow(target: (() => FollowTarget | null) | null): void {
+  follow(target: (() => GroundPoint | null) | null): void {
     this.#follow = target;
   }
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TOUCH_QUERY } from "../design/use-media-query.ts";
 import { LONGEST_WORLD_NAME, worldNameFor } from "../features/new-world/world-names.ts";
-import type { CameraState } from "../rendering/camera/god-camera.ts";
+import type { CameraState } from "../game/camera/god-camera.ts";
 import { QUALITY_LEVELS, type QualityLevel } from "../rendering/render-quality.ts";
 import { ISLAND_SHAPES, type IslandShapeKind } from "../world/island-shape.ts";
 import { storedQuality } from "./preferences.ts";
