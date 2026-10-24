@@ -21,6 +21,7 @@ interface TestEngine {
   readonly placeLabel: Mock<(x: number, z: number, lift: number) => LabelPlacement | null>;
   readonly renderFrame: () => void;
   readonly send: MockInstance<(command: SimulationCommand) => void>;
+  readonly setFollowing: (isFollowing: boolean) => void;
   readonly stopFollowing: Mock<() => void>;
 }
 
@@ -44,13 +45,22 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
 
   const session = await createTestSession();
   const renderListeners = new Set<() => void>();
+  const camera = {
+    groundFootprint: () => [],
+    isFollowing: false,
+    state: { ...TEST_CAMERA, distance: cameraDistance },
+  };
+
+  function setFollowing(isFollowing: boolean): void {
+    camera.isFollowing = isFollowing;
+  }
 
   const send = vi.spyOn(session, "send");
-  const clearSelection = vi.fn<() => void>();
-  const focusOn = vi.fn<(x: number, z: number, distance?: number | null) => void>();
-  const followSelection = vi.fn<() => void>();
+  const clearSelection = vi.fn<() => void>(() => setFollowing(false));
+  const focusOn = vi.fn<(x: number, z: number, distance?: number | null) => void>(() => setFollowing(false));
+  const followSelection = vi.fn<() => void>(() => setFollowing(true));
   const placeLabel = vi.fn<(x: number, z: number, lift: number) => LabelPlacement | null>(() => null);
-  const stopFollowing = vi.fn<() => void>();
+  const stopFollowing = vi.fn<() => void>(() => setFollowing(false));
 
   function subscribeToRenders(listener: () => void): () => void {
     renderListeners.add(listener);
@@ -67,7 +77,7 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
   }
 
   const engine: EngineHandle = {
-    camera: { groundFootprint: () => [], state: { ...TEST_CAMERA, distance: cameraDistance } },
+    camera,
     clearSelection,
     focusOn,
     followSelection,
@@ -89,6 +99,7 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
     placeLabel,
     renderFrame,
     send,
+    setFollowing,
     stopFollowing,
   };
 }

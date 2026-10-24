@@ -1,4 +1,5 @@
 import type { GenerationProgress, WorldRequest } from "../generation/generation-options.ts";
+import { toError } from "../shared/errors.ts";
 import type { ChronicleEntry } from "../simulation/chronicle.ts";
 import type { SimulationCommand } from "../simulation/commands.ts";
 import type { SimulationEffect } from "../simulation/effects.ts";
@@ -27,14 +28,6 @@ interface SessionOptions {
 }
 
 const PERFORMANCE_CLOCK: SessionClock = { now: () => performance.now() };
-
-function toError(error: unknown): Error {
-  if (error instanceof Error) {
-    return error;
-  }
-
-  return new Error(String(error));
-}
 
 export class GameSession {
   readonly mirror: WorldMirror;

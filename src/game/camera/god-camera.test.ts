@@ -1,6 +1,6 @@
 import { PerspectiveCamera } from "three/webgpu";
 import { describe, expect, it } from "vitest";
-import { GodCamera } from "./god-camera.ts";
+import { GodCamera, type GroundPoint } from "./god-camera.ts";
 
 const HALF_SIZE = 2560;
 const REACH = 10_000;
@@ -37,5 +37,34 @@ describe("god camera", () => {
 
     expect(nearest).toBeGreaterThan(0);
     expect(farthest).toBeLessThan(-REACH / 2);
+  });
+
+  it("follows a target until it goes away", () => {
+    const camera = createCamera();
+
+    let target: GroundPoint | null = { x: 120, z: -80 };
+
+    camera.follow(() => target);
+    camera.update(1);
+
+    expect(camera.isFollowing).toBe(true);
+
+    target = null;
+    camera.update(1);
+
+    expect(camera.isFollowing).toBe(false);
+  });
+
+  it.each([
+    { move: (camera: GodCamera) => camera.flyTo({ targetX: 300, targetZ: 300 }), name: "flying" },
+    { move: (camera: GodCamera) => camera.pan(40, 20, 900), name: "panning" },
+    { move: (camera: GodCamera) => camera.moveBy(30, 10), name: "moving" },
+  ])("stops following when $name somewhere else", ({ move }) => {
+    const camera = createCamera();
+
+    camera.follow(() => ({ x: 0, z: 0 }));
+    move(camera);
+
+    expect(camera.isFollowing).toBe(false);
   });
 });

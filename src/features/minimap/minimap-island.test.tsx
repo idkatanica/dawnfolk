@@ -32,8 +32,8 @@ describe("minimap island", () => {
     expect(screen.container).toBeEmptyDOMElement();
   });
 
-  it("moves the camera to the clicked point and stops following", async () => {
-    const { engine, focusOn, stopFollowing } = await startTestEngine();
+  it("moves the camera to the clicked point", async () => {
+    const { engine, focusOn } = await startTestEngine();
 
     useInterfaceStore.setState({ isMapOpen: true });
 
@@ -51,7 +51,6 @@ describe("minimap island", () => {
 
     const [x, z] = target;
 
-    expect(stopFollowing).toHaveBeenCalled();
     expect(x).toBeCloseTo((132 / 176) * grid.worldSize - grid.halfSize, -1);
     expect(z).toBeCloseTo((44 / 176) * grid.worldSize - grid.halfSize, -1);
   });

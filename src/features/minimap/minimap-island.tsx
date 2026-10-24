@@ -34,7 +34,6 @@ function useMinimapNavigation(engine: EngineHandle) {
     const x = ((event.clientX - bounds.left) / bounds.width) * grid.worldSize - grid.halfSize;
     const z = ((event.clientY - bounds.top) / bounds.height) * grid.worldSize - grid.halfSize;
 
-    engine.stopFollowing();
     engine.focusOn(x, z);
   }
 

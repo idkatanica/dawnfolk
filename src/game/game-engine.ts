@@ -163,13 +163,7 @@ export class GameEngine implements EngineHandle {
   }
 
   focusOn(x: number, z: number, distance: number | null = null): void {
-    if (distance === null) {
-      this.camera.flyTo({ targetX: x, targetZ: z });
-
-      return;
-    }
-
-    this.camera.flyTo({ distance, targetX: x, targetZ: z });
+    this.camera.flyTo({ targetX: x, targetZ: z, ...(distance === null ? {} : { distance }) });
   }
 
   followSelection(): void {
