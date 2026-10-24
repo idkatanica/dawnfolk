@@ -27,8 +27,9 @@ commits and pull requests; follow both. This file adds what is easy to miss.
 ## Rules that are easy to miss
 
 - The engine never imports React, and the simulation never imports
-  rendering. The UI reads the session through small Zustand stores and sends
-  commands, which zod validates at the worker boundary.
+  rendering; `noRestrictedImports` overrides in `biome.jsonc` enforce both.
+  The UI reads the session through small Zustand stores and sends commands,
+  which zod validates at the worker boundary.
 - Generation and the simulation are deterministic for a seed. Draw their
   randomness from a `RandomSource` or `hashToUnit`, never `Math.random`, and
   keep the order of random draws stable: tests pin worlds by seed. Only
