@@ -17,6 +17,7 @@ import {
 } from "./world-generator.ts";
 
 const TEST_DIMENSIONS = { cellSize: 40, cellsPerSide: 128 };
+const DETERMINISM_DIMENSIONS = { cellSize: 20, cellsPerSide: 128 };
 const STEEP = 1;
 const CLIFF = Math.tan((55 * Math.PI) / 180);
 const SMALLEST_RIVER_GAP = 35;
@@ -26,15 +27,27 @@ const JUNCTION_CELLS = 1.5;
 let world: GeneratedWorld;
 let squareWorld: GeneratedWorld;
 const stages = new Set<string>();
+const testWorlds = new Map<string, GeneratedWorld>();
 
-function generateTestWorld(seed: number, shape: IslandShapeKind = "round"): GeneratedWorld {
-  return generateWorld(
+function testWorld(seed: number, shape: IslandShapeKind = "round"): GeneratedWorld {
+  const key = `${seed}:${shape}`;
+  const cached = testWorlds.get(key);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const generated = generateWorld(
     seed,
     { dimensions: TEST_DIMENSIONS, erosionStrength: 1, shape },
     (progress: GenerationProgress) => {
       stages.add(progress.stage);
     }
   );
+
+  testWorlds.set(key, generated);
+
+  return generated;
 }
 
 function slopesOf(terrain: TerrainData, grid: WorldGrid): number[] {
@@ -387,8 +400,8 @@ function distanceToWaterfall(generated: GeneratedWorld, grid: WorldGrid, cell: n
 }
 
 beforeAll(() => {
-  world = generateTestWorld(7);
-  squareWorld = generateTestWorld(7, "square");
+  world = testWorld(7);
+  squareWorld = testWorld(7, "square");
 });
 
 describe("world generation", () => {
@@ -396,15 +409,8 @@ describe("world generation", () => {
     expect([...stages].sort()).toEqual(["climate", "erosion", "relief", "vegetation", "water"]);
   });
 
-  it("is deterministic for a seed", () => {
-    const again = generateTestWorld(7);
-
-    expect(again.terrain.height).toEqual(world.terrain.height);
-    expect(again.vegetation.count).toBe(world.vegetation.count);
-  });
-
   it("differs between seeds", () => {
-    const other = generateTestWorld(8);
+    const other = testWorld(8);
 
     expect(other.terrain.height).not.toEqual(world.terrain.height);
   });
@@ -467,7 +473,7 @@ describe("world generation", () => {
   it("keeps the water of every river falling from its source to its mouth on several seeds and both shapes", () => {
     for (const seed of [3, 7, 11, 19]) {
       for (const shape of ISLAND_SHAPES) {
-        const generated = seed === 7 && shape === "round" ? world : generateTestWorld(seed, shape);
+        const generated = testWorld(seed, shape);
 
         expect(generated.water.rivers.length).toBeGreaterThan(0);
         expect(riverFaults(generated)).toEqual([]);
@@ -476,7 +482,7 @@ describe("world generation", () => {
   });
 
   it("runs the rivers that leave the island past the coast to the top of their waterfalls", () => {
-    for (const generated of [world, squareWorld, generateTestWorld(11), generateTestWorld(11, "square")]) {
+    for (const generated of [world, squareWorld, testWorld(11), testWorld(11, "square")]) {
       expect(generated.water.waterfalls.length).toBeGreaterThan(0);
       expect(mouthFaults(generated)).toEqual([]);
     }
@@ -485,7 +491,7 @@ describe("world generation", () => {
   it("keeps distinct rivers apart instead of running them side by side on several seeds and both shapes", () => {
     for (const seed of [3, 7, 11]) {
       for (const shape of ISLAND_SHAPES) {
-        const generated = seed === 7 && shape === "round" ? world : generateTestWorld(seed, shape);
+        const generated = testWorld(seed, shape);
 
         expect(closestDistinctRivers(generated)).toBeGreaterThan(SMALLEST_RIVER_GAP);
       }
@@ -493,7 +499,7 @@ describe("world generation", () => {
   });
 
   it("starts every river at a pond or a cave facing down the river", () => {
-    for (const generated of [world, squareWorld, generateTestWorld(11), generateTestWorld(19, "square")]) {
+    for (const generated of [world, squareWorld, testWorld(11), testWorld(19, "square")]) {
       expect(generated.water.springs.length).toBeGreaterThan(0);
       expect(headFaults(generated)).toEqual([]);
     }
@@ -724,15 +730,26 @@ describe("world generation", () => {
     }
   });
 
-  it("keeps the woodland the same for a seed", () => {
-    expect(generateTestWorld(7).terrain.woodland).toEqual(world.terrain.woodland);
-  });
-
   it("produces many biomes and a living vegetation cover", () => {
     const biomes = new Set(world.terrain.biome);
 
     expect(biomes.size).toBeGreaterThanOrEqual(8);
     expect(world.vegetation.aliveCount).toBeGreaterThan(1000);
+  });
+});
+
+describe.each(ISLAND_SHAPES)("a %s world generated twice from one seed", (shape) => {
+  it("comes out the same in every stage", () => {
+    const options = { dimensions: DETERMINISM_DIMENSIONS, erosionStrength: 1, shape };
+
+    const first = generateWorld(7, options);
+    const again = generateWorld(7, options);
+
+    expect(first.crossings.length).toBeGreaterThan(0);
+    expect(first.deposits.length).toBeGreaterThan(0);
+    expect(first.monuments.length).toBeGreaterThan(0);
+    expect(again).toEqual(first);
+    expect(again.vegetation.exportBuffers()).toEqual(first.vegetation.exportBuffers());
   });
 });
 
