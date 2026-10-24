@@ -1,4 +1,11 @@
-import type { HeightPatch, InitialWorld, PackedRows, SimulationFrame, SimulationStatistics } from "./frame.ts";
+import type {
+  HeightPatch,
+  InitialWorld,
+  PackedRows,
+  SimulationFrame,
+  SimulationStatistics,
+  TribeSummary,
+} from "./frame.ts";
 import {
   allRows,
   describeBuilding,
@@ -28,6 +35,7 @@ export class FrameBuilder {
     const { buildings, fauna, fire, society, world } = simulation;
 
     const burningCells = Int32Array.from(fire.burningCells());
+    const tribes = this.#tribes();
 
     return {
       animalCount: fauna.animals.length,
@@ -40,11 +48,11 @@ export class FrameBuilder {
       effects: simulation.effects.takeEffects(),
       groundRows: packGroundRows(world, world.groundChanges.takeRuns()),
       heightPatch: this.#heightPatch(),
-      inspection: this.#inspection(),
+      inspection: this.#inspection(tribes),
       isBusy: simulation.isBusy,
       isPaused: simulation.isPaused,
       notices: simulation.takeNotices(),
-      people: packPeople(society.people, new Map(society.tribes().map((tribe) => [tribe.id, tribe]))),
+      people: packPeople(society.people, (id) => society.findTribe(id)),
       personCount: society.people.length,
       rivalry: simulation.rivalry.view(simulation.calendar.day),
       rules: simulation.rules,
@@ -53,7 +61,7 @@ export class FrameBuilder {
       statistics: this.#statistics(),
       surfaceRows: this.#changedSurfaceRows(),
       tick: simulation.tick,
-      tribes: society.tribes().map((tribe) => describeTribe(tribe, society.membersOf(tribe), { buildings, world })),
+      tribes,
       vegetation: world.vegetation.takeChanges(),
       water: simulation.takeWaterUpdate(),
       weather: describeWeather(simulation.weather, simulation.environment),
@@ -123,7 +131,7 @@ export class FrameBuilder {
     return packHeightPatch(world, region);
   }
 
-  #inspection(): Inspection | null {
+  #inspection(tribes: readonly TribeSummary[]): Inspection | null {
     const simulation = this.#simulation;
     const { selection } = simulation;
 
@@ -136,8 +144,18 @@ export class FrameBuilder {
       environment: simulation.environment,
       fauna: simulation.fauna,
       society: simulation.society,
+      tribes,
       world: simulation.world,
     });
+  }
+
+  #tribes(): TribeSummary[] {
+    const { buildings, society, world } = this.#simulation;
+
+    const tribes = society.tribes();
+    const members = society.membersOfEach(tribes);
+
+    return tribes.map((tribe, position) => describeTribe(tribe, members[position], { buildings, world }));
   }
 
   #statistics(): SimulationStatistics {

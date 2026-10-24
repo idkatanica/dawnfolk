@@ -56,13 +56,21 @@ export const useWorldStore = create<WorldStore>()(() => ({
   snapshot: null,
 }));
 
-function snapshotOf(frame: SimulationFrame): WorldSnapshot {
+function keptRules(previous: WorldSnapshot | null, rules: WorldRules): WorldRules {
+  if (previous === null || JSON.stringify(previous.rules) !== JSON.stringify(rules)) {
+    return rules;
+  }
+
+  return previous.rules;
+}
+
+function snapshotOf(frame: SimulationFrame, previous: WorldSnapshot | null): WorldSnapshot {
   return {
     calendar: frame.calendar,
     inspection: frame.inspection,
     isPaused: frame.isPaused,
     rivalry: frame.rivalry,
-    rules: frame.rules,
+    rules: keptRules(previous, frame.rules),
     speed: frame.speed,
     statistics: frame.statistics,
     tribes: frame.tribes,
@@ -94,7 +102,7 @@ export function connectWorldStore(feed: WorldFeed): () => void {
   useWorldStore.setState({
     chronicle: [...feed.chronicle],
     notices: [],
-    snapshot: snapshotOf(feed.frame),
+    snapshot: snapshotOf(feed.frame, null),
   });
 
   return feed.subscribe((frame) => {
@@ -113,7 +121,7 @@ export function connectWorldStore(feed: WorldFeed): () => void {
     }
 
     lastRefresh = now;
-    useWorldStore.setState({ snapshot: snapshotOf(frame) });
+    useWorldStore.setState((state) => ({ snapshot: snapshotOf(frame, state.snapshot) }));
   });
 }
 

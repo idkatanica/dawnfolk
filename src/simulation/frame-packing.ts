@@ -185,26 +185,26 @@ function shownWeapon(person: Person): number {
   return weaponCode(weapon.kind);
 }
 
-function gearOf(person: Person, tribe: Tribe | undefined): number {
+function gearOf(person: Person, tribe: Tribe | null): number {
   if (shownWeapon(person) !== NO_WEAPON_CODE && person.weapon !== null) {
     return gearCode(person.weapon.material);
   }
 
-  if (tribe === undefined) {
+  if (tribe === null) {
     return gearCode("stone");
   }
 
   return gearCode(tribe.tools);
 }
 
-export function packPeople(people: readonly Person[], tribes: ReadonlyMap<number, Tribe>): Float32Array {
+export function packPeople(people: readonly Person[], findTribe: (id: number) => Tribe | null): Float32Array {
   const buffer = new Float32Array(people.length * PERSON_STRIDE);
 
   for (const [index, person] of people.entries()) {
     const { mover } = person;
 
     const offset = index * PERSON_STRIDE;
-    const tribe = tribes.get(person.tribeId);
+    const tribe = findTribe(person.tribeId);
 
     buffer[offset + PersonField.Id] = person.id;
     buffer[offset + PersonField.X] = mover.x;
@@ -222,7 +222,7 @@ export function packPeople(people: readonly Person[], tribes: ReadonlyMap<number
     buffer[offset + PersonField.Health] = person.health;
     buffer[offset + PersonField.Weapon] = shownWeapon(person);
     buffer[offset + PersonField.Gear] = gearOf(person, tribe);
-    buffer[offset + PersonField.Era] = tribe === undefined ? 0 : tribe.eraIndex;
+    buffer[offset + PersonField.Era] = tribe === null ? 0 : tribe.eraIndex;
     buffer[offset + PersonField.IsRaiding] = person.job?.kind === "raid" ? 1 : 0;
   }
 

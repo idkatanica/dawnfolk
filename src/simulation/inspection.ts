@@ -7,7 +7,6 @@ import { NO_PLANT, PlantState } from "../world/vegetation-store.ts";
 import type { Selection } from "./commands.ts";
 import type { FaunaSystem } from "./fauna/fauna.ts";
 import type { TribeSummary } from "./frame.ts";
-import { describeTribe } from "./frame-packing.ts";
 import type { Environment } from "./nature/environment.ts";
 import type { BuildingSystem } from "./society/buildings.ts";
 import { JOB_LABELS } from "./society/jobs/job.ts";
@@ -91,6 +90,7 @@ interface InspectionSources {
   environment: Environment;
   fauna: FaunaSystem;
   society: SocietySystem;
+  tribes: readonly TribeSummary[];
   world: WorldState;
 }
 
@@ -262,11 +262,11 @@ function inspectCell(x: number, z: number, sources: InspectionSources): CellInsp
 }
 
 function inspectTribe(id: number, sources: InspectionSources): TribeInspection | null {
-  const tribe = sources.society.findTribe(id);
+  const summary = sources.tribes.find((tribe) => tribe.id === id);
 
-  if (tribe === null) {
+  if (summary === undefined) {
     return null;
   }
 
-  return { kind: "tribe", summary: describeTribe(tribe, sources.society.membersOf(tribe), sources) };
+  return { kind: "tribe", summary };
 }
