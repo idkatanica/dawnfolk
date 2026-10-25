@@ -5,7 +5,7 @@ import { createRandom, type RandomSource } from "../../shared/random.ts";
 import { LOG_TAPER, STEPPING_STONE_VARIANTS } from "../../world/crossings.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { MeshBuilder, type SurfacePoint } from "../mesh/mesh-builder.ts";
-import type { MeshData } from "../mesh/mesh-data.ts";
+import { boundsOf, type MeshData } from "../mesh/mesh-data.ts";
 import { deformShape, facetShape, type Shape } from "../mesh/shape.ts";
 import { cone, icosphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
@@ -21,7 +21,7 @@ export const FALLEN_LOG_VARIANTS = 4;
 export const FALLEN_LOG_ROOT_RADIUS = 0.4;
 
 const WOOD_NOISE = createVolumeNoise(createRandom(7310));
-const STONE_DETAIL: Readonly<Record<CrossingDetailLevel, number>> = { high: 2, low: 0, medium: 1 };
+const SUBDIVISIONS: Readonly<Record<CrossingDetailLevel, number>> = { high: 2, low: 0, medium: 1 };
 const STONE_SHAPES: readonly (readonly [number, number])[] = [
   [1.12, 0.86],
   [0.96, 1],
@@ -33,7 +33,6 @@ const TRUNK_SEGMENTS: Readonly<Record<CrossingDetailLevel, number>> = { high: 28
 const TRUNK_SIDES: Readonly<Record<CrossingDetailLevel, number>> = { high: 12, low: 5, medium: 8 };
 const STUB_SIDES: Readonly<Record<CrossingDetailLevel, number>> = { high: 6, low: 4, medium: 5 };
 const STUBS: Readonly<Record<CrossingDetailLevel, number>> = { high: 5, low: 2, medium: 4 };
-const PLATE_DETAIL: Readonly<Record<CrossingDetailLevel, number>> = { high: 2, low: 0, medium: 1 };
 const ROOTS: Readonly<Record<CrossingDetailLevel, number>> = { high: 7, low: 0, medium: 4 };
 const SPLINTERS: Readonly<Record<CrossingDetailLevel, number>> = { high: 4, low: 0, medium: 2 };
 const FLARE = 0.45;
@@ -48,18 +47,6 @@ function stoneSlot(seed: number): (point: SurfacePoint) => MaterialSlotIndex {
   const weathered = weatheredSlot({ base: MaterialSlot.Stone, frost: 0, lichen: 0.26, moss: 0, seed });
 
   return (point) => (point.normal.y > WORN_TOP ? MaterialSlot.PaleStone : weathered(point));
-}
-
-function heightRange(shape: Shape): { bottom: number; top: number } {
-  let bottom = Number.POSITIVE_INFINITY;
-  let top = Number.NEGATIVE_INFINITY;
-
-  for (let offset = 1; offset < shape.positions.length; offset += 3) {
-    bottom = Math.min(bottom, shape.positions[offset]);
-    top = Math.max(top, shape.positions[offset]);
-  }
-
-  return { bottom, top };
 }
 
 function steppingStone(variant: number, level: CrossingDetailLevel): MeshData {
@@ -78,10 +65,11 @@ function steppingStone(variant: number, level: CrossingDetailLevel): MeshData {
       radius: 0.6,
       roughness: 0.05,
     },
-    STONE_DETAIL[level]
+    SUBDIVISIONS[level]
   );
 
-  const { bottom, top } = heightRange(shape);
+  const { maximum, minimum } = boundsOf(shape.positions);
+  const height = maximum[1] - minimum[1];
   const width = STONE_WIDTH / 1.2;
 
   const builder = new MeshBuilder();
@@ -89,8 +77,8 @@ function steppingStone(variant: number, level: CrossingDetailLevel): MeshData {
   builder.add(shape, {
     style: { shade: groundShade(STEPPING_STONE_HEIGHT), slot: stoneSlot(random.next() * 40) },
     transform: new Matrix4()
-      .makeTranslation(0, -bottom * (STEPPING_STONE_HEIGHT / (top - bottom)), 0)
-      .multiply(transformOf({ scale: [width * stretchX, STEPPING_STONE_HEIGHT / (top - bottom), width * stretchZ] })),
+      .makeTranslation(0, -minimum[1] * (STEPPING_STONE_HEIGHT / height), 0)
+      .multiply(transformOf({ scale: [width * stretchX, STEPPING_STONE_HEIGHT / height, width * stretchZ] })),
   });
 
   return builder.build();
@@ -210,7 +198,7 @@ function rootPlate(log: LogShape, level: CrossingDetailLevel, builder: MeshBuild
   const thickness = FALLEN_LOG_ROOT_RADIUS * PLATE_THICKNESS;
   const offset = random.next() * 60;
 
-  const plate = deformShape(icosphere(1, PLATE_DETAIL[level]), (vertex) => {
+  const plate = deformShape(icosphere(1, SUBDIVISIONS[level]), (vertex) => {
     const angle = Math.atan2(vertex.z, vertex.y);
     const ragged = 1 + 0.18 * WOOD_NOISE.sample(Math.cos(angle) * 1.7 + offset, Math.sin(angle) * 1.7, 0.4);
 

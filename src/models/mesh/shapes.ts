@@ -6,6 +6,7 @@ import { computeSmoothNormals, displaceShape, type Shape, transformShape } from 
 import { type Triple, transformOf } from "./transforms.ts";
 
 const POLE_RADIUS = 1e-5;
+const RIBBON_FOLD = 0.35;
 
 class ShapeWriter {
   readonly #along = new GrowableFloatArray();
@@ -792,15 +793,10 @@ function addTubeCap(
   capRing(writer, centerIndex, ring, isEnd);
 }
 
-interface RibbonOptions {
-  readonly fold?: number;
-}
-
 function ribbonSide(
   writer: ShapeWriter,
   points: readonly TubePoint[],
   frames: readonly TubeFrame[],
-  fold: number,
   lengths: readonly number[],
   isBack: boolean
 ): void {
@@ -814,7 +810,7 @@ function ribbonSide(
 
     const facing = isBack ? frame.normal.clone().negate() : frame.normal.clone();
     const left = center.clone().addScaledVector(frame.binormal, point.radius);
-    const middle = center.clone().addScaledVector(frame.normal, point.radius * fold);
+    const middle = center.clone().addScaledVector(frame.normal, point.radius * RIBBON_FOLD);
     const right = center.clone().addScaledVector(frame.binormal, -point.radius);
 
     rows.push([
@@ -844,12 +840,10 @@ function ribbonSide(
   }
 }
 
-export function ribbon(points: readonly TubePoint[], options: RibbonOptions = {}): Shape {
+export function ribbon(points: readonly TubePoint[]): Shape {
   if (points.length < 2) {
     throw new RangeError("A ribbon needs at least two points");
   }
-
-  const { fold = 0.3 } = options;
 
   const centers = points.map((point) => new Vector3(point.x, point.y, point.z));
   const writer = new ShapeWriter();
@@ -857,8 +851,8 @@ export function ribbon(points: readonly TubePoint[], options: RibbonOptions = {}
   const frames = transportFrames(tubeTangents(centers));
   const lengths = arcLengths(centers);
 
-  ribbonSide(writer, points, frames, fold, lengths, false);
-  ribbonSide(writer, points, frames, fold, lengths, true);
+  ribbonSide(writer, points, frames, lengths, false);
+  ribbonSide(writer, points, frames, lengths, true);
 
   const shape = writer.finish();
 
@@ -958,14 +952,13 @@ interface BlobOptions {
   readonly detail?: number;
   readonly frequency?: number;
   readonly noise: VolumeNoise;
-  readonly normalSoftness?: number;
   readonly offset?: Triple;
   readonly radius: number;
   readonly roughness?: number;
 }
 
 export function blob(options: BlobOptions): Shape {
-  const { detail = 1, frequency = 1.4, normalSoftness = 0.45, offset = [0, 0, 0], roughness = 0.22 } = options;
+  const { detail = 1, frequency = 1.4, offset = [0, 0, 0], roughness = 0.22 } = options;
   const { noise, radius } = options;
 
   return displaceShape(
@@ -977,7 +970,7 @@ export function blob(options: BlobOptions): Shape {
 
       return radius * roughness * noise.fractal(sampleX, sampleY, sampleZ, { octaves: 2 });
     },
-    { normalSoftness }
+    0.45
   );
 }
 

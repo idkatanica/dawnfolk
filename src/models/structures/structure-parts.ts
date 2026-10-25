@@ -67,7 +67,7 @@ export function addStake(
   height: number,
   radius: number,
   order: Order,
-  bands: readonly number[] = []
+  bands: readonly number[]
 ): void {
   const tipHeight = radius * 2.4;
   const sides = detail(context, 6, 4);
@@ -95,16 +95,10 @@ export function addStake(
   );
 }
 
-export function addBlock(
-  context: StructureContext,
-  size: Triple,
-  position: Triple,
-  style: VertexStyle,
-  rotation: Triple = [0, 0, 0]
-): void {
+export function addBlock(context: StructureContext, size: Triple, position: Triple, style: VertexStyle): void {
   const [width, height, depth] = size;
 
-  context.builder.add(box(width, height, depth), { style, transform: transformOf({ position, rotation }) });
+  context.builder.add(box(width, height, depth), { style, transform: transformOf({ position }) });
 }
 
 export function addRock(

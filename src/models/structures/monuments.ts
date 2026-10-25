@@ -265,7 +265,7 @@ function faceDepth(y: number): number {
   const upper = HEAD_RINGS[Math.max(0, above)];
   const lower = HEAD_RINGS[Math.max(0, above - 1)];
 
-  if (upper === undefined || lower === undefined || upper.y === lower.y) {
+  if (upper.y === lower.y) {
     return 1.1;
   }
 
