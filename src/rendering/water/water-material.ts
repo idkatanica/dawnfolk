@@ -62,6 +62,9 @@ const SOLID_ICE = 0.5;
 const RAIN_ROUGHNESS = 0.45;
 const RAIN_SKY_DAMPING = 0.35;
 const RAIN_SUN_DAMPING = 0.88;
+const FORD_WATER_DEPTH = 0.45;
+const FORD_SHALLOWING = 0.92;
+const FORD_RIPPLES = 0.45;
 
 export class WaterLook {
   readonly daylight = uniform(1);
@@ -180,7 +183,8 @@ export function createWaterMaterial(
   const shoreDepth = shore.x.add(shoreWobble(shore.x, viewDistance));
 
   const isWet = shoreDepth.greaterThan(0);
-  const depth = max(shoreDepth, 0);
+  const fordBed = textures.fords.marksNode(positionWorld.xz).x;
+  const depth = mix(max(shoreDepth, 0), min(max(shoreDepth, 0), FORD_WATER_DEPTH), fordBed.mul(FORD_SHALLOWING));
   const shoreEdge = max(fwidth(shoreDepth), SHORE_FADE);
   const flowSpeed = length(flow);
 
@@ -195,15 +199,22 @@ export function createWaterMaterial(
   const fresnel = pow(float(1).sub(max(dot(normal, viewDirection), 0)), 4);
   const foamDetail = smoothstep(FOAM_FAR, FOAM_NEAR, viewDistance);
 
-  const canFoam = depth.lessThan(SHORE_FOAM_DEPTH).or(flowSpeed.greaterThan(RAPIDS_START));
+  const canFoam = depth
+    .lessThan(SHORE_FOAM_DEPTH)
+    .or(flowSpeed.greaterThan(RAPIDS_START))
+    .or(fordBed.greaterThan(0.05));
   const steadyFoam = steadyFoamAt(isWet.and(foamDetail.greaterThan(0)).and(canFoam), foamDetail);
 
   const shoreFoam = smoothstep(SHORE_FOAM_DEPTH, 0, depth)
     .mul(smoothstep(SHORE_FOAM_FAR, SHORE_FOAM_NEAR, viewDistance))
     .mul(smoothstep(0.25, 0.75, steadyFoam));
   const rapidsFoam = smoothstep(RAPIDS_START, 0.3, flowSpeed).mul(smoothstep(0.45, 0.85, steadyFoam));
+  const fordRipples = fordBed
+    .mul(FORD_RIPPLES)
+    .mul(smoothstep(0.55, 0.9, steadyFoam))
+    .mul(foamDetail);
 
-  const foam = clamp(shoreFoam.add(rapidsFoam), 0, 1).mul(float(1).sub(ice));
+  const foam = clamp(shoreFoam.add(rapidsFoam).add(fordRipples), 0, 1).mul(float(1).sub(ice));
 
   const body = mix(vec3(0.16, 0.42, 0.42), vec3(0.03, 0.13, 0.2), smoothstep(0.2, 6, depth));
   const sky = mix(look.horizonColor, look.zenithColor, 0.35);

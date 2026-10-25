@@ -1,4 +1,4 @@
-import { clamp, FULL_TURN, hashToUnit, lerp, smoothstep } from "../shared/math.ts";
+import { clamp, lerp, smoothstep } from "../shared/math.ts";
 import { NO_WATER } from "./water.ts";
 import type { WorldGrid } from "./world-grid.ts";
 
@@ -30,16 +30,6 @@ export interface CrossingPoint {
   readonly along: number;
 }
 
-export interface SteppingStone {
-  readonly along: number;
-  readonly lift: number;
-  readonly radius: number;
-  readonly rotation: number;
-  readonly variant: number;
-  readonly x: number;
-  readonly z: number;
-}
-
 export interface FallenLog {
   readonly rootBottom: number;
   readonly rootRadius: number;
@@ -57,13 +47,6 @@ export const LOG_ROOT_BEHIND = 1.5;
 export const LOG_TIP_BEYOND = 0.9;
 export const LOG_TAPER = 0.72;
 
-const STONE_SPACING = 1.32;
-const STONE_JITTER_ALONG = 0.14;
-const STONE_JITTER_ACROSS = 0.16;
-const STONE_SMALLEST_RADIUS = 0.48;
-const STONE_LARGEST_RADIUS = 0.68;
-const STONE_LIFT_JITTER = 0.05;
-const STONE_SALT = 41.7;
 const LOG_STEP_OFF = 0.6;
 const LOG_THINNEST = 0.3;
 const LOG_THICKEST = 0.46;
@@ -189,33 +172,6 @@ export function fallenLog(log: LogBridge): FallenLog {
     tipX: tip.x,
     tipZ: tip.z,
   };
-}
-
-function stoneHash(ford: Ford, index: number, channel: number): number {
-  return hashToUnit(ford.seed * 1000 + index, channel, STONE_SALT);
-}
-
-export function steppingStones(ford: Ford): SteppingStone[] {
-  const length = crossingLength(ford);
-  const count = Math.max(1, Math.round(length / STONE_SPACING));
-  const spacing = length / count;
-  const stones: SteppingStone[] = [];
-
-  for (let index = 0; index <= count; index += 1) {
-    const along = clamp(index * spacing + (stoneHash(ford, index, 1) - 0.5) * 2 * STONE_JITTER_ALONG, 0, length);
-    const across = (stoneHash(ford, index, 2) - 0.5) * 2 * STONE_JITTER_ACROSS;
-
-    stones.push({
-      ...pointOnCrossing(ford, along, across),
-      along,
-      lift: STONE_RISE + (stoneHash(ford, index, 5) - 0.5) * STONE_LIFT_JITTER,
-      radius: lerp(STONE_SMALLEST_RADIUS, STONE_LARGEST_RADIUS, stoneHash(ford, index, 3)),
-      rotation: stoneHash(ford, index, 4) * FULL_TURN,
-      variant: Math.floor(stoneHash(ford, index, 6) * STEPPING_STONE_VARIANTS) % STEPPING_STONE_VARIANTS,
-    });
-  }
-
-  return stones;
 }
 
 export function crossingCells(grid: WorldGrid, crossing: Crossing, margin = 0): number[] {

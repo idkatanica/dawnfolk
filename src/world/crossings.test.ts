@@ -14,7 +14,6 @@ import {
   logDeckAt,
   logRadiusAt,
   STONE_RISE,
-  steppingStones,
 } from "./crossings.ts";
 import { NO_WATER } from "./water.ts";
 import { WorldGrid } from "./world-grid.ts";
@@ -68,18 +67,6 @@ describe("crossings", () => {
     expect(log.tipZ).toBeCloseTo(20 + LOG_TIP_BEYOND);
     expect(log.rootBottom + 2 * logRadiusAt(LOG, -LOG_ROOT_BEHIND)).toBeLessThan(LOG.startDeck);
     expect(log.rootBottom).toBeLessThan(log.tipBottom);
-  });
-
-  it("lay stepping stones a stride apart across the whole span, the same way every time", () => {
-    const stones = steppingStones(FORD);
-
-    const gaps = stones.slice(1).map((stone, index) => stone.along - stones[index].along);
-
-    expect(stones.length).toBeGreaterThan(40);
-    expect(Math.min(...gaps)).toBeGreaterThan(0.9);
-    expect(Math.max(...gaps)).toBeLessThan(1.7);
-    expect(stones.every((stone) => isOnCrossing(FORD, stone.x, stone.z))).toBe(true);
-    expect(steppingStones(FORD)).toEqual(stones);
   });
 
   it("find the crossing under a point through the cells it covers", () => {

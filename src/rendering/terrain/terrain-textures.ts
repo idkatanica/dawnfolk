@@ -16,6 +16,7 @@ import type { WorldMirror } from "../../game/world-mirror.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { sampleCells } from "../../world/terrain-sampling.ts";
 import { POND_SHORE_SLOPE, pondEdgeReach } from "../../world/water.ts";
+import { FordField } from "../water/ford-field.ts";
 import {
   buildShoreField,
   NOT_POND,
@@ -60,6 +61,7 @@ function surfaceTexture(data: Uint8Array, size: number): DataTexture {
 
 export class TerrainTextures {
   readonly bloom = uniform(0);
+  readonly fords: FordField;
   readonly height: DataTexture;
   readonly outline: IslandOutline;
   readonly patchSteps: DataTexture;
@@ -78,6 +80,7 @@ export class TerrainTextures {
     const size = mirror.grid.cellsPerSide;
 
     this.#mirror = mirror;
+    this.fords = new FordField(mirror.grid, mirror.crossings);
     this.height = floatTexture(mirror.terrain.height, size);
     this.outline = new IslandOutline(mirror);
     this.patchesPerSide = Math.ceil(size / PATCH_CELLS);
@@ -130,6 +133,7 @@ export class TerrainTextures {
 
     if (changes.hasWaterChanged) {
       this.#buildShore();
+      this.fords.rebuild(this.#mirror.crossings);
     } else {
       this.#updateShore(changes.waterLevelRegion, changes.heightRegion);
     }
@@ -152,6 +156,7 @@ export class TerrainTextures {
 
   dispose(): void {
     this.#albedo.dispose();
+    this.fords.dispose();
     this.outline.dispose();
     this.height.dispose();
     this.patchSteps.dispose();

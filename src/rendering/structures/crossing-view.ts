@@ -1,4 +1,5 @@
 import {
+  abs,
   attribute,
   clamp,
   cos,
@@ -20,11 +21,14 @@ import {
   vec3,
 } from "three/tsl";
 import {
+  BufferGeometry,
   type Frustum,
   Group,
+  Mesh,
   MeshStandardNodeMaterial,
   type Node,
   type PerspectiveCamera,
+  PlaneGeometry,
   Sphere,
   Vector3,
 } from "three/webgpu";
@@ -36,35 +40,47 @@ import {
   CROSSING_DETAIL_LEVELS,
   FALLEN_LOG_LENGTHS,
   FALLEN_LOG_ROOT_RADIUS,
+  FALLEN_LOG_VARIANTS,
   fallenLogVariant,
   STEPPING_STONE_HEIGHT,
   STONE_WIDTH,
 } from "../../models/structures/crossings.ts";
+import { fractionalPart, smoothstep as smoothstepNumber } from "../../shared/math.ts";
 import {
   type Crossing,
   crossingLength,
   type Ford,
   fallenLog,
   type LogBridge,
+  pointOnCrossing,
   STEPPING_STONE_VARIANTS,
-  steppingStones,
 } from "../../world/crossings.ts";
 import { NO_WATER } from "../../world/water.ts";
-import { geometryFromMeshData, InstanceBatch } from "../instancing.ts";
+import { geometryFromMeshData, InstanceBatch, toInstancedGeometry } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { assignSphereLevels, HIDDEN_LEVEL } from "../view-input.ts";
+import { sampleWaterSurface } from "../water/water-surface.ts";
+import { type BarPoint, type FordStone, layFord } from "./ford-layout.ts";
+import { createBarMaterial, createFoamMaterial, FOAM_FIELDS, fordBarGeometry } from "./ford-materials.ts";
 
 const LEVEL_DISTANCES: readonly number[] = [150, 650, 3600];
 const SHADOW_LEVEL_COUNT = 2;
-const STONE_SINK = 0.3;
-const SHORTEST_STONE = 0.14;
+const FINE_LEVEL_COUNT = 2;
 const DRY_LEVEL = -10_000;
+const PEBBLE_BATCH = STEPPING_STONE_VARIANTS + FALLEN_LOG_VARIANTS;
+const FOAM_BATCH = -1;
+const FOAM_WAKE = 3.2;
+const FOAM_ABOVE = 0.15;
+const FLOW_PROBE = 8;
 const WET_STONE = vec3(0.55, 0.58, 0.52);
 const RIVERBED = vec3(0.07, 0.17, 0.19);
 const MURKIEST = 0.85;
+const DROWNED_SHADE = 0.55;
 const MURK_DEPTH = 2.2;
 const SNOW = vec3(0.86, 0.9, 0.95);
+const WATERLINE_FOAM = vec3(0.84, 0.89, 0.9);
 
 const CROSSING_FIELDS = [
   { name: "crossingPlacement", size: 4 },
@@ -75,9 +91,11 @@ const CROSSING_FIELDS = [
 interface PlacedPiece {
   readonly batch: number;
   readonly data: readonly number[];
+  readonly isFine: boolean;
 }
 
 interface PlacedCrossing {
+  readonly bar: readonly (readonly BarPoint[])[];
   readonly bounds: Sphere;
   level: number;
   readonly pieces: readonly PlacedPiece[];
@@ -99,10 +117,14 @@ function createCrossingMaterial(textures: TerrainTextures, mirror: WorldMirror):
   const slot = int(attribute("slot", "float").add(0.5));
   const shade = attribute("shade", "float");
 
+  const ground = vec3(0, coarseGroundOffsetNode(textures, grid, placement.xz).mul(look.z), 0);
+
   material.positionNode = Fn(() => {
     normalLocal.assign(normalize(rotateAroundUp(pitched(normalLocal.div(shape.xyz), shape.w), placement.w)));
 
-    return rotateAroundUp(pitched(positionLocal.mul(shape.xyz), shape.w), placement.w).add(placement.xyz);
+    return rotateAroundUp(pitched(positionLocal.mul(shape.xyz), shape.w), placement.w)
+      .add(placement.xyz)
+      .add(ground);
   })();
 
   const last = grid.cellsPerSide - 1;
@@ -116,31 +138,63 @@ function createCrossingMaterial(textures: TerrainTextures, mirror: WorldMirror):
   const murk = smoothstep(0, MURK_DEPTH, belowWater).mul(MURKIEST);
   const snowOnTop = snow.mul(smoothstep(0.3, 0.8, normalWorld.y)).mul(float(1).sub(wetness));
 
-  const wet = mix(mix(base, base.mul(WET_STONE), wetness), RIVERBED, murk);
+  const drowned = mix(float(1), float(DROWNED_SHADE), smoothstep(0.05, 0.7, belowWater));
 
-  material.colorNode = mix(wet, SNOW, snowOnTop);
+  const wet = mix(mix(base, base.mul(WET_STONE), wetness).mul(drowned), RIVERBED, murk);
+
+  const waterline = smoothstep(0.1, 0.02, abs(positionWorld.y.sub(look.x))).mul(0.5);
+
+  material.colorNode = mix(mix(wet, WATERLINE_FOAM, waterline), SNOW, snowOnTop);
   material.roughnessNode = mix(float(0.88), float(0.55), wetness);
 
   return material;
 }
 
+function flowAngleOf(ford: Ford, mirror: WorldMirror): { angle: number; strength: number } {
+  const middle = crossingLength(ford) / 2;
+  const upstream = pointOnCrossing(ford, middle, -FLOW_PROBE);
+  const downstream = pointOnCrossing(ford, middle, FLOW_PROBE);
+
+  const fall = mirror.waterLevelAt(upstream.x, upstream.z) - mirror.waterLevelAt(downstream.x, downstream.z);
+  const sign = fall < 0 ? -1 : 1;
+  const directionX = (downstream.x - upstream.x) * sign;
+  const directionZ = (downstream.z - upstream.z) * sign;
+
+  return { angle: Math.atan2(directionX, directionZ), strength: Math.min(1, 0.35 + Math.abs(fall) * 4) };
+}
+
 export class CrossingView {
   readonly group = new Group();
   readonly #batches: readonly (readonly InstanceBatch[])[];
+  readonly #bar: Mesh<BufferGeometry, MeshStandardNodeMaterial>;
+  readonly #foam: InstanceBatch;
   readonly #mirror: WorldMirror;
+  readonly #textures: TerrainTextures;
   #isDirty = true;
   #placed: PlacedCrossing[] = [];
 
   constructor(mirror: WorldMirror, textures: TerrainTextures) {
     this.#mirror = mirror;
+    this.#textures = textures;
 
     const material = createCrossingMaterial(textures, mirror);
 
     this.#batches = CROSSING_DETAIL_LEVELS.map((level, levelIndex) =>
-      [...buildSteppingStones(level), ...buildFallenLogs(level)].map((model) =>
-        this.#createBatch(model, material, levelIndex)
+      [...buildSteppingStones(level), ...buildFallenLogs(level), ...buildSteppingStones("low")].map((model, index) =>
+        this.#createBatch(model, material, index < PEBBLE_BATCH && levelIndex < SHADOW_LEVEL_COUNT)
       )
     );
+
+    this.#foam = new InstanceBatch(
+      toInstancedGeometry(new PlaneGeometry(1, 1).rotateX(-Math.PI / 2)),
+      createFoamMaterial(),
+      FOAM_FIELDS,
+      64
+    );
+    this.#foam.mesh.renderOrder = 3;
+    this.#bar = new Mesh(new BufferGeometry(), createBarMaterial(textures, mirror));
+    this.#bar.receiveShadow = true;
+    this.group.add(this.#foam.mesh, this.#bar);
 
     this.rebuild();
   }
@@ -150,6 +204,9 @@ export class CrossingView {
       .map((crossing) => this.#place(crossing))
       .filter((placed) => placed.pieces.length > 0);
     this.#isDirty = true;
+
+    this.#bar.geometry.dispose();
+    this.#bar.geometry = fordBarGeometry(this.#placed.map((placed) => placed.bar).filter((bar) => bar.length > 1));
   }
 
   update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
@@ -164,21 +221,28 @@ export class CrossingView {
   }
 
   dispose(): void {
-    for (const batch of this.#batches.flat()) {
+    for (const batch of [...this.#batches.flat(), this.#foam]) {
       batch.dispose();
     }
+
+    this.#bar.geometry.dispose();
+    this.#bar.material.dispose();
   }
 
   #refill(): void {
-    const batches = this.#batches.flat();
+    const batches = [...this.#batches.flat(), this.#foam];
 
     for (const batch of batches) {
       batch.begin();
     }
 
     for (const crossing of this.#placed.filter((placed) => placed.level !== HIDDEN_LEVEL)) {
-      for (const piece of crossing.pieces) {
-        this.#batches[crossing.level][piece.batch].add(piece.data);
+      const isNear = crossing.level < FINE_LEVEL_COUNT;
+
+      for (const piece of crossing.pieces.filter((candidate) => isNear || !candidate.isFine)) {
+        const batch = piece.batch === FOAM_BATCH ? this.#foam : this.#batches[crossing.level][piece.batch];
+
+        batch.add(piece.data);
       }
     }
 
@@ -187,10 +251,10 @@ export class CrossingView {
     }
   }
 
-  #createBatch(model: MeshData, material: MeshStandardNodeMaterial, levelIndex: number): InstanceBatch {
+  #createBatch(model: MeshData, material: MeshStandardNodeMaterial, castsShadow: boolean): InstanceBatch {
     const batch = new InstanceBatch(geometryFromMeshData(model, ["shade", "slot"]), material, CROSSING_FIELDS, 16);
 
-    batch.mesh.castShadow = levelIndex < SHADOW_LEVEL_COUNT;
+    batch.mesh.castShadow = castsShadow;
     batch.mesh.receiveShadow = true;
     this.group.add(batch.mesh);
 
@@ -198,7 +262,8 @@ export class CrossingView {
   }
 
   #place(crossing: Crossing): PlacedCrossing {
-    const pieces = crossing.kind === "ford" ? this.#stonesOf(crossing) : [this.#logOf(crossing)];
+    const { bar, pieces } =
+      crossing.kind === "ford" ? this.#fordOf(crossing) : { bar: [], pieces: [this.#logOf(crossing)] };
 
     const middleX = (crossing.startX + crossing.endX) / 2;
     const middleZ = (crossing.startZ + crossing.endZ) / 2;
@@ -208,46 +273,27 @@ export class CrossingView {
       crossingLength(crossing) / 2 + 4
     );
 
-    return { bounds, level: HIDDEN_LEVEL, pieces };
+    return { bar, bounds, level: HIDDEN_LEVEL, pieces };
   }
 
-  #stonesOf(ford: Ford): PlacedPiece[] {
+  #fordOf(ford: Ford): { bar: readonly (readonly BarPoint[])[]; pieces: PlacedPiece[] } {
     const mirror = this.#mirror;
-    const pieces: PlacedPiece[] = [];
+    const textures = this.#textures;
+    const flow = flowAngleOf(ford, mirror);
 
-    for (const stone of steppingStones(ford)) {
-      const waterLevel = mirror.waterLevelAt(stone.x, stone.z);
-      const ground = mirror.heightAt(stone.x, stone.z);
+    const { bar, stones } = layFord(ford, {
+      heightAt: (x, z) => mirror.heightAt(x, z),
+      shoreDepthAt: (x, z) => textures.shoreDepthAt(x, z),
+      waterLevelAt: (x, z) => mirror.waterLevelAt(x, z),
+      waterSurfaceAt: (x, z) => sampleWaterSurface(mirror.terrain, mirror.grid, x, z),
+    });
 
-      const top = waterLevel + stone.lift;
+    const foam = stones
+      .filter((stone) => (stone.kind === "step" || stone.kind === "boulder") && stone.waterLevel !== NO_WATER)
+      .filter((stone) => stone.top > stone.waterLevel - FOAM_ABOVE)
+      .map((stone) => foamOf(stone, flow));
 
-      if (waterLevel === NO_WATER || top - ground < SHORTEST_STONE) {
-        continue;
-      }
-
-      const bottom = ground - STONE_SINK;
-      const width = (stone.radius * 2) / STONE_WIDTH;
-
-      pieces.push({
-        batch: stone.variant,
-        data: [
-          stone.x,
-          bottom,
-          stone.z,
-          stone.rotation,
-          width,
-          (top - bottom) / STEPPING_STONE_HEIGHT,
-          width,
-          0,
-          waterLevel,
-          0.9 + 0.2 * ((stone.rotation * 7.3) % 1),
-          0,
-          0,
-        ],
-      });
-    }
-
-    return pieces;
+    return { bar, pieces: [...stones.map(stonePiece), ...foam] };
   }
 
   #logOf(bridge: LogBridge): PlacedPiece {
@@ -274,6 +320,50 @@ export class CrossingView {
         0,
         0,
       ],
+      isFine: false,
     };
   }
+}
+
+function stonePiece(stone: FordStone): PlacedPiece {
+  const width = (stone.radius * 2) / STONE_WIDTH;
+  const isPebble = stone.kind === "pebble";
+
+  return {
+    batch: isPebble ? PEBBLE_BATCH + stone.variant : stone.variant,
+    data: [
+      stone.x,
+      stone.bottom,
+      stone.z,
+      stone.rotation,
+      width,
+      (stone.top - stone.bottom) / STEPPING_STONE_HEIGHT,
+      width,
+      0,
+      stone.waterLevel,
+      0.86 + 0.28 * fractionalPart(stone.rotation * 7.3),
+      stone.isGrounded ? 1 : 0,
+      0,
+    ],
+    isFine: isPebble,
+  };
+}
+
+function foamOf(stone: FordStone, flow: { angle: number; strength: number }): PlacedPiece {
+  const above = smoothstepNumber(-FOAM_ABOVE, 0.05, stone.top - stone.waterLevel);
+
+  return {
+    batch: FOAM_BATCH,
+    data: [
+      stone.x,
+      stone.waterLevel,
+      stone.z,
+      flow.angle,
+      stone.radius,
+      stone.radius * FOAM_WAKE * flow.strength,
+      fractionalPart(stone.rotation * 3.1) * 40,
+      0.35 + 0.65 * above,
+    ],
+    isFine: true,
+  };
 }
