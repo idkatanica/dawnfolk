@@ -23,6 +23,7 @@ import {
   ShoreChannel,
   type ShoreSource,
   updateShoreDepths,
+  updateShoreField,
 } from "../water/shore-field.ts";
 import type { WorldChanges } from "../world-changes.ts";
 import { bloomFor } from "./fireweed.ts";
@@ -123,13 +124,14 @@ export class TerrainTextures {
       this.height.needsUpdate = true;
     }
 
-    const haveLevelsChanged = changes.hasWaterChanged || changes.waterLevelRegion !== null;
-
-    if (haveLevelsChanged) {
-      this.#buildShore();
+    if (changes.hasWaterChanged || changes.waterLevelRegion !== null) {
       this.water.needsUpdate = true;
-    } else if (changes.heightRegion !== null) {
-      this.#updateShore(changes.heightRegion);
+    }
+
+    if (changes.hasWaterChanged) {
+      this.#buildShore();
+    } else {
+      this.#updateShore(changes.waterLevelRegion, changes.heightRegion);
     }
 
     if (changes.surfaceRuns.length > 0) {
@@ -194,8 +196,17 @@ export class TerrainTextures {
     this.shore.needsUpdate = true;
   }
 
-  #updateShore(region: CellRegion): void {
-    updateShoreDepths(this.#shoreSource(), region, this.#shoreData);
-    this.shore.needsUpdate = true;
+  #updateShore(levelRegion: CellRegion | null, heightRegion: CellRegion | null): void {
+    const source = this.#shoreSource();
+
+    if (levelRegion !== null) {
+      updateShoreField(source, levelRegion, this.#shoreData);
+      this.shore.needsUpdate = true;
+    }
+
+    if (heightRegion !== null) {
+      updateShoreDepths(source, heightRegion, this.#shoreData);
+      this.shore.needsUpdate = true;
+    }
   }
 }
