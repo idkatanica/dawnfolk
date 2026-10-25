@@ -160,17 +160,30 @@ describe("vegetation chunks", () => {
     );
   });
 
-  it("shares one far batch between the variants of a tree but keeps every cactus form apart", () => {
+  it("shares one far batch between the variants of a tree but keeps every cactus and monument form apart", () => {
     const farGroups = bucketGroups("low");
 
     function groupsOf(species: number): number {
       return farGroups.filter((group) => PLANT_BUCKETS[group[0]].species === species).length;
     }
 
+    function bucketsOf(species: number): number {
+      return PLANT_BUCKETS.filter((bucket) => bucket.species === species).length;
+    }
+
     expect(farGroups.length).toBeLessThan(BUCKET_COUNT / 2);
     expect(groupsOf(PlantSpecies.Oak)).toBe(1);
-    expect(groupsOf(PlantSpecies.Cactus)).toBe(
-      PLANT_BUCKETS.filter((bucket) => bucket.species === PlantSpecies.Cactus).length
-    );
+
+    for (const species of [
+      PlantSpecies.Cactus,
+      PlantSpecies.Arch,
+      PlantSpecies.Cairn,
+      PlantSpecies.Dolmen,
+      PlantSpecies.Idol,
+      PlantSpecies.Menhir,
+      PlantSpecies.Pillar,
+    ]) {
+      expect(groupsOf(species)).toBe(bucketsOf(species));
+    }
   });
 });
