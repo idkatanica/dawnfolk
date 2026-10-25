@@ -3,6 +3,7 @@ import { ANIMAL_KINDS, type AnimalKind } from "../../content/animals.ts";
 import { type AnimalAppearance, animalAppearance } from "../../models/animals/animal-appearance.ts";
 import {
   ANIMAL_SPECIES,
+  animalBoneScales,
   buildAnimalParts,
   poseAnimal,
   visibleAnimalParts,
@@ -67,7 +68,7 @@ function measureKindStrides(kind: AnimalKind): Map<AnimalPose, number> {
   const species = ANIMAL_SPECIES[kind];
   const strides = new Map<AnimalPose, number>();
 
-  const scales = species.boneScales(animalAppearance({ kind, seed: REFERENCE_SEED, youth: 0 }));
+  const scales = animalBoneScales(kind, animalAppearance({ kind, seed: REFERENCE_SEED, youth: 0 }));
 
   for (const clip of ANIMAL_POSES) {
     if (QUADRUPED_CLIPS[clip].timing.kind !== "stride") {
@@ -337,7 +338,7 @@ export class AnimalView {
       kind,
       motion: this.#motionFor(existing, animals, offset),
       parts: visibleAnimalParts(kind, appearance),
-      scales: ANIMAL_SPECIES[kind].boneScales(appearance),
+      scales: animalBoneScales(kind, appearance),
       variation: seed,
     };
 

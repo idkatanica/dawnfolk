@@ -5,7 +5,7 @@ import type { AnimalPose } from "../../world/agent-poses.ts";
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { animalAppearance } from "./animal-appearance.ts";
-import { ANIMAL_SPECIES, poseAnimal } from "./animal-models.ts";
+import { ANIMAL_SPECIES, animalBoneScales, poseAnimal } from "./animal-models.ts";
 import { QUADRUPED_CLIPS } from "./quadruped-clips.ts";
 import { QuadrupedBone } from "./quadruped-skeleton.ts";
 
@@ -18,7 +18,7 @@ function posed(kind: AnimalKind, clip: AnimalPose, phase: number): SkeletonPoser
   const pose = new Pose(species.skeleton.bones.length);
 
   poseAnimal(kind, pose, clip, phase, { variation: 0.3 });
-  poser.pose(pose, species.boneScales(animalAppearance({ kind, seed: 0.31, youth: 0 })));
+  poser.pose(pose, animalBoneScales(kind, animalAppearance({ kind, seed: 0.31, youth: 0 })));
 
   return poser;
 }
