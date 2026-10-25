@@ -21,7 +21,9 @@ const CROWN_TONGUE_LIMIT = 2400;
 const CROWN_SPARK_LIMIT = 260;
 const SMOKE_COLUMN_LIMIT = 90;
 const SMOKE_CELL_SHARE = 0.2;
-const PUFFS_PER_COLUMN = 6;
+const HEAVY_SMOKE_PUFFS = 8;
+const LIGHT_SMOKE_PUFFS = 16;
+const CAMPFIRE_SMOKE_PUFFS = 32;
 const SPARK_CELL_LIMIT = 220;
 const SPARK_CELL_SHARE = 0.33;
 const SPARKS_PER_CELL = 2;
@@ -36,9 +38,12 @@ const FLAME_LIFT = 0.36;
 const CAMPFIRE_LIGHTS = 3;
 const CAMPFIRE_LIGHT_RANGE = 70;
 const CAMPFIRE_LIGHT_POWER = 260;
-const HEAVY_SMOKE_HEIGHT = 190;
+const HEAVY_SMOKE_HEIGHT = 170;
+const COLUMN_GROWN_SCORCH = 0.25;
+const FULL_SMOKE_INTENSITY = 0.35;
+const CAMPFIRE_SMOKE_HEIGHT = 34;
 const REBUILD_DISTANCE = 120;
-const LIGHT_SMOKE_HEIGHT = 95;
+const LIGHT_SMOKE_HEIGHT = 80;
 
 interface FireViewOptions {
   readonly axes: CameraAxes;
@@ -62,6 +67,13 @@ interface BurningCell {
   readonly cell: number;
   readonly distance: number;
   readonly intensity: number;
+}
+
+interface SmokeColumn {
+  readonly density: number;
+  readonly heaviness: number;
+  readonly puffs: number;
+  readonly warmth: number;
 }
 
 function isSmokeCell(burning: BurningCell): boolean {
@@ -176,7 +188,7 @@ export class FireView {
       this.#addGroundFlames(mirror, burning);
     }
 
-    for (const burning of cells.filter(isSmokeCell).slice(0, SMOKE_COLUMN_LIMIT)) {
+    for (const burning of cells.filter(isSmokeCell).slice(0, SMOKE_COLUMN_LIMIT).toReversed()) {
       this.#addFireSmoke(mirror, burning);
     }
 
@@ -321,14 +333,22 @@ export class FireView {
   }
 
   #addFireSmoke(mirror: WorldMirror, burning: BurningCell): void {
-    const { grid } = mirror;
+    const { grid, surface } = mirror;
 
     const isHeavy = isWoodland(mirror, burning.cell) && burning.intensity >= CROWN_FIRE;
     const x = grid.cellCenterX(burning.cell);
     const z = grid.cellCenterZ(burning.cell);
-    const height = (isHeavy ? HEAVY_SMOKE_HEIGHT : LIGHT_SMOKE_HEIGHT) * (0.6 + 0.5 * burning.intensity);
+    const scorch = surface[burning.cell * SURFACE_CHANNELS + SurfaceChannel.Scorch] / BYTE;
+    const growth = 0.35 + 0.65 * Math.min(1, scorch / COLUMN_GROWN_SCORCH);
+    const height = (isHeavy ? HEAVY_SMOKE_HEIGHT : LIGHT_SMOKE_HEIGHT) * (0.6 + 0.5 * burning.intensity) * growth;
+    const density = Math.min(1, burning.intensity / FULL_SMOKE_INTENSITY) * (isHeavy ? 1 : 0.75);
 
-    this.#addSmokeColumn(mirror, x, z, height, isHeavy ? 1 : 0, burning.intensity);
+    this.#addSmokeColumn(mirror, x, z, height, {
+      density,
+      heaviness: isHeavy ? 1 : 0,
+      puffs: isHeavy ? HEAVY_SMOKE_PUFFS : LIGHT_SMOKE_PUFFS,
+      warmth: burning.intensity,
+    });
   }
 
   #addSparks(mirror: WorldMirror, burning: BurningCell): void {
@@ -348,14 +368,14 @@ export class FireView {
     }
   }
 
-  #addSmokeColumn(mirror: WorldMirror, x: number, z: number, height: number, heaviness: number, warmth: number): void {
-    const ground = mirror.heightAt(x, z) + 2 + heaviness * 14;
+  #addSmokeColumn(mirror: WorldMirror, x: number, z: number, height: number, column: SmokeColumn): void {
+    const ground = mirror.heightAt(x, z) + 1 + column.heaviness * 6;
     const offset = hashToUnit(x, z) * 0.1;
 
-    for (let puff = 0; puff < PUFFS_PER_COLUMN; puff += 1) {
-      const seed = puff / PUFFS_PER_COLUMN + offset;
+    for (let puff = 0; puff < column.puffs; puff += 1) {
+      const seed = puff / column.puffs + offset;
 
-      this.#puffs.add([x, ground, z, height], [seed, heaviness, 0.7 + hashToUnit(x, z, puff) * 0.6, warmth]);
+      this.#puffs.add([x, ground, z, height], [seed, column.heaviness, column.density, column.warmth]);
     }
   }
 
@@ -379,7 +399,12 @@ export class FireView {
         );
       }
 
-      this.#addSmokeColumn(mirror, building.x, building.z, 26, 0, 0.5);
+      this.#addSmokeColumn(mirror, building.x, building.z, CAMPFIRE_SMOKE_HEIGHT, {
+        density: 0.55 + heat * 0.45,
+        heaviness: 0,
+        puffs: CAMPFIRE_SMOKE_PUFFS,
+        warmth: 0.5,
+      });
       this.#sparks.add(
         [building.x, ground + 0.6, building.z, CAMPFIRE_SPARK_RISE],
         [hashToUnit(building.id, 5), heat, 0, 0]
