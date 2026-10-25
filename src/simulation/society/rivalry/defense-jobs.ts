@@ -55,14 +55,12 @@ function nearestRaider(tick: PersonTick, raid: Raid, radius: number): Foe | null
 export class DefendJob implements Job {
   readonly kind = "defend";
   readonly raidId: number;
-  readonly weapon: CarriedWeapon;
   readonly #engagement: Engagement;
   readonly #post: Waypoint;
   #guardState: GuardState = "roaming";
 
   constructor(tick: PersonTick, raid: Raid, weapon: CarriedWeapon) {
     this.raidId = raid.id;
-    this.weapon = weapon;
     this.#engagement = new Engagement(weapon, tick.context.rivalry.random.next());
     this.#post = guardPost(tick.tribe, raid, tick.person);
   }
@@ -129,13 +127,11 @@ export class DefendJob implements Job {
 
 export class FightJob implements Job {
   readonly kind = "fight";
-  readonly weapon: CarriedWeapon;
   readonly #engagement: Engagement;
   readonly #foe: Foe;
   #seconds = 0;
 
   constructor(tick: PersonTick, foe: Foe, weapon: CarriedWeapon) {
-    this.weapon = weapon;
     this.#foe = foe;
     this.#engagement = new Engagement(weapon, tick.context.rivalry.random.next() * 0.5);
   }

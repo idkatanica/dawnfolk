@@ -2,7 +2,7 @@ import { ANIMAL_KINDS } from "../content/animals.ts";
 import { BUILDING_KINDS, BUILDINGS } from "../content/buildings.ts";
 import { CROP_KINDS, CROPS } from "../content/crops.ts";
 import { depositCode } from "../content/deposits.ts";
-import { ERA_COUNT } from "../content/eras.ts";
+import { currentEra, ERA_COUNT } from "../content/eras.ts";
 import { saturate } from "../shared/math.ts";
 import {
   ANIMAL_STRIDE,
@@ -37,7 +37,7 @@ import { tribeBuildings } from "./society/camp-plan.ts";
 import { carriedItem, isChild, type Person } from "./society/person.ts";
 import { plantedCount } from "./society/plots.ts";
 import { nextEraName, technologyNames, tribeGoal } from "./society/progress.ts";
-import { eraOf, type Tribe } from "./society/tribe.ts";
+import type { Tribe } from "./society/tribe.ts";
 import { SNOW_CAPACITY, type WorldState } from "./world/world-state.ts";
 
 const BYTE = 255;
@@ -339,7 +339,7 @@ function goalView(tribe: Tribe): GoalView | null {
 }
 
 export function describeTribe(tribe: Tribe, members: readonly Person[], sources: TribeSources): TribeSummary {
-  const era = eraOf(tribe);
+  const era = currentEra(tribe.technologies);
 
   return {
     births: tribe.births,

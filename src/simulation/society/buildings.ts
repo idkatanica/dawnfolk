@@ -1,5 +1,4 @@
 import { BUILDINGS, type BuildingKind, isFlammable, isLitCampfire } from "../../content/buildings.ts";
-import { distanceSquared } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { IdentifierSource } from "../identifiers.ts";
@@ -190,22 +189,6 @@ export class BuildingSystem {
     this.#incidents = [];
 
     return incidents;
-  }
-
-  nearest(x: number, z: number, radius: number): Building | null {
-    let nearest: Building | null = null;
-    let nearestDistance = radius * radius;
-
-    for (const building of this.#buildings) {
-      const squaredDistance = distanceSquared(x, z, building.x, building.z);
-
-      if (squaredDistance < nearestDistance) {
-        nearest = building;
-        nearestDistance = squaredDistance;
-      }
-    }
-
-    return nearest;
   }
 
   setAlight(building: Building): void {

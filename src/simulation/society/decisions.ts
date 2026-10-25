@@ -196,17 +196,17 @@ function shouldInterrupt(tick: PersonTick, job: Job): boolean {
     return false;
   }
 
-  return isFreezingOnTheWay(tick, FREEZING);
+  return isFreezingOnTheWay(tick);
 }
 
-function isFreezingOnTheWay(tick: PersonTick, threshold: number): boolean {
+function isFreezingOnTheWay(tick: PersonTick): boolean {
   const place = nearestWarmPlace(tick);
 
   if (place === null || isWithinReach(tick, place)) {
     return false;
   }
 
-  return warmthOnArrival(tick, place) < threshold;
+  return warmthOnArrival(tick, place) < FREEZING;
 }
 
 export function decideJob(tick: PersonTick): Job {

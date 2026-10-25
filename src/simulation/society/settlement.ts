@@ -252,10 +252,7 @@ function settleWhereTheyStand(tribe: Tribe, members: readonly Person[]): void {
       Math.hypot(second.mover.x - centerX, second.mover.z - centerZ)
   );
 
-  if (
-    nearest === undefined ||
-    Math.hypot(nearest.mover.x - tribe.campX, nearest.mover.z - tribe.campZ) < SETTLED_DISTANCE
-  ) {
+  if (Math.hypot(nearest.mover.x - tribe.campX, nearest.mover.z - tribe.campZ) < SETTLED_DISTANCE) {
     return;
   }
 

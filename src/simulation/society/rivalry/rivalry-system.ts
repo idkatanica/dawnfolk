@@ -72,7 +72,6 @@ const LONGEST_RAID_DISTANCE = 1600;
 const SMALLEST_VICTIM_TRIBE = 8;
 const RALLY_DISTANCE = 12;
 const MUSTER_SECONDS = 45;
-const MUSTER_SHARE = 1;
 const ALARM_DISTANCE = 140;
 const ASSAULT_DISTANCE = 60;
 const LONGEST_MARCH_SECONDS = 700;
@@ -625,7 +624,7 @@ export class RivalrySystem implements Battleground {
     if (raid.phase === "muster") {
       const gathered = raiders.filter((raider) => isNear(raider, raid.rally, RALLY_DISTANCE + 6)).length;
 
-      if (gathered >= raiders.length * MUSTER_SHARE || raid.phaseSeconds > MUSTER_SECONDS) {
+      if (gathered >= raiders.length || raid.phaseSeconds > MUSTER_SECONDS) {
         this.#enterPhase(raid, "march");
       }
 

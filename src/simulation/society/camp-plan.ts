@@ -101,14 +101,6 @@ function dwellingReach(tribe: Tribe): number {
   return FARTHEST_DWELLING + tribe.buildings.shelterIds.length * DWELLING_SPREAD;
 }
 
-function campfirePlan(tribe: Tribe, context: SocietyContext): BuildingPlan | null {
-  if (!isUnlocked(tribe, "campfire", context) || context.buildings.find(tribe.buildings.campfireId) !== null) {
-    return null;
-  }
-
-  return campPlan(tribe, "campfire", 0, 4);
-}
-
 function shelterPlan(tribe: Tribe, context: SocietyContext): BuildingPlan | null {
   const kind = bestDwelling(tribe);
 
@@ -295,7 +287,7 @@ function hasFields(tribe: Tribe): boolean {
 }
 
 const PLANNERS: readonly Planner[] = [
-  campfirePlan,
+  singleBuilding("campfire", 0, 4),
   shelterPlan,
   singleBuilding("storehouse", 9, 18),
   singleBuilding("kiln", 18, 34),

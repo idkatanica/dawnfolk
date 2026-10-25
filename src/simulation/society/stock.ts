@@ -133,16 +133,3 @@ export function spoilFood(stock: Stock, days: number, storage: Storage): void {
     stock[kind] = Math.max(0, stock[kind] - stock[kind] * rate * days);
   }
 }
-
-export function plunder(stock: Stock, share: number): Stock {
-  const loot = emptyStock();
-
-  for (const kind of RESOURCE_KINDS) {
-    const amount = Math.floor(stock[kind] * share);
-
-    loot[kind] = amount;
-    stock[kind] -= amount;
-  }
-
-  return loot;
-}

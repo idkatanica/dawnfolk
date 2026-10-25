@@ -37,8 +37,8 @@ function waterNearby(world: WorldState, x: number, z: number): string | null {
   return isLake ? "by the lake" : null;
 }
 
-export function describePlace(world: WorldState, x: number, z: number, home: Tribe | null): string {
-  if (home !== null && Math.hypot(home.campX - x, home.campZ - z) < CAMP_RADIUS) {
+export function describePlace(world: WorldState, x: number, z: number, home: Tribe): string {
+  if (Math.hypot(home.campX - x, home.campZ - z) < CAMP_RADIUS) {
     return "close to their camp";
   }
 

@@ -60,7 +60,7 @@ export function strikeLightning(strike: Strike, services: PowerServices): void {
 
   society.damageArea(strike.x, strike.z, STRIKE_KILL_RADIUS, 3, "lightning");
   fauna.damageArea(strike.x, strike.z, STRIKE_KILL_RADIUS, 6, "lightning");
-  fauna.scare(strike.x, strike.z, STRIKE_SCARE_RADIUS, 1);
+  fauna.scare(strike.x, strike.z, STRIKE_SCARE_RADIUS);
 
   for (const building of buildings.all) {
     if (Math.hypot(building.x - strike.x, building.z - strike.z) < STRIKE_BUILDING_RADIUS) {
@@ -168,7 +168,7 @@ export function explode(blast: Blast, services: PowerServices): void {
   buildings.damageArea(blast.x, blast.z, reach, 120 * blast.power, burnsDebris);
   society.damageArea(blast.x, blast.z, reach, 1.6 * blast.power, "blast");
   fauna.damageArea(blast.x, blast.z, reach, 3 * blast.power, "blast");
-  fauna.scare(blast.x, blast.z, blast.radius * 8, 1);
+  fauna.scare(blast.x, blast.z, blast.radius * 8);
   hazards.addZone({ radius: blast.radius * 4, remainingSeconds: 6, x: blast.x, z: blast.z });
   services.effects.add({
     isInWater,
@@ -374,7 +374,7 @@ export function shakeLand(quake: Quake, services: PowerServices): void {
   );
   buildings.damageArea(quake.x, quake.z, quake.radius, 45 * quake.magnitude, false);
   society.damageArea(quake.x, quake.z, quake.radius * 0.6, 0.35 * quake.magnitude, "earthquake");
-  fauna.scare(quake.x, quake.z, quake.radius * 1.5, 1);
+  fauna.scare(quake.x, quake.z, quake.radius * 1.5);
   hazards.addZone({ radius: quake.radius, remainingSeconds: 5, x: quake.x, z: quake.z });
   services.effects.add({
     kind: "earthquake",

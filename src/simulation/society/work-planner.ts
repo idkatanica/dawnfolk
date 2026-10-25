@@ -17,7 +17,7 @@ import { TendJob } from "./jobs/tend-job.ts";
 import { isElder } from "./person.ts";
 import type { PersonTick } from "./society-context.ts";
 import { amountOf, totalFood } from "./stock.ts";
-import { type Field, knows } from "./tribe.ts";
+import { knows } from "./tribe.ts";
 import { completedBuilding } from "./tribe-places.ts";
 import { hasWeaponsToHunt } from "./weapons.ts";
 import { foodNeed, isWorthIt, type WorkOption } from "./work-needs.ts";
@@ -26,7 +26,7 @@ const LOW_CAMPFIRE_FUEL = 0.45;
 const ELDER_HEAVY_WORK = 0.25;
 const HEAVY_WORK: ReadonlySet<JobKind> = new Set(["chop", "hunt", "mine", "quarry"]);
 const CRAFTING_WOOD = 8;
-const FIELD_TASK_WEIGHTS: Readonly<Record<FieldTask | "none", number>> = { harvest: 3.6, none: 0, sow: 2.6, tend: 1 };
+const FIELD_TASK_WEIGHTS: Readonly<Record<FieldTask, number>> = { harvest: 3.6, sow: 2.6, tend: 1 };
 const MASONRY_STONE = 24;
 const FIRE_WOOD = 4;
 const LARGEST_BUILDING_PARTY = 4;
@@ -42,16 +42,6 @@ function expeditionBuilders(tick: PersonTick): number {
 
 function constructionSite(tick: PersonTick): Building | null {
   return tick.context.buildings.find(tick.tribe.buildings.constructionSiteId);
-}
-
-function fieldTaskOf(tick: PersonTick, field: Field): FieldTask | "none" {
-  const task = fieldTask(tick.tribe, field, tick.context.environment.season);
-
-  if (task === null) {
-    return "none";
-  }
-
-  return task;
 }
 
 function fireWoodReserve(season: number): number {
@@ -188,12 +178,9 @@ const WORK_OPTIONS: readonly WorkOption[] = [
       const { season } = tick.context.environment;
 
       const field = neediestField(tick.tribe, season);
+      const task = field === null ? null : fieldTask(tick.tribe, field, season);
 
-      if (field === null) {
-        return 0;
-      }
-
-      return FIELD_TASK_WEIGHTS[fieldTaskOf(tick, field)];
+      return task === null ? 0 : FIELD_TASK_WEIGHTS[task];
     },
   },
   {

@@ -29,7 +29,6 @@ const RALLY_SPREAD = 1.4;
 const TARGET_SPREAD = 2.2;
 const HOME_SPREAD = 3;
 const LOADED_SPEED_SHARE = 1.15;
-const FLEEING_SPEED_SHARE = 1;
 const RATION_HUNGER = 0.6;
 const CATCH_UP_DISTANCE = 30;
 const SLOWEST_PACE = 0.55;
@@ -221,12 +220,12 @@ export class RaidJob implements Job {
       raid.aim === "burn" && raid.burned.length === 0 ? burnableBuilding(tick.context.buildings.all, victims) : null;
 
     if (building !== null) {
-      this.#workAt(tick, building, KINDLING_SECONDS, () => setAblaze(building, raid, tick));
+      this.#workAt(tick, raid, building, KINDLING_SECONDS, () => setAblaze(building, raid, tick));
 
       return;
     }
 
-    this.#workAt(tick, plunderSpot(victims, tick), PLUNDER_SECONDS, () => this.#plunder(raid, victims));
+    this.#workAt(tick, raid, plunderSpot(victims, tick), PLUNDER_SECONDS, () => this.#plunder(raid, victims));
   }
 
   #plunder(raid: Raid, victims: Tribe): void {
@@ -236,7 +235,7 @@ export class RaidJob implements Job {
     unpack(this.#loot, taken);
   }
 
-  #workAt(tick: PersonTick, spot: Waypoint, seconds: number, finish: () => void): void {
+  #workAt(tick: PersonTick, raid: Raid, spot: Waypoint, seconds: number, finish: () => void): void {
     const { person } = tick;
 
     if (this.#destination !== "objective") {
@@ -257,14 +256,8 @@ export class RaidJob implements Job {
       return;
     }
 
-    const raid = tick.context.rivalry.raidOf(this.raidId);
-
     finish();
-
-    if (raid !== null) {
-      raid.struckIds.add(person.id);
-    }
-
+    raid.struckIds.add(person.id);
     this.#leg = "homeward";
   }
 
@@ -293,7 +286,7 @@ export class RaidJob implements Job {
     }
 
     const isLoaded = totalGoods(this.#loot) > 0;
-    const speed = isLoaded ? walkSpeed(person) * LOADED_SPEED_SHARE : runSpeed(person) * FLEEING_SPEED_SHARE;
+    const speed = isLoaded ? walkSpeed(person) * LOADED_SPEED_SHARE : runSpeed(person);
 
     if (!walk(tick, speed)) {
       return this;

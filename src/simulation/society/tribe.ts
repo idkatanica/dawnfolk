@@ -1,6 +1,5 @@
 import type { BuildingKind } from "../../content/buildings.ts";
 import type { CropKind } from "../../content/crops.ts";
-import { currentEra, type EraDefinition } from "../../content/eras.ts";
 import type { TribeIdentity } from "../../content/names.ts";
 import { nextTechnology, type TechnologyDefinition, type TechnologyId } from "../../content/technologies.ts";
 import type { ToolMaterial } from "../../content/weapons.ts";
@@ -154,10 +153,6 @@ export function createTribe(founding: TribeFounding): Tribe {
 
 export function knows(tribe: Tribe, technology: TechnologyId): boolean {
   return tribe.technologies.has(technology);
-}
-
-export function eraOf(tribe: Tribe): EraDefinition {
-  return currentEra(tribe.technologies);
 }
 
 export function upcomingTechnology(tribe: Tribe): TechnologyDefinition | undefined {
