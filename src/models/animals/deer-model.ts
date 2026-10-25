@@ -1,8 +1,9 @@
 import { Vector3 } from "three";
 import { FULL_TURN } from "../../shared/math.ts";
-import { alongPath, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts";
+import { alongTube, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, SurfacePoint } from "../mesh/mesh-builder.ts";
+import { curveBodySections } from "../mesh/path-curves.ts";
 import { type Shape, transformShape } from "../mesh/shape.ts";
 import { type BodySection, lengthwiseLoft, pointAlong, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { outermostHit, surfaceTransform } from "../mesh/surface-probe.ts";
@@ -116,7 +117,7 @@ function coatSlot(point: SurfacePoint): number {
 
 function headShape(detail: AnimalDetail): Shape {
   const muzzle = tube(
-    alongPath(
+    alongTube(
       [
         { radius: 0, x: 0, y: 1.66, z: 0.67 },
         { radius: 0.062, x: 0, y: 1.665, z: 0.7 },
@@ -179,7 +180,7 @@ const TAIL: readonly TubePoint[] = [
 export function addDeerBody(builder: MeshBuilder, detail: AnimalDetail): void {
   const { segments } = detail;
 
-  builder.add(lengthwiseLoft(BODY, segments + 2), {
+  builder.add(lengthwiseLoft(curveBodySections(BODY, detail.curveSteps), segments + 2), {
     seam: BODY_SEAM,
     style: { ...bodyStyle(DEER_FRAME, 0.14), slot: coatSlot },
   });
@@ -289,7 +290,7 @@ export function addFawnSpots(builder: MeshBuilder, detail: AnimalDetail): void {
   }
 
   const style = { ...bodyStyle(DEER_FRAME, 0.14), slot: MaterialSlot.CoatLight };
-  const body = lengthwiseLoft(BODY, detail.segments + 2);
+  const body = lengthwiseLoft(curveBodySections(BODY, detail.curveSteps), detail.segments + 2);
 
   for (let index = 0; index < SPOT_COUNT; index += 1) {
     const side = index % 2 === 0 ? 1 : -1;

@@ -1,7 +1,8 @@
 import { type Matrix4, Vector3 } from "three";
-import { alongPath, segmentsAtLeast } from "../level-of-detail.ts";
+import { alongPath, alongSections, alongTube, segmentsAtLeast } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, VertexStyle } from "../mesh/mesh-builder.ts";
+import { curveTube } from "../mesh/path-curves.ts";
 import type { Shape } from "../mesh/shape.ts";
 import { type LoftSection, loft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
@@ -87,6 +88,15 @@ const ARM: readonly TubePoint[] = [
   { radius: 0.02, x: 0.216, y: 0.858, z: 0.014 },
 ];
 
+const SHOULDER_DOME: readonly TubePoint[] = [
+  { radius: 0, x: 0.19, y: 1.481, z: 0 },
+  { radius: 0.043, x: 0.19, y: 1.463, z: 0 },
+  { radius: 0.057, x: 0.19, y: 1.441, z: 0 },
+  { radius: 0.061, x: 0.19, y: 1.42, z: 0 },
+];
+
+const DOMED_ARM: readonly TubePoint[] = [...SHOULDER_DOME, ...ARM.slice(2)];
+
 const LEG: readonly TubePoint[] = [
   { radius: 0.055, x: 0.092, y: 0.985, z: -0.005 },
   { radius: 0.095, x: 0.095, y: 0.93, z: 0 },
@@ -138,7 +148,7 @@ export function forEachSide(add: (side: Side, mirror: Matrix4) => void): void {
 }
 
 export function headShape(detail: HumanDetail): Shape {
-  return loft(alongPath(HEAD_SECTIONS, detail), detail.headSegments);
+  return loft(alongSections(HEAD_SECTIONS, detail), detail.headSegments);
 }
 
 export const HEAD_AXIS_Z = -0.01;
@@ -219,7 +229,7 @@ function addHead(builder: MeshBuilder, detail: HumanDetail): void {
   const head = headShape(detail);
 
   builder.add(head, { seam: SKIN_SEAM, style: { ...rigidStyle(HumanBone.Head), ...SKIN } });
-  builder.add(tube(NECK, { radialSegments: detail.limbSegments }), {
+  builder.add(tube(curveTube(NECK, detail.curveSteps), { radialSegments: detail.limbSegments }), {
     seam: SKIN_SEAM,
     style: { ...TORSO_STYLE, ...SKIN },
   });
@@ -243,11 +253,14 @@ function addArms(builder: MeshBuilder, detail: HumanDetail): void {
   forEachSide((side, mirror) => {
     const style = { ...armStyle(side), ...SKIN };
 
-    builder.add(tube(alongPath(ARM, detail), { radialSegments: detail.limbSegments }), {
-      seam: SKIN_SEAM,
-      style,
-      transform: mirror,
-    });
+    builder.add(
+      tube(alongTube(detail.hasFineDetails ? DOMED_ARM : ARM, detail), { radialSegments: detail.limbSegments }),
+      {
+        seam: SKIN_SEAM,
+        style,
+        transform: mirror,
+      }
+    );
     builder.add(sphere(SHOULDER_RADIUS, detail.limbSegments, Math.max(4, detail.limbSegments - 3)), {
       seam: SKIN_SEAM,
       style: { ...rigidStyle(sideBones(side).upperArm), ...SKIN },
@@ -275,7 +288,7 @@ function addLegs(builder: MeshBuilder, detail: HumanDetail): void {
 }
 
 function addBody(builder: MeshBuilder, torso: readonly LoftSection[], detail: HumanDetail): void {
-  builder.add(loft(alongPath(torso, detail), detail.torsoSegments), {
+  builder.add(loft(alongSections(torso, detail), detail.torsoSegments), {
     seam: SKIN_SEAM,
     style: { ...FLEXIBLE_TORSO_STYLE, ...SKIN },
   });
