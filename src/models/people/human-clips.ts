@@ -152,7 +152,7 @@ function leap(pose: Pose, phase: number, context: HumanClipContext): void {
   }
 
   bendTrunk(pose, HumanBone.Spine, { forward: degrees(10) });
-  pose.height = LEAP_LIFT * Math.abs(wave(phase));
+  pose.height = LEAP_LIFT * Math.abs(cosineWave(phase));
 }
 
 function idle(pose: Pose, phase: number, context: HumanClipContext): void {

@@ -72,6 +72,10 @@ function footHeights(poser: SkeletonPoser): number[] {
   );
 }
 
+function lowestFoot(poser: SkeletonPoser): number {
+  return Math.min(...footHeights(poser));
+}
+
 function contactHeight(poser: SkeletonPoser, contact: ContactPoint): number {
   return poser.skinPoint(contact.bone, new Vector3(...contact.position), new Vector3()).y;
 }
@@ -186,16 +190,15 @@ describe("human clips", () => {
     expect(pointOf(posed("build", 0.64), HumanBone.HandRight, RIGHT_FIST).y).toBeLessThan(0.35);
   });
 
-  it("leaves the ground in the middle of a jump", () => {
-    const poser = posed("play", 0.48);
-    const point = new Vector3();
-    const lowest = Math.min(
-      ...HUMAN_SKELETON.footContacts.map(
-        (contact) => poser.skinPoint(contact.bone, point.set(...contact.position), point).y
-      )
-    );
+  it("is in the air at the widest stride of a leap and lands as the legs pass", () => {
+    expect(lowestFoot(posed("leap", 0))).toBeGreaterThan(0.15);
+    expect(lowestFoot(posed("leap", 0.5))).toBeGreaterThan(0.15);
+    expect(lowestFoot(posed("leap", 0.25))).toBeLessThan(PLANTED);
+    expect(lowestFoot(posed("leap", 0.75))).toBeLessThan(PLANTED);
+  });
 
-    expect(lowest).toBeGreaterThan(0.15);
+  it("leaves the ground in the middle of a jump", () => {
+    expect(lowestFoot(posed("play", 0.48))).toBeGreaterThan(0.15);
   });
 });
 
