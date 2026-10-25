@@ -13,6 +13,10 @@ export type EngineStatus =
 
 type EngineStatusListener = (status: EngineStatus) => void;
 
+export function loadGameEngine() {
+  return import("../game/game-engine.ts");
+}
+
 export function reportStop(session: GameSession, onStatus: EngineStatusListener): void {
   session.subscribeToStatus((status) => {
     if (status.kind === "failed") {
@@ -65,7 +69,7 @@ export class EngineLauncher {
   }
 
   async #start(launch: LaunchOptions): Promise<void> {
-    const engineModule = await import("../game/game-engine.ts");
+    const engineModule = await loadGameEngine();
 
     const engine = await engineModule.GameEngine.start({
       camera: launch.camera,
