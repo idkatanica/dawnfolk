@@ -96,11 +96,13 @@ function PlantList({ plants }: { readonly plants: readonly PlantDescription[] })
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <ul aria-label="Plants" className="flex flex-wrap gap-1.5">
       {plants.map((plant, index) => (
-        <PlantChip key={`${plant.name}-${String(index)}`} plant={plant} />
+        <li className="flex" key={`${plant.name}-${String(index)}`}>
+          <PlantChip plant={plant} />
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -244,13 +246,15 @@ export function TribeDetails({ tribe }: { readonly tribe: TribeInspection }) {
 
       <TribeRelations tribeId={summary.id} />
 
-      <div className="flex flex-wrap gap-1.5">
-        {summary.technologies.map((name) => (
-          <Badge key={name} tone="muted">
-            {name}
-          </Badge>
-        ))}
-      </div>
+      {summary.technologies.length > 0 ? (
+        <ul aria-label="Discoveries" className="flex flex-wrap gap-1.5">
+          {summary.technologies.map((name) => (
+            <li className="flex" key={name}>
+              <Badge tone="muted">{name}</Badge>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }

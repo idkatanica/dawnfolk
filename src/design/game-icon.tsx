@@ -12,7 +12,7 @@ export function GameIcon({ className, label, name, size = 24 }: GameIconProps) {
   return (
     <img
       alt={label === undefined ? "" : label}
-      className={cn("pointer-events-none inline-block shrink-0 select-none object-contain", className)}
+      className={cn("pointer-events-none inline-block shrink-0 select-none", className)}
       decoding="async"
       draggable={false}
       height={size}

@@ -32,7 +32,7 @@ function LoadingMessage({ name, progress }: LoadingMessageProps) {
     <div className="flex flex-col items-center gap-3 text-center" role="status">
       <Logo className="size-20 text-pine" />
 
-      <p className="text-3xl text-ink">{name}</p>
+      <h2 className="wrap-break-word text-3xl text-ink">{name}</h2>
 
       <p className="text-ink-soft text-sm">{stageLabel(progress)}…</p>
     </div>
@@ -47,7 +47,7 @@ interface FailureMessageProps {
 function FailureMessage({ message, title }: FailureMessageProps) {
   return (
     <div className="flex max-w-md flex-col items-center gap-3 text-center" role="alert">
-      <p className="text-3xl text-ink">{title}</p>
+      <h2 className="text-3xl text-ink">{title}</h2>
 
       <p className="text-ink-soft text-sm">{message}</p>
     </div>

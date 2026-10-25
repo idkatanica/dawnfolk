@@ -6,7 +6,7 @@ type TooltipSide = "bottom" | "left" | "right" | "top";
 interface WithTooltipProps {
   readonly children: ReactElement;
   readonly content: ReactNode;
-  readonly side?: TooltipSide;
+  readonly side?: TooltipSide | undefined;
 }
 
 const OPEN_DELAY = 450;

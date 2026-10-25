@@ -28,7 +28,6 @@
   --color-paper-hover: rgb(92 70 42 / 0.07);
   --color-paper-press: rgb(92 70 42 / 0.12);
   --color-veil: rgb(255 255 255 / 0.55);
-  --color-veil-strong: rgb(255 255 255 / 0.78);
   --color-dawn: #dd6f35;
   --color-dawn-strong: #c25a24;
   --color-dawn-soft: rgb(221 111 53 / 0.14);
@@ -40,9 +39,7 @@
   --color-gold: #c9952c;
 
   --shadow-segment: 0 1px 2px rgb(29 39 51 / 0.1), 0 0 0 0.5px rgb(29 39 51 / 0.08);
-
   --shadow-panel: 0 1px 2px rgb(52 40 26 / 0.1), 0 10px 30px -12px rgb(52 40 26 / 0.32);
-
   --shadow-thumb: 0 1px 3px rgb(29 39 51 / 0.28), 0 0 0 0.5px rgb(29 39 51 / 0.16);
 
   --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
@@ -66,6 +63,22 @@
 
 @utility pb-sheet {
   padding-bottom: calc(--spacing(4) + env(safe-area-inset-bottom, 0px));
+}
+
+@utility scroll-fade {
+  --fade-size: 1.5rem;
+
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black min(var(--fade-size), var(--scroll-area-overflow-y-start, 0px)),
+    black calc(100% - min(var(--fade-size), var(--scroll-area-overflow-y-end, 0px))),
+    transparent 100%
+  );
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
 }
 
 :root {
@@ -109,22 +122,6 @@ body {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-}
-
-@utility scroll-fade {
-  --fade-size: 1.5rem;
-
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    black min(var(--fade-size), var(--scroll-area-overflow-y-start, 0px)),
-    black calc(100% - min(var(--fade-size), var(--scroll-area-overflow-y-end, 0px))),
-    transparent 100%
-  );
-}
-
-@utility scrollbar-none {
-  scrollbar-width: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -43,7 +43,7 @@ export function App() {
 
   return (
     <TooltipProvider>
-      <main className="fixed inset-0 overflow-hidden bg-sky text-ink">
+      <main className="fixed inset-0 overflow-hidden">
         <h1 className="sr-only">Dawnfolk</h1>
 
         {isChoosingWorld ? <StartScreen /> : <GameScreen />}

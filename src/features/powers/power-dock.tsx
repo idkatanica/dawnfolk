@@ -12,7 +12,7 @@ import { usePowerStore } from "./power-store.ts";
 const SELECT_HINT = "Tap people, animals, buildings or land to see their details.";
 
 const TILE_CLASS =
-  "grid size-10.5 shrink-0 snap-start place-items-center rounded-xl outline-none transition-[background-color,box-shadow,scale] duration-150 hover:bg-white/55 focus-visible:ring-2 focus-visible:ring-dawn active:scale-95 pointer-coarse:size-12";
+  "grid size-10.5 shrink-0 snap-start place-items-center rounded-xl outline-none transition-[background-color,box-shadow,scale] duration-150 hover:bg-veil focus-visible:ring-2 focus-visible:ring-dawn active:scale-95 pointer-coarse:size-12";
 
 const CHOSEN_TILE_CLASS = "bg-white shadow-segment hover:bg-white";
 
@@ -87,7 +87,7 @@ function SelectTile() {
 function CategoryGroup({ category, name }: { readonly category: PowerCategory; readonly name: string }) {
   return (
     <>
-      <Toolbar.Separator className="mx-1 h-7 w-px shrink-0 bg-ink/15" orientation="vertical" />
+      <Toolbar.Separator className="mx-1 h-7 w-px shrink-0 bg-ink/15" />
 
       <Toolbar.Group aria-label={name} className="flex shrink-0 items-center gap-0.5">
         {powersInCategory(category).map((powerId) => (
@@ -133,7 +133,7 @@ export function PowerDock({ className }: { readonly className?: string | undefin
   useWheelScrollsSideways(rowReference);
 
   return (
-    <Island className={cn("max-w-full", className)} surface="glass">
+    <Island className={className} surface="glass">
       <Toolbar.Root
         aria-label="Powers"
         className="scrollbar-none flex snap-x snap-mandatory scroll-px-1.5 items-center gap-0.5 overflow-x-auto overscroll-x-contain p-1.5"

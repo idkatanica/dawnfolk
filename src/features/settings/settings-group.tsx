@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 export const GROUP_CLASS = "flex flex-col gap-4 border-line border-t py-5 first:border-t-0 first:pt-0 last:pb-0";
 
+export const FIELD_GRID = "grid gap-x-6 gap-y-4 sm:grid-cols-2";
+
 interface GroupHeadingProps {
   readonly action?: ReactNode;
   readonly description: string;
@@ -35,5 +37,3 @@ export function SettingsGroup({ action, children, description, title }: Settings
     </section>
   );
 }
-
-export const FIELD_GRID = "grid gap-x-6 gap-y-4 sm:grid-cols-2";

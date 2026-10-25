@@ -50,7 +50,7 @@ export function JournalSheet() {
             <div aria-hidden="true" className="h-1 w-10 shrink-0 self-center rounded-full bg-ink/20" />
 
             <Drawer.Content className="flex min-h-0 flex-1 flex-col" ref={panelReference}>
-              <SidePanelContent className="flex-1" contents={contents} onBack={back} onClose={close} />
+              <SidePanelContent contents={contents} onBack={back} onClose={close} />
             </Drawer.Content>
           </Drawer.Popup>
         </Drawer.Viewport>

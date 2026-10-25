@@ -29,7 +29,7 @@ export function NameField({ onChange, onRoll, value }: RolledFieldProps) {
 
         <input
           autoComplete="off"
-          className="h-9 min-w-0 flex-1 bg-transparent text-ink outline-none"
+          className="h-9 pointer-coarse:h-11 min-w-0 flex-1 text-ink outline-none"
           maxLength={LONGEST_WORLD_NAME}
           onChange={onChange}
           spellCheck={false}
@@ -49,7 +49,7 @@ export function SeedField({ className, onChange, onRoll, value }: RolledFieldPro
         <span className="text-ink-muted">Seed</span>
 
         <input
-          className="h-9 min-w-0 flex-1 bg-transparent text-ink tabular-nums outline-none"
+          className="h-9 pointer-coarse:h-11 min-w-0 flex-1 text-ink tabular-nums outline-none"
           inputMode="numeric"
           onChange={onChange}
           value={value}

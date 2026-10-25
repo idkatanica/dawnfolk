@@ -12,7 +12,7 @@ function SpeedOption({ speed }: { readonly speed: number }) {
   return (
     <Toggle
       aria-label={`Speed ${speed} times`}
-      className={cn(SEGMENT, "h-8 min-w-8 px-1.5 font-semibold tabular-nums lg:min-w-9 lg:px-2")}
+      className={cn(SEGMENT, "min-w-8 px-1.5 font-semibold tabular-nums lg:min-w-9 lg:px-2")}
       value={String(speed)}
     >
       {speed}×

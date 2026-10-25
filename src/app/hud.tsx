@@ -32,13 +32,13 @@ function WideHud() {
       </div>
 
       <div className="flex items-end gap-3">
-        <div className="flex min-w-fit flex-1 basis-0">
+        <div className="flex min-w-fit flex-1">
           <MinimapIsland />
         </div>
 
         <PowerDock className="min-w-0" />
 
-        <div aria-hidden="true" className="flex-1 basis-0" />
+        <div aria-hidden="true" className="flex-1" />
       </div>
     </div>
   );
@@ -51,9 +51,7 @@ function CompactHud() {
 
       <NoticeFeed />
 
-      <div className="flex-1" />
-
-      <div className="flex min-h-0 flex-col gap-2">
+      <div className="mt-auto flex min-h-0 flex-col gap-2">
         <MinimapIsland className="self-start" />
 
         <PowerSettings className="max-h-details" />

@@ -27,7 +27,7 @@ export function StartScreen() {
   const { begin, draft } = useStartScreen();
 
   return (
-    <div className="absolute inset-0 overflow-y-auto bg-sky">
+    <div className="absolute inset-0 overflow-y-auto">
       <div className="flex min-h-full flex-col items-center justify-center gap-8 p-6">
         <header className="flex flex-col items-center gap-3 text-center">
           <Logo className="size-20 text-pine" />
@@ -52,7 +52,7 @@ export function StartScreen() {
 
           <SeedField onChange={draft.changeSeed} onRoll={draft.rollSeed} value={draft.seedText} />
 
-          <TextButton className="w-full" disabled={draft.choice === null} tone="accent" type="submit">
+          <TextButton disabled={draft.choice === null} tone="accent" type="submit">
             Grow the island
             <ArrowRight aria-hidden="true" size={16} />
           </TextButton>

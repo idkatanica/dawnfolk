@@ -3,7 +3,6 @@ import { useSyncExternalStore } from "react";
 import { useEngine } from "../../app/use-engine.ts";
 import { type AgeGroup, ageGroupOf } from "../../content/life-stages.ts";
 import { IconButton, TextButton } from "../../design/buttons.tsx";
-import { cn } from "../../design/cn.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
 import type { Inspection, PersonInspection } from "../../simulation/inspection.ts";
@@ -140,7 +139,7 @@ function BackRow({ onBack, onClose }: { readonly onBack: () => void; readonly on
     <div className="flex items-center justify-between">
       <TextButton
         aria-label="Back to the journal"
-        className="-ml-1 h-8 gap-1 pr-3 pl-1.5"
+        className="-ml-1 h-8 pointer-coarse:h-10 gap-1 pr-3 pl-1.5"
         onClick={onBack}
         tone="quiet"
       >
@@ -154,15 +153,14 @@ function BackRow({ onBack, onClose }: { readonly onBack: () => void; readonly on
 }
 
 interface InspectorCardProps {
-  readonly className?: string | undefined;
   readonly inspection: Inspection;
   readonly onBack?: (() => void) | undefined;
   readonly onClose: () => void;
 }
 
-export function InspectorCard({ className, inspection, onBack, onClose }: InspectorCardProps) {
+export function InspectorCard({ inspection, onBack, onClose }: InspectorCardProps) {
   return (
-    <section aria-label="Selection details" className={cn("flex min-h-0 flex-col gap-3", className)}>
+    <section aria-label="Selection details" className="flex min-h-0 flex-col gap-3">
       {onBack === undefined ? null : <BackRow onBack={onBack} onClose={onClose} />}
 
       <header className="flex items-center gap-3">
@@ -170,7 +168,7 @@ export function InspectorCard({ className, inspection, onBack, onClose }: Inspec
           <GameIcon name={KIND_ICONS[inspection.kind]} size={30} />
         </span>
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="min-w-0 flex-1">
           <h2
             className="truncate font-semibold text-ink text-lg leading-tight outline-none"
             data-panel-heading=""

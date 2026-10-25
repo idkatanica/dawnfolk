@@ -85,7 +85,7 @@ function WeatherControls({ weather }: { readonly weather: WeatherView }) {
   const choice = weather.isAutomatic ? AUTOMATIC : weather.kind;
 
   return (
-    <div className="flex flex-col">
+    <>
       <SettingsGroup description="Pick the weather or let the seasons decide." title="Sky">
         <ChoiceField
           description="Pick the weather or let the seasons decide."
@@ -132,7 +132,7 @@ function WeatherControls({ weather }: { readonly weather: WeatherView }) {
           />
         </div>
       </SettingsGroup>
-    </div>
+    </>
   );
 }
 

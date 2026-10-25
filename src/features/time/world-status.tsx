@@ -95,7 +95,7 @@ export function CompactClock({ className }: { readonly className?: string | unde
   );
 }
 
-export function WorldStatus({ className }: { readonly className?: string | undefined }) {
+export function WorldStatus() {
   const calendar = useWorldStore((state) => state.snapshot?.calendar);
 
   if (calendar === undefined) {
@@ -103,7 +103,7 @@ export function WorldStatus({ className }: { readonly className?: string | undef
   }
 
   return (
-    <div className={cn("flex flex-col gap-3", className)}>
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
         <GameIcon name={daylightIcon(calendar.hours)} size={36} />
 

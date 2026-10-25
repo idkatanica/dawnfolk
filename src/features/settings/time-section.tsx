@@ -46,7 +46,7 @@ function TimeControls({ calendar }: { readonly calendar: CalendarView }) {
   const { changeDayLength, changeFrozen, changeHours, changeSeason, changeSeasonLength } = useTimeSettings();
 
   return (
-    <div className="flex flex-col">
+    <>
       <SettingsGroup description="Move the sun and pick the season." title="Today">
         <RangeField
           label="Time of day"
@@ -97,7 +97,7 @@ function TimeControls({ calendar }: { readonly calendar: CalendarView }) {
           />
         </div>
       </SettingsGroup>
-    </div>
+    </>
   );
 }
 

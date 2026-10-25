@@ -24,7 +24,7 @@ const SEGMENTED_LIMIT = 3;
 
 function SegmentOption({ option }: { readonly option: ChoiceOption }) {
   return (
-    <Toggle className={cn(SEGMENT, "h-8 flex-1")} value={option.value}>
+    <Toggle className={cn(SEGMENT, "flex-1")} value={option.value}>
       {option.icon}
 
       {option.label}
@@ -65,10 +65,10 @@ function SegmentedChoice({ label, onChange, options, value }: ChoiceFieldProps) 
 function ListOption({ option }: { readonly option: ChoiceOption }) {
   return (
     <Select.Item
-      className="grid cursor-default select-none grid-cols-[1rem_1fr] items-center gap-2 rounded-lg py-2 pr-4 pl-2.5 text-ink text-sm outline-none data-highlighted:bg-dawn-soft"
+      className="grid cursor-default grid-cols-[1rem_1fr] items-center gap-2 rounded-lg py-2 pr-4 pl-2.5 text-ink text-sm outline-none data-highlighted:bg-dawn-soft"
       value={option.value}
     >
-      <Select.ItemIndicator className="col-start-1 text-ink">
+      <Select.ItemIndicator className="col-start-1">
         <Check aria-hidden="true" size={14} strokeWidth={2.4} />
       </Select.ItemIndicator>
 
@@ -84,7 +84,7 @@ function ListChoice({ label, onChange, options, value }: ChoiceFieldProps) {
     <Select.Root items={options} onValueChange={handleChange} value={value}>
       <Select.Trigger
         aria-label={label}
-        className="flex h-9 w-full items-center justify-between gap-3 rounded-full bg-white/60 px-4 text-ink text-sm outline-none ring-1 ring-ink/8 ring-inset transition-colors hover:bg-white/80 focus-visible:ring-2 focus-visible:ring-dawn"
+        className="flex h-9 pointer-coarse:h-10 w-full items-center justify-between gap-3 rounded-full bg-white/60 px-4 text-ink text-sm outline-none ring-1 ring-ink/8 ring-inset transition-colors hover:bg-white/80 focus-visible:ring-2 focus-visible:ring-dawn"
       >
         <Select.Value />
 

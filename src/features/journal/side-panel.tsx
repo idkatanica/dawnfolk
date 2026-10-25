@@ -167,23 +167,22 @@ export interface PanelContents {
 }
 
 interface SidePanelContentProps {
-  readonly className?: string | undefined;
   readonly contents: PanelContents;
   readonly onBack: () => void;
   readonly onClose: () => void;
 }
 
-export function SidePanelContent({ className, contents, onBack, onClose }: SidePanelContentProps) {
+export function SidePanelContent({ contents, onBack, onClose }: SidePanelContentProps) {
   const { inspection, isJournalOpen } = contents;
 
   return (
-    <div className={cn("flex min-h-0 flex-col", className)}>
+    <>
       {isJournalOpen ? <JournalSection isHidden={inspection !== null} onClose={onClose} /> : null}
 
       {inspection === null ? null : (
         <InspectorCard inspection={inspection} onBack={isJournalOpen ? onBack : undefined} onClose={onClose} />
       )}
-    </div>
+    </>
   );
 }
 
@@ -201,7 +200,7 @@ export function SidePanel({ className }: { readonly className?: string | undefin
   return (
     <Island className={cn("flex w-journal flex-col", className)}>
       <div className="flex min-h-0 flex-1 flex-col p-3" ref={panelReference}>
-        <SidePanelContent className="flex-1" contents={{ inspection, isJournalOpen }} onBack={back} onClose={close} />
+        <SidePanelContent contents={{ inspection, isJournalOpen }} onBack={back} onClose={close} />
       </div>
     </Island>
   );

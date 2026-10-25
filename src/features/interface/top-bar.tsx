@@ -8,10 +8,10 @@ import { MenuButtons } from "./menu-buttons.tsx";
 
 const BAR_CLASS = "flex h-12 pointer-coarse:h-13 items-center";
 
-export function StatusCard({ className }: { readonly className?: string | undefined }) {
+export function StatusCard() {
   return (
-    <Island className={className}>
-      <header className="flex w-fit flex-col gap-3 p-3 pl-4">
+    <Island>
+      <header className="flex flex-col gap-3 p-3 pl-4">
         <WorldStatus />
 
         <TimeControls className="-ml-1" />
@@ -20,23 +20,21 @@ export function StatusCard({ className }: { readonly className?: string | undefi
   );
 }
 
-export function PanelBar({ className }: { readonly className?: string | undefined }) {
+export function PanelBar() {
   return (
-    <Island className={className}>
-      <div className={cn(BAR_CLASS, "px-1.5")}>
-        <MenuButtons />
-      </div>
+    <Island>
+      <MenuButtons className={cn(BAR_CLASS, "px-1.5")} />
     </Island>
   );
 }
 
-export function CompactTopBar({ className }: { readonly className?: string | undefined }) {
+export function CompactTopBar() {
   return (
-    <Island className={className}>
+    <Island>
       <header className={cn(BAR_CLASS, "gap-2 pr-1 pl-3")}>
         <CompactClock className="flex-1" />
 
-        <TimeControls className="shrink-0" />
+        <TimeControls />
 
         <Divider />
 
