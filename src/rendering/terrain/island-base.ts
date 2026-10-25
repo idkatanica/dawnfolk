@@ -63,7 +63,6 @@ function createCliffMaterial(textures: TerrainTextures, grid: WorldGrid, plinth:
 
   material.colorNode = rockColor(plinth, CLIFF_GRAIN_OCTAVES);
   material.roughnessNode = float(0.97);
-  material.metalnessNode = float(0);
 
   return material;
 }

@@ -120,7 +120,6 @@ function createCrossingMaterial(textures: TerrainTextures, mirror: WorldMirror):
 
   material.colorNode = mix(wet, SNOW, snowOnTop);
   material.roughnessNode = mix(float(0.88), float(0.55), wetness);
-  material.metalnessNode = float(0);
 
   return material;
 }

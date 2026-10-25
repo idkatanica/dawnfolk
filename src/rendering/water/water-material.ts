@@ -228,7 +228,6 @@ export function createWaterMaterial(
     float(0.35),
     ice
   );
-  material.metalnessNode = float(0);
   material.specularIntensityNode = float(1).sub(look.precipitation.mul(RAIN_SUN_DAMPING));
 
   return material;

@@ -167,7 +167,6 @@ function createCropMaterial(weather: PlantWeather): MeshStandardNodeMaterial {
 
   material.colorNode = varying(color, "cropColor");
   material.roughnessNode = float(0.9);
-  material.metalnessNode = float(0);
 
   return material;
 }
@@ -192,7 +191,6 @@ function createFenceMaterial(length: number): MeshStandardNodeMaterial {
 
   material.colorNode = varying(slotColorTable().element(slot).mul(shade), "fenceColor");
   material.roughnessNode = float(0.88);
-  material.metalnessNode = float(0);
 
   return material;
 }

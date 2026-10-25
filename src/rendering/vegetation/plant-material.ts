@@ -262,7 +262,6 @@ export function createPlantMaterial({
   material.emissiveNode = vertexColor.mul(fireLight).mul(CROWN_FIRE_LIGHT).add(smoulder);
   material.normalNode = normalize(normalView.add(leafBump));
   material.roughnessNode = float(0.88);
-  material.metalnessNode = float(0);
 
   return material;
 }

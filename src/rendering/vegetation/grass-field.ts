@@ -228,7 +228,6 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   material.colorNode = varying(mix(ground.rgb, bladeColor, growth), "grassColor");
   material.normalNode = transformNormalToView(varying(bladeNormal, "grassNormal"));
   material.roughnessNode = float(0.9);
-  material.metalnessNode = float(0);
 
   return material;
 }

@@ -258,7 +258,6 @@ function createBuildingMaterial(): MeshStandardNodeMaterial {
 
   material.emissiveNode = vec3(1, 0.42, 0.12).mul(glow);
   material.roughnessNode = float(0.86);
-  material.metalnessNode = float(0);
 
   return material;
 }
@@ -294,7 +293,6 @@ function createPlinthMaterial(): MeshStandardNodeMaterial {
 
   material.colorNode = mix(footing.mul(grain), CHARCOAL, damage.mul(0.6));
   material.roughnessNode = float(0.92);
-  material.metalnessNode = float(0);
 
   return material;
 }
