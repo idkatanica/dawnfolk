@@ -17,6 +17,7 @@ import {
 
 export const TREE_HEIGHTS = {
   [PlantSpecies.Acacia]: 9,
+  [PlantSpecies.Alder]: 14,
   [PlantSpecies.Birch]: 19,
   [PlantSpecies.Bush]: 2.2,
   [PlantSpecies.Cactus]: 4,
@@ -246,6 +247,63 @@ function willow(seed: number): TreeStructure {
   }
 
   return finish(growth, TREE_HEIGHTS[PlantSpecies.Willow]);
+}
+
+function alder(seed: number): TreeStructure {
+  const growth = createGrowth(seed);
+
+  const { random } = growth;
+
+  const stems = random.integer(1, 3);
+
+  for (let stem = 0; stem < stems; stem += 1) {
+    const trunk = addTrunk(
+      growth,
+      {
+        forks: false,
+        height: random.between(11, 13) - stem * 1.5,
+        lean: stemLean(random, stems),
+        radiusBottom: 0.32 - stem * 0.05,
+        radiusTop: 0.08,
+        segments: 5,
+        wobble: 0.14,
+      },
+      alderStemOffset(random, stem, stems)
+    );
+
+    const branchCount = random.integer(5, 7);
+
+    for (let branch = 0; branch < branchCount; branch += 1) {
+      const along = lerp(0.35, 0.9, branch / branchCount) + jitter(random, 0.03);
+
+      const offshoot = addLimb(growth, trunk, along, branch * GOLDEN_ANGLE + jitter(random, 0.3), {
+        bend: 0.04,
+        depth: 1,
+        gravity: 0.06,
+        length: random.between(2.2, 3.4) * (1.25 - along * 0.6),
+        radiusEnd: 0.03,
+        segments: 3,
+        tilt: random.between(0.7, 1.05),
+        wobble: 0.25,
+      });
+
+      addBlob(growth, toVector(tipOf(offshoot)), random.between(1.7, 2.3) * (1.2 - along * 0.4), 0.85);
+    }
+
+    addBlob(growth, toVector(tipOf(trunk)), random.between(1.4, 1.8), 1.15);
+  }
+
+  return finish(growth, TREE_HEIGHTS[PlantSpecies.Alder]);
+}
+
+function alderStemOffset(random: RandomSource, stem: number, stems: number): Vector3 {
+  if (stems === 1) {
+    return new Vector3();
+  }
+
+  const angle = (stem / stems) * FULL_TURN + jitter(random, 0.4);
+
+  return new Vector3(Math.cos(angle) * 0.45, 0, Math.sin(angle) * 0.45);
 }
 
 function spruce(seed: number): TreeStructure {
@@ -743,6 +801,7 @@ type TreeGenerator = (seed: number, variant: number) => TreeStructure;
 
 export const TREE_GENERATORS: Readonly<Partial<Record<PlantSpeciesIndex, TreeGenerator>>> = {
   [PlantSpecies.Acacia]: acacia,
+  [PlantSpecies.Alder]: alder,
   [PlantSpecies.Birch]: birch,
   [PlantSpecies.Bush]: bush,
   [PlantSpecies.DeadTree]: deadTree,

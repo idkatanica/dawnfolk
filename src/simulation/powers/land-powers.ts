@@ -33,6 +33,7 @@ type PaintMaterial = PowerParameters<"paint">["material"];
 
 const CHOSEN_SPECIES: Readonly<Record<Exclude<ForestSpecies, "climate">, PlantSpeciesIndex>> = {
   acacia: PlantSpecies.Acacia,
+  alder: PlantSpecies.Alder,
   birch: PlantSpecies.Birch,
   bush: PlantSpecies.Bush,
   maple: PlantSpecies.Maple,

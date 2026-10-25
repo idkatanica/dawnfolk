@@ -15,6 +15,7 @@ const VARIANT_COUNTS: Readonly<Record<PlantSpeciesIndex, number>> = {
   ...ROCK_VARIANT_COUNTS,
   ...ORCHARD_VARIANT_COUNTS,
   [PlantSpecies.Acacia]: 3,
+  [PlantSpecies.Alder]: 4,
   [PlantSpecies.Arch]: PIECE_FORMS[PlantSpecies.Arch].length,
   [PlantSpecies.Birch]: 4,
   [PlantSpecies.Bush]: 4,
@@ -68,6 +69,7 @@ const DEADWOOD: TreeLook = { bark: MaterialSlot.Deadwood, foliage: MaterialSlot.
 
 const TREE_LOOKS: Readonly<Partial<Record<PlantSpeciesIndex, TreeLook>>> = {
   [PlantSpecies.Acacia]: BROADLEAF,
+  [PlantSpecies.Alder]: BROADLEAF,
   [PlantSpecies.Birch]: BIRCH,
   [PlantSpecies.Bush]: BROADLEAF,
   [PlantSpecies.DeadTree]: DEADWOOD,

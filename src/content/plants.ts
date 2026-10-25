@@ -4,6 +4,7 @@ import { CULTIVATED_PLANT_SPECIES, CultivatedSpecies } from "./cultivated-plants
 
 export const PlantSpecies = {
   Acacia: 10,
+  Alder: 31,
   Arch: 24,
   Birch: 3,
   Boulder: 8,
@@ -324,6 +325,17 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     wood: 0,
   },
   ...CULTIVATED_PLANT_SPECIES,
+  {
+    canopyFuel: 1.5,
+    form: "broadleaf",
+    givesBerries: false,
+    heightRange: [9, 16],
+    index: PlantSpecies.Alder,
+    name: "Alder",
+    radiusPerMeter: 0.063,
+    steepestSlope: 0.5,
+    wood: 2,
+  },
 ];
 
 export function plantSpeciesDefinition(index: number): PlantSpeciesDefinition {
