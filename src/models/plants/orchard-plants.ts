@@ -5,6 +5,7 @@ import { clamp, FULL_TURN, lerp, smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
+import { withoutBuriedOverlaps, withoutBuriedTriangles } from "../mesh/buried-triangles.ts";
 import { MeshBuilder, type VertexStyle } from "../mesh/mesh-builder.ts";
 import { type MeshData, mergeMeshes } from "../mesh/mesh-data.ts";
 import type { Shape } from "../mesh/shape.ts";
@@ -13,14 +14,7 @@ import { outermostHit } from "../mesh/surface-probe.ts";
 import { transformOf } from "../mesh/transforms.ts";
 import { BERRY_PART } from "./berries.ts";
 import { addBlob, addLimb, addTrunk, BLOB_TINT, createGrowth, finish, type Growth } from "./tree-growth.ts";
-import {
-  FOLIAGE_FLUTTER,
-  isDistantLevel,
-  meshTree,
-  type PlantDetailLevel,
-  plantSway,
-  type TreeLook,
-} from "./tree-mesher.ts";
+import { FOLIAGE_FLUTTER, meshTree, type PlantDetailLevel, plantSway, type TreeLook } from "./tree-mesher.ts";
 import {
   type FoliageBlob,
   GOLDEN_ANGLE,
@@ -55,6 +49,11 @@ type FruitShape = "pear" | "round";
 
 type FruitDetail = Exclude<PlantDetailLevel, "far" | "low">;
 
+interface Tessellation {
+  readonly rings: number;
+  readonly segments: number;
+}
+
 interface FruitLook {
   readonly counts: Readonly<Record<FruitDetail, number>>;
   readonly hanging: number;
@@ -63,6 +62,7 @@ interface FruitLook {
   readonly radius: number;
   readonly shape: FruitShape;
   readonly slot: MaterialSlotIndex;
+  readonly tessellation: Readonly<Record<FruitDetail, Tessellation>>;
 }
 
 interface StemOptions {
@@ -76,8 +76,8 @@ interface StemOptions {
 }
 
 const TRUNK_SEGMENTS = 3;
-const FRUIT_SEGMENTS = 5;
-const FRUIT_RINGS = 3;
+const STEM_SIDES = 3;
+const STEM_WIDENING = 1.18;
 const HANGING_STEP = 1.45;
 const FRUIT_SINK = 0.4;
 const PEAR_CENTER = 0.72;
@@ -87,6 +87,14 @@ const ORCHARD_SPECIES: ReadonlySet<number> = new Set(Object.keys(ORCHARD_HEIGHTS
 const FRUIT_TREE_LOOK: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
 const LEAF_NOISE = createVolumeNoise(createRandom(7171));
 const GROUNDED_ENVELOPE = 0.8;
+const BURIED_MARGIN = 0.01;
+
+const ROUND_FRUIT: Tessellation = { rings: 3, segments: 5 };
+const POINTED_BERRY: Tessellation = { rings: 2, segments: 5 };
+const SQUARE_BERRY: Tessellation = { rings: 3, segments: 4 };
+const DISTANT_BERRY: Tessellation = { rings: 2, segments: 4 };
+const TREE_FRUIT: Readonly<Record<FruitDetail, Tessellation>> = { high: ROUND_FRUIT, medium: ROUND_FRUIT };
+const ROUND_BERRY: Readonly<Record<FruitDetail, Tessellation>> = { high: ROUND_FRUIT, medium: DISTANT_BERRY };
 
 const FRUIT_LOOKS: Readonly<Record<OrchardSpecies, FruitLook>> = {
   [CultivatedSpecies.AppleTree]: {
@@ -97,6 +105,7 @@ const FRUIT_LOOKS: Readonly<Record<OrchardSpecies, FruitLook>> = {
     radius: 0.1,
     shape: "round",
     slot: MaterialSlot.Apple,
+    tessellation: TREE_FRUIT,
   },
   [CultivatedSpecies.Blueberry]: {
     counts: { high: 30, medium: 12 },
@@ -106,6 +115,7 @@ const FRUIT_LOOKS: Readonly<Record<OrchardSpecies, FruitLook>> = {
     radius: 0.04,
     shape: "round",
     slot: MaterialSlot.Blueberry,
+    tessellation: { high: POINTED_BERRY, medium: DISTANT_BERRY },
   },
   [CultivatedSpecies.Currant]: {
     counts: { high: 16, medium: 8 },
@@ -115,6 +125,7 @@ const FRUIT_LOOKS: Readonly<Record<OrchardSpecies, FruitLook>> = {
     radius: 0.045,
     shape: "round",
     slot: MaterialSlot.Currant,
+    tessellation: { high: SQUARE_BERRY, medium: DISTANT_BERRY },
   },
   [CultivatedSpecies.PearTree]: {
     counts: { high: 26, medium: 12 },
@@ -124,6 +135,7 @@ const FRUIT_LOOKS: Readonly<Record<OrchardSpecies, FruitLook>> = {
     radius: 0.085,
     shape: "pear",
     slot: MaterialSlot.Pear,
+    tessellation: TREE_FRUIT,
   },
   [CultivatedSpecies.PlumTree]: {
     counts: { high: 40, medium: 16 },
@@ -133,6 +145,7 @@ const FRUIT_LOOKS: Readonly<Record<OrchardSpecies, FruitLook>> = {
     radius: 0.065,
     shape: "round",
     slot: MaterialSlot.Plum,
+    tessellation: TREE_FRUIT,
   },
   [CultivatedSpecies.Raspberry]: {
     counts: { high: 22, medium: 10 },
@@ -142,6 +155,7 @@ const FRUIT_LOOKS: Readonly<Record<OrchardSpecies, FruitLook>> = {
     radius: 0.05,
     shape: "round",
     slot: MaterialSlot.Raspberry,
+    tessellation: ROUND_BERRY,
   },
 };
 
@@ -447,9 +461,11 @@ export function isOrchardModel(species: number): species is OrchardSpecies {
   return ORCHARD_SPECIES.has(species);
 }
 
-function fruitShape(look: FruitLook): Shape {
+function fruitShape(look: FruitLook, detail: FruitDetail): Shape {
+  const { rings, segments } = look.tessellation[detail];
+
   if (look.shape === "round") {
-    return sphere(look.radius, FRUIT_SEGMENTS, FRUIT_RINGS);
+    return sphere(look.radius, segments, rings);
   }
 
   const { radius } = look;
@@ -463,7 +479,7 @@ function fruitShape(look: FruitLook): Shape {
       { radius: radius * 0.42, y: radius * 1.85 },
       { radius: 0, y: radius * 2.2 },
     ],
-    FRUIT_SEGMENTS
+    segments
   );
 }
 
@@ -488,14 +504,14 @@ interface FruitPlacement {
   readonly seed: number;
 }
 
-function fruitMesh(plant: MeshData, placement: FruitPlacement): MeshData {
+function fruitMeshes(plant: MeshData, placement: FruitPlacement): MeshData[] {
   const { hosts, look } = placement;
 
   const random = createRandom(placement.seed);
-  const builder = new MeshBuilder({ flutter: FOLIAGE_FLUTTER, part: BERRY_PART, slot: look.slot });
-  const shape = fruitShape(look);
+  const shape = fruitShape(look, placement.detail);
   const lift = fruitLift(look);
   const style: VertexStyle = { sway: (point) => plantSway(point.position.y, placement.height) };
+  const fruits: MeshData[] = [];
 
   function isFoliage(triangle: number): boolean {
     return plant.channels.slot[plant.indices[triangle * 3]] === MaterialSlot.Leaf;
@@ -518,15 +534,18 @@ function fruitMesh(plant: MeshData, placement: FruitPlacement): MeshData {
 
     for (let link = 0; link <= look.hanging; link += 1) {
       const drop = link * look.radius * HANGING_STEP;
+      const builder = new MeshBuilder({ flutter: FOLIAGE_FLUTTER, part: BERRY_PART, slot: look.slot });
 
       builder.add(shape, {
         style,
         transform: transformOf({ position: [center.x, center.y + lift - drop, center.z] }),
       });
+
+      fruits.push(builder.build());
     }
   }
 
-  return builder.build();
+  return fruits;
 }
 
 function leafStyle(structure: BushStructure, leaf: BushLeaf): VertexStyle {
@@ -593,34 +612,51 @@ function envelopeLeaf(structure: BushStructure): BushLeaf {
   };
 }
 
-function meshBush(structure: BushStructure, level: PlantDetailLevel): MeshData {
+function distantBush(structure: BushStructure): MeshData {
+  const builder = new MeshBuilder();
+  const envelope = envelopeLeaf(structure);
+
+  builder.add(icosphere(envelope.radius, 0), {
+    style: leafStyle(structure, envelope),
+    transform: transformOf({ position: envelope.center.toArray(), scale: [1, envelope.squash, 1] }),
+  });
+
+  return builder.build();
+}
+
+function stemPoints(stem: readonly TubePoint[], level: PlantDetailLevel): TubePoint[] {
+  if (level === "high") {
+    return stem.map((point) => ({ ...point, radius: point.radius * STEM_WIDENING }));
+  }
+
+  return stem.filter((_point, index) => index % 2 === 0 || index === stem.length - 1);
+}
+
+function bushStems(structure: BushStructure, level: PlantDetailLevel): MeshData {
   const builder = new MeshBuilder();
 
-  if (isDistantLevel(level)) {
-    const envelope = envelopeLeaf(structure);
-
-    builder.add(icosphere(envelope.radius, 0), {
-      style: leafStyle(structure, envelope),
-      transform: transformOf({ position: envelope.center.toArray(), scale: [1, envelope.squash, 1] }),
-    });
-
-    return builder.build();
-  }
-
-  const sides = level === "high" ? 5 : 3;
-
   for (const stem of structure.stems) {
-    builder.add(tube(stem, { radialSegments: sides }), { style: stemStyle(structure) });
-  }
-
-  for (const leaf of structure.leaves) {
-    builder.add(leafShape(leaf, level), {
-      style: leafStyle(structure, leaf),
-      transform: transformOf({ position: leaf.center.toArray(), scale: [1, leaf.squash, 1] }),
+    builder.add(tube(stemPoints(stem, level), { radialSegments: STEM_SIDES }), {
+      style: stemStyle(structure),
     });
   }
 
   return builder.build();
+}
+
+function bushLeaf(structure: BushStructure, leaf: BushLeaf, level: PlantDetailLevel): MeshData {
+  const builder = new MeshBuilder();
+
+  builder.add(leafShape(leaf, level), {
+    style: leafStyle(structure, leaf),
+    transform: transformOf({ position: leaf.center.toArray(), scale: [1, leaf.squash, 1] }),
+  });
+
+  return builder.build();
+}
+
+function othersThan<Item>(items: readonly Item[], skipped: number): Item[] {
+  return items.filter((_, index) => index !== skipped);
 }
 
 function fruitDetail(level: PlantDetailLevel): FruitDetail | null {
@@ -653,7 +689,7 @@ function meshFruitTree(species: FruitTreeSpecies, seed: number, level: PlantDeta
     .filter((foliage): foliage is FoliageBlob => foliage.kind === "blob")
     .map((foliage) => ({ center: new Vector3(...foliage.center), squash: foliage.squash }));
 
-  const fruit = fruitMesh(tree, {
+  const fruit = fruitMeshes(tree, {
     detail,
     height: structure.height,
     hosts,
@@ -661,20 +697,22 @@ function meshFruitTree(species: FruitTreeSpecies, seed: number, level: PlantDeta
     seed: seed + 1,
   });
 
-  return mergeMeshes([tree, fruit]);
+  return mergeMeshes([tree, ...fruit]);
 }
 
 function meshBerryBush(species: BushSpecies, seed: number, level: PlantDetailLevel): MeshData {
   const structure = BUSH_GENERATORS[species](seed);
-  const bush = meshBush(structure, level);
 
   const detail = fruitDetail(level);
 
   if (detail === null) {
-    return bush;
+    return distantBush(structure);
   }
 
-  const berries = fruitMesh(bush, {
+  const stems = bushStems(structure, level);
+  const leaves = structure.leaves.map((leaf) => bushLeaf(structure, leaf, level));
+
+  const berries = fruitMeshes(mergeMeshes([stems, ...leaves]), {
     detail,
     height: structure.height,
     hosts: structure.leaves,
@@ -682,7 +720,11 @@ function meshBerryBush(species: BushSpecies, seed: number, level: PlantDetailLev
     seed: seed + 1,
   });
 
-  return mergeMeshes([bush, berries]);
+  const shownBerries = berries.map((berry, index) =>
+    withoutBuriedTriangles(berry, [...leaves, ...othersThan(berries, index)], BURIED_MARGIN)
+  );
+
+  return mergeMeshes([stems, ...withoutBuriedOverlaps(leaves, BURIED_MARGIN), ...shownBerries]);
 }
 
 export function meshOrchardPlant(species: OrchardSpecies, seed: number, level: PlantDetailLevel): MeshData {

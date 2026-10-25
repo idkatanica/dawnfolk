@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
-import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
+import { highestExposedOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { isInsidePiece, loosePieces, type MeshPiece, meshPieces } from "../testing/mesh-connectivity.ts";
 import { windBentMesh } from "../testing/moved-mesh.ts";
 import { BERRY_RADIUS, isBerryPart } from "./berries.ts";
@@ -126,7 +126,7 @@ describe.each(SPECIES)("plant species %i", (species) => {
   it("closes every variant everywhere above the ground", () => {
     for (const level of PLANT_DETAIL_LEVELS) {
       for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
-        expect(highestOpenEdge(mesh), `${level} variant ${variant}`).toBeLessThan(GROUND_LEVEL);
+        expect(highestExposedOpenEdge(mesh), `${level} variant ${variant}`).toBeLessThan(GROUND_LEVEL);
       }
     }
   });
