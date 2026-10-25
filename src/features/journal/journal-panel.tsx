@@ -31,7 +31,7 @@ function ScrollingPanel({ children, value }: { readonly children: ReactNode; rea
   return (
     <Tabs.Panel className="flex min-h-0 flex-1 flex-col outline-none" value={value}>
       <ScrollArea.Root className="flex min-h-0 flex-1 flex-col">
-        <ScrollArea.Viewport className="scroll-fade min-h-0 flex-1 overscroll-contain outline-none">
+        <ScrollArea.Viewport className="scroll-fade relative min-h-0 flex-1 overscroll-contain outline-none">
           {children}
         </ScrollArea.Viewport>
 

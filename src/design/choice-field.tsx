@@ -94,9 +94,9 @@ function ListChoice({ label, onChange, options, value }: ChoiceFieldProps) {
       </Select.Trigger>
 
       <Select.Portal>
-        <Select.Positioner className="z-50 select-none outline-none" sideOffset={6}>
-          <Select.Popup className="min-w-(--anchor-width) origin-(--transform-origin) rounded-2xl border border-paper-edge bg-paper p-1 shadow-panel outline-none transition-[scale,opacity] duration-100 data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
-            <Select.List className="max-h-(--available-height) overflow-y-auto">
+        <Select.Positioner alignItemWithTrigger={false} className="z-50 select-none outline-none" sideOffset={6}>
+          <Select.Popup className="w-(--anchor-width) origin-(--transform-origin) rounded-2xl border border-paper-edge bg-paper p-1 shadow-panel outline-none transition-[scale,opacity] duration-100 data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
+            <Select.List className="max-h-[min(var(--available-height),24rem)] overflow-y-auto">
               {options.map((option) => (
                 <ListOption key={option.value} option={option} />
               ))}
