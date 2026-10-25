@@ -1,24 +1,11 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { TooltipProvider } from "../design/tooltip.tsx";
-import { useEngineStore } from "./engine-store.ts";
 import { GameView } from "./game-view.tsx";
-import { Hud } from "./hud.tsx";
 import { useLaunchStore } from "./launch-store.ts";
 import { LoadingScreen } from "./loading-screen.tsx";
 import { StartScreen } from "./start-screen.tsx";
-import { useEngineBridges } from "./use-engine-bridges.ts";
 
-function ReadyHud() {
-  const isReady = useEngineStore((state) => state.status.kind === "ready");
-
-  useEngineBridges();
-
-  if (!isReady) {
-    return null;
-  }
-
-  return <Hud />;
-}
+const ReadyHud = lazy(() => import("./hud.tsx").then((module) => ({ default: module.ReadyHud })));
 
 function GameScreen() {
   const launch = useLaunchStore((state) => state.launch);
@@ -31,7 +18,9 @@ function GameScreen() {
     <>
       <GameView launch={launch} />
 
-      <ReadyHud />
+      <Suspense fallback={null}>
+        <ReadyHud />
+      </Suspense>
 
       <LoadingScreen />
     </>
