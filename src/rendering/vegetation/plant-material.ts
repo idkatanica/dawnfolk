@@ -37,6 +37,7 @@ import { PlantState } from "../../world/vegetation-store.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 
 const CALM_GUST = 0.12;
@@ -195,10 +196,12 @@ export function createPlantMaterial({
     .add(vec3(shiver, shiver.mul(0.5), shiver.negate()))
     .mul(select(isFallen, float(0), float(1)));
 
+  const ground = vec3(0, coarseGroundOffsetNode(textures, grid, placement.xz), 0);
+
   material.positionNode = Fn(() => {
     normalLocal.assign(rotateAroundUp(select(isFallen, tiltOver(normalLocal), normalLocal), placement.w));
 
-    return rotateAroundUp(local, placement.w).add(windOffset).add(placement.xyz);
+    return rotateAroundUp(local, placement.w).add(windOffset).add(placement.xyz).add(ground);
   })();
 
   const last = grid.cellsPerSide - 1;

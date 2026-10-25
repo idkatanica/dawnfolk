@@ -254,7 +254,7 @@ export class WorldRenderer {
       this.#matrix.multiplyMatrices(view.camera.projectionMatrix, view.camera.matrixWorldInverse)
     );
     this.#terrain.update(view.camera, this.#frustum, this.#quality.terrainDetail);
-    this.#islandBase.followPatchLevels(this.#terrain.patchLevels);
+    this.#textures.followPatchLevels(this.#terrain.patchLevels);
     this.#water.update(view.camera, this.#frustum, this.#quality.terrainDetail, this.#terrain.patchLevels);
     this.#vegetation.update(
       view.camera,

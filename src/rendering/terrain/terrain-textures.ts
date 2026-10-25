@@ -28,6 +28,7 @@ import type { WorldChanges } from "../world-changes.ts";
 import { bloomFor } from "./fireweed.ts";
 import { GroundAlbedo } from "./ground-albedo.ts";
 import { IslandOutline } from "./island-outline.ts";
+import { PATCH_CELLS, PATCH_STEPS } from "./terrain-patches.ts";
 
 const SEASON_STEP = 0.01;
 const POND_SHORE_CELLS = 2;
@@ -60,12 +61,15 @@ export class TerrainTextures {
   readonly bloom = uniform(0);
   readonly height: DataTexture;
   readonly outline: IslandOutline;
+  readonly patchSteps: DataTexture;
+  readonly patchesPerSide: number;
   readonly shore: DataTexture;
   readonly size: number;
   readonly surface: DataTexture;
   readonly water: DataTexture;
   readonly #albedo: GroundAlbedo;
   readonly #mirror: WorldMirror;
+  readonly #patchStepData: Float32Array;
   readonly #shoreData: Float32Array;
   readonly #pondDepths: Float32Array;
   #albedoSeason = Number.NaN;
@@ -77,6 +81,9 @@ export class TerrainTextures {
     this.size = size;
     this.height = floatTexture(mirror.terrain.height, size);
     this.outline = new IslandOutline(mirror);
+    this.patchesPerSide = Math.ceil(size / PATCH_CELLS);
+    this.#patchStepData = new Float32Array(this.patchesPerSide * this.patchesPerSide).fill(1);
+    this.patchSteps = floatTexture(this.#patchStepData, this.patchesPerSide);
     this.water = floatTexture(mirror.terrain.waterSurface, size);
     this.#shoreData = new Float32Array(size * size * SHORE_CHANNELS);
     this.#pondDepths = new Float32Array(size * size);
@@ -92,6 +99,23 @@ export class TerrainTextures {
 
   shoreDepthAt(x: number, z: number): number {
     return sampleCells(this.#shoreData, this.#mirror.grid, x, z, SHORE_CHANNELS, ShoreChannel.Depth);
+  }
+
+  followPatchLevels(levels: Readonly<Int8Array>): void {
+    let hasChanged = false;
+
+    for (const [patch, level] of levels.entries()) {
+      const step = level < 0 ? 1 : PATCH_STEPS[level];
+
+      if (this.#patchStepData[patch] !== step) {
+        this.#patchStepData[patch] = step;
+        hasChanged = true;
+      }
+    }
+
+    if (hasChanged) {
+      this.patchSteps.needsUpdate = true;
+    }
   }
 
   update(renderer: WebGPURenderer, season: number, changes: WorldChanges): void {
@@ -133,6 +157,7 @@ export class TerrainTextures {
     this.#albedo.dispose();
     this.outline.dispose();
     this.height.dispose();
+    this.patchSteps.dispose();
     this.surface.dispose();
     this.water.dispose();
     this.shore.dispose();
