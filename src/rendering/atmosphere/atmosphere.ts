@@ -139,7 +139,8 @@ export class Atmosphere {
 
     if (isMoonlit) {
       this.#lightDirection.set(moon.x, Math.max(moon.y, 0.2), moon.z).normalize();
-      this.sun.intensity = 0.7 * smoothstep(-0.05, 0.3, moon.y) * (1 - overcast * 0.6);
+      this.sun.intensity =
+        0.7 * smoothstep(-0.05, 0.3, moon.y) * smoothstep(-0.04, -0.14, sun.y) * (1 - overcast * 0.6);
     } else {
       this.#lightDirection.set(sun.x, Math.max(sun.y, 0.04), sun.z).normalize();
       this.sun.intensity = strength * smoothstep(-0.04, 0.12, sun.y);
