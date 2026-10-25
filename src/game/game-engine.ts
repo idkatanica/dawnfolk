@@ -13,7 +13,7 @@ import { GroundPicker, type ScreenPoint, type ViewportSize } from "./input/groun
 import { KeyboardControls } from "./input/keyboard-controls.ts";
 import { PointerControls } from "./input/pointer-controls.ts";
 import { type LabelPlacement, LabelProjector } from "./label-projector.ts";
-import { findLandmarks, type Landmark } from "./landmarks.ts";
+import type { Landmark } from "./landmarks.ts";
 import { type SimulationConnection, WorkerSimulationConnection } from "./simulation-connection.ts";
 import { type PowerSelection, PowerTool } from "./tools/power-tool.ts";
 
@@ -61,7 +61,6 @@ async function createSessionOrRelease(
 
 export class GameEngine implements EngineHandle {
   readonly camera: GodCamera;
-  readonly landmarks: readonly Landmark[];
   readonly powers: PowerTool;
   readonly session: GameSession;
   readonly #canvas: HTMLCanvasElement;
@@ -107,13 +106,6 @@ export class GameEngine implements EngineHandle {
       { heightAt, surfaceAt: (x, z) => mirror.surfaceAt(x, z) },
       mirror.grid.halfSize
     );
-    this.landmarks = findLandmarks({
-      grid: mirror.grid,
-      heights: mirror.terrain.height,
-      lakes: mirror.water.lakes,
-      monuments: mirror.monuments,
-      seed: mirror.seed,
-    });
 
     const groundPicker = new GroundPicker(perspective, heightAt, mirror.grid.halfSize);
 
@@ -154,6 +146,10 @@ export class GameEngine implements EngineHandle {
     engine.run();
 
     return engine;
+  }
+
+  get landmarks(): readonly Landmark[] {
+    return this.session.mirror.landmarks;
   }
 
   selectPower(selection: PowerSelection | null): void {

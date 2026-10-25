@@ -35,8 +35,8 @@ const MONUMENT_LIFT = 9;
 function highestCell(heights: Float32Array): number {
   let highest = 0;
 
-  for (const [cell, height] of heights.entries()) {
-    if (height > heights[highest]) {
+  for (let cell = 1; cell < heights.length; cell += 1) {
+    if (heights[cell] > heights[highest]) {
       highest = cell;
     }
   }

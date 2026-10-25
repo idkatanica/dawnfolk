@@ -246,6 +246,25 @@ describe("world labels", () => {
     expect(placeLabel).toHaveBeenCalledExactlyOnceWith(40, -20, 30);
   });
 
+  it("renames the places when a frame brings new landmarks", async () => {
+    const { engine, placeLabel, setLandmarks } = await startTestEngine({ landmarks: [PEAK, LAKE] });
+
+    placeLabel.mockReturnValue(ON_SCREEN);
+    showWorld({ tribes: [] });
+
+    const screen = await render(<WorldLabels />);
+
+    const places = screen.getByRole("list", { name: "Places" });
+
+    await expect.element(places.getByText("Mirror Lake", { exact: true })).toBeInTheDocument();
+    setLandmarks([{ ...PEAK, detail: "2110 m", x: -80, z: 300 }]);
+    engine.session.update(1);
+    await engine.session.whenIdle();
+
+    await expect.element(places.getByText("2110 m", { exact: true })).toBeInTheDocument();
+    await expect.element(places.getByText("Mirror Lake", { exact: true })).not.toBeInTheDocument();
+  });
+
   it("stays away while the labels are turned off", async () => {
     await startTestEngine({ landmarks: [PEAK] });
 

@@ -23,6 +23,7 @@ interface TestEngine {
   readonly renderFrame: () => void;
   readonly send: MockInstance<(command: SimulationCommand) => void>;
   readonly setFollowing: (isFollowing: boolean) => void;
+  readonly setLandmarks: (landmarks: readonly Landmark[]) => void;
   readonly stopFollowing: Mock<() => void>;
 }
 
@@ -42,7 +43,8 @@ function createTestSession(): Promise<GameSession> {
 }
 
 export async function startTestEngine(options: TestEngineOptions = {}): Promise<TestEngine> {
-  const { cameraDistance = TEST_CAMERA.distance, landmarks = [] } = options;
+  const { cameraDistance = TEST_CAMERA.distance } = options;
+  let { landmarks = [] } = options;
 
   const session = await createTestSession();
   const renderListeners = new Set<() => void>();
@@ -55,6 +57,10 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
 
   function setFollowing(isFollowing: boolean): void {
     camera.isFollowing = isFollowing;
+  }
+
+  function setLandmarks(changedLandmarks: readonly Landmark[]): void {
+    landmarks = changedLandmarks;
   }
 
   const send = vi.spyOn(session, "send");
@@ -83,7 +89,9 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
     clearSelection,
     focusOn,
     followSelection,
-    landmarks,
+    get landmarks() {
+      return landmarks;
+    },
     placeLabel,
     selectPower: vi.fn<(selection: PowerSelection | null) => void>(),
     session,
@@ -102,6 +110,7 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
     renderFrame,
     send,
     setFollowing,
+    setLandmarks,
     stopFollowing,
   };
 }
