@@ -18,7 +18,11 @@ describe("power dock", () => {
     const names = row
       .getByRole("button")
       .elements()
-      .map((button) => button.getAttribute("aria-label") ?? button.textContent);
+      .map((button) => {
+        const label = button.getAttribute("aria-label");
+
+        return label === null ? button.textContent : label;
+      });
 
     expect(names).toEqual(["Select", "Elements", "Land", "Life", ...ELEMENT_POWERS]);
     await expect.element(kinds.getByRole("button", { name: "Elements" })).toHaveAttribute("aria-pressed", "true");

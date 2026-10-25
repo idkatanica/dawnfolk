@@ -285,6 +285,7 @@ describe("hares", () => {
 
   it("draw their chances from a stream of their own", () => {
     const { fauna } = createFauna();
+
     const shared = createRandom(4);
 
     fauna.populateSmallGame(4);

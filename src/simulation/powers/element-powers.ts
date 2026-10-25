@@ -1,9 +1,10 @@
+import type { PowerParameters } from "../../content/powers.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { cellsInArea } from "../world/terrain-editing.ts";
 import { SNOW_CAPACITY } from "../world/world-state.ts";
 import { explode, shakeLand, strikeLightning } from "./catastrophes.ts";
-import { APPLIED, type PowerHandler, percent } from "./power-handler.ts";
+import { APPLIED, type PowerOutcome, type PowerServices, type PowerTarget, percent } from "./power-handler.ts";
 
 const FIRE_BRUSH_STRENGTH = 0.75;
 const FIRE_EDGE_FADE = 0.6;
@@ -26,7 +27,11 @@ function strikeDistance(strike: number, scatter: number, random: RandomSource): 
   return random.next() * scatter;
 }
 
-export const firePower: PowerHandler<"fire"> = (target, parameters, services) => {
+export function firePower(
+  target: PowerTarget,
+  parameters: PowerParameters<"fire">,
+  services: PowerServices
+): PowerOutcome {
   const strength = percent(parameters.intensity) * FIRE_BRUSH_STRENGTH;
 
   for (const { cell, distance } of cellsInArea(services.world, { ...target, radius: parameters.radius })) {
@@ -34,9 +39,13 @@ export const firePower: PowerHandler<"fire"> = (target, parameters, services) =>
   }
 
   return APPLIED;
-};
+}
 
-export const lightningPower: PowerHandler<"lightning"> = (target, parameters, services) => {
+export function lightningPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"lightning">,
+  services: PowerServices
+): PowerOutcome {
   const { random } = services;
 
   for (let strike = 0; strike < parameters.strikes; strike += 1) {
@@ -55,9 +64,13 @@ export const lightningPower: PowerHandler<"lightning"> = (target, parameters, se
   }
 
   return APPLIED;
-};
+}
 
-export const rainPower: PowerHandler<"rain"> = (target, parameters, services) => {
+export function rainPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"rain">,
+  services: PowerServices
+): PowerOutcome {
   const { fire, rules, world } = services;
 
   const intensity = percent(parameters.intensity) / RAIN_DEFAULT_INTENSITY;
@@ -75,9 +88,13 @@ export const rainPower: PowerHandler<"rain"> = (target, parameters, services) =>
   }
 
   return APPLIED;
-};
+}
 
-export const snowPower: PowerHandler<"snow"> = (target, parameters, services) => {
+export function snowPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"snow">,
+  services: PowerServices
+): PowerOutcome {
   const { fire, rules, world } = services;
 
   const intensity = percent(parameters.intensity) / SNOW_DEFAULT_INTENSITY;
@@ -99,9 +116,13 @@ export const snowPower: PowerHandler<"snow"> = (target, parameters, services) =>
   }
 
   return APPLIED;
-};
+}
 
-export const explosionPower: PowerHandler<"explosion"> = (target, parameters, services) => {
+export function explosionPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"explosion">,
+  services: PowerServices
+): PowerOutcome {
   explode(
     {
       burnsDebris: parameters.burningDebris,
@@ -115,9 +136,13 @@ export const explosionPower: PowerHandler<"explosion"> = (target, parameters, se
   );
 
   return APPLIED;
-};
+}
 
-export const meteorPower: PowerHandler<"meteor"> = (target, parameters, services) => {
+export function meteorPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"meteor">,
+  services: PowerServices
+): PowerOutcome {
   const { environment, random, world } = services;
 
   const fromWindward = Math.atan2(environment.windZ, environment.windX) + Math.PI + random.signed() * 0.45;
@@ -148,9 +173,13 @@ export const meteorPower: PowerHandler<"meteor"> = (target, parameters, services
   });
 
   return APPLIED;
-};
+}
 
-export const earthquakePower: PowerHandler<"earthquake"> = (target, parameters, services) => {
+export function earthquakePower(
+  target: PowerTarget,
+  parameters: PowerParameters<"earthquake">,
+  services: PowerServices
+): PowerOutcome {
   shakeLand(
     {
       magnitude: percent(parameters.magnitude) / DEFAULT_MAGNITUDE,
@@ -162,4 +191,4 @@ export const earthquakePower: PowerHandler<"earthquake"> = (target, parameters, 
   );
 
   return APPLIED;
-};
+}

@@ -194,9 +194,11 @@ export class VegetationView {
   }
 
   #markDirty(level: number): void {
-    if (level !== HIDDEN_LEVEL) {
-      this.#dirtyLevels.add(level);
+    if (level === HIDDEN_LEVEL) {
+      return;
     }
+
+    this.#dirtyLevels.add(level);
   }
 
   #levelOf(chunk: VegetationChunk, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {

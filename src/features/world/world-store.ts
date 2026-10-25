@@ -123,6 +123,6 @@ export function connectWorldStore(feed: WorldFeed): () => void {
   });
 }
 
-export function dismissNotice(id: number): void {
-  useWorldStore.setState((state) => ({ notices: state.notices.filter((notice) => notice.id !== id) }));
+export function dismissNotice(noticeId: number): void {
+  useWorldStore.setState((state) => ({ notices: state.notices.filter((notice) => notice.id !== noticeId) }));
 }

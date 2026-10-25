@@ -7,7 +7,14 @@ import { FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { brushFalloff, cellsInArea, flattenTerrain, raiseTerrain, smoothTerrain } from "../world/terrain-editing.ts";
 import { NO_BUILDING, type WorldState } from "../world/world-state.ts";
-import { APPLIED, type PowerHandler, type PowerServices, percent } from "./power-handler.ts";
+import {
+  APPLIED,
+  type PowerHandler,
+  type PowerOutcome,
+  type PowerServices,
+  type PowerTarget,
+  percent,
+} from "./power-handler.ts";
 
 const DEFAULT_STRENGTH = 0.6;
 const BASE_LIFT_PER_SECOND = 14;
@@ -66,21 +73,29 @@ export const raisePower = liftPower<"raise">(1);
 
 export const lowerPower = liftPower<"lower">(-1);
 
-export const flattenPower: PowerHandler<"flatten"> = (target, parameters, services) => {
+export function flattenPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"flatten">,
+  services: PowerServices
+): PowerOutcome {
   const strength = target.seconds * FLATTEN_PER_SECOND * (percent(parameters.strength) / DEFAULT_STRENGTH);
 
   flattenTerrain(services.world, { ...target, radius: parameters.radius }, target.strokeStartHeight, strength);
 
   return APPLIED;
-};
+}
 
-export const smoothPower: PowerHandler<"smooth"> = (target, parameters, services) => {
+export function smoothPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"smooth">,
+  services: PowerServices
+): PowerOutcome {
   const strength = target.seconds * SMOOTH_PER_SECOND * (percent(parameters.strength) / DEFAULT_STRENGTH);
 
   smoothTerrain(services.world, { ...target, radius: parameters.radius }, strength);
 
   return APPLIED;
-};
+}
 
 function climateSpecies(temperature: number, random: RandomSource): PlantSpeciesIndex {
   if (temperature < 4) {
@@ -142,7 +157,11 @@ function plantTree(cell: number, species: PlantSpeciesIndex, services: PowerServ
   world.markSurfaceCell(cell);
 }
 
-export const forestPower: PowerHandler<"forest"> = (target, parameters, services) => {
+export function forestPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"forest">,
+  services: PowerServices
+): PowerOutcome {
   const { random, world } = services;
 
   const density = percent(parameters.density) / DEFAULT_DENSITY;
@@ -166,7 +185,7 @@ export const forestPower: PowerHandler<"forest"> = (target, parameters, services
   }
 
   return APPLIED;
-};
+}
 
 function paintCell(world: WorldState, cell: number, ground: GroundIndex): void {
   if (world.isWater(cell) || world.terrain.ground[cell] === ground) {
@@ -187,7 +206,11 @@ function paintCell(world: WorldState, cell: number, ground: GroundIndex): void {
   world.markSurfaceCell(cell);
 }
 
-export const paintPower: PowerHandler<"paint"> = (target, parameters, services) => {
+export function paintPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"paint">,
+  services: PowerServices
+): PowerOutcome {
   const ground = PAINT_GROUNDS[parameters.material];
 
   for (const { cell } of cellsInArea(services.world, { ...target, radius: parameters.radius })) {
@@ -195,4 +218,4 @@ export const paintPower: PowerHandler<"paint"> = (target, parameters, services) 
   }
 
   return APPLIED;
-};
+}

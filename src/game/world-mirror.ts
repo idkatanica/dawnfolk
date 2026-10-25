@@ -227,6 +227,7 @@ export class WorldMirror {
     }
 
     const { region, values } = patch;
+
     const width = region.lastColumn - region.firstColumn + 1;
 
     for (let row = region.firstRow; row <= region.lastRow; row += 1) {

@@ -25,12 +25,14 @@ export function plunderSurplus(stock: Stock, share: number, foodReserve: number)
   const loot = packFood(stock, Math.max(0, totalFood(stock) - foodReserve) * share);
 
   for (const kind of RESOURCE_KINDS) {
-    if (RESOURCES[kind].group !== "food") {
-      const taken = Math.min(stock[kind], Math.round(stock[kind] * share));
-
-      loot[kind] = taken;
-      stock[kind] -= taken;
+    if (RESOURCES[kind].group === "food") {
+      continue;
     }
+
+    const taken = Math.min(stock[kind], Math.round(stock[kind] * share));
+
+    loot[kind] = taken;
+    stock[kind] -= taken;
   }
 
   return loot;

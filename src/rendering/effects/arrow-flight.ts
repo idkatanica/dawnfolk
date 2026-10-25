@@ -68,6 +68,7 @@ export class ArrowFlight implements ActiveEffect {
 
   #fly(progress: number): void {
     const [shaft] = this.meshes;
+
     const arc = this.#from.distanceTo(this.#to) * ARC_PER_METER;
 
     this.#pointAt(progress, this.#position);

@@ -378,8 +378,9 @@ function closestDistinctRivers(generated: GeneratedWorld): number {
     for (const second of rivers.slice(index + 1)) {
       const confluences = confluencesOf(rivers, first, second, cellSize * JUNCTION_CELLS);
 
-      const isApart = (point: RiverPoint) =>
-        confluences.every((confluence) => !isNear(point, confluence, CONFLUENCE_REACH));
+      function isApart(point: RiverPoint): boolean {
+        return confluences.every((confluence) => !isNear(point, confluence, CONFLUENCE_REACH));
+      }
 
       for (const point of first.points.filter(isApart)) {
         for (const other of second.points.filter(isApart)) {

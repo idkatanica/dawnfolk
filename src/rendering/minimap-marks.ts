@@ -31,6 +31,7 @@ function cssColor(color: number): string {
 
 function sumHerds(frame: AnimalBuffer): Map<number, HerdSum> {
   const { animals } = frame;
+
   const herds = new Map<number, HerdSum>();
 
   for (let animal = 0; animal < frame.animalCount; animal += 1) {
@@ -69,6 +70,7 @@ export function herdMarks(frame: AnimalBuffer): MinimapMark[] {
 
 export function personMarks(frame: PersonBuffer): MinimapMark[] {
   const { people } = frame;
+
   const tribeColors = new Map(frame.tribes.map((tribe) => [tribe.id, tribe.color]));
   const marks: MinimapMark[] = [];
 

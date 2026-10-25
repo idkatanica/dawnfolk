@@ -108,8 +108,8 @@ function spotSpecies(kind: PlotKind, row: number, column: number, timber: readon
 
 function layOutSpots(world: WorldState, kind: PlotKind, cells: readonly number[], layout: PlotLayout): PlotSpot[] {
   const { grid } = world;
-
   const [first] = cells;
+
   const timber = timberSpecies(world, first);
   const originX = grid.cellCenterX(first) - grid.cellSize / 2;
   const originZ = grid.cellCenterZ(first) - grid.cellSize / 2;
@@ -141,6 +141,7 @@ export function addPlotIfNeeded(tribe: Tribe, context: SocietyContext): void {
   }
 
   const { random, world } = context;
+
   const layout = LAYOUTS[kind];
 
   for (let attempt = 0; attempt < PLOT_ATTEMPTS; attempt += 1) {

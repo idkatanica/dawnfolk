@@ -36,7 +36,9 @@ interface AnimalSpecies {
   readonly skeleton: Skeleton;
 }
 
-const always = () => true;
+function always(): boolean {
+  return true;
+}
 
 export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
   deer: {

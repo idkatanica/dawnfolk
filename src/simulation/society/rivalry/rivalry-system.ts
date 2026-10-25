@@ -222,11 +222,13 @@ export class RivalrySystem implements Battleground {
 
     const relation = this.relations.find(victimTribe.id, slayerTribe.id);
 
-    if (relation !== null) {
-      aggrieve(relation, victimTribe.id, BLOOD_GRIEVANCE, "blood");
-      sideOf(relation, victimTribe.id).deaths += 1;
-      sideOf(relation, victimTribe.id).weariness += DEATH_WEARINESS;
+    if (relation === null) {
+      return;
     }
+
+    aggrieve(relation, victimTribe.id, BLOOD_GRIEVANCE, "blood");
+    sideOf(relation, victimTribe.id).deaths += 1;
+    sideOf(relation, victimTribe.id).weariness += DEATH_WEARINESS;
   }
 
   receiveEnvoy(guest: Tribe, host: Tribe, gifts: Stock, context: SocietyContext): void {

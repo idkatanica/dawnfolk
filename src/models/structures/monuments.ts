@@ -77,6 +77,7 @@ function roughRing(radiusX: number, radiusZ: number, y: number, offset: number, 
 
 function standingStone(context: MonumentContext, stone: StandingStone): Shape {
   const { height, thickness, width } = stone;
+
   const offset = context.random.next() * 30;
   const bend = context.random.signed() * 0.06;
 
@@ -282,6 +283,7 @@ function noseShape(context: MonumentContext): Shape {
 
 function addHead(context: MonumentContext, placement: StonePlacement): void {
   const { builder, level } = context;
+
   const head = new MeshBuilder();
   const carving: MonumentContext = { ...context, builder: head };
 
@@ -292,6 +294,7 @@ function addHead(context: MonumentContext, placement: StonePlacement): void {
     { position: [0, 0, faceDepth(2.6) - 0.06], rotation: [0.05, 0, 0] },
     WEATHERED_STONE
   );
+
   for (const side of [-1, 1]) {
     addStone(
       carving,

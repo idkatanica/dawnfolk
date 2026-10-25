@@ -77,7 +77,10 @@ function facetsWhere(faceted: Shape, keep: (triangle: number) => boolean): Shape
 
 export function addStreakedRock(context: StructureContext, shape: Shape, look: OreLook, style: VertexStyle): void {
   const faceted = facetShape(shape);
-  const streaks = (triangle: number) => isStreak(centroidAt(faceted, triangle), look.richness);
+
+  function streaks(triangle: number): boolean {
+    return isStreak(centroidAt(faceted, triangle), look.richness);
+  }
 
   context.builder.add(facetsWhere(faceted, streaks), { style: { ...style, slot: look.ore } });
   context.builder.add(
@@ -107,6 +110,7 @@ export function addOreChunk(context: StructureContext, chunk: OreChunk, look: Or
 
 export function addOreHeap(context: StructureContext, center: Triple, spread: number, look: OreLook): void {
   const [x, , z] = center;
+
   const chunks = detail(context, 7, 3);
 
   for (let chunk = 0; chunk < chunks; chunk += 1) {
