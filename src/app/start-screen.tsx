@@ -1,8 +1,10 @@
 import { ArrowRight } from "lucide-react";
+import { useEffect } from "react";
 import { TextButton } from "../design/buttons.tsx";
 import { Logo } from "../design/logo.tsx";
 import { useWorldDraft } from "../features/new-world/use-world-draft.ts";
 import { NameField, SeedField, ShapeChoice } from "../features/new-world/world-fields.tsx";
+import { loadGameEngine } from "./engine-launcher.ts";
 import { useLaunchStore } from "./launch-store.ts";
 
 export function StartScreen() {
@@ -10,6 +12,10 @@ export function StartScreen() {
   const relaunch = useLaunchStore((state) => state.relaunch);
 
   const draft = useWorldDraft(launch, relaunch);
+
+  useEffect(() => {
+    loadGameEngine().catch((error: unknown) => console.warn("The engine could not be loaded ahead", error));
+  }, []);
 
   return (
     <div className="absolute inset-0 overflow-y-auto">
