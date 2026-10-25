@@ -192,7 +192,7 @@ describe("moving parts", () => {
       [28, true],
       [9, false],
     ] as const
-  ).map(([age, isFemale]) => personAppearance({ age, isFemale, seed: 0.37, tribe: TRIBE }));
+  ).map(([age, isFemale]) => personAppearance({ age, isFemale, seed: 0.42, tribe: TRIBE }));
 
   describe.each([
     ["high", highParts, [0.15, 0.4, 0.7]],

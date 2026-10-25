@@ -200,17 +200,22 @@ function hairStyle(random: RandomSource, ageGroup: AgeGroup, isFemale: boolean):
     ]);
   }
 
-  const baldness = ageGroup === "elder" ? 0.35 : 0.06;
-
-  return choose<HairStyle>(random, [
+  const style = choose<HairStyle>(random, [
     { value: "short", weight: 0.32 },
     { value: "long", weight: 0.14 },
     { value: "ponytail", weight: 0.14 },
     { value: "wild", weight: 0.18 },
     { value: "bun", weight: 0.06 },
-    { value: "fringe", weight: baldness },
-    { value: "bald", weight: baldness / 3 },
+    { value: "fringe", weight: 0.06 },
+    { value: "bald", weight: 0.02 },
   ]);
+  const isBalding = random.chance(0.3);
+
+  if (ageGroup === "elder" && isBalding) {
+    return random.chance(0.25) ? "bald" : "fringe";
+  }
+
+  return style;
 }
 
 function beardStyle(random: RandomSource, ageGroup: AgeGroup, isFemale: boolean): BeardStyle {
@@ -218,13 +223,18 @@ function beardStyle(random: RandomSource, ageGroup: AgeGroup, isFemale: boolean)
     return "none";
   }
 
-  const fullness = ageGroup === "elder" ? 0.5 : 0.24;
-
-  return choose<BeardStyle>(random, [
+  const beard = choose<BeardStyle>(random, [
     { value: "none", weight: 0.36 },
     { value: "short", weight: 0.4 },
-    { value: "full", weight: fullness },
+    { value: "full", weight: 0.24 },
   ]);
+  const growsFull = random.chance(0.4);
+
+  if (ageGroup === "elder" && beard === "short" && growsFull) {
+    return "full";
+  }
+
+  return beard;
 }
 
 function outfit(random: RandomSource, ageGroup: AgeGroup, isFemale: boolean): Outfit {
@@ -409,15 +419,15 @@ export function personAppearance(input: AppearanceInput): PersonAppearance {
   const wearsCape = random.chance(0.3);
   const wearsCloak = random.chance(0.45);
   const skin = colorFromPalette(SKIN_TONES, skinDarkness);
-  const hair = mixColors(hairColor(random, ageGroup, skinDarkness), ELDER_HAIR[1], elderGrey * 0.3);
+  const hair = mixColors(hairColor(random.derive(1), ageGroup, skinDarkness), ELDER_HAIR[1], elderGrey * 0.3);
 
   const appearance: PersonAppearance = {
     accessories: accessories(random, ageGroup),
     ageGroup,
-    beard: beardStyle(random, ageGroup, input.isFemale),
-    body: bodyShape(random, ageGroup, input.age, input.isFemale),
+    beard: beardStyle(random.derive(2), ageGroup, input.isFemale),
+    body: bodyShape(random.derive(3), ageGroup, input.age, input.isFemale),
     colors: { accent: input.tribe.accent, hair, skin, ...clothingColors(random, input.tribe) },
-    hair: hairStyle(random, ageGroup, input.isFemale),
+    hair: hairStyle(random.derive(4), ageGroup, input.isFemale),
     hasBoots: random.chance(0.5),
     hasCape: ageGroup !== "child" && wearsCape,
     hasCloak: ageGroup === "elder" && wearsCloak,
