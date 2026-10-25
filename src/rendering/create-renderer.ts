@@ -14,7 +14,7 @@ export async function createRenderer(canvas: HTMLCanvasElement, quality: RenderQ
 
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.95;
-  renderer.shadowMap.enabled = quality.shadowMapSize > 0;
+  renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFShadowMap;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality.maximumPixelRatio));
 

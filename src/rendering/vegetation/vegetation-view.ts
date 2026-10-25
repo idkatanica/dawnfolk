@@ -49,11 +49,7 @@ interface PlantBatch {
   readonly mesh: Mesh;
 }
 
-function shadowFrustumOf(sun: DirectionalLight): Frustum | null {
-  if (!sun.castShadow) {
-    return null;
-  }
-
+function shadowFrustumOf(sun: DirectionalLight): Frustum {
   sun.updateMatrixWorld();
   sun.target.updateMatrixWorld();
   sun.shadow.updateMatrices(sun);
@@ -61,8 +57,8 @@ function shadowFrustumOf(sun: DirectionalLight): Frustum | null {
   return sun.shadow.getFrustum();
 }
 
-function castsShadowAt(chunk: VegetationChunk, level: number, shadowFrustum: Frustum | null): boolean {
-  if (level === HIDDEN || level >= SHADOW_LEVEL_COUNT || shadowFrustum === null) {
+function castsShadowAt(chunk: VegetationChunk, level: number, shadowFrustum: Frustum): boolean {
+  if (level === HIDDEN || level >= SHADOW_LEVEL_COUNT) {
     return false;
   }
 

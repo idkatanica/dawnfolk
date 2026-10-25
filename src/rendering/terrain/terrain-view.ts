@@ -13,7 +13,7 @@ import { GroundWarp } from "./ground-warp.ts";
 import type { GroundArea, IslandOutline } from "./island-outline.ts";
 import { type HeightRange, type PatchContent, type PatchCorner, PatchGrid, type PatchPiece } from "./patch-grid.ts";
 import { createTerrainMaterial } from "./terrain-material.ts";
-import { PATCH_CELLS, PATCH_LEVEL_DISTANCES } from "./terrain-patches.ts";
+import { PATCH_CELLS } from "./terrain-patches.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
 const SKIRT_ALLOWANCE = 220;
@@ -62,7 +62,7 @@ export class TerrainView {
     this.#levels = new Int8Array(patchesPerSide * patchesPerSide);
     this.#inland = this.#createGrid((corner) => this.#measureInland(corner), [inland], PATCH_CELLS);
 
-    if (!textures.outline.hasCoast) {
+    if (textures.outline.coast === null) {
       this.#materials = [inland];
       this.#coast = null;
 
@@ -123,7 +123,6 @@ export class TerrainView {
     const patches = new PatchGrid(this.#mirror.grid, measure, {
       castsShadow: true,
       edges: "skirted",
-      levelDistances: PATCH_LEVEL_DISTANCES,
       materials,
       pieceCells,
       renderOrder: 0,

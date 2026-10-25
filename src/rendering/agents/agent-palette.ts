@@ -4,8 +4,8 @@ import { DataTexture, FloatType, NearestFilter, RGBAFormat, type TextureNode } f
 const CHANNELS = 4;
 const INITIAL_ROWS = 128;
 
-function createTexture(width: number, rows: number): DataTexture {
-  const created = new DataTexture(new Float32Array(width * rows * CHANNELS), width, rows, RGBAFormat, FloatType);
+function createTexture(data: Float32Array, width: number, rows: number): DataTexture {
+  const created = new DataTexture(data, width, rows, RGBAFormat, FloatType);
 
   created.minFilter = NearestFilter;
   created.magFilter = NearestFilter;
@@ -25,8 +25,8 @@ export class AgentPalette {
   constructor(width: number) {
     this.width = width;
     this.#rows = INITIAL_ROWS;
-    this.#texture = createTexture(width, this.#rows);
-    this.#data = this.#readData();
+    this.#data = new Float32Array(this.#rowFloats * this.#rows);
+    this.#texture = createTexture(this.#data, width, this.#rows);
     this.node = texture(this.#texture);
   }
 
@@ -46,12 +46,12 @@ export class AgentPalette {
     }
 
     const previous = this.#texture;
-    const previousData = this.#data;
+    const data = new Float32Array(this.#rowFloats * next);
 
+    data.set(this.#data);
     this.#rows = next;
-    this.#texture = createTexture(this.width, next);
-    this.#data = this.#readData();
-    this.#data.set(previousData);
+    this.#data = data;
+    this.#texture = createTexture(data, this.width, next);
     this.node.value = this.#texture;
     previous.dispose();
   }
@@ -74,15 +74,5 @@ export class AgentPalette {
 
   get #rowFloats(): number {
     return this.width * CHANNELS;
-  }
-
-  #readData(): Float32Array {
-    const { data } = this.#texture.image;
-
-    if (data instanceof Float32Array) {
-      return data;
-    }
-
-    throw new TypeError("The agent palette must hold 32-bit floats");
   }
 }

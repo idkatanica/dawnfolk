@@ -13,7 +13,6 @@ import { smoothstep } from "../../shared/math.ts";
 import type { Inspection } from "../../simulation/inspection.ts";
 import { PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
 import { CARRIED_ITEMS, type CarriedItem, PERSON_POSES } from "../../world/agent-poses.ts";
-import { gearOfCode, weaponOfCode } from "../../world/gear.ts";
 import type { TribeLooks } from "../tribe-looks.ts";
 import { AgentMotion } from "./agent-motion.ts";
 import { AgentPalette } from "./agent-palette.ts";
@@ -94,10 +93,6 @@ function selectedPersonId(inspection: Inspection | null): number {
   }
 
   return inspection.id;
-}
-
-function weaponChoice(code: number): number {
-  return WEAPON_CHOICES.indexOf(weaponOfCode(code));
 }
 
 export class PeopleView {
@@ -203,8 +198,8 @@ export class PeopleView {
     const visual = this.#visualFor(people, offset);
     const clipCode = people[offset + PersonField.Pose];
     const carriedCode = people[offset + PersonField.Carried];
-    const weapon = weaponChoice(people[offset + PersonField.Weapon]);
-    const gear = this.#gearColors[TOOL_MATERIALS.indexOf(gearOfCode(people[offset + PersonField.Gear]))];
+    const weapon = people[offset + PersonField.Weapon];
+    const gear = this.#gearColors[people[offset + PersonField.Gear]];
 
     this.#animate(input, visual, people, offset);
     this.#palette.ensureRows(row + 1);

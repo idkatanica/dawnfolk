@@ -11,14 +11,20 @@ import {
 import type { CellRegion } from "../../world/change-tracking.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { toInstancedGeometry } from "../instancing.ts";
-import { createPatchGeometry, PATCH_CELLS, PATCH_STEPS, type PatchEdges, type PatchStep } from "./terrain-patches.ts";
+import {
+  createPatchGeometry,
+  PATCH_CELLS,
+  PATCH_LEVEL_DISTANCES,
+  PATCH_STEPS,
+  type PatchEdges,
+  type PatchStep,
+} from "./terrain-patches.ts";
 
 const NO_LEVEL = -1;
 
 interface PatchGridOptions {
   readonly castsShadow: boolean;
   readonly edges: PatchEdges;
-  readonly levelDistances: readonly number[];
   readonly materials: readonly Material[];
   readonly pieceCells: number;
   readonly renderOrder: number;
@@ -74,7 +80,6 @@ export class PatchGrid {
   readonly #chosenLevels: Int8Array;
   readonly #counts: number[][];
   readonly #grid: WorldGrid;
-  readonly #levelDistances: readonly number[];
   readonly #levels: readonly (readonly PatchLevel[])[];
   readonly #measure: PatchMeasure;
   readonly #patches: Patch[] = [];
@@ -88,7 +93,6 @@ export class PatchGrid {
 
     this.#grid = grid;
     this.#measure = measure;
-    this.#levelDistances = options.levelDistances;
     this.#levels = options.materials.map((material) =>
       PATCH_STEPS.map((step) => this.#createLevel(step, material, patchCount * piecesPerPatch, options))
     );
@@ -168,7 +172,7 @@ export class PatchGrid {
   }
 
   #levelFor(distance: number, detail: number): number {
-    const index = this.#levelDistances.findIndex((limit) => distance < limit * detail);
+    const index = PATCH_LEVEL_DISTANCES.findIndex((limit) => distance < limit * detail);
 
     if (index === -1) {
       return PATCH_STEPS.length - 1;

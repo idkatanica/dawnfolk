@@ -58,23 +58,19 @@ export class InterleavedInstances {
   readonly stride: number;
   readonly #fields: readonly InterleavedField[];
   readonly #geometry: InstancedBufferGeometry;
+  #array: Float32Array;
   #buffer: InstancedInterleavedBuffer;
 
   constructor(geometry: InstancedBufferGeometry, fields: readonly InterleavedField[], capacity: number) {
     this.#geometry = geometry;
     this.#fields = fields;
     this.stride = fields.reduce((sum, field) => sum + field.size, 0);
-    this.#buffer = this.#create(Math.max(1, capacity));
+    this.#array = new Float32Array(capacity * this.stride);
+    this.#buffer = this.#create(this.#array);
   }
 
   get array(): Float32Array {
-    const { array } = this.#buffer;
-
-    if (array instanceof Float32Array) {
-      return array;
-    }
-
-    throw new TypeError("Interleaved instances must hold 32-bit floats");
+    return this.#array;
   }
 
   get capacity(): number {
@@ -86,22 +82,23 @@ export class InterleavedInstances {
       return;
     }
 
-    const previous = this.array;
-    const next = this.#create(Math.ceil(count * GROWTH_FACTOR));
+    const next = new Float32Array(Math.ceil(count * GROWTH_FACTOR) * this.stride);
 
-    next.array.set(previous);
+    next.set(this.#array);
+    this.#array = next;
+    this.#buffer = this.#create(next);
   }
 
   markUpdated(count: number): void {
     const buffer = this.#buffer;
 
     buffer.clearUpdateRanges();
-    buffer.addUpdateRange(0, Math.max(1, count) * this.stride);
+    buffer.addUpdateRange(0, count * this.stride);
     buffer.needsUpdate = true;
   }
 
-  #create(capacity: number): InstancedInterleavedBuffer {
-    const buffer = new InstancedInterleavedBuffer(new Float32Array(capacity * this.stride), this.stride);
+  #create(array: Float32Array): InstancedInterleavedBuffer {
+    const buffer = new InstancedInterleavedBuffer(array, this.stride);
 
     buffer.setUsage(DynamicDrawUsage);
 
@@ -111,8 +108,6 @@ export class InterleavedInstances {
       this.#geometry.setAttribute(field.name, new InterleavedBufferAttribute(buffer, field.size, offset));
       offset += field.size;
     }
-
-    this.#buffer = buffer;
 
     return buffer;
   }

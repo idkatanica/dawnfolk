@@ -64,7 +64,6 @@ export class TerrainTextures {
   readonly patchSteps: DataTexture;
   readonly patchesPerSide: number;
   readonly shore: DataTexture;
-  readonly size: number;
   readonly surface: DataTexture;
   readonly water: DataTexture;
   readonly #albedo: GroundAlbedo;
@@ -78,7 +77,6 @@ export class TerrainTextures {
     const size = mirror.grid.cellsPerSide;
 
     this.#mirror = mirror;
-    this.size = size;
     this.height = floatTexture(mirror.terrain.height, size);
     this.outline = new IslandOutline(mirror);
     this.patchesPerSide = Math.ceil(size / PATCH_CELLS);
@@ -129,16 +127,13 @@ export class TerrainTextures {
 
     if (haveLevelsChanged) {
       this.#buildShore();
+      this.water.needsUpdate = true;
     } else if (changes.heightRegion !== null) {
       this.#updateShore(changes.heightRegion);
     }
 
     if (changes.surfaceRuns.length > 0) {
       this.surface.needsUpdate = true;
-    }
-
-    if (haveLevelsChanged) {
-      this.water.needsUpdate = true;
     }
 
     if (changes.groundRuns.length > 0) {
@@ -171,7 +166,7 @@ export class TerrainTextures {
       heights: terrain.height,
       levels: terrain.waterSurface,
       pondDepths: this.#pondDepths,
-      size: this.size,
+      size: grid.cellsPerSide,
     };
   }
 

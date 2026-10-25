@@ -250,7 +250,6 @@ export class GrassField {
     this.mesh = new Mesh(geometry, createGrassMaterial(options, uniforms));
     this.mesh.frustumCulled = false;
     this.mesh.receiveShadow = true;
-    this.mesh.visible = options.clumpsPerSide > 0;
   }
 
   update(camera: Camera, viewDistance: number): void {
