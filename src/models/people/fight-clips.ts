@@ -1,6 +1,6 @@
 import type { FightPose } from "../../world/agent-poses.ts";
 import { arc, cosineWave, degrees, type Keyframe, keyframes, wave } from "../rig/curves.ts";
-import type { Pose } from "../rig/pose.ts";
+import { type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import type { HumanClip, HumanClipContext } from "./human-clips.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
 import { HumanBone, SIDES, type Side } from "./human-skeleton.ts";
@@ -288,11 +288,11 @@ function fall(pose: Pose, phase: number): void {
 }
 
 export const FIGHT_CLIPS: Readonly<Record<FightPose, HumanClip>> = {
-  block: { apply: block, timing: { cycleSeconds: 1.2, kind: "seconds" }, tool: null },
-  brawl: { apply: brawl, timing: { cycleSeconds: 0.9, kind: "seconds" }, tool: null },
-  charge: { apply: charge, timing: { kind: "stride" }, tool: null },
+  block: { apply: block, timing: seconds(1.2), tool: null },
+  brawl: { apply: brawl, timing: seconds(0.9), tool: null },
+  charge: { apply: charge, timing: STRIDE_TIMING, tool: null },
   fall: { apply: fall, timing: { cycleSeconds: 1.5, kind: "once" }, tool: null },
   flinch: { apply: flinch, timing: { cycleSeconds: 0.5, kind: "once" }, tool: null },
-  march: { apply: march, timing: { kind: "stride" }, tool: null },
-  thrust: { apply: thrust, timing: { cycleSeconds: 1.1, kind: "seconds" }, tool: null },
+  march: { apply: march, timing: STRIDE_TIMING, tool: null },
+  thrust: { apply: thrust, timing: seconds(1.1), tool: null },
 };

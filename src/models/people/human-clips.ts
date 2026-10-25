@@ -1,7 +1,7 @@
 import type { AgeGroup } from "../../content/life-stages.ts";
 import type { CarriedItem, PersonPose } from "../../world/agent-poses.ts";
 import { arc, cosineWave, degrees, type Keyframe, keyframes, wave } from "../rig/curves.ts";
-import type { Pose } from "../rig/pose.ts";
+import { type ClipTiming, type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import type { MotionStyle } from "./appearance.ts";
 import { FIGHT_CLIPS } from "./fight-clips.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
@@ -16,24 +16,14 @@ export interface HumanClipContext {
   readonly motion: MotionStyle;
 }
 
-type ClipTiming =
-  | { readonly kind: "once"; readonly cycleSeconds: number }
-  | { readonly kind: "seconds"; readonly cycleSeconds: number }
-  | { readonly kind: "stride" };
-
 export interface HumanClip {
   readonly apply: (pose: Pose, phase: number, context: HumanClipContext) => void;
   readonly timing: ClipTiming;
   readonly tool: HumanTool | null;
 }
 
-const STRIDE_TIMING: ClipTiming = { kind: "stride" };
 const LEAP_STRIDE = 1.45;
 const LEAP_LIFT = 0.24;
-
-function seconds(cycleSeconds: number): ClipTiming {
-  return { cycleSeconds, kind: "seconds" };
-}
 
 function strideScale(context: HumanClipContext): number {
   if (context.ageGroup === "elder") {

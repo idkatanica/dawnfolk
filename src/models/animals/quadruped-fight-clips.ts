@@ -1,6 +1,6 @@
 import type { AnimalFightPose } from "../../world/agent-poses.ts";
 import { degrees, type Keyframe, keyframes, wave } from "../rig/curves.ts";
-import type { Pose } from "../rig/pose.ts";
+import { type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import type { AnimalClip, AnimalClipContext } from "./quadruped-clips.ts";
 import {
   bendBone,
@@ -128,8 +128,8 @@ function fall(pose: Pose, phase: number, context: AnimalClipContext): void {
 }
 
 export const QUADRUPED_FIGHT_CLIPS: Readonly<Record<AnimalFightPose, AnimalClip>> = {
-  attack: { apply: attack, timing: { cycleSeconds: 0.9, kind: "seconds" } },
-  charge: { apply: charge, timing: { kind: "stride" } },
+  attack: { apply: attack, timing: seconds(0.9) },
+  charge: { apply: charge, timing: STRIDE_TIMING },
   fall: { apply: fall, timing: { cycleSeconds: 1.3, kind: "once" } },
   flinch: { apply: flinch, timing: { cycleSeconds: 0.5, kind: "once" } },
 };

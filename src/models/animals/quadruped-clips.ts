@@ -1,6 +1,6 @@
 import type { AnimalPose } from "../../world/agent-poses.ts";
 import { cosineWave, degrees, keyframes, wave } from "../rig/curves.ts";
-import type { Pose } from "../rig/pose.ts";
+import { type ClipTiming, type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import { QUADRUPED_FIGHT_CLIPS } from "./quadruped-fight-clips.ts";
 import {
   bendBone,
@@ -34,16 +34,11 @@ export interface AnimalClipContext {
   readonly variation: number;
 }
 
-type AnimalClipTiming =
-  | { readonly cycleSeconds: number; readonly kind: "once" }
-  | { readonly cycleSeconds: number; readonly kind: "seconds" }
-  | { readonly kind: "stride" };
-
 export type ExtraMotion = (pose: Pose, clip: AnimalPose, phase: number) => void;
 
 export interface AnimalClip {
   readonly apply: (pose: Pose, phase: number, context: AnimalClipContext) => void;
-  readonly timing: AnimalClipTiming;
+  readonly timing: ClipTiming;
 }
 
 const HOP_PHASES: LegPhases = {
@@ -171,10 +166,10 @@ function dead(pose: Pose, _phase: number, context: AnimalClipContext): void {
 }
 
 export const QUADRUPED_CLIPS: Readonly<Record<AnimalPose, AnimalClip>> = {
-  dead: { apply: dead, timing: { cycleSeconds: 10, kind: "seconds" } },
-  graze: { apply: graze, timing: { cycleSeconds: 9, kind: "seconds" } },
-  run: { apply: run, timing: { kind: "stride" } },
-  walk: { apply: walk, timing: { kind: "stride" } },
+  dead: { apply: dead, timing: seconds(10) },
+  graze: { apply: graze, timing: seconds(9) },
+  run: { apply: run, timing: STRIDE_TIMING },
+  walk: { apply: walk, timing: STRIDE_TIMING },
   ...QUADRUPED_FIGHT_CLIPS,
 };
 
