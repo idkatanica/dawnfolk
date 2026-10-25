@@ -30,7 +30,7 @@ export function StartScreen() {
     <div className="absolute inset-0 overflow-y-auto">
       <div className="flex min-h-full flex-col items-center justify-center gap-8 p-6">
         <header className="flex flex-col items-center gap-3 text-center">
-          <Logo className="size-20 text-pine" />
+          <Logo />
 
           <div className="flex flex-col gap-1">
             <p className="text-3xl text-ink">Dawnfolk</p>

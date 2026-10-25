@@ -74,7 +74,6 @@ import tinOre from "./icons/tin-ore.webp";
 import totem from "./icons/totem.webp";
 import vegetables from "./icons/vegetables.webp";
 import warning from "./icons/warning.webp";
-import wind from "./icons/wind.webp";
 import wolf from "./icons/wolf.webp";
 import wood from "./icons/wood.webp";
 import workshop from "./icons/workshop.webp";
@@ -156,7 +155,6 @@ export const GAME_ICON_SOURCES = {
   totem,
   vegetables,
   warning,
-  wind,
   wolf,
   wood,
   workshop,

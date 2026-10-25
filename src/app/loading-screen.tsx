@@ -30,7 +30,7 @@ interface LoadingMessageProps {
 function LoadingMessage({ name, progress }: LoadingMessageProps) {
   return (
     <div className="flex flex-col items-center gap-3 text-center" role="status">
-      <Logo className="size-20 text-pine" />
+      <Logo />
 
       <h2 className="wrap-break-word text-3xl text-ink">{name}</h2>
 

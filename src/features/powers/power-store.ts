@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import {
   defaultPowerParameters,
   isPowerId,
@@ -85,7 +85,6 @@ export const usePowerStore = create<PowerStore>()(
       merge: mergeStored,
       name: STORAGE_KEY,
       partialize: (state) => ({ parameters: state.parameters }),
-      storage: createJSONStorage(() => localStorage),
     }
   )
 );

@@ -46,13 +46,13 @@ function useTimeControls() {
   return { changeSpeed, isPaused, speed, togglePause };
 }
 
-export function TimeControls({ className }: { readonly className?: string | undefined }) {
+export function TimeControls() {
   const { changeSpeed, isPaused, speed, togglePause } = useTimeControls();
 
   const pressedSpeeds = isPaused || speed === undefined ? [] : [String(speed)];
 
   return (
-    <div className={cn(SEGMENT_TRACK, "items-center p-1", className)}>
+    <div className={cn(SEGMENT_TRACK, "items-center p-1")}>
       <Button
         aria-label={isPaused ? "Resume" : "Pause"}
         className={cn(SEGMENT, "w-8 px-0", { "bg-white text-ink shadow-segment": isPaused })}
