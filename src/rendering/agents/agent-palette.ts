@@ -3,7 +3,7 @@ import { type Color, DataTexture, FloatType, NearestFilter, RGBAFormat, type Tex
 import { colorTexel, type PaletteLayout, paletteWidth, rootTexel } from "./palette-layout.ts";
 
 const CHANNELS = 4;
-const INITIAL_ROWS = 128;
+const INITIAL_ROWS = 32;
 
 function createTexture(data: Float32Array, width: number, rows: number): DataTexture {
   const created = new DataTexture(data, width, rows, RGBAFormat, FloatType);
