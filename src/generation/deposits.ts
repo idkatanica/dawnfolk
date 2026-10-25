@@ -179,11 +179,12 @@ export function planDeposits(grid: WorldGrid, terrain: TerrainData, seed: number
   const ores = cellsWhere(planner, (cell) => planner.terrain.height[cell] >= hill && isVeinGround(planner, cell));
   const clay = cellsWhere(planner, (cell) => isClayGround(planner, cell));
   const candidates = DEPOSIT_KINDS.map((kind) => ({ cells: kind === "clay" ? clay : ores, kind }));
-  const rounds = Math.max(...DEPOSIT_KINDS.map((kind) => DEPOSITS[kind].countPerIsland));
+  const counts = DEPOSIT_KINDS.map((kind) => Math.round(DEPOSITS[kind].perSquareKilometer * grid.squareKilometers));
+  const rounds = Math.max(...counts);
 
   for (let round = 0; round < rounds; round += 1) {
-    for (const { cells, kind } of candidates) {
-      if (cells.length > 0 && round < DEPOSITS[kind].countPerIsland) {
+    for (const [index, { cells, kind }] of candidates.entries()) {
+      if (cells.length > 0 && round < counts[index]) {
         placeDeposit(planner, kind, cells);
       }
     }

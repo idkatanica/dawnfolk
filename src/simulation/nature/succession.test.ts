@@ -22,8 +22,12 @@ interface Census {
   youngTrees: number;
 }
 
-function burntForest(biome: BiomeIndex = Biome.Forest, ground: GroundIndex = Ground.Forest): WorldState {
-  const world = new WorldState(createVegetatedWorld({ biome, dimensions: { cellSize: 10, cellsPerSide: 64 }, ground }));
+function burntForest(
+  biome: BiomeIndex = Biome.Forest,
+  ground: GroundIndex = Ground.Forest,
+  cellsPerSide = 64
+): WorldState {
+  const world = new WorldState(createVegetatedWorld({ biome, dimensions: { cellSize: 10, cellsPerSide }, ground }));
 
   for (const cell of world.grid.cellsInRadius(0, 0, BURNT_RADIUS)) {
     world.vegetation.burnTreesInCell(cell, 0);
@@ -149,7 +153,7 @@ describe("succession after a fire", () => {
   });
 
   it("starts every tree as a sapling", () => {
-    const world = burntForest();
+    const world = burntForest(Biome.Forest, Ground.Forest, 256);
     const { vegetation } = world;
 
     const before = vegetation.count;

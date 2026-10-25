@@ -306,7 +306,7 @@ describe("hares", () => {
   });
 
   it("raise litters through spring and summer and send grown young off to new ground", () => {
-    const { fauna } = createFauna();
+    const { fauna } = createFauna(createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 160 } }));
 
     fauna.spawnHerd("hare", 0, 0, 2, createRandom(1));
     runFor(fauna, 150, { days: 0.01, season: SUMMER });

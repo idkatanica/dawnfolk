@@ -42,7 +42,7 @@ const ESCAPE_JINK = 0.7;
 const PREDATOR_FEAR = 0.9;
 const EDGE_REACH_CELLS = 3;
 const LIVED_SHARE: readonly [number, number] = [0.05, 0.85];
-const SMALL_GAME_GROUP_LIMIT = 34;
+const MOST_SMALL_GAME_GROUPS_PER_SQUARE_KILOMETER = 1.3;
 const DISPERSAL_PER_DAY = 0.8;
 const DISPERSAL_RANGE: readonly [number, number] = [120, 420];
 const DISPERSING_MEMBERS = 2;
@@ -815,11 +815,12 @@ export class FaunaSystem {
   #disperse(days: number): void {
     const random = this.#smallGameRandom;
     const groups = this.#herds.filter((herd) => ANIMALS[herd.kind].isSmallGame);
+    const limit = Math.round(MOST_SMALL_GAME_GROUPS_PER_SQUARE_KILOMETER * this.#world.grid.squareKilometers);
 
     let groupCount = groups.length;
 
     for (const herd of groups) {
-      if (groupCount >= SMALL_GAME_GROUP_LIMIT) {
+      if (groupCount >= limit) {
         return;
       }
 

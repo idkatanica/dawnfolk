@@ -41,8 +41,8 @@ const MAXIMUM_TICKS_PER_ADVANCE = 40;
 const NAVIGATION_CHECK_TICKS = 50;
 const CROWDING_TICKS = 2;
 const FIRST_STROKE_SECONDS = 1 / 30;
-const STARTING_HERDS = 16;
-const STARTING_SMALL_GAME_GROUPS = 24;
+const HERDS_PER_SQUARE_KILOMETER = 0.61;
+const SMALL_GAME_GROUPS_PER_SQUARE_KILOMETER = 0.92;
 const STARTING_TRIBES = 2;
 const STARTING_TRIBE_SIZE = 7;
 const STARTING_SPOTS: readonly Waypoint[] = [
@@ -214,7 +214,7 @@ export class Simulation {
   }
 
   populate(): void {
-    const { halfSize } = this.world.grid;
+    const { halfSize, squareKilometers } = this.world.grid;
 
     let settled = 0;
 
@@ -232,8 +232,8 @@ export class Simulation {
       this.#spawnTribe(0, 0);
     }
 
-    this.fauna.populate(STARTING_HERDS, this.random);
-    this.fauna.populateSmallGame(STARTING_SMALL_GAME_GROUPS);
+    this.fauna.populate(Math.round(HERDS_PER_SQUARE_KILOMETER * squareKilometers), this.random);
+    this.fauna.populateSmallGame(Math.round(SMALL_GAME_GROUPS_PER_SQUARE_KILOMETER * squareKilometers));
     this.chronicle.takeEntries();
   }
 
