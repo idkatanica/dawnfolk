@@ -7,7 +7,6 @@ import { CHRONICLE_HISTORY_LIMIT, GameSession, type SessionStatus } from "./game
 import { LocalSimulationConnection } from "./simulation-connection.ts";
 
 interface SessionSetup {
-  clock: { now: () => number };
   connection: LocalSimulationConnection;
   session: GameSession;
   simulation: Simulation;
@@ -23,13 +22,12 @@ function createTestSimulation(): Simulation {
 
 async function createSession(): Promise<SessionSetup> {
   const simulation = createTestSimulation();
-  const clock = { now: () => 500 };
 
   const connection = new LocalSimulationConnection(createSimulationWorkerApi(() => simulation));
 
-  const session = await GameSession.create(connection, DEFAULT_WORLD_REQUEST, { clock });
+  const session = await GameSession.create(connection, DEFAULT_WORLD_REQUEST);
 
-  return { clock, connection, session, simulation };
+  return { connection, session, simulation };
 }
 
 async function advanceSession(session: GameSession, seconds: number): Promise<void> {
@@ -116,12 +114,12 @@ describe("advancing", () => {
   });
 
   it("applies every frame to the mirror and tells the subscribers", async () => {
-    const { clock, session } = await createSession();
+    const { session } = await createSession();
 
     const listener = vi.fn();
 
     session.subscribe(listener);
-    vi.spyOn(clock, "now").mockReturnValue(900);
+    vi.spyOn(performance, "now").mockReturnValue(900);
     await advanceSession(session, 0.2);
 
     expect(listener).toHaveBeenCalledOnce();

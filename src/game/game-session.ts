@@ -18,21 +18,13 @@ type FrameListener = (frame: SimulationFrame) => void;
 
 type StatusListener = (status: SessionStatus) => void;
 
-interface SessionClock {
-  now: () => number;
-}
-
 interface SessionOptions {
-  clock?: SessionClock;
   onProgress?: (progress: GenerationProgress) => void;
 }
-
-const PERFORMANCE_CLOCK: SessionClock = { now: () => performance.now() };
 
 export class GameSession {
   readonly mirror: WorldMirror;
   readonly #chronicle: ChronicleEntry[] = [];
-  readonly #clock: SessionClock;
   readonly #connection: SimulationConnection;
   readonly #effects: SimulationEffect[] = [];
   readonly #frameListeners = new Set<FrameListener>();
@@ -42,9 +34,8 @@ export class GameSession {
   #request: Promise<void> | null = null;
   #status: SessionStatus = { kind: "running" };
 
-  constructor(connection: SimulationConnection, mirror: WorldMirror, clock: SessionClock) {
+  constructor(connection: SimulationConnection, mirror: WorldMirror) {
     this.#connection = connection;
-    this.#clock = clock;
     this.mirror = mirror;
     this.#remember(mirror.frame);
   }
@@ -54,11 +45,11 @@ export class GameSession {
     request: WorldRequest,
     options: SessionOptions = {}
   ): Promise<GameSession> {
-    const { clock = PERFORMANCE_CLOCK, onProgress = () => undefined } = options;
+    const { onProgress = () => undefined } = options;
 
     const initial = await connection.createWorld(request, onProgress);
 
-    return new GameSession(connection, new WorldMirror(initial, clock.now()), clock);
+    return new GameSession(connection, new WorldMirror(initial, performance.now()));
   }
 
   get chronicle(): readonly ChronicleEntry[] {
@@ -173,7 +164,7 @@ export class GameSession {
       return;
     }
 
-    this.mirror.apply(frame, this.#clock.now());
+    this.mirror.apply(frame, performance.now());
     this.#remember(frame);
 
     for (const listener of this.#frameListeners) {

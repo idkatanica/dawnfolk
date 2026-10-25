@@ -1,6 +1,6 @@
 import { Matrix4, PerspectiveCamera, type Vector3, type WebGPURenderer } from "three/webgpu";
 import type { GenerationProgress, WorldRequest } from "../generation/generation-options.ts";
-import { createRenderer, type GraphicsBackend } from "../rendering/create-renderer.ts";
+import { createRenderer } from "../rendering/create-renderer.ts";
 import { type QualityLevel, RENDER_QUALITY } from "../rendering/render-quality.ts";
 import { WorldRenderer } from "../rendering/world-renderer.ts";
 import { clamp } from "../shared/math.ts";
@@ -18,16 +18,14 @@ import { type SimulationConnection, WorkerSimulationConnection } from "./simulat
 import { type PowerSelection, PowerTool } from "./tools/power-tool.ts";
 
 interface EngineOptions {
-  readonly camera?: Partial<CameraState>;
+  readonly camera: Partial<CameraState>;
   readonly canvas: HTMLCanvasElement;
-  readonly connection?: SimulationConnection;
-  readonly onProgress?: (progress: GenerationProgress) => void;
+  readonly onProgress: (progress: GenerationProgress) => void;
   readonly quality: QualityLevel;
   readonly request: WorldRequest;
 }
 
 interface EngineParts {
-  readonly backend: GraphicsBackend;
   readonly canvas: HTMLCanvasElement;
   readonly quality: QualityLevel;
   readonly renderer: WebGPURenderer;
@@ -62,7 +60,6 @@ async function createSessionOrRelease(
 }
 
 export class GameEngine implements EngineHandle {
-  readonly backend: GraphicsBackend;
   readonly camera: GodCamera;
   readonly landmarks: readonly Landmark[];
   readonly powers: PowerTool;
@@ -79,7 +76,6 @@ export class GameEngine implements EngineHandle {
   readonly #renderer: WebGPURenderer;
   readonly #resizeObserver: ResizeObserver;
   readonly #world: WorldRenderer;
-  #lastFrameTime = Number.NaN;
   #reportedFocusX = Number.NaN;
   #reportedFocusZ = Number.NaN;
   #viewport: ViewportSize = { height: 1, width: 1 };
@@ -87,7 +83,6 @@ export class GameEngine implements EngineHandle {
   constructor(parts: EngineParts) {
     this.#canvas = parts.canvas;
     this.#renderer = parts.renderer;
-    this.backend = parts.backend;
     this.session = parts.session;
 
     const { mirror } = parts.session;
@@ -144,15 +139,18 @@ export class GameEngine implements EngineHandle {
   }
 
   static async start(options: EngineOptions): Promise<GameEngine> {
-    const { camera = {}, connection = new WorkerSimulationConnection(), onProgress = () => undefined } = options;
+    const renderer = await createRenderer(options.canvas, RENDER_QUALITY[options.quality]);
 
-    const created = await createRenderer(options.canvas, RENDER_QUALITY[options.quality]);
+    const session = await createSessionOrRelease(
+      renderer,
+      new WorkerSimulationConnection(),
+      options.request,
+      options.onProgress
+    );
 
-    const session = await createSessionOrRelease(created.renderer, connection, options.request, onProgress);
+    const engine = new GameEngine({ canvas: options.canvas, quality: options.quality, renderer, session });
 
-    const engine = new GameEngine({ ...created, canvas: options.canvas, quality: options.quality, session });
-
-    engine.camera.jumpTo(camera);
+    engine.camera.jumpTo(options.camera);
     engine.run();
 
     return engine;
@@ -217,9 +215,7 @@ export class GameEngine implements EngineHandle {
       return;
     }
 
-    this.#pacer.markRendered(time);
-
-    const realSeconds = this.#elapsedSeconds(time);
+    const realSeconds = clamp(this.#pacer.markRendered(time) / MILLISECONDS_PER_SECOND, 0, LONGEST_FRAME_SECONDS);
 
     this.session.update(realSeconds);
     this.#keyboard.update(realSeconds);
@@ -261,18 +257,6 @@ export class GameEngine implements EngineHandle {
       this.#cameraPlacement.copy(placement);
       this.#pacer.markActivity(time);
     }
-  }
-
-  #elapsedSeconds(time: number): number {
-    const previous = this.#lastFrameTime;
-
-    this.#lastFrameTime = time;
-
-    if (Number.isNaN(previous)) {
-      return 0;
-    }
-
-    return clamp((time - previous) / MILLISECONDS_PER_SECOND, 0, LONGEST_FRAME_SECONDS);
   }
 
   #selectedPosition(): { x: number; z: number } | null {
