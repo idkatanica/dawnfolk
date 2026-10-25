@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { landEverywhere } from "../world/testing/terrain-fixtures.ts";
+import { landEverywhere, shapeTerrain } from "../world/testing/terrain-fixtures.ts";
 import { hasWater } from "../world/water.ts";
 import { NEIGHBOR_OFFSETS, WorldGrid } from "../world/world-grid.ts";
 import { computeHydrology, DEFAULT_HYDROLOGY } from "./hydrology.ts";
@@ -16,12 +16,11 @@ const RIDGE_SPREAD = 2 * 30 * 30;
 function carveValley(wallSlope: number, ridgeHeight = 0) {
   const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 64 });
 
-  const uncarved = Float32Array.from({ length: grid.cellCount }, (_, cell) => {
-    const x = grid.cellCenterX(cell);
-    const z = grid.cellCenterZ(cell);
-
-    return 100 + Math.abs(x) * wallSlope + (z + grid.halfSize) * 0.05 + ridgeHeight * Math.exp(-(z * z) / RIDGE_SPREAD);
-  });
+  const uncarved = shapeTerrain(
+    grid,
+    (x, z) =>
+      100 + Math.abs(x) * wallSlope + (z + grid.halfSize) * 0.05 + ridgeHeight * Math.exp(-(z * z) / RIDGE_SPREAD)
+  );
 
   const carved = Float32Array.from(uncarved);
   const options = { ...DEFAULT_HYDROLOGY, riverCatchmentArea: 30_000 };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createRandom } from "../shared/random.ts";
-import { landEverywhere } from "../world/testing/terrain-fixtures.ts";
+import { landEverywhere, shapeTerrain, troughWithBasin } from "../world/testing/terrain-fixtures.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 import { analyzeDrainage } from "./hydrology.ts";
 import { digRiverLakes, fillSinks, type LakeSiting } from "./lake-basins.ts";
@@ -10,20 +10,7 @@ const dryness = new Float32Array(grid.cellCount);
 const coastDistance = landEverywhere(grid.cellCount);
 
 function gentleValley(): Float32Array {
-  return Float32Array.from(
-    { length: grid.cellCount },
-    (_, cell) => 200 - 0.03 * grid.cellCenterZ(cell) + 0.12 * Math.abs(grid.cellCenterX(cell))
-  );
-}
-
-function shapeTerrain(heightAt: (x: number, z: number) => number): Float32Array {
-  return Float32Array.from({ length: grid.cellCount }, (_, cell) =>
-    heightAt(grid.cellCenterX(cell), grid.cellCenterZ(cell))
-  );
-}
-
-function slopeWithBasin(x: number, z: number): number {
-  return 100 + 0.03 * z + 0.08 * Math.abs(x) - 14 * Math.exp(-(x * x + z * z) / (2 * 110 * 110));
+  return shapeTerrain(grid, (x, z) => 200 - 0.03 * z + 0.12 * Math.abs(x));
 }
 
 function boundaryDistance(cell: number): number {
@@ -64,7 +51,7 @@ describe("river lakes", () => {
 
 describe("sink filling", () => {
   it("fills pits too small to hold a lake", () => {
-    const heights = shapeTerrain((x, z) => 100 + 0.02 * z + 0.01 * x);
+    const heights = shapeTerrain(grid, (x, z) => 100 + 0.02 * z + 0.01 * x);
 
     heights[grid.cellAt(5, 5)] -= 3;
     fillSinks(heights, grid, dryness, coastDistance);
@@ -75,7 +62,7 @@ describe("sink filling", () => {
   });
 
   it("leaves lake basins to fill with water", () => {
-    const heights = shapeTerrain(slopeWithBasin);
+    const heights = shapeTerrain(grid, troughWithBasin);
     const center = grid.cellAt(5, 5);
 
     const bottom = heights[center];
