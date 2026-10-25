@@ -15,14 +15,16 @@ const HUD_FRAME = "pointer-events-none fixed inset-0 z-10 flex flex-col p-safe";
 function WideHud() {
   return (
     <div className={cn(HUD_FRAME, "gap-3")}>
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_minmax(0,1fr)] gap-3">
-        <StatusCard className="justify-self-start" />
+      <div className="flex min-h-0 flex-1 gap-3">
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-3">
+          <StatusCard />
 
-        <PanelBar className="self-center justify-self-end" />
-
-        <NoticeFeed className="items-start" />
+          <NoticeFeed className="items-start" />
+        </div>
 
         <div className="flex min-h-0 flex-col items-end gap-3">
+          <PanelBar />
+
           <SidePanel className="max-h-full min-h-0" />
 
           <PowerSettings className="mt-auto" />

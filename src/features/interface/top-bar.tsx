@@ -8,9 +8,9 @@ import { MenuButtons } from "./menu-buttons.tsx";
 
 const BAR_CLASS = "flex h-12 pointer-coarse:h-13 items-center";
 
-export function StatusCard({ className }: { readonly className?: string | undefined }) {
+export function StatusCard() {
   return (
-    <Island className={className}>
+    <Island>
       <header className="flex flex-col gap-3 p-3">
         <WorldStatus />
 
@@ -20,9 +20,9 @@ export function StatusCard({ className }: { readonly className?: string | undefi
   );
 }
 
-export function PanelBar({ className }: { readonly className?: string | undefined }) {
+export function PanelBar() {
   return (
-    <Island className={className}>
+    <Island>
       <MenuButtons className={cn(BAR_CLASS, "px-1.5")} />
     </Island>
   );
