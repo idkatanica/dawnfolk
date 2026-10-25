@@ -10,7 +10,7 @@ import type { IslandShapeKind } from "../world/island-shape.ts";
 import type { Monument } from "../world/monuments.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import type { VegetationBuffers, VegetationPatch } from "../world/vegetation-store.ts";
-import type { WaterFeatures } from "../world/water.ts";
+import type { MirroredWater } from "../world/water.ts";
 import type { GridDimensions } from "../world/world-grid.ts";
 import type { ChronicleEntry } from "./chronicle.ts";
 import type { SimulationEffect } from "./effects.ts";
@@ -31,7 +31,7 @@ export interface RegionPatch {
 
 export interface WaterUpdate {
   crossings: readonly Crossing[];
-  features: WaterFeatures;
+  features: MirroredWater;
   riverStrength: Uint8Array;
   waterSurface: Float32Array;
 }
@@ -169,5 +169,5 @@ export interface InitialWorld {
   surface: Uint8Array;
   terrain: TerrainSnapshot;
   vegetation: VegetationBuffers;
-  water: WaterFeatures;
+  water: MirroredWater;
 }
