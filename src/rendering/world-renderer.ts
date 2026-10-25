@@ -128,7 +128,7 @@ export class WorldRenderer {
     this.#waterfalls.rebuild(mirror.water.waterfalls, this.#textures, this.#plinth);
     this.#springs.rebuild(mirror);
     this.#vegetation = new VegetationView(mirror, this.#textures, this.#fireGlow);
-    this.#crops = new CropField(mirror, this.#vegetation.weather);
+    this.#crops = new CropField(mirror, this.#vegetation.weather, this.#textures.fields);
     this.#crossings = new CrossingView(mirror, this.#textures);
     this.#understory = new UnderstoryField(mirror);
     this.#people = new PeopleView(this.#tribes);

@@ -4,18 +4,21 @@ import {
   floor,
   int,
   ivec2,
+  max,
   mix,
   pow,
   screenCoordinate,
   select,
-  smoothstep,
   step,
   textureLoad,
+  uniform,
   uniformArray,
+  vec2,
   vec3,
   vec4,
 } from "three/tsl";
 import {
+  Color,
   DataTexture,
   FloatType,
   LinearFilter,
@@ -31,44 +34,15 @@ import {
   type Texture,
   type TextureDataType,
   UnsignedByteType,
-  Vector3,
   Vector4,
   type WebGPURenderer,
 } from "three/webgpu";
-import { CROP_KINDS, type CropKind, FENCED_CROP_OFFSET } from "../../content/crops.ts";
 import { GROUNDS, Ground, seasonalGroundColor } from "../../content/grounds.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { lerp, saturate } from "../../shared/math.ts";
 
 const BYTE = 255;
-const FIELD_COVERAGE = 0.75;
-
-type Tint = readonly [number, number, number];
-
-const GROWING_TINTS: Readonly<Record<CropKind, Tint>> = {
-  barley: [0.4, 0.55, 0.25],
-  beans: [0.3, 0.48, 0.2],
-  carrots: [0.32, 0.52, 0.22],
-  flax: [0.42, 0.52, 0.62],
-  turnips: [0.34, 0.54, 0.26],
-  wheat: [0.36, 0.52, 0.22],
-};
-
-const RIPE_TINTS: Readonly<Record<CropKind, Tint>> = {
-  barley: [0.8, 0.7, 0.42],
-  beans: [0.5, 0.52, 0.27],
-  carrots: [0.32, 0.52, 0.22],
-  flax: [0.58, 0.5, 0.32],
-  turnips: [0.34, 0.54, 0.26],
-  wheat: [0.78, 0.64, 0.3],
-};
-
-function tintTable(tints: Readonly<Record<CropKind, Tint>>) {
-  return uniformArray<"vec3">(
-    CROP_KINDS.map((kind) => new Vector3(...tints[kind])),
-    "vec3"
-  );
-}
+const COVER_REACH = 2;
 
 function cellTexture(
   data: Float32Array | Uint8Array,
@@ -107,21 +81,67 @@ function linearFromSrgb(color: Node<"vec3">): Node<"vec3"> {
   return mix(curve, color.mul(0.077_399_380_8), step(color, vec3(0.040_45)));
 }
 
-function fieldColor(soil: Node<"vec3">, code: Node<"int">, growth: Node<"float">): Node<"vec3"> {
-  const growing = tintTable(GROWING_TINTS);
-  const ripe = tintTable(RIPE_TINTS);
+interface AlbedoSources {
+  readonly ground: DataTexture;
+  readonly lushness: DataTexture;
+  readonly palette: Vector4[];
+  readonly size: number;
+}
 
-  const kind = select(code.greaterThanEqual(int(FENCED_CROP_OFFSET)), code.sub(FENCED_CROP_OFFSET), code).sub(1);
-  const isBare = kind.lessThan(int(0));
-  const index = select(isBare, int(0), kind);
+interface CellLook {
+  readonly color: Node<"vec4">;
+  readonly isOpen: Node<"float">;
+}
 
-  const crop = mix(growing.element(index), ripe.element(index), smoothstep(0.78, 1, growth));
-  const coverage = select(isBare, float(0), smoothstep(0.08, 0.7, growth).mul(FIELD_COVERAGE));
+function albedoNode({ ground, lushness, palette, size }: AlbedoSources): Node<"vec4"> {
+  const cell = floor(screenCoordinate);
+  const colors = uniformArray<"vec4">(palette, "vec4");
+  const earth = colors.element(int(Ground.Dirt));
+  const last = size - 1;
 
-  return mix(soil, crop, coverage);
+  function lookAt(column: number, row: number): CellLook {
+    const neighbor = ivec2(clamp(cell.add(vec2(column, row)), vec2(0, 0), vec2(last, last)));
+
+    const cellGround = textureLoad(ground, neighbor);
+    const cellLushness = textureLoad(lushness, neighbor);
+
+    const groundIndex = int(cellGround.r.mul(BYTE).add(0.5));
+    const trodden = cellGround.b;
+
+    const seasonal = colors.element(groundIndex);
+
+    const worn = mix(seasonal.rgb, earth.rgb, trodden);
+    const color = clamp(worn.mul(vec3(cellLushness.r, cellLushness.g, cellLushness.r)), 0, 1);
+    const cover = seasonal.a.mul(float(1).sub(trodden));
+
+    return { color: vec4(color, cover), isOpen: select(groundIndex.equal(int(Ground.Farm)), float(0), float(1)) };
+  }
+
+  const own = lookAt(0, 0);
+
+  let around: Node<"vec4"> = vec4(0);
+  let weight: Node<"float"> = float(0);
+
+  for (let row = -COVER_REACH; row <= COVER_REACH; row += 1) {
+    for (let column = -COVER_REACH; column <= COVER_REACH; column += 1) {
+      const neighbor = lookAt(column, row);
+
+      around = around.add(neighbor.color.mul(neighbor.isOpen));
+      weight = weight.add(neighbor.isOpen);
+    }
+  }
+
+  const borrowed = select(weight.greaterThan(0), around.div(max(weight, 1)), own.color);
+  const result = select(own.isOpen.greaterThan(0), own.color, borrowed);
+
+  const levels = floor(result.mul(BYTE).add(0.5)).div(BYTE);
+
+  return vec4(linearFromSrgb(levels.rgb), levels.a);
 }
 
 export class GroundAlbedo {
+  readonly earth = uniform(new Color());
+  readonly soil = uniform(new Color());
   readonly #ground: DataTexture;
   readonly #lushness: DataTexture;
   readonly #material = new NodeMaterial();
@@ -141,7 +161,16 @@ export class GroundAlbedo {
       minFilter: LinearFilter,
       type: UnsignedByteType,
     });
-    this.#material.fragmentNode = this.#albedoNode();
+    this.#material.fragmentNode = albedoNode({
+      ground: this.#ground,
+      lushness: this.#lushness,
+      palette: this.#palette,
+      size,
+    });
+  }
+
+  get cells(): DataTexture {
+    return this.#ground;
   }
 
   get texture(): Texture {
@@ -161,6 +190,9 @@ export class GroundAlbedo {
       color.set(red, green, blue, GROUNDS[index].grass);
     }
 
+    this.soil.value.setRGB(...seasonalGroundColor(Ground.Farm, season), SRGBColorSpace);
+    this.earth.value.setRGB(...seasonalGroundColor(Ground.Dirt, season), SRGBColorSpace);
+
     renderer.setRenderTarget(this.#target);
     this.#quad.render(renderer);
     renderer.setRenderTarget(previousTarget);
@@ -171,31 +203,5 @@ export class GroundAlbedo {
     this.#material.dispose();
     this.#ground.dispose();
     this.#lushness.dispose();
-  }
-
-  #albedoNode(): Node<"vec4"> {
-    const cell = ivec2(screenCoordinate);
-    const palette = uniformArray<"vec4">(this.#palette, "vec4");
-
-    const ground = textureLoad(this.#ground, cell);
-    const lushness = textureLoad(this.#lushness, cell);
-
-    const groundIndex = int(ground.r.mul(BYTE).add(0.5));
-    const growth = ground.g;
-    const trodden = ground.b;
-    const cropCode = int(ground.a.mul(BYTE).add(0.5));
-
-    const isFarm = groundIndex.equal(int(Ground.Farm));
-    const seasonal = palette.element(groundIndex);
-    const earth = palette.element(int(Ground.Dirt));
-
-    const base = select(isFarm, fieldColor(seasonal.rgb, cropCode, growth), seasonal.rgb);
-    const worn = mix(base, earth.rgb, trodden);
-    const cover = select(isFarm, float(0), seasonal.a).mul(float(1).sub(trodden));
-    const color = clamp(worn.mul(vec3(lushness.r, lushness.g, lushness.r)), 0, 1);
-
-    const levels = floor(vec4(color, cover).mul(BYTE).add(0.5)).div(BYTE);
-
-    return vec4(linearFromSrgb(levels.rgb), levels.a);
   }
 }
