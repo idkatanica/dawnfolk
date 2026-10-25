@@ -22,7 +22,7 @@ const EASTERN_RANGE: Polyline = [
   [0.56, 0.2],
 ];
 
-const METERS_PER_ISLAND_UNIT = 2560;
+const METERS_PER_DETAIL_UNIT = 2560;
 const NORTHERN_REACH = 0.7;
 const EASTERN_REACH = 0.48;
 const CREST_ROUNDING = 0.05;
@@ -58,7 +58,7 @@ const MOUNTAIN_RIDGES: ErodedRidgedOptions = {
   gain: 0.45,
   octaves: 5,
   rounding: 0.03,
-  slopeScale: (RIDGE_HEIGHT * RIDGE_FREQUENCY) / METERS_PER_ISLAND_UNIT,
+  slopeScale: (RIDGE_HEIGHT * RIDGE_FREQUENCY) / METERS_PER_DETAIL_UNIT,
 };
 
 const HILL_RIDGES: ErodedRidgedOptions = {
@@ -66,7 +66,7 @@ const HILL_RIDGES: ErodedRidgedOptions = {
   gain: 0.42,
   octaves: 5,
   rounding: 0.06,
-  slopeScale: (HILL_HEIGHT * HILL_FREQUENCY) / METERS_PER_ISLAND_UNIT,
+  slopeScale: (HILL_HEIGHT * HILL_FREQUENCY) / METERS_PER_DETAIL_UNIT,
 };
 
 export interface IslandPoint {
@@ -93,6 +93,7 @@ export interface Relief {
 interface ReliefNoise {
   desert: NoiseSampler;
   detail: GradientNoise;
+  detailScale: number;
   primary: NoiseSampler;
   sample: NoiseGradient;
   secondary: NoiseSampler;
@@ -113,10 +114,16 @@ function warpPoint(noise: NoiseSampler, point: IslandPoint, octaves: number, amo
   return { x: point.x + amount * shiftX, z: point.z + amount * shiftZ };
 }
 
-function distanceToBoundary(noise: NoiseSampler, point: IslandPoint): number {
-  const wobble = BOUNDARY_WOBBLE * noise.fractal(point.x * 3.2 + 17, point.z * 3.2 - 4, { octaves: 2 });
+function inDetailUnits(noise: ReliefNoise, point: IslandPoint): IslandPoint {
+  return { x: point.x * noise.detailScale, z: point.z * noise.detailScale };
+}
 
-  return 1 - Math.max(Math.abs(point.x), Math.abs(point.z)) + wobble;
+function distanceToBoundary(noise: ReliefNoise, point: IslandPoint): number {
+  const detail = inDetailUnits(noise, point);
+
+  const wobble = noise.secondary.fractal(detail.x * 3.2 + 17, detail.z * 3.2 - 4, { octaves: 2 });
+
+  return 1 - Math.max(Math.abs(point.x), Math.abs(point.z)) + (BOUNDARY_WOBBLE * wobble) / noise.detailScale;
 }
 
 function smoothMinimum(first: number, second: number, smoothness: number): number {
@@ -181,7 +188,7 @@ function desertPlateau(noise: ReliefNoise, point: IslandPoint, mesaShare: number
 
   const steepness = Math.max(SHALLOWEST_MESA_PATTERN, 2.4 * Math.hypot(pattern.gradientX, pattern.gradientZ));
 
-  const insideMeters = ((pattern.value - MESA_THRESHOLD) / steepness) * METERS_PER_ISLAND_UNIT;
+  const insideMeters = ((pattern.value - MESA_THRESHOLD) / steepness) * METERS_PER_DETAIL_UNIT;
 
   return plain + (tableTop - plain) * mesaShare * escarpmentProfile(insideMeters);
 }
@@ -192,14 +199,15 @@ function centralLake(point: IslandPoint): number {
 
 function boundaryDistance(noise: ReliefNoise, island: IslandShape, point: IslandPoint, coastDistance: number): number {
   if (island.kind === "square") {
-    return distanceToBoundary(noise.secondary, point);
+    return distanceToBoundary(noise, point);
   }
 
   return coastDistance;
 }
 
 function landformHeight(noise: ReliefNoise, point: IslandPoint, boundary: number, desert: number): number {
-  const warped = warpPoint(noise.primary, point, 3, 0.13);
+  const detail = inDetailUnits(noise, point);
+  const warped = warpPoint(noise.primary, detail, 3, 0.13);
   const outline = warpPoint(noise.primary, point, 1, 0.07);
   const lake = centralLake(point);
 
@@ -217,7 +225,7 @@ function landformHeight(noise: ReliefNoise, point: IslandPoint, boundary: number
   const hillShare = (0.3 + 0.7 * foothills) * (0.35 + 0.65 * smoothstep(0, 0.5, mountains + 0.25));
 
   const tilt = 300 - 95 * point.z + 40 * point.x;
-  const rolling = 70 * noise.primary.fractal(point.x * 0.9 + 2.2, point.z * 0.9 + 9.1, { octaves: 4 });
+  const rolling = 70 * noise.primary.fractal(detail.x * 0.9 + 2.2, detail.z * 0.9 + 9.1, { octaves: 4 });
   const massif = 560 * mountains;
   const peaks = RIDGE_HEIGHT * mountains * ridges;
   const northWestMassif = 160 * gaussian(point.x, point.z, -0.42, -0.42, 0.24) * (0.45 + ridges) * inland;
@@ -231,7 +239,7 @@ function landformHeight(noise: ReliefNoise, point: IslandPoint, boundary: number
   const landform =
     desertLandform <= 0.001
       ? height
-      : lerp(height, desertPlateau(noise, point, smoothstep(MESA_START, MESA_END, boundary)), desertLandform);
+      : lerp(height, desertPlateau(noise, detail, smoothstep(MESA_START, MESA_END, boundary)), desertLandform);
 
   return lerp(rimHeight(landform), landform, smoothstep(0, RIM_WIDTH, boundary));
 }
@@ -243,16 +251,19 @@ function shoreHeight(noise: ReliefNoise, point: IslandPoint, inland: number): nu
 }
 
 function coastalHeight(noise: ReliefNoise, point: IslandPoint, inland: number, coastDistance: number): number {
-  const shore = shoreHeight(noise, point, inland);
+  const detail = inDetailUnits(noise, point);
+  const fromCoast = coastDistance * noise.detailScale;
 
-  if (coastDistance <= 0) {
-    return shore + Math.max(coastDistance * OUTSIDE_SLOPE, -DEEPEST_OUTSIDE_DROP);
+  const shore = shoreHeight(noise, detail, inland);
+
+  if (fromCoast <= 0) {
+    return shore + Math.max(fromCoast * OUTSIDE_SLOPE, -DEEPEST_OUTSIDE_DROP);
   }
 
   const width = 0.07 + 0.11 * smoothstep(shore, shore + 900, inland);
-  const cliffs = noise.secondary.ridged(point.x * 5.5 - 13, point.z * 5.5 + 4, { octaves: 3 });
+  const cliffs = noise.secondary.ridged(detail.x * 5.5 - 13, detail.z * 5.5 + 4, { octaves: 3 });
 
-  return lerp(shore, inland, smoothstep(0, width * (0.7 + 0.6 * cliffs), coastDistance));
+  return lerp(shore, inland, smoothstep(0, width * (0.7 + 0.6 * cliffs), fromCoast));
 }
 
 function reliefSample(noise: ReliefNoise, island: IslandShape, point: IslandPoint): ReliefSample {
@@ -268,7 +279,7 @@ function reliefSample(noise: ReliefNoise, island: IslandShape, point: IslandPoin
   return { coastDistance, desert, height: coastalHeight(noise, point, landform, boundary) };
 }
 
-export function createRelief(seed: number, island: IslandShape): Relief {
+export function createRelief(seed: number, island: IslandShape, halfSize: number): Relief {
   const random = createRandom(seed);
 
   const desert = createNoiseSampler(random.derive(1));
@@ -280,6 +291,7 @@ export function createRelief(seed: number, island: IslandShape): Relief {
   const noise: ReliefNoise = {
     desert,
     detail,
+    detailScale: halfSize / METERS_PER_DETAIL_UNIT,
     primary,
     sample: { gradientX: 0, gradientZ: 0, value: 0 },
     secondary,

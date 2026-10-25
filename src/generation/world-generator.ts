@@ -96,7 +96,7 @@ function boundaryDistances(grid: WorldGrid, relief: Relief): (cell: number) => n
 
 function buildRelief(grid: WorldGrid, seed: number, shapeKind: IslandShapeKind) {
   const shape = createIslandShape(shapeKind, seed);
-  const relief = createRelief(seed, shape);
+  const relief = createRelief(seed, shape, grid.halfSize);
   const coastDistance = new Float32Array(grid.cellCount);
   const desert = new Float64Array(grid.cellCount);
   const heights = new Float32Array(grid.cellCount);
