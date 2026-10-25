@@ -19,8 +19,10 @@ interface FeedOptions {
 function createFeed({ chronicle = [], frame = createFrame() }: FeedOptions = {}): FakeFeed {
   const listeners = new Set<FrameListener>();
   const entries = [...chronicle];
+  let latest = frame;
 
   function emit(next: SimulationFrame): void {
+    latest = next;
     entries.push(...next.chronicle);
 
     for (const listener of listeners) {
@@ -36,7 +38,15 @@ function createFeed({ chronicle = [], frame = createFrame() }: FeedOptions = {})
     };
   }
 
-  return { chronicle: entries, emit, frame, listenerCount: () => listeners.size, subscribe };
+  return {
+    chronicle: entries,
+    emit,
+    get frame() {
+      return latest;
+    },
+    listenerCount: () => listeners.size,
+    subscribe,
+  };
 }
 
 function noticeTexts(): string[] {
@@ -45,6 +55,7 @@ function noticeTexts(): string[] {
 
 describe("world store", () => {
   afterEach(() => {
+    vi.useRealTimers();
     resetWorld();
   });
 
@@ -85,6 +96,41 @@ describe("world store", () => {
     feed.emit(createFrame({ speed: 8 }));
 
     expect(useWorldStore.getState().snapshot?.speed).toBe(8);
+  });
+
+  it("shows the latest throttled frame once the throttle window ends", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+
+    const clock = vi.spyOn(performance, "now").mockReturnValue(1000);
+    const feed = createFeed();
+
+    connectWorldStore(feed);
+    feed.emit(createFrame());
+    clock.mockReturnValue(1010);
+    feed.emit(createFrame({ isPaused: true }));
+
+    expect(useWorldStore.getState().snapshot?.isPaused).toBe(false);
+
+    clock.mockReturnValue(1125);
+    vi.advanceTimersByTime(125);
+
+    expect(useWorldStore.getState().snapshot?.isPaused).toBe(true);
+  });
+
+  it("drops the pending refresh after disconnecting", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+
+    const clock = vi.spyOn(performance, "now").mockReturnValue(1000);
+    const feed = createFeed();
+
+    const disconnect = connectWorldStore(feed);
+
+    feed.emit(createFrame());
+    clock.mockReturnValue(1010);
+    feed.emit(createFrame({ isPaused: true }));
+    disconnect();
+
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("refreshes at once when a frame brings news", () => {

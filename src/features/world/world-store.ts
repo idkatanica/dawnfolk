@@ -96,6 +96,14 @@ function noticesFrom(frame: SimulationFrame): WorldNotice[] {
 
 export function connectWorldStore(feed: WorldFeed): () => void {
   let lastRefresh = Number.NEGATIVE_INFINITY;
+  let trailingRefresh: ReturnType<typeof setTimeout> | undefined;
+
+  function refresh(frame: SimulationFrame): void {
+    clearTimeout(trailingRefresh);
+    trailingRefresh = undefined;
+    lastRefresh = performance.now();
+    useWorldStore.setState((state) => ({ snapshot: snapshotOf(frame, state.snapshot) }));
+  }
 
   useWorldStore.setState({
     chronicle: [...feed.chronicle],
@@ -103,7 +111,7 @@ export function connectWorldStore(feed: WorldFeed): () => void {
     snapshot: snapshotOf(feed.frame, null),
   });
 
-  return feed.subscribe((frame) => {
+  const unsubscribe = feed.subscribe((frame) => {
     const now = performance.now();
     const hasNews = frame.chronicle.length > 0 || frame.notices.length > 0;
 
@@ -115,12 +123,20 @@ export function connectWorldStore(feed: WorldFeed): () => void {
     }
 
     if (now - lastRefresh < REFRESH_MILLISECONDS && !hasNews) {
+      if (trailingRefresh === undefined) {
+        trailingRefresh = setTimeout(() => refresh(feed.frame), lastRefresh + REFRESH_MILLISECONDS - now);
+      }
+
       return;
     }
 
-    lastRefresh = now;
-    useWorldStore.setState((state) => ({ snapshot: snapshotOf(frame, state.snapshot) }));
+    refresh(frame);
   });
+
+  return () => {
+    clearTimeout(trailingRefresh);
+    unsubscribe();
+  };
 }
 
 export function dismissNotice(noticeId: number): void {
