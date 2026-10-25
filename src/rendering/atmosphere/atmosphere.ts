@@ -27,6 +27,8 @@ interface AtmosphereOptions {
 }
 
 const CELESTIAL_DISTANCE = 6000;
+const SHADOW_DEPTH_SPAN = 3000;
+const SHADOW_DEPTH_BIAS = 0.05;
 const SHADOW_REACH_STEPS_PER_OCTAVE = 4;
 const WORLD_UP = new Vector3(0, 1, 0);
 const SKY_CLOUD_DRIFT = 0.000_02;
@@ -55,7 +57,7 @@ export class Atmosphere {
     this.sun = new DirectionalLight(0xff_ff_ff, 3);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(options.shadowMapSize, options.shadowMapSize);
-    this.sun.shadow.bias = -0.0003;
+    this.sun.shadow.bias = -SHADOW_DEPTH_BIAS / (SHADOW_DEPTH_SPAN * 2);
     this.sun.shadow.camera.layers.enable(SHADOW_ONLY_LAYER);
 
     this.hemisphere = new HemisphereLight(0xb6_d2_ee, 0x7a_72_5a, 1.2);
@@ -163,8 +165,8 @@ export class Atmosphere {
     shadow.right = reach;
     shadow.top = reach;
     shadow.bottom = -reach;
-    shadow.near = CELESTIAL_DISTANCE - 3000;
-    shadow.far = CELESTIAL_DISTANCE + 3000;
+    shadow.near = CELESTIAL_DISTANCE - SHADOW_DEPTH_SPAN;
+    shadow.far = CELESTIAL_DISTANCE + SHADOW_DEPTH_SPAN;
     shadow.updateProjectionMatrix();
     this.sun.shadow.normalBias = Math.max(
       LEAST_NORMAL_BIAS,

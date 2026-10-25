@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CARRIED_ITEMS, PERSON_POSES, type PersonPose } from "../../world/agent-poses.ts";
 import { mergeMeshes } from "../mesh/mesh-data.ts";
 import { Pose } from "../rig/pose.ts";
+import type { ContactPoint } from "../rig/skeleton.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { measureStride } from "../rig/stride.ts";
 import { loosePieces, type MeshPiece, TOUCHING } from "../testing/mesh-connectivity.ts";
@@ -21,6 +22,24 @@ const ADULT: HumanClipContext = { ageGroup: "adult", carried: "nothing", motion:
 const RIGHT_FIST = new Vector3(-0.217, 0.832, 0.018);
 const LEFT_FIST = new Vector3(0.217, 0.832, 0.018);
 const SPEAR_TIP = new Vector3(-0.217, 0.832, 1.13);
+const STICK_TIP = new Vector3(-0.217, 0.122, 0.038);
+const PLANTED = 0.02;
+const STANDING_WORK: readonly PersonPose[] = [
+  "gather",
+  "chop",
+  "dig",
+  "fish",
+  "throw",
+  "mine",
+  "shoot",
+  "thrust",
+  "brawl",
+  "block",
+  "flinch",
+];
+const KNEE_CONTACT = HUMAN_SKELETON.allContacts.find(
+  (contact) => contact.bone === HumanBone.ShinRight && contact.position[1] > 0.4
+);
 const TRIBE = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
 const parts = buildHumanParts(HUMAN_DETAILS.high);
 
@@ -44,6 +63,22 @@ function pointOf(poser: SkeletonPoser, bone: number, rest: Vector3): Vector3 {
 
 function jointOf(poser: SkeletonPoser, bone: number): Vector3 {
   return poser.jointPosition(bone, new Vector3());
+}
+
+function footHeights(poser: SkeletonPoser): number[] {
+  const point = new Vector3();
+
+  return HUMAN_SKELETON.footContacts.map(
+    (contact) => poser.skinPoint(contact.bone, point.set(...contact.position), point).y
+  );
+}
+
+function lowestFoot(poser: SkeletonPoser): number {
+  return Math.min(...footHeights(poser));
+}
+
+function contactHeight(poser: SkeletonPoser, contact: ContactPoint): number {
+  return poser.skinPoint(contact.bone, new Vector3(...contact.position), new Vector3()).y;
 }
 
 function strideOf(clip: PersonPose, context: HumanClipContext): number {
@@ -127,32 +162,55 @@ describe("human clips", () => {
     expect(jointOf(strike, HumanBone.HandRight).y).toBeLessThan(1);
   });
 
-  it("keeps both feet on the ground while shooting and mining", () => {
-    const point = new Vector3();
+  it("keeps both feet on the ground through standing work and fights", () => {
+    for (const clip of STANDING_WORK) {
+      for (let phase = 0; phase < 1; phase += 0.05) {
+        const [leftHeel, leftToe, rightHeel, rightToe] = footHeights(posed(clip, phase));
 
-    for (const clip of ["shoot", "mine"] as const) {
-      for (const phase of [0, 0.2, 0.4, 0.6, 0.8]) {
-        const poser = posed(clip, phase);
-        const heights = HUMAN_SKELETON.footContacts.map(
-          (contact) => poser.skinPoint(contact.bone, point.set(...contact.position), point).y
-        );
-
-        expect(Math.min(heights[0], heights[1]), `${clip} ${phase} left`).toBeLessThan(0.03);
-        expect(Math.min(heights[2], heights[3]), `${clip} ${phase} right`).toBeLessThan(0.03);
+        expect(Math.min(leftHeel, leftToe), `${clip} ${phase} left`).toBeLessThan(PLANTED);
+        expect(Math.min(rightHeel, rightToe), `${clip} ${phase} right`).toBeLessThan(PLANTED);
+        expect(Math.abs(leftHeel - leftToe), `${clip} ${phase} leading foot flat`).toBeLessThan(PLANTED);
       }
     }
   });
 
-  it("leaves the ground in the middle of a jump", () => {
-    const poser = posed("play", 0.48);
-    const point = new Vector3();
-    const lowest = Math.min(
-      ...HUMAN_SKELETON.footContacts.map(
-        (contact) => poser.skinPoint(contact.bone, point.set(...contact.position), point).y
-      )
-    );
+  it("kneels on one knee to build, with the hammer stone coming down to the ground", () => {
+    if (KNEE_CONTACT === undefined) {
+      throw new Error("The skeleton needs a knee contact");
+    }
 
-    expect(lowest).toBeGreaterThan(0.15);
+    for (let phase = 0; phase < 1; phase += 0.05) {
+      const poser = posed("build", phase);
+      const [leftHeel, leftToe] = footHeights(poser);
+
+      expect(contactHeight(poser, KNEE_CONTACT), `${phase} knee`).toBeLessThan(PLANTED);
+      expect(Math.max(leftHeel, leftToe), `${phase} standing foot`).toBeLessThan(PLANTED);
+    }
+
+    expect(jointOf(posed("build", 0.5), HumanBone.HandRight).y).toBeGreaterThan(1);
+    expect(pointOf(posed("build", 0.64), HumanBone.HandRight, RIGHT_FIST).y).toBeLessThan(0.35);
+  });
+
+  it("drives the digging stick down into the ground", () => {
+    const raised = posed("dig", 0.2);
+    const thrust = posed("dig", 0.55);
+
+    expect(pointOf(raised, HumanBone.HandRight, STICK_TIP).y).toBeGreaterThan(0.25);
+    expect(pointOf(thrust, HumanBone.HandRight, STICK_TIP).y).toBeLessThan(0.05);
+    expect(pointOf(raised, HumanBone.HandRight, STICK_TIP).y).toBeLessThan(
+      pointOf(raised, HumanBone.HandRight, RIGHT_FIST).y - 0.5
+    );
+  });
+
+  it("is in the air at the widest stride of a leap and lands as the legs pass", () => {
+    expect(lowestFoot(posed("leap", 0))).toBeGreaterThan(0.15);
+    expect(lowestFoot(posed("leap", 0.5))).toBeGreaterThan(0.15);
+    expect(lowestFoot(posed("leap", 0.25))).toBeLessThan(PLANTED);
+    expect(lowestFoot(posed("leap", 0.75))).toBeLessThan(PLANTED);
+  });
+
+  it("leaves the ground in the middle of a jump", () => {
+    expect(lowestFoot(posed("play", 0.48))).toBeGreaterThan(0.15);
   });
 });
 
