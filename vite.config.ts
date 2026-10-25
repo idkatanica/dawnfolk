@@ -29,7 +29,6 @@ const configuration: ViteUserConfig = defineConfig({
           exclude: [...configDefaults.exclude, "src/**/*.browser.test.ts"],
           include: ["src/**/*.test.ts", "worker/**/*.test.ts"],
           name: "unit",
-          testTimeout: 30_000,
         },
       },
       {
@@ -70,11 +69,11 @@ const configuration: ViteUserConfig = defineConfig({
           include: ["src/**/*.browser.test.ts", "src/**/*.test.tsx"],
           name: "browser",
           setupFiles: ["src/features/testing/browser-setup.ts"],
-          testTimeout: 30_000,
         },
       },
     ],
     restoreMocks: true,
+    testTimeout: 30_000,
   },
   worker: {
     format: "es",

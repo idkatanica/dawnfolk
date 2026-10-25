@@ -1,11 +1,7 @@
-export const HOME_HOST = "playdawnfolk.com";
+const HOME_HOST = "playdawnfolk.com";
 
-interface AssetFetcher {
-  readonly fetch: (request: Request) => Promise<Response>;
-}
-
-export interface WorkerEnvironment {
-  readonly ASSETS: AssetFetcher;
+interface WorkerEnvironment {
+  readonly ASSETS: { readonly fetch: (request: Request) => Promise<Response> };
 }
 
 export function homeAddressOf(request: Request): string | null {

@@ -21,8 +21,7 @@ commits and pull requests; follow both. This file adds what is easy to miss.
 - In development the engine is on `window.dawnfolk`: `session.frame` has the
   tribes, weather and calendar, `camera` the view, and `powers` the active
   tool.
-- Keep screenshots in a temporary folder, not in the repository; README
-  images live in `.github/screenshots`.
+- Keep screenshots in a temporary folder, not in the repository.
 
 ## Rules that are easy to miss
 

@@ -1,6 +1,5 @@
 name: Feature request
 description: Propose a power, a world rule, a tribe behaviour or an interface change
-labels: []
 body:
   - type: markdown
     attributes:

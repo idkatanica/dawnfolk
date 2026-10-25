@@ -1,6 +1,5 @@
 name: Bug report
 description: The island, the tribes or the interface do not behave as they should
-labels: []
 body:
   - type: markdown
     attributes:
