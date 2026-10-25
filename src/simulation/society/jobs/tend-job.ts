@@ -36,12 +36,8 @@ export class TendJob implements Job {
 
     const progress = this.#errand.update(tick);
 
-    if (progress === "abandoned") {
-      return null;
-    }
-
     if (progress !== "finished") {
-      return this;
+      return progress === "abandoned" ? null : this;
     }
 
     campfire.fuel = Math.min(1, campfire.fuel + FUEL_PER_LOG);
