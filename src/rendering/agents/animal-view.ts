@@ -41,7 +41,8 @@ const ANIMAL_LAYOUT: PaletteLayout = {
 };
 
 const LEVEL_DISTANCES: LevelDistances = { far: 650, high: 90, low: 160 };
-const BOUNDING_RADIUS = 3.5;
+export const ANIMAL_BOUNDING_LIFT = 1.5;
+export const ANIMAL_BOUNDING_RADIUS = 4.6;
 const WADING_DEPTH = 1.2;
 const SHORTEST_STRIDE = 0.5;
 const REFERENCE_SEED = 0.5;
@@ -93,7 +94,7 @@ function measureKindStrides(kind: AnimalKind): Map<AnimalPose, number> {
 export class AnimalView {
   readonly group = new Group();
   readonly #blendedPose = new Pose(MAMMOTH_BONE_COUNT);
-  readonly #bounds = new Sphere(new Vector3(), BOUNDING_RADIUS);
+  readonly #bounds = new Sphere(new Vector3(), ANIMAL_BOUNDING_RADIUS);
   readonly #kinds: Readonly<Record<AnimalKind, AnimalKindView>>;
   readonly #markerAnchor = new Vector3();
   readonly #palette = new AgentPalette(ANIMAL_LAYOUT);
@@ -179,7 +180,7 @@ export class AnimalView {
 
     const y = standingHeight(input.mirror, x, z, WADING_DEPTH);
 
-    this.#bounds.center.set(x, y + 1.5, z);
+    this.#bounds.center.set(x, y + ANIMAL_BOUNDING_LIFT, z);
 
     const distance = input.camera.position.distanceTo(this.#bounds.center);
 
