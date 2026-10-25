@@ -10,46 +10,31 @@ import { byStance, RAID_PHASE_LABELS } from "./stance-looks.ts";
 
 const QUIET_ISLAND = "Every tribe keeps to itself for now. Rivalries grow where lands and hunting grounds meet.";
 
-interface RaidEntry {
-  readonly attacker: TribeSummary;
-  readonly defender: TribeSummary;
-  readonly raid: RaidView;
-}
-
-interface RelationEntry {
+interface TribePair<Item> {
   readonly first: TribeSummary;
-  readonly relation: RelationView;
+  readonly item: Item;
   readonly second: TribeSummary;
 }
 
-function raidEntries(raids: readonly RaidView[], tribes: readonly TribeSummary[]): RaidEntry[] {
-  const entries: RaidEntry[] = [];
+function tribePairs<Item>(
+  items: readonly Item[],
+  tribes: readonly TribeSummary[],
+  idsOf: (item: Item) => readonly [number, number]
+): TribePair<Item>[] {
+  const pairs: TribePair<Item>[] = [];
 
-  for (const raid of raids) {
-    const attacker = tribes.find((tribe) => tribe.id === raid.attackerId);
-    const defender = tribes.find((tribe) => tribe.id === raid.defenderId);
+  for (const item of items) {
+    const [firstId, secondId] = idsOf(item);
 
-    if (attacker !== undefined && defender !== undefined) {
-      entries.push({ attacker, defender, raid });
-    }
-  }
-
-  return entries;
-}
-
-function relationEntries(relations: readonly RelationView[], tribes: readonly TribeSummary[]): RelationEntry[] {
-  const entries: RelationEntry[] = [];
-
-  for (const relation of relations.toSorted(byStance)) {
-    const first = tribes.find((tribe) => tribe.id === relation.firstId);
-    const second = tribes.find((tribe) => tribe.id === relation.secondId);
+    const first = tribes.find((tribe) => tribe.id === firstId);
+    const second = tribes.find((tribe) => tribe.id === secondId);
 
     if (first !== undefined && second !== undefined) {
-      entries.push({ first, relation, second });
+      pairs.push({ first, item, second });
     }
   }
 
-  return entries;
+  return pairs;
 }
 
 function useShowSpot(x: number, z: number) {
@@ -58,8 +43,8 @@ function useShowSpot(x: number, z: number) {
   return () => focus(x, z);
 }
 
-function RaidRow({ entry }: { readonly entry: RaidEntry }) {
-  const { attacker, defender, raid } = entry;
+function RaidRow({ entry }: { readonly entry: TribePair<RaidView> }) {
+  const { first: attacker, item: raid, second: defender } = entry;
 
   const showCamp = useShowSpot(defender.campX, defender.campZ);
 
@@ -90,8 +75,8 @@ function RaidRow({ entry }: { readonly entry: RaidEntry }) {
   );
 }
 
-function RelationRow({ entry }: { readonly entry: RelationEntry }) {
-  const { first, relation, second } = entry;
+function RelationRow({ entry }: { readonly entry: TribePair<RelationView> }) {
+  const { first, item: relation, second } = entry;
 
   const showBorder = useShowSpot((first.campX + second.campX) / 2, (first.campZ + second.campZ) / 2);
 
@@ -120,7 +105,7 @@ function RelationRow({ entry }: { readonly entry: RelationEntry }) {
   );
 }
 
-function RaidSection({ entries }: { readonly entries: readonly RaidEntry[] }) {
+function RaidSection({ entries }: { readonly entries: readonly TribePair<RaidView>[] }) {
   if (entries.length === 0) {
     return null;
   }
@@ -131,7 +116,7 @@ function RaidSection({ entries }: { readonly entries: readonly RaidEntry[] }) {
 
       <ul className="flex flex-col gap-1">
         {entries.map((entry) => (
-          <RaidRow entry={entry} key={entry.raid.id} />
+          <RaidRow entry={entry} key={entry.item.id} />
         ))}
       </ul>
     </section>
@@ -146,12 +131,14 @@ export function RelationList() {
     return <p className="p-3 text-ink-muted text-sm">{QUIET_ISLAND}</p>;
   }
 
+  const relations = rivalry.relations.toSorted(byStance);
+
   return (
     <div className="flex flex-col gap-3">
-      <RaidSection entries={raidEntries(rivalry.raids, tribes)} />
+      <RaidSection entries={tribePairs(rivalry.raids, tribes, (raid) => [raid.attackerId, raid.defenderId])} />
 
       <ul aria-label="Relations" className="flex flex-col gap-0.5">
-        {relationEntries(rivalry.relations, tribes).map((entry) => (
+        {tribePairs(relations, tribes, (relation) => [relation.firstId, relation.secondId]).map((entry) => (
           <RelationRow entry={entry} key={`${entry.first.id}-${entry.second.id}`} />
         ))}
       </ul>

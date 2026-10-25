@@ -21,7 +21,7 @@ describe("settings dialog", () => {
 
   it("opens on the section chosen in the interface", async () => {
     showWorld();
-    useInterfaceStore.getState().openSettings("weather");
+    useInterfaceStore.setState({ isSettingsOpen: true, settingsTab: "weather" });
 
     const screen = await render(<SettingsDialog />);
 
@@ -32,7 +32,7 @@ describe("settings dialog", () => {
 
   it("offers a tab for each section", async () => {
     showWorld();
-    useInterfaceStore.getState().openSettings("world");
+    useInterfaceStore.getState().openSettings();
 
     const screen = await render(<SettingsDialog />);
 
@@ -46,7 +46,7 @@ describe("settings dialog", () => {
 
   it("switches sections from its tabs and remembers the choice", async () => {
     showWorld();
-    useInterfaceStore.getState().openSettings("world");
+    useInterfaceStore.getState().openSettings();
 
     const screen = await render(<SettingsDialog />);
 
@@ -59,7 +59,7 @@ describe("settings dialog", () => {
   });
 
   it("closes from its close button", async () => {
-    useInterfaceStore.getState().openSettings("world");
+    useInterfaceStore.getState().openSettings();
 
     const screen = await render(<SettingsDialog />);
 
@@ -70,7 +70,7 @@ describe("settings dialog", () => {
   });
 
   it("closes with the Escape key", async () => {
-    useInterfaceStore.getState().openSettings("world");
+    useInterfaceStore.getState().openSettings();
 
     const screen = await render(<SettingsDialog />);
 

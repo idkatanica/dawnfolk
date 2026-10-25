@@ -1,30 +1,15 @@
 import { ArrowRight } from "lucide-react";
-import type { FormEvent } from "react";
 import { TextButton } from "../design/buttons.tsx";
 import { Logo } from "../design/logo.tsx";
 import { useWorldDraft } from "../features/new-world/use-world-draft.ts";
 import { NameField, SeedField, ShapeChoice } from "../features/new-world/world-fields.tsx";
 import { useLaunchStore } from "./launch-store.ts";
 
-function useStartScreen() {
+export function StartScreen() {
   const launch = useLaunchStore((state) => state.launch);
   const relaunch = useLaunchStore((state) => state.relaunch);
 
-  const draft = useWorldDraft(launch);
-
-  function begin(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-
-    if (draft.choice !== null) {
-      relaunch(draft.choice);
-    }
-  }
-
-  return { begin, draft };
-}
-
-export function StartScreen() {
-  const { begin, draft } = useStartScreen();
+  const draft = useWorldDraft(launch, relaunch);
 
   return (
     <div className="absolute inset-0 overflow-y-auto">
@@ -42,7 +27,7 @@ export function StartScreen() {
         <form
           aria-label="New world"
           className="flex w-full max-w-sm flex-col gap-4 rounded-island bg-veil p-5 ring-1 ring-white/40 backdrop-blur-xl backdrop-saturate-150"
-          onSubmit={begin}
+          onSubmit={draft.create}
         >
           <h2 className="font-semibold text-ink text-lg">New world</h2>
 

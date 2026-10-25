@@ -2,12 +2,6 @@ import { type RefObject, useEffect } from "react";
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import type { LabelPlacement } from "../../game/label-projector.ts";
 
-interface LabelAnchor {
-  readonly lift: number;
-  readonly x: number;
-  readonly z: number;
-}
-
 interface PlacedLabel {
   readonly isPriority: boolean;
   readonly label: HTMLElement;
@@ -20,40 +14,6 @@ const TOP_CLEARANCE = 76;
 const FAR_DISTANCE = 2600;
 const CROWDED_WIDTH = 150;
 const CROWDED_HEIGHT = 40;
-
-function readCoordinate(label: HTMLElement, attribute: string): number | null {
-  const text = label.getAttribute(attribute);
-
-  if (text === null) {
-    return null;
-  }
-
-  const value = Number(text);
-
-  return Number.isFinite(value) ? value : null;
-}
-
-function anchorOf(label: HTMLElement): LabelAnchor | null {
-  const x = readCoordinate(label, "data-x");
-  const z = readCoordinate(label, "data-z");
-  const lift = readCoordinate(label, "data-lift");
-
-  if (x === null || z === null || lift === null) {
-    return null;
-  }
-
-  return { lift, x, z };
-}
-
-function placementOf(engine: EngineHandle, label: HTMLElement): LabelPlacement | null {
-  const anchor = anchorOf(label);
-
-  if (anchor === null) {
-    return null;
-  }
-
-  return engine.placeLabel(anchor.x, anchor.z, anchor.lift);
-}
 
 function isCrowding(first: LabelPlacement, second: LabelPlacement): boolean {
   return Math.abs(first.left - second.left) < CROWDED_WIDTH && Math.abs(first.top - second.top) < CROWDED_HEIGHT;
@@ -72,7 +32,9 @@ function placeVisibleLabels(engine: EngineHandle, layer: HTMLElement): PlacedLab
   const placed: PlacedLabel[] = [];
 
   for (const label of layer.querySelectorAll<HTMLElement>(LABEL_SELECTOR)) {
-    const placement = placementOf(engine, label);
+    const { lift, x, z } = label.dataset;
+
+    const placement = engine.placeLabel(Number(x), Number(z), Number(lift));
 
     if (placement === null || placement.top < TOP_CLEARANCE) {
       hideLabel(label);

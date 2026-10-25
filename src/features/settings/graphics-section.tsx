@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { useState } from "react";
 import { type LaunchChanges, useLaunchStore } from "../../app/launch-store.ts";
 import { storeQuality } from "../../app/preferences.ts";
 import { TextButton } from "../../design/buttons.tsx";
@@ -46,23 +46,6 @@ function useQualityChoice() {
   return { applyQuality, changeQuality, hasChanged: quality !== active, quality };
 }
 
-function useNewWorld() {
-  const launch = useLaunchStore((state) => state.launch);
-  const relaunch = useRelaunch();
-
-  const draft = useWorldDraft({ name: launch.name, seed: launch.seed, shape: launch.shape });
-
-  function createWorld(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-
-    if (draft.choice !== null) {
-      relaunch(draft.choice);
-    }
-  }
-
-  return { createWorld, draft };
-}
-
 function QualityChoice() {
   const { applyQuality, changeQuality, hasChanged, quality } = useQualityChoice();
 
@@ -99,10 +82,12 @@ function MapLabelsChoice() {
 }
 
 function NewWorld() {
-  const { createWorld, draft } = useNewWorld();
+  const launch = useLaunchStore((state) => state.launch);
+
+  const draft = useWorldDraft(launch, useRelaunch());
 
   return (
-    <form aria-label="New world" className={GROUP_CLASS} onSubmit={createWorld}>
+    <form aria-label="New world" className={GROUP_CLASS} onSubmit={draft.create}>
       <GroupHeading description="Every seed grows a different island. The current one is lost." title="New world" />
 
       <NameField onChange={draft.changeName} onRoll={draft.rollName} value={draft.nameText} />

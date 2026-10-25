@@ -72,19 +72,23 @@ describe("interface store", () => {
     expect(localStorage.getItem("dawnfolk.labels")).toBe("shown");
   });
 
-  it("opens the settings on the chosen section", () => {
-    useInterfaceStore.getState().openSettings("time");
+  it("opens the settings on the World section", () => {
+    const { openSettings, setSettingsTab } = useInterfaceStore.getState();
+
+    setSettingsTab("time");
+    openSettings();
 
     const state = useInterfaceStore.getState();
 
     expect(state.isSettingsOpen).toBe(true);
-    expect(state.settingsTab).toBe("time");
+    expect(state.settingsTab).toBe("world");
   });
 
   it("remembers the section after the settings close", () => {
-    const { openSettings, setSettingsOpen } = useInterfaceStore.getState();
+    const { openSettings, setSettingsOpen, setSettingsTab } = useInterfaceStore.getState();
 
-    openSettings("graphics");
+    openSettings();
+    setSettingsTab("graphics");
     setSettingsOpen(false);
 
     const state = useInterfaceStore.getState();
