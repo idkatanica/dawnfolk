@@ -53,8 +53,8 @@ commits and pull requests; follow both. This file adds what is easy to miss.
   keep their colors and commit only the final WebP, not masters. Interface
   controls use `lucide-react` and take the text color; don't tint them.
 - The interface is islands from `design/island.tsx`. Panels people read, such
-  as the top bar, the side panel, dialogs and notices, are solid paper so text
-  reads over any terrain; only the power dock and the minimap use
+  as the status card, the side panel, dialogs and notices, are solid paper so
+  text reads over any terrain; only the power dock and the minimap use
   `surface="glass"` from `@svidskiy/glass-surface-react`. Every island in a row
   has the same height.
 - Commits carry no trailers such as `Co-authored-by:`, and a pull request body

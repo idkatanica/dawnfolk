@@ -1,6 +1,6 @@
 import { cn } from "../design/cn.ts";
 import { useIsCompact } from "../design/use-media-query.ts";
-import { CompactTopBar, TopBar } from "../features/interface/top-bar.tsx";
+import { CompactTopBar, PanelBar, StatusCard } from "../features/interface/top-bar.tsx";
 import { JournalSheet } from "../features/journal/journal-sheet.tsx";
 import { SidePanel } from "../features/journal/side-panel.tsx";
 import { WorldLabels } from "../features/labels/world-labels.tsx";
@@ -15,14 +15,16 @@ const HUD_FRAME = "pointer-events-none fixed inset-0 z-10 flex flex-col p-safe";
 function WideHud() {
   return (
     <div className={cn(HUD_FRAME, "gap-3")}>
-      <TopBar />
-
       <div className="flex min-h-0 flex-1 gap-3">
-        <div className="relative min-w-0 flex-1">
-          <NoticeFeed className="absolute inset-x-0 top-0" />
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-3">
+          <StatusCard />
+
+          <NoticeFeed className="items-start" />
         </div>
 
         <div className="flex min-h-0 flex-col items-end gap-3">
+          <PanelBar />
+
           <SidePanel className="max-h-full min-h-0" />
 
           <PowerSettings className="mt-auto" />

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import { createCalendar, createStatistics, createWeather, resetWorld, showWorld } from "../testing/world-fixtures.ts";
 import { useInterfaceStore } from "./interface-store.ts";
-import { CompactTopBar, TopBar } from "./top-bar.tsx";
+import { CompactTopBar, PanelBar, StatusCard } from "./top-bar.tsx";
 
 const INITIAL_INTERFACE = useInterfaceStore.getState();
 
@@ -15,25 +15,31 @@ function showMorning(): void {
   });
 }
 
-describe("top bar", () => {
+describe("status card and top bar", () => {
   afterEach(() => {
     resetWorld();
     useInterfaceStore.setState(INITIAL_INTERFACE, true);
   });
 
-  it("holds the status, the time controls and the panel buttons in one bar", async () => {
+  it("holds the status and the time controls in one card", async () => {
     showMorning();
 
-    const screen = await render(<TopBar />);
+    const screen = await render(<StatusCard />);
 
-    const bar = screen.getByRole("banner");
+    const card = screen.getByRole("banner");
 
-    await expect.element(bar.getByText("09:30")).toBeVisible();
-    await expect.element(bar.getByText("Clear")).toBeVisible();
-    await expect.element(bar.getByText("14", { exact: true })).toBeVisible();
-    await expect.element(bar.getByRole("button", { exact: true, name: "Resume" })).toBeVisible();
-    await expect.element(bar.getByRole("group", { name: "Game speed" })).toBeVisible();
-    await expect.element(bar.getByRole("navigation", { name: "Panels" })).toBeVisible();
+    await expect.element(card.getByText("09:30")).toBeVisible();
+    await expect.element(card.getByText("Clear")).toBeVisible();
+    await expect.element(card.getByText("14", { exact: true })).toBeVisible();
+    await expect.element(card.getByRole("button", { exact: true, name: "Resume" })).toBeVisible();
+    await expect.element(card.getByRole("group", { name: "Game speed" })).toBeVisible();
+  });
+
+  it("keeps the panel buttons apart from the status", async () => {
+    const screen = await render(<PanelBar />);
+
+    await expect.element(screen.getByRole("navigation", { name: "Panels" })).toBeVisible();
+    await expect.element(screen.getByRole("banner")).not.toBeInTheDocument();
   });
 
   it("keeps only the clock, the time controls and the menu on a phone", async () => {
