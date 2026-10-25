@@ -33,13 +33,19 @@ export class Calendar {
   daySeconds = DEFAULT_DAY_SECONDS;
   daysPerSeason = DEFAULT_DAYS_PER_SEASON;
   isTimeFrozen: boolean;
+  #anchorDate = 0;
+  #anchorDay = 0;
 
   constructor() {
     this.isTimeFrozen = false;
   }
 
+  get date(): number {
+    return this.#anchorDate + (this.day - this.#anchorDay);
+  }
+
   get timeOfDay(): number {
-    return fractionalPart(this.day);
+    return fractionalPart(this.date);
   }
 
   get hours(): number {
@@ -51,15 +57,15 @@ export class Calendar {
   }
 
   get season(): number {
-    return (this.day / this.daysPerSeason) % SEASON_COUNT;
+    return (this.date / this.daysPerSeason) % SEASON_COUNT;
   }
 
   get year(): number {
-    return Math.floor(this.day / this.yearLength) + 1;
+    return Math.floor(this.date / this.yearLength) + 1;
   }
 
   get dayOfSeason(): number {
-    return Math.floor(this.day % this.daysPerSeason) + 1;
+    return Math.floor(this.date % this.daysPerSeason) + 1;
   }
 
   get isNight(): boolean {
@@ -79,24 +85,29 @@ export class Calendar {
   }
 
   setHours(hours: number): void {
-    this.day = Math.floor(this.day) + fractionalPart(hours / HOURS_PER_DAY);
+    this.#setDate(Math.floor(this.date) + fractionalPart(hours / HOURS_PER_DAY));
   }
 
   setSeason(season: number): void {
-    const { timeOfDay } = this;
+    const { date, timeOfDay } = this;
 
-    const yearStart = this.day - (this.day % this.yearLength);
+    const yearStart = date - (date % this.yearLength);
 
-    this.day = Math.floor(yearStart + season * this.daysPerSeason + 0.001) + timeOfDay;
+    this.#setDate(Math.floor(yearStart + season * this.daysPerSeason + 0.001) + timeOfDay);
   }
 
   setDaysPerSeason(daysPerSeason: number): void {
     const { season, timeOfDay } = this;
 
-    const completedYears = Math.floor(this.day / this.yearLength);
+    const completedYears = Math.floor(this.date / this.yearLength);
 
     this.daysPerSeason = daysPerSeason;
-    this.day = completedYears * this.yearLength + Math.floor(season * daysPerSeason) + timeOfDay;
+    this.#setDate(completedYears * this.yearLength + Math.floor(season * daysPerSeason) + timeOfDay);
+  }
+
+  #setDate(date: number): void {
+    this.#anchorDate = date;
+    this.#anchorDay = this.day;
   }
 
   diurnalTemperatureOffset(): number {

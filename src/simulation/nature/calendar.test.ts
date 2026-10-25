@@ -73,6 +73,39 @@ describe("calendar", () => {
     expect(calendar.hours).toBeCloseTo(12);
   });
 
+  it("keeps counting elapsed days while the date is set", () => {
+    const calendar = calendarAt(15.2);
+
+    calendar.setDaysPerSeason(30);
+
+    expect(calendar.day).toBeCloseTo(15.2);
+    expect(calendar.view().seasonName).toBe("Summer");
+    expect(calendar.year).toBe(2);
+    expect(calendar.hours).toBeCloseTo(4.8);
+
+    calendar.setDaysPerSeason(1);
+
+    expect(calendar.day).toBeCloseTo(15.2);
+    expect(calendar.view().seasonName).toBe("Summer");
+    expect(calendar.year).toBe(2);
+    expect(calendar.dayOfSeason).toBe(1);
+
+    calendar.setSeason(0);
+    calendar.setHours(14);
+
+    expect(calendar.day).toBeCloseTo(15.2);
+    expect(calendar.view().seasonName).toBe("Spring");
+    expect(calendar.year).toBe(2);
+    expect(calendar.dayOfSeason).toBe(1);
+    expect(calendar.hours).toBeCloseTo(14);
+
+    calendar.advance(DEFAULT_DAY_SECONDS);
+
+    expect(calendar.day).toBeCloseTo(16.2);
+    expect(calendar.view().seasonName).toBe("Summer");
+    expect(calendar.hours).toBeCloseTo(14);
+  });
+
   it("is warmest in the afternoon and coldest before dawn", () => {
     const afternoon = calendarAt(15 / 24);
     const night = calendarAt(3 / 24);
