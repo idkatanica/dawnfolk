@@ -79,6 +79,7 @@ function surfaceStep(seconds: number, days: number, conditions: SurfaceCondition
 
 export class SurfaceSystem {
   readonly #coldestWaterTemperature: Float32Array;
+  readonly #isKnownSettled: Uint8Array;
   readonly #maskHeightVersions: Float64Array;
   readonly #maskWaterVersions: Float64Array;
   readonly #scorchBits: Uint32Array;
@@ -95,6 +96,7 @@ export class SurfaceSystem {
     this.#world = world;
     this.#segmentsPerRow = Math.ceil(cellsPerSide / SEGMENT_CELLS);
     this.#coldestWaterTemperature = new Float32Array(this.#segmentsPerRow * cellsPerSide);
+    this.#isKnownSettled = new Uint8Array(this.#segmentsPerRow * cellsPerSide);
     this.#waterCells = new Uint8Array(cellCount);
     this.#maskHeightVersions = new Float64Array(cellsPerSide).fill(UNBUILT_MASK);
     this.#maskWaterVersions = new Float64Array(cellsPerSide).fill(UNBUILT_MASK);
@@ -128,7 +130,12 @@ export class SurfaceSystem {
     const rowStart = row * cellsPerSide;
     const rowEnd = rowStart + cellsPerSide;
 
-    this.#refreshMasks(row);
+    const isMaskRebuilt = this.#refreshMasks(row);
+    const isEdited = this.#world.surfaceEdits.takeRow(row);
+
+    if (isMaskRebuilt || isEdited || step.isPrecipitating) {
+      this.#isKnownSettled.fill(0, row * this.#segmentsPerRow, (row + 1) * this.#segmentsPerRow);
+    }
 
     if (step.isPrecipitating) {
       return this.#updateCells(rowStart, rowEnd, step);
@@ -160,11 +167,11 @@ export class SurfaceSystem {
     return isChanged;
   }
 
-  #refreshMasks(row: number): void {
+  #refreshMasks(row: number): boolean {
     const { grid, heightVersion, terrain, waterVersion } = this.#world;
 
     if (this.#maskHeightVersions[row] === heightVersion && this.#maskWaterVersions[row] === waterVersion) {
-      return;
+      return false;
     }
 
     const { baseTemperature, height, waterSurface } = terrain;
@@ -194,11 +201,19 @@ export class SurfaceSystem {
 
     this.#maskHeightVersions[row] = heightVersion;
     this.#maskWaterVersions[row] = waterVersion;
+
+    return true;
   }
 
   #isSettled(segment: number, firstCell: number, endCell: number, step: SurfaceStep): boolean {
     if (this.#coldestWaterTemperature[segment] + step.airTemperatureOffset < ICE_TEMPERATURE) {
+      this.#isKnownSettled[segment] = 0;
+
       return false;
+    }
+
+    if (this.#isKnownSettled[segment] === 1) {
+      return true;
     }
 
     const { fields, terrain } = this.#world;
@@ -225,6 +240,8 @@ export class SurfaceSystem {
         return false;
       }
     }
+
+    this.#isKnownSettled[segment] = 1;
 
     return true;
   }
