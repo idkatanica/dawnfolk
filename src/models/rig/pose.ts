@@ -2,6 +2,17 @@ import type { Grounding } from "./skeleton.ts";
 
 export const ANGLES_PER_BONE = 3;
 
+export type ClipTiming =
+  | { readonly kind: "once"; readonly cycleSeconds: number }
+  | { readonly kind: "seconds"; readonly cycleSeconds: number }
+  | { readonly kind: "stride" };
+
+export const STRIDE_TIMING: ClipTiming = { kind: "stride" };
+
+export function seconds(cycleSeconds: number): ClipTiming {
+  return { cycleSeconds, kind: "seconds" };
+}
+
 export const RotationAxis = {
   Pitch: 0,
   Roll: 1,

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import { useHeldDraft } from "./use-held-draft.ts";
 
@@ -17,10 +17,6 @@ function useDraftOf(props?: ConfirmedProps) {
 describe("useHeldDraft", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it("shows the confirmed value until something is held", async () => {

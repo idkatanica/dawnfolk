@@ -8,7 +8,7 @@ import { assignHomes, housingCapacity } from "./housing.ts";
 import { createPerson, isChild, isElder, type Person } from "./person.ts";
 import { updatePlots } from "./plots.ts";
 import { discover, isReadyToDiscover } from "./progress.ts";
-import { considerMoving, considerSplit, type SettlementServices, updateMigration } from "./settlement.ts";
+import { considerMoving, considerSplit, updateMigration } from "./settlement.ts";
 import type { SocietyContext } from "./society-context.ts";
 import { type Storage, spoilFood, totalFood } from "./stock.ts";
 import { knows, learn, type Tribe, upcomingTechnology } from "./tribe.ts";
@@ -40,12 +40,7 @@ interface TribeTick {
   days: number;
   members: readonly Person[];
   seconds: number;
-  services: SocietyServices;
   tribe: Tribe;
-}
-
-export interface SocietyServices extends SettlementServices {
-  addPerson: (tribe: Tribe, person: Person) => void;
 }
 
 export function updateTribe(tick: TribeTick): void {
@@ -230,7 +225,7 @@ function giveBirth(tick: TribeTick, mother: Person): void {
 
   mother.lastBirthDay = context.environment.day;
   tribe.births += 1;
-  tick.services.addPerson(tribe, child);
+  tick.context.people.addPerson(tribe, child);
   assignHomes(tribe, context);
   context.chronicle.record({
     category: "birth",
@@ -248,7 +243,7 @@ function driftFaith(tick: TribeTick): void {
 }
 
 function runDailyChecks(tick: TribeTick): void {
-  const { context, members, services, tribe } = tick;
+  const { context, members, tribe } = tick;
 
   tribe.timers.dailyDays += tick.days;
 
@@ -261,8 +256,8 @@ function runDailyChecks(tick: TribeTick): void {
   if (tribe.isMigrating) {
     updateMigration(tribe, members, context);
   } else {
-    considerMoving(tribe, members, context, services);
+    considerMoving(tribe, members, context);
   }
 
-  considerSplit(tribe, members, context, services);
+  considerSplit(tribe, members, context);
 }

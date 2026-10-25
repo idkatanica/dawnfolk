@@ -54,6 +54,18 @@ describe("keyboard controls", () => {
     expect(rig.camera.state.targetZ).toBeLessThan(-100);
   });
 
+  it("takes focus off a clicked button once the camera moves", () => {
+    createRig();
+
+    const button = document.createElement("button");
+
+    document.body.append(button);
+    button.focus();
+    press(button, "KeyW");
+
+    expect(document.activeElement).not.toBe(button);
+  });
+
   it("stops once the key is released", () => {
     const rig = createRig();
 

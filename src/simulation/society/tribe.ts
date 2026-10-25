@@ -1,6 +1,5 @@
 import type { BuildingKind } from "../../content/buildings.ts";
 import type { CropKind } from "../../content/crops.ts";
-import { currentEra, type EraDefinition } from "../../content/eras.ts";
 import type { TribeIdentity } from "../../content/names.ts";
 import { nextTechnology, type TechnologyDefinition, type TechnologyId } from "../../content/technologies.ts";
 import type { ToolMaterial } from "../../content/weapons.ts";
@@ -8,6 +7,7 @@ import type { WorldRules } from "../../content/world-rules.ts";
 import { emptyStock, type Stock } from "./stock.ts";
 
 export const BASE_HOUSING = 4;
+export const MAXIMUM_FAITH = 100;
 
 const NEVER = Number.NEGATIVE_INFINITY;
 
@@ -153,10 +153,6 @@ export function createTribe(founding: TribeFounding): Tribe {
 
 export function knows(tribe: Tribe, technology: TechnologyId): boolean {
   return tribe.technologies.has(technology);
-}
-
-export function eraOf(tribe: Tribe): EraDefinition {
-  return currentEra(tribe.technologies);
 }
 
 export function upcomingTechnology(tribe: Tribe): TechnologyDefinition | undefined {

@@ -83,19 +83,13 @@ function longestSpellInWater(simulation: Simulation, seconds: number): number {
 }
 
 describe.each(["round", "square"] as const)("a long day on a %s island", (shape) => {
-  it("keeps people and animals out of rivers and lakes", { timeout: 180_000 }, () => {
+  it("keeps people and animals out of water and gets them out of a flood", { timeout: 180_000 }, () => {
     const simulation = populatedIsland(shape);
 
     expect(longestSpellInWater(simulation, RUN_SECONDS)).toBeLessThan(LONGEST_SPELL_IN_WATER);
     expect(simulation.society.population).toBeGreaterThan(14);
-  });
 
-  it("gets everyone out quickly when the land floods under them", { timeout: 180_000 }, () => {
-    const simulation = populatedIsland(shape);
-
-    simulation.runTicks(300);
-
-    const [person] = simulation.society.people;
+    const person = simulation.society.people.find((candidate) => candidate.isAlive);
 
     if (person === undefined) {
       throw new Error("Expected someone on the island");

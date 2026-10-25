@@ -230,80 +230,10 @@ export class SurfaceSystem {
   }
 
   #updateCells(firstCell: number, endCell: number, step: SurfaceStep): boolean {
-    if (firstCell === endCell) {
-      return false;
-    }
-
-    if (step.isPrecipitating) {
-      return this.#updateWetCells(firstCell, endCell, step);
-    }
-
-    return this.#updateDryCells(firstCell, endCell, step);
-  }
-
-  #updateDryCells(firstCell: number, endCell: number, step: SurfaceStep): boolean {
     const { fields, terrain } = this.#world;
     const { snow, wetness } = fields;
     const { baseTemperature, ground } = terrain;
-    const { airTemperatureOffset, isDrying, meltRate, seconds } = step;
-
-    const waterCells = this.#waterCells;
-
-    let isChanged = false;
-
-    for (let cell = firstCell; cell < endCell; cell += 1) {
-      if (waterCells[cell] === 1) {
-        if (updateWaterCell(cell, fields, terrain, step)) {
-          isChanged = true;
-        }
-
-        continue;
-      }
-
-      const temperature = baseTemperature[cell] + airTemperatureOffset;
-      const snowBefore = snow[cell];
-      const wetnessBefore = wetness[cell];
-
-      let snowAfter = snowBefore;
-      let wetnessAfter = wetnessBefore;
-
-      if (snowAfter > 0 && temperature > 0) {
-        const melt = (temperature * 0.0035 + step.sunlightMelt) * seconds * meltRate;
-
-        snowAfter = Math.fround(Math.max(0, snowAfter - melt));
-        wetnessAfter = Math.fround(Math.min(1, wetnessAfter + step.meltWetting));
-      }
-
-      if (wetnessAfter > 0 && isDrying) {
-        const evaporation = 0.0012 + Math.max(0, temperature) * 0.000_25 + step.sunlightDrying;
-
-        wetnessAfter = Math.fround(Math.max(0, wetnessAfter - evaporation * seconds * step.dryingRate));
-      }
-
-      if (ground[cell] === Ground.Snow) {
-        snowAfter = Math.fround(Math.max(snowAfter, ETERNAL_SNOW_COVER));
-      }
-
-      if (snowAfter !== snowBefore || wetnessAfter !== wetnessBefore) {
-        isChanged = true;
-      }
-
-      snow[cell] = snowAfter;
-      wetness[cell] = wetnessAfter;
-
-      if (recoverFromFire(cell, fields, terrain, step)) {
-        isChanged = true;
-      }
-    }
-
-    return isChanged;
-  }
-
-  #updateWetCells(firstCell: number, endCell: number, step: SurfaceStep): boolean {
-    const { fields, terrain } = this.#world;
-    const { snow, wetness } = fields;
-    const { baseTemperature, ground } = terrain;
-    const { airTemperatureOffset, isSnowfall, meltRate, seconds } = step;
+    const { airTemperatureOffset, isDrying, isPrecipitating, isSnowfall, meltRate, seconds } = step;
 
     const waterCells = this.#waterCells;
 
@@ -326,11 +256,13 @@ export class SurfaceSystem {
       let wetnessAfter = wetnessBefore;
       let rainMelt = 0;
 
-      if (isSnowfall || temperature < SNOWFALL_TEMPERATURE) {
-        snowAfter = Math.fround(Math.min(SNOW_CAPACITY, snowAfter + step.snowfall));
-      } else {
-        wetnessAfter = Math.fround(Math.min(1, wetnessAfter + step.soaking));
-        rainMelt = RAIN_MELT;
+      if (isPrecipitating) {
+        if (isSnowfall || temperature < SNOWFALL_TEMPERATURE) {
+          snowAfter = Math.fround(Math.min(SNOW_CAPACITY, snowAfter + step.snowfall));
+        } else {
+          wetnessAfter = Math.fround(Math.min(1, wetnessAfter + step.soaking));
+          rainMelt = RAIN_MELT;
+        }
       }
 
       if (snowAfter > 0 && temperature > 0) {
@@ -340,18 +272,20 @@ export class SurfaceSystem {
         wetnessAfter = Math.fround(Math.min(1, wetnessAfter + step.meltWetting));
       }
 
-      if (ground[cell] === Ground.Snow) {
-        snowAfter = Math.fround(Math.max(snowAfter, ETERNAL_SNOW_COVER));
+      if (wetnessAfter > 0 && isDrying) {
+        const evaporation = 0.0012 + Math.max(0, temperature) * 0.000_25 + step.sunlightDrying;
+
+        wetnessAfter = Math.fround(Math.max(0, wetnessAfter - evaporation * seconds * step.dryingRate));
       }
 
-      if (snowAfter !== snowBefore || wetnessAfter !== wetnessBefore) {
-        isChanged = true;
+      if (ground[cell] === Ground.Snow) {
+        snowAfter = Math.fround(Math.max(snowAfter, ETERNAL_SNOW_COVER));
       }
 
       snow[cell] = snowAfter;
       wetness[cell] = wetnessAfter;
 
-      if (recoverFromFire(cell, fields, terrain, step)) {
+      if (recoverFromFire(cell, fields, terrain, step) || snowAfter !== snowBefore || wetnessAfter !== wetnessBefore) {
         isChanged = true;
       }
     }

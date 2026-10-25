@@ -1,5 +1,4 @@
-import { DepositGround } from "./deposit-grounds.ts";
-import type { GroundIndex } from "./grounds.ts";
+import { Ground, type GroundIndex } from "./grounds.ts";
 import type { MaterialKind } from "./resources.ts";
 import type { TechnologyId } from "./technologies.ts";
 
@@ -24,7 +23,7 @@ export interface DepositDefinition {
 export const DEPOSITS: Readonly<Record<DepositKind, DepositDefinition>> = {
   clay: {
     countPerIsland: 30,
-    ground: DepositGround.Clay,
+    ground: Ground.Clay,
     name: "Clay bank",
     radius: 28,
     reach: 900,
@@ -33,7 +32,7 @@ export const DEPOSITS: Readonly<Record<DepositKind, DepositDefinition>> = {
   },
   copper: {
     countPerIsland: 30,
-    ground: DepositGround.CopperOre,
+    ground: Ground.CopperOre,
     name: "Copper vein",
     radius: 30,
     reach: 1500,
@@ -42,7 +41,7 @@ export const DEPOSITS: Readonly<Record<DepositKind, DepositDefinition>> = {
   },
   iron: {
     countPerIsland: 30,
-    ground: DepositGround.IronOre,
+    ground: Ground.IronOre,
     name: "Iron vein",
     radius: 34,
     reach: 1500,
@@ -51,7 +50,7 @@ export const DEPOSITS: Readonly<Record<DepositKind, DepositDefinition>> = {
   },
   tin: {
     countPerIsland: 24,
-    ground: DepositGround.TinOre,
+    ground: Ground.TinOre,
     name: "Tin vein",
     radius: 26,
     reach: 1500,

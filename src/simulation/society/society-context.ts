@@ -10,24 +10,14 @@ import type { Environment } from "../nature/environment.ts";
 import type { FireSystem } from "../nature/fire.ts";
 import type { WorldState } from "../world/world-state.ts";
 import type { BuildingSystem } from "./buildings.ts";
-import type { DeathCause, Person } from "./person.ts";
+import type { Person } from "./person.ts";
 import type { RivalrySystem } from "./rivalry/rivalry-system.ts";
+import type { SocietySystem } from "./society.ts";
 import type { Tribe } from "./tribe.ts";
 
 export interface DeathAccount {
   readonly category: ChronicleCategory;
   readonly text: string;
-}
-
-export interface PeopleDirectory {
-  countNear: (x: number, z: number, radius: number, accepts: (person: Person) => boolean) => number;
-  findPerson: (id: number) => Person | null;
-  findTribe: (id: number) => Tribe | null;
-  kill: (person: Person, cause: DeathCause, account?: DeathAccount | null) => void;
-  livingWithin: (x: number, z: number, radius: number) => Person[];
-  membersOf: (tribe: Tribe) => Person[];
-  nearestPerson: (x: number, z: number, radius: number, accepts: (person: Person) => boolean) => Person | null;
-  tribes: () => readonly Tribe[];
 }
 
 export interface SocietyContext {
@@ -40,7 +30,7 @@ export interface SocietyContext {
   hazards: HazardMap;
   identifiers: IdentifierSource;
   navigation: NavigationGrid;
-  people: PeopleDirectory;
+  people: SocietySystem;
   random: RandomSource;
   rivalry: RivalrySystem;
   rules: WorldRules;

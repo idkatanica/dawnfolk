@@ -1,13 +1,7 @@
 import type { ResourceKind } from "../../content/resources.ts";
 import { DEFAULT_WORLD_RULES } from "../../content/world-rules.ts";
 import type { ChronicleEntry } from "../../simulation/chronicle.ts";
-import type {
-  SimulationFrame,
-  SimulationStatistics,
-  StockView,
-  TribeSummary,
-  WeatherView,
-} from "../../simulation/frame.ts";
+import type { SimulationFrame, StockView, TribeSummary, WeatherView } from "../../simulation/frame.ts";
 import type {
   AnimalInspection,
   BuildingInspection,
@@ -49,14 +43,6 @@ export function createWeather(overrides: Partial<WeatherView> = {}): WeatherView
     windSpeed: 14,
     windX: 1,
     windZ: 0,
-    ...overrides,
-  };
-}
-
-export function createStatistics(overrides: Partial<SimulationStatistics> = {}): SimulationStatistics {
-  return {
-    population: 14,
-    tribes: 2,
     ...overrides,
   };
 }
@@ -122,8 +108,6 @@ export function createPersonInspection(overrides: Partial<PersonInspection> = {}
     health: 1,
     hunger: 0.24,
     id: 4,
-    isAlive: true,
-    isChild: false,
     isFemale: false,
     kind: "person",
     name: "Esk",
@@ -140,7 +124,6 @@ export function createAnimalInspection(overrides: Partial<AnimalInspection> = {}
     activity: "Grazing",
     health: 0.8,
     id: 9,
-    isAlive: true,
     isYoung: false,
     kind: "animal",
     name: "Deer",
@@ -235,7 +218,6 @@ function createSnapshot(overrides: Partial<WorldSnapshot> = {}): WorldSnapshot {
     rivalry: { raids: [], relations: [] },
     rules: DEFAULT_WORLD_RULES,
     speed: 1,
-    statistics: createStatistics(),
     tribes: [createTribe(), createTribe({ color: "#3f7cc4", id: 2, name: "Wolf Clan" })],
     weather: createWeather(),
     ...overrides,
@@ -264,7 +246,6 @@ export function createFrame(overrides: Partial<SimulationFrame> = {}): Simulatio
     rules: DEFAULT_WORLD_RULES,
     secondsSinceTick: 0,
     speed: 1,
-    statistics: createStatistics(),
     surfaceRows: [],
     tick: 0,
     tribes: [createTribe()],

@@ -30,7 +30,7 @@ import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { billboardNodes, type CameraAxes, createQuadGeometry, distanceFromBillboardCenter } from "./billboards.ts";
-import { type LatticeArea, LatticeCover, latticeElement, scramble, unitHash } from "./precipitation-lattice.ts";
+import { CYCLES, cycleOf, type LatticeArea, LatticeCover, latticeElement, unitHash } from "./precipitation-lattice.ts";
 
 const NEAREST_SPAN = 70;
 const SPAN_PER_DISTANCE = 1.6;
@@ -42,13 +42,9 @@ const DROPS_PER_TILE = 312;
 const RANGE_FADE_START = 0.72;
 const LIGHTEST_PRECIPITATION = 0.04;
 const FAINTEST_DROP = 0.002;
-const CYCLES = 256;
 const SALT_OCTAVE = 0x9e_37_79_b9;
-const SALT_PHASE = 0x3c_6e_f3_72;
 const SALT_VARIETY = 0xa5_4f_f5_3a;
-const SALT_CYCLE = 0x51_0e_52_7f;
-const SALT_ACROSS = 0x9b_05_68_8c;
-const SALT_ALONG = 0x1f_83_d9_ab;
+const CYCLE_SALTS = { across: 0x9b_05_68_8c, along: 0x1f_83_d9_ab, cycle: 0x51_0e_52_7f, phase: 0x3c_6e_f3_72 };
 
 export type Precipitation = "rain" | "snow";
 
@@ -161,25 +157,11 @@ class DropOctave {
 
     const element = latticeElement(this.#cover, uint(this.#level).mul(SALT_OCTAVE));
 
-    const phase = unitHash(element.seed, SALT_PHASE);
+    const { age: fall, phase, spread } = cycleOf(element, uniforms.fallen, CYCLE_SALTS);
     const variety = unitHash(element.seed, SALT_VARIETY);
     const tileSize = scale.mul(TILE_SIZE);
     const columnHeight = scale.mul(COLUMN_HEIGHT);
 
-    const progress = phase.add(uniforms.fallen);
-
-    const cycle = floor(progress);
-
-    const fall = progress.sub(cycle);
-    const cycleSeed = scramble(
-      element.seed.add(
-        uint(cycle)
-          .bitAnd(CYCLES - 1)
-          .mul(SALT_CYCLE)
-      )
-    );
-
-    const spread = vec2(unitHash(cycleSeed, SALT_ACROSS), unitHash(cycleSeed, SALT_ALONG));
     const height = columnHeight.mul(float(1).sub(fall));
     const swirl = vec2(sin(time.mul(0.9).add(phase.mul(40))), cos(time.mul(0.7).add(variety.mul(30))));
 

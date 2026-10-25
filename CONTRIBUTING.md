@@ -25,7 +25,6 @@ files, and pre-push runs `bun run typecheck` and `bun run test`.
 | `bun run test` | Runs unit tests in Node and browser tests in Chromium; `bun run test:watch` reruns them on change |
 | `bun run build` | Builds for production; `bun run preview` serves the build |
 | `bun run test:e2e` | Runs Playwright smoke tests of the wide and phone layouts against the production build |
-| `bun run validate` | Runs `check`, `typecheck` and `test` in one go |
 | `bun run deploy` | Builds and deploys to Cloudflare Workers as static assets |
 
 CI runs `check`, `typecheck`, `test` and `build` on every pull request and

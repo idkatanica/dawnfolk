@@ -1,10 +1,8 @@
-import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { defaultPowerParameters } from "../../content/powers.ts";
 import type { PowerSelection } from "../../game/tools/power-tool.ts";
 import { connectPowers } from "./connect-powers.ts";
 import { usePowerStore } from "./power-store.ts";
-
-const initialState = usePowerStore.getState();
 
 function connectSpy() {
   const selectPower = vi.fn<(selection: PowerSelection | null) => void>();
@@ -21,11 +19,6 @@ function pressEscape(): void {
 }
 
 describe("connecting powers to the engine", () => {
-  afterEach(() => {
-    usePowerStore.setState(initialState, true);
-    localStorage.clear();
-  });
-
   it("hands the current choice to the engine at once", () => {
     usePowerStore.getState().selectPower("rain");
 

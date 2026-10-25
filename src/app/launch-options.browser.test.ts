@@ -1,19 +1,13 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { LARGEST_SEED, randomSeed } from "../features/new-world/seeds.ts";
 import { choosesWorld, readLaunchOptions } from "./launch-options.ts";
 import { storeQuality } from "./preferences.ts";
-
-const QUALITY_KEY = "dawnfolk.quality";
 
 function silenceWarnings() {
   return vi.spyOn(console, "warn").mockImplementation(() => undefined);
 }
 
 describe("launch options", () => {
-  afterEach(() => {
-    localStorage.removeItem(QUALITY_KEY);
-  });
-
   it("reads the seed, quality, time, pause and camera from the address", () => {
     const options = readLaunchOptions("?seed=7&quality=high&hours=10.5&paused=1&camera=-187,398,240,0.6,1.2");
 

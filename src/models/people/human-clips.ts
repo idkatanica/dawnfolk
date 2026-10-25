@@ -1,11 +1,12 @@
 import type { AgeGroup } from "../../content/life-stages.ts";
 import type { CarriedItem, PersonPose } from "../../world/agent-poses.ts";
-import { arc, cosineWave, degrees, type Keyframe, keyframes, pulse, wave } from "../rig/curves.ts";
-import type { Pose } from "../rig/pose.ts";
+import { arc, cosineWave, degrees, type Keyframe, keyframes, wave } from "../rig/curves.ts";
+import { type ClipTiming, type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import type { MotionStyle } from "./appearance.ts";
 import { FIGHT_CLIPS } from "./fight-clips.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
 import { HumanBone, otherSide, SIDES, type Side } from "./human-skeleton.ts";
+import { RUNNING, runningLegs, WALKING, walkingLegs } from "./leg-cycles.ts";
 
 type HumanTool = "axe" | "basket" | "diggingStick" | "drawnBow" | "hammerStone" | "pickaxe" | "spear";
 
@@ -15,28 +16,14 @@ export interface HumanClipContext {
   readonly motion: MotionStyle;
 }
 
-type ClipTiming =
-  | { readonly kind: "once"; readonly cycleSeconds: number }
-  | { readonly kind: "seconds"; readonly cycleSeconds: number }
-  | { readonly kind: "stride" };
-
 export interface HumanClip {
   readonly apply: (pose: Pose, phase: number, context: HumanClipContext) => void;
   readonly timing: ClipTiming;
   readonly tool: HumanTool | null;
 }
 
-const STRIDE_TIMING: ClipTiming = { kind: "stride" };
 const LEAP_STRIDE = 1.45;
 const LEAP_LIFT = 0.24;
-
-function seconds(cycleSeconds: number): ClipTiming {
-  return { cycleSeconds, kind: "seconds" };
-}
-
-function legPhase(phase: number, side: Side): number {
-  return side === 1 ? phase : phase + 0.5;
-}
 
 function strideScale(context: HumanClipContext): number {
   if (context.ageGroup === "elder") {
@@ -58,20 +45,6 @@ function relaxedArms(pose: Pose, swing: number): void {
   for (const side of SIDES) {
     swingArm(pose, side, { forward: degrees(3), outward: degrees(7 + swing) });
     bendElbow(pose, side, degrees(12));
-  }
-}
-
-function walkingLegs(pose: Pose, phase: number, stride: number): void {
-  for (const side of SIDES) {
-    const step = legPhase(phase, side);
-
-    swingLeg(pose, side, { forward: degrees(5) + degrees(25) * stride * cosineWave(step), outward: degrees(2) });
-    bendKnee(pose, side, degrees(5 + 15 * pulse(step, 0.1, 0.07) + 62 * stride * pulse(step, 0.7, 0.13)));
-    bendAnkle(
-      pose,
-      side,
-      degrees(8 * pulse(step, 0, 0.08) - 16 * pulse(step, 0.56, 0.07) + 10 * pulse(step, 0.76, 0.1))
-    );
   }
 }
 
@@ -137,7 +110,7 @@ function carryingArms(pose: Pose, phase: number, context: HumanClipContext): voi
 }
 
 function walk(pose: Pose, phase: number, context: HumanClipContext): void {
-  walkingLegs(pose, phase, strideScale(context));
+  walkingLegs(pose, phase, strideScale(context), WALKING);
   walkingTrunk(pose, phase);
   walkingArm(pose, phase, 1, context.motion.armSwing);
   walkingArm(pose, phase, -1, context.motion.armSwing);
@@ -145,26 +118,18 @@ function walk(pose: Pose, phase: number, context: HumanClipContext): void {
 }
 
 function carry(pose: Pose, phase: number, context: HumanClipContext): void {
-  walkingLegs(pose, phase, strideScale(context) * 0.9);
+  walkingLegs(pose, phase, strideScale(context) * 0.9, WALKING);
   walkingTrunk(pose, phase);
   carryingArms(pose, phase, context);
   stoop(pose, context);
 }
 
 function run(pose: Pose, phase: number, context: HumanClipContext): void {
-  const stride = strideScale(context);
+  runningLegs(pose, phase, strideScale(context), RUNNING);
 
   for (const side of SIDES) {
-    const step = legPhase(phase, side);
     const armSwing = -side * cosineWave(phase) * context.motion.armSwing;
 
-    swingLeg(pose, side, { forward: degrees(14) + degrees(44) * stride * cosineWave(step), outward: degrees(2) });
-    bendKnee(pose, side, degrees(18 + 22 * pulse(step, 0.1, 0.08) + 92 * stride * pulse(step, 0.66, 0.15)));
-    bendAnkle(
-      pose,
-      side,
-      degrees(10 * pulse(step, 0, 0.08) - 26 * pulse(step, 0.5, 0.08) + 14 * pulse(step, 0.76, 0.1))
-    );
     swingArm(pose, side, { forward: degrees(8) + degrees(42) * armSwing, outward: degrees(10) });
     bendElbow(pose, side, degrees(88) + degrees(14) * armSwing);
   }

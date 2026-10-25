@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import type { Inspection, TribeInspection } from "../../simulation/inspection.ts";
-import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
+import { startTestEngine } from "../testing/engine-fixtures.ts";
 import {
   createAnimalInspection,
   createBuildingInspection,
@@ -116,8 +116,6 @@ describe("inspector card", () => {
 });
 
 describe("inspector card in a running game", () => {
-  afterEach(stopTestEngine);
-
   it("shows that the camera follows the selection", async () => {
     const { setFollowing } = await startTestEngine();
 

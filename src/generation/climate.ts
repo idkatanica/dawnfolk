@@ -322,23 +322,6 @@ function isNearLakeShore(inputs: ClimateInputs, column: number, row: number, hei
   return false;
 }
 
-interface ShoreQuery {
-  cell: number;
-  column: number;
-  height: number;
-  isWater: boolean;
-  row: number;
-  waterDistance: number;
-}
-
-function isOnLakeShore(inputs: ClimateInputs, shore: ShoreQuery): boolean {
-  if (shore.isWater || shore.waterDistance > 2 || inputs.riverStrength[shore.cell] !== 0) {
-    return false;
-  }
-
-  return isNearLakeShore(inputs, shore.column, shore.row, shore.height);
-}
-
 function groundFor(biome: BiomeIndex, cell: CellClimate, waterLevel: number): GroundIndex {
   if (cell.isWater) {
     return cell.height > waterLevel - 1.5 ? Ground.Sand : Ground.Rock;
@@ -382,14 +365,11 @@ export function buildClimate(inputs: ClimateInputs): ClimateResult {
       const isWater = hasWater(waterSurface[cell], height);
       const moisture = saturate(0.5 + moistureNoise + waterInfluence + 0.14 * north - 0.8 * desert - 0.05 * point.z);
 
-      const isNearShore = isOnLakeShore(inputs, {
-        cell,
-        column,
-        height,
-        isWater,
-        row,
-        waterDistance: waterDistance[cell],
-      });
+      const isNearShore =
+        !isWater &&
+        waterDistance[cell] <= 2 &&
+        inputs.riverStrength[cell] === 0 &&
+        isNearLakeShore(inputs, column, row, height);
 
       const climate: CellClimate = {
         desert,

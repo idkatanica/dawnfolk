@@ -5,6 +5,8 @@ import {
   InstancedBufferGeometry,
   InstancedInterleavedBuffer,
   InterleavedBufferAttribute,
+  type Material,
+  Mesh,
   Sphere,
   Uint32BufferAttribute,
   Vector3,
@@ -58,23 +60,19 @@ export class InterleavedInstances {
   readonly stride: number;
   readonly #fields: readonly InterleavedField[];
   readonly #geometry: InstancedBufferGeometry;
+  #array: Float32Array;
   #buffer: InstancedInterleavedBuffer;
 
   constructor(geometry: InstancedBufferGeometry, fields: readonly InterleavedField[], capacity: number) {
     this.#geometry = geometry;
     this.#fields = fields;
     this.stride = fields.reduce((sum, field) => sum + field.size, 0);
-    this.#buffer = this.#create(Math.max(1, capacity));
+    this.#array = new Float32Array(capacity * this.stride);
+    this.#buffer = this.#create(this.#array);
   }
 
   get array(): Float32Array {
-    const { array } = this.#buffer;
-
-    if (array instanceof Float32Array) {
-      return array;
-    }
-
-    throw new TypeError("Interleaved instances must hold 32-bit floats");
+    return this.#array;
   }
 
   get capacity(): number {
@@ -86,22 +84,23 @@ export class InterleavedInstances {
       return;
     }
 
-    const previous = this.array;
-    const next = this.#create(Math.ceil(count * GROWTH_FACTOR));
+    const next = new Float32Array(Math.ceil(count * GROWTH_FACTOR) * this.stride);
 
-    next.array.set(previous);
+    next.set(this.#array);
+    this.#array = next;
+    this.#buffer = this.#create(next);
   }
 
   markUpdated(count: number): void {
     const buffer = this.#buffer;
 
     buffer.clearUpdateRanges();
-    buffer.addUpdateRange(0, Math.max(1, count) * this.stride);
+    buffer.addUpdateRange(0, count * this.stride);
     buffer.needsUpdate = true;
   }
 
-  #create(capacity: number): InstancedInterleavedBuffer {
-    const buffer = new InstancedInterleavedBuffer(new Float32Array(capacity * this.stride), this.stride);
+  #create(array: Float32Array): InstancedInterleavedBuffer {
+    const buffer = new InstancedInterleavedBuffer(array, this.stride);
 
     buffer.setUsage(DynamicDrawUsage);
 
@@ -112,8 +111,75 @@ export class InterleavedInstances {
       offset += field.size;
     }
 
-    this.#buffer = buffer;
-
     return buffer;
+  }
+}
+
+export class InstanceBatch {
+  readonly mesh: Mesh<InstancedBufferGeometry, Material>;
+  readonly #instances: InterleavedInstances;
+  #count = 0;
+
+  constructor(
+    geometry: InstancedBufferGeometry,
+    material: Material,
+    fields: readonly InterleavedField[],
+    capacity: number
+  ) {
+    geometry.instanceCount = 0;
+    this.#instances = new InterleavedInstances(geometry, fields, capacity);
+    this.mesh = new Mesh(geometry, material);
+    this.mesh.frustumCulled = false;
+    this.mesh.visible = false;
+  }
+
+  get count(): number {
+    return this.#count;
+  }
+
+  begin(): void {
+    this.#count = 0;
+  }
+
+  add(...parts: readonly ArrayLike<number>[]): void {
+    this.#instances.ensureCapacity(this.#count + 1);
+
+    let offset = this.#count * this.#instances.stride;
+
+    for (const part of parts) {
+      this.#instances.array.set(part, offset);
+      offset += part.length;
+    }
+
+    this.#count += 1;
+  }
+
+  fill(sources: readonly ArrayLike<number>[]): void {
+    const total = sources.reduce((sum, source) => sum + source.length, 0);
+
+    this.#count = total / this.#instances.stride;
+    this.#instances.ensureCapacity(this.#count);
+
+    let offset = 0;
+
+    for (const source of sources) {
+      this.#instances.array.set(source, offset);
+      offset += source.length;
+    }
+
+    this.commit();
+  }
+
+  commit(): void {
+    this.mesh.geometry.instanceCount = this.#count;
+    this.mesh.visible = this.#count > 0;
+
+    if (this.#count > 0) {
+      this.#instances.markUpdated(this.#count);
+    }
+  }
+
+  dispose(): void {
+    this.mesh.geometry.dispose();
   }
 }

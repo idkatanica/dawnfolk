@@ -22,8 +22,6 @@ import {
 import {
   type Frustum,
   Group,
-  type InstancedBufferGeometry,
-  Mesh,
   MeshStandardNodeMaterial,
   type Node,
   type PerspectiveCamera,
@@ -40,6 +38,7 @@ import {
   FALLEN_LOG_ROOT_RADIUS,
   fallenLogVariant,
   STEPPING_STONE_HEIGHT,
+  STONE_WIDTH,
 } from "../../models/structures/crossings.ts";
 import {
   type Crossing,
@@ -51,15 +50,13 @@ import {
   steppingStones,
 } from "../../world/crossings.ts";
 import { NO_WATER } from "../../world/water.ts";
-import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
+import { geometryFromMeshData, InstanceBatch } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
+import { assignSphereLevels, HIDDEN_LEVEL } from "../view-input.ts";
 
 const LEVEL_DISTANCES: readonly number[] = [150, 650, 3600];
 const SHADOW_LEVEL_COUNT = 2;
-const HIDDEN = -1;
-const FLOATS_PER_INSTANCE = 12;
-const STONE_WIDTH = 1.05;
 const STONE_SINK = 0.3;
 const SHORTEST_STONE = 0.14;
 const DRY_LEVEL = -10_000;
@@ -74,13 +71,6 @@ const CROSSING_FIELDS = [
   { name: "crossingShape", size: 4 },
   { name: "crossingLook", size: 4 },
 ] as const;
-
-interface CrossingBatch {
-  count: number;
-  readonly geometry: InstancedBufferGeometry;
-  readonly instances: InterleavedInstances;
-  readonly mesh: Mesh;
-}
 
 interface PlacedPiece {
   readonly batch: number;
@@ -130,18 +120,13 @@ function createCrossingMaterial(textures: TerrainTextures, mirror: WorldMirror):
 
   material.colorNode = mix(wet, SNOW, snowOnTop);
   material.roughnessNode = mix(float(0.88), float(0.55), wetness);
-  material.metalnessNode = float(0);
 
   return material;
 }
 
-function yawToward(directionX: number, directionZ: number): number {
-  return Math.atan2(-directionZ, directionX);
-}
-
 export class CrossingView {
   readonly group = new Group();
-  readonly #batches: readonly (readonly CrossingBatch[])[];
+  readonly #batches: readonly (readonly InstanceBatch[])[];
   readonly #mirror: WorldMirror;
   #isDirty = true;
   #placed: PlacedCrossing[] = [];
@@ -161,12 +146,14 @@ export class CrossingView {
   }
 
   rebuild(): void {
-    this.#placed = this.#mirror.crossings.map((crossing) => this.#place(crossing));
+    this.#placed = this.#mirror.crossings
+      .map((crossing) => this.#place(crossing))
+      .filter((placed) => placed.pieces.length > 0);
     this.#isDirty = true;
   }
 
   update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
-    const hasNewLevels = this.#assignLevels(camera, frustum, detail);
+    const hasNewLevels = assignSphereLevels(this.#placed, camera, frustum, LEVEL_DISTANCES, detail);
 
     if (!(hasNewLevels || this.#isDirty)) {
       return;
@@ -177,85 +164,37 @@ export class CrossingView {
   }
 
   dispose(): void {
-    for (const level of this.#batches) {
-      for (const batch of level) {
-        batch.geometry.dispose();
-      }
+    for (const batch of this.#batches.flat()) {
+      batch.dispose();
     }
-  }
-
-  #assignLevels(camera: PerspectiveCamera, frustum: Frustum, detail: number): boolean {
-    let hasChanged = false;
-
-    for (const crossing of this.#placed) {
-      const level = this.#levelOf(crossing, camera, frustum, detail);
-
-      if (level !== crossing.level) {
-        crossing.level = level;
-        hasChanged = true;
-      }
-    }
-
-    return hasChanged;
   }
 
   #refill(): void {
-    for (const level of this.#batches) {
-      for (const batch of level) {
-        batch.count = 0;
+    const batches = this.#batches.flat();
+
+    for (const batch of batches) {
+      batch.begin();
+    }
+
+    for (const crossing of this.#placed.filter((placed) => placed.level !== HIDDEN_LEVEL)) {
+      for (const piece of crossing.pieces) {
+        this.#batches[crossing.level][piece.batch].add(piece.data);
       }
     }
 
-    for (const crossing of this.#placed) {
-      if (crossing.level !== HIDDEN) {
-        this.#fill(crossing, this.#batches[crossing.level]);
-      }
-    }
-
-    for (const level of this.#batches) {
-      for (const batch of level) {
-        batch.geometry.instanceCount = batch.count;
-        batch.mesh.visible = batch.count > 0;
-
-        if (batch.count > 0) {
-          batch.instances.markUpdated(batch.count);
-        }
-      }
+    for (const batch of batches) {
+      batch.commit();
     }
   }
 
-  #createBatch(model: MeshData, material: MeshStandardNodeMaterial, levelIndex: number): CrossingBatch {
-    const geometry = geometryFromMeshData(model, ["shade", "slot"]);
-    const instances = new InterleavedInstances(geometry, CROSSING_FIELDS, 16);
-    const mesh = new Mesh(geometry, material);
+  #createBatch(model: MeshData, material: MeshStandardNodeMaterial, levelIndex: number): InstanceBatch {
+    const batch = new InstanceBatch(geometryFromMeshData(model, ["shade", "slot"]), material, CROSSING_FIELDS, 16);
 
-    mesh.frustumCulled = false;
-    mesh.castShadow = levelIndex < SHADOW_LEVEL_COUNT;
-    mesh.receiveShadow = true;
-    mesh.visible = false;
-    this.group.add(mesh);
+    batch.mesh.castShadow = levelIndex < SHADOW_LEVEL_COUNT;
+    batch.mesh.receiveShadow = true;
+    this.group.add(batch.mesh);
 
-    return { count: 0, geometry, instances, mesh };
-  }
-
-  #levelOf(crossing: PlacedCrossing, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
-    if (crossing.pieces.length === 0 || !frustum.intersectsSphere(crossing.bounds)) {
-      return HIDDEN;
-    }
-
-    const distance = Math.max(0, camera.position.distanceTo(crossing.bounds.center) - crossing.bounds.radius);
-
-    return LEVEL_DISTANCES.findIndex((limit) => distance < limit * detail);
-  }
-
-  #fill(crossing: PlacedCrossing, batches: readonly CrossingBatch[]): void {
-    for (const piece of crossing.pieces) {
-      const batch = batches[piece.batch];
-
-      batch.instances.ensureCapacity(batch.count + 1);
-      batch.instances.array.set(piece.data, batch.count * FLOATS_PER_INSTANCE);
-      batch.count += 1;
-    }
+    return batch;
   }
 
   #place(crossing: Crossing): PlacedCrossing {
@@ -269,7 +208,7 @@ export class CrossingView {
       crossingLength(crossing) / 2 + 4
     );
 
-    return { bounds, level: HIDDEN, pieces };
+    return { bounds, level: HIDDEN_LEVEL, pieces };
   }
 
   #stonesOf(ford: Ford): PlacedPiece[] {
@@ -325,7 +264,7 @@ export class CrossingView {
         log.rootX,
         log.rootBottom,
         log.rootZ,
-        yawToward((log.tipX - log.rootX) / horizontal, (log.tipZ - log.rootZ) / horizontal),
+        Math.atan2(-(log.tipZ - log.rootZ), log.tipX - log.rootX),
         Math.hypot(horizontal, rise) / FALLEN_LOG_LENGTHS[variant % FALLEN_LOG_LENGTHS.length],
         radius,
         radius,

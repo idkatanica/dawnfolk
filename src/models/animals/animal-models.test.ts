@@ -10,7 +10,7 @@ import { meshProblems, openEdgeCount, thinnestPiece } from "../testing/mesh-chec
 import { isInsidePiece, loosePieces, type MeshPiece, meshPieces, TOUCHING } from "../testing/mesh-connectivity.ts";
 import { posedMesh } from "../testing/moved-mesh.ts";
 import { animalAppearance } from "./animal-appearance.ts";
-import { ANIMAL_SPECIES, buildAnimalParts, poseAnimal, visibleAnimalParts } from "./animal-models.ts";
+import { ANIMAL_SPECIES, animalBoneScales, buildAnimalParts, poseAnimal, visibleAnimalParts } from "./animal-models.ts";
 import { leapPerStride } from "./quadruped-clips.ts";
 import { QuadrupedBone } from "./quadruped-skeleton.ts";
 
@@ -31,7 +31,7 @@ function posedAnimal(kind: (typeof ANIMAL_KINDS)[number], clip: (typeof ANIMAL_P
   const pose = new Pose(species.skeleton.bones.length);
 
   poseAnimal(kind, pose, clip, phase, { variation: 0 });
-  poser.pose(pose, species.boneScales(animalAppearance({ kind, ...ADULT })));
+  poser.pose(pose, animalBoneScales(kind, animalAppearance({ kind, ...ADULT })));
 
   return poser;
 }
@@ -75,7 +75,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
   });
 
   it("keeps every part on the body through every clip at every level of detail", () => {
-    const scales = species.boneScales(animalAppearance({ kind, ...ADULT }));
+    const scales = animalBoneScales(kind, animalAppearance({ kind, ...ADULT }));
     const poser = new SkeletonPoser(species.skeleton);
     const pose = new Pose(species.skeleton.bones.length);
 
@@ -163,7 +163,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
       pose: new Pose(species.skeleton.bones.length),
       poser: new SkeletonPoser(species.skeleton),
       sample: (pose, phase) => poseAnimal(kind, pose, "walk", phase, { variation: 0 }),
-      scales: species.boneScales(appearance),
+      scales: animalBoneScales(kind, appearance),
       skeleton: species.skeleton,
     });
 

@@ -17,19 +17,16 @@ function viewOf(inspection: Inspection | null, isJournalOpen: boolean): SidePane
   return "closed";
 }
 
-function useSelectedInspection(): Inspection | null {
-  const inspection = useWorldStore((state) => state.snapshot?.inspection);
+export function useIsSidePanelOpen(): boolean {
+  const hasInspection = useWorldStore((state) => Boolean(state.snapshot?.inspection));
+  const isJournalOpen = useInterfaceStore((state) => state.isJournalOpen);
 
-  if (inspection === undefined) {
-    return null;
-  }
-
-  return inspection;
+  return hasInspection || isJournalOpen;
 }
 
 export function useSidePanel() {
   const engine = useEngine();
-  const inspection = useSelectedInspection();
+  const inspection = useWorldStore((state) => (state.snapshot === null ? null : state.snapshot.inspection));
   const isJournalOpen = useInterfaceStore((state) => state.isJournalOpen);
   const journalTab = useInterfaceStore((state) => state.journalTab);
   const showJournal = useInterfaceStore((state) => state.openJournal);

@@ -25,20 +25,86 @@ type PartBuilder = (builder: MeshBuilder, detail: AnimalDetail) => void;
 
 interface PartDefinition {
   readonly build: PartBuilder;
+  readonly isShown: (appearance: AnimalAppearance) => boolean;
   readonly name: string;
 }
 
 interface AnimalSpecies {
-  readonly boneScales: (appearance: AnimalAppearance) => Float32Array;
   readonly extraMotion: ExtraMotion | null;
   readonly gait: GaitStyle;
   readonly parts: readonly PartDefinition[];
   readonly skeleton: Skeleton;
-  readonly visibleParts: (appearance: AnimalAppearance) => readonly string[];
 }
 
-function uniformBoneScales(skeleton: Skeleton, appearance: AnimalAppearance): Float32Array {
-  const scales = new Float32Array(skeleton.bones.length * 3).fill(appearance.size);
+const always = () => true;
+
+export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
+  deer: {
+    extraMotion: null,
+    gait: DEER_GAIT,
+    parts: [
+      { build: addDeerBody, isShown: always, name: "body" },
+      {
+        build: addSmallAntlers,
+        isShown: (appearance) => appearance.hasAntlers && appearance.antlerSize <= 0.95,
+        name: "antlersSmall",
+      },
+      {
+        build: addLargeAntlers,
+        isShown: (appearance) => appearance.hasAntlers && appearance.antlerSize > 0.95,
+        name: "antlersLarge",
+      },
+      { build: addFawnSpots, isShown: (appearance) => appearance.hasSpots, name: "spots" },
+    ],
+    skeleton: createQuadrupedSkeleton(DEER_FRAME),
+  },
+  hare: {
+    extraMotion: hareEarMotion,
+    gait: HARE_GAIT,
+    parts: [{ build: addHareBody, isShown: always, name: "body" }],
+    skeleton: createQuadrupedSkeleton(HARE_FRAME),
+  },
+  ibex: {
+    extraMotion: null,
+    gait: IBEX_GAIT,
+    parts: [
+      { build: addIbexBody, isShown: always, name: "body" },
+      {
+        build: addShortHorns,
+        isShown: (appearance) => appearance.hornLength > 0.2 && appearance.hornLength <= 0.8,
+        name: "hornsShort",
+      },
+      { build: addLongHorns, isShown: (appearance) => appearance.hornLength > 0.8, name: "hornsLong" },
+    ],
+    skeleton: createQuadrupedSkeleton(IBEX_FRAME),
+  },
+  mammoth: {
+    extraMotion: mammothTrunkMotion,
+    gait: MAMMOTH_GAIT,
+    parts: [
+      { build: addMammothBody, isShown: always, name: "body" },
+      {
+        build: addShortTusks,
+        isShown: (appearance) => appearance.tuskLength > 0.3 && appearance.tuskLength <= 0.8,
+        name: "tusksShort",
+      },
+      { build: addLongTusks, isShown: (appearance) => appearance.tuskLength > 0.8, name: "tusksLong" },
+    ],
+    skeleton: createQuadrupedSkeleton(MAMMOTH_FRAME),
+  },
+  wolf: {
+    extraMotion: null,
+    gait: WOLF_GAIT,
+    parts: [
+      { build: addWolfBody, isShown: always, name: "body" },
+      { build: addRuff, isShown: (appearance) => appearance.hasRuff, name: "ruff" },
+    ],
+    skeleton: createQuadrupedSkeleton(WOLF_FRAME),
+  },
+};
+
+export function animalBoneScales(kind: AnimalKind, appearance: AnimalAppearance): Float32Array {
+  const scales = new Float32Array(ANIMAL_SPECIES[kind].skeleton.bones.length * 3).fill(appearance.size);
   const head = appearance.size * appearance.headScale;
   const legHeight = appearance.size * appearance.legScale;
 
@@ -57,113 +123,6 @@ function uniformBoneScales(skeleton: Skeleton, appearance: AnimalAppearance): Fl
   return scales;
 }
 
-const DEER_SKELETON = createQuadrupedSkeleton(DEER_FRAME);
-const MAMMOTH_SKELETON = createQuadrupedSkeleton(MAMMOTH_FRAME);
-const IBEX_SKELETON = createQuadrupedSkeleton(IBEX_FRAME);
-const WOLF_SKELETON = createQuadrupedSkeleton(WOLF_FRAME);
-const HARE_SKELETON = createQuadrupedSkeleton(HARE_FRAME);
-
-function deerParts(appearance: AnimalAppearance): string[] {
-  const parts = ["body"];
-
-  if (appearance.hasAntlers) {
-    parts.push(appearance.antlerSize > 0.95 ? "antlersLarge" : "antlersSmall");
-  }
-
-  if (appearance.hasSpots) {
-    parts.push("spots");
-  }
-
-  return parts;
-}
-
-function mammothParts(appearance: AnimalAppearance): string[] {
-  if (appearance.tuskLength > 0.8) {
-    return ["body", "tusksLong"];
-  }
-
-  if (appearance.tuskLength > 0.3) {
-    return ["body", "tusksShort"];
-  }
-
-  return ["body"];
-}
-
-function ibexParts(appearance: AnimalAppearance): string[] {
-  if (appearance.hornLength > 0.8) {
-    return ["body", "hornsLong"];
-  }
-
-  if (appearance.hornLength > 0.2) {
-    return ["body", "hornsShort"];
-  }
-
-  return ["body"];
-}
-
-function wolfParts(appearance: AnimalAppearance): string[] {
-  return appearance.hasRuff ? ["body", "ruff"] : ["body"];
-}
-
-export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
-  deer: {
-    boneScales: (appearance) => uniformBoneScales(DEER_SKELETON, appearance),
-    extraMotion: null,
-    gait: DEER_GAIT,
-    parts: [
-      { build: addDeerBody, name: "body" },
-      { build: addSmallAntlers, name: "antlersSmall" },
-      { build: addLargeAntlers, name: "antlersLarge" },
-      { build: addFawnSpots, name: "spots" },
-    ],
-    skeleton: DEER_SKELETON,
-    visibleParts: deerParts,
-  },
-  hare: {
-    boneScales: (appearance) => uniformBoneScales(HARE_SKELETON, appearance),
-    extraMotion: hareEarMotion,
-    gait: HARE_GAIT,
-    parts: [{ build: addHareBody, name: "body" }],
-    skeleton: HARE_SKELETON,
-    visibleParts: () => ["body"],
-  },
-  ibex: {
-    boneScales: (appearance) => uniformBoneScales(IBEX_SKELETON, appearance),
-    extraMotion: null,
-    gait: IBEX_GAIT,
-    parts: [
-      { build: addIbexBody, name: "body" },
-      { build: addShortHorns, name: "hornsShort" },
-      { build: addLongHorns, name: "hornsLong" },
-    ],
-    skeleton: IBEX_SKELETON,
-    visibleParts: ibexParts,
-  },
-  mammoth: {
-    boneScales: (appearance) => uniformBoneScales(MAMMOTH_SKELETON, appearance),
-    extraMotion: mammothTrunkMotion,
-    gait: MAMMOTH_GAIT,
-    parts: [
-      { build: addMammothBody, name: "body" },
-      { build: addShortTusks, name: "tusksShort" },
-      { build: addLongTusks, name: "tusksLong" },
-    ],
-    skeleton: MAMMOTH_SKELETON,
-    visibleParts: mammothParts,
-  },
-  wolf: {
-    boneScales: (appearance) => uniformBoneScales(WOLF_SKELETON, appearance),
-    extraMotion: null,
-    gait: WOLF_GAIT,
-    parts: [
-      { build: addWolfBody, name: "body" },
-      { build: addRuff, name: "ruff" },
-    ],
-    skeleton: WOLF_SKELETON,
-    visibleParts: wolfParts,
-  },
-};
-
 export function buildAnimalParts(kind: AnimalKind, level: AnimalDetailLevel): MeshData[] {
   return ANIMAL_SPECIES[kind].parts.map((part, index) => {
     const builder = new MeshBuilder({ part: index });
@@ -175,11 +134,7 @@ export function buildAnimalParts(kind: AnimalKind, level: AnimalDetailLevel): Me
 }
 
 export function visibleAnimalParts(kind: AnimalKind, appearance: AnimalAppearance): number[] {
-  const species = ANIMAL_SPECIES[kind];
-
-  const visible = species.visibleParts(appearance);
-
-  return species.parts.flatMap((part, index) => (visible.includes(part.name) ? [index] : []));
+  return ANIMAL_SPECIES[kind].parts.flatMap((part, index) => (part.isShown(appearance) ? [index] : []));
 }
 
 export function poseAnimal(

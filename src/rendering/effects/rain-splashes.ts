@@ -38,7 +38,7 @@ import type { WorldGrid } from "../../world/world-grid.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import type { CameraAxes } from "./billboards.ts";
-import { LatticeCover, latticeElement, scramble, unitHash } from "./precipitation-lattice.ts";
+import { CYCLES, cycleOf, LatticeCover, latticeElement } from "./precipitation-lattice.ts";
 
 const TILE_SIZE = 8;
 const SPLASHES_IN_VIEW = 3000;
@@ -48,7 +48,6 @@ const FARTHEST_SPAN = 420;
 const SPAN_PER_DISTANCE = 1.3;
 const RANGE_FADE_START = 0.6;
 const SPLASHES_PER_SECOND = 1.6;
-const CYCLES = 256;
 const CLOSEST_VIEW = 260;
 const FARTHEST_VIEW = 620;
 const FAINTEST_SPLASH = 0.002;
@@ -70,10 +69,7 @@ const CROWN_FAN = 0.42;
 const CROWN_SHOW = 0.9;
 
 const SALT_SPLASH = 0x2d_35_8d_cb;
-const SALT_PHASE = 0x7a_5e_3b_19;
-const SALT_CYCLE = 0x63_d8_3c_21;
-const SALT_ACROSS = 0xd1_b5_4a_33;
-const SALT_ALONG = 0x48_b2_f1_c7;
+const CYCLE_SALTS = { across: 0xd1_b5_4a_33, along: 0x48_b2_f1_c7, cycle: 0x63_d8_3c_21, phase: 0x7a_5e_3b_19 };
 
 const NO_DRIFT = new Vector2();
 
@@ -153,22 +149,9 @@ export class RainSplashes {
 
     const element = latticeElement(this.#cover, uint(SALT_SPLASH));
 
-    const progress = this.#clock.add(unitHash(element.seed, SALT_PHASE));
+    const { age, spread } = cycleOf(element, this.#clock, CYCLE_SALTS);
 
-    const cycle = floor(progress);
-
-    const age = progress.sub(cycle);
-    const cycleSeed = scramble(
-      element.seed.add(
-        uint(cycle)
-          .bitAnd(CYCLES - 1)
-          .mul(SALT_CYCLE)
-      )
-    );
-
-    const spot = element.tile
-      .add(vec2(unitHash(cycleSeed, SALT_ACROSS), unitHash(cycleSeed, SALT_ALONG)))
-      .mul(TILE_SIZE);
+    const spot = element.tile.add(spread).mul(TILE_SIZE);
 
     const cell = ivec2(clamp(floor(spot.add(grid.halfSize).div(grid.cellSize)), vec2(0, 0), vec2(last, last)));
     const ground = sampleHeightNode(textures.height, grid, spot);

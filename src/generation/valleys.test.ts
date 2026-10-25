@@ -1,22 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { landEverywhere } from "../world/testing/terrain-fixtures.ts";
+import { landEverywhere, shapeTerrain, trough, troughWithBasin } from "../world/testing/terrain-fixtures.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 import { analyzeDrainage } from "./hydrology.ts";
 import { carveValleys } from "./valleys.ts";
-
-function shapeTerrain(grid: WorldGrid, heightAt: (x: number, z: number) => number): Float32Array {
-  return Float32Array.from({ length: grid.cellCount }, (_, cell) =>
-    heightAt(grid.cellCenterX(cell), grid.cellCenterZ(cell))
-  );
-}
-
-function trough(x: number, z: number): number {
-  return 100 + 0.03 * z + 0.08 * Math.abs(x);
-}
-
-function troughWithBasin(x: number, z: number): number {
-  return trough(x, z) - 14 * Math.exp(-(x * x + z * z) / (2 * 110 * 110));
-}
 
 function lakeLevels(heights: Float32Array, grid: WorldGrid): number[] {
   return analyzeDrainage(heights, grid, new Float32Array(grid.cellCount), landEverywhere(grid.cellCount)).lakes.map(

@@ -1,4 +1,4 @@
-import { type ChangeEvent, useState } from "react";
+import { type ChangeEvent, type FormEvent, useState } from "react";
 import { type IslandShapeKind, isIslandShapeKind } from "../../world/island-shape.ts";
 import { randomSeed, readSeed } from "./seeds.ts";
 import { readWorldName, worldNameFor } from "./world-names.ts";
@@ -9,7 +9,7 @@ interface WorldChoice {
   readonly shape: IslandShapeKind;
 }
 
-export function useWorldDraft(initial: WorldChoice) {
+export function useWorldDraft(initial: WorldChoice, onCreate: (choice: WorldChoice) => void) {
   const [nameText, setNameText] = useState(initial.name);
   const [seedText, setSeedText] = useState(String(initial.seed));
   const [shape, setShape] = useState(initial.shape);
@@ -41,5 +41,13 @@ export function useWorldDraft(initial: WorldChoice) {
 
   const choice: WorldChoice | null = name === null || seed === null ? null : { name, seed, shape };
 
-  return { changeName, changeSeed, changeShape, choice, nameText, rollName, rollSeed, seedText, shape };
+  function create(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+
+    if (choice !== null) {
+      onCreate(choice);
+    }
+  }
+
+  return { changeName, changeSeed, changeShape, choice, create, nameText, rollName, rollSeed, seedText, shape };
 }

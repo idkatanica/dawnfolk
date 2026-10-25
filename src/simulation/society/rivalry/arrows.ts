@@ -43,10 +43,6 @@ export class ArrowFlights {
     this.#effects = effects;
   }
 
-  get count(): number {
-    return this.#flights.length;
-  }
-
   loose(shooter: Person, weapon: CarriedWeapon, foe: Foe, battleground: Battleground): void {
     const { random } = battleground;
     const target = foeMover(foe);

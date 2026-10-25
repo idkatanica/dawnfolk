@@ -3,13 +3,12 @@ import {
   Float32BufferAttribute,
   InstancedBufferGeometry,
   type Material,
-  Mesh,
   type Node,
   type PerspectiveCamera,
   Uint16BufferAttribute,
   Vector3,
 } from "three/webgpu";
-import { InterleavedInstances } from "../instancing.ts";
+import { InstanceBatch } from "../instancing.ts";
 
 const CORNER_ATTRIBUTE = "billboardCorner";
 
@@ -63,53 +62,10 @@ export function createQuadGeometry(): InstancedBufferGeometry {
   return geometry;
 }
 
-export class BillboardBatch {
-  readonly mesh: Mesh;
-  readonly #geometry: InstancedBufferGeometry;
-  readonly #instances: InterleavedInstances;
-  readonly #material: Material;
-  #count = 0;
+export function createBillboardBatch(material: Material, renderOrder: number): InstanceBatch {
+  const batch = new InstanceBatch(createQuadGeometry(), material, BILLBOARD_FIELDS, 256);
 
-  constructor(material: Material, renderOrder: number) {
-    this.#material = material;
-    this.#geometry = createQuadGeometry();
-    this.#instances = new InterleavedInstances(this.#geometry, BILLBOARD_FIELDS, 256);
-    this.mesh = new Mesh(this.#geometry, material);
-    this.mesh.frustumCulled = false;
-    this.mesh.renderOrder = renderOrder;
-    this.mesh.visible = false;
-  }
+  batch.mesh.renderOrder = renderOrder;
 
-  get count(): number {
-    return this.#count;
-  }
-
-  begin(): void {
-    this.#count = 0;
-  }
-
-  add(placement: readonly [number, number, number, number], look: readonly [number, number, number, number]): void {
-    this.#instances.ensureCapacity(this.#count + 1);
-
-    const data = this.#instances.array;
-    const offset = this.#count * this.#instances.stride;
-
-    data.set(placement, offset);
-    data.set(look, offset + 4);
-    this.#count += 1;
-  }
-
-  commit(): void {
-    this.#geometry.instanceCount = this.#count;
-    this.mesh.visible = this.#count > 0;
-
-    if (this.#count > 0) {
-      this.#instances.markUpdated(this.#count);
-    }
-  }
-
-  dispose(): void {
-    this.#geometry.dispose();
-    this.#material.dispose();
-  }
+  return batch;
 }

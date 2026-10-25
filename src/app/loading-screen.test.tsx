@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import { GameSession } from "../game/game-session.ts";
 import { LocalSimulationConnection } from "../game/simulation-connection.ts";
@@ -10,10 +10,6 @@ import { reportStop } from "./engine-launcher.ts";
 import { useEngineStore } from "./engine-store.ts";
 import { useLaunchStore } from "./launch-store.ts";
 import { LoadingScreen } from "./loading-screen.tsx";
-
-const initialEngineState = useEngineStore.getState();
-const initialLaunchState = useLaunchStore.getState();
-const initialAddress = window.location.href;
 
 async function startFailingSession(failure: Error): Promise<GameSession> {
   const simulation = new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 } }));
@@ -29,13 +25,6 @@ async function startFailingSession(failure: Error): Promise<GameSession> {
 }
 
 describe("loading screen", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-    useEngineStore.setState(initialEngineState, true);
-    useLaunchStore.setState(initialLaunchState, true);
-    window.history.replaceState(null, "", initialAddress);
-  });
-
   it("says why the island could not rise", async () => {
     useEngineStore.setState({ status: { kind: "failed", message: "WebGPU is not available" } });
 

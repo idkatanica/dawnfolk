@@ -9,7 +9,6 @@ import {
   PatchGrid,
   type PatchPiece,
 } from "../terrain/patch-grid.ts";
-import { PATCH_LEVEL_DISTANCES } from "../terrain/terrain-patches.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { createWaterMaterial, WaterLook } from "./water-material.ts";
 
@@ -29,7 +28,6 @@ export class WaterView {
     this.#patches = new PatchGrid(mirror.grid, (corner) => this.#measure(corner), {
       castsShadow: false,
       edges: "open",
-      levelDistances: PATCH_LEVEL_DISTANCES,
       materials: [this.#material],
       pieceCells: PIECE_CELLS,
       renderOrder: 2,

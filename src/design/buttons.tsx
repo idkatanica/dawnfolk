@@ -4,16 +4,13 @@ import { cn } from "./cn.ts";
 
 const FOCUS_RING = "outline-none focus-visible:ring-2 focus-visible:ring-dawn focus-visible:ring-offset-1";
 
-type IconButtonTone = "accent" | "plain";
-
 interface IconButtonProps extends Omit<ComponentProps<typeof BaseButton>, "aria-label" | "children"> {
   readonly icon: ReactNode;
   readonly isPressed?: boolean | undefined;
   readonly label: string;
-  readonly tone?: IconButtonTone | undefined;
 }
 
-export function IconButton({ className, icon, isPressed, label, tone = "plain", ...props }: IconButtonProps) {
+export function IconButton({ className, icon, isPressed, label, ...props }: IconButtonProps) {
   return (
     <BaseButton
       {...props}
@@ -22,10 +19,8 @@ export function IconButton({ className, icon, isPressed, label, tone = "plain", 
       className={cn(
         "grid pointer-coarse:size-11 size-10 shrink-0 place-items-center rounded-full transition-colors duration-150",
         {
-          "bg-dawn text-white hover:bg-dawn-strong active:bg-dawn-strong": tone === "accent",
-          "bg-dawn-soft text-dawn-strong": tone === "plain" && isPressed === true,
-          "text-ink-soft hover:bg-paper-hover hover:text-ink active:bg-paper-press":
-            tone === "plain" && isPressed !== true,
+          "bg-dawn-soft text-dawn-strong": isPressed === true,
+          "text-ink-soft hover:bg-paper-hover hover:text-ink active:bg-paper-press": isPressed !== true,
         },
         FOCUS_RING,
         className

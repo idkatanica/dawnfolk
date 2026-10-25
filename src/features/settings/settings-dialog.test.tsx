@@ -1,18 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { useInterfaceStore } from "../interface/interface-store.ts";
-import { resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { showWorld } from "../testing/world-fixtures.ts";
 import { SettingsDialog } from "./settings-dialog.tsx";
 
-const INITIAL_INTERFACE = useInterfaceStore.getState();
-
 describe("settings dialog", () => {
-  afterEach(() => {
-    useInterfaceStore.setState(INITIAL_INTERFACE, true);
-    resetWorld();
-  });
-
   it("stays closed until the settings are opened", async () => {
     const screen = await render(<SettingsDialog />);
 
@@ -21,7 +14,7 @@ describe("settings dialog", () => {
 
   it("opens on the section chosen in the interface", async () => {
     showWorld();
-    useInterfaceStore.getState().openSettings("weather");
+    useInterfaceStore.setState({ isSettingsOpen: true, settingsTab: "weather" });
 
     const screen = await render(<SettingsDialog />);
 
@@ -32,7 +25,7 @@ describe("settings dialog", () => {
 
   it("offers a tab for each section", async () => {
     showWorld();
-    useInterfaceStore.getState().openSettings("world");
+    useInterfaceStore.getState().openSettings();
 
     const screen = await render(<SettingsDialog />);
 
@@ -46,7 +39,7 @@ describe("settings dialog", () => {
 
   it("switches sections from its tabs and remembers the choice", async () => {
     showWorld();
-    useInterfaceStore.getState().openSettings("world");
+    useInterfaceStore.getState().openSettings();
 
     const screen = await render(<SettingsDialog />);
 
@@ -59,7 +52,7 @@ describe("settings dialog", () => {
   });
 
   it("closes from its close button", async () => {
-    useInterfaceStore.getState().openSettings("world");
+    useInterfaceStore.getState().openSettings();
 
     const screen = await render(<SettingsDialog />);
 
@@ -70,7 +63,7 @@ describe("settings dialog", () => {
   });
 
   it("closes with the Escape key", async () => {
-    useInterfaceStore.getState().openSettings("world");
+    useInterfaceStore.getState().openSettings();
 
     const screen = await render(<SettingsDialog />);
 

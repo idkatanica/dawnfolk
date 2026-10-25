@@ -196,13 +196,13 @@ export class BeastInstincts {
     return this.#charges.has(animal.id);
   }
 
-  steerPacks(packs: readonly Pack[], findAnimal: (id: number) => Animal | null, tick: FaunaTick): void {
+  steerPacks(packs: readonly Pack[], tick: FaunaTick): void {
     for (const pack of packs) {
       if (pack.kind !== "wolf") {
         continue;
       }
 
-      const members = pack.memberIds.map((id) => findAnimal(id)).filter((animal) => animal !== null);
+      const members = pack.memberIds.map((id) => this.#prey.find(id)).filter((animal) => animal !== null);
 
       this.#steerPack(pack, members, tick);
     }
@@ -456,7 +456,7 @@ export class BeastInstincts {
 
     const isTame = tick.rules.nature.beastBoldness <= 0;
 
-    if (leader === undefined || mood.hunt !== null || mood.chase !== null || mood.hunger < PROWL_HUNGER || isTame) {
+    if (leader === undefined || mood.hunt !== null || mood.hunger < PROWL_HUNGER || isTame) {
       return;
     }
 

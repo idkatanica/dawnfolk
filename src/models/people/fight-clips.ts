@@ -1,9 +1,10 @@
 import type { FightPose } from "../../world/agent-poses.ts";
-import { arc, cosineWave, degrees, type Keyframe, keyframes, pulse, wave } from "../rig/curves.ts";
-import type { Pose } from "../rig/pose.ts";
+import { arc, cosineWave, degrees, type Keyframe, keyframes, wave } from "../rig/curves.ts";
+import { type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import type { HumanClip, HumanClipContext } from "./human-clips.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
 import { HumanBone, SIDES, type Side } from "./human-skeleton.ts";
+import { CHARGING, MARCHING, runningLegs, walkingLegs } from "./leg-cycles.ts";
 
 const WEAPON_SIDE: Side = -1;
 const GUARD_SIDE: Side = 1;
@@ -113,42 +114,10 @@ function poseUpperBody(pose: Pose, stance: Stance): void {
   poseArm(pose, WEAPON_SIDE, stance.weaponArm);
 }
 
-function stepPhase(phase: number, side: Side): number {
-  return side === 1 ? phase : phase + 0.5;
-}
-
 function strideOf(context: HumanClipContext): number {
   const elderly = context.ageGroup === "elder" ? 0.8 : 1;
 
   return context.motion.stride * elderly;
-}
-
-function marchingLegs(pose: Pose, phase: number, stride: number): void {
-  for (const side of SIDES) {
-    const step = stepPhase(phase, side);
-
-    swingLeg(pose, side, { forward: degrees(6) + degrees(27) * stride * cosineWave(step), outward: degrees(3) });
-    bendKnee(pose, side, degrees(8 + 18 * pulse(step, 0.1, 0.07) + 66 * stride * pulse(step, 0.7, 0.13)));
-    bendAnkle(
-      pose,
-      side,
-      degrees(8 * pulse(step, 0, 0.08) - 16 * pulse(step, 0.56, 0.07) + 10 * pulse(step, 0.76, 0.1))
-    );
-  }
-}
-
-function runningLegs(pose: Pose, phase: number, stride: number): void {
-  for (const side of SIDES) {
-    const step = stepPhase(phase, side);
-
-    swingLeg(pose, side, { forward: degrees(16) + degrees(44) * stride * cosineWave(step), outward: degrees(3) });
-    bendKnee(pose, side, degrees(20 + 22 * pulse(step, 0.1, 0.08) + 92 * stride * pulse(step, 0.66, 0.15)));
-    bendAnkle(
-      pose,
-      side,
-      degrees(10 * pulse(step, 0, 0.08) - 26 * pulse(step, 0.5, 0.08) + 14 * pulse(step, 0.76, 0.1))
-    );
-  }
 }
 
 function fightingLegs(pose: Pose, crouch: number, lunge: number): void {
@@ -164,7 +133,7 @@ function march(pose: Pose, phase: number, context: HumanClipContext): void {
   const swing = cosineWave(phase);
   const { armSwing } = context.motion;
 
-  marchingLegs(pose, phase, strideOf(context));
+  walkingLegs(pose, phase, strideOf(context), MARCHING);
   moveBody(pose, { forward: degrees(3), toLeft: degrees(2) * wave(phase), turnLeft: -degrees(4) * swing });
   bendTrunk(pose, HumanBone.Spine, { forward: degrees(2), turnLeft: degrees(4) * swing });
   bendTrunk(pose, HumanBone.Chest, { forward: -degrees(3), turnLeft: degrees(3) * swing });
@@ -176,7 +145,7 @@ function march(pose: Pose, phase: number, context: HumanClipContext): void {
 function charge(pose: Pose, phase: number, context: HumanClipContext): void {
   const swing = cosineWave(phase);
 
-  runningLegs(pose, phase, strideOf(context));
+  runningLegs(pose, phase, strideOf(context), CHARGING);
   poseUpperBody(pose, SPEAR_LEVELLED);
   moveBody(pose, { turnLeft: -degrees(5) * swing });
   bendTrunk(pose, HumanBone.Spine, { forward: degrees(4), turnLeft: degrees(4) * swing });
@@ -319,11 +288,11 @@ function fall(pose: Pose, phase: number): void {
 }
 
 export const FIGHT_CLIPS: Readonly<Record<FightPose, HumanClip>> = {
-  block: { apply: block, timing: { cycleSeconds: 1.2, kind: "seconds" }, tool: null },
-  brawl: { apply: brawl, timing: { cycleSeconds: 0.9, kind: "seconds" }, tool: null },
-  charge: { apply: charge, timing: { kind: "stride" }, tool: null },
+  block: { apply: block, timing: seconds(1.2), tool: null },
+  brawl: { apply: brawl, timing: seconds(0.9), tool: null },
+  charge: { apply: charge, timing: STRIDE_TIMING, tool: null },
   fall: { apply: fall, timing: { cycleSeconds: 1.5, kind: "once" }, tool: null },
   flinch: { apply: flinch, timing: { cycleSeconds: 0.5, kind: "once" }, tool: null },
-  march: { apply: march, timing: { kind: "stride" }, tool: null },
-  thrust: { apply: thrust, timing: { cycleSeconds: 1.1, kind: "seconds" }, tool: null },
+  march: { apply: march, timing: STRIDE_TIMING, tool: null },
+  thrust: { apply: thrust, timing: seconds(1.1), tool: null },
 };

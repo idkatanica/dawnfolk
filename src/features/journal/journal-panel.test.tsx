@@ -1,11 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import { useInterfaceStore } from "../interface/interface-store.ts";
-import { createChronicleEntry, createRelation, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { createChronicleEntry, createRelation, showWorld } from "../testing/world-fixtures.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { JournalPanel } from "./journal-panel.tsx";
-
-const initialInterfaceState = useInterfaceStore.getState();
 
 function showJournalContent() {
   showWorld();
@@ -13,11 +11,6 @@ function showJournalContent() {
 }
 
 describe("journal panel", () => {
-  afterEach(() => {
-    resetWorld();
-    useInterfaceStore.setState(initialInterfaceState, true);
-  });
-
   it("opens on the tribes", async () => {
     showJournalContent();
 

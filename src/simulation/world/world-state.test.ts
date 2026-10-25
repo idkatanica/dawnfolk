@@ -104,7 +104,7 @@ describe("world state", () => {
     world.setGround(cell, Ground.Steppe);
 
     expect(world.fields.fuel[cell]).toBeCloseTo(groundDefinition(Ground.Steppe).fuel);
-    expect(world.groundChanges.hasChanges).toBe(true);
+    expect(world.groundChanges.takeRuns()).toEqual([{ firstRow: world.grid.rowOf(cell), rowCount: 1 }]);
   });
 
   it("tracks canopy fuel as trees are planted and removed", () => {

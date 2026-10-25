@@ -20,13 +20,6 @@ interface CalendarState {
   isTimeFrozen: boolean;
 }
 
-export const DEFAULT_CALENDAR: CalendarState = {
-  day: START_TIME_OF_DAY,
-  daySeconds: DEFAULT_DAY_SECONDS,
-  daysPerSeason: DEFAULT_DAYS_PER_SEASON,
-  isTimeFrozen: false,
-};
-
 export interface CalendarView extends CalendarState {
   dayOfSeason: number;
   hours: number;
@@ -36,16 +29,13 @@ export interface CalendarView extends CalendarState {
 }
 
 export class Calendar {
-  day: number;
-  daySeconds: number;
-  daysPerSeason: number;
+  day = START_TIME_OF_DAY;
+  daySeconds = DEFAULT_DAY_SECONDS;
+  daysPerSeason = DEFAULT_DAYS_PER_SEASON;
   isTimeFrozen: boolean;
 
-  constructor(state: CalendarState = DEFAULT_CALENDAR) {
-    this.day = state.day;
-    this.daySeconds = state.daySeconds;
-    this.daysPerSeason = state.daysPerSeason;
-    this.isTimeFrozen = state.isTimeFrozen;
+  constructor() {
+    this.isTimeFrozen = false;
   }
 
   get timeOfDay(): number {

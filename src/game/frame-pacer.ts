@@ -19,8 +19,12 @@ export class FramePacer {
     return now - this.#lastRender >= this.#interval(now, hasFocus) - EARLY_FRAME_MILLISECONDS;
   }
 
-  markRendered(now: number): void {
+  markRendered(now: number): number {
+    const elapsed = Number.isNaN(this.#lastRender) ? 0 : now - this.#lastRender;
+
     this.#lastRender = now;
+
+    return elapsed;
   }
 
   #interval(now: number, hasFocus: boolean): number {

@@ -9,7 +9,7 @@ import { Island } from "../../design/island.tsx";
 import { useIsCompact } from "../../design/use-media-query.ts";
 import { ParameterControl } from "../parameters/parameter-control.tsx";
 import { POWER_ICONS } from "./power-icons.tsx";
-import { usePowerStore, withDefaults } from "./power-store.ts";
+import { parametersOf, usePowerStore } from "./power-store.ts";
 
 const USAGE_HINTS = {
   brush: "Hold and drag over the land.",
@@ -17,11 +17,11 @@ const USAGE_HINTS = {
 } as const;
 
 function usePowerParameters(powerId: PowerId) {
-  const stored = usePowerStore((state) => state.parameters[powerId]);
+  const parameters = usePowerStore((state) => state.parameters);
   const setParameter = usePowerStore((state) => state.setParameter);
   const resetParameters = usePowerStore((state) => state.resetParameters);
 
-  const values = withDefaults(powerId, stored);
+  const values = parametersOf(parameters, powerId);
 
   function changeParameter(key: string, value: ParameterValue): void {
     setParameter(powerId, key, value);

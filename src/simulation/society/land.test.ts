@@ -4,31 +4,15 @@ import { isFruitTreeSpecies } from "../../content/cultivated-plants.ts";
 import { Ground } from "../../content/grounds.ts";
 import { PlantSpecies } from "../../content/plants.ts";
 import { describeEnvironment } from "../nature/environment.ts";
-import { firstMemberTick, SocietyHarness, settle } from "../testing/test-society.ts";
+import { firstMemberTick, runToCompletion, SocietyHarness, settle } from "../testing/test-society.ts";
 import { PLOT_GROUND } from "../world/world-state.ts";
 import { addFieldIfNeeded, fieldTask, sowField, updateFields } from "./farming.ts";
 import { FarmJob } from "./jobs/farm-job.ts";
-import type { Job } from "./jobs/job.ts";
 import { addPlotIfNeeded, plantSpot, ripestFruitTree, updatePlots } from "./plots.ts";
-import type { PersonTick } from "./society-context.ts";
 import type { Tribe } from "./tribe.ts";
 import { TroddenGround } from "./trodden-ground.ts";
 
 const MORNING = 0.3;
-
-function runToCompletion(job: Job, tick: PersonTick, limitSeconds: number): boolean {
-  let current: Job | null = job;
-
-  for (let elapsed = 0; elapsed < limitSeconds; elapsed += tick.seconds) {
-    current = current.update(tick);
-
-    if (current === null) {
-      return true;
-    }
-  }
-
-  return false;
-}
 
 function moveToSeason(harness: SocietyHarness, season: number): void {
   harness.calendar.setSeason(season);

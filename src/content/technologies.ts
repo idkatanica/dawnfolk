@@ -31,7 +31,6 @@ export interface MaterialNeed {
 
 export interface TechnologyDefinition {
   cost: number;
-  description: string;
   id: TechnologyId;
   name: string;
   needs: MaterialNeed | null;
@@ -41,7 +40,6 @@ export interface TechnologyDefinition {
 export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   {
     cost: 40,
-    description: "A campfire keeps people warm at night and in winter, cooks food and keeps beasts away.",
     id: "fire",
     name: "Fire",
     needs: null,
@@ -49,7 +47,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 60,
-    description: "Shelters of branches and hides: warm sleep and room for children.",
     id: "shelter",
     name: "Shelters",
     needs: null,
@@ -57,7 +54,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 90,
-    description: "Hunters track deer and even mammoths with stone-tipped spears.",
     id: "spear",
     name: "Spears",
     needs: null,
@@ -65,7 +61,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 125,
-    description: "Food from lakes and rivers all year round.",
     id: "fishing",
     name: "Fishing",
     needs: null,
@@ -73,7 +68,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 160,
-    description: "A storehouse: food spoils slower and winter is easier to survive.",
     id: "storage",
     name: "Storage",
     needs: null,
@@ -81,7 +75,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 190,
-    description: "Bows and arrows bring down game from a safe distance.",
     id: "archery",
     name: "Archery",
     needs: null,
@@ -89,7 +82,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 220,
-    description: "Sturdy round huts of daub and thatch instead of shelters.",
     id: "huts",
     name: "Huts",
     needs: null,
@@ -97,7 +89,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 250,
-    description: "Clay dug by the water is fired in a kiln into pots that keep food fresh.",
     id: "pottery",
     name: "Pottery",
     needs: null,
@@ -105,7 +96,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 280,
-    description: "Fields of wheat and barley near the camp: sown in spring, harvested in autumn.",
     id: "farming",
     name: "Farming",
     needs: null,
@@ -113,7 +103,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 330,
-    description: "A sacred totem. Faith grows and people stay calmer.",
     id: "totem",
     name: "Totem",
     needs: null,
@@ -121,7 +110,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 370,
-    description: "Flax is grown and spun into linen for lighter clothes.",
     id: "weaving",
     name: "Weaving",
     needs: null,
@@ -129,7 +117,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 410,
-    description: "Apple, pear and plum trees and berry bushes are planted by the camp.",
     id: "orchards",
     name: "Orchards",
     needs: null,
@@ -137,7 +124,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 450,
-    description: "Green-stained rock in the hills is dug out of a mine.",
     id: "mining",
     name: "Mining",
     needs: null,
@@ -145,7 +131,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 510,
-    description: "Copper ore is smelted in a furnace and cast into tools.",
     id: "copper",
     name: "Copper smelting",
     needs: { amount: 6, resource: "copperOre" },
@@ -153,7 +138,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 570,
-    description: "Fenced fields are ploughed for carrots, turnips and more grain.",
     id: "ploughing",
     name: "Ploughing",
     needs: null,
@@ -161,7 +145,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 630,
-    description: "Copper melted with tin gives hard bronze for blades and tools.",
     id: "bronze",
     name: "Bronze",
     needs: { amount: 4, resource: "tinOre" },
@@ -169,7 +152,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 700,
-    description: "Woodlots are planted and tended, and felled trees replanted.",
     id: "forestry",
     name: "Forestry",
     needs: null,
@@ -177,7 +159,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 780,
-    description: "Iron is forged from rusty ore: the hardest tools and weapons.",
     id: "iron",
     name: "Ironworking",
     needs: { amount: 6, resource: "ironOre" },
@@ -185,7 +166,6 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   },
   {
     cost: 880,
-    description: "Houses and walls of dressed stone.",
     id: "masonry",
     name: "Masonry",
     needs: null,

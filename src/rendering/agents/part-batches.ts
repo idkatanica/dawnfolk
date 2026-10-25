@@ -1,6 +1,6 @@
-import { Group, type InstancedBufferGeometry, type Material, Mesh } from "three/webgpu";
+import { Group, type Material } from "three/webgpu";
 import { type MeshData, triangleCount } from "../../models/mesh/mesh-data.ts";
-import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
+import { geometryFromMeshData, InstanceBatch } from "../instancing.ts";
 import { SHADOW_ONLY_LAYER } from "../shadow-only-layer.ts";
 
 const SKINNED_CHANNELS = ["boneA", "boneB", "boneWeight", "shade", "slot"] as const;
@@ -12,28 +12,11 @@ interface PartLevel {
   readonly shadowParts: readonly MeshData[] | null;
 }
 
-interface PartBatch {
-  count: number;
-  readonly geometry: InstancedBufferGeometry;
-  readonly mesh: Mesh;
-  readonly rows: InterleavedInstances;
-}
-
-type BatchRow = readonly (PartBatch | null)[];
-
-function appendRow(batch: PartBatch | null, row: number): void {
-  if (batch === null) {
-    return;
-  }
-
-  batch.rows.ensureCapacity(batch.count + 1);
-  batch.rows.array[batch.count] = row;
-  batch.count += 1;
-}
+type BatchRow = readonly (InstanceBatch | null)[];
 
 export class PartBatches {
   readonly group = new Group();
-  readonly #all: readonly PartBatch[];
+  readonly #all: readonly InstanceBatch[];
   readonly #batches: readonly BatchRow[];
   readonly #shadowBatches: readonly (BatchRow | null)[];
 
@@ -47,36 +30,24 @@ export class PartBatches {
 
   begin(): void {
     for (const batch of this.#all) {
-      batch.count = 0;
+      batch.begin();
     }
   }
 
   add(level: number, part: number, row: number): void {
-    appendRow(this.#batches[level][part], row);
-
-    const shadows = this.#shadowBatches[level];
-
-    if (shadows === null) {
-      return;
-    }
-
-    appendRow(shadows[part], row);
+    this.#batches[level][part]?.add([row]);
+    this.#shadowBatches[level]?.[part]?.add([row]);
   }
 
   commit(): void {
     for (const batch of this.#all) {
-      batch.geometry.instanceCount = batch.count;
-      batch.mesh.visible = batch.count > 0;
-
-      if (batch.count > 0) {
-        batch.rows.markUpdated(batch.count);
-      }
+      batch.commit();
     }
   }
 
   dispose(): void {
     for (const batch of this.#all) {
-      batch.geometry.dispose();
+      batch.dispose();
     }
   }
 
@@ -88,27 +59,22 @@ export class PartBatches {
     return level.shadowParts.map((part) => this.#createBatch(part, material, true));
   }
 
-  #createBatch(part: MeshData, material: Material, isShadowOnly: boolean): PartBatch | null {
+  #createBatch(part: MeshData, material: Material, isShadowOnly: boolean): InstanceBatch | null {
     if (triangleCount(part) === 0) {
       return null;
     }
 
-    const geometry = geometryFromMeshData(part, SKINNED_CHANNELS);
+    const batch = new InstanceBatch(geometryFromMeshData(part, SKINNED_CHANNELS), material, ROW_FIELDS, 32);
 
-    const rows = new InterleavedInstances(geometry, ROW_FIELDS, 32);
-    const mesh = new Mesh(geometry, material);
-
-    mesh.frustumCulled = false;
-    mesh.castShadow = isShadowOnly;
-    mesh.receiveShadow = !isShadowOnly;
-    mesh.visible = false;
+    batch.mesh.castShadow = isShadowOnly;
+    batch.mesh.receiveShadow = !isShadowOnly;
 
     if (isShadowOnly) {
-      mesh.layers.set(SHADOW_ONLY_LAYER);
+      batch.mesh.layers.set(SHADOW_ONLY_LAYER);
     }
 
-    this.group.add(mesh);
+    this.group.add(batch.mesh);
 
-    return { count: 0, geometry, mesh, rows };
+    return batch;
   }
 }

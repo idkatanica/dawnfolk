@@ -228,7 +228,6 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   material.colorNode = varying(mix(ground.rgb, bladeColor, growth), "grassColor");
   material.normalNode = transformNormalToView(varying(bladeNormal, "grassNormal"));
   material.roughnessNode = float(0.9);
-  material.metalnessNode = float(0);
 
   return material;
 }
@@ -250,7 +249,6 @@ export class GrassField {
     this.mesh = new Mesh(geometry, createGrassMaterial(options, uniforms));
     this.mesh.frustumCulled = false;
     this.mesh.receiveShadow = true;
-    this.mesh.visible = options.clumpsPerSide > 0;
   }
 
   update(camera: Camera, viewDistance: number): void {

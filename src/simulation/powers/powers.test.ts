@@ -3,22 +3,18 @@ import { Ground } from "../../content/grounds.ts";
 import { PlantSpecies } from "../../content/plants.ts";
 import { POWER_ORDER, POWERS } from "../../content/powers.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
-import type { FaunaSystem } from "../fauna/fauna.ts";
 import { Simulation } from "../simulation.ts";
 import { totalFood } from "../society/stock.ts";
 import {
   centerCell,
   createVegetatedWorld,
   floodCells,
+  livingCount,
   monumentAround,
   plantsTooSteep,
   steepeningRamp,
 } from "../testing/test-world.ts";
 import { POWER_HANDLERS, parsePowerParameters } from "./power-registry.ts";
-
-function livingCount(fauna: FaunaSystem): number {
-  return fauna.animals.filter((animal) => animal.isAlive).length;
-}
 
 function createSimulation(baseTemperature = 15): Simulation {
   return new Simulation(createVegetatedWorld({ baseTemperature, dimensions: { cellSize: 10, cellsPerSide: 96 } }));

@@ -1,15 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import { CompactMenu } from "./compact-menu.tsx";
 import { useInterfaceStore } from "./interface-store.ts";
 
-const INITIAL_INTERFACE = useInterfaceStore.getState();
-
 describe("compact menu", () => {
-  afterEach(() => {
-    useInterfaceStore.setState(INITIAL_INTERFACE, true);
-  });
-
   it("keeps its entries hidden until it is opened", async () => {
     const screen = await render(<CompactMenu />);
 

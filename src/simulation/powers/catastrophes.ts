@@ -1,6 +1,5 @@
 import { isShrubSpecies, isTreeSpecies, PlantSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import { clamp, FULL_TURN, hashToUnit, lerp, smoothstep } from "../../shared/math.ts";
-import { NO_PLANT } from "../../world/vegetation-store.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import { discover } from "../society/progress.ts";
 import { type Catastrophe, ruinText, type Shock, shakeMonuments } from "../world/monument-damage.ts";
@@ -46,7 +45,7 @@ interface Strike {
 }
 
 export function strikeLightning(strike: Strike, services: PowerServices): void {
-  const { buildings, fauna, fire, society, world } = services;
+  const { buildings, fauna, fire, people, world } = services;
 
   services.effects.add({ isNatural: strike.isNatural, kind: "lightning", x: strike.x, z: strike.z });
 
@@ -59,9 +58,9 @@ export function strikeLightning(strike: Strike, services: PowerServices): void {
     world.markSurfaceCell(cell);
   }
 
-  society.damageArea(strike.x, strike.z, STRIKE_KILL_RADIUS, 3, "lightning");
+  people.damageArea(strike.x, strike.z, STRIKE_KILL_RADIUS, 3, "lightning");
   fauna.damageArea(strike.x, strike.z, STRIKE_KILL_RADIUS, 6, "lightning");
-  fauna.scare(strike.x, strike.z, STRIKE_SCARE_RADIUS, 1);
+  fauna.scare(strike.x, strike.z, STRIKE_SCARE_RADIUS);
 
   for (const building of buildings.all) {
     if (Math.hypot(building.x - strike.x, building.z - strike.z) < STRIKE_BUILDING_RADIUS) {
@@ -89,7 +88,7 @@ function isRainedOn(cell: number, strike: Strike, services: PowerServices): bool
 }
 
 function teachFire(strike: Strike, services: PowerServices): void {
-  const tribe = services.society.nearestTribe(strike.x, strike.z, TEACHING_DISTANCE);
+  const tribe = services.people.nearestTribe(strike.x, strike.z, TEACHING_DISTANCE);
 
   if (tribe === null) {
     return;
@@ -142,7 +141,7 @@ function reachScale(blast: Blast): number {
 }
 
 export function explode(blast: Blast, services: PowerServices): void {
-  const { buildings, fauna, hazards, society, world } = services;
+  const { buildings, fauna, hazards, people, world } = services;
 
   const reach = blast.radius * BLAST_REACH;
 
@@ -167,9 +166,9 @@ export function explode(blast: Blast, services: PowerServices): void {
     services
   );
   buildings.damageArea(blast.x, blast.z, reach, 120 * blast.power, burnsDebris);
-  society.damageArea(blast.x, blast.z, reach, 1.6 * blast.power, "blast");
+  people.damageArea(blast.x, blast.z, reach, 1.6 * blast.power, "blast");
   fauna.damageArea(blast.x, blast.z, reach, 3 * blast.power, "blast");
-  fauna.scare(blast.x, blast.z, blast.radius * 8, 1);
+  fauna.scare(blast.x, blast.z, blast.radius * 8);
   hazards.addZone({ radius: blast.radius * 4, remainingSeconds: 6, x: blast.x, z: blast.z });
   services.effects.add({
     isInWater,
@@ -236,7 +235,7 @@ function flatten(cell: number, blast: Blast, remoteness: number, services: Power
   const { environment, world } = services;
   const { vegetation } = world;
 
-  for (const plant of plantsIn(world, cell)) {
+  for (const plant of vegetation.plantsInCell(cell).filter((index) => vegetation.isAlive(index))) {
     const { form } = plantSpeciesDefinition(vegetation.species[plant]);
 
     if (isTreeSpecies(vegetation.species[plant])) {
@@ -251,20 +250,6 @@ function flatten(cell: number, blast: Blast, remoteness: number, services: Power
   world.fields.scorch[cell] = Math.max(world.fields.scorch[cell], lerp(0.85, 0.35, remoteness));
   world.fields.snow[cell] = 0;
   world.markDisturbed(cell, environment.day);
-}
-
-function plantsIn(world: WorldState, cell: number): number[] {
-  const { vegetation } = world;
-
-  const plants: number[] = [];
-
-  for (let plant = vegetation.firstPlantInCell(cell); plant !== NO_PLANT; plant = vegetation.nextPlantInCell(plant)) {
-    if (vegetation.isAlive(plant)) {
-      plants.push(plant);
-    }
-  }
-
-  return plants;
 }
 
 function fallingAway(plant: number, blast: Blast, world: WorldState): number {
@@ -373,7 +358,7 @@ interface Quake {
 }
 
 export function shakeLand(quake: Quake, services: PowerServices): void {
-  const { buildings, fauna, hazards, random, society, world } = services;
+  const { buildings, fauna, hazards, random, people, world } = services;
 
   shakeTerrain(world, quake, quake.magnitude, random);
 
@@ -388,8 +373,8 @@ export function shakeLand(quake: Quake, services: PowerServices): void {
     services
   );
   buildings.damageArea(quake.x, quake.z, quake.radius, 45 * quake.magnitude, false);
-  society.damageArea(quake.x, quake.z, quake.radius * 0.6, 0.35 * quake.magnitude, "earthquake");
-  fauna.scare(quake.x, quake.z, quake.radius * 1.5, 1);
+  people.damageArea(quake.x, quake.z, quake.radius * 0.6, 0.35 * quake.magnitude, "earthquake");
+  fauna.scare(quake.x, quake.z, quake.radius * 1.5);
   hazards.addZone({ radius: quake.radius, remainingSeconds: 5, x: quake.x, z: quake.z });
   services.effects.add({
     kind: "earthquake",
@@ -404,7 +389,7 @@ function toppleTrees(cell: number, services: PowerServices): void {
   const { environment, world } = services;
   const { vegetation } = world;
 
-  for (const plant of plantsIn(world, cell)) {
+  for (const plant of vegetation.plantsInCell(cell).filter((index) => vegetation.isAlive(index))) {
     if (isTreeSpecies(vegetation.species[plant])) {
       world.fellPlant(plant, environment.day, hashToUnit(vegetation.seed[plant] * 31, cell) * FULL_TURN);
       world.markDisturbed(cell, environment.day);

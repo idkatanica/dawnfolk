@@ -3,7 +3,7 @@ import { carriedFood, type Person } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
 import { takeFood, totalFood } from "../stock.ts";
 import type { Tribe } from "../tribe.ts";
-import { hasLitCampfire } from "../tribe-places.ts";
+import { litCampfireOf } from "../tribe-places.ts";
 import { Errand, headTo, type Job } from "./job.ts";
 
 const MEAL_SECONDS = 2.5;
@@ -21,15 +21,11 @@ export class EatJob implements Job {
   update(tick: PersonTick): Job | null {
     const progress = this.#errand.update(tick);
 
-    if (progress === "abandoned") {
-      return null;
-    }
-
     if (progress !== "finished") {
-      return this;
+      return progress === "abandoned" ? null : this;
     }
 
-    const isCooked = hasLitCampfire(tick.tribe, tick.context.buildings);
+    const isCooked = litCampfireOf(tick.tribe, tick.context.buildings) !== null;
 
     eatMeal(tick.person, tick.tribe, isCooked);
 

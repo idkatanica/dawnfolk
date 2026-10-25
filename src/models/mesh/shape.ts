@@ -129,13 +129,7 @@ export function deformShape(shape: Shape, deformation: Deformation): Shape {
 
 type Displacement = (vertex: ShapeVertex) => number;
 
-interface DisplaceOptions {
-  readonly normalSoftness?: number;
-}
-
-export function displaceShape(shape: Shape, displacement: Displacement, options: DisplaceOptions = {}): Shape {
-  const { normalSoftness = 0 } = options;
-
+export function displaceShape(shape: Shape, displacement: Displacement, normalSoftness: number): Shape {
   const positions = new Float32Array(shape.positions);
 
   for (let index = 0; index < shapeVertexCount(shape); index += 1) {
@@ -150,9 +144,7 @@ export function displaceShape(shape: Shape, displacement: Displacement, options:
 
   const normals = computeSmoothNormals(positions, shape.indices);
 
-  if (normalSoftness > 0) {
-    blendNormals(normals, shape.normals, normalSoftness);
-  }
+  blendNormals(normals, shape.normals, normalSoftness);
 
   return { along: shape.along, around: shape.around, indices: shape.indices, normals, positions };
 }

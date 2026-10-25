@@ -1,15 +1,7 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { useLaunchStore } from "./launch-store.ts";
 
-const initialState = useLaunchStore.getState();
-const initialAddress = window.location.href;
-
 describe("launch store", () => {
-  afterEach(() => {
-    useLaunchStore.setState(initialState, true);
-    window.history.replaceState(null, "", initialAddress);
-  });
-
   it("starts from the options in the address", () => {
     const { launch } = useLaunchStore.getState();
 

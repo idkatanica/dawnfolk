@@ -11,22 +11,6 @@ export interface SimulationConnection {
   send: (command: SimulationCommand) => void;
 }
 
-class CommandQueue {
-  #commands: SimulationCommand[] = [];
-
-  push(command: SimulationCommand): void {
-    this.#commands.push(command);
-  }
-
-  take(): SimulationCommand[] {
-    const commands = this.#commands;
-
-    this.#commands = [];
-
-    return commands;
-  }
-}
-
 function settle<Value>(run: () => Value): Promise<Value> {
   return new Promise((resolve) => {
     resolve(run());
@@ -34,7 +18,7 @@ function settle<Value>(run: () => Value): Promise<Value> {
 }
 
 export class WorkerSimulationConnection implements SimulationConnection {
-  readonly #queue = new CommandQueue();
+  readonly #commands: SimulationCommand[] = [];
   readonly #remote: Remote<SimulationWorkerApi>;
   readonly #worker: Worker;
 
@@ -47,11 +31,11 @@ export class WorkerSimulationConnection implements SimulationConnection {
   }
 
   advance(realSeconds: number): Promise<SimulationFrame> {
-    return this.#remote.advance(realSeconds, this.#queue.take());
+    return this.#remote.advance(realSeconds, this.#commands.splice(0));
   }
 
   createWorld(request: WorldRequest, onProgress: (progress: GenerationProgress) => void): Promise<InitialWorld> {
-    this.#queue.take();
+    this.#commands.splice(0);
 
     return this.#remote.createWorld(request, proxy(onProgress));
   }
@@ -61,33 +45,33 @@ export class WorkerSimulationConnection implements SimulationConnection {
   }
 
   send(command: SimulationCommand): void {
-    this.#queue.push(command);
+    this.#commands.push(command);
   }
 }
 
 export class LocalSimulationConnection implements SimulationConnection {
   readonly #api: SimulationWorkerApi;
-  readonly #queue = new CommandQueue();
+  readonly #commands: SimulationCommand[] = [];
 
   constructor(api: SimulationWorkerApi) {
     this.#api = api;
   }
 
   advance(realSeconds: number): Promise<SimulationFrame> {
-    return settle(() => this.#api.advance(realSeconds, this.#queue.take()));
+    return settle(() => this.#api.advance(realSeconds, this.#commands.splice(0)));
   }
 
   createWorld(request: WorldRequest, onProgress: (progress: GenerationProgress) => void): Promise<InitialWorld> {
-    this.#queue.take();
+    this.#commands.splice(0);
 
     return settle(() => this.#api.createWorld(request, onProgress));
   }
 
   dispose(): void {
-    this.#queue.take();
+    this.#commands.splice(0);
   }
 
   send(command: SimulationCommand): void {
-    this.#queue.push(command);
+    this.#commands.push(command);
   }
 }

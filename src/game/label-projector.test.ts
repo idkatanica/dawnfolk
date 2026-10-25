@@ -1,8 +1,7 @@
-import { PerspectiveCamera } from "three/webgpu";
 import { describe, expect, it } from "vitest";
 import { LabelProjector } from "./label-projector.ts";
+import { cameraLookingAt, VIEWPORT } from "./testing/view-fixtures.ts";
 
-const VIEWPORT = { height: 600, width: 800 };
 const WORLD_HALF_SIZE = 2000;
 const FLAT_GROUND = { heightAt: () => 0, surfaceAt: () => 0 };
 
@@ -16,16 +15,6 @@ function wallAroundCentre(x: number, z: number): number {
   const isOutsideCentre = Math.abs(x) > 100 || Math.abs(z) > 100;
 
   return isOutsideCentre ? 5000 : 0;
-}
-
-function cameraLookingAt(x: number, z: number): PerspectiveCamera {
-  const camera = new PerspectiveCamera(45, VIEWPORT.width / VIEWPORT.height, 1, 40_000);
-
-  camera.position.set(x, 400, z + 300);
-  camera.lookAt(x, 0, z);
-  camera.updateMatrixWorld();
-
-  return camera;
 }
 
 describe("label projector", () => {

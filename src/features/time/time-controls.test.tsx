@@ -1,16 +1,12 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import { SIMULATION_SPEEDS } from "../../simulation/tick.ts";
-import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
-import { resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { startTestEngine } from "../testing/engine-fixtures.ts";
+import { showWorld } from "../testing/world-fixtures.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { TimeControls } from "./time-controls.tsx";
 
 describe("time controls", () => {
-  afterEach(() => {
-    resetWorld();
-  });
-
   it("offers to resume a paused world without marking any speed", async () => {
     showWorld({ isPaused: true, speed: 2 });
 
@@ -68,11 +64,6 @@ describe("time controls", () => {
 });
 
 describe("time controls in a running game", () => {
-  afterEach(() => {
-    stopTestEngine();
-    resetWorld();
-  });
-
   it("resumes a paused world", async () => {
     const { send } = await startTestEngine();
 

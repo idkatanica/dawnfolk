@@ -219,7 +219,6 @@ export function createTerrainMaterial({
 
   material.colorNode = flowering;
   material.roughnessNode = mix(float(0.95), float(0.5), wetness);
-  material.metalnessNode = float(0);
   material.emissiveNode = emberGlow(surface.a, positionWorld.xz, fine.mul(0.5).add(0.5)).add(
     scorched.mul(fireLight).mul(GROUND_FIRE_LIGHT)
   );

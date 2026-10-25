@@ -99,7 +99,7 @@ function cellsAround(grid: WorldGrid, cell: number, innerRadius: number, outerRa
     .filter((other) => Math.hypot(grid.cellCenterX(other) - x, grid.cellCenterZ(other) - z) >= innerRadius);
 }
 
-function plantsAboveTheirSlope(generated: GeneratedWorld): string[] {
+function misplacedPlants(generated: GeneratedWorld): string[] {
   const { terrain, vegetation } = generated;
 
   const grid = new WorldGrid(generated.dimensions);
@@ -113,6 +113,10 @@ function plantsAboveTheirSlope(generated: GeneratedWorld): string[] {
 
     if (slope > steepestSlope) {
       misplaced.push(`${name} on slope ${slope.toFixed(2)}`);
+    }
+
+    if (hasWater(terrain.waterSurface[cell], terrain.height[cell])) {
+      misplaced.push(`${name} in water`);
     }
   }
 
@@ -685,7 +689,7 @@ describe("world generation", () => {
   });
 
   it("plants nothing on ground steeper than its species can hold", () => {
-    expect(plantsAboveTheirSlope(world)).toEqual([]);
+    expect(misplacedPlants(world)).toEqual([]);
   });
 
   it("opens glades, sparse stands and riverside meadows in the forests", () => {
@@ -810,9 +814,9 @@ describe("full-size island rim", () => {
     }
   });
 
-  it("keeps every plant of the full island off ground too steep for it", () => {
-    expect(plantsAboveTheirSlope(fullSize)).toEqual([]);
-    expect(plantsAboveTheirSlope(fullSquare)).toEqual([]);
+  it("keeps every plant of the full island off water and off ground too steep for it", () => {
+    expect(misplacedPlants(fullSize)).toEqual([]);
+    expect(misplacedPlants(fullSquare)).toEqual([]);
   });
 
   it("has few slopes steeper than 45 degrees and almost none steeper than 55", () => {

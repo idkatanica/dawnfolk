@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import {
   defaultPowerParameters,
   isPowerId,
@@ -44,14 +44,6 @@ export function readStoredParameters(value: unknown): StoredParameters {
   return parameters;
 }
 
-export function withDefaults(powerId: PowerId, stored: ParameterValueMap | undefined): ParameterValueMap {
-  if (stored === undefined) {
-    return defaultPowerParameters(powerId);
-  }
-
-  return stored;
-}
-
 function mergeStored(persisted: unknown, current: PowerStore): PowerStore {
   if (persisted === undefined) {
     return current;
@@ -61,7 +53,13 @@ function mergeStored(persisted: unknown, current: PowerStore): PowerStore {
 }
 
 export function parametersOf(parameters: StoredParameters, powerId: PowerId): ParameterValueMap {
-  return withDefaults(powerId, parameters[powerId]);
+  const stored = parameters[powerId];
+
+  if (stored === undefined) {
+    return defaultPowerParameters(powerId);
+  }
+
+  return stored;
 }
 
 export const usePowerStore = create<PowerStore>()(
@@ -85,7 +83,6 @@ export const usePowerStore = create<PowerStore>()(
       merge: mergeStored,
       name: STORAGE_KEY,
       partialize: (state) => ({ parameters: state.parameters }),
-      storage: createJSONStorage(() => localStorage),
     }
   )
 );

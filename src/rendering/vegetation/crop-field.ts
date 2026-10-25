@@ -14,16 +14,7 @@ import {
   varying,
   vec3,
 } from "three/tsl";
-import {
-  type Frustum,
-  Group,
-  type InstancedBufferGeometry,
-  Mesh,
-  MeshStandardNodeMaterial,
-  type PerspectiveCamera,
-  Sphere,
-  Vector3,
-} from "three/webgpu";
+import { type Frustum, Group, MeshStandardNodeMaterial, type PerspectiveCamera, Sphere, Vector3 } from "three/webgpu";
 import { CROP_KINDS, type CropKind, cropOfCode, isFencedCode } from "../../content/crops.ts";
 import { Ground } from "../../content/grounds.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
@@ -41,12 +32,12 @@ import {
 import { FULL_TURN, hashToUnit } from "../../shared/math.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import type { CellRegion, RowRun } from "../../world/change-tracking.ts";
-import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
+import { geometryFromMeshData, InstanceBatch } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { assignSphereLevels, HIDDEN_LEVEL } from "../view-input.ts";
 import { gustAt, type PlantWeather } from "./plant-material.ts";
 
 const BYTE = 255;
-const HIDDEN = -1;
 const FLOATS_PER_PLANT = 8;
 const GROWTH_OFFSET = 4;
 const FLOATS_PER_FENCE = 8;
@@ -94,12 +85,6 @@ const FENCE_FIELDS = [
   { name: "fenceStart", size: 4 },
   { name: "fenceEnd", size: 4 },
 ] as const;
-
-interface InstanceBatch {
-  readonly geometry: InstancedBufferGeometry;
-  readonly instances: InterleavedInstances;
-  readonly mesh: Mesh;
-}
 
 interface FieldCell {
   readonly bounds: Sphere;
@@ -182,7 +167,6 @@ function createCropMaterial(weather: PlantWeather): MeshStandardNodeMaterial {
 
   material.colorNode = varying(color, "cropColor");
   material.roughnessNode = float(0.9);
-  material.metalnessNode = float(0);
 
   return material;
 }
@@ -207,7 +191,6 @@ function createFenceMaterial(length: number): MeshStandardNodeMaterial {
 
   material.colorNode = varying(slotColorTable().element(slot).mul(shade), "fenceColor");
   material.roughnessNode = float(0.88);
-  material.metalnessNode = float(0);
 
   return material;
 }
@@ -254,7 +237,7 @@ export class CropField {
   }
 
   update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
-    const hasNewLevels = this.#assignLevels(camera, frustum, detail);
+    const hasNewLevels = assignSphereLevels(this.#cells.values(), camera, frustum, LEVEL_DISTANCES, detail);
 
     if (!(hasNewLevels || this.#isDirty || this.#grownKinds.size > 0)) {
       return;
@@ -265,24 +248,9 @@ export class CropField {
     this.#grownKinds.clear();
   }
 
-  #assignLevels(camera: PerspectiveCamera, frustum: Frustum, detail: number): boolean {
-    let hasChanged = false;
-
-    for (const field of this.#cells.values()) {
-      const level = this.#levelOf(field, camera, frustum, detail);
-
-      if (level !== field.level) {
-        field.level = level;
-        hasChanged = true;
-      }
-    }
-
-    return hasChanged;
-  }
-
   dispose(): void {
     for (const batch of [...this.#cropBatches.flat(), ...this.#fenceBatches, this.#furrowBatch]) {
-      batch.geometry.dispose();
+      batch.dispose();
     }
   }
 
@@ -292,28 +260,18 @@ export class CropField {
     fields: typeof CROP_FIELDS | typeof FENCE_FIELDS,
     castsShadow: boolean
   ): InstanceBatch {
-    const geometry = geometryFromMeshData(data, ["part", "shade", "slot", "sway"]);
+    const batch = new InstanceBatch(
+      geometryFromMeshData(data, ["part", "shade", "slot", "sway"]),
+      material,
+      fields,
+      256
+    );
 
-    const instances = new InterleavedInstances(geometry, fields, 256);
-    const mesh = new Mesh(geometry, material);
+    batch.mesh.castShadow = castsShadow;
+    batch.mesh.receiveShadow = true;
+    this.group.add(batch.mesh);
 
-    mesh.frustumCulled = false;
-    mesh.castShadow = castsShadow;
-    mesh.receiveShadow = true;
-    mesh.visible = false;
-    this.group.add(mesh);
-
-    return { geometry, instances, mesh };
-  }
-
-  #levelOf(field: FieldCell, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
-    if (!frustum.intersectsSphere(field.bounds)) {
-      return HIDDEN;
-    }
-
-    const distance = Math.max(0, camera.position.distanceTo(field.bounds.center) - field.bounds.radius);
-
-    return LEVEL_DISTANCES.findIndex((limit) => distance < limit * detail);
+    return batch;
   }
 
   #groundAt(column: number, row: number, channel: number): number {
@@ -429,9 +387,9 @@ export class CropField {
       fences: this.#fenceInstances(sides),
       furrows: this.#furrowInstances(column, row),
       growth,
-      kind: kind === null ? HIDDEN : CROP_KINDS.indexOf(kind),
+      kind: kind === null ? HIDDEN_LEVEL : CROP_KINDS.indexOf(kind),
       layout,
-      level: HIDDEN,
+      level: HIDDEN_LEVEL,
       plants: kind === null ? new Float32Array(0) : this.#plantInstances(column, row, kind, growth / BYTE),
     };
   }
@@ -499,51 +457,31 @@ export class CropField {
       const toX = isAlongX ? centerX + half : centerX + across;
       const toZ = isAlongX ? centerZ + across : centerZ + half;
 
-      data.set(
-        [
-          fromX,
-          fromZ,
-          this.#mirror.heightAt(fromX, fromZ),
-          Math.atan2(-(toZ - fromZ), toX - fromX),
-          this.#mirror.heightAt(toX, toZ),
-          0,
-          0,
-          0,
-        ],
-        line * FLOATS_PER_FENCE
-      );
+      data.set(this.#segment(fromX, fromZ, toX, toZ), line * FLOATS_PER_FENCE);
     }
 
     return data;
   }
 
   #fenceInstances(sides: readonly FenceSide[]): Float32Array {
-    const data = new Float32Array(sides.length * FLOATS_PER_FENCE);
+    return new Float32Array(sides.flatMap((side) => this.#segment(...side.from, ...side.to)));
+  }
 
-    for (const [index, side] of sides.entries()) {
-      const [fromX, fromZ] = side.from;
-      const [toX, toZ] = side.to;
-
-      data.set(
-        [
-          fromX,
-          fromZ,
-          this.#mirror.heightAt(fromX, fromZ),
-          Math.atan2(-(toZ - fromZ), toX - fromX),
-          this.#mirror.heightAt(toX, toZ),
-          0,
-          0,
-          0,
-        ],
-        index * FLOATS_PER_FENCE
-      );
-    }
-
-    return data;
+  #segment(fromX: number, fromZ: number, toX: number, toZ: number): number[] {
+    return [
+      fromX,
+      fromZ,
+      this.#mirror.heightAt(fromX, fromZ),
+      Math.atan2(-(toZ - fromZ), toX - fromX),
+      this.#mirror.heightAt(toX, toZ),
+      0,
+      0,
+      0,
+    ];
   }
 
   #refill(isWhole: boolean): void {
-    const fields = [...this.#cells.values()].filter((field) => field.level !== HIDDEN);
+    const fields = [...this.#cells.values()].filter((field) => field.level !== HIDDEN_LEVEL);
 
     for (const [kindIndex, batches] of this.#cropBatches.entries()) {
       if (!(isWhole || this.#grownKinds.has(kindIndex))) {
@@ -553,11 +491,7 @@ export class CropField {
       const ofKind = fields.filter((field) => field.kind === kindIndex);
 
       for (const [level, batch] of batches.entries()) {
-        fill(
-          batch,
-          ofKind.filter((field) => field.level === level).map((field) => field.plants),
-          FLOATS_PER_PLANT
-        );
+        batch.fill(ofKind.filter((field) => field.level === level).map((field) => field.plants));
       }
     }
 
@@ -566,20 +500,10 @@ export class CropField {
     }
 
     for (const [level, batch] of this.#fenceBatches.entries()) {
-      const sources = fields.filter((field) => field.level === level);
-
-      fill(
-        batch,
-        sources.map((field) => field.fences),
-        FLOATS_PER_FENCE
-      );
+      batch.fill(fields.filter((field) => field.level === level).map((field) => field.fences));
     }
 
-    fill(
-      this.#furrowBatch,
-      fields.map((field) => field.furrows),
-      FLOATS_PER_FENCE
-    );
+    this.#furrowBatch.fill(fields.map((field) => field.furrows));
   }
 }
 
@@ -587,29 +511,4 @@ function areRowsAlongX(column: number, row: number): boolean {
   return (
     hashToUnit(Math.floor(column / ORIENTATION_BLOCK), Math.floor(row / ORIENTATION_BLOCK), ORIENTATION_SALT) < 0.5
   );
-}
-
-function fill(batch: InstanceBatch, sources: readonly Float32Array[], stride: number): void {
-  const total = sources.reduce((sum, source) => sum + source.length, 0);
-  const count = total / stride;
-
-  batch.geometry.instanceCount = count;
-  batch.mesh.visible = count > 0;
-
-  if (count === 0) {
-    return;
-  }
-
-  batch.instances.ensureCapacity(count);
-
-  const target = batch.instances.array;
-
-  let offset = 0;
-
-  for (const source of sources) {
-    target.set(source, offset);
-    offset += source.length;
-  }
-
-  batch.instances.markUpdated(count);
 }

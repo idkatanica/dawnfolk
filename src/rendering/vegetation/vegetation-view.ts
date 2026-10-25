@@ -3,7 +3,6 @@ import {
   type Frustum,
   Group,
   type InstancedBufferGeometry,
-  Mesh,
   type MeshStandardNodeMaterial,
   type PerspectiveCamera,
 } from "three/webgpu";
@@ -13,8 +12,9 @@ import type { VertexChannel } from "../../models/mesh/mesh-data.ts";
 import { buildPlantVariant, PLANT_DETAIL_LEVELS } from "../../models/plants/plant-models.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
-import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
+import { geometryFromMeshData, InstanceBatch } from "../instancing.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
+import { HIDDEN_LEVEL } from "../view-input.ts";
 import { createPlantMaterial, PlantWeather, SpeciesLook } from "./plant-material.ts";
 import { foliageLook } from "./plant-palette.ts";
 import {
@@ -27,7 +27,6 @@ import {
 
 const LEVEL_DISTANCES: readonly number[] = [160, 600, 1600, 4200];
 const SHADOW_LEVEL_COUNT = 2;
-const HIDDEN = -1;
 
 const PLANT_CHANNELS: readonly VertexChannel[] = ["flutter", "part", "shade", "slot", "sway"];
 
@@ -42,18 +41,12 @@ interface BatchCounts {
 }
 
 interface PlantBatch {
+  readonly batch: InstanceBatch;
   readonly buckets: readonly number[];
   readonly counts: BatchCounts;
-  readonly geometry: InstancedBufferGeometry;
-  readonly instances: InterleavedInstances;
-  readonly mesh: Mesh;
 }
 
-function shadowFrustumOf(sun: DirectionalLight): Frustum | null {
-  if (!sun.castShadow) {
-    return null;
-  }
-
+function shadowFrustumOf(sun: DirectionalLight): Frustum {
   sun.updateMatrixWorld();
   sun.target.updateMatrixWorld();
   sun.shadow.updateMatrices(sun);
@@ -61,8 +54,8 @@ function shadowFrustumOf(sun: DirectionalLight): Frustum | null {
   return sun.shadow.getFrustum();
 }
 
-function castsShadowAt(chunk: VegetationChunk, level: number, shadowFrustum: Frustum | null): boolean {
-  if (level === HIDDEN || level >= SHADOW_LEVEL_COUNT || shadowFrustum === null) {
+function castsShadowAt(chunk: VegetationChunk, level: number, shadowFrustum: Frustum): boolean {
+  if (level === HIDDEN_LEVEL || level >= SHADOW_LEVEL_COUNT) {
     return false;
   }
 
@@ -82,7 +75,7 @@ export class VegetationView {
 
   constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow) {
     this.chunks = new VegetationChunks(mirror);
-    this.#chunkLevels = new Int8Array(this.chunks.chunks.length).fill(HIDDEN);
+    this.#chunkLevels = new Int8Array(this.chunks.chunks.length).fill(HIDDEN_LEVEL);
     this.#chunkShadows = new Uint8Array(this.chunks.chunks.length);
     this.#looks = PLANT_SPECIES.map(() => new SpeciesLook());
 
@@ -129,10 +122,8 @@ export class VegetationView {
   }
 
   dispose(): void {
-    for (const level of this.#batches) {
-      for (const batch of level) {
-        batch.geometry.dispose();
-      }
+    for (const plants of this.#batches.flat()) {
+      plants.batch.dispose();
     }
   }
 
@@ -142,23 +133,20 @@ export class VegetationView {
     levelIndex: number,
     buckets: readonly number[]
   ): PlantBatch {
-    const instances = new InterleavedInstances(geometry, PLANT_FIELDS, 64);
-    const mesh = new Mesh(geometry, material);
+    const batch = new InstanceBatch(geometry, material, PLANT_FIELDS, 64);
     const counts: BatchCounts = { drawn: 0, shadowed: 0 };
 
-    mesh.frustumCulled = false;
-    mesh.castShadow = levelIndex < SHADOW_LEVEL_COUNT;
-    mesh.receiveShadow = true;
-    mesh.visible = false;
-    mesh.onBeforeShadow = () => {
+    batch.mesh.castShadow = levelIndex < SHADOW_LEVEL_COUNT;
+    batch.mesh.receiveShadow = true;
+    batch.mesh.onBeforeShadow = () => {
       geometry.instanceCount = counts.shadowed;
     };
-    mesh.onAfterShadow = () => {
+    batch.mesh.onAfterShadow = () => {
       geometry.instanceCount = counts.drawn;
     };
-    this.group.add(mesh);
+    this.group.add(batch.mesh);
 
-    return { buckets, counts, geometry, instances, mesh };
+    return { batch, buckets, counts };
   }
 
   #paintSeason(season: number): void {
@@ -195,7 +183,7 @@ export class VegetationView {
     for (const index of chunkIndices) {
       const level = this.#chunkLevels[index];
 
-      if (level === HIDDEN) {
+      if (level === HIDDEN_LEVEL) {
         continue;
       }
 
@@ -206,14 +194,14 @@ export class VegetationView {
   }
 
   #markDirty(level: number): void {
-    if (level !== HIDDEN) {
+    if (level !== HIDDEN_LEVEL) {
       this.#dirtyLevels.add(level);
     }
   }
 
   #levelOf(chunk: VegetationChunk, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
     if (chunk.plants.size === 0 || !frustum.intersectsBox(chunk.bounds)) {
-      return HIDDEN;
+      return HIDDEN_LEVEL;
     }
 
     const distance = chunk.bounds.distanceToPoint(camera.position);
@@ -251,37 +239,17 @@ export class VegetationView {
     this.#dirtyLevels.clear();
   }
 
-  #fill(batch: PlantBatch, chunks: readonly VegetationChunk[], casterCount: number): void {
-    const plantCounts = chunks.map(
-      (chunk) => batch.buckets.reduce((sum, bucket) => sum + chunk.buckets[bucket].length, 0) / FLOATS_PER_PLANT
-    );
+  #fill(plants: PlantBatch, chunks: readonly VegetationChunk[], casterCount: number): void {
+    const { batch, buckets, counts } = plants;
 
-    const count = plantCounts.reduce((sum, plants) => sum + plants, 0);
+    const sources = chunks.map((chunk) => buckets.map((bucket) => chunk.buckets[bucket]));
 
-    batch.counts.drawn = count;
-    batch.counts.shadowed = plantCounts.slice(0, casterCount).reduce((sum, plants) => sum + plants, 0);
-    batch.geometry.instanceCount = count;
-    batch.mesh.visible = count > 0;
-
-    if (count === 0) {
-      return;
-    }
-
-    batch.instances.ensureCapacity(count);
-
-    const target = batch.instances.array;
-
-    let offset = 0;
-
-    for (const chunk of chunks) {
-      for (const bucket of batch.buckets) {
-        const data = chunk.buckets[bucket];
-
-        target.set(data, offset);
-        offset += data.length;
-      }
-    }
-
-    batch.instances.markUpdated(count);
+    batch.fill(sources.flat());
+    counts.drawn = batch.count;
+    counts.shadowed =
+      sources
+        .slice(0, casterCount)
+        .flat()
+        .reduce((sum, source) => sum + source.length, 0) / FLOATS_PER_PLANT;
   }
 }

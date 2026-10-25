@@ -1,34 +1,18 @@
 import { clamp, lerp } from "../shared/math.ts";
 import type { RandomSource } from "../shared/random.ts";
 
-interface HydraulicErosionOptions {
-  brushRadius: number;
-  capacity: number;
-  depositionSpeed: number;
-  dropletCount: number;
-  erosionSpeed: number;
-  evaporation: number;
-  gravity: number;
-  heightScale: number;
-  inertia: number;
-  maximumSteps: number;
-  minimumCapacity: number;
-}
-
-const DEFAULT_HYDRAULIC_EROSION: Omit<HydraulicErosionOptions, "dropletCount"> = {
-  brushRadius: 3,
-  capacity: 4,
-  depositionSpeed: 0.3,
-  erosionSpeed: 0.32,
-  evaporation: 0.012,
-  gravity: 4,
-  heightScale: 1600,
-  inertia: 0.06,
-  maximumSteps: 60,
-  minimumCapacity: 0.01,
-};
-
+const BRUSH_RADIUS = 3;
+const CAPACITY = 4;
+const DEPOSITION_SPEED = 0.3;
+const EROSION_SPEED = 0.32;
+const EVAPORATION = 0.012;
+const GRAVITY = 4;
+const HEIGHT_SCALE = 1600;
+const INERTIA = 0.06;
+const MAXIMUM_STEPS = 60;
+const MINIMUM_CAPACITY = 0.01;
 const SETTLED_EXCESS = 0.02;
+const SMOOTHING = 0.2;
 
 interface ErosionBrush {
   columns: Int32Array;
@@ -159,12 +143,12 @@ function isOnMap(column: number, row: number, size: number): boolean {
   return column >= 0 && row >= 0 && column < size && row < size;
 }
 
-function depositedAmount(heightChange: number, sediment: number, capacity: number, depositionSpeed: number): number {
+function depositedAmount(heightChange: number, sediment: number, capacity: number): number {
   if (heightChange > 0) {
     return Math.min(heightChange, sediment);
   }
 
-  return (sediment - capacity) * depositionSpeed;
+  return (sediment - capacity) * DEPOSITION_SPEED;
 }
 
 interface DropletTerrain {
@@ -174,12 +158,7 @@ interface DropletTerrain {
   readonly size: number;
 }
 
-function simulateDroplet(
-  terrain: DropletTerrain,
-  random: RandomSource,
-  options: HydraulicErosionOptions,
-  sample: SurfaceSample
-): void {
+function simulateDroplet(terrain: DropletTerrain, random: RandomSource, sample: SurfaceSample): void {
   const { brush, map, size } = terrain;
 
   const limit = size - 2;
@@ -193,13 +172,13 @@ function simulateDroplet(
   let x = random.next() * limit;
   let z = random.next() * limit;
 
-  for (let step = 0; step < options.maximumSteps; step += 1) {
+  for (let step = 0; step < MAXIMUM_STEPS; step += 1) {
     sampleSurface(map, size, x, z, sample);
 
     const startHeight = sample.height;
 
-    directionX = directionX * options.inertia - sample.gradientX * (1 - options.inertia);
-    directionZ = directionZ * options.inertia - sample.gradientZ * (1 - options.inertia);
+    directionX = directionX * INERTIA - sample.gradientX * (1 - INERTIA);
+    directionZ = directionZ * INERTIA - sample.gradientZ * (1 - INERTIA);
 
     const length = Math.sqrt(directionX * directionX + directionZ * directionZ);
 
@@ -223,22 +202,22 @@ function simulateDroplet(
 
     const heightChange = sample.height - startHeight;
 
-    const capacity = Math.max(-heightChange * speed * water * options.capacity, options.minimumCapacity);
+    const capacity = Math.max(-heightChange * speed * water * CAPACITY, MINIMUM_CAPACITY);
 
     if (sediment > capacity || heightChange > 0) {
-      const amount = depositedAmount(heightChange, sediment, capacity, options.depositionSpeed);
+      const amount = depositedAmount(heightChange, sediment, capacity);
 
       sediment -= amount;
       deposit(map, size, previousX, previousZ, amount);
     } else {
       const softness = 1 - terrain.resistance[Math.floor(previousZ) * size + Math.floor(previousX)];
-      const amount = Math.min((capacity - sediment) * options.erosionSpeed, -heightChange) * softness;
+      const amount = Math.min((capacity - sediment) * EROSION_SPEED, -heightChange) * softness;
 
       sediment += erode(map, size, brush, previousX, previousZ, amount);
     }
 
-    speed = Math.sqrt(Math.max(0, speed * speed - heightChange * options.gravity));
-    water *= 1 - options.evaporation;
+    speed = Math.sqrt(Math.max(0, speed * speed - heightChange * GRAVITY));
+    water *= 1 - EVAPORATION;
   }
 }
 
@@ -246,25 +225,25 @@ function erodeHydraulically(
   heights: Float32Array,
   resistance: Float32Array,
   random: RandomSource,
-  options: HydraulicErosionOptions,
+  dropletCount: number,
   onProgress: (progress: number) => void
 ): void {
   const size = Math.round(Math.sqrt(heights.length));
-  const map = Float32Array.from(heights, (height) => height / options.heightScale);
-  const terrain: DropletTerrain = { brush: createBrush(options.brushRadius, size), map, resistance, size };
+  const map = Float32Array.from(heights, (height) => height / HEIGHT_SCALE);
+  const terrain: DropletTerrain = { brush: createBrush(BRUSH_RADIUS, size), map, resistance, size };
   const sample: SurfaceSample = { gradientX: 0, gradientZ: 0, height: 0 };
-  const reportEvery = Math.max(1, Math.floor(options.dropletCount / 20));
+  const reportEvery = Math.max(1, Math.floor(dropletCount / 20));
 
-  for (let droplet = 0; droplet < options.dropletCount; droplet += 1) {
-    simulateDroplet(terrain, random, options, sample);
+  for (let droplet = 0; droplet < dropletCount; droplet += 1) {
+    simulateDroplet(terrain, random, sample);
 
     if (droplet % reportEvery === 0) {
-      onProgress(droplet / options.dropletCount);
+      onProgress(droplet / dropletCount);
     }
   }
 
   for (const [index, value] of map.entries()) {
-    heights[index] = value * options.heightScale;
+    heights[index] = value * HEIGHT_SCALE;
   }
 }
 
@@ -339,17 +318,14 @@ export function erodeAcrossScales(
 ): void {
   for (const [index, scale] of scales.entries()) {
     const coarseSize = size / scale.factor;
-    const options = {
-      ...DEFAULT_HYDRAULIC_EROSION,
-      dropletCount: Math.round(coarseSize * coarseSize * scale.dropletsPerCell),
-    };
+    const dropletCount = Math.round(coarseSize * coarseSize * scale.dropletsPerCell);
 
     function report(progress: number): void {
       onProgress((index + progress) / scales.length);
     }
 
     if (scale.factor === 1) {
-      erodeHydraulically(heights, resistance, random, options, report);
+      erodeHydraulically(heights, resistance, random, dropletCount, report);
 
       continue;
     }
@@ -357,7 +333,7 @@ export function erodeAcrossScales(
     const coarse = downsample(heights, size, scale.factor);
     const before = Float32Array.from(coarse);
 
-    erodeHydraulically(coarse, downsample(resistance, size, scale.factor), random, options, report);
+    erodeHydraulically(coarse, downsample(resistance, size, scale.factor), random, dropletCount, report);
     addUpsampledChange(
       heights,
       size,
@@ -558,22 +534,20 @@ export function limitSlopes(heights: Float32Array, size: number, cellSize: numbe
   limitFromLaterCells(heights, size, straight, straight * Math.SQRT2);
 }
 
-export function smoothHeights(heights: Float32Array, size: number, passes: number, strength: number): void {
+export function smoothHeights(heights: Float32Array, size: number): void {
   const smoothed = new Float32Array(heights.length);
 
-  for (let pass = 0; pass < passes; pass += 1) {
-    for (let row = 0; row < size; row += 1) {
-      for (let column = 0; column < size; column += 1) {
-        const index = row * size + column;
-        const left = heights[row * size + Math.max(0, column - 1)];
-        const right = heights[row * size + Math.min(size - 1, column + 1)];
-        const up = heights[Math.max(0, row - 1) * size + column];
-        const down = heights[Math.min(size - 1, row + 1) * size + column];
+  for (let row = 0; row < size; row += 1) {
+    for (let column = 0; column < size; column += 1) {
+      const index = row * size + column;
+      const left = heights[row * size + Math.max(0, column - 1)];
+      const right = heights[row * size + Math.min(size - 1, column + 1)];
+      const up = heights[Math.max(0, row - 1) * size + column];
+      const down = heights[Math.min(size - 1, row + 1) * size + column];
 
-        smoothed[index] = lerp(heights[index], (left + right + up + down) * 0.25, strength);
-      }
+      smoothed[index] = lerp(heights[index], (left + right + up + down) * 0.25, SMOOTHING);
     }
-
-    heights.set(smoothed);
   }
+
+  heights.set(smoothed);
 }

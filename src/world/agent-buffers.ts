@@ -1,22 +1,21 @@
-export const PERSON_STRIDE = 18;
+export const PERSON_STRIDE = 17;
 
 export const PersonField = {
   Age: 9,
   AppearanceSeed: 11,
   Carried: 12,
-  Era: 16,
-  Gear: 15,
+  Era: 15,
+  Gear: 14,
   Heading: 3,
-  Health: 13,
   Id: 0,
   IsFemale: 10,
-  IsRaiding: 17,
+  IsRaiding: 16,
   Phase: 7,
   Pose: 6,
   TribeId: 8,
   VelocityX: 4,
   VelocityZ: 5,
-  Weapon: 14,
+  Weapon: 13,
   X: 1,
   Z: 2,
 } as const;

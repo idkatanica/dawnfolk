@@ -8,7 +8,7 @@ import { createIslandShape, type IslandShapeKind } from "../world/island-shape.t
 import type { Monument } from "../world/monuments.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { VegetationStore } from "../world/vegetation-store.ts";
-import type { Spring, WaterFeatures } from "../world/water.ts";
+import type { WaterFeatures } from "../world/water.ts";
 import { type GridDimensions, WorldGrid } from "../world/world-grid.ts";
 import { buildClimate } from "./climate.ts";
 import { planCrossings } from "./crossings.ts";
@@ -124,16 +124,16 @@ function buildRelief(
   return { coastDistance, desert, dryness: Float32Array.from(desert), heights, relief };
 }
 
-function reservedGround(monuments: Uint8Array, springs: readonly Spring[]): Uint8Array {
-  const reserved = Uint8Array.from(monuments);
+export function cellMask(cellCount: number, owners: readonly { readonly cells: readonly number[] }[]): Uint8Array {
+  const mask = new Uint8Array(cellCount);
 
-  for (const spring of springs) {
-    for (const cell of spring.cells) {
-      reserved[cell] = 1;
+  for (const owner of owners) {
+    for (const cell of owner.cells) {
+      mask[cell] = 1;
     }
   }
 
-  return reserved;
+  return mask;
 }
 
 function bareOffIsland(ground: Uint8Array, coastDistance: Float32Array): void {
@@ -175,7 +175,7 @@ export function generateWorld(
   carveValleys(heights, grid, dryness, coastDistance);
   relaxSlopes(heights, size, grid.cellSize, talus, FINAL_RELAXATION_ITERATIONS);
   limitSlopes(heights, size, grid.cellSize, STEEPEST_SLOPE);
-  smoothHeights(heights, size, 1, 0.2);
+  smoothHeights(heights, size);
   fillSinks(heights, grid, dryness, coastDistance);
   onProgress({ progress: 0, stage: "water" });
 
@@ -210,16 +210,17 @@ export function generateWorld(
   openWoodland(terrain, grid, seed);
 
   const ruins = planMonuments(grid, terrain, seed);
+  const ruinGround = cellMask(grid.cellCount, ruins.monuments);
   const crossings = planCrossings({
     grid,
-    isBlocked: (cell) => ruins.ground[cell] === 1,
+    isBlocked: (cell) => ruinGround[cell] === 1,
     lakeIds: hydrology.lakeIds,
     terrain,
     water: hydrology.features,
   });
   const vegetation = new VegetationStore(grid, Math.round(grid.cellCount * VEGETATION_CAPACITY_PER_CELL));
 
-  const reserved = reservedGround(ruins.ground, hydrology.features.springs);
+  const reserved = cellMask(grid.cellCount, [...ruins.monuments, ...hydrology.features.springs]);
 
   plantInitialVegetation(vegetation, grid, terrain, seed, reserved);
 

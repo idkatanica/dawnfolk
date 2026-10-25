@@ -5,43 +5,24 @@ export interface RowRun {
 
 export class RowChangeTracker {
   readonly #isRowChanged: Uint8Array;
-  #changedRowCount = 0;
 
   constructor(rowCount: number) {
     this.#isRowChanged = new Uint8Array(rowCount);
   }
 
-  get hasChanges(): boolean {
-    return this.#changedRowCount > 0;
-  }
-
   markRow(row: number): void {
-    if (this.#isRowChanged[row] === 1) {
-      return;
-    }
-
     this.#isRowChanged[row] = 1;
-    this.#changedRowCount += 1;
   }
 
   markRows(firstRow: number, lastRow: number): void {
-    const first = Math.max(0, firstRow);
-    const last = Math.min(this.#isRowChanged.length - 1, lastRow);
-
-    for (let row = first; row <= last; row += 1) {
-      this.markRow(row);
-    }
+    this.#isRowChanged.fill(1, firstRow, lastRow + 1);
   }
 
   markAll(): void {
-    this.markRows(0, this.#isRowChanged.length - 1);
+    this.#isRowChanged.fill(1);
   }
 
   takeRuns(): RowRun[] {
-    if (this.#changedRowCount === 0) {
-      return [];
-    }
-
     const runs: RowRun[] = [];
     let runStart = -1;
 
@@ -63,7 +44,6 @@ export class RowChangeTracker {
     }
 
     this.#isRowChanged.fill(0);
-    this.#changedRowCount = 0;
 
     return runs;
   }
@@ -78,10 +58,6 @@ export interface CellRegion {
 
 export class RegionChangeTracker {
   #region: CellRegion | null = null;
-
-  get hasChanges(): boolean {
-    return this.#region !== null;
-  }
 
   markRegion(region: CellRegion): void {
     if (this.#region === null) {

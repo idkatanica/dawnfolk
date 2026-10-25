@@ -26,154 +26,140 @@ function strikeDistance(strike: number, scatter: number, random: RandomSource): 
   return random.next() * scatter;
 }
 
-export const firePower: PowerHandler<"fire"> = {
-  apply: (target, parameters, services) => {
-    const strength = percent(parameters.intensity) * FIRE_BRUSH_STRENGTH;
+export const firePower: PowerHandler<"fire"> = (target, parameters, services) => {
+  const strength = percent(parameters.intensity) * FIRE_BRUSH_STRENGTH;
 
-    for (const { cell, distance } of cellsInArea(services.world, { ...target, radius: parameters.radius })) {
-      services.fire.ignite(cell, strength * (1 - (distance / parameters.radius) * FIRE_EDGE_FADE));
-    }
+  for (const { cell, distance } of cellsInArea(services.world, { ...target, radius: parameters.radius })) {
+    services.fire.ignite(cell, strength * (1 - (distance / parameters.radius) * FIRE_EDGE_FADE));
+  }
 
-    return APPLIED;
-  },
+  return APPLIED;
 };
 
-export const lightningPower: PowerHandler<"lightning"> = {
-  apply: (target, parameters, services) => {
-    const { random } = services;
+export const lightningPower: PowerHandler<"lightning"> = (target, parameters, services) => {
+  const { random } = services;
 
-    for (let strike = 0; strike < parameters.strikes; strike += 1) {
-      const angle = random.next() * FULL_TURN;
-      const distance = strikeDistance(strike, parameters.scatter, random);
+  for (let strike = 0; strike < parameters.strikes; strike += 1) {
+    const angle = random.next() * FULL_TURN;
+    const distance = strikeDistance(strike, parameters.scatter, random);
 
-      strikeLightning(
-        {
-          ignitionChance: percent(parameters.ignitionChance),
-          isNatural: false,
-          x: target.x + Math.cos(angle) * distance,
-          z: target.z + Math.sin(angle) * distance,
-        },
-        services
-      );
-    }
+    strikeLightning(
+      {
+        ignitionChance: percent(parameters.ignitionChance),
+        isNatural: false,
+        x: target.x + Math.cos(angle) * distance,
+        z: target.z + Math.sin(angle) * distance,
+      },
+      services
+    );
+  }
 
-    return APPLIED;
-  },
+  return APPLIED;
 };
 
-export const rainPower: PowerHandler<"rain"> = {
-  apply: (target, parameters, services) => {
-    const { fire, rules, world } = services;
+export const rainPower: PowerHandler<"rain"> = (target, parameters, services) => {
+  const { fire, rules, world } = services;
 
-    const intensity = percent(parameters.intensity) / RAIN_DEFAULT_INTENSITY;
+  const intensity = percent(parameters.intensity) / RAIN_DEFAULT_INTENSITY;
 
-    const soaking = target.seconds * RAIN_PER_SECOND * intensity * rules.water.rainStrength;
+  const soaking = target.seconds * RAIN_PER_SECOND * intensity * rules.water.rainStrength;
 
-    for (const { cell, distance } of cellsInArea(world, { ...target, radius: parameters.radius })) {
-      const relativeDistance = distance / parameters.radius;
+  for (const { cell, distance } of cellsInArea(world, { ...target, radius: parameters.radius })) {
+    const relativeDistance = distance / parameters.radius;
 
-      const falloff = 1 - relativeDistance * relativeDistance;
+    const falloff = 1 - relativeDistance * relativeDistance;
 
-      world.fields.wetness[cell] = Math.min(1, world.fields.wetness[cell] + soaking * falloff);
-      fire.douse(cell, soaking * 2 * falloff);
-      world.markSurfaceCell(cell);
-    }
+    world.fields.wetness[cell] = Math.min(1, world.fields.wetness[cell] + soaking * falloff);
+    fire.douse(cell, soaking * 2 * falloff);
+    world.markSurfaceCell(cell);
+  }
 
-    return APPLIED;
-  },
+  return APPLIED;
 };
 
-export const snowPower: PowerHandler<"snow"> = {
-  apply: (target, parameters, services) => {
-    const { fire, rules, world } = services;
+export const snowPower: PowerHandler<"snow"> = (target, parameters, services) => {
+  const { fire, rules, world } = services;
 
-    const intensity = percent(parameters.intensity) / SNOW_DEFAULT_INTENSITY;
+  const intensity = percent(parameters.intensity) / SNOW_DEFAULT_INTENSITY;
 
-    const snowfall = target.seconds * SNOW_PER_SECOND * intensity * rules.water.snowfall;
+  const snowfall = target.seconds * SNOW_PER_SECOND * intensity * rules.water.snowfall;
 
-    for (const { cell, distance } of cellsInArea(world, { ...target, radius: parameters.radius })) {
-      if (world.isWater(cell)) {
-        continue;
-      }
-
-      const relativeDistance = distance / parameters.radius;
-
-      const falloff = 1 - relativeDistance * relativeDistance;
-
-      world.fields.snow[cell] = Math.min(SNOW_CAPACITY, world.fields.snow[cell] + snowfall * falloff);
-      fire.douse(cell, snowfall * 3);
-      world.markSurfaceCell(cell);
+  for (const { cell, distance } of cellsInArea(world, { ...target, radius: parameters.radius })) {
+    if (world.isWater(cell)) {
+      continue;
     }
 
-    return APPLIED;
-  },
+    const relativeDistance = distance / parameters.radius;
+
+    const falloff = 1 - relativeDistance * relativeDistance;
+
+    world.fields.snow[cell] = Math.min(SNOW_CAPACITY, world.fields.snow[cell] + snowfall * falloff);
+    fire.douse(cell, snowfall * 3);
+    world.markSurfaceCell(cell);
+  }
+
+  return APPLIED;
 };
 
-export const explosionPower: PowerHandler<"explosion"> = {
-  apply: (target, parameters, services) => {
+export const explosionPower: PowerHandler<"explosion"> = (target, parameters, services) => {
+  explode(
+    {
+      burnsDebris: parameters.burningDebris,
+      catastrophe: "explosion",
+      power: percent(parameters.power) / DEFAULT_BLAST_POWER,
+      radius: parameters.radius,
+      x: target.x,
+      z: target.z,
+    },
+    services
+  );
+
+  return APPLIED;
+};
+
+export const meteorPower: PowerHandler<"meteor"> = (target, parameters, services) => {
+  const { environment, random, world } = services;
+
+  const fromWindward = Math.atan2(environment.windZ, environment.windX) + Math.PI + random.signed() * 0.45;
+  const ground = world.surfaceAt(target.x, target.z);
+
+  services.effects.add({
+    durationSeconds: parameters.fallTime,
+    fromX: target.x + Math.cos(fromWindward) * METEOR_DISTANCE,
+    fromY: ground + METEOR_ALTITUDE,
+    fromZ: target.z + Math.sin(fromWindward) * METEOR_DISTANCE,
+    kind: "meteor",
+    radius: parameters.craterRadius,
+    toX: target.x,
+    toZ: target.z,
+  });
+  services.schedule(parameters.fallTime, () => {
     explode(
       {
-        burnsDebris: parameters.burningDebris,
-        catastrophe: "explosion",
-        power: percent(parameters.power) / DEFAULT_BLAST_POWER,
-        radius: parameters.radius,
+        burnsDebris: parameters.ignites,
+        catastrophe: "meteor",
+        power: METEOR_POWER * (parameters.craterRadius / METEOR_REFERENCE_CRATER),
+        radius: parameters.craterRadius,
         x: target.x,
         z: target.z,
       },
       services
     );
+  });
 
-    return APPLIED;
-  },
+  return APPLIED;
 };
 
-export const meteorPower: PowerHandler<"meteor"> = {
-  apply: (target, parameters, services) => {
-    const { environment, random, world } = services;
+export const earthquakePower: PowerHandler<"earthquake"> = (target, parameters, services) => {
+  shakeLand(
+    {
+      magnitude: percent(parameters.magnitude) / DEFAULT_MAGNITUDE,
+      radius: parameters.radius,
+      x: target.x,
+      z: target.z,
+    },
+    services
+  );
 
-    const fromWindward = Math.atan2(environment.windZ, environment.windX) + Math.PI + random.signed() * 0.45;
-    const ground = world.surfaceAt(target.x, target.z);
-
-    services.effects.add({
-      durationSeconds: parameters.fallTime,
-      fromX: target.x + Math.cos(fromWindward) * METEOR_DISTANCE,
-      fromY: ground + METEOR_ALTITUDE,
-      fromZ: target.z + Math.sin(fromWindward) * METEOR_DISTANCE,
-      kind: "meteor",
-      radius: parameters.craterRadius,
-      toX: target.x,
-      toZ: target.z,
-    });
-    services.schedule(parameters.fallTime, () => {
-      explode(
-        {
-          burnsDebris: parameters.ignites,
-          catastrophe: "meteor",
-          power: METEOR_POWER * (parameters.craterRadius / METEOR_REFERENCE_CRATER),
-          radius: parameters.craterRadius,
-          x: target.x,
-          z: target.z,
-        },
-        services
-      );
-    });
-
-    return APPLIED;
-  },
-};
-
-export const earthquakePower: PowerHandler<"earthquake"> = {
-  apply: (target, parameters, services) => {
-    shakeLand(
-      {
-        magnitude: percent(parameters.magnitude) / DEFAULT_MAGNITUDE,
-        radius: parameters.radius,
-        x: target.x,
-        z: target.z,
-      },
-      services
-    );
-
-    return APPLIED;
-  },
+  return APPLIED;
 };

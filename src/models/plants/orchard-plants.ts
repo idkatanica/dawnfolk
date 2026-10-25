@@ -11,6 +11,7 @@ import type { Shape } from "../mesh/shape.ts";
 import { blob, icosphere, lathe, pointAlong, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { transformOf } from "../mesh/transforms.ts";
+import { BERRY_PART } from "./berries.ts";
 import { addBlob, addLimb, addTrunk, BLOB_TINT, createGrowth, finish, type Growth } from "./tree-growth.ts";
 import {
   FOLIAGE_FLUTTER,
@@ -442,12 +443,8 @@ const BUSH_GENERATORS: Readonly<Record<BushSpecies, (seed: number) => BushStruct
   [CultivatedSpecies.Raspberry]: raspberry,
 };
 
-function isOrchardSpecies(species: number): species is OrchardSpecies {
+export function isOrchardModel(species: number): species is OrchardSpecies {
   return ORCHARD_SPECIES.has(species);
-}
-
-export function isOrchardModel(species: number): boolean {
-  return isOrchardSpecies(species);
 }
 
 function fruitShape(look: FruitLook): Shape {
@@ -488,7 +485,6 @@ interface FruitPlacement {
   readonly height: number;
   readonly hosts: readonly FruitHost[];
   readonly look: FruitLook;
-  readonly part: number;
   readonly seed: number;
 }
 
@@ -496,7 +492,7 @@ function fruitMesh(plant: MeshData, placement: FruitPlacement): MeshData {
   const { hosts, look } = placement;
 
   const random = createRandom(placement.seed);
-  const builder = new MeshBuilder({ flutter: FOLIAGE_FLUTTER, part: placement.part, slot: look.slot });
+  const builder = new MeshBuilder({ flutter: FOLIAGE_FLUTTER, part: BERRY_PART, slot: look.slot });
   const shape = fruitShape(look);
   const lift = fruitLift(look);
   const style: VertexStyle = { sway: (point) => plantSway(point.position.y, placement.height) };
@@ -635,14 +631,6 @@ function fruitDetail(level: PlantDetailLevel): FruitDetail | null {
   return null;
 }
 
-function orchardSpecies(species: PlantSpeciesIndex): OrchardSpecies {
-  if (!isOrchardSpecies(species)) {
-    throw new RangeError(`Plant species ${species} is not grown in orchards`);
-  }
-
-  return species;
-}
-
 function isFruitTree(species: OrchardSpecies): species is FruitTreeSpecies {
   return (
     species === CultivatedSpecies.AppleTree ||
@@ -651,7 +639,7 @@ function isFruitTree(species: OrchardSpecies): species is FruitTreeSpecies {
   );
 }
 
-function meshFruitTree(species: FruitTreeSpecies, seed: number, level: PlantDetailLevel, fruitPart: number): MeshData {
+function meshFruitTree(species: FruitTreeSpecies, seed: number, level: PlantDetailLevel): MeshData {
   const structure = FRUIT_TREE_GENERATORS[species](seed);
   const tree = meshTree(structure, FRUIT_TREE_LOOK, level);
 
@@ -670,14 +658,13 @@ function meshFruitTree(species: FruitTreeSpecies, seed: number, level: PlantDeta
     height: structure.height,
     hosts,
     look: FRUIT_LOOKS[species],
-    part: fruitPart,
     seed: seed + 1,
   });
 
   return mergeMeshes([tree, fruit]);
 }
 
-function meshBerryBush(species: BushSpecies, seed: number, level: PlantDetailLevel, fruitPart: number): MeshData {
+function meshBerryBush(species: BushSpecies, seed: number, level: PlantDetailLevel): MeshData {
   const structure = BUSH_GENERATORS[species](seed);
   const bush = meshBush(structure, level);
 
@@ -692,24 +679,16 @@ function meshBerryBush(species: BushSpecies, seed: number, level: PlantDetailLev
     height: structure.height,
     hosts: structure.leaves,
     look: FRUIT_LOOKS[species],
-    part: fruitPart,
     seed: seed + 1,
   });
 
   return mergeMeshes([bush, berries]);
 }
 
-export function meshOrchardPlant(
-  species: PlantSpeciesIndex,
-  seed: number,
-  level: PlantDetailLevel,
-  fruitPart: number
-): MeshData {
-  const kind = orchardSpecies(species);
-
-  if (isFruitTree(kind)) {
-    return meshFruitTree(kind, seed, level, fruitPart);
+export function meshOrchardPlant(species: OrchardSpecies, seed: number, level: PlantDetailLevel): MeshData {
+  if (isFruitTree(species)) {
+    return meshFruitTree(species, seed, level);
   }
 
-  return meshBerryBush(kind, seed, level, fruitPart);
+  return meshBerryBush(species, seed, level);
 }

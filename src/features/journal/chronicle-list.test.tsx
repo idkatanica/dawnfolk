@@ -1,6 +1,6 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
-import { createChronicleEntry, resetWorld } from "../testing/world-fixtures.ts";
+import { createChronicleEntry } from "../testing/world-fixtures.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { ChronicleList } from "./chronicle-list.tsx";
 
@@ -13,10 +13,6 @@ function createEntries(count: number) {
 }
 
 describe("chronicle list", () => {
-  afterEach(() => {
-    resetWorld();
-  });
-
   it("says that nothing has happened yet", async () => {
     const screen = await render(<ChronicleList />);
 

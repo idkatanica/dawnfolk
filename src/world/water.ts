@@ -18,7 +18,6 @@ export interface Lake {
   centerZ: number;
   id: number;
   level: number;
-  maximumDepth: number;
 }
 
 export interface RiverPoint {

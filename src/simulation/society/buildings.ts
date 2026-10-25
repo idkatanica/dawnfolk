@@ -1,5 +1,4 @@
-import { BUILDINGS, type BuildingKind, isFlammable } from "../../content/buildings.ts";
-import { distanceSquared } from "../../shared/math.ts";
+import { BUILDINGS, type BuildingKind, isFlammable, isLitCampfire } from "../../content/buildings.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { IdentifierSource } from "../identifiers.ts";
@@ -15,7 +14,6 @@ const CAMPFIRE_FUEL_PER_DAY = 0.9;
 const CAMPFIRE_RAIN = 0.4;
 const ESCAPE_DROUGHT = 0.55;
 const ESCAPE_WIND = 20;
-const LIT_CAMPFIRE_FUEL = 0.02;
 
 type BuildingLossReason = "abandoned" | "burnt" | "destroyed" | "replaced";
 
@@ -84,11 +82,7 @@ export function isComplete(building: Building): boolean {
 }
 
 export function isCampfireLit(building: Building | null): boolean {
-  if (building === null || !isComplete(building)) {
-    return false;
-  }
-
-  return building.fuel > LIT_CAMPFIRE_FUEL;
+  return building !== null && isLitCampfire(building);
 }
 
 export class BuildingSystem {
@@ -195,22 +189,6 @@ export class BuildingSystem {
     this.#incidents = [];
 
     return incidents;
-  }
-
-  nearest(x: number, z: number, radius: number): Building | null {
-    let nearest: Building | null = null;
-    let nearestDistance = radius * radius;
-
-    for (const building of this.#buildings) {
-      const squaredDistance = distanceSquared(x, z, building.x, building.z);
-
-      if (squaredDistance < nearestDistance) {
-        nearest = building;
-        nearestDistance = squaredDistance;
-      }
-    }
-
-    return nearest;
   }
 
   setAlight(building: Building): void {

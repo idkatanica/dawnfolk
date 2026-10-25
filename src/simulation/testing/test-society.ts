@@ -6,11 +6,12 @@ import { Chronicle } from "../chronicle.ts";
 import { EffectLog } from "../effects.ts";
 import { FaunaSystem } from "../fauna/fauna.ts";
 import { IdentifierSource } from "../identifiers.ts";
-import { Calendar, DEFAULT_CALENDAR } from "../nature/calendar.ts";
+import { Calendar } from "../nature/calendar.ts";
 import { describeEnvironment } from "../nature/environment.ts";
 import { FireSystem } from "../nature/fire.ts";
 import { WeatherSystem } from "../nature/weather.ts";
 import { BuildingSystem } from "../society/buildings.ts";
+import type { Job } from "../society/jobs/job.ts";
 import type { Person } from "../society/person.ts";
 import { RivalrySystem } from "../society/rivalry/rivalry-system.ts";
 import { SocietySystem } from "../society/society.ts";
@@ -31,7 +32,7 @@ interface SocietyHarnessOptions {
 
 export class SocietyHarness {
   readonly buildings: BuildingSystem;
-  readonly calendar: Calendar;
+  readonly calendar = new Calendar();
   readonly chronicle = new Chronicle();
   readonly context: SocietyContext;
   readonly effects = new EffectLog();
@@ -58,7 +59,7 @@ export class SocietyHarness {
 
     this.isFaunaAwake = settings.isFaunaAwake;
     this.world = new WorldState(createVegetatedWorld(settings.world, SEED));
-    this.calendar = new Calendar({ ...DEFAULT_CALENDAR, day: settings.day });
+    this.calendar.day = settings.day;
     this.random = createRandom(SEED);
     this.navigation = new NavigationGrid(this.world);
     this.fire = new FireSystem(this.world);
@@ -163,4 +164,18 @@ export function firstMemberTick(harness: SocietyHarness, tribe: Tribe): PersonTi
   const [person] = harness.society.membersOf(tribe);
 
   return tickFor(harness, person, tribe);
+}
+
+export function runToCompletion(job: Job, tick: PersonTick, limitSeconds: number): boolean {
+  let current: Job | null = job;
+
+  for (let elapsed = 0; elapsed < limitSeconds; elapsed += tick.seconds) {
+    current = current.update(tick);
+
+    if (current === null) {
+      return true;
+    }
+  }
+
+  return false;
 }

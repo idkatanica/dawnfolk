@@ -1,11 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { defaultPowerParameters, POWERS } from "../../content/powers.ts";
 import { PowerSettings } from "./power-settings.tsx";
 import { usePowerStore } from "./power-store.ts";
-
-const initialState = usePowerStore.getState();
 
 function renderSettingsOf(powerId: "explosion" | "fire" | "forest") {
   usePowerStore.getState().selectPower(powerId);
@@ -16,11 +14,6 @@ function renderSettingsOf(powerId: "explosion" | "fire" | "forest") {
 describe("power settings", () => {
   beforeEach(async () => {
     await page.viewport(1280, 800);
-  });
-
-  afterEach(() => {
-    usePowerStore.setState(initialState, true);
-    localStorage.clear();
   });
 
   it("stays hidden while no power is selected", async () => {
@@ -120,11 +113,6 @@ describe("power settings", () => {
 describe("power settings on a phone", () => {
   beforeEach(async () => {
     await page.viewport(390, 844);
-  });
-
-  afterEach(() => {
-    usePowerStore.setState(initialState, true);
-    localStorage.clear();
   });
 
   it("keeps to one line until the settings are asked for", async () => {

@@ -1,15 +1,10 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { storedLabelsShown, storedQuality, storeLabelsShown, storeQuality } from "./preferences.ts";
 
 const QUALITY_KEY = "dawnfolk.quality";
 const LABELS_KEY = "dawnfolk.labels";
 
 describe("saved preferences", () => {
-  afterEach(() => {
-    localStorage.removeItem(QUALITY_KEY);
-    localStorage.removeItem(LABELS_KEY);
-  });
-
   it("has no saved quality at first", () => {
     expect(storedQuality()).toBeNull();
   });

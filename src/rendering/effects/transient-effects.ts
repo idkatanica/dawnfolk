@@ -9,13 +9,13 @@ import type {
   MeteorEffect,
   SplashEffect,
 } from "../../simulation/effects.ts";
-import type { BillboardBatch } from "./billboards.ts";
+import type { InstanceBatch } from "../instancing.ts";
 import type { EffectMeshes, RibbonPoint } from "./effect-meshes.ts";
 import type { GroundRing } from "./ground-ring.ts";
 
 export interface SpriteSinks {
-  readonly dust: BillboardBatch;
-  readonly glow: BillboardBatch;
+  readonly dust: InstanceBatch;
+  readonly glow: InstanceBatch;
 }
 
 export interface EffectContext {

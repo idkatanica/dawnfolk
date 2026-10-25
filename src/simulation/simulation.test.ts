@@ -208,6 +208,10 @@ describe("frames", () => {
     simulation.execute({ selection: { id: person.id, kind: "person" }, type: "setSelection" });
 
     expect(simulation.advance(0).inspection).toMatchObject({ kind: "person", name: person.name });
+
+    simulation.society.kill(person, "age");
+
+    expect(simulation.advance(0).inspection).toMatchObject({ activity: "Has passed away" });
   });
 
   it("reports recomputed water after the land settles", () => {

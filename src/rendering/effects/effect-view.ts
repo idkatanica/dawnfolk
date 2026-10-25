@@ -1,7 +1,7 @@
 import { Group, PointLight, type Vector3 } from "three/webgpu";
 import type { SimulationEffect } from "../../simulation/effects.ts";
 import { ArrowFlight, ArrowParts } from "./arrow-flight.ts";
-import { BillboardBatch, type CameraAxes } from "./billboards.ts";
+import { type CameraAxes, createBillboardBatch } from "./billboards.ts";
 import { EffectMeshes } from "./effect-meshes.ts";
 import type { GroundRing } from "./ground-ring.ts";
 import { createDustMaterial, createGlowMaterial } from "./sprite-materials.ts";
@@ -45,8 +45,8 @@ export class EffectView {
   constructor(options: EffectViewOptions) {
     this.#createRing = options.createRing;
     this.#sinks = {
-      dust: new BillboardBatch(createDustMaterial(options.axes), 5),
-      glow: new BillboardBatch(createGlowMaterial(options.axes), 9),
+      dust: createBillboardBatch(createDustMaterial(options.axes), 5),
+      glow: createBillboardBatch(createGlowMaterial(options.axes), 9),
     };
 
     this.#context = {
@@ -87,10 +87,6 @@ export class EffectView {
     for (let index = this.#active.length - 1; index >= 0; index -= 1) {
       const effect = this.#active[index];
 
-      if (effect === undefined) {
-        continue;
-      }
-
       if (!effect.update(realSeconds, this.#sinks)) {
         this.#finish(index, effect);
       }
@@ -105,19 +101,18 @@ export class EffectView {
 
   dispose(): void {
     for (let index = this.#active.length - 1; index >= 0; index -= 1) {
-      const effect = this.#active[index];
-
-      if (effect !== undefined) {
-        this.#finish(index, effect);
-      }
+      this.#finish(index, this.#active[index]);
     }
 
     for (const ring of this.#idleRings.splice(0)) {
       ring.dispose();
     }
 
-    this.#sinks.dust.dispose();
-    this.#sinks.glow.dispose();
+    for (const batch of [this.#sinks.dust, this.#sinks.glow]) {
+      batch.dispose();
+      batch.mesh.material.dispose();
+    }
+
     this.#meshes.dispose();
     this.#arrowParts.dispose();
   }
@@ -160,11 +155,7 @@ export class EffectView {
   #takeRing(): GroundRing {
     const ring = this.#idleRings.pop();
 
-    if (ring === undefined) {
-      return this.#createRing();
-    }
-
-    return ring;
+    return ring === undefined ? this.#createRing() : ring;
   }
 
   #releaseRing(ring: GroundRing): void {

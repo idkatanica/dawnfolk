@@ -37,11 +37,7 @@ function useCompactMenu() {
     openJournal("tribes");
   }
 
-  function showSettings(): void {
-    openSettings("world");
-  }
-
-  return { isMapOpen, showJournal, showSettings, toggleMap };
+  return { isMapOpen, openSettings, showJournal, toggleMap };
 }
 
 function FullscreenEntry() {
@@ -59,7 +55,7 @@ function FullscreenEntry() {
 }
 
 export function CompactMenu() {
-  const { isMapOpen, showJournal, showSettings, toggleMap } = useCompactMenu();
+  const { isMapOpen, openSettings, showJournal, toggleMap } = useCompactMenu();
 
   return (
     <Menu.Root>
@@ -76,7 +72,7 @@ export function CompactMenu() {
               {isMapOpen ? "Hide the map" : "Show the map"}
             </MenuEntry>
 
-            <MenuEntry icon={<Settings aria-hidden="true" size={17} />} onClick={showSettings}>
+            <MenuEntry icon={<Settings aria-hidden="true" size={17} />} onClick={openSettings}>
               Settings
             </MenuEntry>
 

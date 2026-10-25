@@ -15,9 +15,9 @@ import { updateNeeds } from "./needs.ts";
 import { createPerson, type DeathCause, type Person, walkSpeed } from "./person.ts";
 import { syncEra } from "./progress.ts";
 import { findCampSite } from "./settlement.ts";
-import type { DeathAccount, PeopleDirectory, PersonTick, SocietyContext } from "./society-context.ts";
+import type { DeathAccount, PersonTick, SocietyContext } from "./society-context.ts";
 import { createTribe, type Tribe } from "./tribe.ts";
-import { type SocietyServices, updateTribe } from "./tribe-life.ts";
+import { updateTribe } from "./tribe-life.ts";
 import { TroddenGround } from "./trodden-ground.ts";
 
 const HOP_PACE = 1.5;
@@ -55,7 +55,7 @@ interface TribeArrival {
   z: number;
 }
 
-export class SocietySystem implements PeopleDirectory, SocietyServices {
+export class SocietySystem {
   readonly #dependencies: SocietyDependencies;
   readonly #peopleById = new Map<number, Person>();
   readonly #tribesById = new Map<number, Tribe>();
@@ -295,7 +295,7 @@ export class SocietySystem implements PeopleDirectory, SocietyServices {
     const members = this.membersOfEach(tribes);
 
     for (const [position, tribe] of tribes.entries()) {
-      updateTribe({ context, days, members: members[position], seconds, services: this, tribe });
+      updateTribe({ context, days, members: members[position], seconds, tribe });
     }
 
     for (const person of [...this.#people]) {

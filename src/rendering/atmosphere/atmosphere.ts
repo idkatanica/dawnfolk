@@ -53,10 +53,9 @@ export class Atmosphere {
     this.#cloudSea = new CloudSea(options.cloudSeaAltitude);
 
     this.sun = new DirectionalLight(0xff_ff_ff, 3);
-    this.sun.castShadow = options.shadowMapSize > 0;
+    this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(options.shadowMapSize, options.shadowMapSize);
     this.sun.shadow.bias = -0.0003;
-    this.sun.shadow.normalBias = LEAST_NORMAL_BIAS;
     this.sun.shadow.camera.layers.enable(SHADOW_ONLY_LAYER);
 
     this.hemisphere = new HemisphereLight(0xb6_d2_ee, 0x7a_72_5a, 1.2);
@@ -173,10 +172,6 @@ export class Atmosphere {
   }
 
   #shadowAnchor(focus: Vector3, reach: number): Vector3 {
-    if (!this.sun.castShadow) {
-      return this.#shadowFocus.copy(focus);
-    }
-
     const texelSize = (reach * 2) / this.sun.shadow.mapSize.x;
     const right = this.#shadowRight.crossVectors(WORLD_UP, this.#lightDirection).normalize();
 

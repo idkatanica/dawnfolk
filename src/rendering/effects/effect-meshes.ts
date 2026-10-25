@@ -74,29 +74,16 @@ function buildRibbonGeometry(strands: readonly (readonly RibbonPoint[])[]): Buff
 }
 
 class PerObjectValues {
-  readonly #fallback: number;
   readonly #values = new WeakMap<Object3D, number>();
-
-  constructor(fallback: number) {
-    this.#fallback = fallback;
-  }
 
   set(object: Object3D, value: number): void {
     this.#values.set(object, value);
   }
 
   read(object: Object3D | null): number {
-    if (object === null) {
-      return this.#fallback;
-    }
+    const value = object === null ? undefined : this.#values.get(object);
 
-    const value = this.#values.get(object);
-
-    if (value === undefined) {
-      return this.#fallback;
-    }
-
-    return value;
+    return value === undefined ? 1 : value;
   }
 }
 
@@ -134,10 +121,10 @@ function createFireballMaterial(heats: PerObjectValues): MeshBasicNodeMaterial {
 }
 
 export class EffectMeshes {
-  readonly #fireballHeats = new PerObjectValues(1);
+  readonly #fireballHeats = new PerObjectValues();
   readonly #fireballMaterial = createFireballMaterial(this.#fireballHeats);
   readonly #fireballShape = new SphereGeometry(1, 32, 16);
-  readonly #ribbonBrightnesses = new PerObjectValues(1);
+  readonly #ribbonBrightnesses = new PerObjectValues();
   readonly #ribbonMaterial = createRibbonMaterial(this.#ribbonBrightnesses);
 
   createBolt(strands: readonly (readonly RibbonPoint[])[]): Mesh {

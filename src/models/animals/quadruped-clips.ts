@@ -1,6 +1,6 @@
 import type { AnimalPose } from "../../world/agent-poses.ts";
-import { cosineWave, degrees, keyframes, pulse, wave } from "../rig/curves.ts";
-import type { Pose } from "../rig/pose.ts";
+import { cosineWave, degrees, keyframes, wave } from "../rig/curves.ts";
+import { type ClipTiming, type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import { QUADRUPED_FIGHT_CLIPS } from "./quadruped-fight-clips.ts";
 import {
   bendBone,
@@ -8,10 +8,12 @@ import {
   type LegPhases,
   LYING_SPREAD,
   LYING_SWING,
+  moveLeg,
   sideName,
+  stepLegs,
   WALK_PHASES,
 } from "./quadruped-motion.ts";
-import { LEG_ENDS, LEG_SIDES, type LegEnd, type LegSide, legBones, QuadrupedBone } from "./quadruped-skeleton.ts";
+import { LEG_ENDS, LEG_SIDES, type LegEnd, QuadrupedBone } from "./quadruped-skeleton.ts";
 
 type RunKind = "amble" | "gallop" | "hop";
 
@@ -32,16 +34,11 @@ export interface AnimalClipContext {
   readonly variation: number;
 }
 
-type AnimalClipTiming =
-  | { readonly cycleSeconds: number; readonly kind: "once" }
-  | { readonly cycleSeconds: number; readonly kind: "seconds" }
-  | { readonly kind: "stride" };
-
 export type ExtraMotion = (pose: Pose, clip: AnimalPose, phase: number) => void;
 
 export interface AnimalClip {
   readonly apply: (pose: Pose, phase: number, context: AnimalClipContext) => void;
-  readonly timing: AnimalClipTiming;
+  readonly timing: ClipTiming;
 }
 
 const HOP_PHASES: LegPhases = {
@@ -53,43 +50,6 @@ const WALKING_HOP = 0.45;
 const HOP_HEIGHT = 0.1;
 
 const GRAZING_STANCE: Readonly<Record<LegEnd, number>> = { front: degrees(4), hind: -degrees(3) };
-
-interface LegMotion {
-  readonly fold: number;
-  readonly outward?: number;
-  readonly swing: number;
-}
-
-function moveLeg(pose: Pose, end: LegEnd, side: LegSide, motion: LegMotion): void {
-  const { fold, outward = 0, swing } = motion;
-
-  const bones = legBones(end, side);
-
-  pose.rotate(bones.upper, -swing, side * outward, 0);
-
-  if (end === "front") {
-    pose.rotate(bones.lower, -fold * 0.45, 0, 0);
-    pose.rotate(bones.hoof, fold * 1.2, 0, 0);
-
-    return;
-  }
-
-  pose.rotate(bones.lower, -fold * 0.7, 0, 0);
-  pose.rotate(bones.hoof, fold, 0, 0);
-}
-
-function stepLegs(pose: Pose, phase: number, swing: number, fold: number, offsets: LegPhases): void {
-  for (const end of LEG_ENDS) {
-    for (const side of LEG_SIDES) {
-      const legPhase = phase + offsets[end][sideName(side)];
-
-      moveLeg(pose, end, side, {
-        fold: fold * pulse(legPhase, 0.78, 0.11),
-        swing: swing * cosineWave(legPhase),
-      });
-    }
-  }
-}
 
 function swishTail(pose: Pose, phase: number, amount: number): void {
   bendBone(pose, QuadrupedBone.Tail, degrees(10), amount * wave(phase * 2));
@@ -185,7 +145,7 @@ function graze(pose: Pose, phase: number, context: AnimalClipContext): void {
 
   for (const end of LEG_ENDS) {
     for (const side of LEG_SIDES) {
-      moveLeg(pose, end, side, { fold: 0, outward: degrees(1.5), swing: GRAZING_STANCE[end] });
+      moveLeg(pose, end, side, GRAZING_STANCE[end], 0, degrees(1.5));
     }
   }
 
@@ -200,16 +160,16 @@ function dead(pose: Pose, _phase: number, context: AnimalClipContext): void {
 
   for (const end of LEG_ENDS) {
     for (const side of LEG_SIDES) {
-      moveLeg(pose, end, side, { fold: degrees(12), outward: LYING_SPREAD[sideName(side)], swing: LYING_SWING[end] });
+      moveLeg(pose, end, side, LYING_SWING[end], degrees(12), LYING_SPREAD[sideName(side)]);
     }
   }
 }
 
 export const QUADRUPED_CLIPS: Readonly<Record<AnimalPose, AnimalClip>> = {
-  dead: { apply: dead, timing: { cycleSeconds: 10, kind: "seconds" } },
-  graze: { apply: graze, timing: { cycleSeconds: 9, kind: "seconds" } },
-  run: { apply: run, timing: { kind: "stride" } },
-  walk: { apply: walk, timing: { kind: "stride" } },
+  dead: { apply: dead, timing: seconds(10) },
+  graze: { apply: graze, timing: seconds(9) },
+  run: { apply: run, timing: STRIDE_TIMING },
+  walk: { apply: walk, timing: STRIDE_TIMING },
   ...QUADRUPED_FIGHT_CLIPS,
 };
 

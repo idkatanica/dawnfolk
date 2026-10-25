@@ -1,4 +1,5 @@
 import { Group, type PerspectiveCamera, PointLight, Vector3 } from "three/webgpu";
+import { isLitCampfire } from "../../content/buildings.ts";
 import { Ground } from "../../content/grounds.ts";
 import { isTreeSpecies } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
@@ -6,9 +7,9 @@ import { distanceSquared, hashToUnit } from "../../shared/math.ts";
 import type { BuildingView } from "../../simulation/frame.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
-import { isLitCampfire } from "../structures/lit-campfire.ts";
+import type { InstanceBatch } from "../instancing.ts";
 import { CHUNK_CELLS, type VegetationChunks } from "../vegetation/vegetation-chunks.ts";
-import { BillboardBatch, type CameraAxes } from "./billboards.ts";
+import { type CameraAxes, createBillboardBatch } from "./billboards.ts";
 import { createFlameMaterial } from "./flame-material.ts";
 import { createSmokeMaterial, SmokeLook } from "./smoke-material.ts";
 import { createSparkMaterial } from "./spark-material.ts";
@@ -46,14 +47,6 @@ interface BurningCell {
   readonly intensity: number;
 }
 
-function groundFlameCount(intensity: number): number {
-  if (intensity > 0.65) {
-    return 2;
-  }
-
-  return 1;
-}
-
 function isSmokeCell(burning: BurningCell): boolean {
   return hashToUnit(burning.cell, 41) < SMOKE_CELL_SHARE;
 }
@@ -76,19 +69,19 @@ export class FireView {
   readonly group = new Group();
   readonly smoke = new SmokeLook();
   readonly #chunks: VegetationChunks;
-  readonly #flames: BillboardBatch;
+  readonly #flames: InstanceBatch;
   readonly #lights: readonly PointLight[];
-  readonly #puffs: BillboardBatch;
+  readonly #puffs: InstanceBatch;
   readonly #rebuiltFrom = new Vector3(Number.POSITIVE_INFINITY, 0, 0);
-  readonly #sparks: BillboardBatch;
+  readonly #sparks: InstanceBatch;
   #litCampfires: readonly BuildingView[] = [];
   #tick = -1;
 
   constructor({ axes, chunks }: FireViewOptions) {
     this.#chunks = chunks;
-    this.#flames = new BillboardBatch(createFlameMaterial(axes), 6);
-    this.#puffs = new BillboardBatch(createSmokeMaterial(axes, this.smoke), 5);
-    this.#sparks = new BillboardBatch(createSparkMaterial(axes, this.smoke), 7);
+    this.#flames = createBillboardBatch(createFlameMaterial(axes), 6);
+    this.#puffs = createBillboardBatch(createSmokeMaterial(axes, this.smoke), 5);
+    this.#sparks = createBillboardBatch(createSparkMaterial(axes, this.smoke), 7);
     this.#lights = Array.from(
       { length: CAMPFIRE_LIGHTS },
       () => new PointLight(0xff_9a_52, 0, CAMPFIRE_LIGHT_RANGE, 1.6)
@@ -121,9 +114,10 @@ export class FireView {
   }
 
   dispose(): void {
-    this.#flames.dispose();
-    this.#puffs.dispose();
-    this.#sparks.dispose();
+    for (const batch of [this.#flames, this.#puffs, this.#sparks]) {
+      batch.dispose();
+      batch.mesh.material.dispose();
+    }
   }
 
   #rebuild(mirror: WorldMirror, camera: PerspectiveCamera): void {
@@ -180,7 +174,7 @@ export class FireView {
 
     const left = grid.cellCenterX(burning.cell) - grid.cellSize / 2;
     const top = grid.cellCenterZ(burning.cell) - grid.cellSize / 2;
-    const count = groundFlameCount(burning.intensity);
+    const count = burning.intensity > 0.65 ? 2 : 1;
 
     for (let flame = 0; flame < count; flame += 1) {
       const scale = hashToUnit(burning.cell, flame, 3);

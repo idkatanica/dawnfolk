@@ -42,12 +42,8 @@ class ClayJob implements Job {
   update(tick: PersonTick): Job | null {
     const progress = this.#errand.update(tick);
 
-    if (progress === "abandoned") {
-      return null;
-    }
-
     if (progress !== "finished") {
-      return this;
+      return progress === "abandoned" ? null : this;
     }
 
     pickUp(tick.person, "clay", CLAY_PER_TRIP, "clay");

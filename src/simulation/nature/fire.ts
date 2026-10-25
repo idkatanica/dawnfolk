@@ -41,10 +41,6 @@ interface FireTick {
   seconds: number;
 }
 
-function windStrengthFor(windSpeed: number): number {
-  return Math.min(MAXIMUM_WIND_STRENGTH, windSpeed / FULL_WIND_SPEED);
-}
-
 export class FireSystem {
   readonly #burning: CellSet;
   readonly #heated: CellSet;
@@ -75,7 +71,7 @@ export class FireSystem {
   }
 
   setWind(windX: number, windZ: number, windSpeed: number, rules: WorldRules): void {
-    const strength = windStrengthFor(windSpeed);
+    const strength = Math.min(MAXIMUM_WIND_STRENGTH, windSpeed / FULL_WIND_SPEED);
     const influence = rules.fire.windInfluence;
 
     for (const [index, offset] of NEIGHBOR_OFFSETS.entries()) {

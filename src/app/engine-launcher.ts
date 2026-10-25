@@ -3,7 +3,6 @@ import type { GameEngine } from "../game/game-engine.ts";
 import type { GameSession } from "../game/game-session.ts";
 import { DEFAULT_GENERATION_OPTIONS, type GenerationProgress } from "../generation/generation-options.ts";
 import { toError } from "../shared/errors.ts";
-import { exposeEngineForDebugging } from "./debug-handle.ts";
 import type { LaunchOptions } from "./launch-options.ts";
 
 export type EngineStatus =
@@ -85,7 +84,11 @@ export class EngineLauncher {
     this.#state = "running";
     this.#engine = engine;
     this.#applyLaunchTime(engine, launch);
-    exposeEngineForDebugging(engine);
+
+    if (import.meta.env.DEV) {
+      Reflect.set(window, "dawnfolk", engine);
+    }
+
     reportStop(engine.session, (status) => {
       engine.stop();
       this.#onStatus(status);

@@ -105,7 +105,3 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
     stopFollowing,
   };
 }
-
-export function stopTestEngine(): void {
-  useEngineStore.setState({ status: { kind: "loading", progress: null } });
-}

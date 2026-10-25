@@ -1,6 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render } from "vitest-browser-react";
-import { resetWorld } from "../testing/world-fixtures.ts";
 import { dismissNotice, useWorldStore, type WorldNotice } from "../world/world-store.ts";
 import { NoticeFeed } from "./notice-feed.tsx";
 
@@ -10,11 +9,6 @@ const RAIN_NOTICE: WorldNotice = { category: "notice", id: 1, text: "Rain is com
 const HUNGER_WARNING: WorldNotice = { category: "warning", id: 2, text: "The Wolf Clan is starving." };
 
 describe("notice feed", () => {
-  afterEach(() => {
-    vi.useRealTimers();
-    resetWorld();
-  });
-
   it("lists the current notices", async () => {
     useWorldStore.setState({ notices: [RAIN_NOTICE, HUNGER_WARNING] });
 

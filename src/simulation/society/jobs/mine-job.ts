@@ -52,12 +52,8 @@ class MineJob implements Job {
 
     const progress = this.#errand.update(tick);
 
-    if (progress === "abandoned") {
-      return null;
-    }
-
     if (progress !== "finished") {
-      return this;
+      return progress === "abandoned" ? null : this;
     }
 
     pickUp(tick.person, DEPOSITS[this.#ore].resource, ORE_PER_TRIP, "ore");

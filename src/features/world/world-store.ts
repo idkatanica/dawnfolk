@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { WorldRules } from "../../content/world-rules.ts";
 import type { ChronicleCategory, ChronicleEntry } from "../../simulation/chronicle.ts";
-import type { SimulationFrame, SimulationStatistics, TribeSummary, WeatherView } from "../../simulation/frame.ts";
+import type { SimulationFrame, TribeSummary, WeatherView } from "../../simulation/frame.ts";
 import type { Inspection } from "../../simulation/inspection.ts";
 import type { CalendarView } from "../../simulation/nature/calendar.ts";
 import type { RivalryView } from "../../simulation/society/rivalry/rivalry-system.ts";
@@ -13,7 +13,6 @@ export interface WorldSnapshot {
   readonly rivalry: RivalryView;
   readonly rules: WorldRules;
   readonly speed: number;
-  readonly statistics: SimulationStatistics;
   readonly tribes: readonly TribeSummary[];
   readonly weather: WeatherView;
 }
@@ -72,7 +71,6 @@ function snapshotOf(frame: SimulationFrame, previous: WorldSnapshot | null): Wor
     rivalry: frame.rivalry,
     rules: keptRules(previous, frame.rules),
     speed: frame.speed,
-    statistics: frame.statistics,
     tribes: frame.tribes,
     weather: frame.weather,
   };

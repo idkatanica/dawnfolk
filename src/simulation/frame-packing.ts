@@ -2,7 +2,7 @@ import { ANIMAL_KINDS } from "../content/animals.ts";
 import { BUILDING_KINDS, BUILDINGS } from "../content/buildings.ts";
 import { CROP_KINDS, CROPS } from "../content/crops.ts";
 import { depositCode } from "../content/deposits.ts";
-import { ERA_COUNT } from "../content/eras.ts";
+import { currentEra, ERA_COUNT } from "../content/eras.ts";
 import { saturate } from "../shared/math.ts";
 import {
   ANIMAL_STRIDE,
@@ -24,10 +24,9 @@ import type {
   CropCount,
   FarmlandView,
   GoalView,
-  HeightPatch,
   PackedRows,
+  RegionPatch,
   TribeSummary,
-  WaterLevelPatch,
   WeatherView,
 } from "./frame.ts";
 import type { Environment } from "./nature/environment.ts";
@@ -37,7 +36,7 @@ import { tribeBuildings } from "./society/camp-plan.ts";
 import { carriedItem, isChild, type Person } from "./society/person.ts";
 import { plantedCount } from "./society/plots.ts";
 import { nextEraName, technologyNames, tribeGoal } from "./society/progress.ts";
-import { eraOf, type Tribe } from "./society/tribe.ts";
+import type { Tribe } from "./society/tribe.ts";
 import { SNOW_CAPACITY, type WorldState } from "./world/world-state.ts";
 
 const BYTE = 255;
@@ -159,7 +158,11 @@ export function allRows(world: WorldState): RowRun[] {
   return [{ firstRow: 0, rowCount: world.grid.cellsPerSide }];
 }
 
-function packRegion(world: WorldState, values: Float32Array, region: CellRegion): Float32Array {
+export function packRegion(world: WorldState, values: Float32Array, region: CellRegion | null): RegionPatch | null {
+  if (region === null) {
+    return null;
+  }
+
   const width = region.lastColumn - region.firstColumn + 1;
   const height = region.lastRow - region.firstRow + 1;
 
@@ -171,15 +174,7 @@ function packRegion(world: WorldState, values: Float32Array, region: CellRegion)
     packed.set(values.subarray(start, start + width), row * width);
   }
 
-  return packed;
-}
-
-export function packHeightPatch(world: WorldState, region: CellRegion): HeightPatch {
-  return { heights: packRegion(world, world.terrain.height, region), region };
-}
-
-export function packWaterLevels(world: WorldState, region: CellRegion): WaterLevelPatch {
-  return { levels: packRegion(world, world.terrain.waterSurface, region), region };
+  return { region, values: packed };
 }
 
 const ARMED_JOBS: ReadonlySet<string> = new Set(["defend", "fight", "hunt", "raid"]);
@@ -228,7 +223,6 @@ export function packPeople(people: readonly Person[], findTribe: (id: number) =>
     buffer[offset + PersonField.IsFemale] = person.isFemale ? 1 : 0;
     buffer[offset + PersonField.AppearanceSeed] = person.appearanceSeed;
     buffer[offset + PersonField.Carried] = carriedItemCode(carriedItem(person));
-    buffer[offset + PersonField.Health] = person.health;
     buffer[offset + PersonField.Weapon] = shownWeapon(person);
     buffer[offset + PersonField.Gear] = gearOf(person, tribe);
     buffer[offset + PersonField.Era] = tribe === null ? 0 : tribe.eraIndex;
@@ -339,7 +333,7 @@ function goalView(tribe: Tribe): GoalView | null {
 }
 
 export function describeTribe(tribe: Tribe, members: readonly Person[], sources: TribeSources): TribeSummary {
-  const era = eraOf(tribe);
+  const era = currentEra(tribe.technologies);
 
   return {
     births: tribe.births,

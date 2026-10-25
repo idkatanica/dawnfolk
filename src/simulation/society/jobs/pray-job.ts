@@ -1,10 +1,10 @@
 import type { Building } from "../buildings.ts";
 import type { PersonTick } from "../society-context.ts";
+import { MAXIMUM_FAITH } from "../tribe.ts";
 import { Errand, headTo, type Job } from "./job.ts";
 
 const PRAYER_SECONDS = 10;
 const FAITH_PER_PRAYER = 0.6;
-const MAXIMUM_FAITH = 100;
 
 export class PrayJob implements Job {
   readonly kind = "pray";
@@ -20,12 +20,8 @@ export class PrayJob implements Job {
   update(tick: PersonTick): Job | null {
     const progress = this.#errand.update(tick);
 
-    if (progress === "abandoned") {
-      return null;
-    }
-
     if (progress !== "finished") {
-      return this;
+      return progress === "abandoned" ? null : this;
     }
 
     tick.tribe.faith = Math.min(MAXIMUM_FAITH, tick.tribe.faith + FAITH_PER_PRAYER);

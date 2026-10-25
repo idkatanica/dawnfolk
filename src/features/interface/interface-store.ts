@@ -14,7 +14,7 @@ interface InterfaceStore {
   readonly isSettingsOpen: boolean;
   readonly journalTab: JournalTab;
   readonly openJournal: (tab: JournalTab) => void;
-  readonly openSettings: (tab: SettingsTab) => void;
+  readonly openSettings: () => void;
   readonly setJournalTab: (tab: JournalTab) => void;
   readonly setLabelsShown: (areShown: boolean) => void;
   readonly setSettingsOpen: (isOpen: boolean) => void;
@@ -31,7 +31,7 @@ export const useInterfaceStore = create<InterfaceStore>()((set) => ({
   isSettingsOpen: false,
   journalTab: "tribes",
   openJournal: (tab) => set({ isJournalOpen: true, journalTab: tab }),
-  openSettings: (tab) => set({ isSettingsOpen: true, settingsTab: tab }),
+  openSettings: () => set({ isSettingsOpen: true, settingsTab: "world" }),
   setJournalTab: (tab) => set({ journalTab: tab }),
   setLabelsShown: (areShown) => {
     storeLabelsShown(areShown);

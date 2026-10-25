@@ -1,12 +1,7 @@
 import { create } from "zustand";
 import { choosesWorld, type LaunchOptions, readLaunchOptions } from "./launch-options.ts";
 
-export interface LaunchChanges {
-  readonly name?: LaunchOptions["name"];
-  readonly quality?: LaunchOptions["quality"];
-  readonly seed?: LaunchOptions["seed"];
-  readonly shape?: LaunchOptions["shape"];
-}
+export type LaunchChanges = Partial<Pick<LaunchOptions, "name" | "quality" | "seed" | "shape">>;
 
 interface LaunchStore {
   readonly isChoosingWorld: boolean;

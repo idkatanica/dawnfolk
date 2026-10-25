@@ -1,11 +1,12 @@
 import { texture } from "three/tsl";
-import { DataTexture, FloatType, NearestFilter, RGBAFormat, type TextureNode } from "three/webgpu";
+import { type Color, DataTexture, FloatType, NearestFilter, RGBAFormat, type TextureNode } from "three/webgpu";
+import { colorTexel, type PaletteLayout, paletteWidth, rootTexel } from "./palette-layout.ts";
 
 const CHANNELS = 4;
 const INITIAL_ROWS = 128;
 
-function createTexture(width: number, rows: number): DataTexture {
-  const created = new DataTexture(new Float32Array(width * rows * CHANNELS), width, rows, RGBAFormat, FloatType);
+function createTexture(data: Float32Array, width: number, rows: number): DataTexture {
+  const created = new DataTexture(data, width, rows, RGBAFormat, FloatType);
 
   created.minFilter = NearestFilter;
   created.magFilter = NearestFilter;
@@ -17,16 +18,19 @@ function createTexture(width: number, rows: number): DataTexture {
 
 export class AgentPalette {
   readonly node: TextureNode;
-  readonly width: number;
+  readonly #layout: PaletteLayout;
+  readonly #width: number;
   #data: Float32Array;
   #rows: number;
   #texture: DataTexture;
+  #uploadedRows = 0;
 
-  constructor(width: number) {
-    this.width = width;
+  constructor(layout: PaletteLayout) {
+    this.#layout = layout;
+    this.#width = paletteWidth(layout);
     this.#rows = INITIAL_ROWS;
-    this.#texture = createTexture(width, this.#rows);
-    this.#data = this.#readData();
+    this.#data = new Float32Array(this.#rowFloats * this.#rows);
+    this.#texture = createTexture(this.#data, this.#width, this.#rows);
     this.node = texture(this.#texture);
   }
 
@@ -46,12 +50,12 @@ export class AgentPalette {
     }
 
     const previous = this.#texture;
-    const previousData = this.#data;
+    const data = new Float32Array(this.#rowFloats * next);
 
+    data.set(this.#data);
     this.#rows = next;
-    this.#texture = createTexture(this.width, next);
-    this.#data = this.#readData();
-    this.#data.set(previousData);
+    this.#data = data;
+    this.#texture = createTexture(data, this.#width, next);
     this.node.value = this.#texture;
     previous.dispose();
   }
@@ -60,29 +64,40 @@ export class AgentPalette {
     return row * this.#rowFloats;
   }
 
-  texelOffset(row: number, texel: number): number {
-    return row * this.#rowFloats + texel * CHANNELS;
+  writeRoot(row: number, x: number, y: number, z: number, heading: number): void {
+    const offset = this.#texelOffset(row, rootTexel(this.#layout));
+
+    this.#data[offset] = x;
+    this.#data[offset + 1] = y;
+    this.#data[offset + 2] = z;
+    this.#data[offset + 3] = heading;
   }
 
-  upload(): void {
-    this.#texture.needsUpdate = true;
+  writeColor(row: number, index: number, color: Color): void {
+    const offset = this.#texelOffset(row, colorTexel(this.#layout, index));
+
+    this.#data[offset] = color.r;
+    this.#data[offset + 1] = color.g;
+    this.#data[offset + 2] = color.b;
+  }
+
+  finish(rows: number): void {
+    if (rows > 0 || this.#uploadedRows > 0) {
+      this.#texture.needsUpdate = true;
+    }
+
+    this.#uploadedRows = rows;
   }
 
   dispose(): void {
     this.#texture.dispose();
   }
 
-  get #rowFloats(): number {
-    return this.width * CHANNELS;
+  #texelOffset(row: number, texel: number): number {
+    return row * this.#rowFloats + texel * CHANNELS;
   }
 
-  #readData(): Float32Array {
-    const { data } = this.#texture.image;
-
-    if (data instanceof Float32Array) {
-      return data;
-    }
-
-    throw new TypeError("The agent palette must hold 32-bit floats");
+  get #rowFloats(): number {
+    return this.#width * CHANNELS;
   }
 }

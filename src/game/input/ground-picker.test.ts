@@ -1,19 +1,6 @@
-import { PerspectiveCamera } from "three/webgpu";
 import { describe, expect, it } from "vitest";
+import { CENTER, cameraLookingAt, VIEWPORT } from "../testing/view-fixtures.ts";
 import { GroundPicker } from "./ground-picker.ts";
-
-const VIEWPORT = { height: 600, width: 800 };
-const CENTER = { x: 400, y: 300 };
-
-function cameraLookingAt(x: number, z: number): PerspectiveCamera {
-  const camera = new PerspectiveCamera(45, VIEWPORT.width / VIEWPORT.height, 1, 40_000);
-
-  camera.position.set(x, 400, z + 300);
-  camera.lookAt(x, 0, z);
-  camera.updateMatrixWorld();
-
-  return camera;
-}
 
 describe("ground picker", () => {
   it("finds the point under the screen centre on flat ground", () => {

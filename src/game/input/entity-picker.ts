@@ -23,6 +23,16 @@ interface ScreenHit {
   readonly reach: number;
 }
 
+interface AgentLayout {
+  readonly fields: { readonly Id: number; readonly X: number; readonly Z: number };
+  readonly kind: "animal" | "person";
+  readonly lift: number;
+  readonly stride: number;
+}
+
+const PEOPLE: AgentLayout = { fields: PersonField, kind: "person", lift: PERSON_CENTER_HEIGHT, stride: PERSON_STRIDE };
+const ANIMALS: AgentLayout = { fields: AnimalField, kind: "animal", lift: 1.2, stride: ANIMAL_STRIDE };
+
 export class EntityPicker {
   readonly #camera: PerspectiveCamera;
   readonly #heightAt: HeightField;
@@ -36,8 +46,8 @@ export class EntityPicker {
 
   pick(frame: SimulationFrame, screen: ScreenPoint, viewport: ViewportSize, ground: Vector3 | null): Selection | null {
     const candidates = [
-      ...this.#people(frame, screen, viewport),
-      ...this.#animals(frame, screen, viewport),
+      ...this.#agents(frame.people, frame.personCount, PEOPLE, screen, viewport),
+      ...this.#agents(frame.animals, frame.animalCount, ANIMALS, screen, viewport),
       ...this.#buildings(frame, screen, viewport),
     ];
 
@@ -58,38 +68,27 @@ export class EntityPicker {
     return { kind: "cell", x: ground.x, z: ground.z };
   }
 
-  #people(frame: SimulationFrame, screen: ScreenPoint, viewport: ViewportSize): Candidate[] {
+  #agents(
+    data: Float32Array,
+    count: number,
+    layout: AgentLayout,
+    screen: ScreenPoint,
+    viewport: ViewportSize
+  ): Candidate[] {
+    const { fields, kind, lift, stride } = layout;
+
     const candidates: Candidate[] = [];
 
-    for (let person = 0; person < frame.personCount; person += 1) {
-      const offset = person * PERSON_STRIDE;
+    for (let agent = 0; agent < count; agent += 1) {
+      const offset = agent * stride;
 
-      const x = frame.people[offset + PersonField.X];
-      const z = frame.people[offset + PersonField.Z];
+      const x = data[offset + fields.X];
+      const z = data[offset + fields.Z];
 
-      const hit = this.#screenHit(x, PERSON_CENTER_HEIGHT, z, screen, viewport);
-
-      if (hit.distance < PICK_RADIUS_PIXELS) {
-        candidates.push({ ...hit, selection: { id: frame.people[offset + PersonField.Id], kind: "person" } });
-      }
-    }
-
-    return candidates;
-  }
-
-  #animals(frame: SimulationFrame, screen: ScreenPoint, viewport: ViewportSize): Candidate[] {
-    const candidates: Candidate[] = [];
-
-    for (let animal = 0; animal < frame.animalCount; animal += 1) {
-      const offset = animal * ANIMAL_STRIDE;
-
-      const x = frame.animals[offset + AnimalField.X];
-      const z = frame.animals[offset + AnimalField.Z];
-
-      const hit = this.#screenHit(x, 1.2, z, screen, viewport);
+      const hit = this.#screenHit(x, lift, z, screen, viewport);
 
       if (hit.distance < PICK_RADIUS_PIXELS) {
-        candidates.push({ ...hit, selection: { id: frame.animals[offset + AnimalField.Id], kind: "animal" } });
+        candidates.push({ ...hit, selection: { id: data[offset + fields.Id], kind } });
       }
     }
 

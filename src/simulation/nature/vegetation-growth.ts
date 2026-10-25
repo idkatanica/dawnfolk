@@ -71,7 +71,7 @@ export class VegetationGrowthSystem {
       return;
     }
 
-    this.#growBerries(this.#berryDays, conditions.season, rules);
+    this.#world.vegetation.changeBerryFruit(berryChange(conditions.season, this.#berryDays, rules));
     this.#berryDays = 0;
   }
 
@@ -164,9 +164,5 @@ export class VegetationGrowthSystem {
     }
 
     return biome === Biome.Meadow && random.chance(MEADOW_REGROWTH_CHANCE);
-  }
-
-  #growBerries(days: number, season: number, rules: WorldRules): void {
-    this.#world.vegetation.changeBerryFruit(berryChange(season, days, rules));
   }
 }

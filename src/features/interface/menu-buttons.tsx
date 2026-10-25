@@ -29,15 +29,11 @@ function useMenuActions() {
   const toggleMap = useInterfaceStore((state) => state.toggleMap);
   const openSettings = useInterfaceStore((state) => state.openSettings);
 
-  function showSettings(): void {
-    openSettings("world");
-  }
-
-  return { isJournalOpen, isMapOpen, showSettings, toggleJournal, toggleMap };
+  return { isJournalOpen, isMapOpen, openSettings, toggleJournal, toggleMap };
 }
 
 export function MenuButtons({ className }: { readonly className?: string | undefined }) {
-  const { isJournalOpen, isMapOpen, showSettings, toggleJournal, toggleMap } = useMenuActions();
+  const { isJournalOpen, isMapOpen, openSettings, toggleJournal, toggleMap } = useMenuActions();
 
   return (
     <nav aria-label="Panels" className={cn("flex items-center gap-1", className)}>
@@ -60,7 +56,7 @@ export function MenuButtons({ className }: { readonly className?: string | undef
       </WithTooltip>
 
       <WithTooltip content="World, weather, time and graphics" side="bottom">
-        <IconButton icon={<Settings aria-hidden="true" size={18} />} label="Settings" onClick={showSettings} />
+        <IconButton icon={<Settings aria-hidden="true" size={18} />} label="Settings" onClick={openSettings} />
       </WithTooltip>
 
       <FullscreenButton />

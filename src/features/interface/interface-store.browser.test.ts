@@ -1,15 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { COMPACT_QUERY } from "../../design/use-media-query.ts";
 import { useInterfaceStore } from "./interface-store.ts";
 
-const INITIAL_INTERFACE = useInterfaceStore.getState();
-
 describe("interface store", () => {
-  afterEach(() => {
-    useInterfaceStore.setState(INITIAL_INTERFACE, true);
-    localStorage.removeItem("dawnfolk.labels");
-  });
-
   it("starts with every panel closed except the map on wide screens", () => {
     const state = useInterfaceStore.getState();
 
@@ -72,19 +65,23 @@ describe("interface store", () => {
     expect(localStorage.getItem("dawnfolk.labels")).toBe("shown");
   });
 
-  it("opens the settings on the chosen section", () => {
-    useInterfaceStore.getState().openSettings("time");
+  it("opens the settings on the World section", () => {
+    const { openSettings, setSettingsTab } = useInterfaceStore.getState();
+
+    setSettingsTab("time");
+    openSettings();
 
     const state = useInterfaceStore.getState();
 
     expect(state.isSettingsOpen).toBe(true);
-    expect(state.settingsTab).toBe("time");
+    expect(state.settingsTab).toBe("world");
   });
 
   it("remembers the section after the settings close", () => {
-    const { openSettings, setSettingsOpen } = useInterfaceStore.getState();
+    const { openSettings, setSettingsOpen, setSettingsTab } = useInterfaceStore.getState();
 
-    openSettings("graphics");
+    openSettings();
+    setSettingsTab("graphics");
     setSettingsOpen(false);
 
     const state = useInterfaceStore.getState();

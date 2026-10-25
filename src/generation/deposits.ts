@@ -64,11 +64,11 @@ function hillHeight(planner: DepositPlanner): number {
 }
 
 function isVeinGround(planner: DepositPlanner, cell: number): boolean {
-  const slope = slopeAt(planner.terrain.height, planner.grid, cell);
-
   if (!isLand(planner, cell) || touchesWaterCell(planner.terrain, planner.grid, cell)) {
     return false;
   }
+
+  const slope = slopeAt(planner.terrain.height, planner.grid, cell);
 
   return slope >= GENTLEST_VEIN_SLOPE && slope <= STEEPEST_VEIN_SLOPE;
 }
@@ -84,24 +84,18 @@ function isNearWater(planner: DepositPlanner, cell: number): boolean {
 }
 
 function isClayGround(planner: DepositPlanner, cell: number): boolean {
-  const slope = slopeAt(planner.terrain.height, planner.grid, cell);
-
-  return isLand(planner, cell) && slope <= STEEPEST_CLAY_SLOPE && isNearWater(planner, cell);
+  return (
+    isLand(planner, cell) &&
+    slopeAt(planner.terrain.height, planner.grid, cell) <= STEEPEST_CLAY_SLOPE &&
+    isNearWater(planner, cell)
+  );
 }
 
-function candidateCells(planner: DepositPlanner, kind: DepositKind, hill: number): number[] {
+function cellsWhere(planner: DepositPlanner, isCandidate: (cell: number) => boolean): number[] {
   const candidates: number[] = [];
 
   for (let cell = 0; cell < planner.grid.cellCount; cell += 1) {
-    if (kind === "clay") {
-      if (isClayGround(planner, cell)) {
-        candidates.push(cell);
-      }
-
-      continue;
-    }
-
-    if (planner.terrain.height[cell] >= hill && isVeinGround(planner, cell)) {
+    if (isCandidate(cell)) {
       candidates.push(cell);
     }
   }
@@ -184,7 +178,9 @@ export function planDeposits(grid: WorldGrid, terrain: TerrainData, seed: number
   const planner: DepositPlanner = { grid, placed: [], random: createRandom(seed * 13 + 29), reserved, terrain };
 
   const hill = hillHeight(planner);
-  const candidates = DEPOSIT_KINDS.map((kind) => ({ cells: candidateCells(planner, kind, hill), kind }));
+  const ores = cellsWhere(planner, (cell) => planner.terrain.height[cell] >= hill && isVeinGround(planner, cell));
+  const clay = cellsWhere(planner, (cell) => isClayGround(planner, cell));
+  const candidates = DEPOSIT_KINDS.map((kind) => ({ cells: kind === "clay" ? clay : ores, kind }));
   const rounds = Math.max(...DEPOSIT_KINDS.map((kind) => DEPOSITS[kind].countPerIsland));
 
   for (let round = 0; round < rounds; round += 1) {

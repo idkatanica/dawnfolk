@@ -3,7 +3,7 @@ import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex } from "../../conte
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, mergeMeshes, vertexCount } from "../mesh/mesh-data.ts";
 import { isMonumentModel, MONUMENT_HEIGHTS, meshMonument } from "../structures/monuments.ts";
-import { BERRY_PART, berryClusters } from "./berries.ts";
+import { berryClusters } from "./berries.ts";
 import { CACTUS_FORMS, cactusForm, meshCactus } from "./cacti.ts";
 import { isOrchardModel, meshOrchardPlant, ORCHARD_HEIGHTS, ORCHARD_VARIANT_COUNTS } from "./orchard-plants.ts";
 import { isRockModel, meshRock, ROCK_HEIGHTS, ROCK_VARIANT_COUNTS } from "./rocks.ts";
@@ -94,7 +94,7 @@ export function buildPlantVariant(species: PlantSpeciesIndex, variant: number, l
   }
 
   if (isOrchardModel(species)) {
-    return meshOrchardPlant(species, seed, level, BERRY_PART);
+    return meshOrchardPlant(species, seed, level);
   }
 
   const generator = TREE_GENERATORS[species];

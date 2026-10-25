@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import {
   createAnimalInspection,
@@ -9,7 +9,6 @@ import {
   createRelation,
   createStock,
   createTribe,
-  resetWorld,
   showWorld,
 } from "../testing/world-fixtures.ts";
 import { AnimalDetails, BuildingDetails, CellDetails, PersonDetails, TribeDetails } from "./inspector-details.tsx";
@@ -29,15 +28,6 @@ describe("person details", () => {
     await expect.element(screen.getByText("76%", { exact: true })).toBeVisible();
     await expect.element(screen.getByText("55%", { exact: true })).toBeVisible();
     await expect.element(screen.getByText("90%", { exact: true })).toBeVisible();
-  });
-
-  it("says when a person has passed away", async () => {
-    const person = createPersonInspection({ activity: "Resting", isAlive: false });
-
-    const screen = await render(<PersonDetails person={person} />);
-
-    await expect.element(screen.getByText("Has passed away")).toBeVisible();
-    await expect.element(screen.getByText("Resting")).not.toBeInTheDocument();
   });
 });
 
@@ -282,10 +272,6 @@ describe("tribe details", () => {
 });
 
 describe("tribe neighbours", () => {
-  afterEach(() => {
-    resetWorld();
-  });
-
   it("lists the other tribes by how they stand with this one", async () => {
     showWorld({
       rivalry: {

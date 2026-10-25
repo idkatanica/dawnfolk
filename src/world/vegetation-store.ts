@@ -141,7 +141,7 @@ export class VegetationStore implements VegetationChannels {
     this.species[index] = placement.species;
     this.state[index] = PlantState.Alive;
     this.wear[index] = 0;
-    this.fruit[index] = this.#initialFruit(placement.species);
+    this.fruit[index] = this.#givesBerries(index) ? 1 : 0;
     this.#linkToCell(index, this.#grid.cellAt(placement.x, placement.z));
     this.#aliveCount += 1;
     this.#changed.add(index);
@@ -306,6 +306,16 @@ export class VegetationStore implements VegetationChannels {
     return this.#nextInCell[index];
   }
 
+  plantsInCell(cellIndex: number): number[] {
+    const plants: number[] = [];
+
+    for (let index = this.#firstInCell[cellIndex]; index !== NO_PLANT; index = this.#nextInCell[index]) {
+      plants.push(index);
+    }
+
+    return plants;
+  }
+
   hasPlantsInCell(cellIndex: number): boolean {
     return this.#firstInCell[cellIndex] !== NO_PLANT;
   }
@@ -336,7 +346,7 @@ export class VegetationStore implements VegetationChannels {
   }
 
   clearCell(cellIndex: number, includesStones: boolean): void {
-    for (const index of this.#plantsInCell(cellIndex)) {
+    for (const index of this.plantsInCell(cellIndex)) {
       const { form } = plantSpeciesDefinition(this.species[index]);
 
       if (form !== "monument" && (includesStones || form !== "stone")) {
@@ -411,16 +421,6 @@ export class VegetationStore implements VegetationChannels {
     this.#count += 1;
 
     return index;
-  }
-
-  #plantsInCell(cellIndex: number): number[] {
-    const plants: number[] = [];
-
-    for (let index = this.#firstInCell[cellIndex]; index !== NO_PLANT; index = this.#nextInCell[index]) {
-      plants.push(index);
-    }
-
-    return plants;
   }
 
   #canBerriesChange(change: number): boolean {
@@ -500,14 +500,6 @@ export class VegetationStore implements VegetationChannels {
     }
   }
 
-  #initialFruit(species: number): number {
-    if (plantSpeciesDefinition(species).givesBerries) {
-      return 1;
-    }
-
-    return 0;
-  }
-
   #linkToCell(index: number, cellIndex: number): void {
     this.cell[index] = cellIndex;
 
@@ -534,21 +526,13 @@ export class VegetationStore implements VegetationChannels {
       current = this.#nextInCell[current];
     }
 
-    if (current === index) {
-      this.#relink(previous, cellIndex, this.#nextInCell[index]);
+    if (current === index && previous === NO_PLANT) {
+      this.#firstInCell[cellIndex] = this.#nextInCell[index];
+    } else if (current === index) {
+      this.#nextInCell[previous] = this.#nextInCell[index];
     }
 
     this.cell[index] = NO_PLANT;
     this.#nextInCell[index] = NO_PLANT;
-  }
-
-  #relink(previous: number, cellIndex: number, following: number): void {
-    if (previous === NO_PLANT) {
-      this.#firstInCell[cellIndex] = following;
-
-      return;
-    }
-
-    this.#nextInCell[previous] = following;
   }
 }

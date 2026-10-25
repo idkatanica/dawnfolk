@@ -16,7 +16,7 @@ import {
 import { aroundPoint, type NavigationGrid, type Waypoint } from "../agents/navigation.ts";
 import type { IdentifierSource } from "../identifiers.ts";
 import type { WorldState } from "../world/world-state.ts";
-import { type Assailant, BeastInstincts, type PeopleSense } from "./beast-instincts.ts";
+import { type Assailant, BeastInstincts, type Pack, type PeopleSense } from "./beast-instincts.ts";
 import { CALM_FEAR, startleAnimal } from "./fear.ts";
 
 const HERD_SPREAD = 30;
@@ -73,11 +73,7 @@ export interface Animal {
   youth: number;
 }
 
-interface Herd {
-  goalX: number;
-  goalZ: number;
-  id: number;
-  kind: AnimalKind;
+interface Herd extends Pack {
   memberIds: number[];
   retargetSeconds: number;
 }
@@ -231,9 +227,9 @@ export class FaunaSystem {
     return nearest;
   }
 
-  scare(x: number, z: number, radius: number, strength: number): void {
+  scare(x: number, z: number, radius: number): void {
     for (const animal of this.#animalsWithin(x, z, radius)) {
-      startleAnimal(animal, x, z, strength);
+      startleAnimal(animal, x, z, 1);
     }
   }
 
@@ -311,7 +307,7 @@ export class FaunaSystem {
       this.#steerHerd(herd, tick);
     }
 
-    this.#instincts.steerPacks(this.#herds, (id) => this.findAnimal(id), tick);
+    this.#instincts.steerPacks(this.#herds, tick);
 
     for (const animal of this.#animals) {
       this.#updateAnimal(animal, tick);

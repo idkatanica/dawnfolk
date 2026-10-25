@@ -80,7 +80,6 @@ export function createSkinnedMaterial(palette: AgentPalette, layout: PaletteLayo
 
   material.colorNode = varying(color.mul(shade), "agentColor");
   material.roughnessNode = float(0.82);
-  material.metalnessNode = float(0);
 
   return material;
 }

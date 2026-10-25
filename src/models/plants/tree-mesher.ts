@@ -239,14 +239,7 @@ function addBranches(builder: MeshBuilder, structure: TreeStructure, look: TreeL
 }
 
 function thinned(points: readonly TubePoint[]): TubePoint[] {
-  const kept = points.filter((_point, index) => index % 2 === 0);
-  const last = points.at(-1);
-
-  if (last === undefined || kept.at(-1) === last) {
-    return kept;
-  }
-
-  return [...kept, last];
+  return points.filter((_point, index) => index % 2 === 0 || index === points.length - 1);
 }
 
 interface SkirtDetail {
@@ -467,7 +460,7 @@ function addFrond(
   const rootSway = plantSway(root.y, structure.height);
   const points = level === "high" ? frond.points : thinned(frond.points);
 
-  builder.add(ribbon(points, { fold: 0.35 }), {
+  builder.add(ribbon(points), {
     style: {
       ...foliageStyle(structure, look, frond.tint, crownCenter(structure)),
       sway: (point) => lerp(rootSway, 1, point.along),

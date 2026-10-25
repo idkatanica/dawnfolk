@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { WEATHER } from "../../content/weather.ts";
 import { DEFAULT_WORLD_RULES, type WorldRules, worldRulesSchema } from "../../content/world-rules.ts";
 import { createRandom } from "../../shared/random.ts";
-import { DEFAULT_WEATHER, pickSeasonalWeather, WeatherSystem, type WeatherTick } from "./weather.ts";
+import { pickSeasonalWeather, WeatherSystem, type WeatherTick } from "./weather.ts";
 
 function tickOf(elapsedSeconds: number): WeatherTick {
   return { day: 1, elapsedDays: elapsedSeconds / 240, elapsedSeconds, season: 0.5 };
@@ -60,8 +60,10 @@ describe("weather system", () => {
   });
 
   it("changes the weather on its own when automatic", () => {
-    const weather = new WeatherSystem({ ...DEFAULT_WEATHER, nextChangeInDays: 0 });
+    const weather = new WeatherSystem();
     const random = createRandom(5);
+
+    weather.state.nextChangeInDays = 0;
 
     const update = weather.update(tickOf(1), DEFAULT_WORLD_RULES, random);
 
@@ -70,7 +72,9 @@ describe("weather system", () => {
   });
 
   it("keeps a manual choice", () => {
-    const weather = new WeatherSystem({ ...DEFAULT_WEATHER, nextChangeInDays: 0 });
+    const weather = new WeatherSystem();
+
+    weather.state.nextChangeInDays = 0;
 
     weather.setKind("fog");
     runFor(weather, 2000);

@@ -65,7 +65,6 @@ describe("world store", () => {
       rivalry: frame.rivalry,
       rules: frame.rules,
       speed: 4,
-      statistics: frame.statistics,
       tribes: frame.tribes,
       weather: frame.weather,
     });

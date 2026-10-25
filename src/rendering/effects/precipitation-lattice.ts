@@ -5,6 +5,8 @@ const IDENTITY_PERIOD = 65_536;
 const IDENTITY_MASK = 0xff_ff;
 const SALT_RANK = 0x5b_d1_e9_95;
 
+export const CYCLES = 256;
+
 export interface LatticeArea {
   readonly centerX: number;
   readonly centerZ: number;
@@ -18,7 +20,9 @@ interface LatticeElement {
   readonly tile: Node<"vec2">;
 }
 
-export function scramble(seed: Node<"uint">): Node<"uint"> {
+type CycleSalts = Readonly<Record<"across" | "along" | "cycle" | "phase", number>>;
+
+function scramble(seed: Node<"uint">): Node<"uint"> {
   const state = seed.mul(747_796_405).add(2_891_336_453);
   const word = state.shiftRight(state.shiftRight(28).add(4)).bitXor(state).mul(277_803_737);
 
@@ -91,5 +95,22 @@ export function latticeElement(cover: LatticeCover, salt: Node<"uint">): Lattice
     presence: clamp(cover.shown.sub(rank), 0, 1),
     seed: scramble(tileSeed.add(uint(slot))),
     tile: cover.origin.add(cell),
+  };
+}
+
+export function cycleOf(element: LatticeElement, clock: Node<"float">, salts: CycleSalts) {
+  const phase = unitHash(element.seed, salts.phase);
+  const progress = clock.add(phase);
+
+  const cycle = floor(progress);
+
+  const wrapped = uint(cycle).bitAnd(CYCLES - 1);
+
+  const cycleSeed = scramble(element.seed.add(wrapped.mul(salts.cycle)));
+
+  return {
+    age: progress.sub(cycle),
+    phase,
+    spread: vec2(unitHash(cycleSeed, salts.across), unitHash(cycleSeed, salts.along)),
   };
 }

@@ -42,12 +42,6 @@ const MIGRANT_PACE = 2;
 const BURNT_CAMP = 0.8;
 const PROSPECTING_SHARE = 0.5;
 
-export interface SettlementServices {
-  createTribe: (campX: number, campZ: number) => Tribe;
-  moveToTribe: (person: Person, from: Tribe, to: Tribe) => void;
-  tribes: () => readonly Tribe[];
-}
-
 interface SiteSearch {
   excluded: Tribe | null;
   isNearOrigin: boolean;
@@ -252,10 +246,7 @@ function settleWhereTheyStand(tribe: Tribe, members: readonly Person[]): void {
       Math.hypot(second.mover.x - centerX, second.mover.z - centerZ)
   );
 
-  if (
-    nearest === undefined ||
-    Math.hypot(nearest.mover.x - tribe.campX, nearest.mover.z - tribe.campZ) < SETTLED_DISTANCE
-  ) {
+  if (Math.hypot(nearest.mover.x - tribe.campX, nearest.mover.z - tribe.campZ) < SETTLED_DISTANCE) {
     return;
   }
 
@@ -288,33 +279,27 @@ function reasonToMove(tribe: Tribe, context: SocietyContext): string | null {
   return null;
 }
 
-export function considerMoving(
-  tribe: Tribe,
-  members: readonly Person[],
-  context: SocietyContext,
-  services: SettlementServices
-): void {
+export function considerMoving(tribe: Tribe, members: readonly Person[], context: SocietyContext): void {
   const reason = reasonToMove(tribe, context);
 
   if (reason === null) {
-    prospect(tribe, members, context, services);
+    prospect(tribe, members, context);
 
     return;
   }
 
-  const site = findCampSite(siteSearchNear(campPoint(tribe), MOVE_SEARCH_RADIUS, tribe), context, services.tribes());
+  const site = findCampSite(
+    siteSearchNear(campPoint(tribe), MOVE_SEARCH_RADIUS, tribe),
+    context,
+    context.people.tribes()
+  );
 
   if (site !== null) {
     moveCamp(tribe, members, site, reason, context);
   }
 }
 
-function prospect(
-  tribe: Tribe,
-  members: readonly Person[],
-  context: SocietyContext,
-  services: SettlementServices
-): void {
+function prospect(tribe: Tribe, members: readonly Person[], context: SocietyContext): void {
   const move = prospectingMove(tribe, context);
 
   if (move === null) {
@@ -329,7 +314,7 @@ function prospect(
     radius: DEPOSITS[move.kind].reach * PROSPECTING_SHARE,
   };
 
-  const site = findCampSite(search, context, services.tribes());
+  const site = findCampSite(search, context, context.people.tribes());
 
   if (site === null) {
     tribe.migrationStartDay = context.environment.day;
@@ -371,13 +356,8 @@ function moveCamp(
   });
 }
 
-function canSplit(
-  tribe: Tribe,
-  members: readonly Person[],
-  context: SocietyContext,
-  services: SettlementServices
-): boolean {
-  if (members.length < SPLIT_POPULATION || tribe.isMigrating || services.tribes().length >= MAXIMUM_TRIBES) {
+function canSplit(tribe: Tribe, members: readonly Person[], context: SocietyContext): boolean {
+  if (members.length < SPLIT_POPULATION || tribe.isMigrating || context.people.tribes().length >= MAXIMUM_TRIBES) {
     return false;
   }
 
@@ -412,13 +392,8 @@ function chooseSettlers(members: readonly Person[]): Person[] {
   return settlers;
 }
 
-export function considerSplit(
-  tribe: Tribe,
-  members: readonly Person[],
-  context: SocietyContext,
-  services: SettlementServices
-): void {
-  if (!canSplit(tribe, members, context, services)) {
+export function considerSplit(tribe: Tribe, members: readonly Person[], context: SocietyContext): void {
+  if (!canSplit(tribe, members, context)) {
     return;
   }
 
@@ -432,19 +407,19 @@ export function considerSplit(
     ...siteSearchNear(campPoint(tribe), SPLIT_SEARCH_RADIUS, tribe),
     minimumNeighborDistance: SPLIT_NEIGHBOR_DISTANCE,
   };
-  const site = findCampSite(search, context, services.tribes());
+  const site = findCampSite(search, context, context.people.tribes());
 
   if (site === null) {
     return;
   }
 
-  const offshoot = services.createTribe(site.x, site.z);
+  const offshoot = context.people.createTribe(site.x, site.z);
 
   offshoot.originId = tribe.id;
   shareWithOffshoot(tribe, offshoot, context);
 
   for (const person of settlers) {
-    services.moveToTribe(person, tribe, offshoot);
+    context.people.moveToTribe(person, tribe, offshoot);
   }
 
   context.chronicle.record({

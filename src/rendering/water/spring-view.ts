@@ -102,7 +102,6 @@ function createSpringMaterial(): MeshStandardNodeMaterial {
 
   material.colorNode = varying(slotColorTable().element(slot).mul(shade), "springColor");
   material.roughnessNode = float(0.92);
-  material.metalnessNode = float(0);
 
   return material;
 }

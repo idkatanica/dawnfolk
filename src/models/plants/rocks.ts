@@ -1,4 +1,3 @@
-import { Matrix4, Vector3 } from "three";
 import { PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
@@ -9,7 +8,16 @@ import type { MeshData } from "../mesh/mesh-data.ts";
 import { facetShape, type Shape } from "../mesh/shape.ts";
 import { blob, type LoftSection, loft } from "../mesh/shapes.ts";
 import { type Triple, transformOf } from "../mesh/transforms.ts";
-import { type ChiselOptions, chiseledStone, type FlatCut, groundShade, STONE_NOISE, weatheredSlot } from "../stones.ts";
+import {
+  addStone,
+  type ChiselOptions,
+  chiseledStone,
+  type FlatCut,
+  groundShade,
+  STONE_NOISE,
+  type StoneContext,
+  type StoneLook,
+} from "../stones.ts";
 import type { PlantDetailLevel } from "./tree-mesher.ts";
 
 type RockSpecies =
@@ -43,72 +51,15 @@ export const ROCK_VARIANT_COUNTS = {
 
 const BOULDER_NOISE = createVolumeNoise(createRandom(8080));
 const STONE_DETAIL: Readonly<Record<PlantDetailLevel, number>> = { far: 0, high: 1, low: 0, medium: 1 };
-const PEBBLE_DETAIL: Readonly<Record<PlantDetailLevel, number>> = { far: 0, high: 0, low: 0, medium: 0 };
 const SPLIT_DETAIL: Readonly<Record<PlantDetailLevel, number>> = { far: 0, high: 1, low: 1, medium: 1 };
 const STRATA_SEGMENTS: Readonly<Record<PlantDetailLevel, number>> = { far: 4, high: 14, low: 6, medium: 9 };
 const SHOWN_SCREE_STONES: Readonly<Record<PlantDetailLevel, number>> = { far: 2, high: 9, low: 4, medium: 9 };
 const UP: Triple = [0, 1, 0];
 const DOWN: Triple = [0, -1, 0];
 
-interface RockContext {
-  readonly builder: MeshBuilder;
-  readonly height: number;
+interface RockContext extends StoneContext {
   readonly level: PlantDetailLevel;
-  readonly random: RandomSource;
   readonly variant: number;
-}
-
-interface StonePlacement {
-  readonly bottom?: number;
-  readonly position: Triple;
-  readonly rotation?: Triple;
-  readonly scale?: Triple;
-}
-
-interface StoneLook {
-  readonly frost?: number;
-  readonly lichen: number;
-  readonly moss: number;
-  readonly slot?: MaterialSlotIndex;
-}
-
-function lowestPoint(shape: Shape, transform: Matrix4): number {
-  const point = new Vector3();
-  let lowest = Number.POSITIVE_INFINITY;
-
-  for (let offset = 0; offset < shape.positions.length; offset += 3) {
-    lowest = Math.min(lowest, point.fromArray(shape.positions, offset).applyMatrix4(transform).y);
-  }
-
-  return lowest;
-}
-
-function grounded(shape: Shape, placement: StonePlacement): Matrix4 {
-  const transform = transformOf(placement);
-
-  if (placement.bottom === undefined) {
-    return transform;
-  }
-
-  return new Matrix4().makeTranslation(0, placement.bottom - lowestPoint(shape, transform), 0).multiply(transform);
-}
-
-function addStone(context: RockContext, shape: Shape, placement: StonePlacement, look: StoneLook): void {
-  const { frost = 0, slot = MaterialSlot.Stone } = look;
-
-  context.builder.add(shape, {
-    style: {
-      shade: groundShade(context.height),
-      slot: weatheredSlot({
-        base: slot,
-        frost,
-        lichen: look.lichen,
-        moss: look.moss,
-        seed: context.random.next() * 40,
-      }),
-    },
-    transform: grounded(shape, placement),
-  });
 }
 
 function chisel(context: RockContext, options: ChiselOptions): Shape {
@@ -131,7 +82,6 @@ function roundStone(context: RockContext, radius: number, roughness: number): Sh
       detail: STONE_DETAIL[context.level],
       frequency: 1.1,
       noise: BOULDER_NOISE,
-      normalSoftness: 0,
       offset: [context.random.next() * 97, context.random.next() * 13, context.random.next() * 31],
       radius,
       roughness,
@@ -348,7 +298,7 @@ function scree(context: RockContext): void {
   for (const stone of shown) {
     addStone(
       context,
-      chiseledStone(random, { cuts: 7, depth: 0.5, radius: stone.radius, roughness: 0.12 }, PEBBLE_DETAIL[level]),
+      chiseledStone(random, { cuts: 7, depth: 0.5, radius: stone.radius, roughness: 0.12 }, 0),
       {
         position: [stone.x, stone.y, stone.z],
         rotation: [random.signed() * 0.5, random.next() * FULL_TURN, random.signed() * 0.5],

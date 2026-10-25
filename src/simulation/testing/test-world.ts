@@ -11,6 +11,7 @@ import { createTerrainData } from "../../world/testing/terrain-fixtures.ts";
 import { VegetationStore } from "../../world/vegetation-store.ts";
 import { NO_WATER } from "../../world/water.ts";
 import { type GridDimensions, WorldGrid } from "../../world/world-grid.ts";
+import type { FaunaSystem } from "../fauna/fauna.ts";
 import { WorldState } from "../world/world-state.ts";
 
 export interface TestWorldOptions {
@@ -159,4 +160,8 @@ export function plantsTooSteep(world: WorldState): string[] {
 
 export function depositAround(grid: WorldGrid, kind: DepositKind, x: number, z: number): Deposit {
   return { cells: grid.cellsInRadius(x, z, 25), id: 0, kind, x, z };
+}
+
+export function livingCount(fauna: FaunaSystem): number {
+  return fauna.animals.filter((animal) => animal.isAlive).length;
 }

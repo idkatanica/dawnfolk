@@ -832,10 +832,9 @@ function buildCrossing(site: Site, kind: CrossingKind, id: number, seed: number)
 function homeliness(survey: CrossingSurvey, cell: number): number {
   const { terrain } = survey;
 
-  const biome = HOMELINESS[terrain.biome[cell]];
   const swampy = terrain.ground[cell] === Ground.Swamp ? -0.4 : 0;
 
-  return (biome === undefined ? 0 : biome) + swampy;
+  return HOMELINESS[terrain.biome[cell]] + swampy;
 }
 
 function siteScore(survey: CrossingSurvey, site: Site, kind: CrossingKind, center: Point): number {

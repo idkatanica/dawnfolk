@@ -187,12 +187,10 @@ export class VegetationChunks {
   }
 
   #repack(chunk: VegetationChunk, touched: Set<number>): void {
-    const { vegetation } = this.#mirror;
-
     const counts = new Array<number>(BUCKET_COUNT).fill(0);
 
     for (const plant of chunk.plants) {
-      counts[bucketOf(vegetation.species[plant], vegetation.seed[plant])] += 1;
+      counts[this.#bucketOfPlant[plant]] += 1;
     }
 
     const buckets = counts.map((count) => allocateBucket(count));
@@ -201,7 +199,7 @@ export class VegetationChunks {
     chunk.bounds.makeEmpty();
 
     for (const plant of chunk.plants) {
-      const bucket = bucketOf(vegetation.species[plant], vegetation.seed[plant]);
+      const bucket = this.#bucketOfPlant[plant];
       const offset = filled[bucket] * FLOATS_PER_PLANT;
 
       this.#writePlant(plant, buckets[bucket], offset, chunk.bounds);

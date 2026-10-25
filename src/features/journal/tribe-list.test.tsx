@@ -1,16 +1,12 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
-import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
-import { createStock, createTribe, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { startTestEngine } from "../testing/engine-fixtures.ts";
+import { createStock, createTribe, showWorld } from "../testing/world-fixtures.ts";
 import { TribeList } from "./tribe-list.tsx";
 
 const EMPTY_ISLAND = "No tribes live on the island. Bring one with the Tribe power.";
 
 describe("tribe list", () => {
-  afterEach(() => {
-    resetWorld();
-  });
-
   it("invites to bring a tribe before the first frame arrives", async () => {
     const screen = await render(<TribeList />);
 
@@ -110,11 +106,6 @@ describe("tribe list", () => {
 });
 
 describe("tribe list in a running game", () => {
-  afterEach(() => {
-    stopTestEngine();
-    resetWorld();
-  });
-
   it("flies the camera to the camp and selects the tribe", async () => {
     const { focusOn, send, stopFollowing } = await startTestEngine();
 

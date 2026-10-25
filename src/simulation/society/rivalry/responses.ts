@@ -82,10 +82,12 @@ function answerBeast(tick: PersonTick): Job | null {
   return new ShelterJob(tick, null);
 }
 
-export function respondToFoes(tick: PersonTick): Job | null {
-  const { job } = tick.person;
+export function isBusy(person: Person): boolean {
+  return person.job !== null && STEADY_JOBS.has(person.job.kind);
+}
 
-  if (job !== null && STEADY_JOBS.has(job.kind)) {
+export function respondToFoes(tick: PersonTick): Job | null {
+  if (isBusy(tick.person)) {
     return null;
   }
 

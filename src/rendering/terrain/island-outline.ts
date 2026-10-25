@@ -237,10 +237,6 @@ export class IslandOutline {
     this.#texture = radiusTexture(radii);
   }
 
-  get hasCoast(): boolean {
-    return this.#texture !== null;
-  }
-
   sideOf(area: GroundArea, margin: number): OutlineSide {
     if (this.#radii === null) {
       return "inside";

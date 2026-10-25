@@ -1,4 +1,4 @@
-import { Biome } from "../../content/biomes.ts";
+import { WOODED_BIOMES } from "../../content/biomes.ts";
 import { Ground, type GroundIndex, groundDefinition } from "../../content/grounds.ts";
 import { PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import type { PowerParameters } from "../../content/powers.ts";
@@ -19,7 +19,6 @@ const DEFAULT_DENSITY = 0.5;
 const CROWDED_CELL = 2;
 const SNOWY_PAINT = 0.6;
 const HOT_CLIMATE = 14;
-const FORESTED_BIOMES: ReadonlySet<number> = new Set([Biome.Forest, Biome.Taiga]);
 
 type ForestSpecies = PowerParameters<"forest">["species"];
 
@@ -53,44 +52,34 @@ function liftPerSecond(radius: number, strength: number): number {
   return (BASE_LIFT_PER_SECOND + radius * LIFT_PER_METER_OF_RADIUS) * (percent(strength) / DEFAULT_STRENGTH);
 }
 
-export const raisePower: PowerHandler<"raise"> = {
-  apply: (target, parameters, services) => {
+function liftPower<Id extends "lower" | "raise">(direction: number): PowerHandler<Id> {
+  return (target, parameters, services) => {
     const lift = liftPerSecond(parameters.radius, parameters.strength) * target.seconds;
 
-    raiseTerrain(services.world, { ...target, radius: parameters.radius }, lift);
+    raiseTerrain(services.world, { ...target, radius: parameters.radius }, lift * direction);
 
     return APPLIED;
-  },
+  };
+}
+
+export const raisePower = liftPower<"raise">(1);
+
+export const lowerPower = liftPower<"lower">(-1);
+
+export const flattenPower: PowerHandler<"flatten"> = (target, parameters, services) => {
+  const strength = target.seconds * FLATTEN_PER_SECOND * (percent(parameters.strength) / DEFAULT_STRENGTH);
+
+  flattenTerrain(services.world, { ...target, radius: parameters.radius }, target.strokeStartHeight, strength);
+
+  return APPLIED;
 };
 
-export const lowerPower: PowerHandler<"lower"> = {
-  apply: (target, parameters, services) => {
-    const lift = liftPerSecond(parameters.radius, parameters.strength) * target.seconds;
+export const smoothPower: PowerHandler<"smooth"> = (target, parameters, services) => {
+  const strength = target.seconds * SMOOTH_PER_SECOND * (percent(parameters.strength) / DEFAULT_STRENGTH);
 
-    raiseTerrain(services.world, { ...target, radius: parameters.radius }, -lift);
+  smoothTerrain(services.world, { ...target, radius: parameters.radius }, strength);
 
-    return APPLIED;
-  },
-};
-
-export const flattenPower: PowerHandler<"flatten"> = {
-  apply: (target, parameters, services) => {
-    const strength = target.seconds * FLATTEN_PER_SECOND * (percent(parameters.strength) / DEFAULT_STRENGTH);
-
-    flattenTerrain(services.world, { ...target, radius: parameters.radius }, target.strokeStartHeight, strength);
-
-    return APPLIED;
-  },
-};
-
-export const smoothPower: PowerHandler<"smooth"> = {
-  apply: (target, parameters, services) => {
-    const strength = target.seconds * SMOOTH_PER_SECOND * (percent(parameters.strength) / DEFAULT_STRENGTH);
-
-    smoothTerrain(services.world, { ...target, radius: parameters.radius }, strength);
-
-    return APPLIED;
-  },
+  return APPLIED;
 };
 
 function climateSpecies(temperature: number, random: RandomSource): PlantSpeciesIndex {
@@ -143,7 +132,7 @@ function plantTree(cell: number, species: PlantSpeciesIndex, services: PowerServ
     z: grid.cellCenterZ(cell) + random.between(-0.4, 0.4) * grid.cellSize,
   });
 
-  const isForestLand = FORESTED_BIOMES.has(world.terrain.biome[cell]);
+  const isForestLand = WOODED_BIOMES.has(world.terrain.biome[cell]);
 
   if (isForestLand && groundDefinition(world.terrain.ground[cell]).fuel > 0) {
     world.setGround(cell, Ground.Forest);
@@ -153,32 +142,30 @@ function plantTree(cell: number, species: PlantSpeciesIndex, services: PowerServ
   world.markSurfaceCell(cell);
 }
 
-export const forestPower: PowerHandler<"forest"> = {
-  apply: (target, parameters, services) => {
-    const { random, world } = services;
+export const forestPower: PowerHandler<"forest"> = (target, parameters, services) => {
+  const { random, world } = services;
 
-    const density = percent(parameters.density) / DEFAULT_DENSITY;
+  const density = percent(parameters.density) / DEFAULT_DENSITY;
 
-    for (const { cell, distance } of cellsInArea(world, { ...target, radius: parameters.radius })) {
-      if (!canPlantIn(world, cell)) {
-        continue;
-      }
-
-      const chance = target.seconds * PLANTING_PER_SECOND * brushFalloff(distance, parameters.radius) * density;
-
-      if (!random.chance(chance)) {
-        continue;
-      }
-
-      const species = speciesFor(parameters.species, world.terrain.baseTemperature[cell], random);
-
-      if (world.canPlace(cell, plantSpeciesDefinition(species).steepestSlope)) {
-        plantTree(cell, species, services);
-      }
+  for (const { cell, distance } of cellsInArea(world, { ...target, radius: parameters.radius })) {
+    if (!canPlantIn(world, cell)) {
+      continue;
     }
 
-    return APPLIED;
-  },
+    const chance = target.seconds * PLANTING_PER_SECOND * brushFalloff(distance, parameters.radius) * density;
+
+    if (!random.chance(chance)) {
+      continue;
+    }
+
+    const species = speciesFor(parameters.species, world.terrain.baseTemperature[cell], random);
+
+    if (world.canPlace(cell, plantSpeciesDefinition(species).steepestSlope)) {
+      plantTree(cell, species, services);
+    }
+  }
+
+  return APPLIED;
 };
 
 function paintCell(world: WorldState, cell: number, ground: GroundIndex): void {
@@ -200,14 +187,12 @@ function paintCell(world: WorldState, cell: number, ground: GroundIndex): void {
   world.markSurfaceCell(cell);
 }
 
-export const paintPower: PowerHandler<"paint"> = {
-  apply: (target, parameters, services) => {
-    const ground = PAINT_GROUNDS[parameters.material];
+export const paintPower: PowerHandler<"paint"> = (target, parameters, services) => {
+  const ground = PAINT_GROUNDS[parameters.material];
 
-    for (const { cell } of cellsInArea(services.world, { ...target, radius: parameters.radius })) {
-      paintCell(services.world, cell, ground);
-    }
+  for (const { cell } of cellsInArea(services.world, { ...target, radius: parameters.radius })) {
+    paintCell(services.world, cell, ground);
+  }
 
-    return APPLIED;
-  },
+  return APPLIED;
 };

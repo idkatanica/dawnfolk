@@ -10,25 +10,25 @@ import { HUMAN_BONE_COUNT, HUMAN_SKELETON } from "../../models/people/human-skel
 import { Pose } from "../../models/rig/pose.ts";
 import { SkeletonPoser } from "../../models/rig/skeleton-poser.ts";
 import { smoothstep } from "../../shared/math.ts";
-import type { Inspection } from "../../simulation/inspection.ts";
 import { PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
 import { CARRIED_ITEMS, type CarriedItem, PERSON_POSES } from "../../world/agent-poses.ts";
-import { gearOfCode, weaponOfCode } from "../../world/gear.ts";
 import type { TribeLooks } from "../tribe-looks.ts";
+import { HIDDEN_LEVEL } from "../view-input.ts";
 import { AgentMotion } from "./agent-motion.ts";
 import { AgentPalette } from "./agent-palette.ts";
 import {
   type AgentViewInput,
   detailLevel,
   farthestFigure,
-  HIDDEN_LEVEL,
+  forgetUnseen,
   type LevelDistances,
   NO_SELECTION,
+  selectedAgentId,
   standingHeight,
 } from "./agent-view-input.ts";
 import { HumanStrides } from "./human-strides.ts";
 import { type MarkerStyle, personMarker } from "./marker-look.ts";
-import { colorTexel, type PaletteLayout, paletteWidth, rootTexel } from "./palette-layout.ts";
+import type { PaletteLayout } from "./palette-layout.ts";
 import { PartBatches } from "./part-batches.ts";
 import { createSkinnedMaterial } from "./skinned-material.ts";
 
@@ -88,18 +88,6 @@ function colorsOf(appearance: PersonAppearance): Color[] {
   return [colors.skin, colors.hair, colors.fur, colors.hide, colors.accent].map((hex) => new Color(hex));
 }
 
-function selectedPersonId(inspection: Inspection | null): number {
-  if (inspection?.kind !== "person") {
-    return NO_SELECTION;
-  }
-
-  return inspection.id;
-}
-
-function weaponChoice(code: number): number {
-  return WEAPON_CHOICES.indexOf(weaponOfCode(code));
-}
-
 export class PeopleView {
   readonly #activityParts = activityTable();
   readonly #batches: PartBatches;
@@ -108,7 +96,7 @@ export class PeopleView {
   readonly #bounds = new Sphere(new Vector3(), BOUNDING_RADIUS);
   readonly #markerAnchor = new Vector3();
   readonly #markerStyles = new Map<number, MarkerStyle>();
-  readonly #palette = new AgentPalette(paletteWidth(PERSON_LAYOUT));
+  readonly #palette = new AgentPalette(PERSON_LAYOUT);
   readonly #pose = new Pose(HUMAN_BONE_COUNT);
   readonly #poser = new SkeletonPoser(HUMAN_SKELETON);
   readonly #previousPose = new Pose(HUMAN_BONE_COUNT);
@@ -118,7 +106,6 @@ export class PeopleView {
   readonly #visuals = new Map<number, PersonVisual>();
   #figureCount = 0;
   #selectedId = NO_SELECTION;
-  #uploadedRows = 0;
 
   constructor(tribes: TribeLooks) {
     this.#tribes = tribes;
@@ -149,7 +136,7 @@ export class PeopleView {
     const { frame } = input.mirror;
 
     this.#seen.clear();
-    this.#selectedId = selectedPersonId(frame.inspection);
+    this.#selectedId = selectedAgentId(frame.inspection, "person");
     this.#batches.begin();
 
     let rows = 0;
@@ -165,14 +152,10 @@ export class PeopleView {
     }
 
     this.#figureCount = rows;
-    this.#forgetMissing();
+    forgetUnseen(this.#visuals, this.#seen);
     this.#batches.commit();
 
-    if (rows > 0 || this.#uploadedRows > 0) {
-      this.#palette.upload();
-    }
-
-    this.#uploadedRows = rows;
+    this.#palette.finish(rows);
   }
 
   dispose(): void {
@@ -203,15 +186,19 @@ export class PeopleView {
     const visual = this.#visualFor(people, offset);
     const clipCode = people[offset + PersonField.Pose];
     const carriedCode = people[offset + PersonField.Carried];
-    const weapon = weaponChoice(people[offset + PersonField.Weapon]);
-    const gear = this.#gearColors[TOOL_MATERIALS.indexOf(gearOfCode(people[offset + PersonField.Gear]))];
+    const weapon = people[offset + PersonField.Weapon];
+    const gear = this.#gearColors[people[offset + PersonField.Gear]];
 
     this.#animate(input, visual, people, offset);
     this.#palette.ensureRows(row + 1);
     this.#writePose(visual, CARRIED_ITEMS[carriedCode], row);
-    this.#writeRoot(row, x, y, z, visual.motion.heading);
-    this.#writeColors(row, visual.colors);
-    this.#writeColor(row, GEAR_COLOR_INDEX, gear);
+    this.#palette.writeRoot(row, x, y, z, visual.motion.heading);
+
+    for (const [index, color] of visual.colors.entries()) {
+      this.#palette.writeColor(row, index, color);
+    }
+
+    this.#palette.writeColor(row, GEAR_COLOR_INDEX, gear);
 
     for (const part of visual.baseParts) {
       this.#batches.add(level, part, row);
@@ -287,33 +274,6 @@ export class PeopleView {
     return this.#blendedPose;
   }
 
-  #writeRoot(row: number, x: number, y: number, z: number, heading: number): void {
-    const { data } = this.#palette;
-
-    const offset = this.#palette.texelOffset(row, rootTexel(PERSON_LAYOUT));
-
-    data[offset] = x;
-    data[offset + 1] = y;
-    data[offset + 2] = z;
-    data[offset + 3] = heading;
-  }
-
-  #writeColors(row: number, colors: readonly Color[]): void {
-    for (const [index, color] of colors.entries()) {
-      this.#writeColor(row, index, color);
-    }
-  }
-
-  #writeColor(row: number, index: number, color: Color): void {
-    const { data } = this.#palette;
-
-    const offset = this.#palette.texelOffset(row, colorTexel(PERSON_LAYOUT, index));
-
-    data[offset] = color.r;
-    data[offset + 1] = color.g;
-    data[offset + 2] = color.b;
-  }
-
   #visualFor(people: Float32Array, offset: number): PersonVisual {
     const id = people[offset + PersonField.Id];
     const age = people[offset + PersonField.Age];
@@ -340,25 +300,20 @@ export class PeopleView {
       appearanceKey: key,
       baseParts: appearanceParts(appearance).map((part) => humanPartIndex(part)),
       colors: colorsOf(appearance),
-      motion: this.#motionFor(existing, people, offset),
+      motion:
+        existing === undefined
+          ? new AgentMotion(
+              people[offset + PersonField.Pose],
+              people[offset + PersonField.Phase],
+              people[offset + PersonField.Heading]
+            )
+          : existing.motion,
       scales: humanBoneScales(appearance.body),
     };
 
     this.#visuals.set(id, visual);
 
     return visual;
-  }
-
-  #motionFor(existing: PersonVisual | undefined, people: Float32Array, offset: number): AgentMotion {
-    if (existing !== undefined) {
-      return existing.motion;
-    }
-
-    return new AgentMotion(
-      people[offset + PersonField.Pose],
-      people[offset + PersonField.Phase],
-      people[offset + PersonField.Heading]
-    );
   }
 
   #markerStyle(tribeId: number): MarkerStyle {
@@ -375,13 +330,5 @@ export class PeopleView {
     this.#markerStyles.set(accent, style);
 
     return style;
-  }
-
-  #forgetMissing(): void {
-    for (const id of this.#visuals.keys()) {
-      if (!this.#seen.has(id)) {
-        this.#visuals.delete(id);
-      }
-    }
   }
 }

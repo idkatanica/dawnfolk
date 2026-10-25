@@ -1,4 +1,4 @@
-import { Biome } from "../content/biomes.ts";
+import { WOODED_BIOMES } from "../content/biomes.ts";
 import {
   MONUMENT_KINDS,
   MONUMENT_SLOPE,
@@ -13,7 +13,7 @@ import { clamp, FULL_TURN, lerp } from "../shared/math.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
 import { hasRoomFromCoast } from "../world/coast.ts";
 import { canStandOn, slopeAt } from "../world/footing.ts";
-import { type Monument, monumentGround } from "../world/monuments.ts";
+import type { Monument } from "../world/monuments.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
 import { isWaterCell, sampleHeight } from "../world/terrain-sampling.ts";
 import type { PlantPlacement } from "../world/vegetation-store.ts";
@@ -30,7 +30,6 @@ const COAST_CLEARANCE = 60;
 const GROUND_MARGIN = 1.5;
 const PROMINENCE_REACH = 170;
 const PROMINENCE_SAMPLES = 10;
-const WOODED: ReadonlySet<number> = new Set([Biome.Forest, Biome.Taiga]);
 
 interface LaidPiece {
   readonly height: number;
@@ -47,7 +46,6 @@ interface Layout {
 }
 
 interface MonumentPlan {
-  readonly ground: Uint8Array;
   readonly monuments: readonly Monument[];
   readonly pieces: readonly PlantPlacement[];
 }
@@ -308,8 +306,6 @@ function footprint(grid: WorldGrid, layout: Layout, site: Site, pieces: readonly
   const corner = grid.cellSize * Math.SQRT1_2;
 
   for (const { placement, reach } of pieces) {
-    cells.add(grid.cellAt(placement.x, placement.z));
-
     for (const cell of grid.cellsInRadius(placement.x, placement.z, reach + GROUND_MARGIN + corner)) {
       cells.add(cell);
     }
@@ -386,7 +382,7 @@ function settingScore(planner: Planner, kind: MonumentKind, site: Site, cells: r
     case "heights":
       return flatness + clamp(prominence(planner, site) / 12, -2, 4);
     case "clearing":
-      return flatness + (WOODED.has(terrain.biome[cell]) ? 2 : 0) + (1 - terrain.woodland[cell]) * 2;
+      return flatness + (WOODED_BIOMES.has(terrain.biome[cell]) ? 2 : 0) + (1 - terrain.woodland[cell]) * 2;
     default:
       return flatness * 2 + clamp(prominence(planner, site) / 30, -1, 1);
   }
@@ -491,5 +487,5 @@ export function planMonuments(grid: WorldGrid, terrain: TerrainData, seed: numbe
     pieces.push(...choice.pieces.map((piece) => piece.placement));
   }
 
-  return { ground: monumentGround(grid.cellCount, planner.placed), monuments: planner.placed, pieces };
+  return { monuments: planner.placed, pieces };
 }

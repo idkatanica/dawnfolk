@@ -1,19 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
-import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
-import { createAnimalInspection, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { startTestEngine } from "../testing/engine-fixtures.ts";
+import { createAnimalInspection, showWorld } from "../testing/world-fixtures.ts";
 import { useInterfaceStore } from "./interface-store.ts";
 import { MenuButtons } from "./menu-buttons.tsx";
 
-const INITIAL_INTERFACE = useInterfaceStore.getState();
-
 describe("menu buttons", () => {
-  afterEach(() => {
-    stopTestEngine();
-    resetWorld();
-    useInterfaceStore.setState(INITIAL_INTERFACE, true);
-  });
-
   it("offers the journal, the map and the settings", async () => {
     const screen = await render(<MenuButtons />);
 

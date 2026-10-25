@@ -63,7 +63,7 @@ function nearestReachableBush(tick: PersonTick, area: SearchArea): number | null
   });
 }
 
-export function findBerries(tick: PersonTick): GatherJob | null {
+export function findBerries(tick: PersonTick): ForageJob | null {
   const bush = nearestReachableBush(tick, gatheringArea(tick));
 
   if (bush === null) {
@@ -72,74 +72,10 @@ export function findBerries(tick: PersonTick): GatherJob | null {
     return null;
   }
 
-  return new GatherJob(tick, bush);
+  return new ForageJob(tick, bush, "gather");
 }
 
-class GatherJob implements Job {
-  readonly claimedPlant: number;
-  readonly kind = "gather";
-  readonly #errand: Errand;
-
-  constructor(tick: PersonTick, bush: number) {
-    const target = plantTarget(tick.context.world.vegetation, bush, GATHERING_REACH);
-
-    this.claimedPlant = bush;
-    this.#errand = new Errand(GATHERING_SECONDS, "gather", target);
-    tick.tribe.claimedPlants.add(bush);
-    headToWork(tick.person, target, tick.context);
-  }
-
-  update(tick: PersonTick): Job | null {
-    const progress = this.#errand.update(tick);
-
-    if (progress === "abandoned") {
-      return null;
-    }
-
-    if (progress !== "finished") {
-      return this;
-    }
-
-    tick.tribe.claimedPlants.delete(this.claimedPlant);
-    this.#pick(tick);
-
-    return nextStep(tick);
-  }
-
-  #pick(tick: PersonTick): void {
-    const { vegetation } = tick.context.world;
-
-    const bush = this.claimedPlant;
-
-    if (!vegetation.isAlive(bush) || vegetation.fruit[bush] <= PICKABLE_FRUIT) {
-      return;
-    }
-
-    const taken = Math.min(HANDFUL, vegetation.fruit[bush]);
-
-    vegetation.setFruit(bush, vegetation.fruit[bush] - taken);
-    pickUp(tick.person, "berries", taken * FOOD_PER_FRUIT, "berries");
-    learn(tick.tribe, 0.25, tick.context.rules);
-  }
-}
-
-function nextStep(tick: PersonTick): Job {
-  if (carriedFood(tick.person) >= FULL_BASKET) {
-    return new DeliverJob(tick);
-  }
-
-  const { mover } = tick.person;
-
-  const nextBush = nearestReachableBush(tick, { radius: NEXT_BUSH_RADIUS, x: mover.x, z: mover.z });
-
-  if (nextBush === null) {
-    return new DeliverJob(tick);
-  }
-
-  return new GatherJob(tick, nextBush);
-}
-
-export function findFruit(tick: PersonTick): PickJob | null {
+export function findFruit(tick: PersonTick): ForageJob | null {
   const tree = ripestFruitTree(tick.tribe, tick.context.world, tick.tribe.claimedPlants);
 
   if (tree === null) {
@@ -153,45 +89,43 @@ export function findFruit(tick: PersonTick): PickJob | null {
     return null;
   }
 
-  return new PickJob(tick, tree);
+  return new ForageJob(tick, tree, "pick");
 }
 
-class PickJob implements Job {
+class ForageJob implements Job {
   readonly claimedPlant: number;
-  readonly kind = "pick";
+  readonly kind: "gather" | "pick";
   readonly #errand: Errand;
 
-  constructor(tick: PersonTick, tree: number) {
-    const target = plantTarget(tick.context.world.vegetation, tree, GATHERING_REACH);
+  constructor(tick: PersonTick, plant: number, kind: "gather" | "pick") {
+    const target = plantTarget(tick.context.world.vegetation, plant, GATHERING_REACH);
 
-    this.claimedPlant = tree;
+    this.claimedPlant = plant;
+    this.kind = kind;
     this.#errand = new Errand(GATHERING_SECONDS, "gather", target);
-    tick.tribe.claimedPlants.add(tree);
+    tick.tribe.claimedPlants.add(plant);
     headToWork(tick.person, target, tick.context);
   }
 
   update(tick: PersonTick): Job | null {
     const progress = this.#errand.update(tick);
 
-    if (progress === "abandoned") {
-      return null;
-    }
-
     if (progress !== "finished") {
-      return this;
+      return progress === "abandoned" ? null : this;
     }
 
     const { vegetation } = tick.context.world;
 
-    const tree = this.claimedPlant;
+    const plant = this.claimedPlant;
 
-    tick.tribe.claimedPlants.delete(tree);
+    tick.tribe.claimedPlants.delete(plant);
 
-    if (vegetation.isAlive(tree) && vegetation.fruit[tree] > PICKABLE_FRUIT) {
-      const taken = Math.min(HANDFUL, vegetation.fruit[tree]);
+    if (vegetation.isAlive(plant) && vegetation.fruit[plant] > PICKABLE_FRUIT) {
+      const taken = Math.min(HANDFUL, vegetation.fruit[plant]);
+      const food = this.kind === "gather" ? "berries" : "fruit";
 
-      vegetation.setFruit(tree, vegetation.fruit[tree] - taken);
-      pickUp(tick.person, "fruit", taken * FOOD_PER_FRUIT, "fruit");
+      vegetation.setFruit(plant, vegetation.fruit[plant] - taken);
+      pickUp(tick.person, food, taken * FOOD_PER_FRUIT, food);
       learn(tick.tribe, 0.25, tick.context.rules);
     }
 
@@ -199,8 +133,20 @@ class PickJob implements Job {
       return new DeliverJob(tick);
     }
 
-    const next = findFruit(tick);
+    const next = this.#next(tick);
 
     return next === null ? new DeliverJob(tick) : next;
+  }
+
+  #next(tick: PersonTick): ForageJob | null {
+    if (this.kind === "pick") {
+      return findFruit(tick);
+    }
+
+    const { mover } = tick.person;
+
+    const bush = nearestReachableBush(tick, { radius: NEXT_BUSH_RADIUS, x: mover.x, z: mover.z });
+
+    return bush === null ? null : new ForageJob(tick, bush, "gather");
   }
 }

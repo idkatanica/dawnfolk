@@ -99,5 +99,5 @@ export function applyPower<Id extends PowerId>(
 ): PowerOutcome {
   const handler: PowerHandler<Id> = POWER_HANDLERS[powerId];
 
-  return handler.apply(target, parameters, services);
+  return handler(target, parameters, services);
 }

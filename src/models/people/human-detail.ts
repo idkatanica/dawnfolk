@@ -4,7 +4,6 @@ type HumanDetailLevel = "far" | "high" | "low";
 
 export interface HumanDetail extends DetailSteps {
   readonly hasFineDetails: boolean;
-  readonly hasSmallParts: boolean;
   readonly headSegments: number;
   readonly limbSegments: number;
   readonly propSubdivisions: number;
@@ -18,9 +17,7 @@ export const HUMAN_DETAILS: Readonly<Record<HumanDetailLevel, HumanDetail>> = {
     hasSmallParts: false,
     headSegments: 6,
     limbSegments: 4,
-    pathStep: 2,
     propSubdivisions: 0,
-    segmentFloor: 4,
     torsoSegments: 6,
     trimShare: 0.4,
   },
@@ -29,9 +26,7 @@ export const HUMAN_DETAILS: Readonly<Record<HumanDetailLevel, HumanDetail>> = {
     hasSmallParts: true,
     headSegments: 12,
     limbSegments: 7,
-    pathStep: 1,
     propSubdivisions: 1,
-    segmentFloor: 8,
     torsoSegments: 12,
     trimShare: 1,
   },
@@ -40,9 +35,7 @@ export const HUMAN_DETAILS: Readonly<Record<HumanDetailLevel, HumanDetail>> = {
     hasSmallParts: true,
     headSegments: 8,
     limbSegments: 5,
-    pathStep: 1,
     propSubdivisions: 1,
-    segmentFloor: 8,
     torsoSegments: 8,
     trimShare: 0.6,
   },
