@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BROOK_STRENGTH } from "../../world/brooks.ts";
+import { NO_WATER } from "../../world/water.ts";
 import { createTestWorld, floodCells, floodStrip, fordAcross, riverStrip } from "../testing/test-world.ts";
 import { raiseTerrain } from "../world/terrain-editing.ts";
 import type { WorldState } from "../world/world-state.ts";
@@ -260,6 +261,27 @@ describe("crossings", () => {
 
     expect(navigation.findPath({ x: -150, z: -100 }, { x: 150, z: 0 })).toEqual([{ x: 150, z: 0 }]);
     expect(navigation.isReachable({ x: -150, z: -100 }, { x: 150, z: 200 })).toBe(true);
+  });
+
+  it("hops a brook back the way a hop from the far bank came", () => {
+    const world = createTestWorld(RIVER_WORLD);
+
+    riverStrip(world, -20, -10, BROOK_STRENGTH);
+    riverStrip(world, -10, 0, BROOK_STRENGTH + 10);
+
+    const gap = world.grid.cellAt(-5, -15);
+
+    world.terrain.waterSurface[gap] = NO_WATER;
+    world.terrain.riverStrength[gap] = 0;
+
+    const navigation = new NavigationGrid(world);
+    const from = { x: 150, z: 5 };
+
+    const path = expectPath(navigation.findPath(from, { x: -150, z: 5 }));
+
+    expect(path.every((waypoint, index) => navigation.isClear(index === 0 ? from : path[index - 1], waypoint))).toBe(
+      true
+    );
   });
 
   it("does not hop a river wider than a hop or flood water", () => {
