@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { Calendar, DEFAULT_CALENDAR, DEFAULT_DAY_SECONDS } from "./calendar.ts";
+import { Calendar, DEFAULT_DAY_SECONDS } from "./calendar.ts";
 
 function calendarAt(day: number): Calendar {
-  return new Calendar({ ...DEFAULT_CALENDAR, day });
+  const calendar = new Calendar();
+
+  calendar.day = day;
+
+  return calendar;
 }
 
 describe("calendar", () => {
@@ -24,10 +28,14 @@ describe("calendar", () => {
   });
 
   it("stands still while time is frozen", () => {
-    const calendar = new Calendar({ ...DEFAULT_CALENDAR, isTimeFrozen: true });
+    const calendar = new Calendar();
+
+    const start = calendar.day;
+
+    calendar.isTimeFrozen = true;
 
     expect(calendar.advance(100)).toBe(0);
-    expect(calendar.day).toBe(DEFAULT_CALENDAR.day);
+    expect(calendar.day).toBe(start);
   });
 
   it("walks through the seasons and years", () => {

@@ -25,23 +25,6 @@ interface WeatherState {
   windSpeed: number;
 }
 
-export const DEFAULT_WEATHER: WeatherState = {
-  cloudCover: 0.15,
-  fog: 0,
-  gust: 1,
-  isAutomatic: true,
-  kind: "clear",
-  lightningCountdown: 2,
-  nextChangeInDays: 0.6,
-  precipitation: 0,
-  storm: 0,
-  temperatureOffset: 0,
-  userTemperatureOffset: 0,
-  windBaseSpeed: 14,
-  windDirection: 225,
-  windSpeed: 14,
-};
-
 interface WindVector {
   x: number;
   z: number;
@@ -78,11 +61,22 @@ export function pickSeasonalWeather(season: number, random: RandomSource): Weath
 }
 
 export class WeatherSystem {
-  state: WeatherState;
-
-  constructor(state: WeatherState = DEFAULT_WEATHER) {
-    this.state = { ...state };
-  }
+  state: WeatherState = {
+    cloudCover: 0.15,
+    fog: 0,
+    gust: 1,
+    isAutomatic: true,
+    kind: "clear",
+    lightningCountdown: 2,
+    nextChangeInDays: 0.6,
+    precipitation: 0,
+    storm: 0,
+    temperatureOffset: 0,
+    userTemperatureOffset: 0,
+    windBaseSpeed: 14,
+    windDirection: 225,
+    windSpeed: 14,
+  };
 
   get name(): string {
     return WEATHER[this.state.kind].name;

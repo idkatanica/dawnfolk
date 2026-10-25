@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { Calendar, DEFAULT_CALENDAR } from "./calendar.ts";
+import { Calendar } from "./calendar.ts";
 import { describeEnvironment, droughtLevel } from "./environment.ts";
 import { WeatherSystem } from "./weather.ts";
+
+function calendarAt(day: number): Calendar {
+  const calendar = new Calendar();
+
+  calendar.day = day;
+
+  return calendar;
+}
 
 describe("drought", () => {
   it("is highest in a dry summer and drops with rain", () => {
@@ -13,7 +21,7 @@ describe("drought", () => {
 
 describe("environment", () => {
   it("combines season, time of day and weather into the air temperature", () => {
-    const calendar = new Calendar({ ...DEFAULT_CALENDAR, day: 4.5 });
+    const calendar = calendarAt(4.5);
     const weather = new WeatherSystem();
 
     weather.setUserTemperatureOffset(-20);
@@ -28,8 +36,8 @@ describe("environment", () => {
   it("has sunlight by day and none at night", () => {
     const weather = new WeatherSystem();
 
-    const noon = describeEnvironment(new Calendar({ ...DEFAULT_CALENDAR, day: 4.5 }), weather);
-    const midnight = describeEnvironment(new Calendar({ ...DEFAULT_CALENDAR, day: 4 }), weather);
+    const noon = describeEnvironment(calendarAt(4.5), weather);
+    const midnight = describeEnvironment(calendarAt(4), weather);
 
     expect(noon.sunlight).toBeGreaterThan(0.5);
     expect(midnight.sunlight).toBe(0);

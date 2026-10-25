@@ -6,7 +6,7 @@ import { Chronicle } from "../chronicle.ts";
 import { EffectLog } from "../effects.ts";
 import { FaunaSystem } from "../fauna/fauna.ts";
 import { IdentifierSource } from "../identifiers.ts";
-import { Calendar, DEFAULT_CALENDAR } from "../nature/calendar.ts";
+import { Calendar } from "../nature/calendar.ts";
 import { describeEnvironment } from "../nature/environment.ts";
 import { FireSystem } from "../nature/fire.ts";
 import { WeatherSystem } from "../nature/weather.ts";
@@ -31,7 +31,7 @@ interface SocietyHarnessOptions {
 
 export class SocietyHarness {
   readonly buildings: BuildingSystem;
-  readonly calendar: Calendar;
+  readonly calendar = new Calendar();
   readonly chronicle = new Chronicle();
   readonly context: SocietyContext;
   readonly effects = new EffectLog();
@@ -58,7 +58,7 @@ export class SocietyHarness {
 
     this.isFaunaAwake = settings.isFaunaAwake;
     this.world = new WorldState(createVegetatedWorld(settings.world, SEED));
-    this.calendar = new Calendar({ ...DEFAULT_CALENDAR, day: settings.day });
+    this.calendar.day = settings.day;
     this.random = createRandom(SEED);
     this.navigation = new NavigationGrid(this.world);
     this.fire = new FireSystem(this.world);
