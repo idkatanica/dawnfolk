@@ -14,6 +14,7 @@ interface Breeding {
 
 interface AnimalDefinition {
   abundance: number;
+  bodyRadius: number;
   breeding: Breeding;
   edgeBiomes: readonly BiomeIndex[];
   favouriteBiomes: readonly BiomeIndex[];
@@ -39,6 +40,7 @@ const SPRING_CALVING: Breeding = { litterSize: [1, 1], perDay: 0.6, season: [0.2
 export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
   deer: {
     abundance: 3,
+    bodyRadius: 0.45,
     breeding: SPRING_CALVING,
     edgeBiomes: [],
     favouriteBiomes: [Biome.Meadow, Biome.Forest, Biome.Steppe, Biome.Taiga, Biome.Scrub],
@@ -60,6 +62,7 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
   },
   hare: {
     abundance: 0,
+    bodyRadius: 0.15,
     breeding: { litterSize: [1, 3], perDay: 0.5, season: [0.1, 2.2] },
     edgeBiomes: [Biome.Forest],
     favouriteBiomes: [Biome.Meadow, Biome.Steppe, Biome.Scrub],
@@ -81,6 +84,7 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
   },
   ibex: {
     abundance: 2,
+    bodyRadius: 0.4,
     breeding: SPRING_CALVING,
     edgeBiomes: [],
     favouriteBiomes: [Biome.Alpine, Biome.Mesa, Biome.Tundra],
@@ -102,6 +106,7 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
   },
   mammoth: {
     abundance: 2.4,
+    bodyRadius: 1.6,
     breeding: SPRING_CALVING,
     edgeBiomes: [],
     favouriteBiomes: [Biome.Tundra, Biome.Taiga, Biome.Steppe, Biome.Glacier],
@@ -123,6 +128,7 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
   },
   wolf: {
     abundance: 1,
+    bodyRadius: 0.35,
     breeding: SPRING_CALVING,
     edgeBiomes: [],
     favouriteBiomes: [Biome.Taiga, Biome.Tundra, Biome.Forest, Biome.Steppe],

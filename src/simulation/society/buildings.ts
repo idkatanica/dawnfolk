@@ -115,6 +115,12 @@ export class BuildingSystem {
       this.#world.occupancy[occupied] = id;
     }
 
+    this.#world.obstacles.placeBuilding(id, {
+      radius: BUILDINGS[placement.kind].footprint,
+      x: placement.x,
+      z: placement.z,
+    });
+
     const building: Building = {
       burningSeconds: 0,
       cell,
@@ -165,6 +171,7 @@ export class BuildingSystem {
 
     this.#buildings.splice(index, 1);
     this.#buildingsById.delete(building.id);
+    this.#world.obstacles.clearBuilding(building.id);
     this.#releaseCell(building);
     this.#losses.push({ building, reason });
   }

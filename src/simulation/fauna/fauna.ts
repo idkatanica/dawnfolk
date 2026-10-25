@@ -334,7 +334,10 @@ export class FaunaSystem {
       isAlive: true,
       kind: herd.kind,
       lifeDays: lifespanDays === null ? Number.POSITIVE_INFINITY : random.between(lifespanDays[0], lifespanDays[1]),
-      mover: { ...createMover(start.x, start.z, random.next() * FULL_TURN), hopSpeed: hopSpeedOf(herd.kind) },
+      mover: {
+        ...createMover(start.x, start.z, random.next() * FULL_TURN, ANIMALS[herd.kind].bodyRadius),
+        hopSpeed: hopSpeedOf(herd.kind),
+      },
       offsetX: random.signed() * HERD_SPREAD * 0.5,
       offsetZ: random.signed() * HERD_SPREAD * 0.5,
       phase: random.next() * 10,

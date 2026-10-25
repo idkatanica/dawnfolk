@@ -5,6 +5,7 @@ import type { GenerationOptions, GenerationProgress } from "../generation/genera
 import { type GeneratedWorld, generateWorld } from "../generation/world-generator.ts";
 import { clamp } from "../shared/math.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
+import { keepApart } from "./agents/crowding.ts";
 import { HazardMap } from "./agents/hazards.ts";
 import type { Mover } from "./agents/movement.ts";
 import { NavigationGrid, type Waypoint } from "./agents/navigation.ts";
@@ -37,6 +38,7 @@ import { WorldState } from "./world/world-state.ts";
 const MAXIMUM_REAL_SECONDS = 0.25;
 const MAXIMUM_TICKS_PER_ADVANCE = 40;
 const NAVIGATION_CHECK_TICKS = 50;
+const CROWDING_TICKS = 2;
 const FIRST_STROKE_SECONDS = 1 / 30;
 const STARTING_HERDS = 16;
 const STARTING_SMALL_GAME_GROUPS = 24;
@@ -584,8 +586,20 @@ export class Simulation {
       threats: this.#faunaThreats,
     });
     this.hazards.update(TICK_SECONDS);
+
+    if (this.#tick % CROWDING_TICKS === 0) {
+      this.#keepAgentsApart();
+    }
+
     this.#recordBuildingIncidents();
     this.#recordSplashes();
+  }
+
+  #keepAgentsApart(): void {
+    const people = this.society.people.map((person) => person.mover);
+    const animals = this.fauna.animals.filter((animal) => animal.isAlive).map((animal) => animal.mover);
+
+    keepApart([...people, ...animals], this.world, TICK_SECONDS * CROWDING_TICKS);
   }
 
   #recordSplashes(): void {
