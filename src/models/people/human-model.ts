@@ -190,6 +190,7 @@ const ARMED_POSES: ReadonlySet<PersonPose> = new Set([
   "fall",
   "flinch",
   "idle",
+  "leap",
   "march",
   "run",
   "thrust",
