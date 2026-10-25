@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { useInterfaceStore } from "../interface/interface-store.ts";
+import { startTestEngine } from "../testing/engine-fixtures.ts";
 import { createChronicleEntry } from "../testing/world-fixtures.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { ChronicleList } from "./chronicle-list.tsx";
@@ -58,5 +61,37 @@ describe("chronicle list", () => {
     await entry.click();
 
     await expect.element(entry).toBeVisible();
+  });
+
+  it("keeps the journal open on a wide screen when an entry shows its place", async () => {
+    await page.viewport(1280, 800);
+
+    const { focusOn } = await startTestEngine();
+
+    useInterfaceStore.getState().openJournal("chronicle");
+    useWorldStore.setState({ chronicle: [createChronicleEntry({ id: 1, text: "Event 1", x: 120, z: -40 })] });
+
+    const screen = await render(<ChronicleList />);
+
+    await screen.getByRole("button", { exact: false, name: "Event 1" }).click();
+
+    expect(focusOn).toHaveBeenCalledWith(120, -40, expect.any(Number));
+    expect(useInterfaceStore.getState().isJournalOpen).toBe(true);
+  });
+
+  it("closes the journal on a phone so the place it shows is not under the sheet", async () => {
+    await page.viewport(390, 844);
+
+    const { focusOn } = await startTestEngine();
+
+    useInterfaceStore.getState().openJournal("chronicle");
+    useWorldStore.setState({ chronicle: [createChronicleEntry({ id: 1, text: "Event 1", x: 120, z: -40 })] });
+
+    const screen = await render(<ChronicleList />);
+
+    await screen.getByRole("button", { exact: false, name: "Event 1" }).click();
+
+    expect(focusOn).toHaveBeenCalledWith(120, -40, expect.any(Number));
+    expect(useInterfaceStore.getState().isJournalOpen).toBe(false);
   });
 });

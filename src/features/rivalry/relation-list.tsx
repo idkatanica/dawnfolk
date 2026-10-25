@@ -2,7 +2,7 @@ import { ArrowRight } from "lucide-react";
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { TribeSummary } from "../../simulation/frame.ts";
 import type { RaidView, RelationView } from "../../simulation/society/rivalry/rivalry-system.ts";
-import { useFocusCamera } from "../inspector/use-focus-camera.ts";
+import { useShowSpot } from "../inspector/use-focus-camera.ts";
 import { TribeDot } from "../tribes/tribe-dot.tsx";
 import { useWorldStore } from "../world/world-store.ts";
 import { RelationNote, StanceBadge } from "./rivalry-parts.tsx";
@@ -35,12 +35,6 @@ function tribePairs<Item>(
   }
 
   return pairs;
-}
-
-function useShowSpot(x: number, z: number) {
-  const focus = useFocusCamera();
-
-  return () => focus(x, z);
 }
 
 function RaidRow({ entry }: { readonly entry: TribePair<RaidView> }) {
