@@ -4,6 +4,7 @@ import { ArrowFlight, ArrowParts } from "./arrow-flight.ts";
 import { type CameraAxes, createBillboardBatch } from "./billboards.ts";
 import { EffectMeshes } from "./effect-meshes.ts";
 import type { GroundRing } from "./ground-ring.ts";
+import { MeteorFall } from "./meteor-fall.ts";
 import { createDustMaterial, createGlowMaterial } from "./sprite-materials.ts";
 import {
   type ActiveEffect,
@@ -13,7 +14,6 @@ import {
   EmberFlight,
   Explosion,
   LightningStrike,
-  MeteorFall,
   Splash,
   type SpriteSinks,
 } from "./transient-effects.ts";

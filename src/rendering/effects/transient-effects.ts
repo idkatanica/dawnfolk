@@ -6,7 +6,6 @@ import type {
   EmberEffect,
   ExplosionEffect,
   LightningEffect,
-  MeteorEffect,
   SplashEffect,
 } from "../../simulation/effects.ts";
 import type { InstanceBatch } from "../instancing.ts";
@@ -42,7 +41,6 @@ const EARTHQUAKE_SECONDS = 3.2;
 const BLESSING_SECONDS = 3;
 const DUST_PUFFS = 26;
 const SPARKLES = 70;
-const TRAIL_SAMPLES = 16;
 const RING_COLOR = 0xff_f0_d8;
 const SPLASH_SECONDS = 0.55;
 const SPLASH_DROPS = 9;
@@ -204,46 +202,6 @@ export class Explosion implements ActiveEffect {
 
   finish(): void {
     this.#context.releaseRing(this.#ring);
-  }
-}
-
-export class MeteorFall implements ActiveEffect {
-  readonly meshes: readonly Mesh[] = [];
-  readonly #effect: MeteorEffect;
-  readonly #from: Vector3;
-  readonly #point = new Vector3();
-  readonly #to: Vector3;
-  #age = 0;
-
-  constructor(context: EffectContext, effect: MeteorEffect) {
-    this.#effect = effect;
-    this.#from = new Vector3(effect.fromX, effect.fromY, effect.fromZ);
-    this.#to = new Vector3(effect.toX, context.heightAt(effect.toX, effect.toZ), effect.toZ);
-  }
-
-  update(seconds: number, sinks: SpriteSinks): boolean {
-    this.#age += seconds;
-
-    const duration = Math.max(0.1, this.#effect.durationSeconds);
-    const size = 8 + this.#effect.radius * 0.08;
-
-    const progress = saturate(this.#age / duration);
-
-    const head = this.#point.lerpVectors(this.#from, this.#to, progress);
-
-    sinks.glow.add([head.x, head.y, head.z, size * 2.4], [1, 0.75, 0.4, 1]);
-
-    for (let sample = 1; sample <= TRAIL_SAMPLES; sample += 1) {
-      const behind = saturate(progress - sample * 0.012);
-      const fade = 1 - sample / TRAIL_SAMPLES;
-
-      const point = this.#point.lerpVectors(this.#from, this.#to, behind);
-
-      sinks.glow.add([point.x, point.y, point.z, size * (1 + fade)], [1, 0.45, 0.12, fade]);
-      sinks.dust.add([point.x, point.y + sample, point.z, size * (1.5 + sample * 0.2)], [0.25, 0.23, 0.22, fade * 0.5]);
-    }
-
-    return this.#age < duration;
   }
 }
 
