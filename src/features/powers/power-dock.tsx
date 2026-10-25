@@ -1,10 +1,12 @@
 import { Toolbar } from "@base-ui/react/toolbar";
 import { MousePointer2 } from "lucide-react";
-import { type RefObject, useEffect, useRef } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import { POWER_CATEGORIES, POWERS, type PowerCategory, type PowerId, powersInCategory } from "../../content/powers.ts";
 import { cn } from "../../design/cn.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
+import type { GameIconName } from "../../design/game-icon-sources.ts";
 import { Island } from "../../design/island.tsx";
+import { SEGMENT, SEGMENT_TRACK } from "../../design/segmented.ts";
 import { WithTooltip } from "../../design/tooltip.tsx";
 import { POWER_ICONS } from "./power-icons.tsx";
 import { usePowerStore } from "./power-store.ts";
@@ -84,17 +86,65 @@ function SelectTile() {
   );
 }
 
-function CategoryGroup({ category, name }: { readonly category: PowerCategory; readonly name: string }) {
-  return (
-    <>
-      <Toolbar.Separator className="mx-1 h-7 w-px shrink-0 bg-ink/15" />
+const KIND_ICONS: Readonly<Record<PowerCategory, GameIconName>> = {
+  elements: POWER_ICONS.fire,
+  land: POWER_ICONS.raise,
+  life: POWER_ICONS.tribe,
+};
 
-      <Toolbar.Group aria-label={name} className="flex shrink-0 items-center gap-0.5">
-        {powersInCategory(category).map((powerId) => (
-          <PowerTile key={powerId} powerId={powerId} />
-        ))}
-      </Toolbar.Group>
-    </>
+function useChosenKind() {
+  const [kind, setKind] = useState<PowerCategory>(() => {
+    const { selectedPowerId } = usePowerStore.getState();
+
+    return selectedPowerId === null ? "elements" : POWERS[selectedPowerId].category;
+  });
+
+  return { kind, setKind };
+}
+
+interface KindChoice {
+  readonly chosenKind: PowerCategory;
+  readonly onKindChange: (kind: PowerCategory) => void;
+}
+
+function useKindTab({ chosenKind, kind, onKindChange }: KindChoice & { readonly kind: PowerCategory }) {
+  function choose(): void {
+    onKindChange(kind);
+  }
+
+  return { choose, isChosen: kind === chosenKind };
+}
+
+function KindTab({
+  chosenKind,
+  kind,
+  name,
+  onKindChange,
+}: KindChoice & { readonly kind: PowerCategory; readonly name: string }) {
+  const { choose, isChosen } = useKindTab({ chosenKind, kind, onKindChange });
+
+  return (
+    <Toolbar.Button
+      aria-pressed={isChosen}
+      className={cn(SEGMENT, "pointer-coarse:h-10 px-1.5 text-sm lg:px-2.5", {
+        "bg-white text-ink shadow-segment": isChosen,
+      })}
+      onClick={choose}
+    >
+      <GameIcon name={KIND_ICONS[kind]} size={22} />
+
+      <span className="max-lg:sr-only">{name}</span>
+    </Toolbar.Button>
+  );
+}
+
+function KindTabs({ chosenKind, onKindChange }: KindChoice) {
+  return (
+    <Toolbar.Group aria-label="Kinds" className={cn(SEGMENT_TRACK, "mr-1 shrink-0 p-1")}>
+      {POWER_CATEGORIES.map((entry) => (
+        <KindTab chosenKind={chosenKind} key={entry.id} kind={entry.id} name={entry.name} onKindChange={onKindChange} />
+      ))}
+    </Toolbar.Group>
   );
 }
 
@@ -129,6 +179,7 @@ function useWheelScrollsSideways(rowReference: RefObject<HTMLDivElement | null>)
 
 export function PowerDock({ className }: { readonly className?: string | undefined }) {
   const rowReference = useRef<HTMLDivElement>(null);
+  const { kind, setKind } = useChosenKind();
 
   useWheelScrollsSideways(rowReference);
 
@@ -141,8 +192,12 @@ export function PowerDock({ className }: { readonly className?: string | undefin
       >
         <SelectTile />
 
-        {POWER_CATEGORIES.map((entry) => (
-          <CategoryGroup category={entry.id} key={entry.id} name={entry.name} />
+        <Toolbar.Separator className="mx-1 h-7 w-px shrink-0 bg-ink/15" />
+
+        <KindTabs chosenKind={kind} onKindChange={setKind} />
+
+        {powersInCategory(kind).map((powerId) => (
+          <PowerTile key={powerId} powerId={powerId} />
         ))}
       </Toolbar.Root>
     </Island>

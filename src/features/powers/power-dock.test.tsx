@@ -17,28 +17,50 @@ describe("power dock", () => {
     localStorage.clear();
   });
 
-  it("shows every power in one row, grouped by kind, with Select first", async () => {
+  it("shows Select, the kinds and the powers of the chosen kind", async () => {
     const screen = await render(<PowerDock />);
 
     const row = screen.getByRole("toolbar", { name: "Powers" });
-    const buttons = row.getByRole("button").elements();
+    const kinds = row.getByRole("group", { name: "Kinds" });
+    const names = row
+      .getByRole("button")
+      .elements()
+      .map((button) => button.getAttribute("aria-label") ?? button.textContent);
 
-    expect(buttons[0]?.getAttribute("aria-label")).toBe("Select");
-    expect(buttons).toHaveLength(1 + ELEMENT_POWERS.length + LAND_POWERS.length + LIFE_POWERS.length);
+    expect(names).toEqual(["Select", "Elements", "Land", "Life", ...ELEMENT_POWERS]);
+    await expect.element(kinds.getByRole("button", { name: "Elements" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("switches to the powers of another kind", async () => {
+    const screen = await render(<PowerDock />);
+
+    const kinds = screen.getByRole("group", { name: "Kinds" });
+
+    await kinds.getByRole("button", { name: "Land" }).click();
 
     await Promise.all(
-      [
-        { name: "Elements", powers: ELEMENT_POWERS },
-        { name: "Land", powers: LAND_POWERS },
-        { name: "Life", powers: LIFE_POWERS },
-      ].flatMap((group) =>
-        group.powers.map((name) =>
-          expect
-            .element(row.getByRole("group", { name: group.name }).getByRole("button", { exact: true, name }))
-            .toBeInTheDocument()
-        )
-      )
+      LAND_POWERS.map((name) => expect.element(screen.getByRole("button", { exact: true, name })).toBeInTheDocument())
     );
+    await expect.element(screen.getByRole("button", { exact: true, name: "Fire" })).not.toBeInTheDocument();
+
+    await kinds.getByRole("button", { name: "Life" }).click();
+
+    await Promise.all(
+      LIFE_POWERS.map((name) => expect.element(screen.getByRole("button", { exact: true, name })).toBeInTheDocument())
+    );
+  });
+
+  it("opens on the kind of the selected power", async () => {
+    usePowerStore.setState({ selectedPowerId: "smooth" });
+
+    const screen = await render(<PowerDock />);
+
+    await expect
+      .element(screen.getByRole("group", { name: "Kinds" }).getByRole("button", { name: "Land" }))
+      .toHaveAttribute("aria-pressed", "true");
+    await expect
+      .element(screen.getByRole("button", { exact: true, name: "Smooth" }))
+      .toHaveAttribute("aria-pressed", "true");
   });
 
   it("shows icons alone and names each power in its tooltip", async () => {
@@ -60,6 +82,10 @@ describe("power dock", () => {
 
     select.element().focus();
     await userEvent.keyboard("{ArrowRight}");
+
+    await expect.element(screen.getByRole("button", { name: "Elements" })).toHaveFocus();
+
+    await userEvent.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
 
     await expect.element(screen.getByRole("button", { exact: true, name: "Fire" })).toHaveFocus();
   });
