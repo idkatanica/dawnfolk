@@ -113,6 +113,28 @@ describe("advancing", () => {
     expect(advance).toHaveBeenCalledOnce();
   });
 
+  it("sends the view focus with the next regular request instead of asking for a frame", async () => {
+    const { connection, session, simulation } = await createSession();
+
+    session.send({ isPaused: true, type: "setPaused" });
+    session.update(0.02);
+    await session.whenIdle();
+
+    const advance = vi.spyOn(connection, "advance");
+    const execute = vi.spyOn(simulation, "execute");
+
+    session.send({ type: "setViewFocus", x: 120, z: -80 });
+    session.update(0.1);
+
+    expect(advance).not.toHaveBeenCalled();
+
+    session.update(0.9);
+    await session.whenIdle();
+
+    expect(advance).toHaveBeenCalledOnce();
+    expect(execute).toHaveBeenCalledWith({ type: "setViewFocus", x: 120, z: -80 });
+  });
+
   it("applies every frame to the mirror and tells the subscribers", async () => {
     const { session } = await createSession();
 
