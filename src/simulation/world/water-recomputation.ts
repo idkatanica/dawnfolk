@@ -155,8 +155,8 @@ export class WaterRecomputation {
   #startFilling(lakeIds: Int32Array, lakes: readonly Lake[], previousLevels: Float32Array): Filling | null {
     const cellsOfLakes = lakes.map((): number[] => []);
 
-    for (const [cell, lakeId] of lakeIds.entries()) {
-      const cells = cellsOfLakes[lakeId];
+    for (let cell = 0; cell < lakeIds.length; cell += 1) {
+      const cells = cellsOfLakes[lakeIds[cell]];
 
       if (cells !== undefined) {
         cells.push(cell);

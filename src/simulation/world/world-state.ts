@@ -395,8 +395,8 @@ export class WorldState {
       }
     }
 
-    for (const [cell, occupant] of this.occupancy.entries()) {
-      if (occupant === CROSSING_GROUND) {
+    for (let cell = 0; cell < this.occupancy.length; cell += 1) {
+      if (this.occupancy[cell] === CROSSING_GROUND) {
         this.occupancy[cell] = NO_BUILDING;
       }
     }

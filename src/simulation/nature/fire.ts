@@ -74,7 +74,8 @@ export class FireSystem {
     const strength = Math.min(MAXIMUM_WIND_STRENGTH, windSpeed / FULL_WIND_SPEED);
     const influence = rules.fire.windInfluence;
 
-    for (const [index, offset] of NEIGHBOR_OFFSETS.entries()) {
+    for (let index = 0; index < NEIGHBOR_OFFSETS.length; index += 1) {
+      const offset = NEIGHBOR_OFFSETS[index];
       const alignment = (offset.column * windX + offset.row * windZ) / offset.distance;
       const diagonalDamping = offset.distance > 1 ? DIAGONAL_WIND_DAMPING : 1;
 
@@ -268,7 +269,8 @@ export class FireSystem {
 
     const emittedHeat = intensity * crownBoost * 0.05 * tick.seconds * tick.rules.fire.spreadSpeed;
 
-    for (const [index, offset] of NEIGHBOR_OFFSETS.entries()) {
+    for (let index = 0; index < NEIGHBOR_OFFSETS.length; index += 1) {
+      const offset = NEIGHBOR_OFFSETS[index];
       const neighborColumn = column + offset.column;
       const neighborRow = row + offset.row;
 
