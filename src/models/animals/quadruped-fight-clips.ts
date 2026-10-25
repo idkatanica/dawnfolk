@@ -1,25 +1,18 @@
 import type { AnimalFightPose } from "../../world/agent-poses.ts";
-import { cosineWave, degrees, type Keyframe, keyframes, pulse, wave } from "../rig/curves.ts";
+import { degrees, type Keyframe, keyframes, wave } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
 import type { AnimalClip, AnimalClipContext } from "./quadruped-clips.ts";
-import { bendBone, GALLOP_PHASES, LYING_SPREAD, LYING_SWING, sideName, WALK_PHASES } from "./quadruped-motion.ts";
-import { LEG_ENDS, LEG_SIDES, type LegEnd, type LegSide, legBones, QuadrupedBone } from "./quadruped-skeleton.ts";
-
-function moveLeg(pose: Pose, end: LegEnd, side: LegSide, swing: number, fold: number, outward = 0): void {
-  const bones = legBones(end, side);
-
-  pose.rotate(bones.upper, -swing, side * outward, 0);
-
-  if (end === "front") {
-    pose.rotate(bones.lower, -fold * 0.45, 0, 0);
-    pose.rotate(bones.hoof, fold * 1.2, 0, 0);
-
-    return;
-  }
-
-  pose.rotate(bones.lower, -fold * 0.7, 0, 0);
-  pose.rotate(bones.hoof, fold, 0, 0);
-}
+import {
+  bendBone,
+  GALLOP_PHASES,
+  LYING_SPREAD,
+  LYING_SWING,
+  moveLeg,
+  sideName,
+  stepLegs,
+  WALK_PHASES,
+} from "./quadruped-motion.ts";
+import { LEG_ENDS, LEG_SIDES, QuadrupedBone } from "./quadruped-skeleton.ts";
 
 const LUNGE: readonly Keyframe[] = [
   [0, 0],
@@ -55,14 +48,7 @@ function charge(pose: Pose, phase: number, context: AnimalClipContext): void {
   const offsets = gait.runKind === "gallop" ? GALLOP_PHASES : WALK_PHASES;
   const fold = gait.lowerFlex * (gait.runKind === "gallop" ? 1.4 : 1.25);
 
-  for (const end of LEG_ENDS) {
-    for (const side of LEG_SIDES) {
-      const legPhase = phase + offsets[end][sideName(side)];
-
-      moveLeg(pose, end, side, gait.runSwing * cosineWave(legPhase), fold * pulse(legPhase, 0.78, 0.11));
-    }
-  }
-
+  stepLegs(pose, phase, gait.runSwing, fold, offsets);
   bendBone(pose, QuadrupedBone.Pelvis, degrees(4) * wave(phase, 0.1));
   bendBone(pose, QuadrupedBone.Spine, -degrees(5) * wave(phase));
   bendBone(pose, QuadrupedBone.Neck, degrees(30) + degrees(5) * wave(phase, 0.3));
