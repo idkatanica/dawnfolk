@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Ground } from "../../content/grounds.ts";
+import { PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import { BROOK_STRENGTH } from "../../world/brooks.ts";
 import type { Crossing, LogBridge } from "../../world/crossings.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
@@ -475,5 +476,86 @@ describe("crossings", () => {
     expect(
       Math.abs(crossingTicks - hopLength / (hopSpeed * STEP_SECONDS * Math.cos(Math.atan2(50, 150))))
     ).toBeLessThan(3);
+  });
+});
+
+describe("obstacles", () => {
+  function plantAt(world: WorldState, species: PlantSpeciesIndex, height: number): number {
+    return world.plant({ bornDay: 0, height, rotation: 0, seed: 0.5, species, x: 0, z: 0 });
+  }
+
+  function radiusOf(world: WorldState, plant: number): number {
+    return plantSpeciesDefinition(world.vegetation.species[plant]).radiusPerMeter * world.vegetation.height[plant];
+  }
+
+  it.each([
+    ["a tree trunk", PlantSpecies.Oak, 20],
+    ["a boulder", PlantSpecies.Boulder, 3],
+  ])("walks around %s in the way instead of through it", (_name, species, height) => {
+    const world = createTestWorld();
+    const navigation = new NavigationGrid(world);
+
+    const radius = radiusOf(world, plantAt(world, species, height));
+    const mover = createMover(-30, 0.1, 0);
+
+    let closest = Number.POSITIVE_INFINITY;
+
+    setDestination(mover, { x: 30, z: 0.1 }, navigation, { mayPlanRoute: false });
+
+    for (let elapsed = 0; elapsed < 40 && !hasArrived(mover); elapsed += STEP_SECONDS) {
+      moveAlong(mover, STEP_SECONDS, 3, world, navigation);
+      closest = Math.min(closest, Math.hypot(mover.x, mover.z));
+    }
+
+    expect(closest).toBeGreaterThan(radius);
+    expect(Math.hypot(mover.x - 30, mover.z - 0.1)).toBeLessThan(2);
+  });
+
+  it("walks up to the tree it is heading for", () => {
+    const world = createTestWorld();
+
+    const radius = radiusOf(world, plantAt(world, PlantSpecies.Oak, 20));
+    const mover = createMover(-30, 0, 0);
+
+    setDestination(mover, { x: 0, z: 0 }, new NavigationGrid(world), { arrivalDistance: radius + 1 });
+
+    expect(walk(mover, world, 20)).toBe(true);
+    expect(Math.hypot(mover.x, mover.z)).toBeLessThan(radius + 1.5);
+  });
+
+  it("steps out of a trunk it stands in", () => {
+    const world = createTestWorld();
+
+    plantAt(world, PlantSpecies.Oak, 20);
+
+    const mover = createMover(0.2, 0, 0);
+
+    setDestination(mover, { x: 30, z: 0 }, new NavigationGrid(world));
+
+    expect(walk(mover, world, 20)).toBe(true);
+  });
+
+  it("walks around a building but into its own", () => {
+    const world = createTestWorld();
+    const navigation = new NavigationGrid(world);
+
+    world.obstacles.placeBuilding(1, { radius: 4, x: 0, z: 0 });
+
+    const passer = createMover(-30, 0, 0);
+    const owner = createMover(-30, 0, 0);
+
+    let closest = Number.POSITIVE_INFINITY;
+
+    setDestination(passer, { x: 30, z: 0 }, navigation, { mayPlanRoute: false });
+    setDestination(owner, { x: 0, z: 0 }, navigation);
+
+    for (let elapsed = 0; elapsed < 40 && !hasArrived(passer); elapsed += STEP_SECONDS) {
+      moveAlong(passer, STEP_SECONDS, 3, world, navigation);
+      closest = Math.min(closest, Math.hypot(passer.x, passer.z));
+    }
+
+    expect(closest).toBeGreaterThan(4);
+    expect(walk(owner, world, 20)).toBe(true);
+    expect(Math.hypot(owner.x, owner.z)).toBeLessThan(2);
   });
 });

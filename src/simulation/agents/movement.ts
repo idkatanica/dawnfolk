@@ -1,5 +1,6 @@
 import { groundDefinition } from "../../content/grounds.ts";
-import { wrapAngle } from "../../shared/math.ts";
+import { distanceToSegment, wrapAngle } from "../../shared/math.ts";
+import type { Obstacle } from "../world/obstacles.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { continueHop, type Hop, isInOpenWater, planHop, type Splash } from "./hops.ts";
 import type { NavigationGrid, Waypoint } from "./navigation.ts";
@@ -19,6 +20,9 @@ const DEFLECTION_FRUSTRATION = 0.3;
 const REPLAN_PROGRESS = 2;
 const MAXIMUM_FUTILE_REPLANS = 3;
 const HOP_DEFLECTION = 0.7;
+const PERSON_RADIUS = 0.3;
+const OBSTACLE_LOOKAHEAD = 1;
+const OBSTACLE_SCAN = 4;
 
 export interface Mover {
   arrivalDistance: number;
@@ -29,8 +33,12 @@ export interface Mover {
   heading: number;
   hop: Hop | null;
   hopSpeed: number;
+  nearbyObstacles: readonly Obstacle[];
   path: Waypoint[];
   pathIndex: number;
+  radius: number;
+  scannedX: number;
+  scannedZ: number;
   splash: Splash | null;
   stuckSeconds: number;
   velocityX: number;
@@ -39,7 +47,7 @@ export interface Mover {
   z: number;
 }
 
-export function createMover(x: number, z: number, heading: number): Mover {
+export function createMover(x: number, z: number, heading: number, radius = PERSON_RADIUS): Mover {
   return {
     arrivalDistance: FINAL_ARRIVAL_DISTANCE,
     closestReplanDistance: Number.POSITIVE_INFINITY,
@@ -49,8 +57,12 @@ export function createMover(x: number, z: number, heading: number): Mover {
     heading,
     hop: null,
     hopSpeed: 0,
+    nearbyObstacles: [],
     path: [],
     pathIndex: 0,
+    radius,
+    scannedX: Number.POSITIVE_INFINITY,
+    scannedZ: Number.POSITIVE_INFINITY,
     splash: null,
     stuckSeconds: 0,
     velocityX: 0,
@@ -81,6 +93,7 @@ export function setDestination(
   mover.path = planRoute(mover, landing, navigation, mayPlanRoute);
   mover.pathIndex = 0;
   forgetReplans(mover);
+  forgetObstacles(mover);
   mover.stuckSeconds = 0;
 }
 
@@ -131,7 +144,14 @@ export function moveAlong(
   if (isStranded(mover, world)) {
     wadeAshore(
       mover,
-      { isEscapingWater: true, isLeavingWater: true, seconds, speed, step: speed * SWIMMING_SPEED * seconds },
+      {
+        isEscapingWater: true,
+        isLeavingWater: true,
+        obstacles: [],
+        seconds,
+        speed,
+        step: speed * SWIMMING_SPEED * seconds,
+      },
       world,
       navigation
     );
@@ -148,22 +168,26 @@ export function moveAlong(
   const waypoint = mover.path[mover.pathIndex];
 
   const distanceLeft = Math.hypot(waypoint.x - mover.x, waypoint.z - mover.z);
+  const step = Math.min(distanceLeft, speed * terrainSpeedFactor(mover, world) * seconds);
+  const obstacles = obstaclesOnTheWay(mover, step, world);
 
-  if (distanceLeft < arrivalDistanceAt(mover, distanceLeft, world, navigation)) {
+  if (
+    distanceLeft < arrivalDistanceAt(mover, distanceLeft, world, navigation) ||
+    isBehindObstacle(waypoint, distanceLeft, mover, obstacles)
+  ) {
     mover.pathIndex += 1;
     stopMoving(mover);
 
     return hasArrived(mover);
   }
 
-  const step = Math.min(distanceLeft, speed * terrainSpeedFactor(mover, world) * seconds);
   const desiredHeading = Math.atan2(waypoint.x - mover.x, waypoint.z - mover.z);
 
   if (
     !tryStep(
       mover,
       desiredHeading,
-      { isEscapingWater: false, isLeavingWater: false, seconds, speed, step },
+      { isEscapingWater: false, isLeavingWater: false, obstacles, seconds, speed, step },
       world,
       navigation
     )
@@ -215,6 +239,7 @@ function terrainSpeedFactor(mover: Mover, world: WorldState): number {
 interface StepAttempt {
   isEscapingWater: boolean;
   isLeavingWater: boolean;
+  obstacles: readonly Obstacle[];
   seconds: number;
   speed: number;
   step: number;
@@ -239,7 +264,7 @@ function tryStep(
 
   const shoreHeading = Math.atan2(shore.x - mover.x, shore.z - mover.z);
 
-  return stepTowards(mover, shoreHeading, { ...attempt, isEscapingWater: true }, world);
+  return stepTowards(mover, shoreHeading, { ...attempt, isEscapingWater: true, obstacles: [] }, world);
 }
 
 function wadeAshore(mover: Mover, attempt: StepAttempt, world: WorldState, navigation: NavigationGrid): void {
@@ -295,8 +320,11 @@ function stepTowards(mover: Mover, desiredHeading: number, attempt: StepAttempt,
     const probeX = mover.x + directionX * probe;
     const probeZ = mover.z + directionZ * probe;
 
-    if (!mayStepTo(mover, probeX, probeZ, attempt, world)) {
+    const isClearOfObstacles = !isBlocked(mover, heading, Math.max(step, OBSTACLE_LOOKAHEAD), attempt.obstacles);
+
+    if (!(isClearOfObstacles && mayStepTo(mover, probeX, probeZ, attempt, world))) {
       if (
+        isClearOfObstacles &&
         Math.abs(deflection) <= HOP_DEFLECTION &&
         !attempt.isEscapingWater &&
         startHop(mover, heading, attempt, world)
@@ -332,6 +360,62 @@ function startHop(mover: Mover, heading: number, attempt: StepAttempt, world: Wo
   continueHop(mover, attempt.seconds);
 
   return true;
+}
+
+function obstaclesOnTheWay(mover: Mover, step: number, world: WorldState): readonly Obstacle[] {
+  const reach = Math.max(step, OBSTACLE_LOOKAHEAD) + mover.radius;
+  const moved = Math.hypot(mover.x - mover.scannedX, mover.z - mover.scannedZ);
+
+  if (moved + reach <= OBSTACLE_SCAN) {
+    return mover.nearbyObstacles;
+  }
+
+  const obstacles = world.obstacles.near(mover.x, mover.z, Math.max(OBSTACLE_SCAN, reach));
+
+  mover.nearbyObstacles = obstacles.filter((obstacle) => !isAround(obstacle, mover));
+  mover.scannedX = mover.x;
+  mover.scannedZ = mover.z;
+
+  return mover.nearbyObstacles;
+}
+
+function forgetObstacles(mover: Mover): void {
+  mover.scannedX = Number.POSITIVE_INFINITY;
+  mover.scannedZ = Number.POSITIVE_INFINITY;
+}
+
+function isAround(obstacle: Obstacle, mover: Mover): boolean {
+  const distance = Math.hypot(mover.goalX - obstacle.x, mover.goalZ - obstacle.z);
+
+  return distance < obstacle.radius + mover.radius + mover.arrivalDistance;
+}
+
+function isBehindObstacle(
+  waypoint: Waypoint,
+  distanceLeft: number,
+  mover: Mover,
+  obstacles: readonly Obstacle[]
+): boolean {
+  return obstacles.some((obstacle) => {
+    const clearance = obstacle.radius + mover.radius;
+
+    return Math.hypot(waypoint.x - obstacle.x, waypoint.z - obstacle.z) < clearance && distanceLeft < clearance * 2;
+  });
+}
+
+function isBlocked(mover: Mover, heading: number, distance: number, obstacles: readonly Obstacle[]): boolean {
+  const end: [number, number] = [mover.x + Math.sin(heading) * distance, mover.z + Math.cos(heading) * distance];
+
+  return obstacles.some((obstacle) => {
+    const clearance = obstacle.radius + mover.radius;
+    const fromCenter = Math.hypot(mover.x - obstacle.x, mover.z - obstacle.z);
+
+    if (fromCenter < clearance) {
+      return Math.hypot(end[0] - obstacle.x, end[1] - obstacle.z) < fromCenter;
+    }
+
+    return distanceToSegment(obstacle.x, obstacle.z, [mover.x, mover.z], end) < clearance;
+  });
 }
 
 function uphillSlowdown(rise: number, run: number): number {

@@ -21,6 +21,7 @@ import { NO_PLANT, type PlantPlacement, type VegetationStore } from "../../world
 import { NO_WATER, type Spring, type WaterFeatures } from "../../world/water.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
 import { CellSet } from "./cell-set.ts";
+import { ObstacleMap } from "./obstacles.ts";
 
 export const NO_BUILDING = -1;
 export const MONUMENT_GROUND = -2;
@@ -79,6 +80,7 @@ export class WorldState {
   readonly lowestHeight: number;
   readonly monumentConditions: readonly MonumentCondition[];
   readonly monuments: readonly Monument[];
+  readonly obstacles: ObstacleMap;
   readonly occupancy: Int32Array;
   readonly recovering: CellSet;
   readonly seed: number;
@@ -109,6 +111,7 @@ export class WorldState {
     this.fields = createSurfaceFields(this.grid.cellCount, generated.terrain.ground);
     this.cropCodes = new Uint8Array(this.grid.cellCount);
     this.occupancy = new Int32Array(this.grid.cellCount).fill(NO_BUILDING);
+    this.obstacles = new ObstacleMap(this.grid, this.vegetation);
     this.canopyFuel = new Float32Array(this.grid.cellCount);
     this.initialCanopyFuel = new Float32Array(this.grid.cellCount);
     this.disturbedDay = new Float32Array(this.grid.cellCount);
