@@ -17,7 +17,11 @@ import { createSparkMaterial } from "./spark-material.ts";
 
 const BYTE = 255;
 const FLAME_CELL_LIMIT = 1600;
-const CROWN_TONGUE_LIMIT = 2400;
+const CROWN_TONGUE_LIMIT = 4200;
+const CONIFER_CROWN_BASE = 0.2;
+const BROADLEAF_CROWN_BASE = 0.45;
+const CONIFER_CROWN_WIDTH = 0.16;
+const BROADLEAF_CROWN_WIDTH = 0.3;
 const CROWN_SPARK_LIMIT = 260;
 const SMOKE_COLUMN_LIMIT = 90;
 const SMOKE_CELL_SHARE = 0.2;
@@ -54,13 +58,18 @@ interface CrownTongue {
   readonly height: number;
   readonly reach: number;
   readonly size: number;
+  readonly slenderness: number;
+  readonly spread: number;
   readonly strength: number;
 }
 
 const CROWN_TONGUES: readonly CrownTongue[] = [
-  { height: 0.64, reach: 0.6, size: 0.5, strength: 0 },
-  { height: 0.4, reach: 1, size: 0.38, strength: 0.3 },
-  { height: 0.86, reach: 0.35, size: 0.4, strength: 0.45 },
+  { height: 0.08, reach: 1, size: 0.15, slenderness: 0, spread: 0.95, strength: 0 },
+  { height: 0.2, reach: 0.9, size: 0.17, slenderness: 0, spread: 0.85, strength: 0.12 },
+  { height: 0.36, reach: 0.8, size: 0.19, slenderness: 0.2, spread: 0.7, strength: 0 },
+  { height: 0.52, reach: 0.7, size: 0.17, slenderness: 0.4, spread: 0.55, strength: 0.25 },
+  { height: 0.66, reach: 0.55, size: 0.21, slenderness: 0.6, spread: 0.4, strength: 0.4 },
+  { height: 0.82, reach: 0.4, size: 0.27, slenderness: 0.8, spread: 0.2, strength: 0.65 },
 ];
 
 interface BurningCell {
@@ -295,8 +304,9 @@ export class FireView {
     const height = vegetation.height[plant];
     const seed = vegetation.seed[plant];
     const ground = mirror.heightAt(x, z);
-    const crownShare = plantSpeciesDefinition(vegetation.species[plant]).form === "conifer" ? 0.14 : 0.3;
-    const crownRadius = height * crownShare;
+    const isConifer = plantSpeciesDefinition(vegetation.species[plant]).form === "conifer";
+    const crownRadius = height * (isConifer ? CONIFER_CROWN_WIDTH : BROADLEAF_CROWN_WIDTH);
+    const crownBase = isConifer ? CONIFER_CROWN_BASE : BROADLEAF_CROWN_BASE;
 
     let added = 0;
 
@@ -306,15 +316,15 @@ export class FireView {
       }
 
       const angle = hashToUnit(plant, index, 21) * Math.PI * 2;
-      const spread = crownRadius * 0.4 * hashToUnit(plant, index, 22);
-      const size = height * tongue.size * (0.55 + 0.6 * strength) * (0.8 + 0.4 * hashToUnit(plant, index, 23));
+      const spread = crownRadius * tongue.spread * (0.6 + 0.4 * hashToUnit(plant, index, 22));
+      const size = height * tongue.size * (0.35 + 0.8 * strength) * (0.7 + 0.6 * hashToUnit(plant, index, 23));
       const tongueX = x + Math.cos(angle) * spread;
       const tongueZ = z + Math.sin(angle) * spread;
-      const tongueY = ground + height * tongue.height - size * 0.25;
+      const tongueY = ground + height * (crownBase + (1 - crownBase) * tongue.height) - size * 0.2;
 
       this.#flames.add(
         [tongueX, tongueY, tongueZ, size],
-        [fractionalPart(seed + index * 0.37), strength, crownRadius * tongue.reach, 1]
+        [fractionalPart(seed + index * 0.37), strength, crownRadius * tongue.reach, tongue.slenderness]
       );
       added += 1;
     }

@@ -23,6 +23,9 @@ const BODY_COLOR = vec3(1.7, 0.41, 0.04);
 const CORE_COLOR = vec3(2.4, 1.1, 0.2);
 const TOP_DOWN_SQUASH = 0.42;
 const SEED_SPREAD = 37;
+const TIP_RANGE = 0.5;
+const TIP_FEATHER = 0.07;
+const TIP_FADE = 0.5;
 
 export function createFlameMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
   const material = new MeshBasicNodeMaterial({ depthWrite: false, transparent: true });
@@ -52,8 +55,8 @@ export function createFlameMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
   const clock = time.mul(1.8).add(seed);
 
   const tip = unitNoise(vec2(across.mul(5).add(seed), clock.mul(1.4)))
-    .mul(0.38)
-    .add(0.62);
+    .mul(TIP_RANGE)
+    .add(1 - TIP_RANGE);
   const sway = unitNoise(vec2(seed.add(3), along.mul(1.3).sub(clock.mul(0.9))))
     .sub(0.5)
     .mul(0.3)
@@ -70,12 +73,16 @@ export function createFlameMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
     .mul(smoothstep(-0.04, 0.16, height));
   const inside = select(height.lessThan(1), float(1), float(0));
 
+  const erosion = unitNoise(vec2(across.mul(4).add(seed.mul(1.7)), along.mul(3).sub(clock.mul(2.6))));
+  const ragged = smoothstep(height.mul(0.9).sub(0.3), height.mul(0.9).add(0.15), erosion);
+
   const body = float(1)
-    .sub(smoothstep(profile.mul(0.25), profile, offset))
-    .mul(inside);
+    .sub(smoothstep(profile.mul(0.25), profile.add(height.mul(TIP_FEATHER)), offset))
+    .mul(inside)
+    .mul(ragged);
 
   const heat = body.mul(float(1).sub(height.mul(0.85))).mul(flicker);
-  const alpha = body.mul(smoothstep(1, 0.7, height)).mul(clamp(strength.mul(1.4), 0, 1));
+  const alpha = body.mul(smoothstep(1, TIP_FADE, height)).mul(clamp(strength.mul(1.4), 0, 1));
 
   const color = mix(mix(RIM_COLOR, BODY_COLOR, smoothstep(0.1, 0.55, heat)), CORE_COLOR, smoothstep(0.62, 1, heat));
 

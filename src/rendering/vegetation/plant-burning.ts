@@ -25,9 +25,10 @@ const LIVING_CHAR_END = 0.5;
 const IGNITION_CHAR = 0.35;
 const FLAMING_START = 0.03;
 const FLAMING_FULL = 0.45;
-const AFTERGLOW_SCORCH = 0.9;
-const AFTERGLOW_STRENGTH = 0.55;
-const AFTERGLOW_HEIGHT = 9;
+const AFTERGLOW_SCORCH = 0.78;
+const AFTERGLOW_HEIGHT = 14;
+const AFTERGLOW_CROWN = 0.35;
+const SMOULDER_GLOW = 0.22;
 const EMBER_COLOR = vec3(2.2, 0.48, 0.07);
 const FLAME_COLOR = vec3(3.2, 1.1, 0.2);
 const FAR_FLAME_COLOR = vec3(1.9, 0.62, 0.12);
@@ -43,6 +44,7 @@ const GLOW_FLOOR = 0.004;
 export interface BurnInput {
   readonly alive: Node<"float">;
   readonly burnt: Node<"float">;
+  readonly fallen: Node<"float">;
   readonly fire: Node<"float">;
   readonly foliage: Node<"float">;
   readonly height: Node<"float">;
@@ -54,12 +56,14 @@ export interface PlantBurn {
   readonly crownLeft: Node<"float">;
   readonly embers: Node<"float">;
   readonly flames: Node<"float">;
+  readonly smoulder: Node<"float">;
 }
 
 export interface BurnGlowInput {
   readonly embers: Node<"float">;
   readonly flames: Node<"float">;
   readonly phase: Node<"float">;
+  readonly smoulder: Node<"float">;
 }
 
 export function remainingCrown(fire: number, scorch: number): number {
@@ -74,7 +78,7 @@ function remainingCrownNode(fire: Node<"float">, scorch: Node<"float">): Node<"f
   return burning.mul(float(1).sub(smoothstep(CROWN_SCORCH_START, CROWN_SCORCH_END, scorch)));
 }
 
-export function plantBurn({ alive, burnt, fire, foliage, height, scorch }: BurnInput): PlantBurn {
+export function plantBurn({ alive, burnt, fallen, fire, foliage, height, scorch }: BurnInput): PlantBurn {
   const flaming = smoothstep(FLAMING_START, FLAMING_FULL, fire);
   const crownLeft = alive.add(burnt.mul(remainingCrownNode(fire, scorch)));
 
@@ -83,21 +87,17 @@ export function plantBurn({ alive, burnt, fire, foliage, height, scorch }: BurnI
   const charring = alive.mul(livingCharring).add(burnt.mul(mix(float(0.92), float(1), foliage)));
 
   const isOut = float(1).sub(smoothstep(0.008, 0.04, fire));
-  const afterglow = smoothstep(AFTERGLOW_SCORCH, 1, scorch)
-    .mul(isOut)
-    .mul(smoothstep(AFTERGLOW_HEIGHT, 0, height))
-    .mul(AFTERGLOW_STRENGTH);
+  const afterglow = smoothstep(AFTERGLOW_SCORCH, 1, scorch).mul(isOut);
+  const trunkGlow = mix(float(AFTERGLOW_CROWN), float(1), smoothstep(AFTERGLOW_HEIGHT, 0, height));
+  const smoulder = afterglow.mul(burnt.mul(trunkGlow).add(fallen));
 
   const burningWood = mix(float(1), smoothstep(0.15, 0.7, livingCharring), foliage);
-  const embers = alive
-    .mul(flaming)
-    .mul(burningWood)
-    .add(burnt.mul(max(flaming, afterglow)));
+  const embers = alive.mul(flaming).mul(burningWood).add(burnt.mul(flaming)).add(smoulder);
 
   const flameSurface = mix(crownLeft.mul(0.5).add(0.25), crownLeft, foliage);
   const flames = alive.add(burnt).mul(flaming).mul(flameSurface);
 
-  return { charring, crownLeft, embers, flames };
+  return { charring, crownLeft, embers, flames, smoulder };
 }
 
 export function charredColor(color: Node<"vec3">, charring: Node<"float">, charcoal: Node<"vec3">): Node<"vec3"> {
@@ -108,7 +108,7 @@ export function charredColor(color: Node<"vec3">, charring: Node<"float">, charc
   return mix(browned, charcoal, smoothstep(0.35, 0.95, charring));
 }
 
-export function burnGlow({ embers, flames, phase }: BurnGlowInput): Node<"vec3"> {
+export function burnGlow({ embers, flames, phase, smoulder }: BurnGlowInput): Node<"vec3"> {
   return Fn(() => {
     const glow = vec3(0).toVar();
 
@@ -117,7 +117,9 @@ export function burnGlow({ embers, flames, phase }: BurnGlowInput): Node<"vec3">
         smoothstep(DETAIL_FADE_START, DETAIL_FADE_END, positionWorld.distance(cameraPosition))
       );
 
-      glow.assign(FAR_FLAME_COLOR.mul(flames.mul(0.45).add(embers.mul(0.25))).mul(float(1).sub(detail)));
+      glow.assign(
+        FAR_FLAME_COLOR.mul(flames.mul(0.45).add(embers.mul(0.25)).add(smoulder.mul(0.1))).mul(float(1).sub(detail))
+      );
 
       If(detail.greaterThan(0), () => {
         const crackNoise = mx_noise_float(positionWorld.mul(CRACK_SCALE));
@@ -135,7 +137,12 @@ export function burnGlow({ embers, flames, phase }: BurnGlowInput): Node<"vec3">
         const tongueNoise = mx_noise_float(rising).mul(0.5).add(0.5);
         const tongues = smoothstep(float(0.82).sub(flames.mul(0.14)), 1, tongueNoise).mul(flames);
 
-        const near = EMBER_COLOR.mul(cracks.mul(flicker).mul(embers)).add(FLAME_COLOR.mul(tongues));
+        const breathing = sin(time.mul(1.3).add(patches.mul(5)).add(phase))
+          .mul(0.35)
+          .add(0.65);
+        const smouldering = smoulder.mul(breathing).mul(patches.mul(0.7).add(0.3)).mul(SMOULDER_GLOW);
+
+        const near = EMBER_COLOR.mul(cracks.mul(flicker).mul(embers).add(smouldering)).add(FLAME_COLOR.mul(tongues));
 
         glow.addAssign(near.mul(detail));
       });
