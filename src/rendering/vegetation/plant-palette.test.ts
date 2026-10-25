@@ -3,9 +3,13 @@ import { PlantSpecies } from "../../content/plants.ts";
 import { colorChannels } from "../../shared/color.ts";
 import { foliageLook } from "./plant-palette.ts";
 
+const BLOSSOM = 0.3;
 const SUMMER = 1.5;
 const AUTUMN = 2.45;
 const WINTER = 3.5;
+
+const FRUIT_TREES = [PlantSpecies.AppleTree, PlantSpecies.PearTree, PlantSpecies.PlumTree];
+const BERRY_BUSHES = [PlantSpecies.Raspberry, PlantSpecies.Blueberry, PlantSpecies.Currant];
 
 describe("foliage looks", () => {
   it("leaves deciduous trees bare in winter and full in summer", () => {
@@ -39,5 +43,27 @@ describe("foliage looks", () => {
     const startOfYear = foliageLook(PlantSpecies.Birch, 4.001);
 
     expect(endOfYear.coverage).toBeCloseTo(startOfYear.coverage, 2);
+  });
+});
+
+describe("orchard foliage", () => {
+  it.each(FRUIT_TREES)("covers fruit tree %i in pale blossom in spring and green leaves in summer", (species) => {
+    const blossom = foliageLook(species, BLOSSOM);
+    const [red, green, blue] = colorChannels(blossom.color);
+    const [summerRed, summerGreen, summerBlue] = colorChannels(foliageLook(species, SUMMER).color);
+
+    expect(blossom.coverage).toBeGreaterThan(0.9);
+    expect(Math.min(red, green, blue)).toBeGreaterThan(0.8);
+    expect(summerGreen).toBeGreaterThan(Math.max(summerRed, summerBlue));
+  });
+
+  it.each([...FRUIT_TREES, ...BERRY_BUSHES])("leaves species %i bare in winter", (species) => {
+    expect(foliageLook(species, WINTER).coverage).toBe(0);
+  });
+
+  it("turns blueberries red in autumn", () => {
+    const [red, green] = colorChannels(foliageLook(PlantSpecies.Blueberry, 2.5).color);
+
+    expect(red).toBeGreaterThan(green * 2);
   });
 });
