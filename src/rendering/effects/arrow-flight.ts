@@ -34,6 +34,7 @@ export class ArrowParts {
 }
 
 export class ArrowFlight implements ActiveEffect {
+  readonly isOnGameClock = true;
   readonly meshes: readonly Mesh[];
   readonly #effect: ArrowEffect;
   readonly #from: Vector3;

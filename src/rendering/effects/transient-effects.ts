@@ -29,6 +29,7 @@ export interface EffectContext {
 
 export interface ActiveEffect {
   readonly finish?: () => void;
+  readonly isOnGameClock?: true;
   readonly meshes: readonly Mesh[];
   readonly update: (seconds: number, sinks: SpriteSinks) => boolean;
 }
@@ -206,6 +207,7 @@ export class Explosion implements ActiveEffect {
 }
 
 export class EmberFlight implements ActiveEffect {
+  readonly isOnGameClock = true;
   readonly meshes: readonly Mesh[] = [];
   readonly #effect: EmberEffect;
   readonly #from: Vector3;
