@@ -3,8 +3,6 @@ import type { PersonTick } from "../society-context.ts";
 import { sleepingSpot } from "../tribe-places.ts";
 import { headTo, type Job, standStill, walk } from "./job.ts";
 
-const WAKING_HOUR = 12;
-
 type SleepPhase = "asleep" | "travel";
 
 export class SleepJob implements Job {
@@ -28,11 +26,7 @@ export class SleepJob implements Job {
 
     standStill(tick.person, "sleep");
 
-    if (environment.isNight || environment.hours >= WAKING_HOUR) {
-      return this;
-    }
-
-    return null;
+    return environment.isNight ? this : null;
   }
 
   #travel(tick: PersonTick): void {
