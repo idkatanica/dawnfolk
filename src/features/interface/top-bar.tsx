@@ -11,10 +11,10 @@ const BAR_CLASS = "flex h-12 pointer-coarse:h-13 items-center";
 export function StatusCard() {
   return (
     <Island>
-      <header className="flex flex-col gap-3 p-3 pl-4">
+      <header className="flex flex-col gap-3 p-3">
         <WorldStatus />
 
-        <TimeControls className="-ml-1" />
+        <TimeControls />
       </header>
     </Island>
   );

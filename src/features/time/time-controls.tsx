@@ -1,8 +1,8 @@
+import { Button } from "@base-ui/react/button";
 import { Toggle } from "@base-ui/react/toggle";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { Pause, Play } from "lucide-react";
 import { useSendCommand } from "../../app/use-engine.ts";
-import { IconButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
 import { SEGMENT, SEGMENT_TRACK } from "../../design/segmented.ts";
 import { SIMULATION_SPEEDS } from "../../simulation/tick.ts";
@@ -53,17 +53,23 @@ export function TimeControls({ className }: { readonly className?: string | unde
   const PlaybackIcon = isPaused ? Play : Pause;
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
-      <IconButton
-        icon={<PlaybackIcon aria-hidden="true" size={18} />}
-        label={isPaused ? "Resume" : "Pause"}
+    <div className={cn(SEGMENT_TRACK, "items-center p-1", className)}>
+      <Button
+        aria-label={isPaused ? "Resume" : "Pause"}
+        className={cn(SEGMENT, "w-8 px-0", {
+          "bg-dawn text-white hover:bg-dawn-strong hover:text-white": isPaused,
+          "bg-dawn-soft text-ink": !isPaused,
+        })}
         onClick={togglePause}
-        tone={isPaused ? "accent" : "plain"}
-      />
+      >
+        <PlaybackIcon aria-hidden="true" fill="currentColor" size={14} />
+      </Button>
+
+      <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-line" />
 
       <ToggleGroup
         aria-label="Game speed"
-        className={cn(SEGMENT_TRACK, "p-1")}
+        className="flex flex-1 justify-between gap-0.5"
         onValueChange={changeSpeed}
         value={pressedSpeeds}
       >

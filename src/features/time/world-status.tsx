@@ -33,6 +33,35 @@ function daylightIcon(hours: number): GameIconName {
   return "moon";
 }
 
+const CHIP_CLASS = "flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full bg-ink/5 pr-3 pl-1.5 text-ink text-sm";
+
+const RING_RADIUS = 21;
+const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
+
+function DayRing({ hours }: { readonly hours: number }) {
+  const elapsed = (RING_LENGTH * hours) / 24;
+
+  return (
+    <span className="relative grid size-12 shrink-0 place-items-center">
+      <svg aria-hidden="true" className="absolute inset-0 -rotate-90" viewBox="0 0 48 48">
+        <circle className="fill-none stroke-ink/8" cx="24" cy="24" r={RING_RADIUS} strokeWidth="3" />
+
+        <circle
+          className="fill-none stroke-dawn"
+          cx="24"
+          cy="24"
+          r={RING_RADIUS}
+          strokeDasharray={`${elapsed} ${RING_LENGTH}`}
+          strokeLinecap="round"
+          strokeWidth="3"
+        />
+      </svg>
+
+      <GameIcon name={daylightIcon(hours)} size={28} />
+    </span>
+  );
+}
+
 function WeatherReading() {
   const weather = useWorldStore((state) => state.snapshot?.weather);
 
@@ -41,10 +70,10 @@ function WeatherReading() {
   }
 
   return (
-    <span className="flex items-center gap-1.5 whitespace-nowrap">
+    <span className={CHIP_CLASS}>
       <GameIcon name={WEATHER_ICONS[weather.kind]} size={22} />
 
-      <span className="text-ink">{weather.name}</span>
+      <span>{weather.name}</span>
 
       <span className="text-ink-muted text-xs tabular-nums">{Math.round(weather.windSpeed)} km/h</span>
     </span>
@@ -62,10 +91,10 @@ function PopulationReading() {
   const tribeCount = tribes === 1 ? "1 tribe" : `${tribes} tribes`;
 
   return (
-    <span className="flex items-center gap-1.5 whitespace-nowrap" title={`${population} people in ${tribeCount}`}>
+    <span className={CHIP_CLASS} title={`${population} people in ${tribeCount}`}>
       <GameIcon name="population" size={22} />
 
-      <span className="text-ink tabular-nums">{population}</span>
+      <span className="tabular-nums">{population}</span>
 
       <span className="text-ink-muted text-xs">{tribeCount}</span>
     </span>
@@ -105,7 +134,7 @@ export function WorldStatus() {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <GameIcon name={daylightIcon(calendar.hours)} size={36} />
+        <DayRing hours={calendar.hours} />
 
         <span className="flex flex-col gap-1 leading-none">
           <span className="font-semibold text-2xl text-ink tabular-nums">{formatClock(calendar.hours)}</span>
@@ -116,7 +145,7 @@ export function WorldStatus() {
         </span>
       </div>
 
-      <div className="flex items-center gap-4 text-sm">
+      <div className="flex gap-1.5">
         <WeatherReading />
 
         <PopulationReading />
