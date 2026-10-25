@@ -14,6 +14,7 @@ import { MeshBuilder } from "../../models/mesh/mesh-builder.ts";
 import type { MeshData } from "../../models/mesh/mesh-data.ts";
 import { type CaveLook, meshCaveMouth } from "../../models/structures/cave-mouth.ts";
 import { clamp, FULL_TURN, lerp } from "../../shared/math.ts";
+import { type CellRegion, regionsOverlap } from "../../world/change-tracking.ts";
 import type { Spring } from "../../world/water.ts";
 import { slotColorTable } from "../node-helpers.ts";
 
@@ -130,6 +131,10 @@ function lowestGroundUnder(spring: Spring, mirror: WorldMirror): number {
   return lowest;
 }
 
+function groundReach(spring: Spring): number {
+  return Math.max(...RISE_REACHES, -FOOTPRINT_BACK) + spring.radius * FOOTPRINT_SHOULDER + 1;
+}
+
 function addCave(builder: MeshBuilder, spring: Spring, mirror: WorldMirror, models: ModelCache): void {
   const biome = landBiomeNear(mirror, spring);
   const rise = Math.round(riseBehind(spring, mirror) * 2) / 2;
@@ -154,6 +159,20 @@ export class SpringView {
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     this.mesh.frustumCulled = false;
+  }
+
+  isShapedBy(region: CellRegion | null, mirror: WorldMirror): boolean {
+    if (region === null) {
+      return false;
+    }
+
+    const { grid } = mirror;
+
+    return mirror.water.springs.some(
+      (spring) =>
+        spring.kind === "cave" &&
+        regionsOverlap(region, grid.circleBounds(spring.x, spring.z, groundReach(spring) + grid.cellSize))
+    );
   }
 
   rebuild(mirror: WorldMirror): void {

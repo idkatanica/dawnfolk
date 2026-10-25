@@ -216,10 +216,16 @@ export class WorldRenderer {
 
     if (changes.hasWaterChanged) {
       this.#water.waterChanged(null);
-      this.#waterfalls.rebuild(this.#mirror.water.waterfalls, this.#textures, this.#plinth);
-      this.#springs.rebuild(this.#mirror);
     } else if (changes.waterLevelRegion !== null) {
       this.#water.waterChanged(changes.waterLevelRegion);
+    }
+
+    if (changes.hasWaterChanged || this.#waterfalls.isShapedBy(changes.heightRegion, this.#mirror.grid)) {
+      this.#waterfalls.rebuild(this.#mirror.water.waterfalls, this.#textures, this.#plinth);
+    }
+
+    if (changes.hasWaterChanged || this.#springs.isShapedBy(changes.heightRegion, this.#mirror)) {
+      this.#springs.rebuild(this.#mirror);
     }
 
     const metersPerSecond = (frame.weather.windSpeed * 1000) / 3600;

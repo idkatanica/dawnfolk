@@ -406,7 +406,6 @@ export class WorldState {
     this.water = water;
     this.crossings = crossings;
     this.#crossingIndex = new CrossingIndex(this.grid, crossings, CROSSING_TOLERANCE);
-    this.markWaterChanged();
     this.#reserveSprings(water.springs);
     this.#markCrossingGround();
 
@@ -415,6 +414,12 @@ export class WorldState {
         this.clearPlants(cell, true);
       }
     }
+  }
+
+  hasFreeSpringGround(): boolean {
+    return this.water.springs.some((spring) =>
+      spring.cells.some((cell) => this.occupancy[cell] === NO_BUILDING || this.occupancy[cell] === CROSSING_GROUND)
+    );
   }
 
   markWaterChanged(): void {

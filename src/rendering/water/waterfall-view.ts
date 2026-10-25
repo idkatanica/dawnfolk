@@ -20,7 +20,9 @@ import {
   Uint32BufferAttribute,
 } from "three/webgpu";
 import { saturate } from "../../shared/math.ts";
+import { type CellRegion, regionsOverlap } from "../../world/change-tracking.ts";
 import type { Waterfall } from "../../world/water.ts";
+import type { WorldGrid } from "../../world/world-grid.ts";
 import type { IslandOutline } from "../terrain/island-outline.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 
@@ -37,6 +39,7 @@ const CROSSING_STEPS = 24;
 const SPAN_STEP = 0.25;
 const WIDEST_HALF_SPAN = 40;
 const SPAN_INSET = 0.6;
+const SHORE_SAMPLE_CELLS = 2;
 const NARROWEST_SPAN = 3;
 const FACE_CLEARANCE = 15;
 const BOTTOM_SPREAD = 1.4;
@@ -226,6 +229,7 @@ function createCurtainMaterial(): MeshBasicNodeMaterial {
 
 export class WaterfallView {
   readonly mesh: Mesh;
+  #lips: readonly Lip[] = [];
 
   constructor() {
     this.mesh = new Mesh(new BufferGeometry(), createCurtainMaterial());
@@ -236,8 +240,10 @@ export class WaterfallView {
   rebuild(waterfalls: readonly Waterfall[], textures: TerrainTextures, plinth: number): void {
     const writer: CurtainWriter = { coordinates: [], drops: [], indices: [], positions: [], progress: [], sides: [] };
 
-    for (const waterfall of waterfalls) {
-      addCurtain(writer, findLip(waterfall, textures), textures.outline, plinth);
+    this.#lips = waterfalls.map((waterfall) => findLip(waterfall, textures));
+
+    for (const lip of this.#lips) {
+      addCurtain(writer, lip, textures.outline, plinth);
     }
 
     const geometry = new BufferGeometry();
@@ -252,6 +258,16 @@ export class WaterfallView {
     this.mesh.geometry.dispose();
     this.mesh.geometry = geometry;
     this.mesh.visible = writer.indices.length > 0;
+  }
+
+  isShapedBy(region: CellRegion | null, grid: WorldGrid): boolean {
+    if (region === null) {
+      return false;
+    }
+
+    const reach = SPAN_INSET + WIDEST_HALF_SPAN + grid.cellSize * SHORE_SAMPLE_CELLS;
+
+    return this.#lips.some((lip) => regionsOverlap(region, grid.circleBounds(lip.centerX, lip.centerZ, reach)));
   }
 
   dispose(): void {

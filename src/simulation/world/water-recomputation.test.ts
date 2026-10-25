@@ -76,6 +76,33 @@ describe("water recomputation", () => {
     }
   });
 
+  it("keeps the water version when recomputing finds the same water", () => {
+    const recomputation = new WaterRecomputation(world);
+
+    expect(recomputation.recompute()).toBe("settled");
+    expect(world.waterVersion).toBe(0);
+  });
+
+  it("reports new water when a spring's ground was freed", () => {
+    const recomputation = new WaterRecomputation(world);
+
+    raiseTerrain(world, { radius: 300, x: 0, z: 0 }, 20);
+    recomputation.recompute();
+
+    const [spring] = world.water.springs;
+
+    if (spring === undefined) {
+      throw new Error("Expected the island to have springs");
+    }
+
+    for (const cell of spring.cells) {
+      world.occupancy[cell] = NO_BUILDING;
+    }
+
+    expect(recomputation.recompute()).toBe("features");
+    expect(spring.cells.map((cell) => world.occupancy[cell])).toEqual(spring.cells.map(() => SPRING_GROUND));
+  });
+
   it("clears rocks from the cells the water covers and leaves them on its dry banks", () => {
     const recomputation = new WaterRecomputation(world);
     const { grid } = world;
