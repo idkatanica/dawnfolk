@@ -15,7 +15,6 @@ import { Pose } from "../../models/rig/pose.ts";
 import { SkeletonPoser } from "../../models/rig/skeleton-poser.ts";
 import { measureStride } from "../../models/rig/stride.ts";
 import { smoothstep } from "../../shared/math.ts";
-import type { Inspection } from "../../simulation/inspection.ts";
 import { ANIMAL_STRIDE, AnimalField } from "../../world/agent-buffers.ts";
 import { ANIMAL_POSES, type AnimalPose } from "../../world/agent-poses.ts";
 import { HIDDEN_LEVEL } from "../view-input.ts";
@@ -25,12 +24,14 @@ import {
   type AgentViewInput,
   detailLevel,
   farthestFigure,
+  forgetUnseen,
   type LevelDistances,
   NO_SELECTION,
+  selectedAgentId,
   standingHeight,
 } from "./agent-view-input.ts";
 import { ANIMAL_MARKERS } from "./marker-look.ts";
-import { colorTexel, type PaletteLayout, paletteWidth, rootTexel } from "./palette-layout.ts";
+import type { PaletteLayout } from "./palette-layout.ts";
 import { PartBatches } from "./part-batches.ts";
 import { createSkinnedMaterial } from "./skinned-material.ts";
 
@@ -89,27 +90,18 @@ function measureKindStrides(kind: AnimalKind): Map<AnimalPose, number> {
   return strides;
 }
 
-function selectedAnimalId(inspection: Inspection | null): number {
-  if (inspection?.kind !== "animal") {
-    return NO_SELECTION;
-  }
-
-  return inspection.id;
-}
-
 export class AnimalView {
   readonly group = new Group();
   readonly #blendedPose = new Pose(MAMMOTH_BONE_COUNT);
   readonly #bounds = new Sphere(new Vector3(), BOUNDING_RADIUS);
   readonly #kinds: Readonly<Record<AnimalKind, AnimalKindView>>;
   readonly #markerAnchor = new Vector3();
-  readonly #palette = new AgentPalette(paletteWidth(ANIMAL_LAYOUT));
+  readonly #palette = new AgentPalette(ANIMAL_LAYOUT);
   readonly #pose = new Pose(MAMMOTH_BONE_COUNT);
   readonly #previousPose = new Pose(MAMMOTH_BONE_COUNT);
   readonly #seen = new Set<number>();
   readonly #visuals = new Map<number, AnimalVisual>();
   #selectedId = NO_SELECTION;
-  #uploadedRows = 0;
 
   constructor() {
     const material = createSkinnedMaterial(this.#palette, ANIMAL_LAYOUT);
@@ -127,7 +119,7 @@ export class AnimalView {
     const { frame } = input.mirror;
 
     this.#seen.clear();
-    this.#selectedId = selectedAnimalId(frame.inspection);
+    this.#selectedId = selectedAgentId(frame.inspection, "animal");
 
     for (const kind of ANIMAL_KINDS) {
       this.#kinds[kind].batches.begin();
@@ -145,21 +137,13 @@ export class AnimalView {
       }
     }
 
-    for (const id of this.#visuals.keys()) {
-      if (!this.#seen.has(id)) {
-        this.#visuals.delete(id);
-      }
-    }
+    forgetUnseen(this.#visuals, this.#seen);
 
     for (const kind of ANIMAL_KINDS) {
       this.#kinds[kind].batches.commit();
     }
 
-    if (rows > 0 || this.#uploadedRows > 0) {
-      this.#palette.upload();
-    }
-
-    this.#uploadedRows = rows;
+    this.#palette.finish(rows);
   }
 
   dispose(): void {
@@ -214,7 +198,11 @@ export class AnimalView {
     this.#animate(input, visual, kindView, offset);
     this.#palette.ensureRows(row + 1);
     this.#writePose(visual, kindView, row);
-    this.#writeRootAndColors(row, [x, y, z, visual.motion.heading], visual.colors);
+    this.#palette.writeRoot(row, x, y, z, visual.motion.heading);
+
+    for (const [index, color] of visual.colors.entries()) {
+      this.#palette.writeColor(row, index, color);
+    }
 
     for (const part of visual.parts) {
       kindView.batches.add(level, part, row);
@@ -299,22 +287,6 @@ export class AnimalView {
     return this.#blendedPose;
   }
 
-  #writeRootAndColors(row: number, root: readonly [number, number, number, number], colors: readonly Color[]): void {
-    const { data } = this.#palette;
-
-    const rootOffset = this.#palette.texelOffset(row, rootTexel(ANIMAL_LAYOUT));
-
-    data.set(root, rootOffset);
-
-    for (const [index, color] of colors.entries()) {
-      const offset = this.#palette.texelOffset(row, colorTexel(ANIMAL_LAYOUT, index));
-
-      data[offset] = color.r;
-      data[offset + 1] = color.g;
-      data[offset + 2] = color.b;
-    }
-  }
-
   #visualFor(animals: Float32Array, offset: number): AnimalVisual {
     const id = animals[offset + AnimalField.Id];
     const youth = animals[offset + AnimalField.Youth];
@@ -336,7 +308,14 @@ export class AnimalView {
       appearance,
       colors: [new Color(appearance.coat), new Color(appearance.coatLight)],
       kind,
-      motion: this.#motionFor(existing, animals, offset),
+      motion:
+        existing === undefined
+          ? new AgentMotion(
+              animals[offset + AnimalField.Pose],
+              animals[offset + AnimalField.Phase],
+              animals[offset + AnimalField.Heading]
+            )
+          : existing.motion,
       parts: visibleAnimalParts(kind, appearance),
       scales: animalBoneScales(kind, appearance),
       variation: seed,
@@ -345,17 +324,5 @@ export class AnimalView {
     this.#visuals.set(id, visual);
 
     return visual;
-  }
-
-  #motionFor(existing: AnimalVisual | undefined, animals: Float32Array, offset: number): AgentMotion {
-    if (existing !== undefined) {
-      return existing.motion;
-    }
-
-    return new AgentMotion(
-      animals[offset + AnimalField.Pose],
-      animals[offset + AnimalField.Phase],
-      animals[offset + AnimalField.Heading]
-    );
   }
 }
