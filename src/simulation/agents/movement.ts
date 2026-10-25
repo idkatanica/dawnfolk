@@ -148,6 +148,7 @@ export function moveAlong(
   const waypoint = mover.path[mover.pathIndex];
 
   const distanceLeft = Math.hypot(waypoint.x - mover.x, waypoint.z - mover.z);
+
   if (distanceLeft < arrivalDistanceAt(mover, distanceLeft, world, navigation)) {
     mover.pathIndex += 1;
     stopMoving(mover);

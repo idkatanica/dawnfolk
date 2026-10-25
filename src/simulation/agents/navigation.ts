@@ -196,6 +196,7 @@ export class NavigationGrid {
 
   #nearestStepAshore(cell: number, x: number, z: number): Waypoint | null {
     const world = this.#world;
+
     const closer = this.#shoreSteps[cell] - 1;
 
     let nearest: Waypoint | null = null;

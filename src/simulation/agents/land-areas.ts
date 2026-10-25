@@ -429,6 +429,7 @@ export class LandAreas {
 
   #findHops(): void {
     const { grid } = this.#world;
+
     const passageOf = (cell: number): Passage => this.#passageOf(cell);
     const targets: number[] = [];
 
@@ -446,6 +447,7 @@ export class LandAreas {
 
   #findAreas(): AreaSeed[] {
     const { grid } = this.#world;
+
     const blocksPerSide = Math.ceil(grid.cellsPerSide / this.#cellsPerArea);
     const areas: AreaSeed[] = [];
 
@@ -475,6 +477,7 @@ export class LandAreas {
 
   #floodBlock(first: number, area: number, corner: { column: number; row: number }): AreaSeed {
     const { grid } = this.#world;
+
     const cells = [first];
     const last = { column: corner.column + this.#cellsPerArea - 1, row: corner.row + this.#cellsPerArea - 1 };
 
@@ -509,6 +512,7 @@ export class LandAreas {
 
   #linkAreas(areas: readonly AreaSeed[]): void {
     const { grid } = this.#world;
+
     const count = areas.length;
 
     this.#areaCount = count;

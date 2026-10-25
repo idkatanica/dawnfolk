@@ -147,6 +147,7 @@ export class Engagement {
 
   #close(tick: PersonTick, foe: Foe, standOff: number): void {
     const { person } = tick;
+
     const target = foeMover(foe);
 
     this.#retargetSeconds -= tick.seconds;
@@ -173,6 +174,7 @@ export class Engagement {
 
   #backOff(tick: PersonTick, foe: Foe): void {
     const { person } = tick;
+
     const target = foeMover(foe);
 
     this.#retargetSeconds -= tick.seconds;

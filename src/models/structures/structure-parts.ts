@@ -156,6 +156,7 @@ export function addFlag(
   order: number
 ): void {
   const [x, y, z] = base;
+
   const width = 0.62;
   const height = 0.42;
 

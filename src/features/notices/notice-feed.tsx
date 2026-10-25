@@ -7,12 +7,12 @@ import { dismissNotice, useWorldStore, type WorldNotice } from "../world/world-s
 
 const NOTICE_SECONDS = 7;
 
-function useDismissLater(id: number): void {
+function useDismissLater(noticeId: number): void {
   useEffect(() => {
-    const timer = window.setTimeout(() => dismissNotice(id), NOTICE_SECONDS * 1000);
+    const timer = window.setTimeout(() => dismissNotice(noticeId), NOTICE_SECONDS * 1000);
 
     return () => window.clearTimeout(timer);
-  }, [id]);
+  }, [noticeId]);
 }
 
 function NoticeIcon({ notice }: { readonly notice: WorldNotice }) {

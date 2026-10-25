@@ -222,6 +222,7 @@ describe("moving parts", () => {
       for (const appearance of people) {
         for (const phase of [0.15, 0.4, 0.7]) {
           const mesh = posedPerson(appearance, clip, phase, tools);
+
           expect(loosePieces(mesh, TOUCHING, isTorso), `${appearance.ageGroup} ${phase}`).toEqual([]);
         }
       }

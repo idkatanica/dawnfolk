@@ -365,6 +365,7 @@ export class Splash implements ActiveEffect {
     this.#age += seconds;
 
     const { level, x, z } = this.#effect;
+
     const age = this.#age / SPLASH_SECONDS;
     const fade = (1 - smoothstep(0.35, 1, age)) * 0.85;
 

@@ -102,7 +102,9 @@ function isBottom(index: number, outline: readonly OutlinePoint[]): boolean {
 
 function faceRing(opening: Opening, ring: FaceRing, spread: Point, random: RandomSource): Point[] {
   return opening.outline.map((point, index) => {
-    const wobble = (scale: number) => random.signed() * ring.jitter * scale;
+    function wobble(scale: number): number {
+      return random.signed() * ring.jitter * scale;
+    }
 
     const x = point.x + point.outwardX * ring.offset * spread.x + wobble(1);
     const y = isBottom(index, opening.outline)

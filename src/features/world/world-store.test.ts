@@ -208,9 +208,9 @@ describe("world store", () => {
     connectWorldStore(feed);
     feed.emit(createFrame({ notices: ["First", "Second", "Third"] }));
 
-    const ids = useWorldStore.getState().notices.map((notice) => notice.id);
+    const noticeIds = useWorldStore.getState().notices.map((notice) => notice.id);
 
-    expect(new Set(ids).size).toBe(ids.length);
+    expect(new Set(noticeIds).size).toBe(noticeIds.length);
   });
 
   it("stops listening after disconnecting", () => {

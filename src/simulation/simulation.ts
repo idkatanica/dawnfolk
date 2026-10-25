@@ -264,9 +264,12 @@ export class Simulation {
       return;
     }
 
-    const apply = (target: PowerTarget) => applyPower(powerId, parameters, target, this.services);
-
-    this.#stroke = { apply, startHeight: this.world.heightAt(x, z), x, z };
+    this.#stroke = {
+      apply: (target) => applyPower(powerId, parameters, target, this.services),
+      startHeight: this.world.heightAt(x, z),
+      x,
+      z,
+    };
     this.#applyStroke(FIRST_STROKE_SECONDS);
   }
 

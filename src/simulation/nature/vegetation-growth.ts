@@ -141,6 +141,7 @@ export class VegetationGrowthSystem {
 
   #canSprout(cell: number, random: RandomSource): boolean {
     const world = this.#world;
+
     const biome = world.terrain.biome[cell];
 
     if (!world.isOpenGround(cell)) {

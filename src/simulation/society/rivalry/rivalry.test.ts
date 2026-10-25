@@ -191,6 +191,7 @@ describe("a raid", () => {
     const harness = new SocietyHarness({ ...SPRING_HARNESS, day: 10.4 });
 
     const [first, second] = neighbours(harness, 420);
+
     const relation = harness.rivalry.relations.meet(first.id, second.id, false);
 
     armTribe(first, 300);
@@ -352,6 +353,7 @@ describe("peace", () => {
     const harness = new SocietyHarness(SPRING_HARNESS);
 
     const [first, second] = neighbours(harness, 420);
+
     const relation = harness.rivalry.relations.meet(first.id, second.id, false);
 
     setFood(first, 120);
@@ -379,6 +381,7 @@ describe("peace", () => {
     const harness = new SocietyHarness(SPRING_HARNESS);
 
     const [first, second] = neighbours(harness, 420);
+
     const relation = harness.rivalry.relations.meet(first.id, second.id, false);
 
     setFood(first, 0);

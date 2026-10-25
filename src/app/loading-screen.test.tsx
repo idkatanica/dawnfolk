@@ -38,6 +38,7 @@ describe("loading screen", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     const session = await startFailingSession(new Error("The worker crashed"));
+
     const { launch } = useLaunchStore.getState();
 
     reportStop(session, useEngineStore.getState().setStatus);

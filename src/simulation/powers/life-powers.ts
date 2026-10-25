@@ -1,8 +1,17 @@
 import { plantSpeciesDefinition } from "../../content/plants.ts";
+import type { PowerParameters } from "../../content/powers.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
 import { MAXIMUM_FAITH, upcomingTechnology } from "../society/tribe.ts";
 import { cellsInArea } from "../world/terrain-editing.ts";
-import { APPLIED, type PowerHandler, type PowerServices, percent, refused } from "./power-handler.ts";
+import {
+  APPLIED,
+  type PowerHandler,
+  type PowerOutcome,
+  type PowerServices,
+  type PowerTarget,
+  percent,
+  refused,
+} from "./power-handler.ts";
 
 const ABUNDANCE_REACH = 250;
 const ABUNDANCE_FOOD = 15;
@@ -13,7 +22,11 @@ const INSPIRATION_FAITH = 5;
 const HEALING_FAITH = 1;
 const HEALED_HUNGER = 0.2;
 
-export const tribePower: PowerHandler<"tribe"> = (target, parameters, services) => {
+export function tribePower(
+  target: PowerTarget,
+  parameters: PowerParameters<"tribe">,
+  services: PowerServices
+): PowerOutcome {
   const tribe = services.people.spawnTribe({
     context: services,
     people: parameters.people,
@@ -27,7 +40,7 @@ export const tribePower: PowerHandler<"tribe"> = (target, parameters, services) 
   }
 
   return APPLIED;
-};
+}
 
 function herdPower<Id extends "deer" | "hare" | "ibex" | "mammoth" | "wolf">(
   kind: Id,
@@ -66,7 +79,11 @@ function ripenBushes(services: PowerServices, x: number, z: number, radius: numb
   }
 }
 
-export const abundancePower: PowerHandler<"abundance"> = (target, parameters, services) => {
+export function abundancePower(
+  target: PowerTarget,
+  parameters: PowerParameters<"abundance">,
+  services: PowerServices
+): PowerOutcome {
   ripenBushes(services, target.x, target.z, parameters.radius);
   services.effects.add({ kind: "blessing", radius: parameters.radius, style: "abundance", x: target.x, z: target.z });
 
@@ -87,9 +104,13 @@ export const abundancePower: PowerHandler<"abundance"> = (target, parameters, se
   });
 
   return APPLIED;
-};
+}
 
-export const inspirationPower: PowerHandler<"inspiration"> = (target, parameters, services) => {
+export function inspirationPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"inspiration">,
+  services: PowerServices
+): PowerOutcome {
   const tribe = services.people.nearestTribe(target.x, target.z, INSPIRATION_REACH);
 
   if (tribe === null) {
@@ -114,9 +135,13 @@ export const inspirationPower: PowerHandler<"inspiration"> = (target, parameters
   });
 
   return APPLIED;
-};
+}
 
-export const healingPower: PowerHandler<"healing"> = (target, parameters, services) => {
+export function healingPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"healing">,
+  services: PowerServices
+): PowerOutcome {
   const people = services.people.livingWithin(target.x, target.z, parameters.radius);
 
   if (people.length === 0) {
@@ -138,4 +163,4 @@ export const healingPower: PowerHandler<"healing"> = (target, parameters, servic
   services.effects.add({ kind: "blessing", radius: parameters.radius, style: "healing", x: target.x, z: target.z });
 
   return APPLIED;
-};
+}

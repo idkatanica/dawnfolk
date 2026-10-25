@@ -41,6 +41,7 @@ function nextToolMaterial(tribe: Tribe): ToolMaterial | null {
 
 function isWanted(tribe: Tribe, recipe: RecipeId, construction: ResourceAmounts): boolean {
   const { stock } = tribe;
+
   const members = tribe.memberCount;
 
   switch (recipe) {

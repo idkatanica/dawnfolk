@@ -45,6 +45,7 @@ export class ArrowFlights {
 
   loose(shooter: Person, weapon: CarriedWeapon, foe: Foe, battleground: Battleground): void {
     const { random } = battleground;
+
     const target = foeMover(foe);
 
     const distance = distanceTo(shooter.mover, foe);
@@ -100,6 +101,7 @@ export class ArrowFlights {
 
 function land(flight: ArrowFlight, battleground: Battleground, context: SocietyContext): void {
   const { foe } = flight;
+
   const target = foeMover(foe);
 
   const isStillThere = Math.hypot(target.x - flight.landX, target.z - flight.landZ) < LANDING_TOLERANCE + foeGirth(foe);

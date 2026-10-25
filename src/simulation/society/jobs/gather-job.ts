@@ -83,6 +83,7 @@ export function findFruit(tick: PersonTick): ForageJob | null {
   }
 
   const { navigation, world } = tick.context;
+
   const target = plantTarget(world.vegetation, tree, GATHERING_REACH);
 
   if (!(canWorkAt(world, target, tick.person.mover) && navigation.isWithinWalk(tick.person.mover, target))) {

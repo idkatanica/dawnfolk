@@ -19,11 +19,11 @@ export function findTree(tick: PersonTick): ChopJob | null {
   const { vegetation } = world;
   const { day } = tick.context.environment;
 
-  const isReachable = (plant: number): boolean => {
+  function isReachable(plant: number): boolean {
     const target = plantTarget(vegetation, plant, AXE_REACH);
 
     return canWorkAt(world, target, person.mover) && navigation.isWithinWalk(person.mover, target);
-  };
+  }
 
   const tree = nearestPlant(world, {
     accepts: (plant) =>

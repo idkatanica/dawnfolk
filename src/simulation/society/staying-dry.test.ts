@@ -225,12 +225,14 @@ describe("staying dry", () => {
 
       wasInWater = wasInWater || harness.world.isWaterAt(x, z);
 
-      if (fisher.pose === "fish") {
-        const isOnBank = harness.world.grid.cellsInRadius(x, z, 11).some((cell) => harness.world.isWater(cell));
-
-        expect(harness.world.isWalkableAt(x, z) && isOnBank).toBe(true);
-        fishingSpots += 1;
+      if (fisher.pose !== "fish") {
+        continue;
       }
+
+      const isOnBank = harness.world.grid.cellsInRadius(x, z, 11).some((cell) => harness.world.isWater(cell));
+
+      expect(harness.world.isWalkableAt(x, z) && isOnBank).toBe(true);
+      fishingSpots += 1;
     }
 
     expect(fishingSpots).toBeGreaterThan(0);
