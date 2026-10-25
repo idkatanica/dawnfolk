@@ -40,6 +40,7 @@ import { CropField } from "./vegetation/crop-field.ts";
 import { GrassField } from "./vegetation/grass-field.ts";
 import { UnderstoryField } from "./vegetation/understory-field.ts";
 import { VegetationView } from "./vegetation/vegetation-view.ts";
+import { LilyPads } from "./water/lily-pads.ts";
 import { SpringView } from "./water/spring-view.ts";
 import { WaterView } from "./water/water-view.ts";
 import { WaterfallView } from "./water/waterfall-view.ts";
@@ -93,6 +94,7 @@ export class WorldRenderer {
   readonly #frustum = new Frustum();
   readonly #grass: GrassField;
   readonly #islandBase: IslandBase;
+  readonly #lilies: LilyPads;
   readonly #markers: AgentMarkers;
   readonly #matrix = new Matrix4();
   readonly #mirror: WorldMirror;
@@ -127,6 +129,7 @@ export class WorldRenderer {
     this.#water = new WaterView(mirror, this.#textures);
     this.#waterfalls.rebuild(mirror.water.waterfalls, this.#textures, this.#plinth);
     this.#springs.rebuild(mirror);
+    this.#lilies = new LilyPads(mirror, this.#textures);
     this.#vegetation = new VegetationView(mirror, this.#textures, this.#fireGlow);
     this.#crops = new CropField(mirror, this.#vegetation.weather, this.#textures.fields);
     this.#crossings = new CrossingView(mirror, this.#textures);
@@ -167,6 +170,7 @@ export class WorldRenderer {
       this.#water.group,
       this.#waterfalls.mesh,
       this.#springs.mesh,
+      ...this.#lilies.meshes,
       this.#vegetation.group,
       this.#crops.group,
       this.#crossings.group,
@@ -228,6 +232,10 @@ export class WorldRenderer {
       this.#springs.rebuild(this.#mirror);
     }
 
+    if (changes.hasWaterChanged) {
+      this.#lilies.rebuild(this.#mirror);
+    }
+
     const gameSeconds = frame.isPaused ? 0 : view.realSeconds * frame.speed;
     const metersPerSecond = (frame.weather.windSpeed * 1000) / 3600;
     const windX = frame.weather.windX * metersPerSecond;
@@ -275,6 +283,7 @@ export class WorldRenderer {
     this.#crops.update(view.camera, this.#frustum, this.#quality.vegetationDetail);
     this.#crossings.update(view.camera, this.#frustum, this.#quality.vegetationDetail);
     this.#grass.update(view.camera, view.viewDistance);
+    this.#lilies.update(frame.calendar.season);
     this.#updateAgents(view, gameSeconds);
     this.#markSelection();
     this.#updateEffects(view, gameSeconds, form, rainfall, metersPerSecond);
@@ -300,6 +309,7 @@ export class WorldRenderer {
     this.#water.dispose();
     this.#waterfalls.dispose();
     this.#springs.dispose();
+    this.#lilies.dispose();
     this.#terrain.dispose();
     this.#islandBase.dispose();
     this.#textures.dispose();
@@ -312,6 +322,8 @@ export class WorldRenderer {
     const { look } = this.#water;
     const { palette } = this.#atmosphere;
 
+    this.#textures.skyColor.value.setHex(palette.horizon);
+    this.#textures.daylight.value = this.#atmosphere.daylight;
     look.horizonColor.value.setHex(palette.horizon);
     look.zenithColor.value.setHex(palette.zenith);
     look.daylight.value = this.#atmosphere.daylight;

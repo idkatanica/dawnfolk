@@ -44,7 +44,7 @@ Age to the Iron Age on a procedurally generated island rendered with WebGPU.
 ## Features
 
 - **A living island.** Named and grown from a seed, round or square, with rivers from caves and ponds, lakes,
-  waterfalls off the edge, biomes, seasons and snow.
+  waterfalls off the edge, wooded swamps with lily pools, biomes, seasons and snow.
 - **Ruins and crossings.** Megaliths of a forgotten people, and stepping stones or fallen logs where rivers can be
   crossed.
 - **Tribes.** People gather, hunt, fish, farm, build, pray, migrate and split, and climb from the Stone Age to the
@@ -93,7 +93,7 @@ src/
   content/     data registries: grounds, biomes, plants, animals, weather, technologies, buildings, powers,
                world rules — powers and rules are zod schemas with UI metadata
   world/       world grid and the data shared by the simulation and the renderer
-  generation/  relief → erosion → hydrology → climate and biomes → ruins and river crossings → vegetation →
+  generation/  relief → erosion → hydrology → climate, wetlands and biomes → ruins and river crossings → vegetation →
                ore deposits
   simulation/  deterministic fixed-tick simulation: nature (calendar, weather, fire, embers, surface, growth),
                agents (navigation, movement), fauna, society (people, jobs, tribes, buildings, settlement,
@@ -102,8 +102,9 @@ src/
   game/        main thread: worker connection, world mirror, session, engine loop, god camera, input, power tools
   models/      procedural model engine: mesh builder, rig and clips, people, animals, plants and rocks,
                buildings, monuments, crossings
-  rendering/   WebGPU renderer: sky, height fog and atmosphere, terrain and water patches, waterfalls, vegetation
-               chunks and grass, skinned agents with far markers, buildings, fire, smoke, weather, bloom
+  rendering/   WebGPU renderer: sky, height fog and atmosphere, terrain and water patches, bog pools and lily pads,
+               waterfalls, vegetation chunks and grass, skinned agents with far markers, buildings, fire, smoke,
+               weather, bloom
   design/      design system: paper and glass islands, game icons, buttons, fields, meters, tooltips, formatting
   features/    UI features with their stores: time, powers, inspector, journal, tribes and rivalry, minimap,
                map labels, notices, settings, new world

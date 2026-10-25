@@ -1,6 +1,7 @@
 import { uniform } from "three/tsl";
 import {
   ClampToEdgeWrapping,
+  Color,
   DataTexture,
   FloatType,
   LinearFilter,
@@ -8,12 +9,14 @@ import {
   type PixelFormat,
   RedFormat,
   RGBAFormat,
+  RGFormat,
   type Texture,
   UnsignedByteType,
   type WebGPURenderer,
 } from "three/webgpu";
+import { Ground, isPoolGround } from "../../content/grounds.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import type { CellRegion } from "../../world/change-tracking.ts";
+import type { CellRegion, RowRun } from "../../world/change-tracking.ts";
 import { sampleCells } from "../../world/terrain-sampling.ts";
 import { POND_SHORE_SLOPE, pondEdgeReach } from "../../world/water.ts";
 import { FordField } from "../water/ford-field.ts";
@@ -35,12 +38,26 @@ import { PATCH_CELLS, PATCH_STEPS } from "./terrain-patches.ts";
 
 const SEASON_STEP = 0.01;
 const POND_SHORE_CELLS = 2;
+const BYTE = 255;
+const WETLAND_CHANNELS = 2;
 
 function floatTexture(data: Float32Array, size: number, format: PixelFormat = RedFormat): DataTexture {
   const texture = new DataTexture(data, size, size, format, FloatType);
 
   texture.minFilter = NearestFilter;
   texture.magFilter = NearestFilter;
+  texture.wrapS = ClampToEdgeWrapping;
+  texture.wrapT = ClampToEdgeWrapping;
+  texture.needsUpdate = true;
+
+  return texture;
+}
+
+function wetlandTexture(data: Uint8Array, size: number): DataTexture {
+  const texture = new DataTexture(data, size, size, RGFormat, UnsignedByteType);
+
+  texture.minFilter = LinearFilter;
+  texture.magFilter = LinearFilter;
   texture.wrapS = ClampToEdgeWrapping;
   texture.wrapT = ClampToEdgeWrapping;
   texture.needsUpdate = true;
@@ -62,6 +79,7 @@ function surfaceTexture(data: Uint8Array, size: number): DataTexture {
 
 export class TerrainTextures {
   readonly bloom = uniform(0);
+  readonly daylight = uniform(1);
   readonly fords: FordField;
   readonly fields: FieldPlan;
   readonly height: DataTexture;
@@ -69,13 +87,16 @@ export class TerrainTextures {
   readonly patchSteps: DataTexture;
   readonly patchesPerSide: number;
   readonly shore: DataTexture;
+  readonly skyColor = uniform(new Color(0x9c_c0_e0));
   readonly surface: DataTexture;
   readonly water: DataTexture;
+  readonly wetland: DataTexture;
   readonly #albedo: GroundAlbedo;
   readonly #mirror: WorldMirror;
   readonly #patchStepData: Float32Array;
   readonly #shoreData: Float32Array;
   readonly #pondDepths: Float32Array;
+  readonly #wetlandData: Uint8Array;
   #albedoSeason = Number.NaN;
 
   constructor(mirror: WorldMirror) {
@@ -94,6 +115,9 @@ export class TerrainTextures {
     this.shore = floatTexture(this.#shoreData, size, RGBAFormat);
     this.#buildShore();
     this.surface = surfaceTexture(mirror.surface, size);
+    this.#wetlandData = new Uint8Array(size * size * WETLAND_CHANNELS);
+    this.#paintWetland({ firstRow: 0, rowCount: size });
+    this.wetland = wetlandTexture(this.#wetlandData, size);
     this.#albedo = new GroundAlbedo(mirror);
     this.fields = new FieldPlan(mirror);
   }
@@ -153,6 +177,12 @@ export class TerrainTextures {
     if (changes.groundRuns.length > 0) {
       this.#albedo.groundChanged();
       this.fields.groundChanged(changes.groundRuns);
+
+      for (const run of changes.groundRuns) {
+        this.#paintWetland(run);
+      }
+
+      this.wetland.needsUpdate = true;
     }
 
     const hasSeasonChanged = Number.isNaN(this.#albedoSeason) || Math.abs(season - this.#albedoSeason) >= SEASON_STEP;
@@ -173,6 +203,23 @@ export class TerrainTextures {
     this.surface.dispose();
     this.water.dispose();
     this.shore.dispose();
+    this.wetland.dispose();
+  }
+
+  #paintWetland({ firstRow, rowCount }: RowRun): void {
+    const { grid, terrain } = this.#mirror;
+
+    const firstCell = firstRow * grid.cellsPerSide;
+    const lastCell = Math.min(grid.cellCount, (firstRow + rowCount) * grid.cellsPerSide);
+
+    for (let cell = firstCell; cell < lastCell; cell += 1) {
+      const ground = terrain.ground[cell];
+
+      const isPool = isPoolGround(ground);
+
+      this.#wetlandData[cell * WETLAND_CHANNELS] = isPool || ground === Ground.Swamp ? BYTE : 0;
+      this.#wetlandData[cell * WETLAND_CHANNELS + 1] = isPool ? BYTE : 0;
+    }
   }
 
   #shoreSource(): ShoreSource {

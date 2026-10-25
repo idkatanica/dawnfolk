@@ -1,6 +1,8 @@
 import {
   attribute,
+  cameraPosition,
   clamp,
+  dot,
   Fn,
   float,
   fwidth,
@@ -15,12 +17,14 @@ import {
   normalLocal,
   normalWorldGeometry,
   positionWorld,
+  pow,
   select,
   sin,
   smoothstep,
   texture,
   textureLoad,
   time,
+  transformNormalToView,
   vec2,
   vec3,
 } from "three/tsl";
@@ -29,6 +33,7 @@ import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { unitNoise } from "../node-helpers.ts";
 import { fordBedColorNode } from "../water/ford-field.ts";
+import { POOL_BANK, poolReachNode } from "./bog-pools.ts";
 import { fieldGroundNode } from "./field-ground.ts";
 import { FIREWEED, fireweedOn } from "./fireweed.ts";
 import type { GroundWarp } from "./ground-warp.ts";
@@ -50,6 +55,47 @@ const STEEP_FACE_SHADE = 0.82;
 const EMBER_THRESHOLD = 0.004;
 const TRODDEN_EARTH = vec3(0.3, 0.22, 0.14);
 const FORD_BED_DEPTH = 0.6;
+const POOL_WATER = vec3(0.034, 0.038, 0.022);
+const POOL_SCUM = vec3(0.11, 0.14, 0.04);
+const POOL_RIM = 0.45;
+const POOL_SHORE = 0.04;
+const POOL_WOBBLE = 0.2;
+const MARSH_MUD = 0.62;
+const POOL_ROUGHNESS = 0.1;
+const MARSH_ROUGHNESS = 0.72;
+
+interface Marsh {
+  readonly pool: Node<"float">;
+  readonly soak: Node<"float">;
+}
+
+function marshAt(textures: TerrainTextures, grid: WorldGrid, wobble: Node<"float">): Marsh {
+  const wetland = texture(textures.wetland, positionWorld.xz.add(grid.halfSize).div(grid.worldSize));
+
+  const bank = float(1).sub(wobble).mul(POOL_WOBBLE).add(POOL_BANK);
+
+  return {
+    pool: smoothstep(bank, bank.add(POOL_SHORE), poolReachNode(textures, grid, positionWorld.xz)),
+    soak: wetland.r.mul(smoothstep(0.1, 0.6, wetland.g).mul(0.6).add(0.4)),
+  };
+}
+
+function boggy(ground: Node<"vec3">, marsh: Marsh, mottle: Node<"float">): Node<"vec3"> {
+  const mud = ground.mul(mix(float(1), float(MARSH_MUD), marsh.soak.mul(smoothstep(-0.4, 0.4, mottle))));
+  const rim = mud.mul(mix(float(1), float(POOL_RIM), smoothstep(0, 0.4, marsh.pool)));
+  const water = mix(POOL_WATER, POOL_SCUM, smoothstep(0.35, 0.85, mottle).mul(0.6));
+
+  return mix(rim, water, smoothstep(0.35, 1, marsh.pool));
+}
+
+function poolGlint(textures: TerrainTextures, pool: Node<"float">): Node<"vec3"> {
+  const toCamera = normalize(cameraPosition.sub(positionWorld));
+  const fresnel = pow(float(1).sub(max(dot(vec3(0, 1, 0), toCamera), 0)), 5)
+    .mul(0.6)
+    .add(0.035);
+
+  return textures.skyColor.mul(fresnel).mul(textures.daylight.mul(0.5).add(0.03)).mul(pool);
+}
 
 function emberGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"float">): Node<"vec3"> {
   return Fn(() => {
@@ -226,8 +272,13 @@ export function createTerrainMaterial({
 
   const ground = mix(mottled, rockColor, rock);
 
+  const marsh = marshAt(textures, grid, patches.mul(0.35).add(fine.mul(0.15)).add(0.5));
+  const openPool = marsh.pool.mul(float(1).sub(snowCover));
+
+  const marshy = boggy(ground, marsh, patches.mul(0.6).add(fine.mul(0.4)));
+
   const fordMarks = textures.fords.marksNode(positionWorld.xz);
-  const forded = fordGround(ground, fordMarks, rock);
+  const forded = fordGround(marshy, fordMarks, rock);
 
   const snowy = mix(forded, vec3(0.9, 0.93, 0.97), snowCover.mul(float(1).sub(rock.mul(0.6))));
   const wetness = max(surface.g, smoothstep(0, 0.6, depth));
@@ -247,12 +298,14 @@ export function createTerrainMaterial({
 
   const fireLight = fireLightAt(glow, grid, positionWorld.xz);
 
+  const roughness = mix(mix(float(0.95), float(MARSH_ROUGHNESS), marsh.soak), float(0.5), wetness);
+
   material.colorNode = flowering;
-  material.normalNode = field.normal;
-  material.roughnessNode = mix(float(0.95), float(0.5), wetness);
-  material.emissiveNode = emberGlow(surface.a, positionWorld.xz, fine.mul(0.5).add(0.5)).add(
-    scorched.mul(fireLight).mul(GROUND_FIRE_LIGHT)
-  );
+  material.roughnessNode = mix(roughness, float(POOL_ROUGHNESS), openPool);
+  material.normalNode = normalize(mix(field.normal, transformNormalToView(vec3(0, 1, 0)), openPool));
+  material.emissiveNode = emberGlow(surface.a, positionWorld.xz, fine.mul(0.5).add(0.5))
+    .add(scorched.mul(fireLight).mul(GROUND_FIRE_LIGHT))
+    .add(poolGlint(textures, openPool));
 
   return material;
 }
