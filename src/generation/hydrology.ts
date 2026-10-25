@@ -338,8 +338,8 @@ function findLakes(
     });
   }
 
-  for (const [cell, lakeId] of lakeIds.entries()) {
-    if (lakeId === REJECTED_LAKE) {
+  for (let cell = 0; cell < lakeIds.length; cell += 1) {
+    if (lakeIds[cell] === REJECTED_LAKE) {
       lakeIds[cell] = NO_CELL;
     }
   }
@@ -350,10 +350,10 @@ function findLakes(
 function buildUpstreamLists(isRiver: Uint8Array, receivers: Int32Array): Map<number, number[]> {
   const upstream = new Map<number, number[]>();
 
-  for (const [cell, flag] of isRiver.entries()) {
+  for (let cell = 0; cell < isRiver.length; cell += 1) {
     const receiver = receivers[cell];
 
-    if (flag === 0 || receiver === NO_CELL || isRiver[receiver] === 0) {
+    if (isRiver[cell] === 0 || receiver === NO_CELL || isRiver[receiver] === 0) {
       continue;
     }
 
@@ -388,8 +388,8 @@ function largestByAccumulation(cells: readonly number[], accumulation: Float32Ar
 function traceRiverChains(network: DrainageNetwork, lakeIds: Int32Array, riverThreshold: number): RiverChain[] {
   const isRiver = new Uint8Array(lakeIds.length);
 
-  for (const [cell, accumulation] of network.accumulation.entries()) {
-    if (accumulation >= riverThreshold && lakeIds[cell] === NO_CELL) {
+  for (let cell = 0; cell < isRiver.length; cell += 1) {
+    if (network.accumulation[cell] >= riverThreshold && lakeIds[cell] === NO_CELL) {
       isRiver[cell] = 1;
     }
   }
@@ -397,10 +397,10 @@ function traceRiverChains(network: DrainageNetwork, lakeIds: Int32Array, riverTh
   const upstream = buildUpstreamLists(isRiver, network.receivers);
   const pending: { joinsCell: number; mouth: number }[] = [];
 
-  for (const [cell, flag] of isRiver.entries()) {
+  for (let cell = 0; cell < isRiver.length; cell += 1) {
     const receiver = network.receivers[cell];
 
-    if (flag === 1 && (receiver === NO_CELL || isRiver[receiver] === 0)) {
+    if (isRiver[cell] === 1 && (receiver === NO_CELL || isRiver[receiver] === 0)) {
       pending.push({ joinsCell: NO_CELL, mouth: cell });
     }
   }
@@ -1075,7 +1075,9 @@ function lowerBanks(targets: ChannelTargets): void {
 
   spreadBankLowering(lowering, targets);
 
-  for (const [cell, cut] of lowering.cuts.entries()) {
+  for (let cell = 0; cell < lowering.cuts.length; cell += 1) {
+    const cut = lowering.cuts[cell];
+
     if (cut > 0) {
       heights[cell] = Math.min(heights[cell], Math.max(uncarvedHeights[cell] - cut, lowering.floors[cell]));
     }
