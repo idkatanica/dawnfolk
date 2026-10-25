@@ -601,7 +601,7 @@ export class Simulation {
   }
 
   #keepAgentsApart(): void {
-    const people = this.society.people.map((person) => person.mover);
+    const people = this.society.people.filter((person) => person.isAlive).map((person) => person.mover);
     const animals = this.fauna.animals.filter((animal) => animal.isAlive).map((animal) => animal.mover);
 
     keepApart([...people, ...animals], this.world, TICK_SECONDS * CROWDING_TICKS);

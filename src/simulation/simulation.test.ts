@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { TechnologyId } from "../content/technologies.ts";
 import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../world/agent-buffers.ts";
+import { setDestination } from "./agents/movement.ts";
 import { Simulation } from "./simulation.ts";
 import { createVegetatedWorld, floodStrip } from "./testing/test-world.ts";
 import { TICK_SECONDS } from "./tick.ts";
@@ -223,6 +224,31 @@ describe("frames", () => {
     const frames = Array.from({ length: 20 }, () => simulation.advance(0.1));
 
     expect(frames.some((frame) => frame.water !== null)).toBe(true);
+  });
+});
+
+describe("crowding", () => {
+  it("leaves the body of someone who died while walking where they fell", () => {
+    const simulation = createSimulation();
+
+    simulation.populate();
+
+    const [fallen, passing] = simulation.society.people;
+    const { mover } = fallen;
+
+    setDestination(mover, { x: -mover.x, z: -mover.z }, simulation.navigation);
+    simulation.society.kill(fallen, "beast");
+
+    const { x, z } = mover;
+
+    for (let tick = 0; tick < 6; tick += 1) {
+      passing.mover.x = x + 0.2;
+      passing.mover.z = z + 0.1;
+      simulation.runTicks(1);
+    }
+
+    expect(mover.x).toBe(x);
+    expect(mover.z).toBe(z);
   });
 });
 
