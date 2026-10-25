@@ -52,6 +52,31 @@ describe("person appearance", () => {
       expect(appearanceFor({ age: 6, seed }).beard).toBe("none");
     }
   });
+
+  it("keeps clothes, gait and hair as a person grows up and grows old", () => {
+    for (const seed of seeds(100)) {
+      for (const isFemale of [false, true]) {
+        const child = appearanceFor({ age: 11.5, isFemale, seed });
+        const adult = appearanceFor({ age: 12.5, isFemale, seed });
+        const aging = appearanceFor({ age: 49.5, isFemale, seed });
+        const elder = appearanceFor({ age: 50.5, isFemale, seed });
+
+        for (const [before, after] of [
+          [child, adult],
+          [aging, elder],
+        ]) {
+          expect(after.colors.fur).toBe(before.colors.fur);
+          expect(after.colors.hide).toBe(before.colors.hide);
+          expect(after.hasBoots).toBe(before.hasBoots);
+          expect(after.motion.armSwing).toBe(before.motion.armSwing);
+        }
+
+        expect(elder.outfit).toBe(aging.outfit);
+        expect([aging.hair, "fringe", "bald"]).toContain(elder.hair);
+        expect([aging.beard, "full"]).toContain(elder.beard);
+      }
+    }
+  });
 });
 
 describe("era details", () => {
