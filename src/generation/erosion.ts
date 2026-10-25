@@ -353,6 +353,7 @@ interface SlopeRelaxation {
   readonly active: Uint8Array;
   readonly cellSize: number;
   readonly change: Float32Array;
+  readonly excesses: Float64Array;
   readonly heights: Float32Array;
   readonly neighborhood: Neighborhood;
   readonly size: number;
@@ -360,17 +361,20 @@ interface SlopeRelaxation {
 }
 
 function shedExcess(relaxation: SlopeRelaxation, column: number, row: number): boolean {
-  const { change, heights, neighborhood, size } = relaxation;
+  const { change, excesses, heights, neighborhood, size } = relaxation;
 
   const cell = row * size + column;
   const height = heights[cell];
   const allowedDrop = relaxation.talus[cell] * relaxation.cellSize;
+  const isInside = column > 0 && row > 0 && column < size - 1 && row < size - 1;
 
   let total = 0;
   let largest = 0;
 
   for (let neighbor = 0; neighbor < 8; neighbor += 1) {
-    if (!isOnMap(column + neighborhood.columns[neighbor], row + neighborhood.rows[neighbor], size)) {
+    excesses[neighbor] = 0;
+
+    if (!(isInside || isOnMap(column + neighborhood.columns[neighbor], row + neighborhood.rows[neighbor], size))) {
       continue;
     }
 
@@ -378,6 +382,7 @@ function shedExcess(relaxation: SlopeRelaxation, column: number, row: number): b
       height - heights[cell + neighborhood.offsets[neighbor]] - allowedDrop * neighborhood.distances[neighbor];
 
     if (excess > 0) {
+      excesses[neighbor] = excess;
       total += excess;
       largest = Math.max(largest, excess);
     }
@@ -390,18 +395,12 @@ function shedExcess(relaxation: SlopeRelaxation, column: number, row: number): b
   const moved = 0.5 * largest;
 
   for (let neighbor = 0; neighbor < 8; neighbor += 1) {
-    if (!isOnMap(column + neighborhood.columns[neighbor], row + neighborhood.rows[neighbor], size)) {
-      continue;
-    }
-
-    const target = cell + neighborhood.offsets[neighbor];
-
-    const excess = height - heights[target] - allowedDrop * neighborhood.distances[neighbor];
+    const excess = excesses[neighbor];
 
     if (excess > 0) {
       const share = (moved * excess) / total;
 
-      change[target] += share;
+      change[cell + neighborhood.offsets[neighbor]] += share;
       change[cell] -= share;
     }
   }
@@ -421,13 +420,14 @@ function applyRelaxation(relaxation: SlopeRelaxation): void {
 
     const column = cell % size;
     const row = (cell - column) / size;
+    const isInside = column > 0 && row > 0 && column < size - 1 && row < size - 1;
 
     heights[cell] += change[cell];
     change[cell] = 0;
     active[cell] = 1;
 
     for (let neighbor = 0; neighbor < 8; neighbor += 1) {
-      if (isOnMap(column + neighborhood.columns[neighbor], row + neighborhood.rows[neighbor], size)) {
+      if (isInside || isOnMap(column + neighborhood.columns[neighbor], row + neighborhood.rows[neighbor], size)) {
         active[cell + neighborhood.offsets[neighbor]] = 1;
       }
     }
@@ -445,6 +445,7 @@ export function relaxSlopes(
     active: new Uint8Array(heights.length).fill(1),
     cellSize,
     change: new Float32Array(heights.length),
+    excesses: new Float64Array(8),
     heights,
     neighborhood: createNeighborhood(size),
     size,
