@@ -28,6 +28,7 @@ import { MeshStandardNodeMaterial, type Node } from "three/webgpu";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { unitNoise } from "../node-helpers.ts";
+import { fordBedColorNode } from "../water/ford-field.ts";
 import { FIREWEED, fireweedOn } from "./fireweed.ts";
 import type { GroundWarp } from "./ground-warp.ts";
 import { sampleCellsNode } from "./height-sampling.ts";
@@ -46,6 +47,8 @@ const STRATA_FREQUENCY = 0.45;
 const STRATA_CONTRAST = 0.035;
 const STEEP_FACE_SHADE = 0.82;
 const EMBER_THRESHOLD = 0.004;
+const TRODDEN_EARTH = vec3(0.3, 0.22, 0.14);
+const FORD_BED_DEPTH = 0.6;
 
 function emberGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"float">): Node<"vec3"> {
   return Fn(() => {
@@ -144,6 +147,21 @@ function underwaterDepth(textures: TerrainTextures, grid: WorldGrid): Node<"floa
   })();
 }
 
+function fordGround(ground: Node<"vec3">, marks: Node<"vec2">, rock: Node<"float">): Node<"vec3"> {
+  return Fn(() => {
+    const color = ground.toVar();
+
+    If(marks.x.add(marks.y).greaterThan(0.001), () => {
+      const patches = mx_noise_float(positionWorld.mul(0.21));
+      const trodden = mix(ground, TRODDEN_EARTH.mul(patches.mul(0.15).add(1)), marks.y.mul(0.8));
+
+      color.assign(mix(trodden, fordBedColorNode(positionWorld), marks.x.mul(float(1).sub(rock))));
+    });
+
+    return color;
+  })();
+}
+
 interface TerrainMaterialOptions {
   readonly cutsAtCoast: boolean;
   readonly glow: FireGlow;
@@ -201,12 +219,17 @@ export function createTerrainMaterial({
 
   const ground = mix(mottled, rockColor, rock);
 
-  const snowy = mix(ground, vec3(0.9, 0.93, 0.97), snowCover.mul(float(1).sub(rock.mul(0.6))));
+  const fordMarks = textures.fords.marksNode(positionWorld.xz);
+  const forded = fordGround(ground, fordMarks, rock);
+
+  const snowy = mix(forded, vec3(0.9, 0.93, 0.97), snowCover.mul(float(1).sub(rock.mul(0.6))));
   const wetness = max(surface.g, smoothstep(0, 0.6, depth));
 
   const damp = snowy.mul(float(1).sub(wetness.mul(0.32)));
 
-  const underwater = mix(damp, damp.mul(vec3(0.5, 0.68, 0.7)), smoothstep(0.1, 3, depth));
+  const shallowDepth = mix(depth, min(depth, FORD_BED_DEPTH), fordMarks.x);
+
+  const underwater = mix(damp, damp.mul(vec3(0.5, 0.68, 0.7)), smoothstep(0.1, 3, shallowDepth));
 
   const ash = mix(CHARCOAL, ASH, smoothstep(0.5, 0.85, patches.mul(0.35).add(fine.mul(0.15)).add(0.5)));
 
