@@ -1,14 +1,13 @@
-import { PerspectiveCamera, Vector3 } from "three/webgpu";
+import { Vector3 } from "three/webgpu";
 import { describe, expect, it } from "vitest";
 import type { SimulationFrame } from "../../simulation/frame.ts";
 import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
 import { PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
+import { CENTER, cameraLookingAt, VIEWPORT } from "../testing/view-fixtures.ts";
 import { EntityPicker } from "./entity-picker.ts";
 import { GroundPicker, type HeightField } from "./ground-picker.ts";
 
-const VIEWPORT = { height: 600, width: 800 };
-const CENTER = { x: 400, y: 300 };
 const WORLD_HALF_SIZE = 2000;
 const EMPTY_FRAME = new Simulation(
   createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 32 } })
@@ -28,16 +27,6 @@ function ridgeHeight(x: number, z: number): number {
   const isOnRidge = Math.abs(x) < 500 && Math.abs(z - 120) < 30;
 
   return isOnRidge ? 200 : 0;
-}
-
-function cameraLookingAt(x: number, z: number): PerspectiveCamera {
-  const camera = new PerspectiveCamera(45, VIEWPORT.width / VIEWPORT.height, 1, 40_000);
-
-  camera.position.set(x, 400, z + 300);
-  camera.lookAt(x, 0, z);
-  camera.updateMatrixWorld();
-
-  return camera;
 }
 
 function peopleAt(...positions: readonly (readonly [number, number])[]): Float32Array {
