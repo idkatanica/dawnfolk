@@ -41,13 +41,7 @@ const CANONICAL_HEIGHTS: Readonly<Record<PlantSpeciesIndex, number>> = {
   ...ORCHARD_HEIGHTS,
 };
 
-const FORM_PER_VARIANT: ReadonlySet<PlantSpeciesIndex> = new Set([
-  PlantSpecies.Cactus,
-  PlantSpecies.DesertShrub,
-  PlantSpecies.Idol,
-  PlantSpecies.Menhir,
-  PlantSpecies.Pillar,
-]);
+const FORM_PER_VARIANT: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DesertShrub]);
 
 export const PLANT_DETAIL_LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low", "far"];
 
@@ -119,7 +113,7 @@ export function plantVariantCount(species: PlantSpeciesIndex): number {
 }
 
 export function farVariantOf(species: PlantSpeciesIndex, variant: number): number {
-  return FORM_PER_VARIANT.has(species) ? variant : 0;
+  return FORM_PER_VARIANT.has(species) || isMonumentModel(species) ? variant : 0;
 }
 
 export function buildPlantVariants(species: PlantSpeciesIndex, level: PlantDetailLevel): MeshData[] {
