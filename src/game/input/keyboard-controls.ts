@@ -105,6 +105,10 @@ export class KeyboardControls {
 
     event.preventDefault();
     this.#held.add(action);
+
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
   }
 
   #release(event: KeyboardEvent): void {
