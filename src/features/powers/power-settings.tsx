@@ -6,6 +6,7 @@ import { IconButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
 import { Island } from "../../design/island.tsx";
+import { ScrollPanel } from "../../design/scroll-panel.tsx";
 import { useIsCompact } from "../../design/use-media-query.ts";
 import { ParameterControl } from "../parameters/parameter-control.tsx";
 import { POWER_ICONS } from "./power-icons.tsx";
@@ -55,7 +56,7 @@ function PowerSettingsContent({ powerId }: { readonly powerId: PowerId }) {
   const fields = describeParameters(power.parameters);
 
   return (
-    <section aria-label={`${power.name} settings`} className="flex flex-col gap-3 p-3 md:w-72">
+    <section aria-label={`${power.name} settings`} className="@container flex min-h-0 flex-1 flex-col gap-3 p-3">
       <header className="flex items-center gap-2.5">
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-ink/6">
           <GameIcon name={POWER_ICONS[powerId]} size={28} />
@@ -82,11 +83,13 @@ function PowerSettingsContent({ powerId }: { readonly powerId: PowerId }) {
       </header>
 
       {areFieldsShown ? (
-        <div className={cn("grid gap-3", { "sm:max-md:grid-cols-2": fields.length > 1 })}>
-          {fields.map((field) => (
-            <ParameterControl field={field} key={field.key} onChange={changeParameter} value={values[field.key]} />
-          ))}
-        </div>
+        <ScrollPanel className="-mx-1 px-1">
+          <div className={cn("grid gap-3", { "@sm:grid-cols-2": fields.length > 1 })}>
+            {fields.map((field) => (
+              <ParameterControl field={field} key={field.key} onChange={changeParameter} value={values[field.key]} />
+            ))}
+          </div>
+        </ScrollPanel>
       ) : null}
     </section>
   );
@@ -100,7 +103,7 @@ export function PowerSettings({ className }: { readonly className?: string | und
   }
 
   return (
-    <Island className={className}>
+    <Island className={cn("flex flex-col", className)}>
       <PowerSettingsContent powerId={powerId} />
     </Island>
   );

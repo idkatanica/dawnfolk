@@ -102,26 +102,24 @@ body {
   background: var(--color-sky);
 }
 
-.island {
-  --color-ink-muted: #556175;
+@layer components {
+  .island {
+    --color-ink-muted: #556175;
 
-  pointer-events: auto;
-}
+    pointer-events: auto;
+  }
 
-.island-solid {
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-}
+  .island-solid,
+  .island.glass-surface {
+    overflow: clip;
+  }
 
-.island > .glass-surface__content {
-  display: block;
-  height: auto;
-  max-height: inherit;
-  padding: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
+  .island > .glass-surface__content {
+    display: block;
+    height: auto;
+    padding: 0;
+    overflow: hidden;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

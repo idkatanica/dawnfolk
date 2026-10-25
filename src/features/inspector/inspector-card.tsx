@@ -5,6 +5,7 @@ import { type AgeGroup, ageGroupOf } from "../../content/life-stages.ts";
 import { IconButton, TextButton } from "../../design/buttons.tsx";
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
+import { ScrollPanel } from "../../design/scroll-panel.tsx";
 import type { Inspection, PersonInspection } from "../../simulation/inspection.ts";
 import { AnimalDetails, BuildingDetails, CellDetails, PersonDetails, TribeDetails } from "./inspector-details.tsx";
 
@@ -185,9 +186,9 @@ export function InspectorCard({ inspection, onBack, onClose }: InspectorCardProp
         {onBack === undefined ? <CloseButton onClose={onClose} /> : null}
       </header>
 
-      <div className="-mx-1 min-h-0 overflow-y-auto overscroll-contain px-1 pb-1 [scrollbar-width:thin]">
+      <ScrollPanel className="-mx-1 px-1 pb-1">
         <InspectionDetails inspection={inspection} />
-      </div>
+      </ScrollPanel>
     </section>
   );
 }
