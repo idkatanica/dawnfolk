@@ -3,7 +3,7 @@ import { ClampToEdgeWrapping, DataTexture, LinearFilter, type Node, RedFormat, U
 import type { SimulationFrame } from "../../simulation/frame.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 
-const GLOW_RESOLUTION = 128;
+const CELLS_PER_TEXEL = 4;
 const BLUR_RADIUS = 3;
 const BLUR_GAIN = 1.6;
 const FULL_GLOW = 22;
@@ -13,15 +13,15 @@ const GLOW_STRENGTH = 2.6;
 
 export type BurningCells = Pick<SimulationFrame, "burningCells" | "burningIntensity">;
 
-function blur(source: Float32Array, target: Float32Array, step: number): void {
+function blur(source: Float32Array, target: Float32Array, step: number, resolution: number): void {
   for (let texel = 0; texel < target.length; texel += 1) {
-    const along = Math.floor(texel / step) % GLOW_RESOLUTION;
+    const along = Math.floor(texel / step) % resolution;
 
     let sum = 0;
     let count = 0;
 
     for (let offset = -BLUR_RADIUS; offset <= BLUR_RADIUS; offset += 1) {
-      if (along + offset >= 0 && along + offset < GLOW_RESOLUTION) {
+      if (along + offset >= 0 && along + offset < resolution) {
         sum += source[texel + offset * step];
         count += 1;
       }
@@ -33,18 +33,23 @@ function blur(source: Float32Array, target: Float32Array, step: number): void {
 
 export class FireGlow {
   readonly texture: DataTexture;
-  readonly #accumulated = new Float32Array(GLOW_RESOLUTION * GLOW_RESOLUTION);
-  readonly #cellsPerTexel: number;
-  readonly #data = new Uint8Array(GLOW_RESOLUTION * GLOW_RESOLUTION);
+  readonly #accumulated: Float32Array;
+  readonly #data: Uint8Array;
   readonly #grid: WorldGrid;
-  readonly #scratch = new Float32Array(GLOW_RESOLUTION * GLOW_RESOLUTION);
+  readonly #resolution: number;
+  readonly #scratch: Float32Array;
   #frame: BurningCells | null = null;
   #litTexels = 0;
 
   constructor(grid: WorldGrid) {
+    const resolution = Math.ceil(grid.cellsPerSide / CELLS_PER_TEXEL);
+
     this.#grid = grid;
-    this.#cellsPerTexel = grid.cellsPerSide / GLOW_RESOLUTION;
-    this.texture = new DataTexture(this.#data, GLOW_RESOLUTION, GLOW_RESOLUTION, RedFormat, UnsignedByteType);
+    this.#resolution = resolution;
+    this.#accumulated = new Float32Array(resolution * resolution);
+    this.#data = new Uint8Array(resolution * resolution);
+    this.#scratch = new Float32Array(resolution * resolution);
+    this.texture = new DataTexture(this.#data, resolution, resolution, RedFormat, UnsignedByteType);
     this.texture.minFilter = LinearFilter;
     this.texture.magFilter = LinearFilter;
     this.texture.wrapS = ClampToEdgeWrapping;
@@ -63,11 +68,13 @@ export class FireGlow {
       return;
     }
 
+    const resolution = this.#resolution;
+
     this.#accumulate(frame);
-    blur(this.#accumulated, this.#scratch, 1);
-    blur(this.#scratch, this.#accumulated, GLOW_RESOLUTION);
-    blur(this.#accumulated, this.#scratch, 1);
-    blur(this.#scratch, this.#accumulated, GLOW_RESOLUTION);
+    blur(this.#accumulated, this.#scratch, 1, resolution);
+    blur(this.#scratch, this.#accumulated, resolution, resolution);
+    blur(this.#accumulated, this.#scratch, 1, resolution);
+    blur(this.#scratch, this.#accumulated, resolution, resolution);
     this.#writeTexture();
   }
 
@@ -81,10 +88,10 @@ export class FireGlow {
     this.#accumulated.fill(0);
 
     for (const [index, cell] of frame.burningCells.entries()) {
-      const column = Math.floor(grid.columnOf(cell) / this.#cellsPerTexel);
-      const row = Math.floor(grid.rowOf(cell) / this.#cellsPerTexel);
+      const column = Math.floor(grid.columnOf(cell) / CELLS_PER_TEXEL);
+      const row = Math.floor(grid.rowOf(cell) / CELLS_PER_TEXEL);
 
-      this.#accumulated[row * GLOW_RESOLUTION + column] += frame.burningIntensity[index] / BYTE;
+      this.#accumulated[row * this.#resolution + column] += frame.burningIntensity[index] / BYTE;
     }
   }
 
