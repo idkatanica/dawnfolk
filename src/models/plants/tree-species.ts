@@ -289,8 +289,35 @@ function spruce(seed: number): TreeStructure {
   }
 
   tuckTrunk(growth, Math.min(height, skirtCeiling(growth.foliage)));
+  addSpruceStubs(growth, trunk, height);
 
   return finish(growth, height);
+}
+
+const STUBS_PER_TIER = 3;
+const BARE_TOP_TIERS = 2;
+
+function addSpruceStubs(growth: Growth, trunk: readonly TubePoint[], height: number): void {
+  const { random } = growth;
+
+  const skirts = growth.foliage.filter((item) => item.kind === "skirt");
+
+  for (const [tier, skirt] of skirts.slice(0, -BARE_TOP_TIERS).entries()) {
+    for (let stub = 0; stub < STUBS_PER_TIER; stub += 1) {
+      const azimuth = (tier * 0.37 + stub / STUBS_PER_TIER) * FULL_TURN + jitter(random, 0.4);
+
+      addLimb(growth, trunk, (skirt.bottom + 0.3) / height, azimuth, {
+        bend: 0.05,
+        depth: 2,
+        gravity: 0.06,
+        length: skirt.radius * random.between(0.4, 0.65),
+        radiusEnd: 0.02,
+        segments: 2,
+        tilt: random.between(1.2, 1.45),
+        wobble: 0.2,
+      });
+    }
+  }
 }
 
 const TUCKED_SHARE = 0.12;
