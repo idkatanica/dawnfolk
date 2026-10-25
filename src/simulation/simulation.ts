@@ -43,12 +43,14 @@ const CROWDING_TICKS = 2;
 const FIRST_STROKE_SECONDS = 1 / 30;
 const HERDS_PER_SQUARE_KILOMETER = 0.61;
 const SMALL_GAME_GROUPS_PER_SQUARE_KILOMETER = 0.92;
-const STARTING_TRIBES = 2;
+const STARTING_TRIBES = 3;
 const STARTING_TRIBE_SIZE = 7;
 const STARTING_SPOTS: readonly Waypoint[] = [
   { x: -0.35, z: 0.25 },
   { x: -0.6, z: 0.6 },
+  { x: 0.05, z: 0.5 },
   { x: 0.25, z: -0.2 },
+  { x: -0.5, z: 0 },
 ];
 const HUNTER_NOTICE_DISTANCE = 18;
 const GLOWING_EMBER_INTENSITY = 0.35;

@@ -5,7 +5,7 @@ export interface GridDimensions {
   cellsPerSide: number;
 }
 
-export const DEFAULT_GRID_DIMENSIONS: GridDimensions = { cellSize: 10, cellsPerSide: 512 };
+export const DEFAULT_GRID_DIMENSIONS: GridDimensions = { cellSize: 10, cellsPerSide: 640 };
 
 const SQUARE_METERS_PER_SQUARE_KILOMETER = 1_000_000;
 

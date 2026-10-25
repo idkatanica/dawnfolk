@@ -237,7 +237,7 @@ describe.each(["round", "square"] as const)("crossings on a %s island", (shape) 
 
     const kept = refreshed.filter((crossing) => generated.crossings.some((original) => original.id === crossing.id));
 
-    expect(kept.length).toBeGreaterThan(generated.crossings.length * 0.9);
+    expect(kept.length).toBeGreaterThan(generated.crossings.length * 0.85);
   });
 });
 

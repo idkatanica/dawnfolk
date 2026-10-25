@@ -11,7 +11,7 @@ test("the island rises with its tribes, runs time and shows the settings of a po
 
   await expect(page.getByRole("toolbar", { name: "Powers" })).toBeVisible();
   await expect(page.getByRole("button", { exact: true, name: "Select" })).toHaveAttribute("aria-pressed", "true");
-  await expect(tribes.getByRole("listitem", { includeHidden: true })).toHaveCount(2);
+  await expect(tribes.getByRole("listitem", { includeHidden: true })).toHaveCount(3);
   await expect(places.getByText(PEAK_HEIGHT)).toBeAttached();
 
   await page.getByRole("button", { exact: true, name: "Resume" }).click();
