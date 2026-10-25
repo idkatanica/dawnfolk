@@ -14,6 +14,8 @@ export const Biome = {
   Water: 0,
 } as const;
 
+export const WOODED_BIOMES: ReadonlySet<number> = new Set([Biome.Forest, Biome.Taiga]);
+
 export type BiomeIndex = (typeof Biome)[keyof typeof Biome];
 
 const BIOME_INDICES: ReadonlySet<number> = new Set(Object.values(Biome));

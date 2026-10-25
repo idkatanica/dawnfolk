@@ -3,10 +3,9 @@ import { MONUMENT_SLOPE, MONUMENTS } from "../content/monuments.ts";
 import { isMonumentSpecies, plantSpeciesDefinition } from "../content/plants.ts";
 import { canStandOn } from "../world/footing.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
-import { monumentGround } from "../world/monuments.ts";
 import { isWaterCell } from "../world/terrain-sampling.ts";
 import { WorldGrid } from "../world/world-grid.ts";
-import { type GeneratedWorld, generateWorld } from "./world-generator.ts";
+import { cellMask, type GeneratedWorld, generateWorld } from "./world-generator.ts";
 
 const TEST_DIMENSIONS = { cellSize: 40, cellsPerSide: 128 };
 const DRY_REACH = 30;
@@ -76,7 +75,7 @@ describe.each(["round", "square"] as const)("monuments on a %s island", (shape) 
     const { monuments, vegetation } = worldOf(shape);
 
     const grid = new WorldGrid(TEST_DIMENSIONS);
-    const ground = monumentGround(grid.cellCount, monuments);
+    const ground = cellMask(grid.cellCount, monuments);
 
     let stones = 0;
 

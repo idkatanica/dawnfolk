@@ -15,7 +15,7 @@ import {
 import { NEIGHBOR_OFFSETS, type WorldGrid } from "../world/world-grid.ts";
 import { carvePond } from "./ponds.ts";
 import { interpolatePoint, makeSurfaceDescend, smoothRiverPath } from "./river-paths.ts";
-import { spaceRiverChains } from "./river-spacing.ts";
+import { type RiverLand, spaceRiverChains } from "./river-spacing.ts";
 import { placeSprings } from "./springs.ts";
 
 const DIAGONAL_REACH = 0.75;
@@ -477,15 +477,8 @@ interface NeighborCell {
   readonly outwardZ: number;
 }
 
-interface RiverNetwork {
-  readonly basins: DrainageBasins;
-  readonly coastDistance: Float32Array;
-  readonly grid: WorldGrid;
-  readonly heights: Float32Array;
-}
-
-function buildRivers(chains: readonly RiverChain[], network: RiverNetwork): River[] {
-  const { basins, grid, heights } = network;
+function buildRivers(chains: readonly RiverChain[], land: RiverLand): River[] {
+  const { basins, grid, heights } = land;
 
   const rivers: River[] = [];
   const surfaces = new Map<number, number>();
@@ -520,7 +513,7 @@ function buildRivers(chains: readonly RiverChain[], network: RiverNetwork): Rive
     const smoothed = smoothRiverPath(points, 2);
 
     if (reachesEdge) {
-      runPastCoast(smoothed, network, claimedPastCoast);
+      runPastCoast(smoothed, land, claimedPastCoast);
     }
 
     rivers.push({ id: rivers.length, points: smoothed, reachesEdge });
@@ -562,8 +555,8 @@ function offIslandNeighbors(cell: number, grid: WorldGrid, coastDistance: Float3
   return neighbors;
 }
 
-function cellPastCoast(mouthCell: number, network: RiverNetwork, claimed: ReadonlySet<number>): number {
-  const neighbors = offIslandNeighbors(mouthCell, network.grid, network.coastDistance);
+function cellPastCoast(mouthCell: number, land: RiverLand, claimed: ReadonlySet<number>): number {
+  const neighbors = offIslandNeighbors(mouthCell, land.grid, land.coastDistance);
 
   const outwardX = neighbors.reduce((total, neighbor) => total + neighbor.outwardX, 0);
   const outwardZ = neighbors.reduce((total, neighbor) => total + neighbor.outwardZ, 0);
@@ -583,8 +576,8 @@ function cellPastCoast(mouthCell: number, network: RiverNetwork, claimed: Readon
   return best;
 }
 
-function runPastCoast(points: RiverPoint[], network: RiverNetwork, claimed: Set<number>): void {
-  const { grid } = network;
+function runPastCoast(points: RiverPoint[], land: RiverLand, claimed: Set<number>): void {
+  const { grid } = land;
 
   const mouth = points.at(-1);
 
@@ -592,7 +585,7 @@ function runPastCoast(points: RiverPoint[], network: RiverNetwork, claimed: Set<
     return;
   }
 
-  const cell = cellPastCoast(grid.cellAt(mouth.x, mouth.z), network, claimed);
+  const cell = cellPastCoast(grid.cellAt(mouth.x, mouth.z), land, claimed);
 
   if (cell === NO_CELL) {
     return;
@@ -729,7 +722,7 @@ function carveCell(
   distanceFromCenter: number,
   sampled: RiverPoint,
   targets: ChannelTargets,
-  isPastCoast = false
+  isPastCoast: boolean
 ): void {
   const halfWidth = sampled.width / 2;
   const wetReach = Math.max(halfWidth, targets.grid.cellSize * DIAGONAL_REACH);
@@ -1128,14 +1121,10 @@ export function computeHydrology(
 
   const riverStrength = new Uint8Array(grid.cellCount);
 
-  const chains = spaceRiverChains(traceRiverChains(basins.network, lakeIds, riverThreshold), {
-    basins,
-    coastDistance,
-    grid,
-    heights,
-  });
+  const land: RiverLand = { basins, coastDistance, grid, heights };
 
-  const rivers = buildRivers(chains, { basins, coastDistance, grid, heights });
+  const chains = spaceRiverChains(traceRiverChains(basins.network, lakeIds, riverThreshold), land);
+  const rivers = buildRivers(chains, land);
   const springs = placeSprings(rivers, { grid, heights, lakeIds, riverThreshold });
   const targets: ChannelTargets = {
     coastDistance,

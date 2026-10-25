@@ -1,4 +1,4 @@
-import { Biome } from "../content/biomes.ts";
+import { WOODED_BIOMES } from "../content/biomes.ts";
 import { Ground } from "../content/grounds.ts";
 import { lerp, smoothstep } from "../shared/math.ts";
 import { createNoiseSampler, type NoiseSampler } from "../shared/noise.ts";
@@ -7,7 +7,6 @@ import type { TerrainData } from "../world/terrain-data.ts";
 import { isWaterCell } from "../world/terrain-sampling.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 
-const WOODED_BIOMES: ReadonlySet<number> = new Set([Biome.Forest, Biome.Taiga]);
 const GLADE_SPAN = 640;
 const GLADE_OPEN = -0.47;
 const GLADE_WOODED = -0.35;

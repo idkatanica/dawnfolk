@@ -16,11 +16,7 @@ export interface RiverLand {
   readonly heights: Float32Array;
 }
 
-interface Spacing {
-  readonly basins: DrainageBasins;
-  readonly coastDistance: Float32Array;
-  readonly grid: WorldGrid;
-  readonly heights: Float32Array;
+interface Spacing extends RiverLand {
   readonly owners: Int32Array;
   readonly reach: number;
 }
@@ -206,10 +202,6 @@ function isFedByLake(chain: RiverChain, spacing: Spacing): boolean {
 
   const [head] = chain.cells;
 
-  if (head === undefined) {
-    return false;
-  }
-
   return grid
     .cellsInRadius(grid.cellCenterX(head), grid.cellCenterZ(head), grid.cellSize * SPACING_CELLS)
     .some((cell) => basins.lakeIds[cell] !== NO_CELL);
@@ -237,15 +229,11 @@ function byMouthFlow(basins: DrainageBasins): (first: RiverChain, second: RiverC
   };
 }
 
-export function spaceRiverChains(
-  chains: readonly RiverChain[],
-  { basins, coastDistance, grid, heights }: RiverLand
-): RiverChain[] {
+export function spaceRiverChains(chains: readonly RiverChain[], land: RiverLand): RiverChain[] {
+  const { basins, grid } = land;
+
   const spacing: Spacing = {
-    basins,
-    coastDistance,
-    grid,
-    heights,
+    ...land,
     owners: new Int32Array(grid.cellCount).fill(NO_CELL),
     reach: Math.max(LARGEST_SPACING, HEAD_CLEARANCE, grid.cellSize * SPACING_CELLS),
   };
@@ -255,7 +243,7 @@ export function spaceRiverChains(
   for (const chain of [...chains].sort(byMouthFlow(basins))) {
     const kept = spacedChain(chain, spacing);
 
-    if (kept === null || kept.cells.length === 0 || !isLongEnough(kept, spacing)) {
+    if (kept === null || !isLongEnough(kept, spacing)) {
       continue;
     }
 

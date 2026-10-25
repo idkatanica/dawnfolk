@@ -22,15 +22,3 @@ export interface Monument {
   readonly x: number;
   readonly z: number;
 }
-
-export function monumentGround(cellCount: number, monuments: readonly Monument[]): Uint8Array {
-  const ground = new Uint8Array(cellCount);
-
-  for (const monument of monuments) {
-    for (const cell of monument.cells) {
-      ground[cell] = 1;
-    }
-  }
-
-  return ground;
-}

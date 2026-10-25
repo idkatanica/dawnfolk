@@ -1,4 +1,4 @@
-import { Biome } from "../../content/biomes.ts";
+import { WOODED_BIOMES } from "../../content/biomes.ts";
 import { Ground, type GroundIndex, groundDefinition } from "../../content/grounds.ts";
 import { PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import type { PowerParameters } from "../../content/powers.ts";
@@ -19,7 +19,6 @@ const DEFAULT_DENSITY = 0.5;
 const CROWDED_CELL = 2;
 const SNOWY_PAINT = 0.6;
 const HOT_CLIMATE = 14;
-const FORESTED_BIOMES: ReadonlySet<number> = new Set([Biome.Forest, Biome.Taiga]);
 
 type ForestSpecies = PowerParameters<"forest">["species"];
 
@@ -143,7 +142,7 @@ function plantTree(cell: number, species: PlantSpeciesIndex, services: PowerServ
     z: grid.cellCenterZ(cell) + random.between(-0.4, 0.4) * grid.cellSize,
   });
 
-  const isForestLand = FORESTED_BIOMES.has(world.terrain.biome[cell]);
+  const isForestLand = WOODED_BIOMES.has(world.terrain.biome[cell]);
 
   if (isForestLand && groundDefinition(world.terrain.ground[cell]).fuel > 0) {
     world.setGround(cell, Ground.Forest);
