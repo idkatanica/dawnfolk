@@ -9,8 +9,7 @@ export const PlantSpecies = {
   Boulder: 8,
   Bush: 6,
   Cactus: 7,
-  Cairn: 25,
-  Crag: 15,
+  Cairn: 15,
   DeadTree: 12,
   DesertShrub: 13,
   Dolmen: 21,
@@ -216,13 +215,13 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
   },
   {
     canopyFuel: 0,
-    form: "stone",
+    form: "monument",
     givesBerries: false,
-    heightRange: [3, 5.5],
-    index: PlantSpecies.Crag,
-    name: "Crag",
-    radiusPerMeter: 0.4,
-    steepestSlope: 1.05,
+    heightRange: [1.3, 4.4],
+    index: PlantSpecies.Cairn,
+    name: "Cairn",
+    radiusPerMeter: 0.79,
+    steepestSlope: 0.35,
     wood: 0,
   },
   {
@@ -324,17 +323,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     steepestSlope: 0.35,
     wood: 0,
   },
-  {
-    canopyFuel: 0,
-    form: "monument",
-    givesBerries: false,
-    heightRange: [1.3, 4.4],
-    index: PlantSpecies.Cairn,
-    name: "Cairn",
-    radiusPerMeter: 0.79,
-    steepestSlope: 0.35,
-    wood: 0,
-  },
   ...CULTIVATED_PLANT_SPECIES,
 ];
 
@@ -411,7 +399,6 @@ export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]
   [Biome.Desert]: [
     { chancePerCell: 0.03, heightScale: 1, species: PlantSpecies.Cactus },
     { chancePerCell: 0.012, heightScale: 1, species: PlantSpecies.Boulder },
-    { chancePerCell: 0.06, heightScale: 1, species: PlantSpecies.DesertShrub },
     { chancePerCell: 0.008, heightScale: 0.85, species: PlantSpecies.Acacia },
     { chancePerCell: 0.004, heightScale: 0.9, species: PlantSpecies.DeadTree },
     { chancePerCell: 0.003, heightScale: 0.9, minimumTemperature: WARM, species: PlantSpecies.Palm },
@@ -480,7 +467,6 @@ export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]
 export const ROCK_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> = {
   [Biome.Alpine]: [
     { chancePerCell: 0.03, heightScale: 1, species: PlantSpecies.Scree },
-    { chancePerCell: 0.012, heightScale: 1, species: PlantSpecies.Crag },
     { chancePerCell: 0.025, heightScale: 1, maximumTemperature: COLD, species: PlantSpecies.FrostedRock },
   ],
   [Biome.Beach]: [{ chancePerCell: 0.003, heightScale: 0.8, species: PlantSpecies.Slab }],
@@ -500,17 +486,14 @@ export const ROCK_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> =
   [Biome.Mesa]: [
     { chancePerCell: 0.025, heightScale: 1, species: PlantSpecies.Sandstone },
     { chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.Scree },
-    { chancePerCell: 0.006, heightScale: 1, species: PlantSpecies.Crag },
   ],
   [Biome.Scrub]: [
-    { chancePerCell: 0.006, heightScale: 1, species: PlantSpecies.Crag },
     { chancePerCell: 0.006, heightScale: 1, species: PlantSpecies.Scree },
     { chancePerCell: 0.004, heightScale: 1, species: PlantSpecies.Slab },
   ],
   [Biome.Steppe]: [
     { chancePerCell: 0.005, heightScale: 1, species: PlantSpecies.Slab },
     { chancePerCell: 0.003, heightScale: 1, species: PlantSpecies.Scree },
-    { chancePerCell: 0.002, heightScale: 0.8, species: PlantSpecies.Crag },
   ],
   [Biome.Swamp]: [{ chancePerCell: 0.006, heightScale: 0.8, species: PlantSpecies.MossyRock }],
   [Biome.Taiga]: [

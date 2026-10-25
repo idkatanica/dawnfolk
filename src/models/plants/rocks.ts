@@ -22,7 +22,6 @@ import type { PlantDetailLevel } from "./tree-mesher.ts";
 
 type RockSpecies =
   | typeof PlantSpecies.Boulder
-  | typeof PlantSpecies.Crag
   | typeof PlantSpecies.FrostedRock
   | typeof PlantSpecies.MossyRock
   | typeof PlantSpecies.Sandstone
@@ -31,7 +30,6 @@ type RockSpecies =
 
 export const ROCK_HEIGHTS = {
   [PlantSpecies.Boulder]: 1.7,
-  [PlantSpecies.Crag]: 4.2,
   [PlantSpecies.FrostedRock]: 1.6,
   [PlantSpecies.MossyRock]: 1.5,
   [PlantSpecies.Sandstone]: 2.6,
@@ -41,7 +39,6 @@ export const ROCK_HEIGHTS = {
 
 export const ROCK_VARIANT_COUNTS = {
   [PlantSpecies.Boulder]: 4,
-  [PlantSpecies.Crag]: 3,
   [PlantSpecies.FrostedRock]: 3,
   [PlantSpecies.MossyRock]: 3,
   [PlantSpecies.Sandstone]: 3,
@@ -191,72 +188,6 @@ function slab(context: RockContext): void {
     },
     SLAB_LOOK
   );
-}
-
-const CRAG_CUT: ChiselOptions = {
-  cuts: 10,
-  depth: 0.55,
-  flats: [
-    { distance: 0.82, normal: [0.35, 1, 0.2] },
-    { distance: 0.84, normal: [1, 0, 0.3] },
-    { distance: 0.8, normal: [-0.5, 0, 1] },
-  ],
-  radius: 1,
-  roughness: 0.14,
-};
-
-const CRAG_LOOK: StoneLook = { lichen: 0.12, moss: 0.15 };
-
-function crag(context: RockContext): void {
-  const { random, variant } = context;
-
-  if (variant === 1) {
-    const [west, east] = sharedChisel(context, CRAG_CUT, [
-      { distance: 0.05, normal: [1, 0, 0.2] },
-      { distance: 0.05, normal: [-1, 0, -0.2] },
-    ]);
-
-    addStone(
-      context,
-      west,
-      { bottom: -0.25, position: [-0.18, 1.22, 0], rotation: [0, 0, 0.06], scale: [1.1, 2.05, 0.9] },
-      CRAG_LOOK
-    );
-    addStone(
-      context,
-      east,
-      { bottom: -0.2, position: [0.2, 0.85, 0.04], rotation: [0.02, 0.08, -0.07], scale: [1.1, 1.95, 0.9] },
-      CRAG_LOOK
-    );
-
-    return;
-  }
-
-  addStone(
-    context,
-    chisel(context, CRAG_CUT),
-    {
-      bottom: -0.35,
-      position: [0, 1.66, 0],
-      rotation: [random.signed() * 0.05, random.next() * FULL_TURN, random.signed() * 0.05],
-      scale: [1.05, 2.05, 0.85],
-    },
-    CRAG_LOOK
-  );
-
-  if (variant === 2) {
-    addStone(
-      context,
-      chisel(context, { ...CRAG_CUT, radius: 0.72 }),
-      {
-        bottom: -0.25,
-        position: [0.95, 1.05, 0.35],
-        rotation: [random.signed() * 0.08, random.next() * FULL_TURN, -0.1],
-        scale: [1, 1.8, 0.9],
-      },
-      CRAG_LOOK
-    );
-  }
 }
 
 interface ScreeStone {
@@ -524,7 +455,6 @@ function frostedRock(context: RockContext): void {
 
 const ROCK_MESHERS: Readonly<Record<RockSpecies, (context: RockContext) => void>> = {
   [PlantSpecies.Boulder]: boulder,
-  [PlantSpecies.Crag]: crag,
   [PlantSpecies.FrostedRock]: frostedRock,
   [PlantSpecies.MossyRock]: mossyRock,
   [PlantSpecies.Sandstone]: sandstone,
