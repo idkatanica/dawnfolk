@@ -360,6 +360,10 @@ export class WorldRenderer {
 
     this.#axes.update(view.camera);
     this.#fire.smoke.brightness.value = 0.3 + this.#atmosphere.daylight * 0.7;
+    this.#fire.smoke.sunlight.value = this.#atmosphere.daylight;
+    this.#fire.smoke.sunDirection.value
+      .subVectors(this.#atmosphere.sun.position, this.#atmosphere.sun.target.position)
+      .normalize();
     this.#fire.smoke.wind.value.set(weather.windX, weather.windZ).multiplyScalar(Math.min(1.5, metersPerSecond / 5));
     this.#fire.update(this.#mirror, view.camera, darkness);
     this.#effects.add(view.effects);

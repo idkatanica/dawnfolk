@@ -10,7 +10,7 @@ import { CameraAxes } from "./billboards.ts";
 import { FireView } from "./fire-view.ts";
 
 const BYTE = 255;
-const PUFFS_PER_COLUMN = 6;
+const LIGHT_SMOKE_PUFFS = 16;
 const SPARKS_PER_CELL = 2;
 
 interface Scene {
@@ -149,7 +149,7 @@ describe("fire view", () => {
     setBurning(mirror, burningRange(0, 200, 0.5));
     fire.update(mirror, camera, 0);
 
-    const columns = fire.puffCount / PUFFS_PER_COLUMN;
+    const columns = fire.puffCount / LIGHT_SMOKE_PUFFS;
 
     expect(Number.isInteger(columns)).toBe(true);
     expect(columns).toBeGreaterThan(20);
