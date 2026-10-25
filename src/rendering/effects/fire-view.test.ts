@@ -4,6 +4,7 @@ import { isTreeSpecies } from "../../content/plants.ts";
 import { WorldMirror } from "../../game/world-mirror.ts";
 import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
+import { SURFACE_CHANNELS, SurfaceChannel } from "../../world/agent-buffers.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 import { VegetationChunks } from "../vegetation/vegetation-chunks.ts";
 import { CameraAxes } from "./billboards.ts";
@@ -40,6 +41,20 @@ function setBurning(mirror: WorldMirror, burning: ReadonlyMap<number, number>): 
     burningIntensity: Uint8Array.from([...burning.values()].map((intensity) => Math.round(intensity * BYTE))),
     tick: mirror.frame.tick + 1,
   };
+}
+
+function burnTreesIn(mirror: WorldMirror, cell: number): void {
+  const { grid, vegetation } = mirror;
+
+  for (let plant = 0; plant < vegetation.count; plant += 1) {
+    if (grid.cellAt(vegetation.x[plant], vegetation.z[plant]) === cell && isTreeSpecies(vegetation.species[plant])) {
+      vegetation.state[plant] = PlantState.Burnt;
+    }
+  }
+}
+
+function setScorch(mirror: WorldMirror, cell: number, scorch: number): void {
+  mirror.surface[cell * SURFACE_CHANNELS + SurfaceChannel.Scorch] = Math.round(scorch * BYTE);
 }
 
 function burningRange(firstCell: number, lastCell: number, intensity: number): Map<number, number> {
@@ -132,15 +147,52 @@ describe("fire view", () => {
     expect(fire.flameCount).toBeGreaterThan(2);
   });
 
-  it("keeps tree crowns calm under a weak fire", () => {
+  it("keeps tree crowns calm under a smouldering fire", () => {
     const { camera, fire, mirror } = createScene();
 
     const cell = cellWithLivingTree(mirror);
 
-    setBurning(mirror, new Map([[cell, 0.4]]));
+    setBurning(mirror, new Map([[cell, 0.05]]));
     fire.update(mirror, camera, 0);
 
-    expect(fire.flameCount).toBe(1);
+    expect(fire.flameCount).toBe(0);
+  });
+
+  it("raises fewer tongues from crowns as the fire weakens", () => {
+    const { camera, fire, mirror } = createScene();
+
+    const cell = cellWithLivingTree(mirror);
+
+    setBurning(mirror, new Map([[cell, 0.9]]));
+    fire.update(mirror, camera, 0);
+
+    const fierce = fire.flameCount;
+
+    setBurning(mirror, new Map([[cell, 0.2]]));
+    fire.update(mirror, camera, 0);
+
+    expect(fire.flameCount).toBeGreaterThan(0);
+    expect(fire.flameCount).toBeLessThan(fierce);
+  });
+
+  it("burns what is left of a burnt crown until the cell is scorched", () => {
+    const { camera, fire, mirror } = createScene();
+
+    const cell = cellWithLivingTree(mirror);
+
+    burnTreesIn(mirror, cell);
+    setScorch(mirror, cell, 0.65);
+    setBurning(mirror, new Map([[cell, 0.25]]));
+    fire.update(mirror, camera, 0);
+
+    const smouldering = fire.flameCount;
+
+    setScorch(mirror, cell, 1);
+    setBurning(mirror, new Map([[cell, 0.25]]));
+    fire.update(mirror, camera, 0);
+
+    expect(smouldering).toBeGreaterThan(0);
+    expect(fire.flameCount).toBe(0);
   });
 
   it("puffs smoke over about one burning cell in five", () => {

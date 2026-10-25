@@ -283,6 +283,28 @@ describe("tree details", () => {
     }
   });
 
+  it("hides stubs of branches under near spruce tiers for the burnt snag", () => {
+    function woodReach(spruce: MeshData): number {
+      let reach = 0;
+
+      for (let vertex = 0; vertex < vertexCount(spruce); vertex += 1) {
+        if (spruce.channels.slot[vertex] !== MaterialSlot.Needle) {
+          reach = Math.max(reach, Math.hypot(spruce.positions[vertex * 3], spruce.positions[vertex * 3 + 2]));
+        }
+      }
+
+      return reach;
+    }
+
+    for (const spruce of buildPlantVariants(PlantSpecies.Spruce, "high")) {
+      expect(woodReach(spruce)).toBeGreaterThan(1);
+    }
+
+    for (const spruce of buildPlantVariants(PlantSpecies.Spruce, "low")) {
+      expect(woodReach(spruce)).toBeLessThan(1);
+    }
+  });
+
   it("grows a different kind of cactus from each variant", () => {
     const [saguaro, organPipe, barrel, pricklyPear] = buildPlantVariants(PlantSpecies.Cactus, "high");
 

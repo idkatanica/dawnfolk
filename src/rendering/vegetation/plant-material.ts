@@ -1,9 +1,9 @@
 import {
+  abs,
   attribute,
   cameraPosition,
   clamp,
   dot,
-  equal,
   Fn,
   float,
   fract,
@@ -19,9 +19,9 @@ import {
   normalWorld,
   positionLocal,
   positionWorld,
-  select,
   sin,
   smoothstep,
+  step,
   textureLoad,
   time,
   uniform,
@@ -33,12 +33,12 @@ import { Color, MeshStandardNodeMaterial, type Node, Vector2 } from "three/webgp
 import { MaterialSlot } from "../../models/materials.ts";
 import { BERRY_PART } from "../../models/plants/berries.ts";
 import { clamp as clampNumber } from "../../shared/math.ts";
-import { PlantState } from "../../world/vegetation-store.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import { coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
+import { burnGlow, charredColor, plantBurn } from "./plant-burning.ts";
 
 const CALM_GUST = 0.12;
 const STRONGEST_GUST = 2;
@@ -88,24 +88,45 @@ const LEAF_BUMP_STRENGTH = 0.55;
 const LEAF_DETAIL_FADE_START = 1600;
 const LEAF_DETAIL_FADE_END = 2400;
 const CROWN_FIRE_LIGHT = 0.45;
-const SMOULDER_COLOR = vec3(1, 0.33, 0.06);
-const SMOULDER_STRENGTH = 2.4;
-const SMOULDER_HEIGHT = 5;
-const SMOULDER_HEAT = 0.02;
-const SMOULDER_CRACK_SCALE = 3.4;
+const CROWN_BURN_SHRINK = 0.6;
+const TIER_BURN_SHRINK = 0.85;
+const CROWN_LEFT_FLOOR = 0.06;
+const STRICTLY_ABOVE = 0.0001;
 const FALLEN_TILT = Math.PI / 2 - 0.06;
 const FALLEN_CHARRING = 0.85;
 
+export interface CrownShape {
+  readonly hasTiers: boolean;
+  readonly middle: number;
+}
+
 interface PlantMaterialOptions {
+  readonly crown: CrownShape;
   readonly glow: FireGlow;
   readonly grid: WorldGrid;
+  readonly isFlammable: boolean;
   readonly look: SpeciesLook;
   readonly textures: TerrainTextures;
   readonly weather: PlantWeather;
 }
 
-function isSlot(slot: Node<"float">, value: number): Node<"bool"> {
-  return equal(int(slot.add(0.5)), int(value));
+function slotWeight(slot: Node<"float">, value: number): Node<"float"> {
+  return float(1).sub(step(0.5, abs(slot.sub(value))));
+}
+
+function burntCrown(position: Node<"vec3">, burningAway: Node<"float">, crown: CrownShape): Node<"vec3"> {
+  if (crown.hasTiers) {
+    const narrowing = float(1).sub(burningAway.mul(TIER_BURN_SHRINK));
+
+    return position.mul(vec3(narrowing, 1, narrowing));
+  }
+
+  const middle = vec3(0, crown.middle, 0);
+
+  return position
+    .sub(middle)
+    .mul(float(1).sub(burningAway.mul(CROWN_BURN_SHRINK)))
+    .add(middle);
 }
 
 function tiltOver(vector: Node<"vec3">): Node<"vec3"> {
@@ -142,8 +163,10 @@ function leafBumpAt(foliage: Node<"float">): Node<"vec3"> {
 }
 
 export function createPlantMaterial({
+  crown,
   glow,
   grid,
+  isFlammable,
   look,
   textures,
   weather,
@@ -159,23 +182,43 @@ export function createPlantMaterial({
 
   const scale = appearance.x;
   const tint = appearance.y;
-  const isBurnt = equal(int(appearance.z.add(0.5)), int(PlantState.Burnt));
-  const isFallen = equal(int(appearance.z.add(0.5)), int(PlantState.Fallen));
-  const isDead = isBurnt.or(isFallen);
+  const state = appearance.z;
   const fruit = appearance.w;
 
-  const isFoliage = isSlot(slot, MaterialSlot.Leaf).or(isSlot(slot, MaterialSlot.Needle));
-  const isBlossom = isSlot(slot, MaterialSlot.Blossom);
-  const isBerry = part.greaterThanEqual(BERRY_PART);
+  const alive = float(1).sub(step(0.5, state));
+  const burnt = step(0.5, state).sub(step(1.5, state));
+  const fallen = step(2.5, state);
+  const dead = burnt.add(fallen);
+  const foliage = slotWeight(slot, MaterialSlot.Leaf).add(slotWeight(slot, MaterialSlot.Needle));
+  const blossom = slotWeight(slot, MaterialSlot.Blossom);
+  const berry = step(BERRY_PART, part);
   const treeThreshold = fract(tint.mul(13.7)).mul(0.9).add(0.05);
   const ripening = fract(part.add(tint));
 
-  const hasFoliage = look.foliageCoverage.greaterThan(treeThreshold).and(isDead.not());
-  const hasBerry = fruit.greaterThan(ripening).and(hasFoliage);
+  const last = grid.cellsPerSide - 1;
+  const cell = clamp(placement.xz.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
+  const surface = textureLoad(textures.surface, ivec2(cell));
 
-  const keep = select(isFoliage, hasFoliage, select(isBerry, hasBerry, isBlossom.not().or(isDead.not())));
-  const kept = positionLocal.mul(scale).mul(select(keep, float(1), float(0)));
-  const local = select(isFallen, tiltOver(kept), kept);
+  const burn = plantBurn({
+    alive,
+    burnt,
+    fire: isFlammable ? surface.a : float(0),
+    foliage,
+    height: positionLocal.y.mul(scale),
+    scorch: isFlammable ? surface.b : float(0),
+  });
+
+  const hasCrown = float(1)
+    .sub(dead)
+    .add(burnt.mul(step(CROWN_LEFT_FLOOR, burn.crownLeft)));
+  const hasFoliage = step(treeThreshold.add(STRICTLY_ABOVE), look.foliageCoverage).mul(hasCrown);
+  const hasBerry = step(ripening.add(STRICTLY_ABOVE), fruit).mul(hasFoliage).mul(float(1).sub(dead));
+  const hasPart = mix(float(1).sub(blossom.mul(dead)), hasBerry, berry);
+  const keep = mix(hasPart, hasFoliage, foliage);
+  const burningAway = foliage.mul(burnt).mul(float(1).sub(burn.crownLeft));
+
+  const kept = burntCrown(positionLocal, burningAway, crown).mul(scale).mul(keep);
+  const local = mix(kept, tiltOver(kept), fallen);
 
   const phase = placement.x.mul(0.047).add(placement.z.mul(0.031));
   const swaySquared = sway.mul(sway);
@@ -194,37 +237,33 @@ export function createPlantMaterial({
   const windOffset = vec3(weather.wind.x, 0, weather.wind.y)
     .mul(bend)
     .add(vec3(shiver, shiver.mul(0.5), shiver.negate()))
-    .mul(select(isFallen, float(0), float(1)));
+    .mul(float(1).sub(fallen));
 
   const ground = vec3(0, coarseGroundOffsetNode(textures, grid, placement.xz), 0);
 
   material.positionNode = Fn(() => {
-    normalLocal.assign(rotateAroundUp(select(isFallen, tiltOver(normalLocal), normalLocal), placement.w));
+    normalLocal.assign(rotateAroundUp(mix(normalLocal, tiltOver(normalLocal), fallen), placement.w));
 
     return rotateAroundUp(local, placement.w).add(windOffset).add(placement.xyz).add(ground);
   })();
 
-  const last = grid.cellsPerSide - 1;
-  const cell = clamp(placement.xz.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
-  const surface = textureLoad(textures.surface, ivec2(cell));
-
   const snow = varying(smoothstep(0.1, 0.45, surface.r), "plantSnow");
-  const heat = varying(surface.a, "plantHeat");
-  const charred = varying(select(isDead, float(1), select(isFoliage, float(0), float(0.6))), "plantCharred");
-  const charring = select(isBurnt, float(0.92), select(isFallen, surface.b.mul(FALLEN_CHARRING), float(0)));
+  const embers = varying(burn.embers, "plantEmbers");
+  const flames = varying(burn.flames, "plantFlames");
+  const charring = burn.charring.add(fallen.mul(surface.b).mul(FALLEN_CHARRING));
 
   const slotColors = slotColorTable();
 
   const variation = tint.mul(0.3).add(0.85);
-  const baseColor = select(isFoliage, look.foliageColor.rgb, slotColors.element(int(slot.add(0.5))));
+  const baseColor = mix(slotColors.element(int(slot.add(0.5))), look.foliageColor.rgb, foliage);
 
   const shaded = baseColor.mul(shade).mul(variation);
 
-  const vertexColor = varying(mix(shaded, CHARCOAL, charring), "plantColor");
+  const vertexColor = varying(charredColor(shaded, charring, CHARCOAL), "plantColor");
   const leafDetail = float(1).sub(
     smoothstep(LEAF_DETAIL_FADE_START, LEAF_DETAIL_FADE_END, placement.xyz.distance(cameraPosition))
   );
-  const foliageMask = varying(select(isFoliage.and(isDead.not()), leafDetail, float(0)), "plantFoliage");
+  const foliageMask = varying(foliage.mul(float(1).sub(dead)).mul(leafDetail), "plantFoliage");
   const snowOnTop = snow.mul(smoothstep(0.25, 0.75, normalWorld.y));
 
   const leafPattern = leafPatternAt(foliageMask);
@@ -234,32 +273,9 @@ export function createPlantMaterial({
 
   material.colorNode = mix(vertexColor.mul(leafPattern), SNOW, snowOnTop);
 
-  const nearRoots = varying(smoothstep(SMOULDER_HEIGHT, 0, positionLocal.y.mul(scale)), "plantNearRoots");
+  const burning = burnGlow({ embers, flames, phase: placement.x.mul(0.37).fract().mul(6) });
 
-  const smoulder = Fn(() => {
-    const embers = vec3(0).toVar();
-
-    If(heat.greaterThan(SMOULDER_HEAT).and(charred.mul(nearRoots).greaterThan(0)), () => {
-      const cracks = smoothstep(0.35, 0.75, mx_noise_float(positionWorld.mul(SMOULDER_CRACK_SCALE)).mul(0.5).add(0.5));
-      const breathing = sin(time.mul(1.7).add(placement.x.mul(0.37)).add(positionWorld.y.mul(2.1)))
-        .mul(0.3)
-        .add(0.7);
-
-      embers.assign(
-        SMOULDER_COLOR.mul(
-          cracks
-            .mul(breathing)
-            .mul(charred)
-            .mul(nearRoots)
-            .mul(smoothstep(SMOULDER_HEAT, 0.5, heat))
-        ).mul(SMOULDER_STRENGTH)
-      );
-    });
-
-    return embers;
-  })();
-
-  material.emissiveNode = vertexColor.mul(fireLight).mul(CROWN_FIRE_LIGHT).add(smoulder);
+  material.emissiveNode = vertexColor.mul(fireLight).mul(CROWN_FIRE_LIGHT).add(burning);
   material.normalNode = normalize(normalView.add(leafBump));
   material.roughnessNode = float(0.88);
 
