@@ -50,6 +50,20 @@ describe("camp sites", () => {
     expect(scoreSite({ x: 100, z: -300 }, search, harness.context, [])).toBe(Number.NEGATIVE_INFINITY);
     expect(scoreSite({ x: -100, z: -100 }, search, harness.context, [])).toBeGreaterThan(Number.NEGATIVE_INFINITY);
   });
+
+  it("rank the river bank below ground a short walk back from it", () => {
+    const harness = new SocietyHarness();
+
+    floodStrip(harness.world, 20, 1.5);
+    harness.navigation.rebuild();
+
+    const search = siteSearchNear({ x: 0, z: 0 }, 300, null);
+
+    const onTheBank = scoreSite({ x: -30, z: 100 }, search, harness.context, []);
+    const backFromTheBank = scoreSite({ x: -100, z: 100 }, search, harness.context, []);
+
+    expect(onTheBank).toBeLessThan(backFromTheBank);
+  });
 });
 
 describe("splits", () => {

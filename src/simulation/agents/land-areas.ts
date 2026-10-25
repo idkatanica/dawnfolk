@@ -55,6 +55,16 @@ function slopePenalty(slope: number): number {
   return slope > MODERATE_SLOPE ? 0.4 : 0;
 }
 
+function addHop(hopsFrom: Map<number, Set<number>>, from: number, to: number): void {
+  const targets = hopsFrom.get(from);
+
+  if (targets === undefined) {
+    hopsFrom.set(from, new Set([to]));
+  } else {
+    targets.add(to);
+  }
+}
+
 export class LandAreas {
   readonly #areaHeap = new MinHeap(1024);
   readonly #areaOfCell: Int32Array;
@@ -441,20 +451,36 @@ export class LandAreas {
       return Passage.Ground;
     }
 
-    return this.#world.isBrook(cell) ? Passage.Brook : Passage.Blocked;
+    const world = this.#world;
+
+    return world.isBrook(cell) && !world.isObstructed(cell) ? Passage.Brook : Passage.Blocked;
   }
 
   #findHops(): void {
     const { grid } = this.#world;
 
     const passageOf = (cell: number): Passage => this.#passageOf(cell);
+    const hopsFrom = new Map<number, Set<number>>();
     const targets: number[] = [];
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      if (this.#walkable[cell] === 0 || !bordersBrook(grid, cell, passageOf)) {
+        continue;
+      }
+
+      for (const target of hopTargets(grid, cell, passageOf)) {
+        addHop(hopsFrom, cell, target);
+        addHop(hopsFrom, target, cell);
+      }
+    }
 
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
       this.#hopStart[cell] = targets.length;
 
-      if (this.#walkable[cell] === 1 && bordersBrook(grid, cell, passageOf)) {
-        targets.push(...hopTargets(grid, cell, passageOf));
+      const hops = hopsFrom.get(cell);
+
+      if (hops !== undefined) {
+        targets.push(...hops);
       }
     }
 

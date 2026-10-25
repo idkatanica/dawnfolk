@@ -84,7 +84,7 @@ function isCampable(world: WorldState, cell: number, point: Waypoint): boolean {
 }
 
 function waterScore(world: WorldState, point: Waypoint): number {
-  let nearestWater = Number.POSITIVE_INFINITY;
+  let nearestWater = isBesideWater(world, point) ? 0 : Number.POSITIVE_INFINITY;
 
   for (let sample = 0; sample < WATER_SAMPLES; sample += 1) {
     const angle = (sample / WATER_SAMPLES) * FULL_TURN;
@@ -106,6 +106,10 @@ function waterScore(world: WorldState, point: Waypoint): number {
   }
 
   return closeness;
+}
+
+function isBesideWater(world: WorldState, point: Waypoint): boolean {
+  return world.grid.cellsInRadius(point.x, point.z, TOO_CLOSE_TO_WATER).some((cell) => world.isWater(cell));
 }
 
 interface ForageCount {
