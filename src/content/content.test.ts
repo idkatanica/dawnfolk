@@ -10,6 +10,7 @@ import { personName, tribeIdentity } from "./names.ts";
 import { describeParameters } from "./parameters.ts";
 import {
   isMonumentSpecies,
+  isShrubSpecies,
   isTreeSpecies,
   PLANT_SPECIES,
   PLANTING_RULES,
@@ -64,7 +65,7 @@ describe("indexed content", () => {
 
   it("asks trees for gentler ground than bushes and keeps everything off cliffs", () => {
     const trees = PLANT_SPECIES.filter((species) => isTreeSpecies(species.index));
-    const undergrowth = PLANT_SPECIES.filter((species) => species.form === "shrub" || species.form === "succulent");
+    const undergrowth = PLANT_SPECIES.filter((species) => isShrubSpecies(species.index));
     const steepestTree = Math.max(...trees.map((species) => species.steepestSlope));
     const gentlestUndergrowth = Math.min(...undergrowth.map((species) => species.steepestSlope));
 

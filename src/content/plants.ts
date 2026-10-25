@@ -358,6 +358,12 @@ export function isTreeSpecies(index: number): boolean {
   return isLivingTreeSpecies(index) || plantSpeciesDefinition(index).form === "deadwood";
 }
 
+export function isShrubSpecies(index: number): boolean {
+  const { form } = plantSpeciesDefinition(index);
+
+  return form === "shrub" || form === "succulent";
+}
+
 export function isRockSpecies(index: number): boolean {
   return plantSpeciesDefinition(index).form === "stone";
 }
@@ -373,9 +379,7 @@ export function woodlandShare(index: number, woodland: number): number {
     return woodland;
   }
 
-  const { form } = plantSpeciesDefinition(index);
-
-  if (form === "shrub" || form === "succulent") {
+  if (isShrubSpecies(index)) {
     return lerp(UNDERGROWTH_IN_CLEARINGS, 1, woodland);
   }
 

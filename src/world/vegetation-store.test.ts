@@ -69,6 +69,33 @@ describe("burnt plants", () => {
   });
 });
 
+describe("wear", () => {
+  it("starts again for a plant that takes a freed slot", () => {
+    const store = new VegetationStore(new WorldGrid({ cellSize: 10, cellsPerSide: 8 }), 16);
+
+    const boulder = plantAt(store, PlantSpecies.Boulder, 3);
+
+    store.wearDown(boulder);
+    store.wearDown(boulder);
+    store.remove(boulder);
+
+    const nextBoulder = plantAt(store, PlantSpecies.Boulder, 5);
+
+    expect(nextBoulder).toBe(boulder);
+    expect(store.wearDown(nextBoulder)).toBe(1);
+  });
+
+  it("leaves removed plants alone", () => {
+    const store = new VegetationStore(new WorldGrid({ cellSize: 10, cellsPerSide: 8 }), 16);
+
+    const boulder = plantAt(store, PlantSpecies.Boulder, 3);
+
+    store.remove(boulder);
+
+    expect(store.wearDown(boulder)).toBe(0);
+  });
+});
+
 describe("berry bushes", () => {
   it("change their fruit in index order while plants grow, burn and are cleared", () => {
     const store = new VegetationStore(new WorldGrid({ cellSize: 10, cellsPerSide: 64 }), 4000);

@@ -27,7 +27,6 @@ export interface PeopleDirectory {
   livingWithin: (x: number, z: number, radius: number) => Person[];
   membersOf: (tribe: Tribe) => Person[];
   nearestPerson: (x: number, z: number, radius: number, accepts: (person: Person) => boolean) => Person | null;
-  quarryUses: Map<number, number>;
   tribes: () => readonly Tribe[];
 }
 

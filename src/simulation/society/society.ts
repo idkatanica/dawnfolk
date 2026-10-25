@@ -56,7 +56,6 @@ interface TribeArrival {
 }
 
 export class SocietySystem implements PeopleDirectory, SocietyServices {
-  readonly quarryUses = new Map<number, number>();
   readonly #dependencies: SocietyDependencies;
   readonly #peopleById = new Map<number, Person>();
   readonly #tribesById = new Map<number, Tribe>();

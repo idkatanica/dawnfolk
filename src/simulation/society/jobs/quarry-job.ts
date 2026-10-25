@@ -53,16 +53,6 @@ export function findStone(tick: PersonTick): Job | null {
   return new QuarryJob(tick, cliff);
 }
 
-function previousUses(quarryUses: ReadonlyMap<number, number>, boulder: number): number {
-  const uses = quarryUses.get(boulder);
-
-  if (uses === undefined) {
-    return 0;
-  }
-
-  return uses;
-}
-
 class BoulderJob implements Job {
   readonly claimedPlant: number;
   readonly kind = "quarry";
@@ -88,17 +78,15 @@ class BoulderJob implements Job {
       return this;
     }
 
-    const { people, world } = tick.context;
+    const { world } = tick.context;
 
     const boulder = this.claimedPlant;
-    const uses = previousUses(people.quarryUses, boulder) + 1;
+    const wear = world.vegetation.wearDown(boulder);
 
     pickUp(tick.person, "stone", STONE_PER_TRIP, "stone");
-    people.quarryUses.set(boulder, uses);
     learn(tick.tribe, 0.4, tick.context.rules);
 
-    if (uses >= TRIPS_PER_BOULDER && world.vegetation.isAlive(boulder)) {
-      people.quarryUses.delete(boulder);
+    if (wear >= TRIPS_PER_BOULDER) {
       world.removePlant(boulder);
     }
 
