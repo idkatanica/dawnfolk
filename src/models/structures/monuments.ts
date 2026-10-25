@@ -7,9 +7,18 @@ import { MeshBuilder } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
 import { deformShape, facetShape, type Shape } from "../mesh/shape.ts";
 import { box, type LoftSection, loft } from "../mesh/shapes.ts";
-import { type Triple, transformOf } from "../mesh/transforms.ts";
+import { transformOf } from "../mesh/transforms.ts";
 import { isDistantLevel, type PlantDetailLevel } from "../plants/tree-mesher.ts";
-import { type ChiselOptions, chiseledStone, groundShade, STONE_NOISE, weatheredSlot } from "../stones.ts";
+import {
+  addStone,
+  type ChiselOptions,
+  chiseledStone,
+  groundShade,
+  STONE_NOISE,
+  type StoneContext,
+  type StoneLook,
+  type StonePlacement,
+} from "../stones.ts";
 
 export const MONUMENT_HEIGHTS = {
   [PlantSpecies.Arch]: 5.4,
@@ -28,40 +37,15 @@ const FLUTES = 12;
 const HALF_TURN = Math.PI;
 const QUARTER_TURN = Math.PI / 2;
 
-interface MonumentContext {
-  readonly builder: MeshBuilder;
-  readonly height: number;
+interface MonumentContext extends StoneContext {
   readonly level: PlantDetailLevel;
-  readonly random: RandomSource;
 }
 
-interface PieceLook {
-  readonly lichen: number;
-  readonly moss: number;
-  readonly slot: MaterialSlotIndex;
-}
+const WEATHERED_STONE: StoneLook = { lichen: 0.24, moss: 0.3, slot: MaterialSlot.Stone };
+const CAIRN_STONE: StoneLook = { lichen: 0.26, moss: 0.14, slot: MaterialSlot.Stone };
+const WORKED_STONE: StoneLook = { lichen: 0.22, moss: 0.2, slot: MaterialSlot.PaleStone };
 
-const WEATHERED_STONE: PieceLook = { lichen: 0.24, moss: 0.3, slot: MaterialSlot.Stone };
-const CAIRN_STONE: PieceLook = { lichen: 0.26, moss: 0.14, slot: MaterialSlot.Stone };
-const WORKED_STONE: PieceLook = { lichen: 0.22, moss: 0.2, slot: MaterialSlot.PaleStone };
-
-interface Placement {
-  readonly position?: Triple;
-  readonly rotation?: Triple;
-  readonly scale?: Triple;
-}
-
-function addPiece(context: MonumentContext, shape: Shape, placement: Placement, look: PieceLook): void {
-  context.builder.add(shape, {
-    style: {
-      shade: groundShade(context.height),
-      slot: weatheredSlot({ ...look, base: look.slot, frost: 0, seed: context.random.next() * 40 }),
-    },
-    transform: transformOf(placement),
-  });
-}
-
-function addPlain(context: MonumentContext, shape: Shape, placement: Placement, slot: MaterialSlotIndex): void {
+function addPlain(context: MonumentContext, shape: Shape, placement: StonePlacement, slot: MaterialSlotIndex): void {
   context.builder.add(shape, {
     style: { shade: groundShade(context.height), slot },
     transform: transformOf(placement),
@@ -148,7 +132,7 @@ function menhir(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Me
   const { random } = context;
 
   if (form === "fallen") {
-    addPiece(
+    addStone(
       context,
       standingStone(context, MENHIR),
       { position: [0, 0.12, -1.8], rotation: [QUARTER_TURN, random.signed() * 0.1, random.signed() * 0.08] },
@@ -159,13 +143,13 @@ function menhir(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Me
   }
 
   if (form === "broken") {
-    addPiece(
+    addStone(
       context,
       brokenStone(context, MENHIR, 2.2),
       { rotation: [0.05, 0, random.signed() * 0.05] },
       WEATHERED_STONE
     );
-    addPiece(
+    addStone(
       context,
       standingStone(context, { ...MENHIR, height: 1.7 }),
       { position: [0.45, 0.12, 0.25], rotation: [QUARTER_TURN, 0.9, 0.12] },
@@ -177,7 +161,7 @@ function menhir(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Me
 
   const lean = form === "leaning" ? 0.27 : 0.04;
 
-  addPiece(context, standingStone(context, MENHIR), { rotation: [lean, 0, random.signed() * 0.05] }, WEATHERED_STONE);
+  addStone(context, standingStone(context, MENHIR), { rotation: [lean, 0, random.signed() * 0.05] }, WEATHERED_STONE);
 }
 
 const CAPSTONE: ChiselOptions = {
@@ -198,13 +182,13 @@ function dolmen(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Do
   const side: StandingStone = { height: 2.2, thickness: 0.42, width: 1.5 };
   const back: StandingStone = { height: 2.05, thickness: 0.4, width: 1.7 };
 
-  addPiece(
+  addStone(
     context,
     standingStone(context, side),
     { position: [-1.1, 0, 0.1], rotation: [0, QUARTER_TURN, 0.03] },
     WEATHERED_STONE
   );
-  addPiece(
+  addStone(
     context,
     standingStone(context, back),
     { position: [0, 0, -0.95], rotation: [-0.02, 0, 0] },
@@ -212,13 +196,13 @@ function dolmen(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Do
   );
 
   if (form === "collapsed") {
-    addPiece(
+    addStone(
       context,
       standingStone(context, side),
       { position: [1.55, 0.16, -1], rotation: [QUARTER_TURN, 0.25, 0] },
       WEATHERED_STONE
     );
-    addPiece(
+    addStone(
       context,
       capstone,
       { position: [0.15, 1.18, 0.15], rotation: [0.05, 0.12, -0.62], scale: [1.05, 1, 0.75] },
@@ -228,13 +212,13 @@ function dolmen(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Do
     return;
   }
 
-  addPiece(
+  addStone(
     context,
     standingStone(context, { ...side, height: 2.12 }),
     { position: [1.1, 0, 0.05], rotation: [0, QUARTER_TURN, -0.03] },
     WEATHERED_STONE
   );
-  addPiece(
+  addStone(
     context,
     capstone,
     { position: [0.02, 2.3, 0], rotation: [0.03, 0.1, 0.04], scale: [1.05, 1, 0.75] },
@@ -296,20 +280,20 @@ function noseShape(context: MonumentContext): Shape {
   return facetShape(loft(sections, isDistantLevel(context.level) ? 3 : 4));
 }
 
-function addHead(context: MonumentContext, placement: Placement): void {
+function addHead(context: MonumentContext, placement: StonePlacement): void {
   const { builder, level } = context;
   const head = new MeshBuilder();
   const carving: MonumentContext = { ...context, builder: head };
 
-  addPiece(carving, headShape(context), {}, WEATHERED_STONE);
-  addPiece(
+  addStone(carving, headShape(context), {}, WEATHERED_STONE);
+  addStone(
     carving,
     noseShape(context),
     { position: [0, 0, faceDepth(2.6) - 0.06], rotation: [0.05, 0, 0] },
     WEATHERED_STONE
   );
   for (const side of [-1, 1]) {
-    addPiece(
+    addStone(
       carving,
       standingStone(context, { height: 1.55, thickness: 0.26, width: 0.5 }),
       { position: [side * 1.24, 1.85, 0.12], rotation: [0, QUARTER_TURN, side * 0.06] },
@@ -318,19 +302,19 @@ function addHead(context: MonumentContext, placement: Placement): void {
   }
 
   if (!isDistantLevel(level)) {
-    addPiece(
+    addStone(
       carving,
       hewnBox(context.random, { depth: 0.42, height: 0.32, width: 1.9 }),
       { position: [0, 3.42, faceDepth(3.4) - 0.1], rotation: [-0.12, 0, 0] },
       WEATHERED_STONE
     );
-    addPiece(
+    addStone(
       carving,
       hewnBox(context.random, { depth: 0.34, height: 0.22, width: 0.86 }),
       { position: [0, 1.5, faceDepth(1.5) - 0.08] },
       WEATHERED_STONE
     );
-    addPiece(
+    addStone(
       carving,
       hewnBox(context.random, { depth: 0.36, height: 0.5, width: 0.9 }),
       { position: [0, 0.95, faceDepth(0.95) - 0.12] },
@@ -400,18 +384,18 @@ function drumShape(context: MonumentContext, height: number, broken: boolean): S
   );
 }
 
-const PLINTH: Placement = { position: [0, 0.1, 0] };
+const PLINTH: StonePlacement = { position: [0, 0.1, 0] };
 const DRUM_HEIGHT = 1.15;
 
 function addColumn(context: MonumentContext, drums: number): void {
   const { random } = context;
 
-  addPiece(context, blockShape(context, { depth: 1.36, height: 0.52, width: 1.36 }), PLINTH, WORKED_STONE);
+  addStone(context, blockShape(context, { depth: 1.36, height: 0.52, width: 1.36 }), PLINTH, WORKED_STONE);
 
   for (let drum = 0; drum < drums; drum += 1) {
     const isTop = drum === drums - 1;
 
-    addPiece(
+    addStone(
       context,
       drumShape(context, DRUM_HEIGHT, isTop),
       {
@@ -439,7 +423,7 @@ function pillar(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Pi
   }
 
   for (let drum = 0; drum < 3; drum += 1) {
-    addPiece(
+    addStone(
       context,
       drumShape(context, DRUM_HEIGHT, false),
       {
@@ -511,7 +495,7 @@ function addPier(context: MonumentContext, shape: Shape, x: number, blocks: numb
   const { random } = context;
 
   for (let block = 0; block < blocks; block += 1) {
-    addPiece(
+    addStone(
       context,
       shape,
       {
@@ -526,7 +510,7 @@ function addPier(context: MonumentContext, shape: Shape, x: number, blocks: numb
 function addVoussoir(context: MonumentContext, shape: Shape, index: number): void {
   const angle = (HALF_TURN * (index + 0.5)) / VOUSSOIRS;
 
-  addPiece(
+  addStone(
     context,
     shape,
     {
@@ -540,7 +524,7 @@ function addVoussoir(context: MonumentContext, shape: Shape, index: number): voi
 function farArch(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Arch>): void {
   const pierHeight = PIER_BLOCK.height * 3;
 
-  addPiece(
+  addStone(
     context,
     box(PIER_BLOCK.width, pierHeight, PIER_BLOCK.depth),
     { position: [-SPAN, pierHeight / 2 - 0.12, 0] },
@@ -548,13 +532,13 @@ function farArch(context: MonumentContext, form: PieceForm<typeof PlantSpecies.A
   );
 
   if (form === "collapsed") {
-    addPiece(
+    addStone(
       context,
       box(PIER_BLOCK.width, pierHeight * 0.66, PIER_BLOCK.depth),
       { position: [SPAN, pierHeight * 0.33 - 0.12, 0] },
       WORKED_STONE
     );
-    addPiece(
+    addStone(
       context,
       box(1.6, 0.62, 0.94),
       { position: [-1.25, SPRING + 0.75, 0], rotation: [0, 0, 0.9] },
@@ -564,7 +548,7 @@ function farArch(context: MonumentContext, form: PieceForm<typeof PlantSpecies.A
     return;
   }
 
-  addPiece(
+  addStone(
     context,
     box(PIER_BLOCK.width, pierHeight, PIER_BLOCK.depth),
     { position: [SPAN, pierHeight / 2 - 0.12, 0] },
@@ -572,7 +556,7 @@ function farArch(context: MonumentContext, form: PieceForm<typeof PlantSpecies.A
   );
 
   for (const angle of [HALF_TURN / 6, HALF_TURN / 2, (HALF_TURN * 5) / 6]) {
-    addPiece(
+    addStone(
       context,
       box(1.9, 0.62, 0.94),
       {
@@ -617,7 +601,7 @@ function arch(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Arch
   }
 
   for (let fallen = 0; fallen < 3; fallen += 1) {
-    addPiece(
+    addStone(
       context,
       voussoir,
       {
@@ -681,7 +665,7 @@ function cairn(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Cai
     const isPeak = ring.radius === 0;
 
     if (!isPeak) {
-      addPiece(
+      addStone(
         context,
         cairnStone(context, ring.radius * 0.85 + 0.15, true),
         { position: [0, ring.y + 0.04, 0], rotation: [0, random.next() * FULL_TURN, 0], scale: [1, 0.8, 1] },
@@ -695,7 +679,7 @@ function cairn(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Cai
       const angle = (stone / stones) * FULL_TURN + random.signed() * 0.2;
       const size = (isPeak ? 0.34 : random.between(0.3, 0.4)) / CAIRN_PEBBLE;
 
-      addPiece(
+      addStone(
         context,
         pebbles[stone % CAIRN_PEBBLE_SHAPES],
         {

@@ -1,12 +1,12 @@
-import { Vector3 } from "three";
+import { Matrix4, Vector3 } from "three";
 import { FULL_TURN, smoothstep } from "../shared/math.ts";
 import { createVolumeNoise } from "../shared/noise.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "./materials.ts";
-import type { SurfacePoint } from "./mesh/mesh-builder.ts";
+import type { MeshBuilder, SurfacePoint } from "./mesh/mesh-builder.ts";
 import { deformShape, facetShape, type Shape } from "./mesh/shape.ts";
 import { icosphere } from "./mesh/shapes.ts";
-import type { Triple } from "./mesh/transforms.ts";
+import { type TransformOptions, type Triple, transformOf } from "./mesh/transforms.ts";
 
 export const STONE_NOISE = createVolumeNoise(createRandom(4242));
 
@@ -124,4 +124,60 @@ export function groundShade(height: number): (point: SurfacePoint) => number {
 
     return (0.62 + 0.38 * smoothstep(-0.1, height * 0.7, position.y)) * (0.93 + 0.07 * streaks);
   };
+}
+
+export interface StonePlacement extends TransformOptions {
+  readonly bottom?: number;
+}
+
+export interface StoneContext {
+  readonly builder: MeshBuilder;
+  readonly height: number;
+  readonly random: RandomSource;
+}
+
+export interface StoneLook {
+  readonly frost?: number;
+  readonly lichen: number;
+  readonly moss: number;
+  readonly slot?: MaterialSlotIndex;
+}
+
+function lowestPoint(shape: Shape, transform: Matrix4): number {
+  const point = new Vector3();
+  let lowest = Number.POSITIVE_INFINITY;
+
+  for (let offset = 0; offset < shape.positions.length; offset += 3) {
+    lowest = Math.min(lowest, point.fromArray(shape.positions, offset).applyMatrix4(transform).y);
+  }
+
+  return lowest;
+}
+
+function grounded(shape: Shape, placement: StonePlacement): Matrix4 {
+  const transform = transformOf(placement);
+
+  if (placement.bottom === undefined) {
+    return transform;
+  }
+
+  return new Matrix4().makeTranslation(0, placement.bottom - lowestPoint(shape, transform), 0).multiply(transform);
+}
+
+export function addStone(context: StoneContext, shape: Shape, placement: StonePlacement, look: StoneLook): void {
+  const { frost = 0, slot = MaterialSlot.Stone } = look;
+
+  context.builder.add(shape, {
+    style: {
+      shade: groundShade(context.height),
+      slot: weatheredSlot({
+        base: slot,
+        frost,
+        lichen: look.lichen,
+        moss: look.moss,
+        seed: context.random.next() * 40,
+      }),
+    },
+    transform: grounded(shape, placement),
+  });
 }

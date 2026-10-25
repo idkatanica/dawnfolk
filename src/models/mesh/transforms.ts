@@ -2,7 +2,7 @@ import { Euler, Matrix4, Quaternion, Vector3 } from "three";
 
 export type Triple = readonly [number, number, number];
 
-interface TransformOptions {
+export interface TransformOptions {
   readonly position?: Triple;
   readonly rotation?: Triple;
   readonly scale?: number | Triple;
