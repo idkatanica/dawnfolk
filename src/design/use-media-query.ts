@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 type Subscribe = (onChange: () => void) => () => void;
 
-export const COMPACT_QUERY = "(max-width: 767px)";
+export const COMPACT_QUERY = "(max-width: 767px), (max-height: 599px)";
 export const TOUCH_QUERY = "(pointer: coarse)";
 
 const subscribers = new Map<string, Subscribe>();

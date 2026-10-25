@@ -1,6 +1,6 @@
-import { ScrollArea } from "@base-ui/react/scroll-area";
 import { Tabs } from "@base-ui/react/tabs";
 import type { ReactNode } from "react";
+import { ScrollPanel } from "../../design/scroll-panel.tsx";
 import { type JournalTab, useInterfaceStore } from "../interface/interface-store.ts";
 import { RelationList } from "../rivalry/relation-list.tsx";
 import { ChronicleList } from "./chronicle-list.tsx";
@@ -30,15 +30,7 @@ function JournalTabButton({ label, value }: { readonly label: string; readonly v
 function ScrollingPanel({ children, value }: { readonly children: ReactNode; readonly value: JournalTab }) {
   return (
     <Tabs.Panel className="flex min-h-0 flex-1 flex-col outline-none" value={value}>
-      <ScrollArea.Root className="flex min-h-0 flex-1 flex-col">
-        <ScrollArea.Viewport className="scroll-fade relative min-h-0 flex-1 overscroll-contain outline-none">
-          {children}
-        </ScrollArea.Viewport>
-
-        <ScrollArea.Scrollbar className="-mr-2 w-1.5 rounded-full py-1 opacity-0 transition-opacity data-hovering:opacity-100 data-scrolling:opacity-100">
-          <ScrollArea.Thumb className="w-full rounded-full bg-ink/25" />
-        </ScrollArea.Scrollbar>
-      </ScrollArea.Root>
+      <ScrollPanel>{children}</ScrollPanel>
     </Tabs.Panel>
   );
 }

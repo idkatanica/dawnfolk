@@ -17,13 +17,6 @@ function viewOf(inspection: Inspection | null, isJournalOpen: boolean): SidePane
   return "closed";
 }
 
-export function useIsSidePanelOpen(): boolean {
-  const hasInspection = useWorldStore((state) => Boolean(state.snapshot?.inspection));
-  const isJournalOpen = useInterfaceStore((state) => state.isJournalOpen);
-
-  return hasInspection || isJournalOpen;
-}
-
 export function useSidePanel() {
   const engine = useEngine();
   const inspection = useWorldStore((state) => (state.snapshot === null ? null : state.snapshot.inspection));
