@@ -52,15 +52,13 @@ function hillHeight(planner: DepositPlanner): number {
     }
   }
 
-  heights.sort((first, second) => first - second);
+  const sorted = Float32Array.from(heights).sort();
 
-  const hill = heights[Math.floor(heights.length * HILL_SHARE)];
-
-  if (hill === undefined) {
+  if (sorted.length === 0) {
     return Number.POSITIVE_INFINITY;
   }
 
-  return hill;
+  return sorted[Math.floor(sorted.length * HILL_SHARE)];
 }
 
 function isVeinGround(planner: DepositPlanner, cell: number): boolean {
