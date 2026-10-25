@@ -62,6 +62,23 @@ describe("elements", () => {
     expect(simulation.world.fields.snow[centerCell(simulation.world)]).toBeGreaterThan(0.3);
   });
 
+  it("snow douses fire less toward the rim of the brush", () => {
+    const simulation = createSimulation();
+
+    const { fields, grid } = simulation.world;
+
+    const center = centerCell(simulation.world);
+    const rim = grid.cellAt(90, 0);
+
+    fields.fire[center] = 1;
+    fields.fire[rim] = 1;
+    simulation.beginStroke("snow", 0, 0, { radius: 100 });
+    simulation.endStroke();
+
+    expect(fields.fire[center]).toBeLessThan(1);
+    expect(fields.fire[rim]).toBeGreaterThan(fields.fire[center]);
+  });
+
   it("lightning strikes, scorches and starts a fire", () => {
     const simulation = createSimulation();
 
