@@ -16,9 +16,11 @@ export interface PowerServices extends SocietyContext {
 
 export type PowerOutcome = { kind: "applied" } | { kind: "refused"; reason: string };
 
-export interface PowerHandler<Id extends PowerId> {
-  apply: (target: PowerTarget, parameters: PowerParameters<Id>, services: PowerServices) => PowerOutcome;
-}
+export type PowerHandler<Id extends PowerId> = (
+  target: PowerTarget,
+  parameters: PowerParameters<Id>,
+  services: PowerServices
+) => PowerOutcome;
 
 export const APPLIED: PowerOutcome = { kind: "applied" };
 

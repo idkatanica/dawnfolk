@@ -13,38 +13,34 @@ const INSPIRATION_FAITH = 5;
 const HEALING_FAITH = 1;
 const HEALED_HUNGER = 0.2;
 
-export const tribePower: PowerHandler<"tribe"> = {
-  apply: (target, parameters, services) => {
-    const tribe = services.people.spawnTribe({
-      context: services,
-      people: parameters.people,
-      technologies: [],
-      x: target.x,
-      z: target.z,
-    });
+export const tribePower: PowerHandler<"tribe"> = (target, parameters, services) => {
+  const tribe = services.people.spawnTribe({
+    context: services,
+    people: parameters.people,
+    technologies: [],
+    x: target.x,
+    z: target.z,
+  });
 
-    if (tribe === null) {
-      return refused("People need flat, dry land away from fire to settle here.");
-    }
+  if (tribe === null) {
+    return refused("People need flat, dry land away from fire to settle here.");
+  }
 
-    return APPLIED;
-  },
+  return APPLIED;
 };
 
 function herdPower<Id extends "deer" | "hare" | "ibex" | "mammoth" | "wolf">(
   kind: Id,
   refusal: string
 ): PowerHandler<Id> {
-  return {
-    apply: (target, parameters, services) => {
-      const herd = services.fauna.spawnHerd(kind, target.x, target.z, parameters.herdSize, services.random);
+  return (target, parameters, services) => {
+    const herd = services.fauna.spawnHerd(kind, target.x, target.z, parameters.herdSize, services.random);
 
-      if (herd === null) {
-        return refused(refusal);
-      }
+    if (herd === null) {
+      return refused(refusal);
+    }
 
-      return APPLIED;
-    },
+    return APPLIED;
   };
 }
 
@@ -70,82 +66,76 @@ function ripenBushes(services: PowerServices, x: number, z: number, radius: numb
   }
 }
 
-export const abundancePower: PowerHandler<"abundance"> = {
-  apply: (target, parameters, services) => {
-    ripenBushes(services, target.x, target.z, parameters.radius);
-    services.effects.add({ kind: "blessing", radius: parameters.radius, style: "abundance", x: target.x, z: target.z });
+export const abundancePower: PowerHandler<"abundance"> = (target, parameters, services) => {
+  ripenBushes(services, target.x, target.z, parameters.radius);
+  services.effects.add({ kind: "blessing", radius: parameters.radius, style: "abundance", x: target.x, z: target.z });
 
-    const tribe = services.people.nearestTribe(target.x, target.z, parameters.radius + ABUNDANCE_REACH);
+  const tribe = services.people.nearestTribe(target.x, target.z, parameters.radius + ABUNDANCE_REACH);
 
-    if (tribe === null) {
-      return APPLIED;
-    }
-
-    tribe.stock.berries += ABUNDANCE_FOOD * (percent(parameters.strength) / DEFAULT_ABUNDANCE);
-    tribe.faith = Math.min(MAXIMUM_FAITH, tribe.faith + ABUNDANCE_FAITH);
-    services.chronicle.record({
-      category: "gift",
-      text: `${tribe.name} received a gift of abundance`,
-      tribeId: tribe.id,
-      x: target.x,
-      z: target.z,
-    });
-
+  if (tribe === null) {
     return APPLIED;
-  },
+  }
+
+  tribe.stock.berries += ABUNDANCE_FOOD * (percent(parameters.strength) / DEFAULT_ABUNDANCE);
+  tribe.faith = Math.min(MAXIMUM_FAITH, tribe.faith + ABUNDANCE_FAITH);
+  services.chronicle.record({
+    category: "gift",
+    text: `${tribe.name} received a gift of abundance`,
+    tribeId: tribe.id,
+    x: target.x,
+    z: target.z,
+  });
+
+  return APPLIED;
 };
 
-export const inspirationPower: PowerHandler<"inspiration"> = {
-  apply: (target, parameters, services) => {
-    const tribe = services.people.nearestTribe(target.x, target.z, INSPIRATION_REACH);
+export const inspirationPower: PowerHandler<"inspiration"> = (target, parameters, services) => {
+  const tribe = services.people.nearestTribe(target.x, target.z, INSPIRATION_REACH);
 
-    if (tribe === null) {
-      return refused("There is no tribe nearby to inspire.");
-    }
+  if (tribe === null) {
+    return refused("There is no tribe nearby to inspire.");
+  }
 
-    const upcoming = upcomingTechnology(tribe);
+  const upcoming = upcomingTechnology(tribe);
 
-    if (upcoming === undefined) {
-      return refused(`${tribe.name} already knows everything there is to know.`);
-    }
+  if (upcoming === undefined) {
+    return refused(`${tribe.name} already knows everything there is to know.`);
+  }
 
-    tribe.knowledge += upcoming.cost * percent(parameters.strength);
-    tribe.faith = Math.min(MAXIMUM_FAITH, tribe.faith + INSPIRATION_FAITH);
-    services.effects.add({ kind: "blessing", radius: 40, style: "inspiration", x: tribe.campX, z: tribe.campZ });
-    services.chronicle.record({
-      category: "gift",
-      text: `${tribe.name} were struck by sudden insight`,
-      tribeId: tribe.id,
-      x: tribe.campX,
-      z: tribe.campZ,
-    });
+  tribe.knowledge += upcoming.cost * percent(parameters.strength);
+  tribe.faith = Math.min(MAXIMUM_FAITH, tribe.faith + INSPIRATION_FAITH);
+  services.effects.add({ kind: "blessing", radius: 40, style: "inspiration", x: tribe.campX, z: tribe.campZ });
+  services.chronicle.record({
+    category: "gift",
+    text: `${tribe.name} were struck by sudden insight`,
+    tribeId: tribe.id,
+    x: tribe.campX,
+    z: tribe.campZ,
+  });
 
-    return APPLIED;
-  },
+  return APPLIED;
 };
 
-export const healingPower: PowerHandler<"healing"> = {
-  apply: (target, parameters, services) => {
-    const people = services.people.livingWithin(target.x, target.z, parameters.radius);
+export const healingPower: PowerHandler<"healing"> = (target, parameters, services) => {
+  const people = services.people.livingWithin(target.x, target.z, parameters.radius);
 
-    if (people.length === 0) {
-      return refused("There is nobody inside the circle to heal.");
+  if (people.length === 0) {
+    return refused("There is nobody inside the circle to heal.");
+  }
+
+  for (const person of people) {
+    const tribe = services.people.findTribe(person.tribeId);
+
+    person.health = 1;
+    person.hunger = Math.min(person.hunger, HEALED_HUNGER);
+    person.warmth = 1;
+
+    if (tribe !== null) {
+      tribe.faith = Math.min(MAXIMUM_FAITH, tribe.faith + HEALING_FAITH);
     }
+  }
 
-    for (const person of people) {
-      const tribe = services.people.findTribe(person.tribeId);
+  services.effects.add({ kind: "blessing", radius: parameters.radius, style: "healing", x: target.x, z: target.z });
 
-      person.health = 1;
-      person.hunger = Math.min(person.hunger, HEALED_HUNGER);
-      person.warmth = 1;
-
-      if (tribe !== null) {
-        tribe.faith = Math.min(MAXIMUM_FAITH, tribe.faith + HEALING_FAITH);
-      }
-    }
-
-    services.effects.add({ kind: "blessing", radius: parameters.radius, style: "healing", x: target.x, z: target.z });
-
-    return APPLIED;
-  },
+  return APPLIED;
 };

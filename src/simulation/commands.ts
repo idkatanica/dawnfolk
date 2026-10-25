@@ -24,6 +24,8 @@ const powerIdSchema = z.custom<PowerId>((value) => typeof value === "string" && 
 
 const parametersSchema = z.record(z.string(), z.unknown());
 
+const powerUse = { parameters: parametersSchema, powerId: powerIdSchema, x: coordinate, z: coordinate };
+
 function entitySelection(kind: "animal" | "building" | "person" | "tribe") {
   return z.object({ id: z.number().int(), kind: z.literal(kind) });
 }
@@ -39,20 +41,8 @@ const selectionSchema = z.discriminatedUnion("kind", [
 export type Selection = z.output<typeof selectionSchema>;
 
 const commandSchema = z.discriminatedUnion("type", [
-  z.object({
-    parameters: parametersSchema,
-    powerId: powerIdSchema,
-    type: z.literal("usePower"),
-    x: coordinate,
-    z: coordinate,
-  }),
-  z.object({
-    parameters: parametersSchema,
-    powerId: powerIdSchema,
-    type: z.literal("beginStroke"),
-    x: coordinate,
-    z: coordinate,
-  }),
+  z.object({ ...powerUse, type: z.literal("usePower") }),
+  z.object({ ...powerUse, type: z.literal("beginStroke") }),
   z.object({ type: z.literal("moveStroke"), x: coordinate, z: coordinate }),
   z.object({ type: z.literal("endStroke") }),
   z.object({ speed: z.number().min(0).max(MAXIMUM_SPEED), type: z.literal("setSpeed") }),
