@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { useInterfaceStore } from "../interface/interface-store.ts";
 import { startTestEngine } from "../testing/engine-fixtures.ts";
 import { createRaid, createRelation, createTribe, showWorld } from "../testing/world-fixtures.ts";
 import { RelationList } from "./relation-list.tsx";
@@ -73,5 +75,28 @@ describe("relation list", () => {
     await raids.getByRole("button").click();
 
     expect(focusOn).toHaveBeenCalledWith(-400, 0, expect.any(Number));
+  });
+
+  it("closes the journal on a phone when a raid shows the camp under attack", async () => {
+    await page.viewport(390, 844);
+
+    const { focusOn } = await startTestEngine();
+
+    useInterfaceStore.getState().openJournal("relations");
+
+    showWorld({
+      rivalry: {
+        raids: [createRaid({ attackerId: 2, defenderId: 1 })],
+        relations: [createRelation({ firstId: 1, secondId: 2, stance: "hostile" })],
+      },
+      tribes: TRIBES,
+    });
+
+    const screen = await render(<RelationList />);
+
+    await screen.getByRole("region", { name: "Raids under way" }).getByRole("button").click();
+
+    expect(focusOn).toHaveBeenCalledWith(-400, 0, expect.any(Number));
+    expect(useInterfaceStore.getState().isJournalOpen).toBe(false);
   });
 });

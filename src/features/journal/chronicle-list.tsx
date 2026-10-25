@@ -1,19 +1,13 @@
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { ChronicleEntry } from "../../simulation/chronicle.ts";
-import { useFocusCamera } from "../inspector/use-focus-camera.ts";
+import { useShowSpot } from "../inspector/use-focus-camera.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { CHRONICLE_ICONS } from "./chronicle-icons.ts";
 
 const SHOWN_ENTRIES = 120;
 
-function useShowPlace(entry: ChronicleEntry) {
-  const focus = useFocusCamera();
-
-  return () => focus(entry.x, entry.z);
-}
-
 function ChronicleItem({ entry }: { readonly entry: ChronicleEntry }) {
-  const showPlace = useShowPlace(entry);
+  const showPlace = useShowSpot(entry.x, entry.z);
 
   return (
     <li>
