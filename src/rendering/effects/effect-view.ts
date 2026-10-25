@@ -152,11 +152,7 @@ export class EffectView {
   #takeRing(): GroundRing {
     const ring = this.#idleRings.pop();
 
-    if (ring === undefined) {
-      return this.#createRing();
-    }
-
-    return ring;
+    return ring === undefined ? this.#createRing() : ring;
   }
 
   #releaseRing(ring: GroundRing): void {

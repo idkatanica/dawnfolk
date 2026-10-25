@@ -18,7 +18,7 @@ function knownTribeOf(tribe: TribeSummary): KnownTribe {
 }
 
 export class TribeLooks {
-  readonly #neutralAccent = new Color(NEUTRAL_LOOK.accent);
+  readonly #neutral: KnownTribe = { accent: new Color(NEUTRAL_LOOK.accent), look: NEUTRAL_LOOK };
   readonly #tribes = new Map<number, KnownTribe>();
 
   remember(tribes: readonly TribeSummary[]): void {
@@ -30,22 +30,16 @@ export class TribeLooks {
   }
 
   look(tribeId: number): TribeLook {
-    const tribe = this.#tribes.get(tribeId);
-
-    if (tribe === undefined) {
-      return NEUTRAL_LOOK;
-    }
-
-    return tribe.look;
+    return this.#known(tribeId).look;
   }
 
   accent(tribeId: number): Color {
+    return this.#known(tribeId).accent;
+  }
+
+  #known(tribeId: number): KnownTribe {
     const tribe = this.#tribes.get(tribeId);
 
-    if (tribe === undefined) {
-      return this.#neutralAccent;
-    }
-
-    return tribe.accent;
+    return tribe === undefined ? this.#neutral : tribe;
   }
 }

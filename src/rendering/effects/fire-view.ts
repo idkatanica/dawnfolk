@@ -46,14 +46,6 @@ interface BurningCell {
   readonly intensity: number;
 }
 
-function groundFlameCount(intensity: number): number {
-  if (intensity > 0.65) {
-    return 2;
-  }
-
-  return 1;
-}
-
 function isSmokeCell(burning: BurningCell): boolean {
   return hashToUnit(burning.cell, 41) < SMOKE_CELL_SHARE;
 }
@@ -180,7 +172,7 @@ export class FireView {
 
     const left = grid.cellCenterX(burning.cell) - grid.cellSize / 2;
     const top = grid.cellCenterZ(burning.cell) - grid.cellSize / 2;
-    const count = groundFlameCount(burning.intensity);
+    const count = burning.intensity > 0.65 ? 2 : 1;
 
     for (let flame = 0; flame < count; flame += 1) {
       const scale = hashToUnit(burning.cell, flame, 3);

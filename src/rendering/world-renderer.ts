@@ -43,7 +43,6 @@ import { VegetationView } from "./vegetation/vegetation-view.ts";
 import { SpringView } from "./water/spring-view.ts";
 import { WaterView } from "./water/water-view.ts";
 import { WaterfallView } from "./water/waterfall-view.ts";
-import { type Wind, windOf } from "./wind.ts";
 import { WorldChangeReader } from "./world-changes.ts";
 
 interface RenderView {
@@ -126,7 +125,7 @@ export class WorldRenderer {
     this.#terrain = new TerrainView(mirror, this.#textures, this.#plinth, this.#fireGlow, renderer);
     this.#islandBase = new IslandBase(mirror, this.#textures, this.#plinth);
     this.#water = new WaterView(mirror, this.#textures);
-    this.#rebuildWaterfalls();
+    this.#waterfalls.rebuild(mirror.water.waterfalls, this.#textures, this.#plinth);
     this.#springs.rebuild(mirror);
     this.#vegetation = new VegetationView(mirror, this.#textures, this.#fireGlow);
     this.#crops = new CropField(mirror, this.#vegetation.weather);
@@ -217,13 +216,15 @@ export class WorldRenderer {
 
     if (changes.hasWaterChanged) {
       this.#water.waterChanged(null);
-      this.#rebuildWaterfalls();
+      this.#waterfalls.rebuild(this.#mirror.water.waterfalls, this.#textures, this.#plinth);
       this.#springs.rebuild(this.#mirror);
     } else if (changes.waterLevelRegion !== null) {
       this.#water.waterChanged(changes.waterLevelRegion);
     }
 
-    const wind = windOf(frame.weather);
+    const metersPerSecond = (frame.weather.windSpeed * 1000) / 3600;
+    const windX = frame.weather.windX * metersPerSecond;
+    const windZ = frame.weather.windZ * metersPerSecond;
     const form = this.#precipitationAt(view.focus);
     const strength = precipitationStrength(frame.weather.precipitation);
 
@@ -239,16 +240,16 @@ export class WorldRenderer {
         season: frame.calendar.season,
         snowfall: form === "snow" ? frame.weather.precipitation : 0,
         storm: frame.weather.storm,
-        windX: wind.directionX * wind.metersPerSecond,
-        windZ: wind.directionZ * wind.metersPerSecond,
+        windX,
+        windZ,
       },
       view.focus,
       view.viewDistance,
       view.realSeconds
     );
 
-    this.#paintWater(wind, strength, rainfall, view.realSeconds);
-    this.#vegetation.weather.blow(wind.directionX, wind.directionZ, wind.metersPerSecond, view.realSeconds);
+    this.#paintWater(windX, windZ, strength, rainfall, view.realSeconds);
+    this.#vegetation.weather.blow(frame.weather.windX, frame.weather.windZ, metersPerSecond, view.realSeconds);
     view.camera.updateMatrixWorld();
     this.#frustum.setFromProjectionMatrix(
       this.#matrix.multiplyMatrices(view.camera.projectionMatrix, view.camera.matrixWorldInverse)
@@ -268,7 +269,7 @@ export class WorldRenderer {
     this.#grass.update(view.camera, view.viewDistance);
     this.#updateAgents(view);
     this.#markSelection();
-    this.#updateEffects(view, wind, form, rainfall);
+    this.#updateEffects(view, form, rainfall, metersPerSecond);
     this.#output.render();
   }
 
@@ -299,17 +300,7 @@ export class WorldRenderer {
     this.#output.dispose();
   }
 
-  #rebuildWaterfalls(): void {
-    const textures = this.#textures;
-
-    this.#waterfalls.rebuild(
-      this.#mirror.water.waterfalls,
-      { depthAt: (x, z) => textures.shoreDepthAt(x, z), outline: textures.outline },
-      this.#plinth
-    );
-  }
-
-  #paintWater(wind: Wind, precipitation: number, rainfall: number, realSeconds: number): void {
+  #paintWater(windX: number, windZ: number, precipitation: number, rainfall: number, realSeconds: number): void {
     const { look } = this.#water;
     const { palette } = this.#atmosphere;
 
@@ -318,8 +309,8 @@ export class WorldRenderer {
     look.daylight.value = this.#atmosphere.daylight;
     look.precipitation.value = precipitation;
     look.rainfall.value = rainfall;
-    look.windTravel.value.x += wind.directionX * wind.metersPerSecond * WATER_DRIFT * realSeconds;
-    look.windTravel.value.y += wind.directionZ * wind.metersPerSecond * WATER_DRIFT * realSeconds;
+    look.windTravel.value.x += windX * WATER_DRIFT * realSeconds;
+    look.windTravel.value.y += windZ * WATER_DRIFT * realSeconds;
   }
 
   #updateAgents(view: RenderView): void {
@@ -347,7 +338,7 @@ export class WorldRenderer {
     this.#buildings.update(input);
   }
 
-  #updateEffects(view: RenderView, wind: Wind, form: Precipitation, rainfall: number): void {
+  #updateEffects(view: RenderView, form: Precipitation, rainfall: number, metersPerSecond: number): void {
     const { weather } = this.#mirror.frame;
 
     const darkness = 1 - this.#atmosphere.daylight;
@@ -355,9 +346,7 @@ export class WorldRenderer {
 
     this.#axes.update(view.camera);
     this.#fire.smoke.brightness.value = 0.3 + this.#atmosphere.daylight * 0.7;
-    this.#fire.smoke.wind.value
-      .set(wind.directionX, wind.directionZ)
-      .multiplyScalar(Math.min(1.5, wind.metersPerSecond / 5));
+    this.#fire.smoke.wind.value.set(weather.windX, weather.windZ).multiplyScalar(Math.min(1.5, metersPerSecond / 5));
     this.#fire.update(this.#mirror, view.camera, darkness);
     this.#effects.add(view.effects);
     this.#effects.update(view.realSeconds);
@@ -373,8 +362,8 @@ export class WorldRenderer {
         brightness,
         form,
         precipitation: weather.precipitation,
-        windX: wind.directionX * wind.metersPerSecond,
-        windZ: wind.directionZ * wind.metersPerSecond,
+        windX: weather.windX * metersPerSecond,
+        windZ: weather.windZ * metersPerSecond,
       },
       view
     );

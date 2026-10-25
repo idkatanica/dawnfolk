@@ -13,43 +13,21 @@ const GLOW_STRENGTH = 2.6;
 
 export type BurningCells = Pick<SimulationFrame, "burningCells" | "burningIntensity">;
 
-function blurRows(source: Float32Array, target: Float32Array): void {
-  for (let row = 0; row < GLOW_RESOLUTION; row += 1) {
-    for (let column = 0; column < GLOW_RESOLUTION; column += 1) {
-      let sum = 0;
-      let count = 0;
+function blur(source: Float32Array, target: Float32Array, step: number): void {
+  for (let texel = 0; texel < target.length; texel += 1) {
+    const along = Math.floor(texel / step) % GLOW_RESOLUTION;
 
-      for (let offset = -BLUR_RADIUS; offset <= BLUR_RADIUS; offset += 1) {
-        const neighbor = column + offset;
+    let sum = 0;
+    let count = 0;
 
-        if (neighbor >= 0 && neighbor < GLOW_RESOLUTION) {
-          sum += source[row * GLOW_RESOLUTION + neighbor];
-          count += 1;
-        }
+    for (let offset = -BLUR_RADIUS; offset <= BLUR_RADIUS; offset += 1) {
+      if (along + offset >= 0 && along + offset < GLOW_RESOLUTION) {
+        sum += source[texel + offset * step];
+        count += 1;
       }
-
-      target[row * GLOW_RESOLUTION + column] = (sum / count) * BLUR_GAIN;
     }
-  }
-}
 
-function blurColumns(source: Float32Array, target: Float32Array): void {
-  for (let row = 0; row < GLOW_RESOLUTION; row += 1) {
-    for (let column = 0; column < GLOW_RESOLUTION; column += 1) {
-      let sum = 0;
-      let count = 0;
-
-      for (let offset = -BLUR_RADIUS; offset <= BLUR_RADIUS; offset += 1) {
-        const neighbor = row + offset;
-
-        if (neighbor >= 0 && neighbor < GLOW_RESOLUTION) {
-          sum += source[neighbor * GLOW_RESOLUTION + column];
-          count += 1;
-        }
-      }
-
-      target[row * GLOW_RESOLUTION + column] = (sum / count) * BLUR_GAIN;
-    }
+    target[texel] = (sum / count) * BLUR_GAIN;
   }
 }
 
@@ -86,10 +64,10 @@ export class FireGlow {
     }
 
     this.#accumulate(frame);
-    blurRows(this.#accumulated, this.#scratch);
-    blurColumns(this.#scratch, this.#accumulated);
-    blurRows(this.#accumulated, this.#scratch);
-    blurColumns(this.#scratch, this.#accumulated);
+    blur(this.#accumulated, this.#scratch, 1);
+    blur(this.#scratch, this.#accumulated, GLOW_RESOLUTION);
+    blur(this.#accumulated, this.#scratch, 1);
+    blur(this.#scratch, this.#accumulated, GLOW_RESOLUTION);
     this.#writeTexture();
   }
 

@@ -22,6 +22,7 @@ import {
 import { saturate } from "../../shared/math.ts";
 import type { Waterfall } from "../../world/water.ts";
 import type { IslandOutline } from "../terrain/island-outline.ts";
+import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 
 const FALL_HEIGHT = 1150;
 const GRAVITY = 9.8;
@@ -42,8 +43,6 @@ const BOTTOM_SPREAD = 1.4;
 const WATER_TINT = vec3(0.42, 0.6, 0.64);
 const TINTED_DROP = 5;
 
-export type ShoreDepth = (x: number, z: number) => number;
-
 interface Lip {
   readonly centerX: number;
   readonly centerZ: number;
@@ -61,11 +60,6 @@ interface CurtainWriter {
   readonly positions: number[];
   readonly progress: number[];
   readonly sides: number[];
-}
-
-interface LipSurroundings {
-  readonly depthAt: ShoreDepth;
-  readonly outline: IslandOutline;
 }
 
 function lipCrossing(waterfall: Waterfall, outline: IslandOutline): readonly [number, number] {
@@ -99,16 +93,16 @@ function lipCrossing(waterfall: Waterfall, outline: IslandOutline): readonly [nu
   return [x - directionX * inside, z - directionZ * inside];
 }
 
-function wetEdge(lip: Omit<Lip, "left" | "right">, side: 1 | -1, surroundings: LipSurroundings): number {
+function wetEdge(lip: Omit<Lip, "left" | "right">, side: 1 | -1, textures: TerrainTextures): number {
   const sideX = -lip.outwardZ * side;
   const sideZ = lip.outwardX * side;
   const baseX = lip.centerX - lip.outwardX * SPAN_INSET;
   const baseZ = lip.centerZ - lip.outwardZ * SPAN_INSET;
 
-  let previous = surroundings.depthAt(baseX, baseZ);
+  let previous = textures.shoreDepthAt(baseX, baseZ);
 
   for (let reach = SPAN_STEP; reach <= WIDEST_HALF_SPAN; reach += SPAN_STEP) {
-    const depth = surroundings.depthAt(baseX + sideX * reach, baseZ + sideZ * reach);
+    const depth = textures.shoreDepthAt(baseX + sideX * reach, baseZ + sideZ * reach);
 
     if (depth <= 0) {
       const share = previous > depth ? previous / (previous - depth) : 1;
@@ -122,14 +116,14 @@ function wetEdge(lip: Omit<Lip, "left" | "right">, side: 1 | -1, surroundings: L
   return WIDEST_HALF_SPAN;
 }
 
-function findLip(waterfall: Waterfall, surroundings: LipSurroundings): Lip {
-  const [centerX, centerZ] = lipCrossing(waterfall, surroundings.outline);
-  const [outwardX, outwardZ] = surroundings.outline.outwardAt(centerX, centerZ);
+function findLip(waterfall: Waterfall, textures: TerrainTextures): Lip {
+  const [centerX, centerZ] = lipCrossing(waterfall, textures.outline);
+  const [outwardX, outwardZ] = textures.outline.outwardAt(centerX, centerZ);
 
   const lip = { centerX, centerZ, outwardX, outwardZ, top: waterfall.top };
 
-  const left = wetEdge(lip, -1, surroundings);
-  const right = wetEdge(lip, 1, surroundings);
+  const left = wetEdge(lip, -1, textures);
+  const right = wetEdge(lip, 1, textures);
 
   if (left + right < NARROWEST_SPAN) {
     return { ...lip, left: waterfall.width / 2, right: waterfall.width / 2 };
@@ -239,11 +233,11 @@ export class WaterfallView {
     this.mesh.renderOrder = 3;
   }
 
-  rebuild(waterfalls: readonly Waterfall[], surroundings: LipSurroundings, plinth: number): void {
+  rebuild(waterfalls: readonly Waterfall[], textures: TerrainTextures, plinth: number): void {
     const writer: CurtainWriter = { coordinates: [], drops: [], indices: [], positions: [], progress: [], sides: [] };
 
     for (const waterfall of waterfalls) {
-      addCurtain(writer, findLip(waterfall, surroundings), surroundings.outline, plinth);
+      addCurtain(writer, findLip(waterfall, textures), textures.outline, plinth);
     }
 
     const geometry = new BufferGeometry();
