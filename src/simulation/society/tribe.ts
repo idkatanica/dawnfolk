@@ -8,6 +8,7 @@ import type { WorldRules } from "../../content/world-rules.ts";
 import { emptyStock, type Stock } from "./stock.ts";
 
 export const BASE_HOUSING = 4;
+export const MAXIMUM_FAITH = 100;
 
 const NEVER = Number.NEGATIVE_INFINITY;
 

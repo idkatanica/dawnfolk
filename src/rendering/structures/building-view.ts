@@ -28,7 +28,7 @@ import {
   Sphere,
   Vector3,
 } from "three/webgpu";
-import { type BuildingKind, isEnclosure } from "../../content/buildings.ts";
+import { type BuildingKind, isEnclosure, isLitCampfire } from "../../content/buildings.ts";
 import { DEPOSIT_KINDS, MINED_DEPOSIT_KINDS } from "../../content/deposits.ts";
 import { eraDefinition } from "../../content/eras.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
@@ -50,7 +50,6 @@ import { geometryFromMeshData, InterleavedInstances, toInstancedGeometry } from 
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import type { TribeLooks } from "../tribe-looks.ts";
 import type { ViewInput } from "../view-input.ts";
-import { isLitCampfire } from "./lit-campfire.ts";
 
 const LEVEL_DISTANCES = { high: 320, low: 3200 } as const;
 const PIECE_RADIUS = 9;

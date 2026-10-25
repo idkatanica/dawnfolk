@@ -1,6 +1,6 @@
 import { plantSpeciesDefinition } from "../../content/plants.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
-import { upcomingTechnology } from "../society/tribe.ts";
+import { MAXIMUM_FAITH, upcomingTechnology } from "../society/tribe.ts";
 import { cellsInArea } from "../world/terrain-editing.ts";
 import { APPLIED, type PowerHandler, type PowerServices, percent, refused } from "./power-handler.ts";
 
@@ -12,7 +12,6 @@ const INSPIRATION_REACH = 600;
 const INSPIRATION_FAITH = 5;
 const HEALING_FAITH = 1;
 const HEALED_HUNGER = 0.2;
-const MAXIMUM_FAITH = 100;
 
 export const tribePower: PowerHandler<"tribe"> = {
   apply: (target, parameters, services) => {

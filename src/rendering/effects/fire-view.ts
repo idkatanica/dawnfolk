@@ -1,4 +1,5 @@
 import { Group, type PerspectiveCamera, PointLight, Vector3 } from "three/webgpu";
+import { isLitCampfire } from "../../content/buildings.ts";
 import { Ground } from "../../content/grounds.ts";
 import { isTreeSpecies } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
@@ -6,7 +7,6 @@ import { distanceSquared, hashToUnit } from "../../shared/math.ts";
 import type { BuildingView } from "../../simulation/frame.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
-import { isLitCampfire } from "../structures/lit-campfire.ts";
 import { CHUNK_CELLS, type VegetationChunks } from "../vegetation/vegetation-chunks.ts";
 import { BillboardBatch, type CameraAxes } from "./billboards.ts";
 import { createFlameMaterial } from "./flame-material.ts";

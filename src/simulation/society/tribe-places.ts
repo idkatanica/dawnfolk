@@ -19,10 +19,6 @@ export function campfireOf(tribe: Tribe, buildings: BuildingSystem): Building | 
   return buildings.find(tribe.buildings.campfireId);
 }
 
-export function hasLitCampfire(tribe: Tribe, buildings: BuildingSystem): boolean {
-  return isCampfireLit(campfireOf(tribe, buildings));
-}
-
 export function litCampfireOf(tribe: Tribe, buildings: BuildingSystem): Building | null {
   const campfire = campfireOf(tribe, buildings);
 

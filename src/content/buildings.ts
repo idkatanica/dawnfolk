@@ -21,6 +21,8 @@ export const BUILDING_KINDS = [
 
 export type BuildingKind = (typeof BUILDING_KINDS)[number];
 
+export const LIT_CAMPFIRE_FUEL = 0.02;
+
 type BuildingCost = Readonly<Partial<Record<MaterialKind, number>>>;
 
 export type BuildingRole = "craft" | "dwelling" | "enclosure" | "fire" | "mine" | "shrine" | "store";
@@ -243,4 +245,12 @@ export function isEnclosure(kind: BuildingKind): boolean {
 
 export function isFlammable(kind: BuildingKind): boolean {
   return BUILDINGS[kind].burnTime > 0;
+}
+
+export function isLitCampfire(building: {
+  readonly fuel: number;
+  readonly kind: BuildingKind;
+  readonly progress: number;
+}): boolean {
+  return building.kind === "campfire" && building.progress >= 1 && building.fuel > LIT_CAMPFIRE_FUEL;
 }

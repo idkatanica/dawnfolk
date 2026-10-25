@@ -40,6 +40,7 @@ import {
   FALLEN_LOG_ROOT_RADIUS,
   fallenLogVariant,
   STEPPING_STONE_HEIGHT,
+  STONE_WIDTH,
 } from "../../models/structures/crossings.ts";
 import {
   type Crossing,
@@ -59,7 +60,6 @@ const LEVEL_DISTANCES: readonly number[] = [150, 650, 3600];
 const SHADOW_LEVEL_COUNT = 2;
 const HIDDEN = -1;
 const FLOATS_PER_INSTANCE = 12;
-const STONE_WIDTH = 1.05;
 const STONE_SINK = 0.3;
 const SHORTEST_STONE = 0.14;
 const DRY_LEVEL = -10_000;

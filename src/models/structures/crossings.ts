@@ -15,13 +15,13 @@ export type CrossingDetailLevel = "high" | "low" | "medium";
 
 export const CROSSING_DETAIL_LEVELS: readonly CrossingDetailLevel[] = ["high", "medium", "low"];
 export const STEPPING_STONE_HEIGHT = 1;
+export const STONE_WIDTH = 1.05;
 export const FALLEN_LOG_LENGTHS: readonly number[] = [20, 27];
 export const FALLEN_LOG_VARIANTS = 4;
 export const FALLEN_LOG_ROOT_RADIUS = 0.4;
 
 const WOOD_NOISE = createVolumeNoise(createRandom(7310));
 const STONE_DETAIL: Readonly<Record<CrossingDetailLevel, number>> = { high: 2, low: 0, medium: 1 };
-const STONE_WIDTH = 1.05;
 const STONE_SHAPES: readonly (readonly [number, number])[] = [
   [1.12, 0.86],
   [0.96, 1],

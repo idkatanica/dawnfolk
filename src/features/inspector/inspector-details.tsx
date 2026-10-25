@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LIT_CAMPFIRE_FUEL } from "../../content/buildings.ts";
 import { TOOL_MATERIAL_DEFINITIONS } from "../../content/weapons.ts";
 import { Badge } from "../../design/badge.tsx";
 import { cn } from "../../design/cn.ts";
@@ -19,8 +20,6 @@ import { TribeRelations } from "../rivalry/tribe-relations.tsx";
 import { BuildingList } from "../tribes/building-list.tsx";
 import { GoalNeed } from "../tribes/goal-need.tsx";
 import { StockList } from "../tribes/stock-list.tsx";
-
-const LIT_FUEL = 0.02;
 
 export function PersonDetails({ person }: { readonly person: PersonInspection }) {
   return (
@@ -67,7 +66,7 @@ function CampfireFuel({ building }: { readonly building: BuildingInspection }) {
     return null;
   }
 
-  const label = building.fuel > LIT_FUEL ? "Firewood" : "Gone out";
+  const label = building.fuel > LIT_CAMPFIRE_FUEL ? "Firewood" : "Gone out";
 
   return <MeterBar label={label} tone="dawn" value={building.fuel} valueText={formatPercent(building.fuel)} />;
 }
