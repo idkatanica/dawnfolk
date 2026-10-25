@@ -18,7 +18,7 @@ import { BeastEncounters } from "./beast-encounters.ts";
 import { CombatLedger } from "./combat-ledger.ts";
 import { EnvoyJob, MournJob } from "./defense-jobs.ts";
 import type { Foe } from "./foes.ts";
-import { packFood, totalGoods, unpack } from "./provisions.ts";
+import { totalGoods, unpack } from "./provisions.ts";
 import { RaidJob } from "./raid-job.ts";
 import {
   burnableBuilding,
@@ -784,11 +784,10 @@ export class RivalrySystem implements Battleground {
     }
 
     const distance = Math.hypot(seeker.campX - host.campX, seeker.campZ - host.campZ);
-    const gifts = packFood(seeker.stock, giftAmount);
     const rations = Math.floor(takeFood(seeker.stock, rationsFor(distance, context.rules.life.hungerRate)));
 
     relation.envoyId = envoy.id;
-    takeUpJob(envoy, seeker, context, (tick) => new EnvoyJob(tick, host, gifts, rations));
+    takeUpJob(envoy, seeker, context, (tick) => new EnvoyJob(tick, host, giftAmount, rations));
 
     return true;
   }
