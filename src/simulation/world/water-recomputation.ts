@@ -26,7 +26,7 @@ interface Filling {
   secondsSinceStep: number;
 }
 
-export type WaterChange = "features" | "levels" | "none";
+export type WaterChange = "features" | "levels" | "none" | "settled";
 
 function easeOut(amount: number): number {
   return 1 - (1 - amount) * (1 - amount);
@@ -64,12 +64,10 @@ export class WaterRecomputation {
       return "none";
     }
 
-    this.recompute();
-
-    return "features";
+    return this.recompute();
   }
 
-  recompute(): void {
+  recompute(): WaterChange {
     const { grid, terrain } = this.#world;
 
     const uncarvedHeights = this.#uncarvedHeights();
@@ -86,6 +84,10 @@ export class WaterRecomputation {
     );
 
     const changedRegion = this.#applyCarving(hydrology.carving, carvedHeights);
+    const isSameRaster =
+      changedRegion === null &&
+      haveSameValues(terrain.waterSurface, hydrology.waterSurface) &&
+      haveSameValues(terrain.riverStrength, hydrology.riverStrength);
 
     terrain.waterSurface.set(hydrology.waterSurface);
     terrain.riverStrength.set(hydrology.riverStrength);
@@ -103,7 +105,17 @@ export class WaterRecomputation {
       this.#world.crossings
     );
 
+    const hasNewWater =
+      !isSameRaster ||
+      this.#filling !== null ||
+      this.#world.hasFreeSpringGround() ||
+      JSON.stringify([hydrology.features, crossings]) !== JSON.stringify([this.#world.water, this.#world.crossings]);
+
     this.#world.replaceWater(hydrology.features, crossings);
+
+    if (hasNewWater) {
+      this.#world.markWaterChanged();
+    }
 
     if (changedRegion !== null) {
       this.#world.finishHeightEdit(changedRegion);
@@ -113,6 +125,8 @@ export class WaterRecomputation {
     this.#settledHeights = uncarvedHeights;
     this.#observedHeightVersion = this.#world.heightVersion;
     this.#quietSeconds = null;
+
+    return hasNewWater ? "features" : "settled";
   }
 
   #noticeHeightEdit(): WaterChange {
@@ -123,9 +137,7 @@ export class WaterRecomputation {
       return "none";
     }
 
-    this.recompute();
-
-    return "features";
+    return this.recompute();
   }
 
   #uncarvedHeights(): Float32Array {
@@ -355,6 +367,16 @@ export class WaterRecomputation {
     fields.wetness[cell] = 1;
     this.#world.markSurfaceCell(cell);
   }
+}
+
+function haveSameValues(first: Float32Array | Uint8Array, second: Float32Array | Uint8Array): boolean {
+  for (let index = 0; index < first.length; index += 1) {
+    if (first[index] !== second[index]) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function isNewWater(cells: readonly number[], level: number, previousLevels: Float32Array): boolean {

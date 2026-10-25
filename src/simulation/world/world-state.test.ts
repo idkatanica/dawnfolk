@@ -203,6 +203,5 @@ describe("world state", () => {
 
     expect(world.occupancy[bank]).toBe(NO_BUILDING);
     expect(world.crossingAt(0, 0.5)).toBeNull();
-    expect(world.waterVersion).toBe(1);
   });
 });

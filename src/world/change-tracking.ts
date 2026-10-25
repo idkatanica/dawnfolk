@@ -64,6 +64,15 @@ export interface CellRegion {
   lastRow: number;
 }
 
+export function regionsOverlap(first: CellRegion, second: CellRegion): boolean {
+  return (
+    first.firstColumn <= second.lastColumn &&
+    second.firstColumn <= first.lastColumn &&
+    first.firstRow <= second.lastRow &&
+    second.firstRow <= first.lastRow
+  );
+}
+
 export class RegionChangeTracker {
   #region: CellRegion | null = null;
 

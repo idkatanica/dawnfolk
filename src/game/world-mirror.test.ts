@@ -66,6 +66,8 @@ describe("world mirror", () => {
   it("follows terrain edits and the water that settles after them", () => {
     const simulation = createSimulation();
 
+    floodStrip(simulation.world, 20, 1.5);
+
     const mirror = new WorldMirror(simulation.initialWorld(), 0);
 
     strokeFor(simulation, mirror, { parameters: { radius: 60, strength: 100 }, powerId: "raise" }, 0.5);
@@ -80,6 +82,20 @@ describe("world mirror", () => {
     expect(mirror.terrain.waterSurface).toEqual(simulation.world.terrain.waterSurface);
     expect(mirror.terrain.riverStrength).toEqual(simulation.world.terrain.riverStrength);
     expect(mirror.water).toEqual(mirroredWater(simulation.world.water));
+  });
+
+  it("keeps its water when the land settles without changing it", () => {
+    const simulation = createSimulation();
+
+    const mirror = new WorldMirror(simulation.initialWorld(), 0);
+
+    strokeFor(simulation, mirror, { parameters: { radius: 60, strength: 100 }, powerId: "raise" }, 0.5);
+    advanceTogether(simulation, mirror, 1.5);
+
+    expect(simulation.waterRecomputation.isPending).toBe(false);
+    expect(mirror.waterVersion).toBe(0);
+    expect(mirror.terrain.height).toEqual(simulation.world.terrain.height);
+    expect(mirror.terrain.waterSurface).toEqual(simulation.world.terrain.waterSurface);
   });
 
   it("follows a crater lake as it fills by its water levels alone", () => {

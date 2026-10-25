@@ -472,6 +472,10 @@ export class Simulation {
       return;
     }
 
+    if (change === "settled") {
+      this.navigation.rebuildIfChanged();
+    }
+
     if (change === "features") {
       this.navigation.rebuild();
       this.#waterUpdate = {

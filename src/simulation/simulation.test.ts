@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { TechnologyId } from "../content/technologies.ts";
 import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../world/agent-buffers.ts";
 import { Simulation } from "./simulation.ts";
-import { createVegetatedWorld } from "./testing/test-world.ts";
+import { createVegetatedWorld, floodStrip } from "./testing/test-world.ts";
 import { TICK_SECONDS } from "./tick.ts";
 
 const WORLD_OPTIONS = { dimensions: { cellSize: 10, cellsPerSide: 96 } };
@@ -217,6 +217,7 @@ describe("frames", () => {
   it("reports recomputed water after the land settles", () => {
     const simulation = createSimulation();
 
+    floodStrip(simulation.world, 20, 1.5);
     simulation.execute({ parameters: { radius: 80, strength: 100 }, powerId: "lower", type: "usePower", x: 0, z: 0 });
 
     const frames = Array.from({ length: 20 }, () => simulation.advance(0.1));
