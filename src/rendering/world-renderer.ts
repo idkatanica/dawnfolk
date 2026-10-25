@@ -250,6 +250,7 @@ export class WorldRenderer {
         windX,
         windZ,
       },
+      view.camera.position,
       view.focus,
       view.viewDistance,
       view.realSeconds

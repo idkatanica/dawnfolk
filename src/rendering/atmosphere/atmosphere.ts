@@ -75,7 +75,7 @@ export class Atmosphere {
     return this.#palette;
   }
 
-  update(state: AtmosphereState, focus: Vector3, viewDistance: number, realSeconds: number): void {
+  update(state: AtmosphereState, eye: Vector3, focus: Vector3, viewDistance: number, realSeconds: number): void {
     const sun = sunDirection(state.hours, state.season);
     const moon = moonDirection(state.hours);
     const overcast = saturate(state.cloudCover * 0.75 + state.storm * 0.5);
@@ -92,7 +92,7 @@ export class Atmosphere {
     this.#placeSun(focus, viewDistance);
     this.#fog(palette, state, sun.y);
 
-    this.#sky.mesh.position.copy(focus);
+    this.#sky.mesh.position.copy(eye);
     this.#cloudSea.update(focus);
   }
 
