@@ -11,9 +11,9 @@ export const DEPOSIT_KINDS = [...MINED_DEPOSIT_KINDS, "clay"] as const;
 export type DepositKind = (typeof DEPOSIT_KINDS)[number];
 
 export interface DepositDefinition {
-  countPerIsland: number;
   ground: GroundIndex;
   name: string;
+  perSquareKilometer: number;
   radius: number;
   reach: number;
   resource: MaterialKind;
@@ -22,36 +22,36 @@ export interface DepositDefinition {
 
 export const DEPOSITS: Readonly<Record<DepositKind, DepositDefinition>> = {
   clay: {
-    countPerIsland: 30,
     ground: Ground.Clay,
     name: "Clay bank",
+    perSquareKilometer: 1.15,
     radius: 28,
     reach: 900,
     resource: "clay",
     technology: "pottery",
   },
   copper: {
-    countPerIsland: 30,
     ground: Ground.CopperOre,
     name: "Copper vein",
+    perSquareKilometer: 1.15,
     radius: 30,
     reach: 1500,
     resource: "copperOre",
     technology: "mining",
   },
   iron: {
-    countPerIsland: 30,
     ground: Ground.IronOre,
     name: "Iron vein",
+    perSquareKilometer: 1.15,
     radius: 34,
     reach: 1500,
     resource: "ironOre",
     technology: "bronze",
   },
   tin: {
-    countPerIsland: 24,
     ground: Ground.TinOre,
     name: "Tin vein",
+    perSquareKilometer: 0.92,
     radius: 26,
     reach: 1500,
     resource: "tinOre",

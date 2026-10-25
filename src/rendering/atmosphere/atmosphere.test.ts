@@ -24,7 +24,7 @@ function createAtmosphere(): Atmosphere {
 }
 
 function lightAt(atmosphere: Atmosphere, hours: number): number {
-  atmosphere.update({ ...CLEAR_SKY, hours }, new Vector3(), 800, 0);
+  atmosphere.update({ ...CLEAR_SKY, hours }, new Vector3(0, 600, 500), new Vector3(), 800, 0);
 
   return atmosphere.sun.intensity;
 }
@@ -65,7 +65,7 @@ describe("Atmosphere", () => {
   it("keeps shadows attached to the feet that cast them", () => {
     const atmosphere = createAtmosphere();
 
-    atmosphere.update(CLEAR_SKY, new Vector3(), 30, 0);
+    atmosphere.update(CLEAR_SKY, new Vector3(0, 20, 25), new Vector3(), 30, 0);
 
     const { bias, camera } = atmosphere.sun.shadow;
 

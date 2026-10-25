@@ -16,9 +16,10 @@ export interface GroundPoint {
 
 type HeightProbe = (x: number, z: number) => number;
 
-const MAXIMUM_DISTANCE = 9000;
+const MAXIMUM_DISTANCE_IN_HALF_SIZES = 3.5;
 const MAXIMUM_PITCH = 1.48;
 const MINIMUM_DISTANCE = 4;
+const OPENING_DISTANCE_IN_HALF_SIZES = 1.25;
 const MINIMUM_PITCH = 0.08;
 const SMOOTHING_RATE = 9;
 const CLEARANCE = 1.2;
@@ -51,6 +52,7 @@ export class GodCamera {
   readonly #current: MutableCameraState;
   readonly #goal: MutableCameraState;
   readonly #heightAt: HeightProbe;
+  readonly #maximumDistance: number;
   readonly #offset = new Vector3();
   readonly #position = new Vector3();
   readonly #ray = new Vector3();
@@ -65,7 +67,14 @@ export class GodCamera {
     this.camera = camera;
     this.#heightAt = heightAt;
     this.#worldHalfSize = worldHalfSize;
-    this.#goal = { distance: 3200, pitch: 0.82, targetX: 0, targetZ: 0, yaw: 0.6 };
+    this.#maximumDistance = worldHalfSize * MAXIMUM_DISTANCE_IN_HALF_SIZES;
+    this.#goal = {
+      distance: worldHalfSize * OPENING_DISTANCE_IN_HALF_SIZES,
+      pitch: 0.82,
+      targetX: 0,
+      targetZ: 0,
+      yaw: 0.6,
+    };
     this.#current = { ...this.#goal };
     this.#targetHeight = heightAt(0, 0);
   }
@@ -207,7 +216,7 @@ export class GodCamera {
     const limit = this.#worldHalfSize * 1.05;
     const goal = this.#goal;
 
-    goal.distance = clamp(goal.distance, MINIMUM_DISTANCE, MAXIMUM_DISTANCE);
+    goal.distance = clamp(goal.distance, MINIMUM_DISTANCE, this.#maximumDistance);
     goal.pitch = clamp(goal.pitch, MINIMUM_PITCH, MAXIMUM_PITCH);
     goal.targetX = clamp(goal.targetX, -limit, limit);
     goal.targetZ = clamp(goal.targetZ, -limit, limit);

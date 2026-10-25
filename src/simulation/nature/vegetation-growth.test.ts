@@ -143,7 +143,7 @@ describe("regrowth", () => {
   it("regrows each tree only on ground gentle enough for it", () => {
     const world = createTestWorld({ biome: Biome.Forest, ground: Ground.Forest, heightAt: steepeningRamp(1.4, 320) });
 
-    growFor(world, { days: 2, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
+    growFor(world, { days: 128, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
 
     const slopes = Array.from({ length: world.vegetation.count }, (_, plant) =>
       world.slope(world.vegetation.cell[plant])
@@ -162,7 +162,7 @@ describe("regrowth", () => {
       terrain.woodland[cell] = grid.cellCenterX(cell) < 0 ? 0 : 0.5;
     }
 
-    growFor(world, { days: 3, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
+    growFor(world, { days: 192, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
 
     const columns = Array.from({ length: vegetation.count }, (_, plant) => grid.columnOf(vegetation.cell[plant]));
     const thinCells = grid.cellCount / 2;
@@ -177,7 +177,7 @@ describe("regrowth", () => {
     const ruin = monumentAround(grid, 0, 0, 60);
     const world = createTestWorld({ biome: Biome.Forest, ground: Ground.Forest, monuments: [ruin] });
 
-    growFor(world, { days: 2, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
+    growFor(world, { days: 128, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
 
     const onRuin = Array.from({ length: world.vegetation.count }, (_, plant) => world.vegetation.cell[plant]).filter(
       (cell) => world.isObstructed(cell)

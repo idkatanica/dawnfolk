@@ -12,7 +12,7 @@ import { Succession, TREE_GROWING_DAYS } from "./succession.ts";
 
 export const SNAG_LIFETIME_DAYS = 4;
 
-const REGROWTH_VISITS_PER_DAY = 2000;
+const REGROWTH_VISITS_PER_SQUARE_KILOMETER = 76.3;
 const BERRY_UPDATE_DAYS = 0.05;
 const SCORCH_BLOCKING_REGROWTH = 0.3;
 const MEADOW_REGROWTH_CHANCE = 0.15;
@@ -90,7 +90,7 @@ export class VegetationGrowthSystem {
 
     this.#nursery.grow(days * multiplier);
     this.#succession.update(days, conditions.day, multiplier);
-    this.#visitBudget += days * REGROWTH_VISITS_PER_DAY * multiplier;
+    this.#visitBudget += days * REGROWTH_VISITS_PER_SQUARE_KILOMETER * this.#world.grid.squareKilometers * multiplier;
 
     while (this.#visitBudget >= 1) {
       this.#visitBudget -= 1;

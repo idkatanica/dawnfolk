@@ -5,7 +5,9 @@ export interface GridDimensions {
   cellsPerSide: number;
 }
 
-export const DEFAULT_GRID_DIMENSIONS: GridDimensions = { cellSize: 10, cellsPerSide: 512 };
+export const DEFAULT_GRID_DIMENSIONS: GridDimensions = { cellSize: 10, cellsPerSide: 640 };
+
+const SQUARE_METERS_PER_SQUARE_KILOMETER = 1_000_000;
 
 interface NeighborOffset {
   column: number;
@@ -29,6 +31,7 @@ export class WorldGrid {
   readonly cellSize: number;
   readonly cellsPerSide: number;
   readonly halfSize: number;
+  readonly squareKilometers: number;
   readonly worldSize: number;
 
   constructor(dimensions: GridDimensions) {
@@ -37,6 +40,7 @@ export class WorldGrid {
     this.cellCount = dimensions.cellsPerSide * dimensions.cellsPerSide;
     this.worldSize = dimensions.cellsPerSide * dimensions.cellSize;
     this.halfSize = this.worldSize / 2;
+    this.squareKilometers = (this.worldSize * this.worldSize) / SQUARE_METERS_PER_SQUARE_KILOMETER;
   }
 
   index(column: number, row: number): number {
