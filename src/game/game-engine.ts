@@ -69,18 +69,21 @@ export class GameEngine implements EngineHandle {
   readonly #entityPicker: EntityPicker;
   readonly #keyboard: KeyboardControls;
   readonly #labels: LabelProjector;
+  readonly #maximumPixelRatio: number;
   readonly #pacer = new FramePacer();
   readonly #pointer: PointerControls;
   readonly #renderListeners = new Set<() => void>();
   readonly #renderer: WebGPURenderer;
   readonly #resizeObserver: ResizeObserver;
   readonly #world: WorldRenderer;
+  #devicePixelRatio = 0;
   #reportedFocusX = Number.NaN;
   #reportedFocusZ = Number.NaN;
   #viewport: ViewportSize = { height: 1, width: 1 };
 
   constructor(parts: EngineParts) {
     this.#canvas = parts.canvas;
+    this.#maximumPixelRatio = RENDER_QUALITY[parts.quality].maximumPixelRatio;
     this.#renderer = parts.renderer;
     this.session = parts.session;
 
@@ -211,6 +214,10 @@ export class GameEngine implements EngineHandle {
       return;
     }
 
+    if (window.devicePixelRatio !== this.#devicePixelRatio) {
+      this.#resize();
+    }
+
     const realSeconds = clamp(this.#pacer.markRendered(time) / MILLISECONDS_PER_SECOND, 0, LONGEST_FRAME_SECONDS);
 
     this.session.update(realSeconds);
@@ -290,8 +297,9 @@ export class GameEngine implements EngineHandle {
     const width = Math.max(1, this.#canvas.clientWidth);
     const height = Math.max(1, this.#canvas.clientHeight);
 
+    this.#devicePixelRatio = window.devicePixelRatio;
     this.#viewport = { height, width };
-    this.#renderer.setSize(width, height, false);
+    this.#renderer.setDrawingBufferSize(width, height, Math.min(this.#devicePixelRatio, this.#maximumPixelRatio));
     this.camera.camera.aspect = width / height;
     this.camera.camera.updateProjectionMatrix();
   }
