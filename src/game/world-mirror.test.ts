@@ -234,6 +234,61 @@ describe("world mirror", () => {
     expect(mirror.landVersion).toBeGreaterThan(quietVersion);
   });
 
+  it("names the new summit once the raised land settles", () => {
+    const simulation = createSimulation();
+
+    const mirror = new WorldMirror(simulation.initialWorld(), 0);
+
+    const { landmarks } = mirror;
+
+    simulation.execute({
+      parameters: { radius: 60, strength: 100 },
+      powerId: "raise",
+      type: "beginStroke",
+      x: 0,
+      z: 0,
+    });
+    advanceTogether(simulation, mirror, 1);
+
+    expect(mirror.landmarks).toBe(landmarks);
+
+    simulation.execute({ type: "endStroke" });
+    advanceTogether(simulation, mirror, 1.5);
+
+    const [peak] = mirror.landmarks;
+
+    expect(peak).toMatchObject({ id: "peak", name: landmarks[0].name });
+    expect(Math.hypot(peak.x, peak.z)).toBeLessThan(20);
+    expect(peak.detail).toBe(`${Math.round(mirror.heightAt(peak.x, peak.z))} m`);
+    expect(peak.detail).not.toBe(landmarks[0].detail);
+    expect(mirror.landmarks).toBe(mirror.landmarks);
+  });
+
+  it("names a crater lake once it has filled", () => {
+    const simulation = new Simulation(
+      createVegetatedWorld({
+        dimensions: { cellSize: 10, cellsPerSide: 96 },
+        heightAt: (x, z) => 200 + Math.abs(x - 5) * 0.25 + z * 0.02,
+      })
+    );
+
+    simulation.weather.setKind("clear");
+    simulation.waterRecomputation.recompute();
+
+    const mirror = new WorldMirror(simulation.initialWorld(), 0);
+
+    expect(mirror.landmarks.filter((landmark) => landmark.kind === "lake")).toEqual([]);
+
+    simulation.usePower("meteor", 0, -200, { craterRadius: 140, fallTime: 0.5 });
+    advanceTogether(simulation, mirror, 7);
+
+    const lakes = mirror.landmarks.filter((landmark) => landmark.kind === "lake");
+
+    expect(simulation.isBusy).toBe(false);
+    expect(lakes).toHaveLength(1);
+    expect(Math.hypot(lakes[0].x, lakes[0].z + 200)).toBeLessThan(140);
+  });
+
   it("remembers when the latest frame arrived", () => {
     const simulation = createSimulation();
 

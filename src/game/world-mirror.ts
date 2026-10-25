@@ -18,6 +18,7 @@ import {
 } from "../world/vegetation-store.ts";
 import type { MirroredWater } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
+import { findLandmarks, type Landmark } from "./landmarks.ts";
 
 const MILLISECONDS_PER_SECOND = 1000;
 const LONGEST_EXTRAPOLATION_SECONDS = 0.1;
@@ -120,6 +121,9 @@ export class WorldMirror {
   water: MirroredWater;
   waterVersion = 0;
   #crossingIndex: CrossingIndex;
+  #heightVersion = 0;
+  #landmarks: readonly Landmark[];
+  #landmarksVersion = 0;
 
   constructor(initial: InitialWorld, receivedAt: number) {
     this.grid = new WorldGrid(initial.dimensions);
@@ -137,6 +141,18 @@ export class WorldMirror {
     this.frameReceivedAt = receivedAt;
     this.surfaceChanges = new RowChangeTracker(this.grid.cellsPerSide);
     this.groundChanges = new RowChangeTracker(this.grid.cellsPerSide);
+    this.#landmarks = this.#findLandmarks();
+  }
+
+  get landmarks(): readonly Landmark[] {
+    const version = this.#heightVersion + this.waterVersion;
+
+    if (version !== this.#landmarksVersion && !this.frame.isBusy) {
+      this.#landmarks = this.#findLandmarks();
+      this.#landmarksVersion = version;
+    }
+
+    return this.#landmarks;
   }
 
   apply(frame: SimulationFrame, receivedAt: number): void {
@@ -156,6 +172,10 @@ export class WorldMirror {
 
     if (hasLandChanged) {
       this.landVersion += 1;
+    }
+
+    if (frame.heightPatch !== null) {
+      this.#heightVersion += 1;
     }
 
     this.frame = frame;
@@ -198,6 +218,16 @@ export class WorldMirror {
 
   crossingAt(x: number, z: number): Crossing | null {
     return this.#crossingIndex.crossingAt(x, z);
+  }
+
+  #findLandmarks(): Landmark[] {
+    return findLandmarks({
+      grid: this.grid,
+      heights: this.terrain.height,
+      lakes: this.water.lakes,
+      monuments: this.monuments,
+      seed: this.seed,
+    });
   }
 
   #applyRows(rows: readonly PackedRows[], target: Uint8Array, changes: RowChangeTracker): void {

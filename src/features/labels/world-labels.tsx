@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import { useEngine } from "../../app/use-engine.ts";
 import { cn } from "../../design/cn.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
@@ -145,15 +145,28 @@ function TribeLabels() {
   );
 }
 
+function useLandmarks(engine: EngineHandle): readonly Landmark[] {
+  function subscribe(onChange: () => void): () => void {
+    return engine.session.subscribe(onChange);
+  }
+
+  function landmarksNow(): readonly Landmark[] {
+    return engine.landmarks;
+  }
+
+  return useSyncExternalStore(subscribe, landmarksNow);
+}
+
 function LabelLayer({ engine }: { readonly engine: EngineHandle }) {
   const layerReference = useRef<HTMLDivElement>(null);
+  const landmarks = useLandmarks(engine);
 
   useLabelLayout(layerReference, engine);
 
   return (
     <div className="group pointer-events-none fixed inset-0 overflow-hidden" ref={layerReference}>
       <ul aria-label="Places">
-        {engine.landmarks.map((landmark) => (
+        {landmarks.map((landmark) => (
           <LandmarkLabel key={landmark.id} landmark={landmark} />
         ))}
       </ul>
