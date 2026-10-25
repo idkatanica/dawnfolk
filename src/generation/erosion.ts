@@ -231,20 +231,14 @@ function erodeHydraulically(
   heights: Float32Array,
   resistance: Float32Array,
   random: RandomSource,
-  dropletCount: number,
-  onProgress: (progress: number) => void
+  dropletCount: number
 ): void {
   const size = Math.round(Math.sqrt(heights.length));
   const map = Float32Array.from(heights, (height) => height / HEIGHT_SCALE);
   const terrain: DropletTerrain = { brush: createBrush(BRUSH_RADIUS, size), map, resistance, size };
-  const reportEvery = Math.max(1, Math.floor(dropletCount / 20));
 
   for (let droplet = 0; droplet < dropletCount; droplet += 1) {
     simulateDroplet(terrain, random);
-
-    if (droplet % reportEvery === 0) {
-      onProgress(droplet / dropletCount);
-    }
   }
 
   for (let index = 0; index < map.length; index += 1) {
@@ -318,19 +312,14 @@ export function erodeAcrossScales(
   heights: Float32Array,
   size: number,
   random: RandomSource,
-  { coarseReach, resistance, scales }: ErosionPlan,
-  onProgress: (progress: number) => void
+  { coarseReach, resistance, scales }: ErosionPlan
 ): void {
-  for (const [index, scale] of scales.entries()) {
+  for (const scale of scales) {
     const coarseSize = size / scale.factor;
     const dropletCount = Math.round(coarseSize * coarseSize * scale.dropletsPerCell);
 
-    function report(progress: number): void {
-      onProgress((index + progress) / scales.length);
-    }
-
     if (scale.factor === 1) {
-      erodeHydraulically(heights, resistance, random, dropletCount, report);
+      erodeHydraulically(heights, resistance, random, dropletCount);
 
       continue;
     }
@@ -338,7 +327,7 @@ export function erodeAcrossScales(
     const coarse = downsample(heights, size, scale.factor);
     const before = Float32Array.from(coarse);
 
-    erodeHydraulically(coarse, downsample(resistance, size, scale.factor), random, dropletCount, report);
+    erodeHydraulically(coarse, downsample(resistance, size, scale.factor), random, dropletCount);
     addUpsampledChange(
       heights,
       size,
