@@ -81,13 +81,9 @@ export class RaidJob implements Job {
   update(tick: PersonTick): Job | null {
     const raid = tick.context.rivalry.raidOf(this.raidId);
 
-    if (raid === null) {
-      return null;
-    }
-
     this.#eatRation(tick);
 
-    if (this.#leg === "homeward" || raid.phase === "retreat") {
+    if (raid === null || this.#leg === "homeward" || raid.phase === "retreat") {
       return this.#goHome(tick);
     }
 

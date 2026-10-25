@@ -3,13 +3,15 @@ import { worldRulesSchema } from "../../../content/world-rules.ts";
 import { armTribe, foundTribe, runUntil, setFood } from "../../testing/test-rivalry.ts";
 import { SocietyHarness, tickFor } from "../../testing/test-society.ts";
 import type { Building } from "../buildings.ts";
+import { assignJob } from "../decisions.ts";
+import { FleeJob } from "../jobs/flee-job.ts";
 import type { Job } from "../jobs/job.ts";
 import { totalFood } from "../stock.ts";
 import type { Tribe } from "../tribe.ts";
 import type { CarriedWeapon } from "../weapons.ts";
 import { FightJob } from "./defense-jobs.ts";
 import { personFoe } from "./foes.ts";
-import { burnableBuilding, type RaidPhase } from "./raids.ts";
+import { burnableBuilding, type RaidPhase, rationsFor } from "./raids.ts";
 import { sideOf } from "./relations.ts";
 import { strike } from "./strikes.ts";
 import { wallCover } from "./walls.ts";
@@ -173,6 +175,28 @@ describe("a raid", () => {
 
     expect(totalFood(victims.stock)).toBeLessThan(80);
     expect(story).toContainEqual(expect.stringMatching(PLUNDER_STORY));
+  });
+
+  it("brings plunder home from a camp too far to reach before the retreat ends", () => {
+    const harness = new SocietyHarness({
+      ...SPRING_HARNESS,
+      world: { dimensions: { cellSize: 10, cellsPerSide: 160 } },
+    });
+
+    const raiders = foundTribe(harness, { adults: 8, children: 0, x: -550, z: 0 });
+    const victims = foundTribe(harness, { adults: 0, children: 4, x: 550, z: 0 });
+
+    armTribe(raiders, 200);
+    setFood(victims, 80);
+    victims.stock.copper = 30;
+
+    const raid = harness.rivalry.launchRaid(raiders, victims, harness.context);
+
+    runUntil(harness, 1500, () => harness.rivalry.raids.length === 0);
+    runUntil(harness, 600, () => harness.society.membersOf(raiders).every((person) => person.job?.kind !== "raid"));
+
+    expect(raid?.loot.copper).toBeGreaterThan(0);
+    expect(raiders.stock.copper).toBe(raid?.loot.copper);
   });
 
   it("sets fire only to what can burn", () => {
@@ -375,6 +399,46 @@ describe("peace", () => {
     expect(relation.truceUntilDay).toBeGreaterThan(harness.calendar.day);
     expect(totalFood(second.stock)).toBeGreaterThan(hostFood);
     expect(chronicleTexts(harness)).toContainEqual(expect.stringMatching(GIFTS_STORY));
+  });
+
+  it("keeps the gifts at home until the envoy reaches the other camp", () => {
+    const harness = new SocietyHarness(SPRING_HARNESS);
+
+    const [first, second] = neighbours(harness, 420);
+
+    const relation = harness.rivalry.relations.meet(first.id, second.id, false);
+
+    setFood(first, 120);
+    relation.standing = -90;
+    relation.stance = "hostile";
+    relation.feudStartDay = -12;
+    sideOf(relation, first.id).weariness = 120;
+    sideOf(relation, second.id).weariness = 40;
+
+    let seekerFood = totalFood(first.stock);
+
+    runUntil(harness, 200, () => {
+      if (relation.envoyId === null) {
+        seekerFood = totalFood(first.stock);
+      }
+
+      return relation.envoyId !== null;
+    });
+
+    const envoy = harness.society.membersOf(first).find((person) => person.id === relation.envoyId);
+
+    if (envoy === undefined) {
+      throw new Error("Expected an envoy on the way");
+    }
+
+    const tick = tickFor(harness, envoy, first);
+    const rations = rationsFor(420, harness.context.rules.life.hungerRate);
+
+    assignJob(tick, new FleeJob(tick, { x: envoy.mover.x + 5, z: envoy.mover.z }));
+    harness.step();
+
+    expect(envoy.job?.kind).toBe("flee");
+    expect(totalFood(first.stock)).toBeGreaterThan(seekerFood - rations - 1);
   });
 
   it("is a bare truce when the weary tribe has nothing to give", () => {
