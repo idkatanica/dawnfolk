@@ -1,10 +1,8 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { defaultPowerParameters } from "../../content/powers.ts";
 import { parametersOf, readStoredParameters, usePowerStore } from "./power-store.ts";
 
 const STORAGE_KEY = "dawnfolk.powers";
-
-const initialState = usePowerStore.getState();
 
 function saveSettings(parameters: unknown): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: { parameters }, version: 0 }));
@@ -21,11 +19,6 @@ function readSavedSettings(): unknown {
 }
 
 describe("power store", () => {
-  afterEach(() => {
-    usePowerStore.setState(initialState, true);
-    localStorage.clear();
-  });
-
   it("starts with no power selected", () => {
     const state = usePowerStore.getState();
 

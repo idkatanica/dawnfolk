@@ -1,18 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { useInterfaceStore } from "../interface/interface-store.ts";
-import { resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { showWorld } from "../testing/world-fixtures.ts";
 import { SettingsDialog } from "./settings-dialog.tsx";
 
-const INITIAL_INTERFACE = useInterfaceStore.getState();
-
 describe("settings dialog", () => {
-  afterEach(() => {
-    useInterfaceStore.setState(INITIAL_INTERFACE, true);
-    resetWorld();
-  });
-
   it("stays closed until the settings are opened", async () => {
     const screen = await render(<SettingsDialog />);
 

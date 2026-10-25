@@ -1,18 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { useInterfaceStore } from "../interface/interface-store.ts";
-import { createAnimalInspection, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { createAnimalInspection, showWorld } from "../testing/world-fixtures.ts";
 import { JournalSheet } from "./journal-sheet.tsx";
 
-const initialInterfaceState = useInterfaceStore.getState();
-
 describe("journal sheet", () => {
-  afterEach(() => {
-    resetWorld();
-    useInterfaceStore.setState(initialInterfaceState, true);
-  });
-
   it("stays closed while the journal is closed and nothing is selected", async () => {
     showWorld();
 

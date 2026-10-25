@@ -1,18 +1,14 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { DEFAULT_WORLD_RULES } from "../../content/world-rules.ts";
-import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
-import { resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { startTestEngine } from "../testing/engine-fixtures.ts";
+import { showWorld } from "../testing/world-fixtures.ts";
 import { WorldRulesSection } from "./world-rules-section.tsx";
 
 const RULE_GROUP_NAMES = ["Fire", "People", "Nature", "Storms", "Rain and snow"];
 
 describe("world rules section", () => {
-  afterEach(() => {
-    resetWorld();
-  });
-
   it("stays empty until the first frame arrives", async () => {
     const screen = await render(<WorldRulesSection />);
 
@@ -64,11 +60,6 @@ describe("world rules section", () => {
 });
 
 describe("world rules section in a running game", () => {
-  afterEach(() => {
-    stopTestEngine();
-    resetWorld();
-  });
-
   it("keeps both of two rules changed in quick succession", async () => {
     const { send } = await startTestEngine();
 

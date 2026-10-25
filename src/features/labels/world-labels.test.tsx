@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import type { Landmark } from "../../game/landmarks.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
-import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
-import { createRelation, createTribe, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { startTestEngine } from "../testing/engine-fixtures.ts";
+import { createRelation, createTribe, showWorld } from "../testing/world-fixtures.ts";
 import { WorldLabels } from "./world-labels.tsx";
 
 const PEAK: Landmark = { detail: "1460 m", id: "peak", kind: "peak", lift: 30, name: "Greycrown", x: 40, z: -20 };
@@ -20,12 +20,6 @@ const RING: Landmark = {
 const ON_SCREEN = { left: 240, top: 320 };
 
 describe("world labels", () => {
-  afterEach(() => {
-    stopTestEngine();
-    resetWorld();
-    useInterfaceStore.setState({ areLabelsShown: true });
-  });
-
   it("shows nothing before the game runs", async () => {
     showWorld();
 

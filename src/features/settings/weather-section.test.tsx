@@ -1,16 +1,12 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { WEATHER, WEATHER_KINDS } from "../../content/weather.ts";
-import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
-import { createWeather, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { startTestEngine } from "../testing/engine-fixtures.ts";
+import { createWeather, showWorld } from "../testing/world-fixtures.ts";
 import { WeatherSection } from "./weather-section.tsx";
 
 describe("weather section", () => {
-  afterEach(() => {
-    resetWorld();
-  });
-
   it("stays empty until the first frame arrives", async () => {
     const screen = await render(<WeatherSection />);
 
@@ -87,11 +83,6 @@ describe("weather section", () => {
 });
 
 describe("weather section in a running game", () => {
-  afterEach(() => {
-    stopTestEngine();
-    resetWorld();
-  });
-
   it("keeps a new wind direction when the speed changes right after", async () => {
     const { send } = await startTestEngine();
 

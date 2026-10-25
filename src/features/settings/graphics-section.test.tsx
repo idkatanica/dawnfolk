@@ -1,10 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import type { LaunchOptions } from "../../app/launch-options.ts";
 import { useLaunchStore } from "../../app/launch-store.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
 import { LARGEST_SEED } from "../new-world/seeds.ts";
-import { resetWorld } from "../testing/world-fixtures.ts";
 import { GraphicsSection } from "./graphics-section.tsx";
 
 const QUALITY_KEY = "dawnfolk.quality";
@@ -12,21 +11,12 @@ const LABELS_KEY = "dawnfolk.labels";
 const WHOLE_NUMBER = /^\d+$/;
 
 const initialLaunch = useLaunchStore.getState();
-const initialInterface = useInterfaceStore.getState();
 
 function launchWith(changes: Partial<LaunchOptions>): void {
   useLaunchStore.setState({ launch: { ...initialLaunch.launch, ...changes } });
 }
 
 describe("graphics section", () => {
-  afterEach(() => {
-    localStorage.removeItem(QUALITY_KEY);
-    localStorage.removeItem(LABELS_KEY);
-    resetWorld();
-    useLaunchStore.setState(initialLaunch, true);
-    useInterfaceStore.setState(initialInterface, true);
-  });
-
   it("starts at the quality the island was launched with", async () => {
     launchWith({ quality: "low" });
 

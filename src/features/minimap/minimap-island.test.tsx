@@ -1,19 +1,12 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import { useInterfaceStore } from "../interface/interface-store.ts";
-import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
+import { startTestEngine } from "../testing/engine-fixtures.ts";
 import { MinimapIsland } from "./minimap-island.tsx";
 
 const MAP_NAME = "Map of the island. Click to move the camera.";
 
-const initialInterface = useInterfaceStore.getState();
-
 describe("minimap island", () => {
-  afterEach(() => {
-    stopTestEngine();
-    useInterfaceStore.setState(initialInterface, true);
-  });
-
   it("stays hidden before the game is running", async () => {
     useInterfaceStore.setState({ isMapOpen: true });
 

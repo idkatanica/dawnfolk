@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import {
   createAnimalInspection,
@@ -9,7 +9,6 @@ import {
   createRelation,
   createStock,
   createTribe,
-  resetWorld,
   showWorld,
 } from "../testing/world-fixtures.ts";
 import { AnimalDetails, BuildingDetails, CellDetails, PersonDetails, TribeDetails } from "./inspector-details.tsx";
@@ -273,10 +272,6 @@ describe("tribe details", () => {
 });
 
 describe("tribe neighbours", () => {
-  afterEach(() => {
-    resetWorld();
-  });
-
   it("lists the other tribes by how they stand with this one", async () => {
     showWorld({
       rivalry: {

@@ -1,13 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
-import { createCalendar, createTribe, createWeather, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { createCalendar, createTribe, createWeather, showWorld } from "../testing/world-fixtures.ts";
 import { CompactClock, WorldStatus } from "./world-status.tsx";
 
 describe("world status", () => {
-  afterEach(() => {
-    resetWorld();
-  });
-
   it("stays empty until the first frame arrives", async () => {
     const screen = await render(<WorldStatus />);
 
@@ -33,10 +29,6 @@ describe("world status", () => {
 });
 
 describe("compact clock", () => {
-  afterEach(() => {
-    resetWorld();
-  });
-
   it("shows the time with the season and the day", async () => {
     showWorld({ calendar: createCalendar({ dayOfSeason: 3, hours: 6.25, seasonName: "Winter" }) });
 

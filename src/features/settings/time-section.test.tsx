@@ -1,14 +1,10 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import { SEASONS } from "../../content/seasons.ts";
-import { createCalendar, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { createCalendar, showWorld } from "../testing/world-fixtures.ts";
 import { TimeSection } from "./time-section.tsx";
 
 describe("time section", () => {
-  afterEach(() => {
-    resetWorld();
-  });
-
   it("stays empty until the first frame arrives", async () => {
     const screen = await render(<TimeSection />);
 

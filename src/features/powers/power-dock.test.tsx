@@ -1,22 +1,15 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import { POWERS, powersInCategory } from "../../content/powers.ts";
 import { PowerDock } from "./power-dock.tsx";
 import { usePowerStore } from "./power-store.ts";
 
-const initialState = usePowerStore.getState();
-
 const ELEMENT_POWERS = ["Fire", "Lightning", "Rain", "Snow", "Explosion", "Meteor", "Earthquake"] as const;
 const LAND_POWERS = ["Raise land", "Lower land", "Flatten", "Smooth", "Forest", "Paint ground"] as const;
 const LIFE_POWERS = powersInCategory("life").map((powerId) => POWERS[powerId].name);
 
 describe("power dock", () => {
-  afterEach(() => {
-    usePowerStore.setState(initialState, true);
-    localStorage.clear();
-  });
-
   it("shows Select, the kinds and the powers of the chosen kind", async () => {
     const screen = await render(<PowerDock />);
 

@@ -1,25 +1,15 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
 import type { TribeInspection } from "../../simulation/inspection.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
-import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
-import { createAnimalInspection, createTribe, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { startTestEngine } from "../testing/engine-fixtures.ts";
+import { createAnimalInspection, createTribe, showWorld } from "../testing/world-fixtures.ts";
 import { SidePanel } from "./side-panel.tsx";
-
-const initialInterfaceState = useInterfaceStore.getState();
 
 const BEAR_CLAN: TribeInspection = { kind: "tribe", summary: createTribe() };
 
-function resetPanel(): void {
-  stopTestEngine();
-  resetWorld();
-  useInterfaceStore.setState(initialInterfaceState, true);
-}
-
 describe("side panel", () => {
-  afterEach(resetPanel);
-
   it("stays hidden while the journal is closed and nothing is selected", async () => {
     showWorld();
 
@@ -77,8 +67,6 @@ describe("side panel", () => {
 });
 
 describe("side panel in a running game", () => {
-  afterEach(resetPanel);
-
   it("opens a tribe from the journal and goes back to the list where it was", async () => {
     const { clearSelection, send } = await startTestEngine();
 

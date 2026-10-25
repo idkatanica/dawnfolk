@@ -1,10 +1,7 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
-import { createCalendar, createWeather, resetWorld, showWorld } from "../testing/world-fixtures.ts";
-import { useInterfaceStore } from "./interface-store.ts";
+import { createCalendar, createWeather, showWorld } from "../testing/world-fixtures.ts";
 import { CompactTopBar, PanelBar, StatusCard } from "./top-bar.tsx";
-
-const INITIAL_INTERFACE = useInterfaceStore.getState();
 
 function showMorning(): void {
   showWorld({
@@ -15,11 +12,6 @@ function showMorning(): void {
 }
 
 describe("status card and top bar", () => {
-  afterEach(() => {
-    resetWorld();
-    useInterfaceStore.setState(INITIAL_INTERFACE, true);
-  });
-
   it("holds the status and the time controls in one card", async () => {
     showMorning();
 

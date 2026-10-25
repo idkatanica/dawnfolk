@@ -1,17 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import { useLaunchStore } from "./launch-store.ts";
 import { StartScreen } from "./start-screen.tsx";
 
 const initialLaunch = useLaunchStore.getState();
-const initialAddress = window.location.href;
 
 describe("start screen", () => {
-  afterEach(() => {
-    useLaunchStore.setState(initialLaunch, true);
-    window.history.replaceState(null, "", initialAddress);
-  });
-
   it("offers a named round world from a random seed", async () => {
     useLaunchStore.setState({ isChoosingWorld: true });
 

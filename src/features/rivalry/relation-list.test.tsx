@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
-import { startTestEngine, stopTestEngine } from "../testing/engine-fixtures.ts";
-import { createRaid, createRelation, createTribe, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { startTestEngine } from "../testing/engine-fixtures.ts";
+import { createRaid, createRelation, createTribe, showWorld } from "../testing/world-fixtures.ts";
 import { RelationList } from "./relation-list.tsx";
 
 const QUIET = "Every tribe keeps to itself for now. Rivalries grow where lands and hunting grounds meet.";
@@ -13,11 +13,6 @@ const TRIBES = [
 ];
 
 describe("relation list", () => {
-  afterEach(() => {
-    stopTestEngine();
-    resetWorld();
-  });
-
   it("says the island is quiet while no tribes have met", async () => {
     showWorld();
 

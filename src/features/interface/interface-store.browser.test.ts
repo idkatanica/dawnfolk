@@ -1,15 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { COMPACT_QUERY } from "../../design/use-media-query.ts";
 import { useInterfaceStore } from "./interface-store.ts";
 
-const INITIAL_INTERFACE = useInterfaceStore.getState();
-
 describe("interface store", () => {
-  afterEach(() => {
-    useInterfaceStore.setState(INITIAL_INTERFACE, true);
-    localStorage.removeItem("dawnfolk.labels");
-  });
-
   it("starts with every panel closed except the map on wide screens", () => {
     const state = useInterfaceStore.getState();
 
