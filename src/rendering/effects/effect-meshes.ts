@@ -1,4 +1,5 @@
 import {
+  abs,
   attribute,
   cameraPosition,
   cross,
@@ -16,6 +17,7 @@ import {
   BufferGeometry,
   Color,
   Float32BufferAttribute,
+  IcosahedronGeometry,
   Mesh,
   MeshBasicNodeMaterial,
   type Object3D,
@@ -120,10 +122,25 @@ function createFireballMaterial(heats: PerObjectValues): MeshBasicNodeMaterial {
   return material;
 }
 
+function createMeteorMaterial(): MeshBasicNodeMaterial {
+  const material = new MeshBasicNodeMaterial();
+  const shape = mx_noise_float(positionLocal.mul(1.6));
+  const veins = mx_noise_float(positionLocal.mul(3.2).add(vec3(0, time.mul(0.6), 0)));
+
+  const glow = smoothstep(0.16, 0, abs(veins));
+
+  material.positionNode = positionLocal.mul(shape.mul(0.3).add(1));
+  material.colorNode = mix(vec3(0.2, 0.12, 0.08), vec3(2.6, 1.05, 0.25), glow.mul(0.85).add(0.15));
+
+  return material;
+}
+
 export class EffectMeshes {
   readonly #fireballHeats = new PerObjectValues();
   readonly #fireballMaterial = createFireballMaterial(this.#fireballHeats);
   readonly #fireballShape = new SphereGeometry(1, 32, 16);
+  readonly #meteorMaterial = createMeteorMaterial();
+  readonly #meteorShape = new IcosahedronGeometry(1, 3);
   readonly #ribbonBrightnesses = new PerObjectValues();
   readonly #ribbonMaterial = createRibbonMaterial(this.#ribbonBrightnesses);
 
@@ -145,6 +162,14 @@ export class EffectMeshes {
     return fireball;
   }
 
+  createMeteor(): Mesh {
+    const meteor = new Mesh(this.#meteorShape, this.#meteorMaterial);
+
+    meteor.frustumCulled = false;
+
+    return meteor;
+  }
+
   setBoltBrightness(bolt: Mesh, brightness: number): void {
     this.#ribbonBrightnesses.set(bolt, brightness);
   }
@@ -156,6 +181,8 @@ export class EffectMeshes {
   dispose(): void {
     this.#fireballMaterial.dispose();
     this.#fireballShape.dispose();
+    this.#meteorMaterial.dispose();
+    this.#meteorShape.dispose();
     this.#ribbonMaterial.dispose();
   }
 }
