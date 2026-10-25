@@ -94,12 +94,7 @@ function boundaryDistances(grid: WorldGrid, relief: Relief): (cell: number) => n
   return (cell) => relief.boundaryDistanceAt(islandPointAt(grid, grid.columnOf(cell), grid.rowOf(cell)));
 }
 
-function buildRelief(
-  grid: WorldGrid,
-  seed: number,
-  shapeKind: IslandShapeKind,
-  onProgress: (progress: GenerationProgress) => void
-) {
+function buildRelief(grid: WorldGrid, seed: number, shapeKind: IslandShapeKind) {
   const shape = createIslandShape(shapeKind, seed);
   const relief = createRelief(seed, shape);
   const coastDistance = new Float32Array(grid.cellCount);
@@ -114,10 +109,6 @@ function buildRelief(
       coastDistance[cell] = sample.coastDistance * grid.halfSize;
       desert[cell] = sample.desert;
       heights[cell] = sample.height;
-    }
-
-    if (row % 32 === 0) {
-      onProgress({ progress: row / grid.cellsPerSide, stage: "relief" });
     }
   }
 
@@ -152,17 +143,19 @@ export function generateWorld(
   const grid = new WorldGrid(options.dimensions);
   const size = grid.cellsPerSide;
 
-  const { coastDistance, desert, dryness, heights, relief } = buildRelief(grid, seed, options.shape, onProgress);
+  onProgress({ stage: "relief" });
+
+  const { coastDistance, desert, dryness, heights, relief } = buildRelief(grid, seed, options.shape);
 
   const talus = talusSlopes(heights, dryness);
 
   relaxSlopes(heights, size, grid.cellSize, talus, ROUGH_RELAXATION_ITERATIONS);
+  onProgress({ stage: "erosion" });
   erodeAcrossScales(
     heights,
     size,
     createRandom(seed * 7 + 3),
-    erosionPlan(grid, heights, dryness, options.erosionStrength),
-    (progress) => onProgress({ progress, stage: "erosion" })
+    erosionPlan(grid, heights, dryness, options.erosionStrength)
   );
   digLakeBasins(grid, heights, relief);
   digRiverLakes(heights, {
@@ -177,11 +170,11 @@ export function generateWorld(
   limitSlopes(heights, size, grid.cellSize, STEEPEST_SLOPE);
   smoothHeights(heights, size);
   fillSinks(heights, grid, dryness, coastDistance);
-  onProgress({ progress: 0, stage: "water" });
+  onProgress({ stage: "water" });
 
   const hydrology = computeHydrology(heights, grid, dryness, coastDistance);
 
-  onProgress({ progress: 0, stage: "climate" });
+  onProgress({ stage: "climate" });
 
   const climate = buildClimate({
     desert,
@@ -206,7 +199,7 @@ export function generateWorld(
     woodland: new Float32Array(grid.cellCount).fill(1),
   };
 
-  onProgress({ progress: 0, stage: "vegetation" });
+  onProgress({ stage: "vegetation" });
   openWoodland(terrain, grid, seed);
 
   const ruins = planMonuments(grid, terrain, seed);

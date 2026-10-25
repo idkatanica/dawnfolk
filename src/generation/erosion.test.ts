@@ -85,17 +85,11 @@ describe("erosion across scales", () => {
   function erode(resistance: number): Float32Array {
     const heights = cone(size, 500);
 
-    erodeAcrossScales(
-      heights,
-      size,
-      createRandom(3),
-      {
-        coarseReach: new Float32Array(size * size).fill(1),
-        resistance: new Float32Array(size * size).fill(resistance),
-        scales,
-      },
-      () => undefined
-    );
+    erodeAcrossScales(heights, size, createRandom(3), {
+      coarseReach: new Float32Array(size * size).fill(1),
+      resistance: new Float32Array(size * size).fill(resistance),
+      scales,
+    });
 
     return heights;
   }

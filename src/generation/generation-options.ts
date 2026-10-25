@@ -4,7 +4,6 @@ import { DEFAULT_GRID_DIMENSIONS, type GridDimensions } from "../world/world-gri
 export type GenerationStage = "climate" | "erosion" | "relief" | "vegetation" | "water";
 
 export interface GenerationProgress {
-  progress: number;
   stage: GenerationStage;
 }
 
