@@ -132,7 +132,7 @@ export class WorldRenderer {
     this.#crossings = new CrossingView(mirror, this.#textures);
     this.#understory = new UnderstoryField(mirror);
     this.#people = new PeopleView(this.#tribes);
-    this.#buildings = new BuildingView(this.#tribes);
+    this.#buildings = new BuildingView(this.#tribes, this.#textures, mirror.grid);
 
     this.#grass = new GrassField({
       clumpsPerSide: quality.grassClumpsPerSide,

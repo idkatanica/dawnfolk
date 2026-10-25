@@ -45,8 +45,11 @@ import { buildMineModel, MINE_SCALE, type MineOre } from "../../models/structure
 import { GLOW_PART } from "../../models/structures/structure-parts.ts";
 import { clamp, FULL_TURN, saturate } from "../../shared/math.ts";
 import type { BuildingView as BuildingSnapshot, SimulationFrame } from "../../simulation/frame.ts";
+import type { WorldGrid } from "../../world/world-grid.ts";
 import { geometryFromMeshData, InstanceBatch, toInstancedGeometry } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
+import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import type { TribeLooks } from "../tribe-looks.ts";
 import type { ViewInput } from "../view-input.ts";
 
@@ -212,7 +215,7 @@ function seatOf(mirror: WorldMirror, piece: PiecePlacement, footing: Footing): S
   return { floor: Math.max(lowest, Math.min(highest - footing.sinking, lowest + footing.lift)), lowest };
 }
 
-function createBuildingMaterial(): MeshStandardNodeMaterial {
+function createBuildingMaterial(textures: TerrainTextures, grid: WorldGrid): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial();
   const placement = attribute("buildingPlacement", "vec4");
   const look = attribute("buildingLook", "vec4");
@@ -228,10 +231,12 @@ function createBuildingMaterial(): MeshStandardNodeMaterial {
 
   const local = positionLocal.mul(select(isBuilt, float(1), float(0)));
 
+  const ground = vec3(0, coarseGroundOffsetNode(textures, grid, placement.xz), 0);
+
   material.positionNode = Fn(() => {
     normalLocal.assign(rotateAroundUp(normalLocal, placement.w));
 
-    return rotateAroundUp(local, placement.w).add(placement.xyz);
+    return rotateAroundUp(local, placement.w).add(placement.xyz).add(ground);
   })();
 
   const slotColors = slotColorTable();
@@ -262,7 +267,7 @@ function createBuildingMaterial(): MeshStandardNodeMaterial {
   return material;
 }
 
-function createPlinthMaterial(): MeshStandardNodeMaterial {
+function createPlinthMaterial(textures: TerrainTextures, grid: WorldGrid): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial();
   const placement = attribute("plinthPlacement", "vec4");
   const box = attribute("plinthBox", "vec4");
@@ -278,10 +283,12 @@ function createPlinthMaterial(): MeshStandardNodeMaterial {
     positionLocal.z.mul(box.w).add(box.y)
   );
 
+  const ground = vec3(0, coarseGroundOffsetNode(textures, grid, placement.xz), 0);
+
   material.positionNode = Fn(() => {
     normalLocal.assign(rotateAroundUp(normalLocal, placement.w));
 
-    return rotateAroundUp(local, placement.w).add(placement.xyz);
+    return rotateAroundUp(local, placement.w).add(placement.xyz).add(ground);
   })();
 
   const grain = mx_noise_float(positionWorld.mul(1.3)).mul(0.22).add(0.86);
@@ -375,10 +382,10 @@ export class BuildingView {
   #laidOutFrame: SimulationFrame | null = null;
   #pieces: PlacedPiece[] = [];
 
-  constructor(tribes: TribeLooks) {
+  constructor(tribes: TribeLooks, textures: TerrainTextures, grid: WorldGrid) {
     this.#tribes = tribes;
 
-    const material = createBuildingMaterial();
+    const material = createBuildingMaterial(textures, grid);
 
     for (const source of modelSources()) {
       const high = source.mesh("high");
@@ -392,7 +399,7 @@ export class BuildingView {
       this.#footings.set(source.key, source.footing(high));
     }
 
-    const plinthMaterial = createPlinthMaterial();
+    const plinthMaterial = createPlinthMaterial(textures, grid);
 
     this.#plinths = [
       createPlinthBatch(new BoxGeometry(1, 1, 1), plinthMaterial),
