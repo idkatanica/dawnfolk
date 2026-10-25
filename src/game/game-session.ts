@@ -70,7 +70,10 @@ export class GameSession {
     }
 
     this.#connection.send(command);
-    this.#commandsSinceRequest += 1;
+
+    if (command.type !== "setViewFocus") {
+      this.#commandsSinceRequest += 1;
+    }
   }
 
   update(realSeconds: number): void {
