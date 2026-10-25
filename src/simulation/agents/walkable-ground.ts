@@ -36,42 +36,17 @@ export function dryStandSpot(world: WorldState, target: Waypoint, standOff: numb
   return null;
 }
 
-export function nearestDrySpot(world: WorldState, point: Waypoint, searchRadius: number): Waypoint {
-  if (isDryFooting(world, world.grid.cellAt(point.x, point.z))) {
-    return point;
-  }
-
+function nearestSpotWhere(
+  world: WorldState,
+  point: Waypoint,
+  searchRadius: number,
+  accepts: (world: WorldState, cell: number) => boolean
+): Waypoint | null {
   let nearest: Waypoint | null = null;
   let nearestDistance = Number.POSITIVE_INFINITY;
 
   for (const cell of world.grid.cellsInRadius(point.x, point.z, searchRadius)) {
-    if (!isDryFooting(world, cell)) {
-      continue;
-    }
-
-    const spot = pointInsideCell(world, cell, point.x, point.z);
-
-    const distance = distanceSquared(point.x, point.z, spot.x, spot.z);
-
-    if (distance < nearestDistance) {
-      nearest = spot;
-      nearestDistance = distance;
-    }
-  }
-
-  return nearest === null ? nearestWalkableSpot(world, point, searchRadius) : nearest;
-}
-
-export function nearestWalkableSpot(world: WorldState, point: Waypoint, searchRadius: number): Waypoint {
-  if (world.isWalkableAt(point.x, point.z)) {
-    return point;
-  }
-
-  let nearest = point;
-  let nearestDistance = Number.POSITIVE_INFINITY;
-
-  for (const cell of world.grid.cellsInRadius(point.x, point.z, searchRadius)) {
-    if (!world.isWalkable(cell)) {
+    if (!accepts(world, cell)) {
       continue;
     }
 
@@ -86,4 +61,24 @@ export function nearestWalkableSpot(world: WorldState, point: Waypoint, searchRa
   }
 
   return nearest;
+}
+
+export function nearestDrySpot(world: WorldState, point: Waypoint, searchRadius: number): Waypoint {
+  if (isDryFooting(world, world.grid.cellAt(point.x, point.z))) {
+    return point;
+  }
+
+  const dry = nearestSpotWhere(world, point, searchRadius, isDryFooting);
+
+  return dry === null ? nearestWalkableSpot(world, point, searchRadius) : dry;
+}
+
+export function nearestWalkableSpot(world: WorldState, point: Waypoint, searchRadius: number): Waypoint {
+  if (world.isWalkableAt(point.x, point.z)) {
+    return point;
+  }
+
+  const spot = nearestSpotWhere(world, point, searchRadius, (ground, cell) => ground.isWalkable(cell));
+
+  return spot === null ? point : spot;
 }
