@@ -142,6 +142,11 @@ export class MeteorFall implements ActiveEffect {
 
     for (const puff of this.#puffs) {
       const age = this.#age - puff.age;
+
+      if (age >= SMOKE_SECONDS) {
+        continue;
+      }
+
       const swell = 0.7 + hashToUnit(puff.index, 7) * 0.7;
       const driftX = (hashToUnit(puff.index, 8) - 0.5) * size * 1.4 * age;
       const driftZ = (hashToUnit(puff.index, 9) - 0.5) * size * 1.4 * age;
@@ -164,6 +169,10 @@ export class MeteorFall implements ActiveEffect {
 
   #drawSparks(seconds: number, sinks: SpriteSinks): void {
     for (const spark of this.#sparks) {
+      if (spark.age >= SPARK_SECONDS) {
+        continue;
+      }
+
       spark.age += seconds;
       spark.velocity.y -= GRAVITY * seconds;
       spark.position.addScaledVector(spark.velocity, seconds);
