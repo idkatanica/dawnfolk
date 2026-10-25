@@ -82,7 +82,6 @@ const FOLIAGE_KEYS: Readonly<Record<PlantSpeciesIndex, readonly FoliageKey[]>> =
   [PlantSpecies.Bush]: deciduous(0x4f_86_34, 0xa8_52_2a),
   [PlantSpecies.Cactus]: evergreen(0x4f_8a_4a, 0x4a_7c_46),
   [PlantSpecies.Cairn]: STONEWORK,
-  [PlantSpecies.Crag]: STONEWORK,
   [PlantSpecies.Currant]: berryBush(0x66_98_3e, 0xc4_a0_38),
   [PlantSpecies.DeadTree]: LEAFLESS,
   [PlantSpecies.DesertShrub]: evergreen(0x8c_9a_68, 0x80_88_5e),

@@ -7,7 +7,7 @@ import { MeshBuilder } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
 import { deformShape, facetShape, type Shape } from "../mesh/shape.ts";
 import { box, type LoftSection, loft } from "../mesh/shapes.ts";
-import { transformOf } from "../mesh/transforms.ts";
+import { type TransformOptions, transformOf } from "../mesh/transforms.ts";
 import { isDistantLevel, type PlantDetailLevel } from "../plants/tree-mesher.ts";
 import {
   addStone,
@@ -17,7 +17,6 @@ import {
   STONE_NOISE,
   type StoneContext,
   type StoneLook,
-  type StonePlacement,
 } from "../stones.ts";
 
 export const MONUMENT_HEIGHTS = {
@@ -45,7 +44,7 @@ const WEATHERED_STONE: StoneLook = { lichen: 0.24, moss: 0.3, slot: MaterialSlot
 const CAIRN_STONE: StoneLook = { lichen: 0.26, moss: 0.14, slot: MaterialSlot.Stone };
 const WORKED_STONE: StoneLook = { lichen: 0.22, moss: 0.2, slot: MaterialSlot.PaleStone };
 
-function addPlain(context: MonumentContext, shape: Shape, placement: StonePlacement, slot: MaterialSlotIndex): void {
+function addPlain(context: MonumentContext, shape: Shape, placement: TransformOptions, slot: MaterialSlotIndex): void {
   context.builder.add(shape, {
     style: { shade: groundShade(context.height), slot },
     transform: transformOf(placement),
@@ -281,7 +280,7 @@ function noseShape(context: MonumentContext): Shape {
   return facetShape(loft(sections, isDistantLevel(context.level) ? 3 : 4));
 }
 
-function addHead(context: MonumentContext, placement: StonePlacement): void {
+function addHead(context: MonumentContext, placement: TransformOptions): void {
   const { builder, level } = context;
 
   const head = new MeshBuilder();
@@ -387,7 +386,7 @@ function drumShape(context: MonumentContext, height: number, broken: boolean): S
   );
 }
 
-const PLINTH: StonePlacement = { position: [0, 0.1, 0] };
+const PLINTH: TransformOptions = { position: [0, 0.1, 0] };
 const DRUM_HEIGHT = 1.15;
 
 function addColumn(context: MonumentContext, drums: number): void {

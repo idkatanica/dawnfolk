@@ -1,4 +1,4 @@
-import { Matrix4, Vector3 } from "three";
+import { Vector3 } from "three";
 import { FULL_TURN, smoothstep } from "../shared/math.ts";
 import { createVolumeNoise } from "../shared/noise.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
@@ -126,10 +126,6 @@ export function groundShade(height: number): (point: SurfacePoint) => number {
   };
 }
 
-export interface StonePlacement extends TransformOptions {
-  readonly bottom?: number;
-}
-
 export interface StoneContext {
   readonly builder: MeshBuilder;
   readonly height: number;
@@ -143,28 +139,7 @@ export interface StoneLook {
   readonly slot?: MaterialSlotIndex;
 }
 
-function lowestPoint(shape: Shape, transform: Matrix4): number {
-  const point = new Vector3();
-  let lowest = Number.POSITIVE_INFINITY;
-
-  for (let offset = 0; offset < shape.positions.length; offset += 3) {
-    lowest = Math.min(lowest, point.fromArray(shape.positions, offset).applyMatrix4(transform).y);
-  }
-
-  return lowest;
-}
-
-function grounded(shape: Shape, placement: StonePlacement): Matrix4 {
-  const transform = transformOf(placement);
-
-  if (placement.bottom === undefined) {
-    return transform;
-  }
-
-  return new Matrix4().makeTranslation(0, placement.bottom - lowestPoint(shape, transform), 0).multiply(transform);
-}
-
-export function addStone(context: StoneContext, shape: Shape, placement: StonePlacement, look: StoneLook): void {
+export function addStone(context: StoneContext, shape: Shape, placement: TransformOptions, look: StoneLook): void {
   const { frost = 0, slot = MaterialSlot.Stone } = look;
 
   context.builder.add(shape, {
@@ -178,6 +153,6 @@ export function addStone(context: StoneContext, shape: Shape, placement: StonePl
         seed: context.random.next() * 40,
       }),
     },
-    transform: grounded(shape, placement),
+    transform: transformOf(placement),
   });
 }
