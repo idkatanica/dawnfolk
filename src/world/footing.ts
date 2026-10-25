@@ -1,3 +1,4 @@
+import { isPoolGround } from "../content/grounds.ts";
 import { plantSpeciesDefinition, woodlandShare } from "../content/plants.ts";
 import { hashToUnit } from "../shared/math.ts";
 import { hasRoomFromCoast, isOnIsland } from "./coast.ts";
@@ -6,6 +7,7 @@ import type { WorldGrid } from "./world-grid.ts";
 
 export interface FootingTerrain extends SampledTerrain {
   readonly coastDistance: Float32Array;
+  readonly ground: Uint8Array;
 }
 
 interface WildTerrain extends FootingTerrain {
@@ -54,7 +56,7 @@ export function isWalkableGround(terrain: FootingTerrain, grid: WorldGrid, cell:
 }
 
 export function isOpenGround(terrain: FootingTerrain, grid: WorldGrid, cell: number): boolean {
-  if (!isOnIsland(terrain.coastDistance, cell) || grid.isOnEdge(cell)) {
+  if (!isOnIsland(terrain.coastDistance, cell) || grid.isOnEdge(cell) || isPoolGround(terrain.ground[cell])) {
     return false;
   }
 

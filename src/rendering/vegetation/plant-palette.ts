@@ -74,6 +74,7 @@ const STONEWORK: readonly FoliageKey[] = evergreen(0x6f_8a_3e, 0x6a_6a_48);
 
 const FOLIAGE_KEYS: Readonly<Record<PlantSpeciesIndex, readonly FoliageKey[]>> = {
   [PlantSpecies.Acacia]: evergreen(0x76_93_42, 0x86_8c_4c),
+  [PlantSpecies.Alder]: deciduous(0x3e_6c_2c, 0x6e_6a_2e),
   [PlantSpecies.AppleTree]: fruitTree(0xf2_d2_da, 0x52_88_34, 0xb8_9a_38),
   [PlantSpecies.Arch]: STONEWORK,
   [PlantSpecies.Birch]: deciduous(0x6f_a8_40, 0xe0_b0_36),

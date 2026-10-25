@@ -43,7 +43,7 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     bodyRadius: 0.45,
     breeding: SPRING_CALVING,
     edgeBiomes: [],
-    favouriteBiomes: [Biome.Meadow, Biome.Forest, Biome.Steppe, Biome.Taiga, Biome.Scrub],
+    favouriteBiomes: [Biome.Meadow, Biome.Forest, Biome.Steppe, Biome.Taiga, Biome.Scrub, Biome.Swamp],
     fleeDistance: 55,
     food: 10,
     health: 1,

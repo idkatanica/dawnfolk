@@ -140,6 +140,7 @@ export const POWERS = {
           { label: "Birch", value: "birch" },
           { label: "Maple", value: "maple" },
           { label: "Willow", value: "willow" },
+          { label: "Alder", value: "alder" },
           { label: "Poplar", value: "poplar" },
           { label: "Acacia", value: "acacia" },
           { label: "Palm", value: "palm" },

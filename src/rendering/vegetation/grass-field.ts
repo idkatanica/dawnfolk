@@ -38,6 +38,8 @@ import {
 } from "three/webgpu";
 import { clamp as clampNumber, FULL_TURN, inverseLerp, saturate } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
+import { unitNoise } from "../node-helpers.ts";
+import { POOL_BANK, poolReachNode } from "../terrain/bog-pools.ts";
 import { fieldClearingNode } from "../terrain/field-ground.ts";
 import { FIREWEED, fireweedOn } from "../terrain/fireweed.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
@@ -81,6 +83,13 @@ const NEAREST_SPACING = 0.45;
 const FARTHEST_SPACING = 1.05;
 const SPACING_STEP = 0.15;
 const SPACING_PER_DISTANCE = 0.011;
+const SHORTEST_REED = 1.1;
+const TALLEST_REED = 2.3;
+const REED_NARROWING = 0.55;
+const REED_STIFFNESS = 0.35;
+const REED_CLUMP_SCALE = 0.16;
+const REED_GREEN = vec3(0.2, 0.27, 0.09);
+const REED_TIP = vec3(0.5, 0.45, 0.22);
 const FADE_START_DISTANCE = 130;
 const FADE_END_DISTANCE = 190;
 
@@ -173,6 +182,7 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
 
   const surface = textureLoad(textures.surface, cell);
   const understoryCover = texture(understory, root.add(grid.halfSize).div(grid.worldSize)).level(float(0)).x;
+  const wetland = texture(textures.wetland, root.add(grid.halfSize).div(grid.worldSize)).level(float(0));
   const footprint = floor(root.add(grid.halfSize).div(grid.cellSize).sub(0.5));
 
   function waterAt(column: number, row: number) {
@@ -186,7 +196,13 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   const fordMarks = textures.fords.marksNode(root);
   const reach = length(root.sub(center)).div(perSide.mul(spacing).mul(0.5));
 
-  const cover = ground.a
+  const reed = smoothstep(0.45, 0.8, wetland.r);
+  const poolFree = float(1).sub(smoothstep(POOL_BANK * 0.5, POOL_BANK, poolReachNode(textures, grid, root)));
+
+  const clump = unitNoise(root.mul(REED_CLUMP_SCALE));
+
+  const cover = max(ground.a, reed.mul(mix(float(0.3), float(1), clump)))
+    .mul(poolFree)
     .mul(understoryCover)
     .mul(float(1).sub(smoothstep(SNOW_START, SNOW_END, surface.r)))
     .mul(float(1).sub(surface.b))
@@ -198,17 +214,24 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
 
   const growth = clamp(cover.sub(random(SALT_PRESENCE)).mul(5), 0, 1);
 
-  const bladeHeight = mix(float(SHORTEST_BLADE), float(TALLEST_BLADE), bladeRandom(3))
-    .mul(mix(float(0.65), float(1), ground.a))
+  const grassHeight = mix(float(SHORTEST_BLADE), float(TALLEST_BLADE), bladeRandom(3)).mul(
+    mix(float(0.65), float(1), ground.a)
+  );
+  const reedHeight = mix(float(SHORTEST_REED), float(TALLEST_REED), bladeRandom(3));
+
+  const bladeHeight = mix(grassHeight, reedHeight, reed).mul(growth);
+  const bladeWidth = mix(float(NARROWEST_BLADE), float(WIDEST_BLADE), bladeRandom(5))
+    .mul(mix(float(1), float(REED_NARROWING), reed))
     .mul(growth);
-  const bladeWidth = mix(float(NARROWEST_BLADE), float(WIDEST_BLADE), bladeRandom(5)).mul(growth);
   const facingAngle = bladeRandom(7).mul(FULL_TURN);
   const spreadAngle = blade.mul(FULL_TURN / BLADES_PER_CLUMP).add(random(SALT_SPREAD).mul(FULL_TURN));
   const leanAngle = bladeRandom(11).mul(FULL_TURN);
 
   const facing = vec2(cos(facingAngle), sin(facingAngle));
   const spread = vec2(cos(spreadAngle), sin(spreadAngle)).mul(spacing.mul(CLUMP_SPREAD));
-  const lean = vec2(cos(leanAngle), sin(leanAngle)).mul(bladeRandom(13).mul(0.35));
+  const lean = vec2(cos(leanAngle), sin(leanAngle)).mul(
+    bladeRandom(13).mul(mix(float(0.35), float(REED_STIFFNESS * 0.35), reed))
+  );
   const wave = gustAt(weather, root);
   const curve = along.mul(along);
 
@@ -225,7 +248,13 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   )();
 
   const shadedGround = ground.rgb.mul(mix(float(0.68), float(1.22), along)).mul(tint);
-  const leafColor = mix(shadedGround, shadedGround.mul(vec3(1.08, 1.1, 0.82)), curve);
+  const grassLeaf = mix(shadedGround, shadedGround.mul(vec3(1.08, 1.1, 0.82)), curve);
+  const reedLeaf = mix(
+    REED_GREEN.mul(mix(float(0.55), float(1.15), along)).mul(tint),
+    REED_TIP,
+    curve.mul(bladeRandom(23).mul(0.7))
+  );
+  const leafColor = mix(grassLeaf, reedLeaf, reed);
   const isFlowering = bladeRandom(19).lessThan(fireweedOn(surface.b, textures.bloom).mul(0.7));
   const bladeColor = mix(leafColor, FIREWEED, select(isFlowering, smoothstep(0.55, 0.85, along), float(0)));
 

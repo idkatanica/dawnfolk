@@ -4,16 +4,19 @@ import { saturate } from "../shared/math.ts";
 import { createNoiseSampler } from "../shared/noise.ts";
 import { createRandom } from "../shared/random.ts";
 import { gradientZAt, slopeAt } from "../world/footing.ts";
-import { hasWater } from "../world/water.ts";
+import { hasWater, type River } from "../world/water.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 import { islandPointAt } from "./relief.ts";
+import { findPools, findSmallAreas, isWetland, measureWetness } from "./wetlands.ts";
 
 interface ClimateInputs {
+  coastDistance: Float32Array;
   desert: Float64Array;
   grid: WorldGrid;
   heights: Float32Array;
   lakeIds: Int32Array;
   riverStrength: Uint8Array;
+  rivers: readonly River[];
   seed: number;
   waterSurface: Float32Array;
 }
@@ -32,6 +35,7 @@ interface CellClimate {
   isNearShore: boolean;
   isRiverBank: boolean;
   isWater: boolean;
+  isWetland: boolean;
   moisture: number;
   slope: number;
   temperature: number;
@@ -52,6 +56,7 @@ const BROAD_RIVER_STRENGTH = 85;
 const RIVER_BANK_RISE = 1.4;
 const RIVER_BANK_RISE_PER_CELL = 0.9;
 const STEEPEST_RIVER_BANK = 0.36;
+const BOG_TEMPERATURE = 3;
 
 const BIOME_GROUND: Readonly<Record<BiomeIndex, GroundIndex>> = {
   [Biome.Alpine]: Ground.Rock,
@@ -86,7 +91,7 @@ function classifyColdOrSteep(cell: CellClimate): BiomeIndex | null {
     return Biome.Mesa;
   }
 
-  if ((cell.isNearShore || cell.isRiverBank) && cell.temperature > SHORE_TEMPERATURE) {
+  if ((cell.isNearShore || cell.isRiverBank) && cell.temperature > SHORE_TEMPERATURE && !cell.isWetland) {
     return Biome.Beach;
   }
 
@@ -106,12 +111,12 @@ function classifyDry(cell: CellClimate): BiomeIndex {
 }
 
 function classifyTemperate(cell: CellClimate): BiomeIndex {
-  if (cell.temperature < 5) {
-    return cell.moisture > 0.4 ? Biome.Taiga : Biome.Tundra;
+  if (cell.isWetland && cell.temperature > BOG_TEMPERATURE) {
+    return Biome.Swamp;
   }
 
-  if (cell.moisture > 0.78 && cell.slope < 0.12 && cell.height < 420) {
-    return Biome.Swamp;
+  if (cell.temperature < 5) {
+    return cell.moisture > 0.4 ? Biome.Taiga : Biome.Tundra;
   }
 
   if (cell.temperature < 8.2) {
@@ -341,6 +346,9 @@ export function buildClimate(inputs: ClimateInputs): ClimateResult {
   const waterDistance = distanceToWater(grid, waterSurface, heights);
   const slopes = measureSlopes(grid, heights);
   const riverBanks = findRiverBanks(inputs, slopes.slope);
+  const wetness = measureWetness(inputs);
+  const drained = new Uint8Array(grid.cellCount);
+  const drainedGround = new Uint8Array(grid.cellCount);
   const result: ClimateResult = {
     baseTemperature: new Float32Array(grid.cellCount),
     biome: new Uint8Array(grid.cellCount),
@@ -377,12 +385,21 @@ export function buildClimate(inputs: ClimateInputs): ClimateResult {
         isNearShore,
         isRiverBank: riverBanks[cell] === 1,
         isWater,
+        isWetland: isWetland(wetness[cell]),
         moisture,
         slope,
         temperature,
       };
 
       const biome = classifyBiome(climate);
+
+      if (biome === Biome.Swamp) {
+        const drainedClimate = { ...climate, isWetland: false };
+        const drainedBiome = classifyBiome(drainedClimate);
+
+        drained[cell] = drainedBiome;
+        drainedGround[cell] = groundFor(drainedBiome, drainedClimate, waterSurface[cell]);
+      }
 
       result.biome[cell] = biome;
       result.ground[cell] = groundFor(biome, climate, waterSurface[cell]);
@@ -392,5 +409,25 @@ export function buildClimate(inputs: ClimateInputs): ClimateResult {
     }
   }
 
+  shapeSwamps(inputs, result, wetness, { biome: drained, ground: drainedGround });
+
   return result;
+}
+
+interface DrainedLand {
+  biome: Uint8Array;
+  ground: Uint8Array;
+}
+
+function shapeSwamps(inputs: ClimateInputs, result: ClimateResult, wetness: Float32Array, drained: DrainedLand): void {
+  const { grid, seed } = inputs;
+
+  for (const cell of findSmallAreas(grid, (candidate) => result.biome[candidate] === Biome.Swamp)) {
+    result.biome[cell] = drained.biome[cell];
+    result.ground[cell] = drained.ground[cell];
+  }
+
+  for (const cell of findPools(grid, seed, wetness, (candidate) => result.biome[candidate] === Biome.Swamp)) {
+    result.ground[cell] = Ground.Bog;
+  }
 }

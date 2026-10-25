@@ -1,4 +1,4 @@
-import { groundDefinition } from "../../content/grounds.ts";
+import { groundDefinition, isPoolGround } from "../../content/grounds.ts";
 import type { GeneratedWorld } from "../../generation/world-generator.ts";
 import { clamp } from "../../shared/math.ts";
 import { isBrookCell } from "../../world/brooks.ts";
@@ -201,6 +201,10 @@ export class WorldState {
 
   isWalkable(cell: number): boolean {
     return isWalkableGround(this.terrain, this.grid, cell) && !this.isObstructed(cell);
+  }
+
+  isPool(cell: number): boolean {
+    return isPoolGround(this.terrain.ground[cell]);
   }
 
   isBrook(cell: number): boolean {
