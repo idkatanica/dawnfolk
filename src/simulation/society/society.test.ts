@@ -6,6 +6,7 @@ import { totalFood } from "./stock.ts";
 
 const MORNING = 0.3;
 const EVENING = 0.9;
+const LATE_EVENING = 23 / 24;
 
 function placeOnAxis(person: Person, x: number): void {
   person.mover.x = x;
@@ -76,6 +77,23 @@ describe("daily life", () => {
     const sleeping = harness.society.membersOf(tribe).filter((person) => person.job?.kind === "sleep");
 
     expect(sleeping.length).toBeGreaterThan(2);
+  });
+
+  it("wakes sleepers when the clock is moved to the afternoon", () => {
+    const harness = new SocietyHarness({ day: LATE_EVENING });
+
+    const tribe = settle(harness, 4);
+
+    harness.run(40);
+
+    const sleepers = harness.society.membersOf(tribe).filter((person) => person.pose === "sleep");
+
+    expect(sleepers.length).toBeGreaterThan(0);
+
+    harness.calendar.setHours(14);
+    harness.step();
+
+    expect(sleepers.map((person) => person.job?.kind)).not.toContain("sleep");
   });
 
   it("starves without food", () => {
