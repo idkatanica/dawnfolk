@@ -23,6 +23,19 @@ const RIGHT_FIST = new Vector3(-0.217, 0.832, 0.018);
 const LEFT_FIST = new Vector3(0.217, 0.832, 0.018);
 const SPEAR_TIP = new Vector3(-0.217, 0.832, 1.13);
 const PLANTED = 0.02;
+const STANDING_WORK: readonly PersonPose[] = [
+  "gather",
+  "chop",
+  "dig",
+  "fish",
+  "throw",
+  "mine",
+  "shoot",
+  "thrust",
+  "brawl",
+  "block",
+  "flinch",
+];
 const KNEE_CONTACT = HUMAN_SKELETON.allContacts.find(
   (contact) => contact.bone === HumanBone.ShinRight && contact.position[1] > 0.4
 );
@@ -144,18 +157,14 @@ describe("human clips", () => {
     expect(jointOf(strike, HumanBone.HandRight).y).toBeLessThan(1);
   });
 
-  it("keeps both feet on the ground while shooting and mining", () => {
-    const point = new Vector3();
+  it("keeps both feet on the ground through standing work and fights", () => {
+    for (const clip of STANDING_WORK) {
+      for (let phase = 0; phase < 1; phase += 0.05) {
+        const [leftHeel, leftToe, rightHeel, rightToe] = footHeights(posed(clip, phase));
 
-    for (const clip of ["shoot", "mine"] as const) {
-      for (const phase of [0, 0.2, 0.4, 0.6, 0.8]) {
-        const poser = posed(clip, phase);
-        const heights = HUMAN_SKELETON.footContacts.map(
-          (contact) => poser.skinPoint(contact.bone, point.set(...contact.position), point).y
-        );
-
-        expect(Math.min(heights[0], heights[1]), `${clip} ${phase} left`).toBeLessThan(0.03);
-        expect(Math.min(heights[2], heights[3]), `${clip} ${phase} right`).toBeLessThan(0.03);
+        expect(Math.min(leftHeel, leftToe), `${clip} ${phase} left`).toBeLessThan(PLANTED);
+        expect(Math.min(rightHeel, rightToe), `${clip} ${phase} right`).toBeLessThan(PLANTED);
+        expect(Math.abs(leftHeel - leftToe), `${clip} ${phase} leading foot flat`).toBeLessThan(PLANTED);
       }
     }
   });

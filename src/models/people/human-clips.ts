@@ -7,6 +7,7 @@ import { FIGHT_CLIPS } from "./fight-clips.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
 import { HumanBone, otherSide, SIDES, type Side } from "./human-skeleton.ts";
 import { RUNNING, runningLegs, WALKING, walkingLegs } from "./leg-cycles.ts";
+import { plantFeet } from "./planted-feet.ts";
 
 type HumanTool = "axe" | "basket" | "diggingStick" | "drawnBow" | "hammerStone" | "pickaxe" | "spear";
 
@@ -190,6 +191,8 @@ function gather(pose: Pose, phase: number, context: HumanClipContext): void {
     bendAnkle(pose, side, degrees(14));
   }
 
+  plantFeet(pose, 1);
+
   swingArm(pose, -1, { forward: degrees(72) + degrees(18) * reach, outward: degrees(6) });
   bendElbow(pose, -1, degrees(26) - degrees(16) * reach);
   bendWrist(pose, -1, degrees(20) * reach);
@@ -241,6 +244,8 @@ function chop(pose: Pose, phase: number): void {
   bendKnee(pose, 1, degrees(16));
   swingLeg(pose, -1, { forward: -degrees(10) - bend * 0.4, outward: degrees(9) });
   bendKnee(pose, -1, degrees(10));
+
+  plantFeet(pose, 1);
 }
 
 function dig(pose: Pose, phase: number): void {
@@ -265,6 +270,8 @@ function dig(pose: Pose, phase: number): void {
   bendKnee(pose, 1, degrees(34));
   swingLeg(pose, -1, { forward: degrees(8), outward: degrees(7) });
   bendKnee(pose, -1, degrees(26));
+
+  plantFeet(pose, 1);
 }
 
 function fish(pose: Pose, phase: number): void {
@@ -287,6 +294,8 @@ function fish(pose: Pose, phase: number): void {
     swingLeg(pose, side, { forward: degrees(22), outward: degrees(11) });
     bendKnee(pose, side, degrees(24));
   }
+
+  plantFeet(pose, 1);
 }
 
 function build(pose: Pose, phase: number): void {
@@ -333,6 +342,8 @@ function throwSpear(pose: Pose, phase: number): void {
   bendKnee(pose, 1, degrees(14));
   swingLeg(pose, -1, { forward: -degrees(16), outward: degrees(6) });
   bendKnee(pose, -1, degrees(22));
+
+  plantFeet(pose, 1);
 }
 
 const MINE_SHOULDER: readonly Keyframe[] = [
@@ -388,6 +399,8 @@ function mine(pose: Pose, phase: number): void {
   bendKnee(pose, 1, degrees(18) + bend * 0.3);
   swingLeg(pose, -1, { forward: -degrees(14) + bend * 0.5, outward: degrees(9) });
   bendKnee(pose, -1, degrees(12) + bend * 0.5);
+
+  plantFeet(pose, 1);
 }
 
 const DRAW_FORWARD: readonly Keyframe[] = [
@@ -438,6 +451,8 @@ function shoot(pose: Pose, phase: number): void {
     swingLeg(pose, side, { forward: degrees(7) * side, outward: degrees(11) });
     bendKnee(pose, side, degrees(9));
   }
+
+  plantFeet(pose, 1);
 }
 
 function sitting(pose: Pose): void {

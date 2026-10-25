@@ -5,6 +5,7 @@ import type { HumanClip, HumanClipContext } from "./human-clips.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
 import { HumanBone, SIDES, type Side } from "./human-skeleton.ts";
 import { CHARGING, MARCHING, runningLegs, walkingLegs } from "./leg-cycles.ts";
+import { plantFeet } from "./planted-feet.ts";
 
 const WEAPON_SIDE: Side = -1;
 const GUARD_SIDE: Side = 1;
@@ -176,6 +177,8 @@ function thrust(pose: Pose, phase: number): void {
   fightingLegs(pose, 0.5, lunge);
   poseUpperBody(pose, spearStance(reach));
   bendTrunk(pose, HumanBone.Spine, { forward: degrees(6) * lunge });
+
+  plantFeet(pose, GUARD_SIDE);
 }
 
 const LEFT_PUNCH: readonly Keyframe[] = [
@@ -208,6 +211,8 @@ function brawl(pose: Pose, phase: number): void {
   bendTrunk(pose, HumanBone.Head, { forward: -degrees(12), turnLeft: degrees(14) * twist });
   punchingArm(pose, GUARD_SIDE, left);
   punchingArm(pose, WEAPON_SIDE, right);
+
+  plantFeet(pose, GUARD_SIDE);
 }
 
 function block(pose: Pose, phase: number): void {
@@ -216,6 +221,8 @@ function block(pose: Pose, phase: number): void {
   fightingLegs(pose, 0.8, 0);
   poseUpperBody(pose, PARRY);
   bendTrunk(pose, HumanBone.Spine, { forward: -degrees(5) - degrees(2) * brace });
+
+  plantFeet(pose, GUARD_SIDE);
 }
 
 const FLINCH_JOLT: readonly Keyframe[] = [
@@ -238,6 +245,8 @@ function flinch(pose: Pose, phase: number): void {
     swingArm(pose, side, { forward: degrees(20) + degrees(30) * jolt, outward: degrees(18) + degrees(26) * jolt });
     bendElbow(pose, side, degrees(30) + degrees(40) * jolt);
   }
+
+  plantFeet(pose, GUARD_SIDE);
 }
 
 const FALL_DROP: readonly Keyframe[] = [
