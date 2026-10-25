@@ -55,9 +55,9 @@ function PowerSettingsContent({ powerId }: { readonly powerId: PowerId }) {
   const fields = describeParameters(power.parameters);
 
   return (
-    <section aria-label={`${power.name} settings`} className="flex w-full flex-col gap-3 p-3 md:w-72">
+    <section aria-label={`${power.name} settings`} className="flex flex-col gap-3 p-3 md:w-72">
       <header className="flex items-center gap-2.5">
-        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-ink/6 text-ink-soft">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-ink/6">
           <GameIcon name={POWER_ICONS[powerId]} size={28} />
         </span>
 

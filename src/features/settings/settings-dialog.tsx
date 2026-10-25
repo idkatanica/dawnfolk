@@ -33,7 +33,7 @@ function isSettingsTab(value: unknown): value is SettingsTab {
 
 function SectionTab({ section }: { readonly section: SettingsSection }) {
   return (
-    <Tabs.Tab className={cn(SEGMENT, "h-8 flex-1 text-sm")} value={section.value}>
+    <Tabs.Tab className={cn(SEGMENT, "pointer-coarse:h-10 flex-1 text-sm")} value={section.value}>
       {section.label}
     </Tabs.Tab>
   );
@@ -77,7 +77,7 @@ export function SettingsDialog() {
           <Dialog.Popup className="w-dialog outline-none transition-[scale,opacity] duration-200 ease-glide data-ending-style:scale-97 data-starting-style:scale-97 data-ending-style:opacity-0 data-starting-style:opacity-0">
             <Island className="max-h-dialog">
               <Tabs.Root className="flex max-h-[inherit] flex-col" onValueChange={changeTab} value={tab}>
-                <header className="flex items-start justify-between gap-4 px-5 pt-5 pb-4 sm:px-6">
+                <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-4 sm:px-6">
                   <div className="flex min-w-0 flex-col gap-0.5">
                     <Dialog.Title className="font-semibold text-ink text-lg leading-tight">Settings</Dialog.Title>
 
@@ -95,17 +95,15 @@ export function SettingsDialog() {
                       />
                     }
                   />
-                </header>
-
-                <div className="px-5 pb-3 sm:px-6">
-                  <Tabs.List aria-label="Settings sections" className={SEGMENT_TRACK}>
-                    {SECTIONS.map((section) => (
-                      <SectionTab key={section.value} section={section} />
-                    ))}
-                  </Tabs.List>
                 </div>
 
-                <ScrollArea.Root className="relative flex min-h-0 flex-auto flex-col">
+                <Tabs.List aria-label="Settings sections" className={cn(SEGMENT_TRACK, "mx-5 mb-3 sm:mx-6")}>
+                  {SECTIONS.map((section) => (
+                    <SectionTab key={section.value} section={section} />
+                  ))}
+                </Tabs.List>
+
+                <ScrollArea.Root className="flex min-h-0 flex-auto flex-col">
                   <ScrollArea.Viewport className="scroll-fade min-h-0 flex-auto overscroll-contain px-5 pt-2 pb-5 outline-none sm:px-6">
                     {SECTIONS.map((section) => (
                       <SectionPanel key={section.value} section={section} />

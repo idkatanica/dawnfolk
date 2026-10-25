@@ -8,13 +8,13 @@ export function BuildingList({ buildings }: { readonly buildings: readonly Build
   }
 
   return (
-    <ul aria-label="Buildings" className="flex flex-wrap gap-1.5">
+    <ul className="flex flex-wrap gap-1.5">
       {buildings.map((building) => {
         const icon = BUILDING_ICONS[building.kind];
 
         return (
           <li
-            className="inline-flex h-7 items-center gap-1.5 rounded-full bg-ink/8 px-2.5 font-medium text-ink-soft text-xs"
+            className="flex h-7 items-center gap-1.5 rounded-full bg-ink/8 px-2.5 font-medium text-ink-soft text-xs"
             key={building.kind}
           >
             <GameIcon name={icon} size={20} />

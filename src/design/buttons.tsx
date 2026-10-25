@@ -47,7 +47,7 @@ export function TextButton({ className, tone, ...props }: TextButtonProps) {
     <BaseButton
       {...props}
       className={cn(
-        "inline-flex h-9 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 font-medium text-sm transition-colors duration-150",
+        "inline-flex h-9 pointer-coarse:h-10 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 font-medium text-sm transition-colors duration-150",
         "disabled:cursor-not-allowed disabled:opacity-50",
         {
           "bg-dawn text-white hover:bg-dawn-strong": tone === "accent",

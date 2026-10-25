@@ -19,7 +19,7 @@ function isJournalTab(value: unknown): value is JournalTab {
 function JournalTabButton({ label, value }: { readonly label: string; readonly value: JournalTab }) {
   return (
     <Tabs.Tab
-      className="h-8 flex-1 rounded-full px-3 font-semibold text-ink-soft text-sm outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink"
+      className="h-8 pointer-coarse:h-10 flex-1 rounded-full px-3 font-semibold text-ink-soft text-sm outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink"
       value={value}
     >
       {label}
@@ -30,7 +30,7 @@ function JournalTabButton({ label, value }: { readonly label: string; readonly v
 function ScrollingPanel({ children, value }: { readonly children: ReactNode; readonly value: JournalTab }) {
   return (
     <Tabs.Panel className="flex min-h-0 flex-1 flex-col outline-none" value={value}>
-      <ScrollArea.Root className="relative flex min-h-0 flex-1 flex-col">
+      <ScrollArea.Root className="flex min-h-0 flex-1 flex-col">
         <ScrollArea.Viewport className="scroll-fade min-h-0 flex-1 overscroll-contain outline-none">
           {children}
         </ScrollArea.Viewport>

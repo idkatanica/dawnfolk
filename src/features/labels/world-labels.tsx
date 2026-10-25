@@ -38,10 +38,7 @@ function LandmarkDetail({ detail }: { readonly detail: string | null }) {
 function LandmarkLabel({ landmark }: { readonly landmark: Landmark }) {
   return (
     <li
-      className={cn(
-        LABEL_FRAME,
-        "flex flex-col items-center text-center text-shadow-black/55 text-shadow-md text-white"
-      )}
+      className={cn(LABEL_FRAME, "flex flex-col items-center text-shadow-black/55 text-shadow-md text-white")}
       data-label=""
       data-lift={landmark.lift}
       data-x={landmark.x}
@@ -82,7 +79,7 @@ function FeudMark({ mood }: { readonly mood: TribeMood }) {
   }
 
   return (
-    <span className="flex items-center text-ember" title={mood === "raiding" ? "Raid under way" : "In a feud"}>
+    <span className="flex" title={mood === "raiding" ? "Raid under way" : "In a feud"}>
       <GameIcon label={mood === "raiding" ? "Raid under way" : "In a feud"} name="raid" size={18} />
     </span>
   );

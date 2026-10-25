@@ -127,12 +127,12 @@ function NewWorld() {
 
 export function GraphicsSection() {
   return (
-    <div className="flex flex-col">
+    <>
       <QualityChoice />
 
       <MapLabelsChoice />
 
       <NewWorld />
-    </div>
+    </>
   );
 }

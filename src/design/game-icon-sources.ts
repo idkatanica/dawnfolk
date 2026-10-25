@@ -5,6 +5,7 @@ import bows from "./icons/bows.webp";
 import bronze from "./icons/bronze.webp";
 import campfire from "./icons/campfire.webp";
 import clay from "./icons/clay.webp";
+import clear from "./icons/clear.webp";
 import cloud from "./icons/cloud.webp";
 import copper from "./icons/copper.webp";
 import copperOre from "./icons/copper-ore.webp";
@@ -86,6 +87,7 @@ export const GAME_ICON_SOURCES = {
   bronze,
   campfire,
   clay,
+  clear,
   cloud,
   copper,
   "copper-ore": copperOre,

@@ -104,7 +104,7 @@ export function WorldRulesSection() {
   }
 
   return (
-    <div className="flex flex-col">
+    <>
       <div className="flex items-center justify-between gap-3 pb-4">
         <p className="text-ink-soft text-sm">Tune how nature and people behave on this island.</p>
 
@@ -113,11 +113,9 @@ export function WorldRulesSection() {
         </TextButton>
       </div>
 
-      <div className="flex flex-col border-line border-t pt-5">
-        {RULE_GROUPS.map((group) => (
-          <RuleGroup group={group} key={group.key} onChange={changeRule} rules={rules} />
-        ))}
-      </div>
-    </div>
+      {RULE_GROUPS.map((group) => (
+        <RuleGroup group={group} key={group.key} onChange={changeRule} rules={rules} />
+      ))}
+    </>
   );
 }

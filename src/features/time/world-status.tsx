@@ -1,16 +1,13 @@
-import type { ReactNode } from "react";
 import type { WeatherKind } from "../../content/weather.ts";
 import { cn } from "../../design/cn.ts";
-import { Divider } from "../../design/divider.tsx";
 import { formatClock } from "../../design/format.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
-import type { CalendarView } from "../../simulation/nature/calendar.ts";
 import { useWorldStore } from "../world/world-store.ts";
 
 const WEATHER_ICONS: Readonly<Record<WeatherKind, GameIconName>> = {
   blizzard: "snow",
-  clear: "sun",
+  clear: "clear",
   cloudy: "cloud",
   fog: "fog",
   heat: "heat",
@@ -36,37 +33,6 @@ function daylightIcon(hours: number): GameIconName {
   return "moon";
 }
 
-interface ReadingProps {
-  readonly detail: ReactNode;
-  readonly icon: GameIconName;
-  readonly title?: string | undefined;
-  readonly value: ReactNode;
-}
-
-function Reading({ detail, icon, title, value }: ReadingProps) {
-  return (
-    <div className="flex items-center gap-2 whitespace-nowrap text-ink-soft" title={title}>
-      <GameIcon name={icon} size={24} />
-
-      <span className="flex flex-col gap-0.5 leading-none">
-        <span className="font-semibold text-ink text-sm tabular-nums">{value}</span>
-
-        <span className="flex items-center gap-1 text-ink-muted text-xs max-lg:hidden">{detail}</span>
-      </span>
-    </div>
-  );
-}
-
-function ClockReading({ calendar }: { readonly calendar: CalendarView }) {
-  return (
-    <Reading
-      detail={`${calendar.seasonName} · Day ${calendar.dayOfSeason} · Year ${calendar.year}`}
-      icon={daylightIcon(calendar.hours)}
-      value={formatClock(calendar.hours)}
-    />
-  );
-}
-
 function WeatherReading() {
   const weather = useWorldStore((state) => state.snapshot?.weather);
 
@@ -75,21 +41,13 @@ function WeatherReading() {
   }
 
   return (
-    <>
-      <Divider />
+    <span className="flex items-center gap-1.5 whitespace-nowrap">
+      <GameIcon name={WEATHER_ICONS[weather.kind]} size={22} />
 
-      <Reading
-        detail={
-          <>
-            <GameIcon name="wind" size={14} />
+      <span className="text-ink">{weather.name}</span>
 
-            <span className="tabular-nums">{Math.round(weather.windSpeed)} km/h</span>
-          </>
-        }
-        icon={WEATHER_ICONS[weather.kind]}
-        value={weather.name}
-      />
-    </>
+      <span className="text-ink-muted text-xs tabular-nums">{Math.round(weather.windSpeed)} km/h</span>
+    </span>
   );
 }
 
@@ -104,16 +62,13 @@ function PopulationReading() {
   const tribeCount = tribes === 1 ? "1 tribe" : `${tribes} tribes`;
 
   return (
-    <>
-      <Divider />
+    <span className="flex items-center gap-1.5 whitespace-nowrap" title={`${population} people in ${tribeCount}`}>
+      <GameIcon name="population" size={22} />
 
-      <Reading
-        detail={tribeCount}
-        icon="population"
-        title={`${population} people in ${tribeCount}`}
-        value={population}
-      />
-    </>
+      <span className="text-ink tabular-nums">{population}</span>
+
+      <span className="text-ink-muted text-xs">{tribeCount}</span>
+    </span>
   );
 }
 
@@ -140,7 +95,7 @@ export function CompactClock({ className }: { readonly className?: string | unde
   );
 }
 
-export function WorldStatus({ className }: { readonly className?: string | undefined }) {
+export function WorldStatus() {
   const calendar = useWorldStore((state) => state.snapshot?.calendar);
 
   if (calendar === undefined) {
@@ -148,12 +103,24 @@ export function WorldStatus({ className }: { readonly className?: string | undef
   }
 
   return (
-    <div className={cn("flex items-center gap-3 lg:gap-4", className)}>
-      <ClockReading calendar={calendar} />
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <GameIcon name={daylightIcon(calendar.hours)} size={36} />
 
-      <WeatherReading />
+        <span className="flex flex-col gap-1 leading-none">
+          <span className="font-semibold text-2xl text-ink tabular-nums">{formatClock(calendar.hours)}</span>
 
-      <PopulationReading />
+          <span className="text-ink-muted text-xs">
+            {calendar.seasonName} · Day {calendar.dayOfSeason} · Year {calendar.year}
+          </span>
+        </span>
+      </div>
+
+      <div className="flex items-center gap-4 text-sm">
+        <WeatherReading />
+
+        <PopulationReading />
+      </div>
     </div>
   );
 }

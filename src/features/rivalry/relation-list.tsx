@@ -66,17 +66,15 @@ function RaidRow({ entry }: { readonly entry: RaidEntry }) {
   return (
     <li>
       <button
-        className="flex w-full items-center gap-3 rounded-2xl bg-ember-soft p-2.5 text-left text-ember outline-none transition-colors hover:bg-ember/20 focus-visible:ring-2 focus-visible:ring-dawn"
+        className="flex w-full items-center gap-3 rounded-2xl bg-ember-soft p-2.5 text-left outline-none transition-colors hover:bg-ember/20 focus-visible:ring-2 focus-visible:ring-dawn"
         onClick={showCamp}
         type="button"
       >
         <GameIcon name="raid" size={24} />
 
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex items-center gap-1 truncate font-semibold text-ink text-sm">
-            {attacker.name}
-            <ArrowRight aria-hidden="true" className="shrink-0 text-ink-soft" size={13} />
-            {defender.name}
+          <span className="truncate font-semibold text-ink text-sm">
+            {attacker.name} <ArrowRight aria-hidden="true" className="inline text-ink-soft" size={13} /> {defender.name}
           </span>
 
           <span className="truncate text-ink-soft text-xs">{RAID_PHASE_LABELS[raid.phase]}</span>
