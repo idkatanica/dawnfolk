@@ -10,6 +10,8 @@ import { NoticeFeed } from "../features/notices/notice-feed.tsx";
 import { PowerDock } from "../features/powers/power-dock.tsx";
 import { PowerSettings } from "../features/powers/power-settings.tsx";
 import { SettingsDialog } from "../features/settings/settings-dialog.tsx";
+import { useEngineStore } from "./engine-store.ts";
+import { useEngineBridges } from "./use-engine-bridges.ts";
 
 const HUD_FRAME = "pointer-events-none fixed inset-0 z-10 flex flex-col p-safe";
 
@@ -73,7 +75,7 @@ function CompactHud() {
   );
 }
 
-export function Hud() {
+function Hud() {
   const isCompact = useIsCompact();
 
   return (
@@ -85,4 +87,16 @@ export function Hud() {
       <SettingsDialog />
     </>
   );
+}
+
+export function ReadyHud() {
+  const isReady = useEngineStore((state) => state.status.kind === "ready");
+
+  useEngineBridges();
+
+  if (!isReady) {
+    return null;
+  }
+
+  return <Hud />;
 }
