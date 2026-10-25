@@ -1,6 +1,7 @@
 import { PIECE_FORMS } from "../../content/monuments.ts";
 import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
 import { MaterialSlot } from "../materials.ts";
+import { isClosed, shellsOf, withoutBuriedOverlaps, withoutBuriedTriangles } from "../mesh/buried-triangles.ts";
 import { type MeshData, mergeMeshes, vertexCount } from "../mesh/mesh-data.ts";
 import { isMonumentModel, MONUMENT_HEIGHTS, meshMonument } from "../structures/monuments.ts";
 import { berryClusters } from "./berries.ts";
@@ -41,11 +42,23 @@ const CANONICAL_HEIGHTS: Readonly<Record<PlantSpeciesIndex, number>> = {
   ...ORCHARD_HEIGHTS,
 };
 
+const CROWNS_WITHOUT_BURIED_FOLIAGE: ReadonlySet<PlantSpeciesIndex> = new Set([
+  PlantSpecies.Acacia,
+  PlantSpecies.Birch,
+  PlantSpecies.Bush,
+  PlantSpecies.DesertShrub,
+  PlantSpecies.Maple,
+  PlantSpecies.Oak,
+  PlantSpecies.Poplar,
+  PlantSpecies.Spruce,
+]);
+
 const FORM_PER_VARIANT: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DesertShrub]);
 
 export const PLANT_DETAIL_LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low", "far"];
 
 const FOOTPRINT_HEIGHT = 0.3;
+const BURIED_MARGIN = 0.01;
 
 const BROADLEAF: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
 const CONIFER: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Needle, hasBarkMarks: false };
@@ -67,6 +80,19 @@ const TREE_LOOKS: Readonly<Partial<Record<PlantSpeciesIndex, TreeLook>>> = {
   [PlantSpecies.Spruce]: CONIFER,
   [PlantSpecies.Willow]: BROADLEAF,
 };
+
+function withoutBuriedFoliage(tree: MeshData, berries: readonly MeshData[], look: TreeLook): MeshData {
+  const shells = shellsOf(tree);
+
+  const foliage = shells.filter((shell) => shell.channels.slot[0] === look.foliage && isClosed(shell));
+  const wood = shells.filter((shell) => !foliage.includes(shell));
+
+  return mergeMeshes([
+    ...wood,
+    ...withoutBuriedOverlaps(foliage, BURIED_MARGIN),
+    ...berries.map((berry) => withoutBuriedTriangles(berry, foliage, BURIED_MARGIN)),
+  ]);
+}
 
 function variantSeed(species: PlantSpeciesIndex, variant: number): number {
   return species * 1000 + variant * 77 + 13;
@@ -101,11 +127,15 @@ export function buildPlantVariant(species: PlantSpeciesIndex, variant: number, l
   const structure = generator(seed, variant);
   const tree = meshTree(structure, look, level);
 
-  if (species !== PlantSpecies.Bush || isDistantLevel(level)) {
+  if (isDistantLevel(level) || !CROWNS_WITHOUT_BURIED_FOLIAGE.has(species)) {
     return tree;
   }
 
-  return mergeMeshes([tree, berryClusters(tree, structure, look, seed + 1, level)]);
+  if (species !== PlantSpecies.Bush) {
+    return withoutBuriedFoliage(tree, [], look);
+  }
+
+  return withoutBuriedFoliage(tree, [berryClusters(tree, structure, look, seed + 1, level)], look);
 }
 
 export function plantVariantCount(species: PlantSpeciesIndex): number {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CultivatedSpecies } from "../../content/cultivated-plants.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
-import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
+import { highestExposedOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { loosePieces } from "../testing/mesh-connectivity.ts";
 import { BERRY_PART } from "./berries.ts";
 import { buildPlantVariants, canonicalHeight, PLANT_DETAIL_LEVELS } from "./plant-models.ts";
@@ -40,7 +40,7 @@ describe.each(FRUIT_SLOTS)("orchard species %i", (species, slot) => {
 
         expect(meshProblems(mesh), `${level} variant ${variant}`).toEqual([]);
         expect(detached, `${level} variant ${variant}`).toEqual([]);
-        expect(highestOpenEdge(mesh), `${level} variant ${variant}`).toBeLessThan(0.05);
+        expect(highestExposedOpenEdge(mesh), `${level} variant ${variant}`).toBeLessThan(0.05);
       }
     }
   });

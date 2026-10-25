@@ -1,9 +1,28 @@
 import { Vector3 } from "three";
 import { type MeshData, VERTEX_CHANNELS, vertexCount } from "../mesh/mesh-data.ts";
 import { type Shape, shapeVertexCount } from "../mesh/shape.ts";
+import { outermostHit } from "../mesh/surface-probe.ts";
 import { type MeshPiece, vertexKey } from "./mesh-connectivity.ts";
 
 const NORMAL_TOLERANCE = 1e-3;
+const SELF_HIT = 1e-3;
+
+const ENCLOSING_DIRECTIONS: readonly Vector3[] = [
+  [1, 0.03, 0.02],
+  [-1, 0.02, -0.03],
+  [0.02, 1, 0.03],
+  [-0.03, -1, 0.02],
+  [0.03, 0.02, 1],
+  [-0.02, 0.03, -1],
+  [1, 1, 1],
+  [-1, 1, 1],
+  [1, -1, 1],
+  [1, 1, -1],
+  [-1, -1, 1],
+  [-1, 1, -1],
+  [1, -1, -1],
+  [-1, -1, -1],
+].map((direction) => new Vector3(...direction).normalize());
 
 interface IndexedGeometry {
   readonly indices: Uint32Array;
@@ -76,6 +95,7 @@ export function meshProblems(mesh: MeshData): string[] {
 interface EdgeUse {
   count: number;
   height: number;
+  middle: Vector3;
 }
 
 function edgeUses(mesh: MeshData): Map<string, EdgeUse> {
@@ -98,7 +118,12 @@ function edgeUses(mesh: MeshData): Map<string, EdgeUse> {
 
       const use = uses.get(edge);
 
-      uses.set(edge, { count: use === undefined ? 1 : use.count + 1, height });
+      const middle = new Vector3()
+        .fromArray(mesh.positions, first * 3)
+        .add(new Vector3().fromArray(mesh.positions, second * 3))
+        .multiplyScalar(0.5);
+
+      uses.set(edge, { count: use === undefined ? 1 : use.count + 1, height, middle });
     }
   }
 
@@ -115,6 +140,20 @@ export function openEdgeCount(mesh: MeshData): number {
 
 export function highestOpenEdge(mesh: MeshData): number {
   return openEdges(mesh).reduce((highest, edge) => Math.max(highest, edge.height), Number.NEGATIVE_INFINITY);
+}
+
+function isEnclosed(mesh: MeshData, point: Vector3): boolean {
+  return ENCLOSING_DIRECTIONS.every((direction) => {
+    const hit = outermostHit(mesh, point, direction);
+
+    return hit !== null && hit.distance > SELF_HIT;
+  });
+}
+
+export function highestExposedOpenEdge(mesh: MeshData): number {
+  return openEdges(mesh)
+    .filter((edge) => !isEnclosed(mesh, edge.middle))
+    .reduce((highest, edge) => Math.max(highest, edge.height), Number.NEGATIVE_INFINITY);
 }
 
 export function thinnestPiece(mesh: MeshData, pieces: readonly MeshPiece[]): number {
