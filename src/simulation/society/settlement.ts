@@ -41,6 +41,7 @@ const LONGEST_MIGRATION_DAYS = 1.5;
 const MIGRANT_PACE = 2;
 const BURNT_CAMP = 0.8;
 const PROSPECTING_SHARE = 0.5;
+const MARSH_AVERSION = 6;
 
 interface SiteSearch {
   excluded: Tribe | null;
@@ -66,9 +67,12 @@ export function scoreSite(
     return UNSUITABLE;
   }
 
+  const surroundings = surveySurroundings(world, cell);
+
   return (
     waterScore(world, point) +
-    forageScore(world, cell) +
+    forageScore(surroundings) -
+    marshScore(surroundings) +
     climateScore(world, cell) +
     neighborScore(point, search, tribes) -
     world.slope(cell) * 6
@@ -77,6 +81,10 @@ export function scoreSite(
 
 function isCampable(world: WorldState, cell: number, point: Waypoint): boolean {
   if (!world.isWalkable(cell) || world.slope(cell) > CAMP_SLOPE || world.isBurning(cell)) {
+    return false;
+  }
+
+  if (world.terrain.biome[cell] === Biome.Swamp) {
     return false;
   }
 
@@ -112,18 +120,20 @@ function isBesideWater(world: WorldState, point: Waypoint): boolean {
   return world.grid.cellsInRadius(point.x, point.z, TOO_CLOSE_TO_WATER).some((cell) => world.isWater(cell));
 }
 
-interface ForageCount {
+interface Surroundings {
   bushes: number;
+  marsh: number;
+  samples: number;
   trees: number;
 }
 
-function forageScore(world: WorldState, center: number): number {
+function surveySurroundings(world: WorldState, center: number): Surroundings {
   const { grid } = world;
 
   const centerColumn = grid.columnOf(center);
   const centerRow = grid.rowOf(center);
 
-  const count: ForageCount = { bushes: 0, trees: 0 };
+  const count: Surroundings = { bushes: 0, marsh: 0, samples: 0, trees: 0 };
 
   for (let rowOffset = -FORAGE_REACH_CELLS; rowOffset <= FORAGE_REACH_CELLS; rowOffset += 2) {
     for (let columnOffset = -FORAGE_REACH_CELLS; columnOffset <= FORAGE_REACH_CELLS; columnOffset += 2) {
@@ -134,15 +144,26 @@ function forageScore(world: WorldState, center: number): number {
         continue;
       }
 
-      countLivingForage(world, grid.index(column, row), count);
+      countSurroundings(world, grid.index(column, row), count);
     }
   }
 
+  return count;
+}
+
+function forageScore(count: Surroundings): number {
   return Math.min(4, count.bushes * 0.4) + Math.min(2.5, count.trees * 0.06);
 }
 
-function countLivingForage(world: WorldState, cell: number, count: ForageCount): void {
-  const { vegetation } = world;
+function marshScore(count: Surroundings): number {
+  return count.samples === 0 ? 0 : (count.marsh / count.samples) * MARSH_AVERSION;
+}
+
+function countSurroundings(world: WorldState, cell: number, count: Surroundings): void {
+  const { terrain, vegetation } = world;
+
+  count.samples += 1;
+  count.marsh += terrain.biome[cell] === Biome.Swamp ? 1 : 0;
 
   for (let plant = vegetation.firstPlantInCell(cell); plant !== NO_PLANT; plant = vegetation.nextPlantInCell(plant)) {
     if (!vegetation.isAlive(plant)) {

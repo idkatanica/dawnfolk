@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { Biome } from "../content/biomes.ts";
-import { Ground } from "../content/grounds.ts";
+import { Ground, isPoolGround } from "../content/grounds.ts";
 import { isTreeSpecies, plantSpeciesDefinition } from "../content/plants.ts";
 import { isOnIsland } from "../world/coast.ts";
 import { admitsWildPlant, slopeAt } from "../world/footing.ts";
@@ -118,9 +118,86 @@ function misplacedPlants(generated: GeneratedWorld): string[] {
     if (hasWater(terrain.waterSurface[cell], terrain.height[cell])) {
       misplaced.push(`${name} in water`);
     }
+
+    if (isPoolGround(terrain.ground[cell])) {
+      misplaced.push(`${name} in a bog pool`);
+    }
   }
 
   return misplaced;
+}
+
+interface SwampSurvey {
+  readonly faults: string[];
+  landCells: number;
+  patches: number;
+  poolCells: number;
+  swampCells: number;
+}
+
+function surveySwamps(generated: GeneratedWorld): SwampSurvey {
+  const { terrain } = generated;
+
+  const grid = new WorldGrid(generated.dimensions);
+  const seen = new Uint8Array(grid.cellCount);
+  const survey: SwampSurvey = { faults: [], landCells: 0, patches: 0, poolCells: 0, swampCells: 0 };
+
+  for (let cell = 0; cell < grid.cellCount; cell += 1) {
+    const isSwamp = terrain.biome[cell] === Biome.Swamp;
+
+    if (isOnIsland(terrain.coastDistance, cell) && terrain.biome[cell] !== Biome.Water) {
+      survey.landCells += 1;
+    }
+
+    if (isPoolGround(terrain.ground[cell])) {
+      survey.poolCells += 1;
+
+      if (!isSwamp) {
+        survey.faults.push(`pool outside a swamp at ${cell}`);
+      }
+    }
+
+    if (!isSwamp) {
+      continue;
+    }
+
+    survey.swampCells += 1;
+
+    if (terrain.dryness[cell] > 0.35 || terrain.height[cell] > 620 || slopeAt(terrain.height, grid, cell) > 0.4) {
+      survey.faults.push(`swamp on dry, high or steep ground at ${cell}`);
+    }
+
+    if (seen[cell] === 0) {
+      survey.patches += 1;
+      markPatch(grid, terrain, cell, seen);
+    }
+  }
+
+  return survey;
+}
+
+function markPatch(grid: WorldGrid, terrain: TerrainData, start: number, seen: Uint8Array): void {
+  const pending = [start];
+
+  seen[start] = 1;
+
+  for (const cell of pending) {
+    for (const offset of NEIGHBOR_OFFSETS) {
+      const column = grid.columnOf(cell) + offset.column;
+      const row = grid.rowOf(cell) + offset.row;
+
+      if (!grid.contains(column, row)) {
+        continue;
+      }
+
+      const neighbor = grid.index(column, row);
+
+      if (seen[neighbor] === 0 && terrain.biome[neighbor] === Biome.Swamp) {
+        seen[neighbor] = 1;
+        pending.push(neighbor);
+      }
+    }
+  }
 }
 
 function isWooded(terrain: TerrainData, cell: number): boolean {
@@ -818,6 +895,18 @@ describe("full-size island rim", () => {
   it("keeps every plant of the full island off water and off ground too steep for it", () => {
     expect(misplacedPlants(fullSize)).toEqual([]);
     expect(misplacedPlants(fullSquare)).toEqual([]);
+  });
+
+  it("grows several swamps with pools on low, flat, wet ground on both shapes", () => {
+    for (const generated of [fullSize, fullSquare]) {
+      const survey = surveySwamps(generated);
+
+      expect(survey.faults).toEqual([]);
+      expect(survey.swampCells / survey.landCells).toBeGreaterThan(0.01);
+      expect(survey.swampCells / survey.landCells).toBeLessThan(0.07);
+      expect(survey.patches).toBeGreaterThanOrEqual(4);
+      expect(survey.poolCells).toBeGreaterThan(survey.swampCells * 0.03);
+    }
   });
 
   it("has few slopes steeper than 45 degrees and almost none steeper than 55", () => {

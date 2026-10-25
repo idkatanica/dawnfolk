@@ -454,10 +454,11 @@ export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]
     { chancePerCell: 0.025, heightScale: 1, minimumTemperature: WARM, species: PlantSpecies.Acacia },
   ],
   [Biome.Swamp]: [
-    { chancePerCell: 0.22, heightScale: 0.9, species: PlantSpecies.Willow },
-    { chancePerCell: 0.12, heightScale: 0.9, species: PlantSpecies.Birch },
+    { chancePerCell: 0.3, heightScale: 1, species: PlantSpecies.Alder },
+    { chancePerCell: 0.2, heightScale: 0.9, species: PlantSpecies.Willow },
+    { chancePerCell: 0.16, heightScale: 0.8, species: PlantSpecies.Birch },
     { chancePerCell: 0.16, heightScale: 1, species: PlantSpecies.Bush },
-    { chancePerCell: 0.04, heightScale: 0.9, species: PlantSpecies.DeadTree },
+    { chancePerCell: 0.05, heightScale: 0.85, species: PlantSpecies.DeadTree },
   ],
   [Biome.Taiga]: [
     { chancePerCell: 0.9, heightScale: 1, species: PlantSpecies.Spruce },

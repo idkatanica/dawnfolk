@@ -2,6 +2,7 @@ import { fractionalPart, lerp, smoothstep } from "../shared/math.ts";
 import { SEASON_COUNT } from "./seasons.ts";
 
 export const Ground = {
+  Bog: 16,
   Clay: 15,
   CopperOre: 12,
   Dirt: 9,
@@ -174,12 +175,12 @@ export const GROUNDS: readonly GroundDefinition[] = [
     index: Ground.Swamp,
     name: "Swamp",
     seasonalColors: [
-      [0.26, 0.3, 0.18],
-      [0.26, 0.3, 0.17],
-      [0.34, 0.31, 0.19],
-      [0.31, 0.3, 0.25],
+      [0.27, 0.28, 0.16],
+      [0.27, 0.28, 0.15],
+      [0.34, 0.3, 0.17],
+      [0.3, 0.28, 0.23],
     ],
-    walkSpeed: 0.55,
+    walkSpeed: 0.75,
   },
   {
     fertility: 0.4,
@@ -293,7 +294,27 @@ export const GROUNDS: readonly GroundDefinition[] = [
     ],
     walkSpeed: 0.85,
   },
+  {
+    fertility: 0,
+    flammability: 0,
+    fuel: 0,
+    grass: 0,
+    holdsTrees: false,
+    index: Ground.Bog,
+    name: "Bog pool",
+    seasonalColors: [
+      [0.17, 0.17, 0.11],
+      [0.17, 0.17, 0.1],
+      [0.19, 0.17, 0.1],
+      [0.18, 0.18, 0.15],
+    ],
+    walkSpeed: 0.55,
+  },
 ];
+
+export function isPoolGround(index: number): boolean {
+  return index === Ground.Bog;
+}
 
 export function groundDefinition(index: number): GroundDefinition {
   const definition = GROUNDS[index];

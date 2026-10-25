@@ -177,11 +177,13 @@ export function generateWorld(
   onProgress({ stage: "climate" });
 
   const climate = buildClimate({
+    coastDistance,
     desert,
     grid,
     heights,
     lakeIds: hydrology.lakeIds,
     riverStrength: hydrology.riverStrength,
+    rivers: hydrology.features.rivers,
     seed,
     waterSurface: hydrology.waterSurface,
   });

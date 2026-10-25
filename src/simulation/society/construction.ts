@@ -185,6 +185,7 @@ function isBuildable(spot: Waypoint, kind: BuildingKind, context: SocietyContext
   const isFirmGround = covered.every(
     (footprintCell) =>
       world.isWalkable(footprintCell) &&
+      !world.isPool(footprintCell) &&
       world.slope(footprintCell) <= steepestSlope &&
       world.occupancy[footprintCell] === NO_BUILDING
   );

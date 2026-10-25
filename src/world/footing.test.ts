@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Ground } from "../content/grounds.ts";
 import { PlantSpecies } from "../content/plants.ts";
 import { admitsWildPlant, canGrowWild, canStandOn, type FootingTerrain, isOpenGround, slopeAt } from "./footing.ts";
 import { landEverywhere } from "./testing/terrain-fixtures.ts";
@@ -16,6 +17,7 @@ function terrainOf(heightAt: (column: number, row: number) => number): FootingTe
 
   return {
     coastDistance: landEverywhere(grid.cellCount),
+    ground: new Uint8Array(grid.cellCount).fill(Ground.Meadow),
     height,
     waterSurface: new Float32Array(grid.cellCount).fill(NO_WATER),
   };
@@ -71,6 +73,17 @@ describe("footing", () => {
 
     expect(isOpenGround(terrain, grid, cliff)).toBe(false);
     expect(canStandOn(terrain, grid, cliff, 5)).toBe(false);
+  });
+
+  it("keeps everything out of a bog pool", () => {
+    const terrain = terrainOf(() => 100);
+    const pool = grid.index(3, 3);
+
+    terrain.ground[pool] = Ground.Bog;
+
+    expect(isOpenGround(terrain, grid, pool)).toBe(false);
+    expect(isOpenGround(terrain, grid, grid.index(4, 3))).toBe(true);
+    expect(canStandOn(terrain, grid, pool, 5)).toBe(false);
   });
 
   it("lets something stand only where the ground is no steeper than it allows", () => {
