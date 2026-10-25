@@ -150,7 +150,7 @@ function createForest(): Simulation {
   );
 
   simulation.weather.setKind("clear");
-  simulation.weather.setWind(0, 0);
+  simulation.weather.setWind(0, 0, 1);
 
   return simulation;
 }

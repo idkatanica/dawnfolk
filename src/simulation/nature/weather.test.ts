@@ -117,7 +117,7 @@ describe("weather system", () => {
   it("blows away from the direction the wind comes from", () => {
     const weather = new WeatherSystem();
 
-    weather.setWind(270, 20);
+    weather.setWind(270, 20, 1);
 
     const wind = weather.windVector();
 
