@@ -1,8 +1,9 @@
+import { ANIMAL_KINDS, ANIMALS } from "../../content/animals.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { isInOpenWater } from "./hops.ts";
 import { hasArrived, type Mover } from "./movement.ts";
 
-const LARGEST_BODY_RADIUS = 1.6;
+const LARGEST_BODY_RADIUS = Math.max(...ANIMAL_KINDS.map((kind) => ANIMALS[kind].bodyRadius));
 const SOFTNESS = 0.5;
 const GOAL_MARGIN = 1;
 const CROWD_FRUSTRATION = 0.5;
