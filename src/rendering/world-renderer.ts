@@ -228,6 +228,7 @@ export class WorldRenderer {
       this.#springs.rebuild(this.#mirror);
     }
 
+    const gameSeconds = frame.isPaused ? 0 : view.realSeconds * frame.speed;
     const metersPerSecond = (frame.weather.windSpeed * 1000) / 3600;
     const windX = frame.weather.windX * metersPerSecond;
     const windZ = frame.weather.windZ * metersPerSecond;
@@ -273,9 +274,9 @@ export class WorldRenderer {
     this.#crops.update(view.camera, this.#frustum, this.#quality.vegetationDetail);
     this.#crossings.update(view.camera, this.#frustum, this.#quality.vegetationDetail);
     this.#grass.update(view.camera, view.viewDistance);
-    this.#updateAgents(view);
+    this.#updateAgents(view, gameSeconds);
     this.#markSelection();
-    this.#updateEffects(view, form, rainfall, metersPerSecond);
+    this.#updateEffects(view, gameSeconds, form, rainfall, metersPerSecond);
     this.#output.render();
   }
 
@@ -319,7 +320,7 @@ export class WorldRenderer {
     look.windTravel.value.y += windZ * WATER_DRIFT * realSeconds;
   }
 
-  #updateAgents(view: RenderView): void {
+  #updateAgents(view: RenderView, gameSeconds: number): void {
     const mirror = this.#mirror;
     const { frame } = mirror;
     const { camera } = view;
@@ -328,7 +329,7 @@ export class WorldRenderer {
       camera,
       detail: this.#quality.agentDetail,
       frustum: this.#frustum,
-      gameSeconds: frame.isPaused ? 0 : view.realSeconds * frame.speed,
+      gameSeconds,
       markers: this.#markers,
       mirror,
       realSeconds: view.realSeconds,
@@ -344,7 +345,13 @@ export class WorldRenderer {
     this.#buildings.update(input);
   }
 
-  #updateEffects(view: RenderView, form: Precipitation, rainfall: number, metersPerSecond: number): void {
+  #updateEffects(
+    view: RenderView,
+    gameSeconds: number,
+    form: Precipitation,
+    rainfall: number,
+    metersPerSecond: number
+  ): void {
     const { weather } = this.#mirror.frame;
 
     const darkness = 1 - this.#atmosphere.daylight;
@@ -355,7 +362,7 @@ export class WorldRenderer {
     this.#fire.smoke.wind.value.set(weather.windX, weather.windZ).multiplyScalar(Math.min(1.5, metersPerSecond / 5));
     this.#fire.update(this.#mirror, view.camera, darkness);
     this.#effects.add(view.effects);
-    this.#effects.update(view.realSeconds);
+    this.#effects.update(view.realSeconds, gameSeconds);
     this.#splashes.update(rainfall, brightness, {
       camera: view.camera,
       focusX: view.focus.x,

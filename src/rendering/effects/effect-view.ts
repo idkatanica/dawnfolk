@@ -80,14 +80,14 @@ export class EffectView {
     }
   }
 
-  update(realSeconds: number): void {
+  update(realSeconds: number, gameSeconds: number): void {
     this.#sinks.dust.begin();
     this.#sinks.glow.begin();
 
     for (let index = this.#active.length - 1; index >= 0; index -= 1) {
       const effect = this.#active[index];
 
-      if (!effect.update(realSeconds, this.#sinks)) {
+      if (!effect.update(effect.isOnGameClock === true ? gameSeconds : realSeconds, this.#sinks)) {
         this.#finish(index, effect);
       }
     }
