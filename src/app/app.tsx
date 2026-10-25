@@ -1,14 +1,17 @@
 import { lazy, Suspense, useEffect } from "react";
 import { TooltipProvider } from "../design/tooltip.tsx";
+import { loadHud } from "./engine-launcher.ts";
+import { useEngineStore } from "./engine-store.ts";
 import { GameView } from "./game-view.tsx";
 import { useLaunchStore } from "./launch-store.ts";
 import { LoadingScreen } from "./loading-screen.tsx";
 import { StartScreen } from "./start-screen.tsx";
 
-const ReadyHud = lazy(() => import("./hud.tsx").then((module) => ({ default: module.ReadyHud })));
+const ReadyHud = lazy(() => loadHud().then((module) => ({ default: module.ReadyHud })));
 
 function GameScreen() {
   const launch = useLaunchStore((state) => state.launch);
+  const isReady = useEngineStore((state) => state.status.kind === "ready");
 
   useEffect(() => {
     document.title = `${launch.name} · Dawnfolk`;
@@ -18,9 +21,11 @@ function GameScreen() {
     <>
       <GameView launch={launch} />
 
-      <Suspense fallback={null}>
-        <ReadyHud />
-      </Suspense>
+      {isReady ? (
+        <Suspense fallback={null}>
+          <ReadyHud />
+        </Suspense>
+      ) : null}
 
       <LoadingScreen />
     </>

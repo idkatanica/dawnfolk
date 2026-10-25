@@ -17,6 +17,10 @@ export function loadGameEngine() {
   return import("../game/game-engine.ts");
 }
 
+export function loadHud() {
+  return import("./hud.tsx");
+}
+
 export function reportStop(session: GameSession, onStatus: EngineStatusListener): void {
   session.subscribeToStatus((status) => {
     if (status.kind === "failed") {
@@ -69,7 +73,7 @@ export class EngineLauncher {
   }
 
   async #start(launch: LaunchOptions): Promise<void> {
-    const engineModule = await loadGameEngine();
+    const [engineModule] = await Promise.all([loadGameEngine(), loadHud()]);
 
     const engine = await engineModule.GameEngine.start({
       camera: launch.camera,
