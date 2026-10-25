@@ -354,8 +354,10 @@ class BankRegions {
   constructor(survey: CrossingSurvey, crossings: readonly Crossing[]) {
     const { grid } = survey;
 
+    const passages = Array.from({ length: grid.cellCount }, (_, cell) => passageIn(survey, cell));
+
     function passageOf(cell: number): Passage {
-      return passageIn(survey, cell);
+      return passages[cell];
     }
 
     this.#grid = grid;
@@ -365,7 +367,7 @@ class BankRegions {
 
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
       this.#parent[cell] = cell;
-      this.#isGround[cell] = passageOf(cell) === Passage.Ground ? 1 : 0;
+      this.#isGround[cell] = passages[cell] === Passage.Ground ? 1 : 0;
     }
 
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
