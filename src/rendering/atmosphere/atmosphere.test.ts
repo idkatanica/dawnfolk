@@ -17,6 +17,7 @@ const CLEAR_SKY = {
 
 const HOUR_STEP = 0.001;
 const MOONLIGHT = 0.7;
+const ANKLE_HEIGHT = 0.085;
 
 function createAtmosphere(): Atmosphere {
   return new Atmosphere(new Scene(), { cloudSeaAltitude: -200, shadowMapSize: 1024 });
@@ -59,5 +60,15 @@ describe("Atmosphere", () => {
     const atmosphere = createAtmosphere();
 
     expect(lightAt(atmosphere, 0)).toBeCloseTo(MOONLIGHT, 5);
+  });
+
+  it("keeps shadows attached to the feet that cast them", () => {
+    const atmosphere = createAtmosphere();
+
+    atmosphere.update(CLEAR_SKY, new Vector3(), 30, 0);
+
+    const { bias, camera } = atmosphere.sun.shadow;
+
+    expect(Math.abs(bias) * (camera.far - camera.near)).toBeLessThan(ANKLE_HEIGHT);
   });
 });
