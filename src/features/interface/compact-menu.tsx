@@ -1,5 +1,5 @@
 import { Menu } from "@base-ui/react/menu";
-import { BookOpen, Map as MapIcon, Maximize2, Menu as MenuIcon, Settings } from "lucide-react";
+import { BookOpen, Map as MapIcon, Maximize2, Menu as MenuIcon, Minimize2, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import { IconButton } from "../../design/buttons.tsx";
 import { useSidePanel } from "../journal/use-side-panel.ts";
@@ -41,15 +41,17 @@ function useCompactMenu() {
 }
 
 function FullscreenEntry() {
-  const { canGoFullscreen, toggleFullscreen } = useFullscreen();
+  const { canGoFullscreen, isFullscreen, toggleFullscreen } = useFullscreen();
 
   if (!canGoFullscreen) {
     return null;
   }
 
+  const Icon = isFullscreen ? Minimize2 : Maximize2;
+
   return (
-    <MenuEntry icon={<Maximize2 aria-hidden="true" size={17} />} onClick={toggleFullscreen}>
-      Full screen
+    <MenuEntry icon={<Icon aria-hidden="true" size={17} />} onClick={toggleFullscreen}>
+      {isFullscreen ? "Leave full screen" : "Full screen"}
     </MenuEntry>
   );
 }

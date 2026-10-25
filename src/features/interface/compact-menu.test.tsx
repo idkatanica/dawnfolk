@@ -1,7 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import { CompactMenu } from "./compact-menu.tsx";
 import { useInterfaceStore } from "./interface-store.ts";
+
+function allowFullscreen(element: Element | null): void {
+  vi.spyOn(document, "fullscreenEnabled", "get").mockReturnValue(true);
+  vi.spyOn(document, "fullscreenElement", "get").mockReturnValue(element);
+}
 
 describe("compact menu", () => {
   it("keeps its entries hidden until it is opened", async () => {
@@ -62,5 +67,25 @@ describe("compact menu", () => {
 
     expect(state.isSettingsOpen).toBe(true);
     expect(state.settingsTab).toBe("world");
+  });
+
+  it("offers full screen when the page is not in full screen", async () => {
+    allowFullscreen(null);
+
+    const screen = await render(<CompactMenu />);
+
+    await screen.getByRole("button", { name: "Menu" }).click();
+
+    await expect.element(screen.getByRole("menuitem", { name: "Full screen" })).toBeVisible();
+  });
+
+  it("offers to leave full screen while the page is in full screen", async () => {
+    allowFullscreen(document.documentElement);
+
+    const screen = await render(<CompactMenu />);
+
+    await screen.getByRole("button", { name: "Menu" }).click();
+
+    await expect.element(screen.getByRole("menuitem", { name: "Leave full screen" })).toBeVisible();
   });
 });
