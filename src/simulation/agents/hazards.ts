@@ -6,7 +6,6 @@ import type { Waypoint } from "./navigation.ts";
 const VISIBLE_FIRE = 0.08;
 const FIRE_NEAR_CAMP = 0.2;
 const CAMP_WATCH_DIRECTIONS = 24;
-const COARSE_SCAN_RADIUS_CELLS = 8;
 
 interface DangerZone {
   radius: number;
@@ -72,14 +71,12 @@ export class HazardMap {
     const centerRow = grid.rowAt(z);
     const reach = Math.ceil(radius / grid.cellSize);
 
-    const step = reach > COARSE_SCAN_RADIUS_CELLS ? 2 : 1;
-
     let weightedColumn = 0;
     let weightedRow = 0;
     let totalWeight = 0;
 
-    for (let rowOffset = -reach; rowOffset <= reach; rowOffset += step) {
-      for (let columnOffset = -reach; columnOffset <= reach; columnOffset += step) {
+    for (let rowOffset = -reach; rowOffset <= reach; rowOffset += 1) {
+      for (let columnOffset = -reach; columnOffset <= reach; columnOffset += 1) {
         const distanceSquared = columnOffset * columnOffset + rowOffset * rowOffset;
         const column = centerColumn + columnOffset;
         const row = centerRow + rowOffset;
