@@ -30,15 +30,6 @@ describe("person details", () => {
     await expect.element(screen.getByText("55%", { exact: true })).toBeVisible();
     await expect.element(screen.getByText("90%", { exact: true })).toBeVisible();
   });
-
-  it("says when a person has passed away", async () => {
-    const person = createPersonInspection({ activity: "Resting", isAlive: false });
-
-    const screen = await render(<PersonDetails person={person} />);
-
-    await expect.element(screen.getByText("Has passed away")).toBeVisible();
-    await expect.element(screen.getByText("Resting")).not.toBeInTheDocument();
-  });
 });
 
 describe("animal details", () => {

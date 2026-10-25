@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
-import { createCalendar, createStatistics, createWeather, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { createCalendar, createWeather, resetWorld, showWorld } from "../testing/world-fixtures.ts";
 import { useInterfaceStore } from "./interface-store.ts";
 import { CompactTopBar, PanelBar, StatusCard } from "./top-bar.tsx";
 
@@ -10,7 +10,6 @@ function showMorning(): void {
   showWorld({
     calendar: createCalendar({ hours: 9.5 }),
     isPaused: true,
-    statistics: createStatistics({ population: 14, tribes: 2 }),
     weather: createWeather({ name: "Clear" }),
   });
 }

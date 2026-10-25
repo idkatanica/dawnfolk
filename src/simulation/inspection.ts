@@ -10,7 +10,7 @@ import type { TribeSummary } from "./frame.ts";
 import type { Environment } from "./nature/environment.ts";
 import type { BuildingSystem } from "./society/buildings.ts";
 import { JOB_LABELS } from "./society/jobs/job.ts";
-import { isChild, type Person } from "./society/person.ts";
+import type { Person } from "./society/person.ts";
 import type { SocietySystem } from "./society/society.ts";
 import type { WorldState } from "./world/world-state.ts";
 
@@ -21,8 +21,6 @@ export interface PersonInspection {
   health: number;
   hunger: number;
   id: number;
-  isAlive: boolean;
-  isChild: boolean;
   isFemale: boolean;
   kind: "person";
   name: string;
@@ -36,7 +34,6 @@ export interface AnimalInspection {
   activity: string;
   health: number;
   id: number;
-  isAlive: boolean;
   isYoung: boolean;
   kind: "animal";
   name: string;
@@ -133,7 +130,7 @@ function tribeName(sources: InspectionSources, tribeId: number): string {
 
 function personActivity(person: Person): string {
   if (!person.isAlive) {
-    return "Dead";
+    return "Has passed away";
   }
 
   if (person.job === null) {
@@ -163,8 +160,6 @@ function inspectPerson(id: number, sources: InspectionSources): PersonInspection
     health: person.health,
     hunger: person.hunger,
     id: person.id,
-    isAlive: person.isAlive,
-    isChild: isChild(person),
     isFemale: person.isFemale,
     kind: "person",
     name: person.name,
@@ -186,7 +181,6 @@ function inspectAnimal(id: number, sources: InspectionSources): AnimalInspection
     activity: animal.pose === "graze" ? ANIMALS[animal.kind].restingActivity : ANIMAL_ACTIVITIES[animal.pose],
     health: animal.health / ANIMALS[animal.kind].health,
     id: animal.id,
-    isAlive: animal.isAlive,
     isYoung: animal.youth > ADULT_YOUTH,
     kind: "animal",
     name: ANIMALS[animal.kind].name,

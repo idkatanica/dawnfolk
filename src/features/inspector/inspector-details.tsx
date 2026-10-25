@@ -24,7 +24,7 @@ import { StockList } from "../tribes/stock-list.tsx";
 export function PersonDetails({ person }: { readonly person: PersonInspection }) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-ink text-sm">{person.isAlive ? person.activity : "Has passed away"}</p>
+      <p className="text-ink text-sm">{person.activity}</p>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
         <MeterBar label="Health" tone="ember" value={person.health} valueText={formatPercent(person.health)} />

@@ -131,11 +131,6 @@ export interface WeatherView {
   windZ: number;
 }
 
-export interface SimulationStatistics {
-  population: number;
-  tribes: number;
-}
-
 export interface SimulationFrame {
   animalCount: number;
   animals: Float32Array;
@@ -157,7 +152,6 @@ export interface SimulationFrame {
   rules: WorldRules;
   secondsSinceTick: number;
   speed: number;
-  statistics: SimulationStatistics;
   surfaceRows: PackedRows[];
   tick: number;
   tribes: TribeSummary[];

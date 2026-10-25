@@ -81,8 +81,10 @@ function WeatherReading() {
 }
 
 function PopulationReading() {
-  const population = useWorldStore((state) => state.snapshot?.statistics.population);
-  const tribes = useWorldStore((state) => state.snapshot?.statistics.tribes);
+  const population = useWorldStore((state) =>
+    state.snapshot?.tribes.reduce((total, tribe) => total + tribe.population, 0)
+  );
+  const tribes = useWorldStore((state) => state.snapshot?.tribes.length);
 
   if (population === undefined || tribes === undefined) {
     return null;

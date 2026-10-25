@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
-import { createCalendar, createStatistics, createWeather, resetWorld, showWorld } from "../testing/world-fixtures.ts";
+import { createCalendar, createTribe, createWeather, resetWorld, showWorld } from "../testing/world-fixtures.ts";
 import { CompactClock, WorldStatus } from "./world-status.tsx";
 
 describe("world status", () => {
@@ -17,7 +17,7 @@ describe("world status", () => {
   it("shows the clock, the calendar, the weather and the population", async () => {
     showWorld({
       calendar: createCalendar({ dayOfSeason: 2, hours: 18.5, seasonName: "Autumn", year: 3 }),
-      statistics: createStatistics({ population: 23, tribes: 1 }),
+      tribes: [createTribe({ population: 23 })],
       weather: createWeather({ name: "Rain", windSpeed: 21.6 }),
     });
 

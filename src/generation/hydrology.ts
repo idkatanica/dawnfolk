@@ -335,7 +335,6 @@ function findLakes(
       centerZ: center.z,
       id,
       level: area.level,
-      maximumDepth: area.maximumDepth,
     });
   }
 

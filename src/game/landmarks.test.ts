@@ -8,7 +8,7 @@ import { findLandmarks, type LandmarkSource } from "./landmarks.ts";
 const GRID = new WorldGrid({ cellSize: 10, cellsPerSide: 8 });
 
 function lake(id: number, cellCount: number): Lake {
-  return { cellCount, centerX: id * 10, centerZ: -id * 10, id, level: 40, maximumDepth: 6 };
+  return { cellCount, centerX: id * 10, centerZ: -id * 10, id, level: 40 };
 }
 
 function sourceWith(lakes: readonly Lake[], seed = 7, monuments: readonly Monument[] = []): LandmarkSource {

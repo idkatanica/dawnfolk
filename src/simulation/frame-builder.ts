@@ -1,12 +1,4 @@
-import type {
-  HeightPatch,
-  InitialWorld,
-  PackedRows,
-  SimulationFrame,
-  SimulationStatistics,
-  TribeSummary,
-  WaterLevelPatch,
-} from "./frame.ts";
+import type { HeightPatch, InitialWorld, PackedRows, SimulationFrame, TribeSummary, WaterLevelPatch } from "./frame.ts";
 import {
   allRows,
   describeBuilding,
@@ -60,7 +52,6 @@ export class FrameBuilder {
       rules: simulation.rules,
       secondsSinceTick: simulation.secondsSinceTick,
       speed: simulation.speed,
-      statistics: this.#statistics(),
       surfaceRows: this.#changedSurfaceRows(),
       tick: simulation.tick,
       tribes,
@@ -172,14 +163,5 @@ export class FrameBuilder {
     const members = society.membersOfEach(tribes);
 
     return tribes.map((tribe, position) => describeTribe(tribe, members[position], { buildings, world }));
-  }
-
-  #statistics(): SimulationStatistics {
-    const { society } = this.#simulation;
-
-    return {
-      population: society.population,
-      tribes: society.tribes().length,
-    };
   }
 }

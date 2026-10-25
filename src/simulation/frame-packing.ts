@@ -228,7 +228,6 @@ export function packPeople(people: readonly Person[], findTribe: (id: number) =>
     buffer[offset + PersonField.IsFemale] = person.isFemale ? 1 : 0;
     buffer[offset + PersonField.AppearanceSeed] = person.appearanceSeed;
     buffer[offset + PersonField.Carried] = carriedItemCode(carriedItem(person));
-    buffer[offset + PersonField.Health] = person.health;
     buffer[offset + PersonField.Weapon] = shownWeapon(person);
     buffer[offset + PersonField.Gear] = gearOf(person, tribe);
     buffer[offset + PersonField.Era] = tribe === null ? 0 : tribe.eraIndex;
