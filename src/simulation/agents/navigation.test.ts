@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BROOK_STRENGTH } from "../../world/brooks.ts";
 import { createTestWorld, floodCells, floodStrip, fordAcross, riverStrip } from "../testing/test-world.ts";
+import { raiseTerrain } from "../world/terrain-editing.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { NavigationGrid, type Waypoint } from "./navigation.ts";
 
@@ -127,6 +128,47 @@ describe("navigation grid", () => {
 
     expect(navigation.rebuildIfChanged()).toBe(true);
     expect(navigation.rebuildIfChanged()).toBe(false);
+  });
+
+  it("keeps the graph when an edit leaves every cell's footing as it was", () => {
+    const world = createTestWorld(RIVER_WORLD);
+
+    const navigation = new NavigationGrid(world);
+
+    raiseTerrain(world, { radius: 60, x: 100, z: 100 }, 0.5);
+
+    expect(navigation.rebuildIfChanged()).toBe(false);
+    expect(navigation.rebuildIfChanged()).toBe(false);
+  });
+
+  it("rebuilds when an edit makes the ground beside it too steep to walk", () => {
+    const world = createTestWorld(RIVER_WORLD);
+
+    const navigation = new NavigationGrid(world);
+
+    const cell = world.grid.cellAt(100, 100);
+    const column = world.grid.columnOf(cell);
+    const row = world.grid.rowOf(cell);
+
+    expect(world.isWalkable(cell + 1)).toBe(true);
+
+    world.setHeight(cell, 130);
+    world.finishHeightEdit({ firstColumn: column, firstRow: row, lastColumn: column, lastRow: row });
+
+    expect(world.isWalkable(cell)).toBe(true);
+    expect(world.isWalkable(cell + 1)).toBe(false);
+    expect(navigation.rebuildIfChanged()).toBe(true);
+  });
+
+  it("rebuilds when an edit only changes how steep the walkable ground is", () => {
+    const world = createTestWorld(RIVER_WORLD);
+
+    const navigation = new NavigationGrid(world);
+
+    raiseTerrain(world, { radius: 60, x: 100, z: 100 }, 30);
+
+    expect(world.grid.cellsInRadius(100, 100, 80).every((cell) => world.isWalkable(cell))).toBe(true);
+    expect(navigation.rebuildIfChanged()).toBe(true);
   });
 });
 

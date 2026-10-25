@@ -73,6 +73,7 @@ export class WorldState {
   readonly cropCodes: Uint8Array;
   readonly deposits: readonly Deposit[];
   readonly fields: SurfaceFields;
+  readonly footingChanges = new RegionChangeTracker();
   readonly grid: WorldGrid;
   readonly groundChanges: RowChangeTracker;
   readonly heightChanges = new RegionChangeTracker();
@@ -313,6 +314,7 @@ export class WorldState {
 
   finishHeightEdit(region: CellRegion): void {
     this.heightChanges.markRegion(region);
+    this.footingChanges.markRegion(region);
     this.heightVersion += 1;
   }
 

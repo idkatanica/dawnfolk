@@ -109,7 +109,7 @@ export class LandAreas {
       const isWalkable = world.isWalkable(cell);
 
       this.#walkable[cell] = isWalkable ? 1 : 0;
-      this.#cellCost[cell] = isWalkable ? 1 + STEEPNESS_COST * slopePenalty(world.slope(cell)) : 1;
+      this.#cellCost[cell] = this.#costOf(cell, isWalkable);
       this.#areaOfCell[cell] = NO_AREA;
     }
 
@@ -117,6 +117,15 @@ export class LandAreas {
     this.#findHops();
     this.#linkAreas(this.#findAreas());
     this.#findRegions();
+  }
+
+  keepsFooting(cell: number): boolean {
+    const isWalkable = this.#world.isWalkable(cell);
+
+    return (
+      this.#walkable[cell] === (isWalkable ? 1 : 0) &&
+      this.#cellCost[cell] === Math.fround(this.#costOf(cell, isWalkable))
+    );
   }
 
   regionNear(point: Point): number {
@@ -417,6 +426,14 @@ export class LandAreas {
     }
 
     return this.#walkable[grid.index(nextColumn, row)] === 1 && this.#walkable[grid.index(column, nextRow)] === 1;
+  }
+
+  #costOf(cell: number, isWalkable: boolean): number {
+    if (!isWalkable) {
+      return 1;
+    }
+
+    return 1 + STEEPNESS_COST * slopePenalty(this.#world.slope(cell));
   }
 
   #passageOf(cell: number): Passage {
