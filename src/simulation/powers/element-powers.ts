@@ -111,7 +111,7 @@ export function snowPower(
     const falloff = 1 - relativeDistance * relativeDistance;
 
     world.fields.snow[cell] = Math.min(SNOW_CAPACITY, world.fields.snow[cell] + snowfall * falloff);
-    fire.douse(cell, snowfall * 3);
+    fire.douse(cell, snowfall * 3 * falloff);
     world.markSurfaceCell(cell);
   }
 
