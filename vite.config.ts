@@ -27,7 +27,7 @@ const configuration: ViteUserConfig = defineConfig({
         extends: true,
         test: {
           exclude: [...configDefaults.exclude, "src/**/*.browser.test.ts"],
-          include: ["src/**/*.test.ts"],
+          include: ["src/**/*.test.ts", "worker/**/*.test.ts"],
           name: "unit",
           testTimeout: 30_000,
         },

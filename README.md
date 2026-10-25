@@ -29,7 +29,7 @@
 </p>
 
 <p align="center">
-  <a href="https://dawnfolk.svidskiy.workers.dev">Play</a> ·
+  <a href="https://playdawnfolk.com">Play</a> ·
   <a href="#features">Features</a> ·
   <a href="#getting-started">Getting started</a> ·
   <a href="#architecture">Architecture</a> ·
