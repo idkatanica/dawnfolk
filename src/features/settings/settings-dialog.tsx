@@ -75,8 +75,8 @@ export function SettingsDialog() {
 
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center px-3 pt-(--dialog-inset-top) pb-(--dialog-inset-bottom)">
           <Dialog.Popup className="w-dialog outline-none transition-[scale,opacity] duration-200 ease-glide data-ending-style:scale-97 data-starting-style:scale-97 data-ending-style:opacity-0 data-starting-style:opacity-0">
-            <Island className="max-h-dialog">
-              <Tabs.Root className="flex max-h-[inherit] flex-col" onValueChange={changeTab} value={tab}>
+            <Island className="flex max-h-dialog flex-col">
+              <Tabs.Root className="flex min-h-0 flex-col" onValueChange={changeTab} value={tab}>
                 <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-4 sm:px-6">
                   <div className="flex min-w-0 flex-col gap-0.5">
                     <Dialog.Title className="font-semibold text-ink text-lg leading-tight">Settings</Dialog.Title>
@@ -104,7 +104,7 @@ export function SettingsDialog() {
                 </Tabs.List>
 
                 <ScrollArea.Root className="flex min-h-0 flex-auto flex-col">
-                  <ScrollArea.Viewport className="scroll-fade min-h-0 flex-auto overscroll-contain px-5 pt-2 pb-5 outline-none sm:px-6">
+                  <ScrollArea.Viewport className="scroll-fade relative min-h-0 flex-auto overscroll-contain px-5 pt-2 pb-5 outline-none sm:px-6">
                     {SECTIONS.map((section) => (
                       <SectionPanel key={section.value} section={section} />
                     ))}
