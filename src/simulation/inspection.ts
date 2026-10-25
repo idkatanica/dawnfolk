@@ -3,7 +3,7 @@ import { Biome, biomeDefinition } from "../content/biomes.ts";
 import { BUILDINGS } from "../content/buildings.ts";
 import { groundDefinition } from "../content/grounds.ts";
 import { plantSpeciesDefinition } from "../content/plants.ts";
-import { NO_PLANT, PlantState } from "../world/vegetation-store.ts";
+import { PlantState } from "../world/vegetation-store.ts";
 import type { Selection } from "./commands.ts";
 import type { FaunaSystem } from "./fauna/fauna.ts";
 import type { TribeSummary } from "./frame.ts";
@@ -219,18 +219,14 @@ function inspectBuilding(id: number, sources: InspectionSources): BuildingInspec
 function plantsIn(world: WorldState, cell: number): PlantDescription[] {
   const { vegetation } = world;
 
-  const plants: PlantDescription[] = [];
-
-  for (let plant = vegetation.firstPlantInCell(cell); plant !== NO_PLANT; plant = vegetation.nextPlantInCell(plant)) {
+  return vegetation.plantsInCell(cell).map((plant) => {
     const { name } = plantSpeciesDefinition(vegetation.species[plant]);
 
-    plants.push({
+    return {
       isBurnt: vegetation.state[plant] === PlantState.Burnt,
       name: vegetation.state[plant] === PlantState.Fallen ? `${name} (fallen)` : name,
-    });
-  }
-
-  return plants;
+    };
+  });
 }
 
 function inspectCell(x: number, z: number, sources: InspectionSources): CellInspection | null {

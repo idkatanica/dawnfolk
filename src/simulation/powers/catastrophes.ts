@@ -1,6 +1,5 @@
 import { isShrubSpecies, isTreeSpecies, PlantSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import { clamp, FULL_TURN, hashToUnit, lerp, smoothstep } from "../../shared/math.ts";
-import { NO_PLANT } from "../../world/vegetation-store.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import { discover } from "../society/progress.ts";
 import { type Catastrophe, ruinText, type Shock, shakeMonuments } from "../world/monument-damage.ts";
@@ -236,7 +235,7 @@ function flatten(cell: number, blast: Blast, remoteness: number, services: Power
   const { environment, world } = services;
   const { vegetation } = world;
 
-  for (const plant of plantsIn(world, cell)) {
+  for (const plant of vegetation.plantsInCell(cell).filter((index) => vegetation.isAlive(index))) {
     const { form } = plantSpeciesDefinition(vegetation.species[plant]);
 
     if (isTreeSpecies(vegetation.species[plant])) {
@@ -251,20 +250,6 @@ function flatten(cell: number, blast: Blast, remoteness: number, services: Power
   world.fields.scorch[cell] = Math.max(world.fields.scorch[cell], lerp(0.85, 0.35, remoteness));
   world.fields.snow[cell] = 0;
   world.markDisturbed(cell, environment.day);
-}
-
-function plantsIn(world: WorldState, cell: number): number[] {
-  const { vegetation } = world;
-
-  const plants: number[] = [];
-
-  for (let plant = vegetation.firstPlantInCell(cell); plant !== NO_PLANT; plant = vegetation.nextPlantInCell(plant)) {
-    if (vegetation.isAlive(plant)) {
-      plants.push(plant);
-    }
-  }
-
-  return plants;
 }
 
 function fallingAway(plant: number, blast: Blast, world: WorldState): number {
@@ -404,7 +389,7 @@ function toppleTrees(cell: number, services: PowerServices): void {
   const { environment, world } = services;
   const { vegetation } = world;
 
-  for (const plant of plantsIn(world, cell)) {
+  for (const plant of vegetation.plantsInCell(cell).filter((index) => vegetation.isAlive(index))) {
     if (isTreeSpecies(vegetation.species[plant])) {
       world.fellPlant(plant, environment.day, hashToUnit(vegetation.seed[plant] * 31, cell) * FULL_TURN);
       world.markDisturbed(cell, environment.day);

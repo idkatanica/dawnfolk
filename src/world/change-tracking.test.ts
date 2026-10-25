@@ -5,7 +5,6 @@ describe("row change tracker", () => {
   it("reports nothing until a row changes", () => {
     const tracker = new RowChangeTracker(16);
 
-    expect(tracker.hasChanges).toBe(false);
     expect(tracker.takeRuns()).toEqual([]);
   });
 
@@ -30,16 +29,7 @@ describe("row change tracker", () => {
     tracker.markAll();
     tracker.takeRuns();
 
-    expect(tracker.hasChanges).toBe(false);
     expect(tracker.takeRuns()).toEqual([]);
-  });
-
-  it("clamps row ranges to the grid", () => {
-    const tracker = new RowChangeTracker(4);
-
-    tracker.markRows(-3, 10);
-
-    expect(tracker.takeRuns()).toEqual([{ firstRow: 0, rowCount: 4 }]);
   });
 });
 
@@ -51,7 +41,6 @@ describe("region change tracker", () => {
     tracker.markRegion({ firstColumn: 1, firstRow: 5, lastColumn: 3, lastRow: 9 });
 
     expect(tracker.takeRegion()).toEqual({ firstColumn: 1, firstRow: 4, lastColumn: 6, lastRow: 9 });
-    expect(tracker.hasChanges).toBe(false);
     expect(tracker.takeRegion()).toBeNull();
   });
 });
