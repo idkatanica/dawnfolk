@@ -1,11 +1,13 @@
 import { fractionalPart, lerp, smoothstep } from "../shared/math.ts";
-import { DEPOSIT_GROUNDS, DepositGround } from "./deposit-grounds.ts";
 import { SEASON_COUNT } from "./seasons.ts";
 
 export const Ground = {
+  Clay: 15,
+  CopperOre: 12,
   Dirt: 9,
   Farm: 10,
   Forest: 2,
+  IronOre: 14,
   Meadow: 0,
   RedRock: 11,
   Rock: 5,
@@ -14,8 +16,8 @@ export const Ground = {
   Snow: 6,
   Steppe: 1,
   Swamp: 8,
+  TinOre: 13,
   Tundra: 7,
-  ...DepositGround,
 } as const;
 
 export type GroundIndex = (typeof Ground)[keyof typeof Ground];
@@ -227,7 +229,70 @@ export const GROUNDS: readonly GroundDefinition[] = [
     ],
     walkSpeed: 0.75,
   },
-  ...DEPOSIT_GROUNDS,
+  {
+    fertility: 0,
+    flammability: 0,
+    fuel: 0,
+    grass: 0,
+    holdsTrees: false,
+    index: Ground.CopperOre,
+    name: "Copper vein",
+    seasonalColors: [
+      [0.33, 0.5, 0.44],
+      [0.34, 0.51, 0.45],
+      [0.33, 0.5, 0.44],
+      [0.33, 0.47, 0.43],
+    ],
+    walkSpeed: 0.75,
+  },
+  {
+    fertility: 0,
+    flammability: 0,
+    fuel: 0,
+    grass: 0,
+    holdsTrees: false,
+    index: Ground.TinOre,
+    name: "Tin vein",
+    seasonalColors: [
+      [0.3, 0.29, 0.33],
+      [0.31, 0.3, 0.34],
+      [0.3, 0.29, 0.33],
+      [0.31, 0.3, 0.34],
+    ],
+    walkSpeed: 0.75,
+  },
+  {
+    fertility: 0,
+    flammability: 0,
+    fuel: 0,
+    grass: 0,
+    holdsTrees: false,
+    index: Ground.IronOre,
+    name: "Iron vein",
+    seasonalColors: [
+      [0.55, 0.27, 0.16],
+      [0.56, 0.28, 0.17],
+      [0.55, 0.27, 0.16],
+      [0.51, 0.27, 0.18],
+    ],
+    walkSpeed: 0.75,
+  },
+  {
+    fertility: 0.3,
+    flammability: 0,
+    fuel: 0,
+    grass: 0.1,
+    holdsTrees: false,
+    index: Ground.Clay,
+    name: "Clay bank",
+    seasonalColors: [
+      [0.6, 0.53, 0.43],
+      [0.63, 0.55, 0.44],
+      [0.6, 0.53, 0.43],
+      [0.56, 0.52, 0.45],
+    ],
+    walkSpeed: 0.85,
+  },
 ];
 
 export function groundDefinition(index: number): GroundDefinition {

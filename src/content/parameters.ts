@@ -26,11 +26,6 @@ interface ToggleParameterSpecification {
   label: string;
 }
 
-interface ChoiceOption {
-  label: string;
-  value: string;
-}
-
 interface ChoiceParameterSpecification<Value extends string> {
   defaultValue: Value;
   description: string;
@@ -46,12 +41,8 @@ interface ToggleParameterMetadata extends ToggleParameterSpecification {
   kind: "toggle";
 }
 
-interface ChoiceParameterMetadata {
-  defaultValue: string;
-  description: string;
+interface ChoiceParameterMetadata extends ChoiceParameterSpecification<string> {
   kind: "choice";
-  label: string;
-  options: readonly ChoiceOption[];
 }
 
 type ParameterMetadata = ChoiceParameterMetadata | RangeParameterMetadata | ToggleParameterMetadata;
@@ -92,15 +83,7 @@ export function choiceParameter<const Value extends string>(specification: Choic
   return z
     .enum(values)
     .default(specification.defaultValue)
-    .meta({
-      parameter: {
-        defaultValue: specification.defaultValue,
-        description: specification.description,
-        kind: "choice",
-        label: specification.label,
-        options: specification.options,
-      },
-    });
+    .meta({ parameter: { kind: "choice", ...specification } });
 }
 
 export function groupMetadata(label: string, description: string): z.GlobalMeta {
@@ -140,13 +123,13 @@ export function describeParameterGroups(schema: z.ZodObject): ParameterGroupFiel
   for (const [key, field] of Object.entries(schema.shape)) {
     const metadata = field.meta();
 
-    if (metadata?.parameterGroup === undefined) {
+    if (metadata?.parameterGroup === undefined || !(field instanceof z.ZodPrefault)) {
       continue;
     }
 
-    const innerSchema = unwrapObject(field);
+    const innerSchema = field.unwrap();
 
-    if (innerSchema === null) {
+    if (!(innerSchema instanceof z.ZodObject)) {
       continue;
     }
 
@@ -154,16 +137,4 @@ export function describeParameterGroups(schema: z.ZodObject): ParameterGroupFiel
   }
 
   return groups;
-}
-
-function unwrapObject(schema: z.core.$ZodType): z.ZodObject | null {
-  if (schema instanceof z.ZodObject) {
-    return schema;
-  }
-
-  if (schema instanceof z.ZodPrefault || schema instanceof z.ZodDefault) {
-    return unwrapObject(schema.unwrap());
-  }
-
-  return null;
 }

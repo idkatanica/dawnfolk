@@ -69,10 +69,6 @@ function isWanted(tribe: Tribe, recipe: RecipeId, construction: ResourceAmounts)
 function stationFor(tribe: Tribe, context: SocietyContext, recipe: RecipeId): Building | null | undefined {
   const { station } = RECIPES[recipe];
 
-  if (station === null) {
-    return null;
-  }
-
   const building = completedOfKind(tribe, context, station);
 
   if (building === null && station !== "workshop") {

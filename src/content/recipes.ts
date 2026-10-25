@@ -14,7 +14,7 @@ export interface RecipeDefinition {
   label: string;
   outputs: ResourceAmounts;
   seconds: number;
-  station: BuildingKind | null;
+  station: BuildingKind;
   technology: TechnologyId;
 }
 

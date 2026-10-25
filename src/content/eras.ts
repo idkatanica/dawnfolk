@@ -5,7 +5,6 @@ const ERA_IDS = ["wanderers", "stoneAge", "neolithic", "copperAge", "bronzeAge",
 export type EraId = (typeof ERA_IDS)[number];
 
 export interface EraDefinition {
-  description: string;
   id: EraId;
   index: number;
   name: string;
@@ -14,42 +13,36 @@ export interface EraDefinition {
 
 export const ERAS: readonly EraDefinition[] = [
   {
-    description: "Foragers sleeping under the open sky.",
     id: "wanderers",
     index: 0,
     name: "Wanderers",
     unlockedBy: null,
   },
   {
-    description: "Hide tents around the fire, spears and flint.",
     id: "stoneAge",
     index: 1,
     name: "Stone Age",
     unlockedBy: "fire",
   },
   {
-    description: "Round huts, fields of grain, kilns and granaries.",
     id: "neolithic",
     index: 2,
     name: "Neolithic",
     unlockedBy: "farming",
   },
   {
-    description: "Longhouses, mines in the hills and smelting furnaces.",
     id: "copperAge",
     index: 3,
     name: "Copper Age",
     unlockedBy: "copper",
   },
   {
-    description: "Bronze tools and blades, workshops and a palisade.",
     id: "bronzeAge",
     index: 4,
     name: "Bronze Age",
     unlockedBy: "bronze",
   },
   {
-    description: "Forges, iron tools, stone houses and walls.",
     id: "ironAge",
     index: 5,
     name: "Iron Age",
