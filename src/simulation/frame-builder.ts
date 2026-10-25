@@ -1,3 +1,4 @@
+import { mirroredWater } from "../world/water.ts";
 import type { InitialWorld, PackedRows, SimulationFrame, TribeSummary } from "./frame.ts";
 import {
   allRows,
@@ -109,7 +110,7 @@ export class FrameBuilder {
         waterSurface: Float32Array.from(terrain.waterSurface),
       },
       vegetation: world.vegetation.exportBuffers(),
-      water: world.water,
+      water: mirroredWater(world.water),
     };
   }
 

@@ -16,7 +16,7 @@ import {
   type VegetationChannels,
   type VegetationPatch,
 } from "../world/vegetation-store.ts";
-import type { WaterFeatures } from "../world/water.ts";
+import type { MirroredWater } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 
 const MILLISECONDS_PER_SECOND = 1000;
@@ -117,7 +117,7 @@ export class WorldMirror {
   frame: SimulationFrame;
   frameReceivedAt: number;
   landVersion = 0;
-  water: WaterFeatures;
+  water: MirroredWater;
   waterVersion = 0;
   #crossingIndex: CrossingIndex;
 

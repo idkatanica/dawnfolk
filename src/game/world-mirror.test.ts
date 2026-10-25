@@ -9,6 +9,7 @@ import {
   fordAcross,
 } from "../simulation/testing/test-world.ts";
 import { createVegetationChannels, VEGETATION_CHANNELS, type VegetationBuffers } from "../world/vegetation-store.ts";
+import { mirroredWater } from "../world/water.ts";
 import { MirroredVegetation, WorldMirror } from "./world-mirror.ts";
 
 const STEP_SECONDS = 0.05;
@@ -78,7 +79,7 @@ describe("world mirror", () => {
     expect(mirror.waterVersion).toBe(1);
     expect(mirror.terrain.waterSurface).toEqual(simulation.world.terrain.waterSurface);
     expect(mirror.terrain.riverStrength).toEqual(simulation.world.terrain.riverStrength);
-    expect(mirror.water).toEqual(simulation.world.water);
+    expect(mirror.water).toEqual(mirroredWater(simulation.world.water));
   });
 
   it("follows a crater lake as it fills by its water levels alone", () => {

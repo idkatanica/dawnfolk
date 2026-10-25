@@ -5,6 +5,7 @@ import type { GenerationOptions, GenerationProgress } from "../generation/genera
 import { type GeneratedWorld, generateWorld } from "../generation/world-generator.ts";
 import { clamp } from "../shared/math.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
+import { mirroredWater } from "../world/water.ts";
 import { keepApart } from "./agents/crowding.ts";
 import { HazardMap } from "./agents/hazards.ts";
 import type { Mover } from "./agents/movement.ts";
@@ -475,7 +476,7 @@ export class Simulation {
       this.navigation.rebuild();
       this.#waterUpdate = {
         crossings: this.world.crossings,
-        features: this.world.water,
+        features: mirroredWater(this.world.water),
         riverStrength: Uint8Array.from(this.world.terrain.riverStrength),
         waterSurface: Float32Array.from(this.world.terrain.waterSurface),
       };

@@ -68,6 +68,12 @@ export interface WaterFeatures {
   waterfalls: Waterfall[];
 }
 
+export type MirroredWater = Omit<WaterFeatures, "rivers">;
+
+export function mirroredWater({ lakes, springs, waterfalls }: WaterFeatures): MirroredWater {
+  return { lakes, springs, waterfalls };
+}
+
 export function pondEdgeReach(spring: Spring, x: number, z: number): number {
   const angle = Math.atan2(z - spring.z, x - spring.x);
   const turn = spring.seed * FULL_TURN;
