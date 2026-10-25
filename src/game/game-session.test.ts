@@ -178,7 +178,7 @@ describe("history", () => {
 });
 
 describe("failures and closing", () => {
-  it("stops and reports when the simulation fails", async () => {
+  it("stops, reports and lets go of the simulation when it fails", async () => {
     const { connection, session } = await createSession();
 
     const statuses: SessionStatus[] = [];
@@ -186,6 +186,7 @@ describe("failures and closing", () => {
     const logError = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     const advance = vi.spyOn(connection, "advance").mockRejectedValueOnce(failure);
+    const dispose = vi.spyOn(connection, "dispose");
 
     session.subscribeToStatus((status) => {
       statuses.push(status);
@@ -197,6 +198,7 @@ describe("failures and closing", () => {
     expect(session.status).toEqual({ error: failure, kind: "failed" });
     expect(logError).toHaveBeenCalledWith("The simulation stopped", failure);
     expect(advance).toHaveBeenCalledOnce();
+    expect(dispose).toHaveBeenCalledOnce();
   });
 
   it("lets go of the simulation once when it closes", async () => {

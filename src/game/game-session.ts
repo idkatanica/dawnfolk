@@ -186,6 +186,7 @@ export class GameSession {
   #fail(error: Error): void {
     console.error("The simulation stopped", error);
     this.#setStatus({ error, kind: "failed" });
+    this.#connection.dispose();
   }
 
   #setStatus(status: SessionStatus): void {

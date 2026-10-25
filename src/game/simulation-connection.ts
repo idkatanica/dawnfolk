@@ -17,8 +17,25 @@ function settle<Value>(run: () => Value): Promise<Value> {
   });
 }
 
+function failureOf(worker: Worker): Promise<never> {
+  const failure = new Promise<never>((_resolve, reject) => {
+    worker.addEventListener(
+      "error",
+      (event) => {
+        reject(new Error(event instanceof ErrorEvent ? event.message : "The simulation worker could not load"));
+      },
+      { once: true }
+    );
+  });
+
+  failure.catch(() => undefined);
+
+  return failure;
+}
+
 export class WorkerSimulationConnection implements SimulationConnection {
   readonly #commands: SimulationCommand[] = [];
+  readonly #failure: Promise<never>;
   readonly #remote: Remote<SimulationWorkerApi>;
   readonly #worker: Worker;
 
@@ -28,16 +45,17 @@ export class WorkerSimulationConnection implements SimulationConnection {
       type: "module",
     });
     this.#remote = wrap<SimulationWorkerApi>(this.#worker);
+    this.#failure = failureOf(this.#worker);
   }
 
   advance(realSeconds: number): Promise<SimulationFrame> {
-    return this.#remote.advance(realSeconds, this.#commands.splice(0));
+    return Promise.race([this.#remote.advance(realSeconds, this.#commands.splice(0)), this.#failure]);
   }
 
   createWorld(request: WorldRequest, onProgress: (progress: GenerationProgress) => void): Promise<InitialWorld> {
     this.#commands.splice(0);
 
-    return this.#remote.createWorld(request, proxy(onProgress));
+    return Promise.race([this.#remote.createWorld(request, proxy(onProgress)), this.#failure]);
   }
 
   dispose(): void {
