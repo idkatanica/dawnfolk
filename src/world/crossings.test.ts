@@ -66,7 +66,6 @@ describe("crossings", () => {
 
     expect(log.rootZ).toBeCloseTo(-20 - LOG_ROOT_BEHIND);
     expect(log.tipZ).toBeCloseTo(20 + LOG_TIP_BEYOND);
-    expect(log.tipRadius).toBeLessThan(log.rootRadius);
     expect(log.rootBottom + 2 * logRadiusAt(LOG, -LOG_ROOT_BEHIND)).toBeLessThan(LOG.startDeck);
     expect(log.rootBottom).toBeLessThan(log.tipBottom);
   });

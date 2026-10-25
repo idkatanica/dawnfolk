@@ -46,7 +46,6 @@ export interface FallenLog {
   readonly rootX: number;
   readonly rootZ: number;
   readonly tipBottom: number;
-  readonly tipRadius: number;
   readonly tipX: number;
   readonly tipZ: number;
 }
@@ -187,7 +186,6 @@ export function fallenLog(log: LogBridge): FallenLog {
     rootX: root.x,
     rootZ: root.z,
     tipBottom: tip.bottom,
-    tipRadius: rootRadius * LOG_TAPER,
     tipX: tip.x,
     tipZ: tip.z,
   };
