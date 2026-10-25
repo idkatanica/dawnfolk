@@ -5,7 +5,7 @@ import { DEFAULT_WORLD_RULES } from "../../content/world-rules.ts";
 import { createRandom } from "../../shared/random.ts";
 import { NavigationGrid, type Waypoint } from "../agents/navigation.ts";
 import { IdentifierSource } from "../identifiers.ts";
-import { createTestWorld, floodCells } from "../testing/test-world.ts";
+import { createTestWorld, floodCells, livingCount } from "../testing/test-world.ts";
 import type { WorldState } from "../world/world-state.ts";
 import type { PeopleSense } from "./beast-instincts.ts";
 import { type Animal, FaunaSystem, type FaunaThreats, type FaunaTick } from "./fauna.ts";
@@ -19,10 +19,6 @@ const NO_PEOPLE: PeopleSense = {
 const NO_THREATS: FaunaThreats = { dangerNear: () => null, hunterNear: () => null, people: NO_PEOPLE };
 const SUMMER = 1.6;
 const SPRING = 0.5;
-
-function livingCount(fauna: FaunaSystem): number {
-  return fauna.animals.filter((animal) => animal.isAlive).length;
-}
 
 function createFauna(world: WorldState = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 96 } })) {
   const navigation = new NavigationGrid(world);

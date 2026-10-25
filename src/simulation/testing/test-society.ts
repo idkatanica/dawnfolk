@@ -11,6 +11,7 @@ import { describeEnvironment } from "../nature/environment.ts";
 import { FireSystem } from "../nature/fire.ts";
 import { WeatherSystem } from "../nature/weather.ts";
 import { BuildingSystem } from "../society/buildings.ts";
+import type { Job } from "../society/jobs/job.ts";
 import type { Person } from "../society/person.ts";
 import { RivalrySystem } from "../society/rivalry/rivalry-system.ts";
 import { SocietySystem } from "../society/society.ts";
@@ -163,4 +164,18 @@ export function firstMemberTick(harness: SocietyHarness, tribe: Tribe): PersonTi
   const [person] = harness.society.membersOf(tribe);
 
   return tickFor(harness, person, tribe);
+}
+
+export function runToCompletion(job: Job, tick: PersonTick, limitSeconds: number): boolean {
+  let current: Job | null = job;
+
+  for (let elapsed = 0; elapsed < limitSeconds; elapsed += tick.seconds) {
+    current = current.update(tick);
+
+    if (current === null) {
+      return true;
+    }
+  }
+
+  return false;
 }

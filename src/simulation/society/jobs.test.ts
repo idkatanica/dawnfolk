@@ -8,7 +8,7 @@ import {
   plantSpeciesDefinition,
 } from "../../content/plants.ts";
 import { FULL_TURN, wrapAngle } from "../../shared/math.ts";
-import { firstMemberTick, SocietyHarness, settle } from "../testing/test-society.ts";
+import { firstMemberTick, runToCompletion, SocietyHarness, settle } from "../testing/test-society.ts";
 import { MONUMENT_GROUND } from "../world/world-state.ts";
 import { findTree } from "./jobs/chop-job.ts";
 import { findBerries } from "./jobs/gather-job.ts";
@@ -73,20 +73,6 @@ function placementAt(tick: PersonTick, plant: number, reach: number): WorkPlacem
     missedBy: Math.abs(Math.hypot(towardX, towardZ) - (radius + reach)),
     turnedAwayBy: Math.abs(wrapAngle(Math.atan2(towardX, towardZ) - mover.heading)),
   };
-}
-
-function runToCompletion(job: Job, tick: PersonTick, limitSeconds: number): boolean {
-  let current: Job | null = job;
-
-  for (let elapsed = 0; elapsed < limitSeconds; elapsed += tick.seconds) {
-    current = current.update(tick);
-
-    if (current === null) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 describe("working at plants", () => {

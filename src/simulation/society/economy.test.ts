@@ -1,16 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { TechnologyId } from "../../content/technologies.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
-import { firstMemberTick, SocietyHarness, settle } from "../testing/test-society.ts";
+import { firstMemberTick, runToCompletion, SocietyHarness, settle } from "../testing/test-society.ts";
 import { depositAround } from "../testing/test-world.ts";
 import type { Building } from "./buildings.ts";
 import { buildingsOfKind } from "./camp-plan.ts";
 import { constructionNeeds, planConstruction } from "./construction.ts";
 import { CraftJob } from "./jobs/craft-job.ts";
-import type { Job } from "./jobs/job.ts";
 import { findMineWork } from "./jobs/mine-job.ts";
 import { discover } from "./progress.ts";
-import type { PersonTick } from "./society-context.ts";
 import { workSpeed } from "./tools.ts";
 import type { Tribe } from "./tribe.ts";
 import { chooseCraft } from "./workshops.ts";
@@ -39,20 +37,6 @@ function learnAll(tribe: Tribe, technologies: readonly TechnologyId[]): void {
   }
 
   tribe.eraIndex = 2;
-}
-
-function runToCompletion(job: Job, tick: PersonTick, limitSeconds: number): boolean {
-  let current: Job | null = job;
-
-  for (let elapsed = 0; elapsed < limitSeconds; elapsed += tick.seconds) {
-    current = current.update(tick);
-
-    if (current === null) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 function complete(tribe: Tribe, building: Building): Building {
