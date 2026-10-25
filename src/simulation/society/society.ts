@@ -257,11 +257,14 @@ export class SocietySystem {
     let nearestDistance = radius;
 
     for (const person of this.#people) {
-      if (!person.isAlive) {
+      const offsetX = person.mover.x - x;
+      const offsetZ = person.mover.z - z;
+
+      if (!person.isAlive || Math.abs(offsetX) >= nearestDistance || Math.abs(offsetZ) >= nearestDistance) {
         continue;
       }
 
-      const distance = Math.hypot(person.mover.x - x, person.mover.z - z);
+      const distance = Math.hypot(offsetX, offsetZ);
 
       if (distance < nearestDistance && accepts(person)) {
         nearest = person;

@@ -219,7 +219,9 @@ export class WorldState {
   }
 
   isObstructedBetween(fromX: number, fromZ: number, toX: number, toZ: number): boolean {
-    if (this.isObstructedAt(fromX, fromZ)) {
+    const from = this.grid.cellAt(fromX, fromZ);
+
+    if (this.isObstructed(from) || from === this.grid.cellAt(toX, toZ)) {
       return false;
     }
 
