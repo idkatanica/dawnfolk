@@ -1,10 +1,16 @@
-import { TOOL_MATERIAL_DEFINITIONS, type ToolMaterial, type WeaponKind } from "../../content/weapons.ts";
+import {
+  isBetterMaterial,
+  TOOL_MATERIAL_DEFINITIONS,
+  type ToolMaterial,
+  type WeaponKind,
+} from "../../content/weapons.ts";
 import type { Person, Weapon } from "./person.ts";
 import { knows, type Tribe } from "./tribe.ts";
 
 export type CarriedWeapon = { readonly kind: "none" } | { readonly kind: WeaponKind; readonly material: ToolMaterial };
 
-const METALS_BY_STRENGTH: readonly ToolMaterial[] = ["iron", "bronze", "copper"];
+export const METALS_BY_STRENGTH: readonly ToolMaterial[] = ["iron", "bronze", "copper"];
+
 const ARROWS_TO_HUNT = 3;
 const BOW_HIT_BONUS = 0.08;
 
@@ -53,17 +59,11 @@ function isUsable(weapon: Weapon, tribe: Tribe): boolean {
 }
 
 function isOutdated(weapon: Weapon, tribe: Tribe): boolean {
-  const better = tribe.armory !== weapon.material && isStronger(tribe.armory, weapon.material);
-
-  if (!better) {
+  if (!isBetterMaterial(tribe.armory, weapon.material)) {
     return false;
   }
 
   return weapon.kind === "bow" ? canTakeBow(tribe) : tribe.stock.spears >= 1;
-}
-
-function isStronger(candidate: ToolMaterial, current: ToolMaterial): boolean {
-  return TOOL_MATERIAL_DEFINITIONS[candidate].hitBonus > TOOL_MATERIAL_DEFINITIONS[current].hitBonus;
 }
 
 export function armForHunt(person: Person, tribe: Tribe): Weapon | null {

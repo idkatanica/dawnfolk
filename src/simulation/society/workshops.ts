@@ -5,7 +5,7 @@ import { completedOfKind } from "./camp-plan.ts";
 import type { SocietyContext } from "./society-context.ts";
 import { amountOf, hasResources } from "./stock.ts";
 import { knows, type Tribe } from "./tribe.ts";
-import { headMaterial } from "./weapons.ts";
+import { headMaterial, METALS_BY_STRENGTH } from "./weapons.ts";
 
 export interface CraftOrder {
   inputs: ResourceAmounts;
@@ -21,11 +21,10 @@ const ARROW_TARGET = 36;
 const TOOLSET_METAL = 6;
 const SPEARS_PER_MEMBER = 0.25;
 const BOWS_PER_MEMBER = 0.2;
-const TOOL_ORDER: readonly ToolMaterial[] = ["iron", "bronze", "copper"];
 const CRAFT_ORDER: readonly RecipeId[] = ["tools", "pottery", "copper", "bronze", "iron", "spears", "bows", "arrows"];
 
 function nextToolMaterial(tribe: Tribe): ToolMaterial | null {
-  for (const material of TOOL_ORDER) {
+  for (const material of METALS_BY_STRENGTH) {
     const { metal, technology } = TOOL_MATERIAL_DEFINITIONS[material];
 
     if (metal === null || technology === null || !knows(tribe, technology)) {
