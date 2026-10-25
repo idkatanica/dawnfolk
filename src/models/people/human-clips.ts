@@ -24,6 +24,8 @@ export interface HumanClip {
 
 const LEAP_STRIDE = 1.45;
 const LEAP_LIFT = 0.24;
+const KNEELING_SIDE: Side = -1;
+const STEADY_SIDE: Side = 1;
 
 function strideScale(context: HumanClipContext): number {
   if (context.ageGroup === "elder") {
@@ -294,21 +296,22 @@ function build(pose: Pose, phase: number): void {
     [0.64, 0],
   ]);
 
-  moveBody(pose, { forward: degrees(16) });
-  bendTrunk(pose, HumanBone.Spine, { forward: degrees(14) });
-  bendTrunk(pose, HumanBone.Chest, { forward: degrees(8) });
-  bendTrunk(pose, HumanBone.Head, { forward: degrees(16) });
+  pose.grounding = "body";
+  moveBody(pose, { forward: degrees(8) });
+  bendTrunk(pose, HumanBone.Spine, { forward: degrees(14) + degrees(14) * (1 - hammer) });
+  bendTrunk(pose, HumanBone.Chest, { forward: degrees(10) });
+  bendTrunk(pose, HumanBone.Head, { forward: degrees(18) });
 
-  for (const side of SIDES) {
-    swingLeg(pose, side, { forward: degrees(80), outward: degrees(14) });
-    bendKnee(pose, side, degrees(112));
-    bendAnkle(pose, side, degrees(24));
-  }
+  swingLeg(pose, STEADY_SIDE, { forward: degrees(100), outward: degrees(12) });
+  bendKnee(pose, STEADY_SIDE, degrees(92));
+  swingLeg(pose, KNEELING_SIDE, { forward: degrees(12), outward: degrees(6) });
+  bendKnee(pose, KNEELING_SIDE, degrees(109));
+  bendAnkle(pose, KNEELING_SIDE, degrees(15));
 
-  swingArm(pose, -1, { forward: degrees(48) + degrees(52) * hammer, outward: degrees(4) });
-  bendElbow(pose, -1, degrees(30) + degrees(58) * hammer);
-  swingArm(pose, 1, { forward: degrees(52), outward: -degrees(8) });
-  bendElbow(pose, 1, degrees(58));
+  swingArm(pose, KNEELING_SIDE, { forward: degrees(40) + degrees(70) * hammer, outward: degrees(2) });
+  bendElbow(pose, KNEELING_SIDE, degrees(10) + degrees(90) * hammer);
+  swingArm(pose, STEADY_SIDE, { forward: degrees(45), outward: -degrees(6) });
+  bendElbow(pose, STEADY_SIDE, degrees(20));
 }
 
 function throwSpear(pose: Pose, phase: number): void {
