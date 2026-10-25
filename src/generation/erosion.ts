@@ -22,12 +22,6 @@ interface ErosionBrush {
   weights: Float32Array;
 }
 
-interface SurfaceSample {
-  gradientX: number;
-  gradientZ: number;
-  height: number;
-}
-
 interface Neighborhood {
   columns: Int32Array;
   distances: Float32Array;
@@ -79,7 +73,7 @@ function createNeighborhood(size: number): Neighborhood {
   };
 }
 
-function sampleSurface(map: Float32Array, size: number, x: number, z: number, sample: SurfaceSample): void {
+function heightAt(map: Float32Array, size: number, x: number, z: number): number {
   const column = Math.floor(x);
   const row = Math.floor(z);
 
@@ -92,45 +86,46 @@ function sampleSurface(map: Float32Array, size: number, x: number, z: number, sa
   const southWest = map[index + size];
   const southEast = map[index + size + 1];
 
-  sample.gradientX = (northEast - northWest) * (1 - offsetZ) + (southEast - southWest) * offsetZ;
-  sample.gradientZ = (southWest - northWest) * (1 - offsetX) + (southEast - northEast) * offsetX;
-  sample.height = lerp(lerp(northWest, northEast, offsetX), lerp(southWest, southEast, offsetX), offsetZ);
+  return lerp(lerp(northWest, northEast, offsetX), lerp(southWest, southEast, offsetX), offsetZ);
 }
 
-function deposit(map: Float32Array, size: number, x: number, z: number, amount: number): void {
-  const column = Math.floor(x);
-  const row = Math.floor(z);
+function erode(
+  map: Float32Array,
+  size: number,
+  brush: ErosionBrush,
+  centerColumn: number,
+  centerRow: number,
+  amount: number
+): number {
+  const { offsets, radius, weights } = brush;
 
-  const offsetX = x - column;
-  const offsetZ = z - row;
-  const index = row * size + column;
-
-  map[index] += amount * (1 - offsetX) * (1 - offsetZ);
-  map[index + 1] += amount * offsetX * (1 - offsetZ);
-  map[index + size] += amount * (1 - offsetX) * offsetZ;
-  map[index + size + 1] += amount * offsetX * offsetZ;
-}
-
-function erode(map: Float32Array, size: number, brush: ErosionBrush, x: number, z: number, amount: number): number {
-  const centerColumn = Math.floor(x);
-  const centerRow = Math.floor(z);
   const center = centerRow * size + centerColumn;
   const isInside =
-    centerColumn >= brush.radius &&
-    centerRow >= brush.radius &&
-    centerColumn < size - brush.radius &&
-    centerRow < size - brush.radius;
+    centerColumn >= radius && centerRow >= radius && centerColumn < size - radius && centerRow < size - radius;
 
   let removed = 0;
 
-  for (let brushIndex = 0; brushIndex < brush.weights.length; brushIndex += 1) {
-    if (!(isInside || isOnMap(centerColumn + brush.columns[brushIndex], centerRow + brush.rows[brushIndex], size))) {
+  if (isInside) {
+    for (let brushIndex = 0; brushIndex < weights.length; brushIndex += 1) {
+      const index = center + offsets[brushIndex];
+
+      const take = Math.min(map[index], amount * weights[brushIndex]);
+
+      map[index] -= take;
+      removed += take;
+    }
+
+    return removed;
+  }
+
+  for (let brushIndex = 0; brushIndex < weights.length; brushIndex += 1) {
+    if (!isOnMap(centerColumn + brush.columns[brushIndex], centerRow + brush.rows[brushIndex], size)) {
       continue;
     }
 
-    const index = center + brush.offsets[brushIndex];
+    const index = center + offsets[brushIndex];
 
-    const take = Math.min(map[index], amount * brush.weights[brushIndex]);
+    const take = Math.min(map[index], amount * weights[brushIndex]);
 
     map[index] -= take;
     removed += take;
@@ -158,7 +153,7 @@ interface DropletTerrain {
   readonly size: number;
 }
 
-function simulateDroplet(terrain: DropletTerrain, random: RandomSource, sample: SurfaceSample): void {
+function simulateDroplet(terrain: DropletTerrain, random: RandomSource): void {
   const { brush, map, size } = terrain;
 
   const limit = size - 2;
@@ -173,21 +168,30 @@ function simulateDroplet(terrain: DropletTerrain, random: RandomSource, sample: 
   let z = random.next() * limit;
 
   for (let step = 0; step < MAXIMUM_STEPS; step += 1) {
-    sampleSurface(map, size, x, z, sample);
+    const column = Math.floor(x);
+    const row = Math.floor(z);
 
-    const startHeight = sample.height;
+    const offsetX = x - column;
+    const offsetZ = z - row;
+    const index = row * size + column;
 
-    directionX = directionX * INERTIA - sample.gradientX * (1 - INERTIA);
-    directionZ = directionZ * INERTIA - sample.gradientZ * (1 - INERTIA);
+    const northWest = map[index];
+    const northEast = map[index + 1];
+    const southWest = map[index + size];
+    const southEast = map[index + size + 1];
+
+    const startHeight = lerp(lerp(northWest, northEast, offsetX), lerp(southWest, southEast, offsetX), offsetZ);
+    const gradientX = (northEast - northWest) * (1 - offsetZ) + (southEast - southWest) * offsetZ;
+    const gradientZ = (southWest - northWest) * (1 - offsetX) + (southEast - northEast) * offsetX;
+
+    directionX = directionX * INERTIA - gradientX * (1 - INERTIA);
+    directionZ = directionZ * INERTIA - gradientZ * (1 - INERTIA);
 
     const length = Math.sqrt(directionX * directionX + directionZ * directionZ);
 
     if (length < 1e-9) {
       return;
     }
-
-    const previousX = x;
-    const previousZ = z;
 
     directionX /= length;
     directionZ /= length;
@@ -198,9 +202,7 @@ function simulateDroplet(terrain: DropletTerrain, random: RandomSource, sample: 
       return;
     }
 
-    sampleSurface(map, size, x, z, sample);
-
-    const heightChange = sample.height - startHeight;
+    const heightChange = heightAt(map, size, x, z) - startHeight;
 
     const capacity = Math.max(-heightChange * speed * water * CAPACITY, MINIMUM_CAPACITY);
 
@@ -208,12 +210,16 @@ function simulateDroplet(terrain: DropletTerrain, random: RandomSource, sample: 
       const amount = depositedAmount(heightChange, sediment, capacity);
 
       sediment -= amount;
-      deposit(map, size, previousX, previousZ, amount);
+
+      map[index] += amount * (1 - offsetX) * (1 - offsetZ);
+      map[index + 1] += amount * offsetX * (1 - offsetZ);
+      map[index + size] += amount * (1 - offsetX) * offsetZ;
+      map[index + size + 1] += amount * offsetX * offsetZ;
     } else {
-      const softness = 1 - terrain.resistance[Math.floor(previousZ) * size + Math.floor(previousX)];
+      const softness = 1 - terrain.resistance[index];
       const amount = Math.min((capacity - sediment) * EROSION_SPEED, -heightChange) * softness;
 
-      sediment += erode(map, size, brush, previousX, previousZ, amount);
+      sediment += erode(map, size, brush, column, row, amount);
     }
 
     speed = Math.sqrt(Math.max(0, speed * speed - heightChange * GRAVITY));
@@ -231,19 +237,18 @@ function erodeHydraulically(
   const size = Math.round(Math.sqrt(heights.length));
   const map = Float32Array.from(heights, (height) => height / HEIGHT_SCALE);
   const terrain: DropletTerrain = { brush: createBrush(BRUSH_RADIUS, size), map, resistance, size };
-  const sample: SurfaceSample = { gradientX: 0, gradientZ: 0, height: 0 };
   const reportEvery = Math.max(1, Math.floor(dropletCount / 20));
 
   for (let droplet = 0; droplet < dropletCount; droplet += 1) {
-    simulateDroplet(terrain, random, sample);
+    simulateDroplet(terrain, random);
 
     if (droplet % reportEvery === 0) {
       onProgress(droplet / dropletCount);
     }
   }
 
-  for (const [index, value] of map.entries()) {
-    heights[index] = value * HEIGHT_SCALE;
+  for (let index = 0; index < map.length; index += 1) {
+    heights[index] = map[index] * HEIGHT_SCALE;
   }
 }
 
@@ -348,6 +353,7 @@ interface SlopeRelaxation {
   readonly active: Uint8Array;
   readonly cellSize: number;
   readonly change: Float32Array;
+  readonly excesses: Float64Array;
   readonly heights: Float32Array;
   readonly neighborhood: Neighborhood;
   readonly size: number;
@@ -355,17 +361,20 @@ interface SlopeRelaxation {
 }
 
 function shedExcess(relaxation: SlopeRelaxation, column: number, row: number): boolean {
-  const { change, heights, neighborhood, size } = relaxation;
+  const { change, excesses, heights, neighborhood, size } = relaxation;
 
   const cell = row * size + column;
   const height = heights[cell];
   const allowedDrop = relaxation.talus[cell] * relaxation.cellSize;
+  const isInside = column > 0 && row > 0 && column < size - 1 && row < size - 1;
 
   let total = 0;
   let largest = 0;
 
   for (let neighbor = 0; neighbor < 8; neighbor += 1) {
-    if (!isOnMap(column + neighborhood.columns[neighbor], row + neighborhood.rows[neighbor], size)) {
+    excesses[neighbor] = 0;
+
+    if (!(isInside || isOnMap(column + neighborhood.columns[neighbor], row + neighborhood.rows[neighbor], size))) {
       continue;
     }
 
@@ -373,6 +382,7 @@ function shedExcess(relaxation: SlopeRelaxation, column: number, row: number): b
       height - heights[cell + neighborhood.offsets[neighbor]] - allowedDrop * neighborhood.distances[neighbor];
 
     if (excess > 0) {
+      excesses[neighbor] = excess;
       total += excess;
       largest = Math.max(largest, excess);
     }
@@ -385,18 +395,12 @@ function shedExcess(relaxation: SlopeRelaxation, column: number, row: number): b
   const moved = 0.5 * largest;
 
   for (let neighbor = 0; neighbor < 8; neighbor += 1) {
-    if (!isOnMap(column + neighborhood.columns[neighbor], row + neighborhood.rows[neighbor], size)) {
-      continue;
-    }
-
-    const target = cell + neighborhood.offsets[neighbor];
-
-    const excess = height - heights[target] - allowedDrop * neighborhood.distances[neighbor];
+    const excess = excesses[neighbor];
 
     if (excess > 0) {
       const share = (moved * excess) / total;
 
-      change[target] += share;
+      change[cell + neighborhood.offsets[neighbor]] += share;
       change[cell] -= share;
     }
   }
@@ -416,13 +420,14 @@ function applyRelaxation(relaxation: SlopeRelaxation): void {
 
     const column = cell % size;
     const row = (cell - column) / size;
+    const isInside = column > 0 && row > 0 && column < size - 1 && row < size - 1;
 
     heights[cell] += change[cell];
     change[cell] = 0;
     active[cell] = 1;
 
     for (let neighbor = 0; neighbor < 8; neighbor += 1) {
-      if (isOnMap(column + neighborhood.columns[neighbor], row + neighborhood.rows[neighbor], size)) {
+      if (isInside || isOnMap(column + neighborhood.columns[neighbor], row + neighborhood.rows[neighbor], size)) {
         active[cell + neighborhood.offsets[neighbor]] = 1;
       }
     }
@@ -440,6 +445,7 @@ export function relaxSlopes(
     active: new Uint8Array(heights.length).fill(1),
     cellSize,
     change: new Float32Array(heights.length),
+    excesses: new Float64Array(8),
     heights,
     neighborhood: createNeighborhood(size),
     size,
