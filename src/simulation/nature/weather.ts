@@ -96,9 +96,10 @@ export class WeatherSystem {
     this.state.nextChangeInDays = 0.2;
   }
 
-  setWind(direction: number, baseSpeed: number): void {
+  setWind(direction: number, baseSpeed: number, windStrength: number): void {
     this.state.windDirection = direction;
     this.state.windBaseSpeed = baseSpeed;
+    this.#updateWindSpeed(windStrength);
   }
 
   setUserTemperatureOffset(offset: number): void {
@@ -158,7 +159,13 @@ export class WeatherSystem {
     state.fog = easeTowards(state.fog, target.fog, easing * 0.7);
     state.temperatureOffset = easeTowards(state.temperatureOffset, target.temperatureOffset, easing * 0.5);
     state.gust = easeTowards(state.gust, gustTarget, easing);
-    state.windSpeed = clamp(state.windBaseSpeed * state.gust * rules.storms.windStrength, 0, MAXIMUM_WIND_SPEED);
+    this.#updateWindSpeed(rules.storms.windStrength);
+  }
+
+  #updateWindSpeed(windStrength: number): void {
+    const { state } = this;
+
+    state.windSpeed = clamp(state.windBaseSpeed * state.gust * windStrength, 0, MAXIMUM_WIND_SPEED);
   }
 
   #countLightning(gameSeconds: number, rules: WorldRules, random: RandomSource): number {

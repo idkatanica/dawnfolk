@@ -90,7 +90,8 @@ const COMMAND_HANDLERS: CommandHandlers = {
   },
   setViewFocus: (simulation, command) => simulation.setViewFocus(command.x, command.z),
   setWeather: (simulation, command) => simulation.setWeather(command.weather),
-  setWind: (simulation, command) => simulation.weather.setWind(command.direction, command.speed),
+  setWind: (simulation, command) =>
+    simulation.weather.setWind(command.direction, command.speed, simulation.rules.storms.windStrength),
   setWorldRules: (simulation, command) => simulation.setRules(readWorldRules(command.rules)),
   usePower: (simulation, command) => simulation.usePower(command.powerId, command.x, command.z, command.parameters),
 };
@@ -181,7 +182,7 @@ export class Simulation {
   }
 
   get environment(): Environment {
-    return this.services.environment;
+    return describeEnvironment(this.calendar, this.weather);
   }
 
   get isBusy(): boolean {

@@ -14,6 +14,7 @@ import {
   packSurfaceRows,
 } from "./frame-packing.ts";
 import { type Inspection, inspect } from "./inspection.ts";
+import type { Environment } from "./nature/environment.ts";
 import type { Simulation } from "./simulation.ts";
 
 export class FrameBuilder {
@@ -26,7 +27,7 @@ export class FrameBuilder {
 
   build(): SimulationFrame {
     const simulation = this.#simulation;
-    const { buildings, fauna, fire, society, world } = simulation;
+    const { buildings, environment, fauna, fire, society, world } = simulation;
 
     const burningCells = Int32Array.from(fire.burningCells());
     const tribes = this.#tribes();
@@ -42,7 +43,7 @@ export class FrameBuilder {
       effects: simulation.effects.takeEffects(),
       groundRows: packGroundRows(world, world.groundChanges.takeRuns()),
       heightPatch: packRegion(world, world.terrain.height, world.heightChanges.takeRegion()),
-      inspection: this.#inspection(tribes),
+      inspection: this.#inspection(tribes, environment),
       isBusy: simulation.isBusy,
       isPaused: simulation.isPaused,
       notices: simulation.takeNotices(),
@@ -58,7 +59,7 @@ export class FrameBuilder {
       vegetation: world.vegetation.takeChanges(),
       water: simulation.takeWaterUpdate(),
       waterLevels: packRegion(world, world.terrain.waterSurface, world.waterLevelChanges.takeRegion()),
-      weather: describeWeather(simulation.weather, simulation.environment),
+      weather: describeWeather(simulation.weather, environment),
     };
   }
 
@@ -114,7 +115,7 @@ export class FrameBuilder {
     };
   }
 
-  #inspection(tribes: readonly TribeSummary[]): Inspection | null {
+  #inspection(tribes: readonly TribeSummary[], environment: Environment): Inspection | null {
     const simulation = this.#simulation;
     const { selection } = simulation;
 
@@ -124,7 +125,7 @@ export class FrameBuilder {
 
     return inspect(selection, {
       buildings: simulation.buildings,
-      environment: simulation.environment,
+      environment,
       fauna: simulation.fauna,
       society: simulation.society,
       tribes,

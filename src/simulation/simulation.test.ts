@@ -215,6 +215,35 @@ describe("frames", () => {
     expect(simulation.advance(0).inspection).toMatchObject({ activity: "Has passed away" });
   });
 
+  it("show wind, temperature and hour changes while paused", () => {
+    const simulation = createSimulation();
+
+    const { world } = simulation;
+
+    simulation.execute({ isPaused: true, type: "setPaused" });
+    simulation.execute({ selection: { kind: "cell", x: 0, z: 0 }, type: "setSelection" });
+
+    const before = simulation.advance(0).weather;
+
+    simulation.execute({ direction: 45, speed: 60, type: "setWind" });
+    simulation.execute({ offset: -15, type: "setTemperatureOffset" });
+    simulation.execute({ hours: 3, type: "setHours" });
+
+    const after = simulation.advance(0.5);
+
+    expect(after.tick).toBe(0);
+    expect(after.weather).toMatchObject({
+      windSpeed: 60,
+      windX: expect.closeTo(-Math.SQRT1_2),
+      windZ: expect.closeTo(Math.SQRT1_2),
+    });
+    expect(after.weather.airTemperatureOffset).toBeLessThan(before.airTemperatureOffset - 15);
+    expect(after.inspection).toMatchObject({
+      kind: "cell",
+      temperature: world.temperature(world.grid.cellAt(0, 0), after.weather.airTemperatureOffset),
+    });
+  });
+
   it("reports recomputed water after the land settles", () => {
     const simulation = createSimulation();
 
