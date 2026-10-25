@@ -175,7 +175,7 @@ export function generateWorld(
   carveValleys(heights, grid, dryness, coastDistance);
   relaxSlopes(heights, size, grid.cellSize, talus, FINAL_RELAXATION_ITERATIONS);
   limitSlopes(heights, size, grid.cellSize, STEEPEST_SLOPE);
-  smoothHeights(heights, size, 1, 0.2);
+  smoothHeights(heights, size);
   fillSinks(heights, grid, dryness, coastDistance);
   onProgress({ progress: 0, stage: "water" });
 
