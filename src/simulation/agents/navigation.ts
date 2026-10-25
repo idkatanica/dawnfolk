@@ -1,3 +1,4 @@
+import type { CellRegion } from "../../world/change-tracking.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { LandAreas, NO_REGION } from "./land-areas.ts";
@@ -38,6 +39,7 @@ export class NavigationGrid {
   rebuild(): void {
     this.#areas.rebuild();
     this.#measureShores();
+    this.#world.footingChanges.takeRegion();
 
     this.#builtHeightVersion = this.#world.heightVersion;
     this.#builtWaterVersion = this.#world.waterVersion;
@@ -47,6 +49,14 @@ export class NavigationGrid {
     const world = this.#world;
 
     if (world.heightVersion === this.#builtHeightVersion && world.waterVersion === this.#builtWaterVersion) {
+      return false;
+    }
+
+    const region = world.footingChanges.takeRegion();
+
+    if (world.waterVersion === this.#builtWaterVersion && region !== null && this.#keepsFooting(region)) {
+      this.#builtHeightVersion = world.heightVersion;
+
       return false;
     }
 
@@ -129,6 +139,28 @@ export class NavigationGrid {
     }
 
     return this.#areas.route(from, to);
+  }
+
+  #keepsFooting(region: CellRegion): boolean {
+    const { grid } = this.#world;
+
+    const last = grid.cellsPerSide - 1;
+    const firstColumn = Math.max(0, region.firstColumn - 1);
+    const lastColumn = Math.min(last, region.lastColumn + 1);
+    const firstRow = Math.max(0, region.firstRow - 1);
+    const lastRow = Math.min(last, region.lastRow + 1);
+
+    for (let row = firstRow; row <= lastRow; row += 1) {
+      for (let column = firstColumn; column <= lastColumn; column += 1) {
+        const cell = grid.index(column, row);
+
+        if (!this.#areas.keepsFooting(cell) || this.#world.isWater(cell) !== (this.#shoreSteps[cell] !== 0)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   #measureShores(): void {
