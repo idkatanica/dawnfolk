@@ -2,10 +2,6 @@
   "$schema": "https://www.schemastore.org/tsconfig",
   "extends": ["@tsconfig/bases/strictest", "@tsconfig/bases/vite-react"],
   "compilerOptions": {
-    "composite": true,
-    "declarationDir": "./node_modules/.tmp/types/node",
-    "emitDeclarationOnly": true,
-    "noEmit": false,
     "tsBuildInfoFile": "./node_modules/.tmp/node.tsbuildinfo",
     "types": ["node"]
   },

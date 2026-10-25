@@ -2,10 +2,10 @@ import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
-import { configDefaults, defineConfig, type ViteUserConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import { createChromiumLaunchOptions } from "./tests/chromium.ts";
 
-const configuration: ViteUserConfig = defineConfig({
+export default defineConfig({
   base: "./",
   build: {
     chunkSizeWarningLimit: 1600,
@@ -79,5 +79,3 @@ const configuration: ViteUserConfig = defineConfig({
     format: "es",
   },
 });
-
-export default configuration;
