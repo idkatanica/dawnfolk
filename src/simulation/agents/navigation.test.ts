@@ -3,7 +3,7 @@ import { BROOK_STRENGTH } from "../../world/brooks.ts";
 import { NO_WATER } from "../../world/water.ts";
 import { createTestWorld, floodCells, floodStrip, fordAcross, riverStrip } from "../testing/test-world.ts";
 import { raiseTerrain } from "../world/terrain-editing.ts";
-import type { WorldState } from "../world/world-state.ts";
+import { SPRING_GROUND, type WorldState } from "../world/world-state.ts";
 import { NavigationGrid, type Waypoint } from "./navigation.ts";
 
 const RIVER_WORLD = { dimensions: { cellSize: 10, cellsPerSide: 96 } };
@@ -54,6 +54,10 @@ function touchesWater(world: WorldState, from: Waypoint, path: readonly Waypoint
   }
 
   return false;
+}
+
+function crossesSpring(world: WorldState, from: Waypoint, to: Waypoint): boolean {
+  return world.grid.someCellAlong(from.x, from.z, to.x, to.z, (cell) => world.occupancy[cell] === SPRING_GROUND);
 }
 
 describe("navigation grid", () => {
@@ -281,6 +285,27 @@ describe("crossings", () => {
 
     expect(path.every((waypoint, index) => navigation.isClear(index === 0 ? from : path[index - 1], waypoint))).toBe(
       true
+    );
+  });
+
+  it("does not hop over spring ground", () => {
+    const world = createTestWorld(RIVER_WORLD);
+
+    riverStrip(world, -20, 0, BROOK_STRENGTH);
+
+    for (const cell of world.grid.cellsInRadius(0, 0, 2000)) {
+      if (world.isWater(cell) && world.grid.cellCenterZ(cell) > -100) {
+        world.occupancy[cell] = SPRING_GROUND;
+      }
+    }
+
+    const navigation = new NavigationGrid(world);
+    const from = { x: -150, z: 100 };
+
+    const path = expectPath(navigation.findPath(from, { x: 150, z: 100 }));
+
+    expect(path.some((waypoint, index) => crossesSpring(world, index === 0 ? from : path[index - 1], waypoint))).toBe(
+      false
     );
   });
 

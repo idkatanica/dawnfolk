@@ -451,7 +451,9 @@ export class LandAreas {
       return Passage.Ground;
     }
 
-    return this.#world.isBrook(cell) ? Passage.Brook : Passage.Blocked;
+    const world = this.#world;
+
+    return world.isBrook(cell) && !world.isObstructed(cell) ? Passage.Brook : Passage.Blocked;
   }
 
   #findHops(): void {
