@@ -48,12 +48,7 @@ export function Island({ children, className, surface = "solid" }: IslandProps) 
   }
 
   return (
-    <div
-      className={cn(
-        "island island-solid rounded-island border border-paper-edge bg-paper text-ink shadow-panel",
-        className
-      )}
-    >
+    <div className={cn("island island-solid rounded-island border border-paper-edge bg-paper text-ink", className)}>
       {children}
     </div>
   );

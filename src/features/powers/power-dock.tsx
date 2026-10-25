@@ -126,7 +126,7 @@ function KindTab({
   return (
     <Toolbar.Button
       aria-pressed={isChosen}
-      className={cn(SEGMENT, "pointer-coarse:h-10 px-1.5 text-sm lg:px-2.5", {
+      className={cn(SEGMENT, "pointer-coarse:h-10 text-sm max-lg:aspect-square max-lg:px-0 lg:px-2.5", {
         "bg-white text-ink shadow-segment": isChosen,
       })}
       onClick={choose}

@@ -1,7 +1,7 @@
 import { Button } from "@base-ui/react/button";
 import { Toggle } from "@base-ui/react/toggle";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
-import { Pause, Play } from "lucide-react";
+import { Pause } from "lucide-react";
 import { useSendCommand } from "../../app/use-engine.ts";
 import { cn } from "../../design/cn.ts";
 import { SEGMENT, SEGMENT_TRACK } from "../../design/segmented.ts";
@@ -50,19 +50,15 @@ export function TimeControls({ className }: { readonly className?: string | unde
   const { changeSpeed, isPaused, speed, togglePause } = useTimeControls();
 
   const pressedSpeeds = isPaused || speed === undefined ? [] : [String(speed)];
-  const PlaybackIcon = isPaused ? Play : Pause;
 
   return (
     <div className={cn(SEGMENT_TRACK, "items-center p-1", className)}>
       <Button
         aria-label={isPaused ? "Resume" : "Pause"}
-        className={cn(SEGMENT, "w-8 px-0", {
-          "bg-dawn text-white hover:bg-dawn-strong hover:text-white": isPaused,
-          "bg-dawn-soft text-ink": !isPaused,
-        })}
+        className={cn(SEGMENT, "w-8 px-0", { "bg-white text-ink shadow-segment": isPaused })}
         onClick={togglePause}
       >
-        <PlaybackIcon aria-hidden="true" fill="currentColor" size={14} />
+        <Pause aria-hidden="true" fill="currentColor" size={14} />
       </Button>
 
       <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-line" />
