@@ -14,7 +14,7 @@ import { WarmJob } from "./jobs/warm-job.ts";
 import { isStandingInFire } from "./needs.ts";
 import { carriedFood, isCarryingAnything, isChild, type Person } from "./person.ts";
 import { respondToFoes } from "./rivalry/responses.ts";
-import type { PersonTick } from "./society-context.ts";
+import type { PersonTick, SocietyContext } from "./society-context.ts";
 import { totalFood } from "./stock.ts";
 import { isWorthLookingFor, type Tribe } from "./tribe.ts";
 import { nearCamp } from "./tribe-places.ts";
@@ -74,6 +74,17 @@ function isOnTheRoad(job: Job): boolean {
 export function assignJob(tick: PersonTick, job: Job): void {
   releaseClaim(tick.tribe, tick.person.job);
   tick.person.job = job;
+}
+
+export function takeUpJob(
+  person: Person,
+  tribe: Tribe,
+  context: SocietyContext,
+  start: (tick: PersonTick) => Job
+): void {
+  const tick = { context, person, seconds: 0, tribe };
+
+  assignJob(tick, start(tick));
 }
 
 export function advanceJob(tick: PersonTick): void {

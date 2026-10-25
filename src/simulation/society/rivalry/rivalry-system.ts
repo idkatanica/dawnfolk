@@ -5,10 +5,10 @@ import type { Chronicle } from "../../chronicle.ts";
 import type { EffectLog } from "../../effects.ts";
 import type { PeopleSense } from "../../fauna/beast-instincts.ts";
 import { isComplete } from "../buildings.ts";
-import { assignJob } from "../decisions.ts";
-import type { Job, JobKind } from "../jobs/job.ts";
+import { takeUpJob } from "../decisions.ts";
+import type { JobKind } from "../jobs/job.ts";
 import { isChild, type Person } from "../person.ts";
-import type { PersonTick, SocietyContext } from "../society-context.ts";
+import type { SocietyContext } from "../society-context.ts";
 import { emptyStock, type Stock, takeFood, totalFood } from "../stock.ts";
 import { knows, type Tribe } from "../tribe.ts";
 import { litCampfireOf } from "../tribe-places.ts";
@@ -46,6 +46,7 @@ import {
   sideOf,
   stanceFor,
 } from "./relations.ts";
+import { isBusy } from "./responses.ts";
 import type { Battleground } from "./strikes.ts";
 import { type Claim, claimOf, claimOverlap, isInsideClaim, rangeOverlap } from "./territory.ts";
 
@@ -92,7 +93,6 @@ const LARGEST_GIFT = 16;
 const GIFT_SHARE = 0.3;
 const FOOD_RESERVE = 4;
 const WORK_JOBS: ReadonlySet<JobKind> = new Set(["chop", "fish", "gather", "hunt", "quarry"]);
-const BUSY_JOBS: ReadonlySet<JobKind> = new Set(["defend", "envoy", "fight", "flee", "hide", "raid"]);
 
 const GRUDGE_REASONS: Readonly<Record<Grudge, string>> = {
   blood: "over blood spilled",
@@ -141,18 +141,6 @@ function areKin(first: Tribe, second: Tribe): boolean {
   const isSibling = first.originId !== null && first.originId === second.originId;
 
   return isParent || isSibling;
-}
-
-function tickFor(person: Person, tribe: Tribe, context: SocietyContext): PersonTick {
-  return { context, person, seconds: 0, tribe };
-}
-
-function takeUp(tick: PersonTick, start: (tick: PersonTick) => Job): void {
-  assignJob(tick, start(tick));
-}
-
-function isBusy(person: Person): boolean {
-  return person.job !== null && BUSY_JOBS.has(person.job.kind);
 }
 
 function hasJoinedRaid(person: Person, raid: Raid): boolean {
@@ -579,7 +567,7 @@ export class RivalrySystem implements Battleground {
 
       const weapon = carriedWeapon(warrior);
 
-      takeUp(tickFor(warrior, attacker, context), (tick) => new RaidJob(tick, raid, weapon, slot, rations));
+      takeUpJob(warrior, attacker, context, (tick) => new RaidJob(tick, raid, weapon, slot, rations));
     }
 
     this.#chronicle.record({
@@ -744,7 +732,7 @@ export class RivalrySystem implements Battleground {
       .slice(0, MOURNERS);
 
     for (const mourner of mourners) {
-      takeUp(tickFor(mourner, tribe, context), (tick) => new MournJob(tick));
+      takeUpJob(mourner, tribe, context, (tick) => new MournJob(tick));
     }
   }
 
@@ -798,7 +786,7 @@ export class RivalrySystem implements Battleground {
     const rations = Math.floor(takeFood(seeker.stock, rationsFor(distance, context.rules.life.hungerRate)));
 
     relation.envoyId = envoy.id;
-    takeUp(tickFor(envoy, seeker, context), (tick) => new EnvoyJob(tick, host, gifts, rations));
+    takeUpJob(envoy, seeker, context, (tick) => new EnvoyJob(tick, host, gifts, rations));
 
     return true;
   }

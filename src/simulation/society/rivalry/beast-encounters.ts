@@ -1,6 +1,6 @@
 import type { BeastBlow, PeopleSense, Quarry } from "../../fauna/beast-instincts.ts";
-import { assignJob } from "../decisions.ts";
-import type { Job, JobKind } from "../jobs/job.ts";
+import { takeUpJob } from "../decisions.ts";
+import type { JobKind } from "../jobs/job.ts";
 import { isChild, isElder, type Person } from "../person.ts";
 import type { SocietyContext } from "../society-context.ts";
 import type { Tribe } from "../tribe.ts";
@@ -220,12 +220,17 @@ export class BeastEncounters implements PeopleSense {
     }
 
     if (canFight(person)) {
-      this.#take(person, tribe, (tick) => new FightJob(tick, animalFoe(blow.attacker), carriedWeapon(person)));
+      takeUpJob(
+        person,
+        tribe,
+        this.#context,
+        (tick) => new FightJob(tick, animalFoe(blow.attacker), carriedWeapon(person))
+      );
 
       return;
     }
 
-    this.#take(person, tribe, (tick) => new ShelterJob(tick, null));
+    takeUpJob(person, tribe, this.#context, (tick) => new ShelterJob(tick, null));
   }
 
   #rallyKin(person: Person, tribe: Tribe, blow: BeastBlow): void {
@@ -239,17 +244,7 @@ export class BeastEncounters implements PeopleSense {
         continue;
       }
 
-      this.#take(kin, tribe, (tick) => new FightJob(tick, animalFoe(blow.attacker), carriedWeapon(kin)));
+      takeUpJob(kin, tribe, this.#context, (tick) => new FightJob(tick, animalFoe(blow.attacker), carriedWeapon(kin)));
     }
-  }
-
-  #take(
-    person: Person,
-    tribe: Tribe,
-    start: (tick: { context: SocietyContext; person: Person; seconds: number; tribe: Tribe }) => Job
-  ): void {
-    const tick = { context: this.#context, person, seconds: 0, tribe };
-
-    assignJob(tick, start(tick));
   }
 }
