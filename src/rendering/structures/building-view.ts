@@ -23,7 +23,6 @@ import {
   CylinderGeometry,
   Group,
   type InstancedBufferGeometry,
-  Mesh,
   MeshStandardNodeMaterial,
   Sphere,
   Vector3,
@@ -46,7 +45,7 @@ import { buildMineModel, MINE_SCALE, type MineOre } from "../../models/structure
 import { GLOW_PART } from "../../models/structures/structure-parts.ts";
 import { clamp, FULL_TURN, saturate } from "../../shared/math.ts";
 import type { BuildingView as BuildingSnapshot, SimulationFrame } from "../../simulation/frame.ts";
-import { geometryFromMeshData, InterleavedInstances, toInstancedGeometry } from "../instancing.ts";
+import { geometryFromMeshData, InstanceBatch, toInstancedGeometry } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import type { TribeLooks } from "../tribe-looks.ts";
 import type { ViewInput } from "../view-input.ts";
@@ -64,6 +63,7 @@ const ROUND_KINDS: ReadonlySet<BuildingKind> = new Set(["hut", "kiln", "smelter"
 const GLOWING_KINDS: ReadonlySet<BuildingKind> = new Set(["forge", "kiln", "smelter"]);
 const ENCLOSURE_KINDS: readonly EnclosureKind[] = ["palisade", "stoneWall"];
 const ENCLOSURE_PIECES: readonly EnclosurePiece[] = ["segment", "gate"];
+const BUILDING_CHANNELS = ["buildOrder", "part", "shade", "slot"] as const;
 
 const BUILDING_FIELDS = [
   { name: "buildingPlacement", size: 4 },
@@ -77,8 +77,6 @@ const PLINTH_FIELDS = [
   { name: "plinthLook", size: 4 },
 ] as const;
 
-const FLOATS_PER_BUILDING = 12;
-const FLOATS_PER_PLINTH = 12;
 const GROUND_BAND = 0.3;
 const PLINTH_INSET = 0.1;
 const PLINTH_TOP = -0.03;
@@ -130,13 +128,6 @@ const ENCLOSURE_FOOTING: Footing = {
 
 type ModelKey = string;
 
-interface BuildingBatch {
-  count: number;
-  readonly geometry: InstancedBufferGeometry;
-  readonly instances: InterleavedInstances;
-  readonly mesh: Mesh;
-}
-
 interface PiecePlacement {
   readonly key: ModelKey;
   readonly progress: number;
@@ -146,7 +137,7 @@ interface PiecePlacement {
 }
 
 interface PlacedPiece {
-  readonly batches: readonly BuildingBatch[];
+  readonly batches: readonly InstanceBatch[];
   readonly building: BuildingSnapshot;
   readonly plinth: GroundBox | null;
   readonly progress: number;
@@ -318,19 +309,21 @@ function createPlinthMaterial(): MeshStandardNodeMaterial {
   return material;
 }
 
-function createPlinthBatch(shape: BufferGeometry, material: MeshStandardNodeMaterial): BuildingBatch {
-  const geometry = toInstancedGeometry(shape.translate(0, -0.5, 0));
+function createBatch(
+  geometry: InstancedBufferGeometry,
+  material: MeshStandardNodeMaterial,
+  fields: typeof BUILDING_FIELDS | typeof PLINTH_FIELDS
+): InstanceBatch {
+  const batch = new InstanceBatch(geometry, material, fields, 16);
 
-  const instances = new InterleavedInstances(geometry, PLINTH_FIELDS, 16);
-  const mesh = new Mesh(geometry, material);
+  batch.mesh.castShadow = true;
+  batch.mesh.receiveShadow = true;
 
-  geometry.instanceCount = 0;
-  mesh.frustumCulled = false;
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  mesh.visible = false;
+  return batch;
+}
 
-  return { count: 0, geometry, instances, mesh };
+function createPlinthBatch(shape: BufferGeometry, material: MeshStandardNodeMaterial): InstanceBatch {
+  return createBatch(toInstancedGeometry(shape.translate(0, -0.5, 0)), material, PLINTH_FIELDS);
 }
 
 function mineKey(ore: MineOre): ModelKey {
@@ -385,10 +378,11 @@ function enclosureKindOf(kind: BuildingKind): EnclosureKind {
 
 export class BuildingView {
   readonly group = new Group();
-  readonly #batches = new Map<ModelKey, readonly BuildingBatch[]>();
+  readonly #all: readonly InstanceBatch[];
+  readonly #batches = new Map<ModelKey, readonly InstanceBatch[]>();
   readonly #bounds = new Sphere(new Vector3(), PIECE_RADIUS);
   readonly #footings = new Map<ModelKey, Footing>();
-  readonly #plinths: readonly BuildingBatch[];
+  readonly #plinths: readonly InstanceBatch[];
   readonly #tribes: TribeLooks;
   #laidOutFrame: SimulationFrame | null = null;
   #pieces: PlacedPiece[] = [];
@@ -401,7 +395,12 @@ export class BuildingView {
     for (const source of modelSources()) {
       const high = source.mesh("high");
 
-      this.#batches.set(source.key, this.#createBatches([high, source.mesh("low")], material));
+      this.#batches.set(
+        source.key,
+        [high, source.mesh("low")].map((meshData) =>
+          createBatch(geometryFromMeshData(meshData, BUILDING_CHANNELS), material, BUILDING_FIELDS)
+        )
+      );
       this.#footings.set(source.key, source.footing(high));
     }
 
@@ -412,76 +411,30 @@ export class BuildingView {
       createPlinthBatch(new CylinderGeometry(0.5, 0.5, 1, ROUND_PLINTH_SIDES), plinthMaterial),
     ];
 
-    for (const plinths of this.#plinths) {
-      this.group.add(plinths.mesh);
-    }
+    this.#all = [...[...this.#batches.values()].flat(), ...this.#plinths];
+    this.group.add(...this.#all.map((batch) => batch.mesh));
   }
 
   update(input: ViewInput): void {
     this.#layOut(input.mirror);
 
-    for (const batches of this.#batches.values()) {
-      for (const batch of batches) {
-        batch.count = 0;
-      }
-    }
-
-    for (const plinths of this.#plinths) {
-      plinths.count = 0;
+    for (const batch of this.#all) {
+      batch.begin();
     }
 
     for (const piece of this.#pieces) {
       this.#place(input, piece);
     }
 
-    for (const batches of this.#batches.values()) {
-      for (const batch of batches) {
-        batch.geometry.instanceCount = batch.count;
-        batch.mesh.visible = batch.count > 0;
-
-        if (batch.count > 0) {
-          batch.instances.markUpdated(batch.count);
-        }
-      }
-    }
-
-    for (const plinths of this.#plinths) {
-      plinths.geometry.instanceCount = plinths.count;
-      plinths.mesh.visible = plinths.count > 0;
-
-      if (plinths.count > 0) {
-        plinths.instances.markUpdated(plinths.count);
-      }
+    for (const batch of this.#all) {
+      batch.commit();
     }
   }
 
   dispose(): void {
-    for (const batches of this.#batches.values()) {
-      for (const batch of batches) {
-        batch.geometry.dispose();
-      }
+    for (const batch of this.#all) {
+      batch.dispose();
     }
-
-    for (const plinths of this.#plinths) {
-      plinths.geometry.dispose();
-    }
-  }
-
-  #createBatches(meshes: readonly MeshData[], material: MeshStandardNodeMaterial): BuildingBatch[] {
-    return meshes.map((meshData) => {
-      const geometry = geometryFromMeshData(meshData, ["buildOrder", "part", "shade", "slot"]);
-
-      const instances = new InterleavedInstances(geometry, BUILDING_FIELDS, 16);
-      const mesh = new Mesh(geometry, material);
-
-      mesh.frustumCulled = false;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.visible = false;
-      this.group.add(mesh);
-
-      return { count: 0, geometry, instances, mesh };
-    });
   }
 
   #layOut(mirror: WorldMirror): void {
@@ -581,17 +534,11 @@ export class BuildingView {
     const level = distance < LEVEL_DISTANCES.high * input.detail ? 0 : 1;
     const accent = this.#tribes.accent(building.tribeId);
 
-    const batch = piece.batches[level];
-
-    batch.instances.ensureCapacity(batch.count + 1);
-
-    const data = batch.instances.array;
-    const offset = batch.count * FLOATS_PER_BUILDING;
-
-    data.set([piece.x, y, piece.z, piece.rotation], offset);
-    data.set([piece.progress, accent.r, accent.g, accent.b], offset + 4);
-    data.set([saturate(1 - building.health), this.#glowOf(building), building.style, 0], offset + 8);
-    batch.count += 1;
+    piece.batches[level].add(
+      [piece.x, y, piece.z, piece.rotation],
+      [piece.progress, accent.r, accent.g, accent.b],
+      [saturate(1 - building.health), this.#glowOf(building), building.style, 0]
+    );
 
     if (piece.plinth !== null) {
       this.#placePlinth(piece, piece.plinth);
@@ -603,17 +550,13 @@ export class BuildingView {
     const [boxes, rounds] = this.#plinths;
 
     const plinths = box.isRound ? rounds : boxes;
-
-    plinths.instances.ensureCapacity(plinths.count + 1);
-
-    const data = plinths.instances.array;
-    const offset = plinths.count * FLOATS_PER_PLINTH;
     const depth = seat.floor - seat.lowest + PLINTH_FOOTING;
 
-    data.set([piece.x, seat.floor + PLINTH_TOP, piece.z, piece.rotation], offset);
-    data.set([box.centerX, box.centerZ, box.width, box.length], offset + 4);
-    data.set([depth, saturate(1 - building.health), building.style, 0], offset + 8);
-    plinths.count += 1;
+    plinths.add(
+      [piece.x, seat.floor + PLINTH_TOP, piece.z, piece.rotation],
+      [box.centerX, box.centerZ, box.width, box.length],
+      [depth, saturate(1 - building.health), building.style, 0]
+    );
   }
 
   #glowOf(building: BuildingSnapshot): number {

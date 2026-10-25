@@ -14,16 +14,7 @@ import {
   varying,
   vec3,
 } from "three/tsl";
-import {
-  type Frustum,
-  Group,
-  type InstancedBufferGeometry,
-  Mesh,
-  MeshStandardNodeMaterial,
-  type PerspectiveCamera,
-  Sphere,
-  Vector3,
-} from "three/webgpu";
+import { type Frustum, Group, MeshStandardNodeMaterial, type PerspectiveCamera, Sphere, Vector3 } from "three/webgpu";
 import { CROP_KINDS, type CropKind, cropOfCode, isFencedCode } from "../../content/crops.ts";
 import { Ground } from "../../content/grounds.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
@@ -41,7 +32,7 @@ import {
 import { FULL_TURN, hashToUnit } from "../../shared/math.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import type { CellRegion, RowRun } from "../../world/change-tracking.ts";
-import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
+import { geometryFromMeshData, InstanceBatch } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import { assignSphereLevels, HIDDEN_LEVEL } from "../view-input.ts";
 import { gustAt, type PlantWeather } from "./plant-material.ts";
@@ -94,12 +85,6 @@ const FENCE_FIELDS = [
   { name: "fenceStart", size: 4 },
   { name: "fenceEnd", size: 4 },
 ] as const;
-
-interface InstanceBatch {
-  readonly geometry: InstancedBufferGeometry;
-  readonly instances: InterleavedInstances;
-  readonly mesh: Mesh;
-}
 
 interface FieldCell {
   readonly bounds: Sphere;
@@ -267,7 +252,7 @@ export class CropField {
 
   dispose(): void {
     for (const batch of [...this.#cropBatches.flat(), ...this.#fenceBatches, this.#furrowBatch]) {
-      batch.geometry.dispose();
+      batch.dispose();
     }
   }
 
@@ -277,18 +262,18 @@ export class CropField {
     fields: typeof CROP_FIELDS | typeof FENCE_FIELDS,
     castsShadow: boolean
   ): InstanceBatch {
-    const geometry = geometryFromMeshData(data, ["part", "shade", "slot", "sway"]);
+    const batch = new InstanceBatch(
+      geometryFromMeshData(data, ["part", "shade", "slot", "sway"]),
+      material,
+      fields,
+      256
+    );
 
-    const instances = new InterleavedInstances(geometry, fields, 256);
-    const mesh = new Mesh(geometry, material);
+    batch.mesh.castShadow = castsShadow;
+    batch.mesh.receiveShadow = true;
+    this.group.add(batch.mesh);
 
-    mesh.frustumCulled = false;
-    mesh.castShadow = castsShadow;
-    mesh.receiveShadow = true;
-    mesh.visible = false;
-    this.group.add(mesh);
-
-    return { geometry, instances, mesh };
+    return batch;
   }
 
   #groundAt(column: number, row: number, channel: number): number {
@@ -528,11 +513,7 @@ export class CropField {
       const ofKind = fields.filter((field) => field.kind === kindIndex);
 
       for (const [level, batch] of batches.entries()) {
-        fill(
-          batch,
-          ofKind.filter((field) => field.level === level).map((field) => field.plants),
-          FLOATS_PER_PLANT
-        );
+        batch.fill(ofKind.filter((field) => field.level === level).map((field) => field.plants));
       }
     }
 
@@ -541,20 +522,10 @@ export class CropField {
     }
 
     for (const [level, batch] of this.#fenceBatches.entries()) {
-      const sources = fields.filter((field) => field.level === level);
-
-      fill(
-        batch,
-        sources.map((field) => field.fences),
-        FLOATS_PER_FENCE
-      );
+      batch.fill(fields.filter((field) => field.level === level).map((field) => field.fences));
     }
 
-    fill(
-      this.#furrowBatch,
-      fields.map((field) => field.furrows),
-      FLOATS_PER_FENCE
-    );
+    this.#furrowBatch.fill(fields.map((field) => field.furrows));
   }
 }
 
@@ -562,29 +533,4 @@ function areRowsAlongX(column: number, row: number): boolean {
   return (
     hashToUnit(Math.floor(column / ORIENTATION_BLOCK), Math.floor(row / ORIENTATION_BLOCK), ORIENTATION_SALT) < 0.5
   );
-}
-
-function fill(batch: InstanceBatch, sources: readonly Float32Array[], stride: number): void {
-  const total = sources.reduce((sum, source) => sum + source.length, 0);
-  const count = total / stride;
-
-  batch.geometry.instanceCount = count;
-  batch.mesh.visible = count > 0;
-
-  if (count === 0) {
-    return;
-  }
-
-  batch.instances.ensureCapacity(count);
-
-  const target = batch.instances.array;
-
-  let offset = 0;
-
-  for (const source of sources) {
-    target.set(source, offset);
-    offset += source.length;
-  }
-
-  batch.instances.markUpdated(count);
 }

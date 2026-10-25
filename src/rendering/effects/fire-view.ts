@@ -7,8 +7,9 @@ import { distanceSquared, hashToUnit } from "../../shared/math.ts";
 import type { BuildingView } from "../../simulation/frame.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
+import type { InstanceBatch } from "../instancing.ts";
 import { CHUNK_CELLS, type VegetationChunks } from "../vegetation/vegetation-chunks.ts";
-import { BillboardBatch, type CameraAxes } from "./billboards.ts";
+import { type CameraAxes, createBillboardBatch } from "./billboards.ts";
 import { createFlameMaterial } from "./flame-material.ts";
 import { createSmokeMaterial, SmokeLook } from "./smoke-material.ts";
 import { createSparkMaterial } from "./spark-material.ts";
@@ -68,19 +69,19 @@ export class FireView {
   readonly group = new Group();
   readonly smoke = new SmokeLook();
   readonly #chunks: VegetationChunks;
-  readonly #flames: BillboardBatch;
+  readonly #flames: InstanceBatch;
   readonly #lights: readonly PointLight[];
-  readonly #puffs: BillboardBatch;
+  readonly #puffs: InstanceBatch;
   readonly #rebuiltFrom = new Vector3(Number.POSITIVE_INFINITY, 0, 0);
-  readonly #sparks: BillboardBatch;
+  readonly #sparks: InstanceBatch;
   #litCampfires: readonly BuildingView[] = [];
   #tick = -1;
 
   constructor({ axes, chunks }: FireViewOptions) {
     this.#chunks = chunks;
-    this.#flames = new BillboardBatch(createFlameMaterial(axes), 6);
-    this.#puffs = new BillboardBatch(createSmokeMaterial(axes, this.smoke), 5);
-    this.#sparks = new BillboardBatch(createSparkMaterial(axes, this.smoke), 7);
+    this.#flames = createBillboardBatch(createFlameMaterial(axes), 6);
+    this.#puffs = createBillboardBatch(createSmokeMaterial(axes, this.smoke), 5);
+    this.#sparks = createBillboardBatch(createSparkMaterial(axes, this.smoke), 7);
     this.#lights = Array.from(
       { length: CAMPFIRE_LIGHTS },
       () => new PointLight(0xff_9a_52, 0, CAMPFIRE_LIGHT_RANGE, 1.6)
@@ -113,9 +114,10 @@ export class FireView {
   }
 
   dispose(): void {
-    this.#flames.dispose();
-    this.#puffs.dispose();
-    this.#sparks.dispose();
+    for (const batch of [this.#flames, this.#puffs, this.#sparks]) {
+      batch.dispose();
+      batch.mesh.material.dispose();
+    }
   }
 
   #rebuild(mirror: WorldMirror, camera: PerspectiveCamera): void {

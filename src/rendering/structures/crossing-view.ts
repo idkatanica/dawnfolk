@@ -22,8 +22,6 @@ import {
 import {
   type Frustum,
   Group,
-  type InstancedBufferGeometry,
-  Mesh,
   MeshStandardNodeMaterial,
   type Node,
   type PerspectiveCamera,
@@ -52,14 +50,13 @@ import {
   steppingStones,
 } from "../../world/crossings.ts";
 import { NO_WATER } from "../../world/water.ts";
-import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
+import { geometryFromMeshData, InstanceBatch } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { assignSphereLevels, HIDDEN_LEVEL } from "../view-input.ts";
 
 const LEVEL_DISTANCES: readonly number[] = [150, 650, 3600];
 const SHADOW_LEVEL_COUNT = 2;
-const FLOATS_PER_INSTANCE = 12;
 const STONE_SINK = 0.3;
 const SHORTEST_STONE = 0.14;
 const DRY_LEVEL = -10_000;
@@ -74,13 +71,6 @@ const CROSSING_FIELDS = [
   { name: "crossingShape", size: 4 },
   { name: "crossingLook", size: 4 },
 ] as const;
-
-interface CrossingBatch {
-  count: number;
-  readonly geometry: InstancedBufferGeometry;
-  readonly instances: InterleavedInstances;
-  readonly mesh: Mesh;
-}
 
 interface PlacedPiece {
   readonly batch: number;
@@ -141,7 +131,7 @@ function yawToward(directionX: number, directionZ: number): number {
 
 export class CrossingView {
   readonly group = new Group();
-  readonly #batches: readonly (readonly CrossingBatch[])[];
+  readonly #batches: readonly (readonly InstanceBatch[])[];
   readonly #mirror: WorldMirror;
   #isDirty = true;
   #placed: PlacedCrossing[] = [];
@@ -179,60 +169,37 @@ export class CrossingView {
   }
 
   dispose(): void {
-    for (const level of this.#batches) {
-      for (const batch of level) {
-        batch.geometry.dispose();
-      }
+    for (const batch of this.#batches.flat()) {
+      batch.dispose();
     }
   }
 
   #refill(): void {
-    for (const level of this.#batches) {
-      for (const batch of level) {
-        batch.count = 0;
+    const batches = this.#batches.flat();
+
+    for (const batch of batches) {
+      batch.begin();
+    }
+
+    for (const crossing of this.#placed.filter((placed) => placed.level !== HIDDEN_LEVEL)) {
+      for (const piece of crossing.pieces) {
+        this.#batches[crossing.level][piece.batch].add(piece.data);
       }
     }
 
-    for (const crossing of this.#placed) {
-      if (crossing.level !== HIDDEN_LEVEL) {
-        this.#fill(crossing, this.#batches[crossing.level]);
-      }
-    }
-
-    for (const level of this.#batches) {
-      for (const batch of level) {
-        batch.geometry.instanceCount = batch.count;
-        batch.mesh.visible = batch.count > 0;
-
-        if (batch.count > 0) {
-          batch.instances.markUpdated(batch.count);
-        }
-      }
+    for (const batch of batches) {
+      batch.commit();
     }
   }
 
-  #createBatch(model: MeshData, material: MeshStandardNodeMaterial, levelIndex: number): CrossingBatch {
-    const geometry = geometryFromMeshData(model, ["shade", "slot"]);
-    const instances = new InterleavedInstances(geometry, CROSSING_FIELDS, 16);
-    const mesh = new Mesh(geometry, material);
+  #createBatch(model: MeshData, material: MeshStandardNodeMaterial, levelIndex: number): InstanceBatch {
+    const batch = new InstanceBatch(geometryFromMeshData(model, ["shade", "slot"]), material, CROSSING_FIELDS, 16);
 
-    mesh.frustumCulled = false;
-    mesh.castShadow = levelIndex < SHADOW_LEVEL_COUNT;
-    mesh.receiveShadow = true;
-    mesh.visible = false;
-    this.group.add(mesh);
+    batch.mesh.castShadow = levelIndex < SHADOW_LEVEL_COUNT;
+    batch.mesh.receiveShadow = true;
+    this.group.add(batch.mesh);
 
-    return { count: 0, geometry, instances, mesh };
-  }
-
-  #fill(crossing: PlacedCrossing, batches: readonly CrossingBatch[]): void {
-    for (const piece of crossing.pieces) {
-      const batch = batches[piece.batch];
-
-      batch.instances.ensureCapacity(batch.count + 1);
-      batch.instances.array.set(piece.data, batch.count * FLOATS_PER_INSTANCE);
-      batch.count += 1;
-    }
+    return batch;
   }
 
   #place(crossing: Crossing): PlacedCrossing {

@@ -1,7 +1,7 @@
 import { Group, PointLight, type Vector3 } from "three/webgpu";
 import type { SimulationEffect } from "../../simulation/effects.ts";
 import { ArrowFlight, ArrowParts } from "./arrow-flight.ts";
-import { BillboardBatch, type CameraAxes } from "./billboards.ts";
+import { type CameraAxes, createBillboardBatch } from "./billboards.ts";
 import { EffectMeshes } from "./effect-meshes.ts";
 import type { GroundRing } from "./ground-ring.ts";
 import { createDustMaterial, createGlowMaterial } from "./sprite-materials.ts";
@@ -45,8 +45,8 @@ export class EffectView {
   constructor(options: EffectViewOptions) {
     this.#createRing = options.createRing;
     this.#sinks = {
-      dust: new BillboardBatch(createDustMaterial(options.axes), 5),
-      glow: new BillboardBatch(createGlowMaterial(options.axes), 9),
+      dust: createBillboardBatch(createDustMaterial(options.axes), 5),
+      glow: createBillboardBatch(createGlowMaterial(options.axes), 9),
     };
 
     this.#context = {
@@ -108,8 +108,11 @@ export class EffectView {
       ring.dispose();
     }
 
-    this.#sinks.dust.dispose();
-    this.#sinks.glow.dispose();
+    for (const batch of [this.#sinks.dust, this.#sinks.glow]) {
+      batch.dispose();
+      batch.mesh.material.dispose();
+    }
+
     this.#meshes.dispose();
     this.#arrowParts.dispose();
   }

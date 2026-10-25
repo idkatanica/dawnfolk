@@ -5,6 +5,8 @@ import {
   InstancedBufferGeometry,
   InstancedInterleavedBuffer,
   InterleavedBufferAttribute,
+  type Material,
+  Mesh,
   Sphere,
   Uint32BufferAttribute,
   Vector3,
@@ -110,5 +112,74 @@ export class InterleavedInstances {
     }
 
     return buffer;
+  }
+}
+
+export class InstanceBatch {
+  readonly mesh: Mesh<InstancedBufferGeometry, Material>;
+  readonly #instances: InterleavedInstances;
+  #count = 0;
+
+  constructor(
+    geometry: InstancedBufferGeometry,
+    material: Material,
+    fields: readonly InterleavedField[],
+    capacity: number
+  ) {
+    geometry.instanceCount = 0;
+    this.#instances = new InterleavedInstances(geometry, fields, capacity);
+    this.mesh = new Mesh(geometry, material);
+    this.mesh.frustumCulled = false;
+    this.mesh.visible = false;
+  }
+
+  get count(): number {
+    return this.#count;
+  }
+
+  begin(): void {
+    this.#count = 0;
+  }
+
+  add(...parts: readonly ArrayLike<number>[]): void {
+    this.#instances.ensureCapacity(this.#count + 1);
+
+    let offset = this.#count * this.#instances.stride;
+
+    for (const part of parts) {
+      this.#instances.array.set(part, offset);
+      offset += part.length;
+    }
+
+    this.#count += 1;
+  }
+
+  fill(sources: readonly ArrayLike<number>[]): void {
+    const total = sources.reduce((sum, source) => sum + source.length, 0);
+
+    this.#count = total / this.#instances.stride;
+    this.#instances.ensureCapacity(this.#count);
+
+    let offset = 0;
+
+    for (const source of sources) {
+      this.#instances.array.set(source, offset);
+      offset += source.length;
+    }
+
+    this.commit();
+  }
+
+  commit(): void {
+    this.mesh.geometry.instanceCount = this.#count;
+    this.mesh.visible = this.#count > 0;
+
+    if (this.#count > 0) {
+      this.#instances.markUpdated(this.#count);
+    }
+  }
+
+  dispose(): void {
+    this.mesh.geometry.dispose();
   }
 }
