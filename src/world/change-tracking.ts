@@ -22,6 +22,14 @@ export class RowChangeTracker {
     this.#isRowChanged.fill(1);
   }
 
+  takeRow(row: number): boolean {
+    const isChanged = this.#isRowChanged[row] === 1;
+
+    this.#isRowChanged[row] = 0;
+
+    return isChanged;
+  }
+
   takeRuns(): RowRun[] {
     const runs: RowRun[] = [];
     let runStart = -1;

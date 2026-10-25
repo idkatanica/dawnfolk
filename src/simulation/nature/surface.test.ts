@@ -230,6 +230,30 @@ describe("surface", () => {
     expect(swept.fields.wetness.some((wetness) => wetness > 0 && wetness < 1)).toBe(true);
   });
 
+  it("wakes a settled stretch when fire or a new ground changes it", () => {
+    const world = createTestWorld();
+
+    const surface = new SurfaceSystem(world);
+    const burnt = centerCell(world);
+    const glacier = burnt + world.grid.cellsPerSide * 3;
+    const passTicks = world.grid.cellsPerSide / ROWS_PER_TICK;
+
+    for (let tick = 0; tick < passTicks * 2; tick += 1) {
+      surface.update(TICK_SECONDS, TICK_SECONDS / 240, DRY_NOON, DEFAULT_WORLD_RULES);
+    }
+
+    world.fields.fuel[burnt] = 0;
+    world.markSurfaceCell(burnt);
+    world.setGround(glacier, Ground.Snow);
+
+    for (let tick = 0; tick < passTicks; tick += 1) {
+      surface.update(TICK_SECONDS, TICK_SECONDS / 240, DRY_NOON, DEFAULT_WORLD_RULES);
+    }
+
+    expect(world.fields.fuel[burnt]).toBeGreaterThan(0);
+    expect(world.fields.snow[glacier]).toBeGreaterThan(0.4);
+  });
+
   it("piles up snow below freezing", () => {
     const world = createTestWorld({ baseTemperature: -8 });
 

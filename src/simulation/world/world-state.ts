@@ -86,6 +86,7 @@ export class WorldState {
   readonly seed: number;
   readonly shape: IslandShapeKind;
   readonly surfaceChanges: RowChangeTracker;
+  readonly surfaceEdits: RowChangeTracker;
   readonly terrain: TerrainData;
   readonly vegetation: VegetationStore;
   readonly waterLevelChanges = new RegionChangeTracker();
@@ -117,6 +118,7 @@ export class WorldState {
     this.disturbedDay = new Float32Array(this.grid.cellCount);
     this.recovering = new CellSet(this.grid.cellCount);
     this.surfaceChanges = new RowChangeTracker(this.grid.cellsPerSide);
+    this.surfaceEdits = new RowChangeTracker(this.grid.cellsPerSide);
     this.groundChanges = new RowChangeTracker(this.grid.cellsPerSide);
     this.lowestHeight = lowestValue(generated.terrain.height);
 
@@ -257,6 +259,7 @@ export class WorldState {
 
   markSurfaceCell(cell: number): void {
     this.surfaceChanges.markRow(this.grid.rowOf(cell));
+    this.surfaceEdits.markRow(this.grid.rowOf(cell));
   }
 
   setGround(cell: number, ground: number): void {
@@ -267,6 +270,7 @@ export class WorldState {
     this.terrain.ground[cell] = ground;
     this.fields.fuel[cell] = groundDefinition(ground).fuel;
     this.groundChanges.markRow(this.grid.rowOf(cell));
+    this.surfaceEdits.markRow(this.grid.rowOf(cell));
   }
 
   setCrop(cell: number, growth: number): void {
