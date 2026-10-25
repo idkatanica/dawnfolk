@@ -262,8 +262,9 @@ function dig(pose: Pose, phase: number): void {
   bendTrunk(pose, HumanBone.Head, { forward: degrees(10) });
 
   for (const side of SIDES) {
-    swingArm(pose, side, { forward: degrees(78) - degrees(42) * thrust, outward: -degrees(10) });
-    bendElbow(pose, side, degrees(52) - degrees(24) * thrust);
+    swingArm(pose, side, { forward: degrees(76) - degrees(42) * thrust, outward: -degrees(10) });
+    bendElbow(pose, side, degrees(52) - degrees(32) * thrust);
+    bendWrist(pose, side, -degrees(8) - degrees(80) * (1 - thrust));
   }
 
   swingLeg(pose, 1, { forward: degrees(34), outward: degrees(7) });

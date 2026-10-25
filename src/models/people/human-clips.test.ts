@@ -22,6 +22,7 @@ const ADULT: HumanClipContext = { ageGroup: "adult", carried: "nothing", motion:
 const RIGHT_FIST = new Vector3(-0.217, 0.832, 0.018);
 const LEFT_FIST = new Vector3(0.217, 0.832, 0.018);
 const SPEAR_TIP = new Vector3(-0.217, 0.832, 1.13);
+const STICK_TIP = new Vector3(-0.217, 0.122, 0.038);
 const PLANTED = 0.02;
 const STANDING_WORK: readonly PersonPose[] = [
   "gather",
@@ -188,6 +189,17 @@ describe("human clips", () => {
 
     expect(jointOf(posed("build", 0.5), HumanBone.HandRight).y).toBeGreaterThan(1);
     expect(pointOf(posed("build", 0.64), HumanBone.HandRight, RIGHT_FIST).y).toBeLessThan(0.35);
+  });
+
+  it("drives the digging stick down into the ground", () => {
+    const raised = posed("dig", 0.2);
+    const thrust = posed("dig", 0.55);
+
+    expect(pointOf(raised, HumanBone.HandRight, STICK_TIP).y).toBeGreaterThan(0.25);
+    expect(pointOf(thrust, HumanBone.HandRight, STICK_TIP).y).toBeLessThan(0.05);
+    expect(pointOf(raised, HumanBone.HandRight, STICK_TIP).y).toBeLessThan(
+      pointOf(raised, HumanBone.HandRight, RIGHT_FIST).y - 0.5
+    );
   });
 
   it("is in the air at the widest stride of a leap and lands as the legs pass", () => {
