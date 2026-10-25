@@ -64,14 +64,7 @@ function initialWorldTransferables(world: InitialWorld): ArrayBuffer[] {
   const buffers: ArrayBufferLike[] = [
     world.ground.buffer,
     world.surface.buffer,
-    terrain.baseTemperature.buffer,
-    terrain.biome.buffer,
-    terrain.ground.buffer,
-    terrain.height.buffer,
-    terrain.moisture.buffer,
-    terrain.riverStrength.buffer,
-    terrain.variation.buffer,
-    terrain.waterSurface.buffer,
+    ...Object.values(terrain).map((values) => values.buffer),
     ...channelBuffers(vegetation),
   ];
 
