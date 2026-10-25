@@ -168,13 +168,13 @@ export class VegetationView {
 
       if (level !== previous) {
         this.#chunkLevels[index] = level;
-        this.#markDirty(previous);
-        this.#markDirty(level);
+        this.#markBucketsDirty(chunk, previous);
+        this.#markBucketsDirty(chunk, level);
       }
 
       if (castsShadow !== this.#chunkShadows[index]) {
         this.#chunkShadows[index] = castsShadow;
-        this.#markDirty(level);
+        this.#markBucketsDirty(chunk, level);
       }
     }
   }
@@ -191,14 +191,28 @@ export class VegetationView {
         this.#changedBuckets[level].add(bucket);
       }
     }
+
+    for (const index of chunkIndices) {
+      this.chunks.chunks[index].changedBuckets = [];
+    }
   }
 
-  #markDirty(level: number): void {
+  #markBucketsDirty(chunk: VegetationChunk, level: number): void {
     if (level === HIDDEN_LEVEL) {
       return;
     }
 
-    this.#dirtyLevels.add(level);
+    const changed = this.#changedBuckets[level];
+
+    for (const [bucket, source] of chunk.buckets.entries()) {
+      if (source.length > 0) {
+        changed.add(bucket);
+      }
+    }
+
+    for (const bucket of chunk.changedBuckets) {
+      changed.add(bucket);
+    }
   }
 
   #levelOf(chunk: VegetationChunk, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
@@ -244,14 +258,28 @@ export class VegetationView {
   #fill(plants: PlantBatch, chunks: readonly VegetationChunk[], casterCount: number): void {
     const { batch, buckets, counts } = plants;
 
-    const sources = chunks.map((chunk) => buckets.map((bucket) => chunk.buckets[bucket]));
+    const sources: Float32Array[] = [];
 
-    batch.fill(sources.flat());
+    let shadowedFloats = 0;
+
+    for (const [index, chunk] of chunks.entries()) {
+      for (const bucket of buckets) {
+        const source = chunk.buckets[bucket];
+
+        if (source.length === 0) {
+          continue;
+        }
+
+        sources.push(source);
+
+        if (index < casterCount) {
+          shadowedFloats += source.length;
+        }
+      }
+    }
+
+    batch.fill(sources);
     counts.drawn = batch.count;
-    counts.shadowed =
-      sources
-        .slice(0, casterCount)
-        .flat()
-        .reduce((sum, source) => sum + source.length, 0) / FLOATS_PER_PLANT;
+    counts.shadowed = shadowedFloats / FLOATS_PER_PLANT;
   }
 }
