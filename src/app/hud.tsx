@@ -3,6 +3,7 @@ import { useIsCompact } from "../design/use-media-query.ts";
 import { CompactTopBar, PanelBar, StatusCard } from "../features/interface/top-bar.tsx";
 import { JournalSheet } from "../features/journal/journal-sheet.tsx";
 import { SidePanel } from "../features/journal/side-panel.tsx";
+import { useIsSidePanelOpen } from "../features/journal/use-side-panel.ts";
 import { WorldLabels } from "../features/labels/world-labels.tsx";
 import { MinimapIsland } from "../features/minimap/minimap-island.tsx";
 import { NoticeFeed } from "../features/notices/notice-feed.tsx";
@@ -13,6 +14,8 @@ import { SettingsDialog } from "../features/settings/settings-dialog.tsx";
 const HUD_FRAME = "pointer-events-none fixed inset-0 z-10 flex flex-col p-safe";
 
 function WideHud() {
+  const isSidePanelOpen = useIsSidePanelOpen();
+
   return (
     <div className={cn(HUD_FRAME, "gap-3")}>
       <div className="flex min-h-0 flex-1 gap-3">
@@ -27,7 +30,7 @@ function WideHud() {
 
           <SidePanel className="max-h-full min-h-0" />
 
-          <PowerSettings className="mt-auto" />
+          {isSidePanelOpen ? <PowerSettings className="mt-auto" /> : null}
         </div>
       </div>
 
@@ -40,6 +43,12 @@ function WideHud() {
 
         <div aria-hidden="true" className="flex-1" />
       </div>
+
+      {isSidePanelOpen ? null : (
+        <div className="pointer-events-none fixed inset-y-0 right-0 flex items-center p-safe">
+          <PowerSettings />
+        </div>
+      )}
     </div>
   );
 }

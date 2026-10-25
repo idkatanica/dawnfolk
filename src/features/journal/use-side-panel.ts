@@ -27,6 +27,13 @@ function useSelectedInspection(): Inspection | null {
   return inspection;
 }
 
+export function useIsSidePanelOpen(): boolean {
+  const hasInspection = useWorldStore((state) => Boolean(state.snapshot?.inspection));
+  const isJournalOpen = useInterfaceStore((state) => state.isJournalOpen);
+
+  return hasInspection || isJournalOpen;
+}
+
 export function useSidePanel() {
   const engine = useEngine();
   const inspection = useSelectedInspection();
