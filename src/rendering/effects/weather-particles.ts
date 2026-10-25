@@ -197,7 +197,7 @@ class DropOctave {
     const viewportMeters = distance(center, cameraPosition).mul(uniforms.viewportSpan);
     const natural = uniforms.size.mul(scale).mul(variety.mul(0.6).add(0.7));
     const streakAxis = normalize(vec3(uniforms.slant.x.negate(), 1, uniforms.slant.y.negate()));
-    const isOnIsland = max(abs(landing.x), abs(landing.y)).lessThan(grid.halfSize);
+    const isOnIsland = textures.outline.insideNode(landing);
 
     const streakLength = clamp(
       natural.mul(mix(float(60), float(1), uniforms.isSnow)),
