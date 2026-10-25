@@ -1,6 +1,7 @@
-import { alongPath, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts";
+import { alongTube, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, SurfacePoint } from "../mesh/mesh-builder.ts";
+import { curveBodySections } from "../mesh/path-curves.ts";
 import { type Shape, transformShape } from "../mesh/shape.ts";
 import { type BodySection, lengthwiseLoft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { combine, sideMirror, transformOf } from "../mesh/transforms.ts";
@@ -114,7 +115,7 @@ function coatSlot(point: SurfacePoint): number {
 
 function headShape(detail: AnimalDetail): Shape {
   const muzzle = tube(
-    alongPath(
+    alongTube(
       [
         { radius: 0, x: 0, y: 1.278, z: 0.47 },
         { radius: 0.064, x: 0, y: 1.28, z: 0.5 },
@@ -177,7 +178,7 @@ const TAIL: readonly TubePoint[] = [
 export function addIbexBody(builder: MeshBuilder, detail: AnimalDetail): void {
   const { segments } = detail;
 
-  builder.add(lengthwiseLoft(BODY, segments + 2), {
+  builder.add(lengthwiseLoft(curveBodySections(BODY, detail.curveSteps), segments + 2), {
     seam: BODY_SEAM,
     style: { ...bodyStyle(IBEX_FRAME, 0.14), slot: coatSlot },
   });

@@ -43,6 +43,8 @@ const ARM_BONES: ReadonlySet<number> = new Set([
   HumanBone.ForearmRight,
   HumanBone.HandLeft,
   HumanBone.HandRight,
+  HumanBone.UpperArmLeft,
+  HumanBone.UpperArmRight,
 ]);
 
 function isArm(mesh: MeshData, piece: MeshPiece): boolean {

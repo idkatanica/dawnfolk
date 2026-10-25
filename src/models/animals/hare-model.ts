@@ -1,7 +1,8 @@
 import type { AnimalPose } from "../../world/agent-poses.ts";
-import { alongPath, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts";
+import { alongPath, alongTube, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, SurfacePoint } from "../mesh/mesh-builder.ts";
+import { curveBodySections } from "../mesh/path-curves.ts";
 import { type Shape, transformShape } from "../mesh/shape.ts";
 import { type BodySection, lengthwiseLoft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { combine, sideMirror, transformOf } from "../mesh/transforms.ts";
@@ -159,7 +160,7 @@ function coatSlot(point: SurfacePoint): number {
 }
 
 function headShape(detail: AnimalDetail): Shape {
-  const head = tube(alongPath(HEAD, detail), { hasEndCap: false, radialSegments: detail.segments });
+  const head = tube(alongTube(HEAD, detail), { hasEndCap: false, radialSegments: detail.segments });
 
   return transformShape(head, transformOf({ scale: [0.82, 1, 1] }));
 }
@@ -230,7 +231,7 @@ function addFeet(builder: MeshBuilder, detail: AnimalDetail): void {
 }
 
 export function addHareBody(builder: MeshBuilder, detail: AnimalDetail): void {
-  builder.add(lengthwiseLoft(BODY, detail.segments + 2), {
+  builder.add(lengthwiseLoft(curveBodySections(BODY, detail.curveSteps), detail.segments + 2), {
     seam: BODY_SEAM,
     style: { ...bodyStyle(HARE_FRAME, 0.05), slot: coatSlot },
   });

@@ -1,8 +1,9 @@
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
-import { alongPath, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts";
+import { alongTube, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, SurfacePoint } from "../mesh/mesh-builder.ts";
+import { curveBodySections } from "../mesh/path-curves.ts";
 import { deformShape, type Shape, transformShape } from "../mesh/shape.ts";
 import { type BodySection, cone, lengthwiseLoft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { combine, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
@@ -130,7 +131,7 @@ function addPaws(builder: MeshBuilder, detail: AnimalDetail, segments: number): 
 }
 
 function bodyShape(detail: AnimalDetail): Shape {
-  return lengthwiseLoft(BODY, detail.segments + 2);
+  return lengthwiseLoft(curveBodySections(BODY, detail.curveSteps), detail.segments + 2);
 }
 
 function neckShape(detail: AnimalDetail): Shape {
@@ -148,7 +149,7 @@ function neckShape(detail: AnimalDetail): Shape {
 
 function headShape(detail: AnimalDetail): Shape {
   const muzzle = tube(
-    alongPath(
+    alongTube(
       [
         { radius: 0, x: 0, y: 1.045, z: 0.49 },
         { radius: 0.075, x: 0, y: 1.05, z: 0.52 },
@@ -231,7 +232,7 @@ export function addWolfBody(builder: MeshBuilder, detail: AnimalDetail): void {
     segments: legSegments,
     slot: MaterialSlot.Coat,
   });
-  addPaws(builder, detail, legSegments);
+  addPaws(builder, detail, segmentsAtLeast(detail, 5, detail.segments - 4));
   builder.add(tube(TAIL, { hasEndCap: false, radialSegments: segmentsAtLeast(detail, 5, detail.segments - 3) }), {
     seam: TAIL_SEAM,
     style: {
