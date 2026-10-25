@@ -4,6 +4,7 @@ import { AgentMotion, BLEND_SECONDS, ONCE_END, TURN_RATE } from "./agent-motion.
 const WALK = 1;
 const RUN = 2;
 const FALL = 3;
+const DEAD = 4;
 
 describe("AgentMotion", () => {
   it("advances the phase by game time and the clip rate", () => {
@@ -66,5 +67,15 @@ describe("AgentMotion", () => {
     motion.advance({ clip: FALL, gameSeconds: 3, heading: 0, isOnce: true, rate: 1, realSeconds: 3 });
 
     expect(motion.phase).toBe(ONCE_END);
+  });
+
+  it("holds the last frame of a one-shot clip while it blends out", () => {
+    const motion = new AgentMotion(WALK, 0, 0);
+
+    motion.advance({ clip: FALL, gameSeconds: 3, heading: 0, isOnce: true, rate: 1, realSeconds: 3 });
+    motion.advance({ clip: DEAD, gameSeconds: 0.1, heading: 0, isOnce: false, rate: 0, realSeconds: 0.1 });
+
+    expect(motion.previousClip).toBe(FALL);
+    expect(motion.previousPhase).toBe(ONCE_END);
   });
 });

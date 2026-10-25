@@ -20,6 +20,8 @@ export class AgentMotion {
   phase: number;
   previousClip: number;
   previousPhase: number;
+  #isOnce = false;
+  #isPreviousOnce = false;
   #previousRate = 0;
   #rate = 0;
 
@@ -36,9 +38,10 @@ export class AgentMotion {
       this.#switchClip(step.clip, step.isOnce);
     }
 
+    this.#isOnce = step.isOnce;
     this.#rate = step.rate;
-    this.phase = this.#nextPhase(step);
-    this.previousPhase = fractionalPart(this.previousPhase + step.gameSeconds * this.#previousRate);
+    this.phase = advancedPhase(this.phase, step.gameSeconds * step.rate, step.isOnce);
+    this.previousPhase = advancedPhase(this.previousPhase, step.gameSeconds * this.#previousRate, this.#isPreviousOnce);
     this.blend = Math.min(1, this.blend + step.realSeconds / BLEND_SECONDS);
     this.#turnToward(step.heading, step.realSeconds);
   }
@@ -46,6 +49,7 @@ export class AgentMotion {
   #switchClip(clip: number, isOnce: boolean): void {
     this.previousClip = this.clip;
     this.previousPhase = this.phase;
+    this.#isPreviousOnce = this.#isOnce;
     this.#previousRate = this.#rate;
     this.clip = clip;
     this.blend = 0;
@@ -53,16 +57,6 @@ export class AgentMotion {
     if (isOnce) {
       this.phase = 0;
     }
-  }
-
-  #nextPhase(step: MotionStep): number {
-    const phase = this.phase + step.gameSeconds * step.rate;
-
-    if (step.isOnce) {
-      return Math.min(ONCE_END, phase);
-    }
-
-    return fractionalPart(phase);
   }
 
   #turnToward(heading: number, realSeconds: number): void {
@@ -77,4 +71,12 @@ export class AgentMotion {
 
     this.heading = wrapAngle(this.heading + Math.sign(difference) * largestTurn);
   }
+}
+
+function advancedPhase(phase: number, amount: number, isOnce: boolean): number {
+  if (isOnce) {
+    return Math.min(ONCE_END, phase + amount);
+  }
+
+  return fractionalPart(phase + amount);
 }
