@@ -125,10 +125,6 @@ function createCrossingMaterial(textures: TerrainTextures, mirror: WorldMirror):
   return material;
 }
 
-function yawToward(directionX: number, directionZ: number): number {
-  return Math.atan2(-directionZ, directionX);
-}
-
 export class CrossingView {
   readonly group = new Group();
   readonly #batches: readonly (readonly InstanceBatch[])[];
@@ -269,7 +265,7 @@ export class CrossingView {
         log.rootX,
         log.rootBottom,
         log.rootZ,
-        yawToward((log.tipX - log.rootX) / horizontal, (log.tipZ - log.rootZ) / horizontal),
+        Math.atan2(-(log.tipZ - log.rootZ), log.tipX - log.rootX),
         Math.hypot(horizontal, rise) / FALLEN_LOG_LENGTHS[variant % FALLEN_LOG_LENGTHS.length],
         radius,
         radius,

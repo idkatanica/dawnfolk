@@ -1,5 +1,6 @@
 import {
   attribute,
+  color,
   equal,
   Fn,
   float,
@@ -19,7 +20,6 @@ import {
 import {
   BoxGeometry,
   type BufferGeometry,
-  Color,
   CylinderGeometry,
   Group,
   type InstancedBufferGeometry,
@@ -153,12 +153,6 @@ interface ModelSource {
   readonly mesh: (level: "high" | "low") => MeshData;
 }
 
-function slotColor(slot: number): Vector3 {
-  const color = new Color(SLOT_COLOR_TABLE[slot]);
-
-  return new Vector3(color.r, color.g, color.b);
-}
-
 function groundBoxOf(mesh: MeshData, isRound: boolean): GroundBox {
   const { positions } = mesh;
 
@@ -218,10 +212,6 @@ function seatOf(mirror: WorldMirror, piece: PiecePlacement, footing: Footing): S
   return { floor: Math.max(lowest, Math.min(highest - footing.sinking, lowest + footing.lift)), lowest };
 }
 
-function vectorNode(vector: Vector3) {
-  return vec3(vector.x, vector.y, vector.z);
-}
-
 function createBuildingMaterial(): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial();
   const placement = attribute("buildingPlacement", "vec4");
@@ -254,8 +244,8 @@ function createBuildingMaterial(): MeshStandardNodeMaterial {
   const isPlastered = equal(slot, int(MaterialSlot.Daub)).and(style.greaterThanEqual(PLASTERED_STYLE - 0.5));
   const isTiled = equal(slot, int(MaterialSlot.Thatch)).and(style.greaterThanEqual(TILED_STYLE - 0.5));
 
-  const plastered = select(isPlastered, mix(base, vectorNode(slotColor(MaterialSlot.Plaster)), 0.7), base);
-  const styled = select(isTiled, vectorNode(slotColor(MaterialSlot.Tile)), plastered);
+  const plastered = select(isPlastered, mix(base, slotColors.element(int(MaterialSlot.Plaster)), 0.7), base);
+  const styled = select(isTiled, slotColors.element(int(MaterialSlot.Tile)), plastered);
 
   material.colorNode = varying(mix(styled.mul(shade), CHARCOAL, damage.mul(0.85)), "buildingColor");
 
@@ -299,7 +289,7 @@ function createPlinthMaterial(): MeshStandardNodeMaterial {
   const mortar = smoothstep(0, 0.1, fract(positionWorld.y.div(STONE_COURSE)))
     .mul(0.45)
     .add(0.55);
-  const stone = vectorNode(slotColor(MaterialSlot.Stone)).mul(mortar);
+  const stone = color(SLOT_COLOR_TABLE[MaterialSlot.Stone]).mul(mortar);
   const footing = select(style.greaterThanEqual(STONE_FOOTING_STYLE - 0.5), stone, EARTH);
 
   material.colorNode = mix(footing.mul(grain), CHARCOAL, damage.mul(0.6));

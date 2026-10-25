@@ -459,47 +459,27 @@ export class CropField {
       const toX = isAlongX ? centerX + half : centerX + across;
       const toZ = isAlongX ? centerZ + across : centerZ + half;
 
-      data.set(
-        [
-          fromX,
-          fromZ,
-          this.#mirror.heightAt(fromX, fromZ),
-          Math.atan2(-(toZ - fromZ), toX - fromX),
-          this.#mirror.heightAt(toX, toZ),
-          0,
-          0,
-          0,
-        ],
-        line * FLOATS_PER_FENCE
-      );
+      data.set(this.#segment(fromX, fromZ, toX, toZ), line * FLOATS_PER_FENCE);
     }
 
     return data;
   }
 
   #fenceInstances(sides: readonly FenceSide[]): Float32Array {
-    const data = new Float32Array(sides.length * FLOATS_PER_FENCE);
+    return new Float32Array(sides.flatMap((side) => this.#segment(...side.from, ...side.to)));
+  }
 
-    for (const [index, side] of sides.entries()) {
-      const [fromX, fromZ] = side.from;
-      const [toX, toZ] = side.to;
-
-      data.set(
-        [
-          fromX,
-          fromZ,
-          this.#mirror.heightAt(fromX, fromZ),
-          Math.atan2(-(toZ - fromZ), toX - fromX),
-          this.#mirror.heightAt(toX, toZ),
-          0,
-          0,
-          0,
-        ],
-        index * FLOATS_PER_FENCE
-      );
-    }
-
-    return data;
+  #segment(fromX: number, fromZ: number, toX: number, toZ: number): number[] {
+    return [
+      fromX,
+      fromZ,
+      this.#mirror.heightAt(fromX, fromZ),
+      Math.atan2(-(toZ - fromZ), toX - fromX),
+      this.#mirror.heightAt(toX, toZ),
+      0,
+      0,
+      0,
+    ];
   }
 
   #refill(isWhole: boolean): void {
