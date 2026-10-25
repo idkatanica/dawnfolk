@@ -15,6 +15,7 @@ import type { CellRegion } from "../../world/change-tracking.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
 import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
+import { HIDDEN_LEVEL } from "../view-input.ts";
 import { createPlantMaterial, PlantWeather, SpeciesLook } from "./plant-material.ts";
 import { foliageLook } from "./plant-palette.ts";
 import {
@@ -27,7 +28,6 @@ import {
 
 const LEVEL_DISTANCES: readonly number[] = [160, 600, 1600, 4200];
 const SHADOW_LEVEL_COUNT = 2;
-const HIDDEN = -1;
 
 const PLANT_CHANNELS: readonly VertexChannel[] = ["flutter", "part", "shade", "slot", "sway"];
 
@@ -58,7 +58,7 @@ function shadowFrustumOf(sun: DirectionalLight): Frustum {
 }
 
 function castsShadowAt(chunk: VegetationChunk, level: number, shadowFrustum: Frustum): boolean {
-  if (level === HIDDEN || level >= SHADOW_LEVEL_COUNT) {
+  if (level === HIDDEN_LEVEL || level >= SHADOW_LEVEL_COUNT) {
     return false;
   }
 
@@ -78,7 +78,7 @@ export class VegetationView {
 
   constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow) {
     this.chunks = new VegetationChunks(mirror);
-    this.#chunkLevels = new Int8Array(this.chunks.chunks.length).fill(HIDDEN);
+    this.#chunkLevels = new Int8Array(this.chunks.chunks.length).fill(HIDDEN_LEVEL);
     this.#chunkShadows = new Uint8Array(this.chunks.chunks.length);
     this.#looks = PLANT_SPECIES.map(() => new SpeciesLook());
 
@@ -191,7 +191,7 @@ export class VegetationView {
     for (const index of chunkIndices) {
       const level = this.#chunkLevels[index];
 
-      if (level === HIDDEN) {
+      if (level === HIDDEN_LEVEL) {
         continue;
       }
 
@@ -202,14 +202,14 @@ export class VegetationView {
   }
 
   #markDirty(level: number): void {
-    if (level !== HIDDEN) {
+    if (level !== HIDDEN_LEVEL) {
       this.#dirtyLevels.add(level);
     }
   }
 
   #levelOf(chunk: VegetationChunk, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
     if (chunk.plants.size === 0 || !frustum.intersectsBox(chunk.bounds)) {
-      return HIDDEN;
+      return HIDDEN_LEVEL;
     }
 
     const distance = chunk.bounds.distanceToPoint(camera.position);

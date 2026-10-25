@@ -55,10 +55,10 @@ import { NO_WATER } from "../../world/water.ts";
 import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
+import { assignSphereLevels, HIDDEN_LEVEL } from "../view-input.ts";
 
 const LEVEL_DISTANCES: readonly number[] = [150, 650, 3600];
 const SHADOW_LEVEL_COUNT = 2;
-const HIDDEN = -1;
 const FLOATS_PER_INSTANCE = 12;
 const STONE_SINK = 0.3;
 const SHORTEST_STONE = 0.14;
@@ -161,12 +161,14 @@ export class CrossingView {
   }
 
   rebuild(): void {
-    this.#placed = this.#mirror.crossings.map((crossing) => this.#place(crossing));
+    this.#placed = this.#mirror.crossings
+      .map((crossing) => this.#place(crossing))
+      .filter((placed) => placed.pieces.length > 0);
     this.#isDirty = true;
   }
 
   update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
-    const hasNewLevels = this.#assignLevels(camera, frustum, detail);
+    const hasNewLevels = assignSphereLevels(this.#placed, camera, frustum, LEVEL_DISTANCES, detail);
 
     if (!(hasNewLevels || this.#isDirty)) {
       return;
@@ -184,21 +186,6 @@ export class CrossingView {
     }
   }
 
-  #assignLevels(camera: PerspectiveCamera, frustum: Frustum, detail: number): boolean {
-    let hasChanged = false;
-
-    for (const crossing of this.#placed) {
-      const level = this.#levelOf(crossing, camera, frustum, detail);
-
-      if (level !== crossing.level) {
-        crossing.level = level;
-        hasChanged = true;
-      }
-    }
-
-    return hasChanged;
-  }
-
   #refill(): void {
     for (const level of this.#batches) {
       for (const batch of level) {
@@ -207,7 +194,7 @@ export class CrossingView {
     }
 
     for (const crossing of this.#placed) {
-      if (crossing.level !== HIDDEN) {
+      if (crossing.level !== HIDDEN_LEVEL) {
         this.#fill(crossing, this.#batches[crossing.level]);
       }
     }
@@ -238,16 +225,6 @@ export class CrossingView {
     return { count: 0, geometry, instances, mesh };
   }
 
-  #levelOf(crossing: PlacedCrossing, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
-    if (crossing.pieces.length === 0 || !frustum.intersectsSphere(crossing.bounds)) {
-      return HIDDEN;
-    }
-
-    const distance = Math.max(0, camera.position.distanceTo(crossing.bounds.center) - crossing.bounds.radius);
-
-    return LEVEL_DISTANCES.findIndex((limit) => distance < limit * detail);
-  }
-
   #fill(crossing: PlacedCrossing, batches: readonly CrossingBatch[]): void {
     for (const piece of crossing.pieces) {
       const batch = batches[piece.batch];
@@ -269,7 +246,7 @@ export class CrossingView {
       crossingLength(crossing) / 2 + 4
     );
 
-    return { bounds, level: HIDDEN, pieces };
+    return { bounds, level: HIDDEN_LEVEL, pieces };
   }
 
   #stonesOf(ford: Ford): PlacedPiece[] {

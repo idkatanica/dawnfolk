@@ -18,13 +18,13 @@ import { smoothstep } from "../../shared/math.ts";
 import type { Inspection } from "../../simulation/inspection.ts";
 import { ANIMAL_STRIDE, AnimalField } from "../../world/agent-buffers.ts";
 import { ANIMAL_POSES, type AnimalPose } from "../../world/agent-poses.ts";
+import { HIDDEN_LEVEL } from "../view-input.ts";
 import { AgentMotion } from "./agent-motion.ts";
 import { AgentPalette } from "./agent-palette.ts";
 import {
   type AgentViewInput,
   detailLevel,
   farthestFigure,
-  HIDDEN_LEVEL,
   type LevelDistances,
   NO_SELECTION,
   standingHeight,

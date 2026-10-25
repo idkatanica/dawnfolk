@@ -14,13 +14,13 @@ import type { Inspection } from "../../simulation/inspection.ts";
 import { PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
 import { CARRIED_ITEMS, type CarriedItem, PERSON_POSES } from "../../world/agent-poses.ts";
 import type { TribeLooks } from "../tribe-looks.ts";
+import { HIDDEN_LEVEL } from "../view-input.ts";
 import { AgentMotion } from "./agent-motion.ts";
 import { AgentPalette } from "./agent-palette.ts";
 import {
   type AgentViewInput,
   detailLevel,
   farthestFigure,
-  HIDDEN_LEVEL,
   type LevelDistances,
   NO_SELECTION,
   standingHeight,

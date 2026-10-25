@@ -1,6 +1,6 @@
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { footingOn } from "../../world/crossings.ts";
-import type { ViewInput } from "../view-input.ts";
+import { HIDDEN_LEVEL, type ViewInput } from "../view-input.ts";
 import type { AgentMarkers } from "./agent-markers.ts";
 
 export interface AgentViewInput extends ViewInput {
@@ -15,8 +15,6 @@ export interface LevelDistances {
   readonly high: number;
   readonly low: number;
 }
-
-export const HIDDEN_LEVEL = -1;
 
 const ANKLE_DEPTH = 0.18;
 export const NO_SELECTION = -1;

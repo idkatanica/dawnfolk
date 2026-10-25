@@ -43,10 +43,10 @@ import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import type { CellRegion, RowRun } from "../../world/change-tracking.ts";
 import { geometryFromMeshData, InterleavedInstances } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { assignSphereLevels, HIDDEN_LEVEL } from "../view-input.ts";
 import { gustAt, type PlantWeather } from "./plant-material.ts";
 
 const BYTE = 255;
-const HIDDEN = -1;
 const FLOATS_PER_PLANT = 8;
 const GROWTH_OFFSET = 4;
 const FLOATS_PER_FENCE = 8;
@@ -254,7 +254,7 @@ export class CropField {
   }
 
   update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
-    const hasNewLevels = this.#assignLevels(camera, frustum, detail);
+    const hasNewLevels = assignSphereLevels(this.#cells.values(), camera, frustum, LEVEL_DISTANCES, detail);
 
     if (!(hasNewLevels || this.#isDirty || this.#grownKinds.size > 0)) {
       return;
@@ -263,21 +263,6 @@ export class CropField {
     this.#refill(hasNewLevels || this.#isDirty);
     this.#isDirty = false;
     this.#grownKinds.clear();
-  }
-
-  #assignLevels(camera: PerspectiveCamera, frustum: Frustum, detail: number): boolean {
-    let hasChanged = false;
-
-    for (const field of this.#cells.values()) {
-      const level = this.#levelOf(field, camera, frustum, detail);
-
-      if (level !== field.level) {
-        field.level = level;
-        hasChanged = true;
-      }
-    }
-
-    return hasChanged;
   }
 
   dispose(): void {
@@ -304,16 +289,6 @@ export class CropField {
     this.group.add(mesh);
 
     return { geometry, instances, mesh };
-  }
-
-  #levelOf(field: FieldCell, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
-    if (!frustum.intersectsSphere(field.bounds)) {
-      return HIDDEN;
-    }
-
-    const distance = Math.max(0, camera.position.distanceTo(field.bounds.center) - field.bounds.radius);
-
-    return LEVEL_DISTANCES.findIndex((limit) => distance < limit * detail);
   }
 
   #groundAt(column: number, row: number, channel: number): number {
@@ -429,9 +404,9 @@ export class CropField {
       fences: this.#fenceInstances(sides),
       furrows: this.#furrowInstances(column, row),
       growth,
-      kind: kind === null ? HIDDEN : CROP_KINDS.indexOf(kind),
+      kind: kind === null ? HIDDEN_LEVEL : CROP_KINDS.indexOf(kind),
       layout,
-      level: HIDDEN,
+      level: HIDDEN_LEVEL,
       plants: kind === null ? new Float32Array(0) : this.#plantInstances(column, row, kind, growth / BYTE),
     };
   }
@@ -543,7 +518,7 @@ export class CropField {
   }
 
   #refill(isWhole: boolean): void {
-    const fields = [...this.#cells.values()].filter((field) => field.level !== HIDDEN);
+    const fields = [...this.#cells.values()].filter((field) => field.level !== HIDDEN_LEVEL);
 
     for (const [kindIndex, batches] of this.#cropBatches.entries()) {
       if (!(isWhole || this.#grownKinds.has(kindIndex))) {
