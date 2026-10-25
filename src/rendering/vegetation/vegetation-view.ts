@@ -168,13 +168,13 @@ export class VegetationView {
 
       if (level !== previous) {
         this.#chunkLevels[index] = level;
-        this.#markDirty(previous);
-        this.#markDirty(level);
+        this.#markBucketsDirty(chunk, previous);
+        this.#markBucketsDirty(chunk, level);
       }
 
       if (castsShadow !== this.#chunkShadows[index]) {
         this.#chunkShadows[index] = castsShadow;
-        this.#markDirty(level);
+        this.#markBucketsDirty(chunk, level);
       }
     }
   }
@@ -191,14 +191,28 @@ export class VegetationView {
         this.#changedBuckets[level].add(bucket);
       }
     }
+
+    for (const index of chunkIndices) {
+      this.chunks.chunks[index].changedBuckets = [];
+    }
   }
 
-  #markDirty(level: number): void {
+  #markBucketsDirty(chunk: VegetationChunk, level: number): void {
     if (level === HIDDEN_LEVEL) {
       return;
     }
 
-    this.#dirtyLevels.add(level);
+    const changed = this.#changedBuckets[level];
+
+    for (const [bucket, source] of chunk.buckets.entries()) {
+      if (source.length > 0) {
+        changed.add(bucket);
+      }
+    }
+
+    for (const bucket of chunk.changedBuckets) {
+      changed.add(bucket);
+    }
   }
 
   #levelOf(chunk: VegetationChunk, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
