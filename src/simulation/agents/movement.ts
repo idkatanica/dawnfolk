@@ -12,6 +12,7 @@ const SWIMMING_SPEED = 0.45;
 const DEFLECTIONS: readonly number[] = [0, 0.6, -0.6, 1.2, -1.2, 1.9, -1.9];
 const PROBE_DISTANCE = 2.5;
 const WATER_SAMPLE_SPACING = 0.25;
+const BOUNDARY_MARGIN = 0.001;
 const CLIMBABLE_SLOPE = 1.2;
 const GIVE_UP_SECONDS = 2.5;
 const TURN_RATE = 8;
@@ -461,7 +462,7 @@ function canEnter(mover: Mover, x: number, z: number, isEscapingWater: boolean, 
 }
 
 function wouldWadeOnTheWay(mover: Mover, x: number, z: number, world: WorldState): boolean {
-  if (isInOpenWater(world, mover.x, mover.z)) {
+  if (!hasWaterAround(mover.x, mover.z, x, z, world) || isInOpenWater(world, mover.x, mover.z)) {
     return false;
   }
 
@@ -473,6 +474,25 @@ function wouldWadeOnTheWay(mover: Mover, x: number, z: number, world: WorldState
 
     if (isInOpenWater(world, sampleX, sampleZ)) {
       return true;
+    }
+  }
+
+  return false;
+}
+
+function hasWaterAround(fromX: number, fromZ: number, toX: number, toZ: number, world: WorldState): boolean {
+  const { grid } = world;
+  const last = grid.cellsPerSide - 1;
+  const firstColumn = Math.max(0, grid.columnAt(Math.min(fromX, toX) - BOUNDARY_MARGIN));
+  const lastColumn = Math.min(last, grid.columnAt(Math.max(fromX, toX) + BOUNDARY_MARGIN));
+  const firstRow = Math.max(0, grid.rowAt(Math.min(fromZ, toZ) - BOUNDARY_MARGIN));
+  const lastRow = Math.min(last, grid.rowAt(Math.max(fromZ, toZ) + BOUNDARY_MARGIN));
+
+  for (let row = firstRow; row <= lastRow; row += 1) {
+    for (let column = firstColumn; column <= lastColumn; column += 1) {
+      if (world.isWater(grid.index(column, row))) {
+        return true;
+      }
     }
   }
 
