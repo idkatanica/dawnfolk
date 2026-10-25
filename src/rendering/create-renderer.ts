@@ -6,6 +6,7 @@ export async function createRenderer(canvas: HTMLCanvasElement, quality: RenderQ
     alpha: false,
     antialias: quality.hasAntialias,
     canvas,
+    depth: !quality.hasBloom,
     powerPreference: "high-performance",
     reversedDepthBuffer: true,
   });
