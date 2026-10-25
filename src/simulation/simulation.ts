@@ -407,7 +407,6 @@ export class Simulation {
       rivalry: this.rivalry,
       rules: DEFAULT_WORLD_RULES,
       schedule: (delaySeconds, run) => this.schedule(delaySeconds, run),
-      society: this.society,
       world: this.world,
     };
   }

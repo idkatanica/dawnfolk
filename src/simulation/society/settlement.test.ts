@@ -30,7 +30,7 @@ function settleSplittingTribe(youngestAge: number): SplittingTribe {
 function nextDrawAfterSplitCheck(youngestAge: number): number {
   const { harness, members, tribe } = settleSplittingTribe(youngestAge);
 
-  considerSplit(tribe, members, harness.context, harness.society);
+  considerSplit(tribe, members, harness.context);
 
   return harness.random.next();
 }

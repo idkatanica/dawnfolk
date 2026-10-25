@@ -15,7 +15,7 @@ const HEALED_HUNGER = 0.2;
 
 export const tribePower: PowerHandler<"tribe"> = {
   apply: (target, parameters, services) => {
-    const tribe = services.society.spawnTribe({
+    const tribe = services.people.spawnTribe({
       context: services,
       people: parameters.people,
       technologies: [],
@@ -75,7 +75,7 @@ export const abundancePower: PowerHandler<"abundance"> = {
     ripenBushes(services, target.x, target.z, parameters.radius);
     services.effects.add({ kind: "blessing", radius: parameters.radius, style: "abundance", x: target.x, z: target.z });
 
-    const tribe = services.society.nearestTribe(target.x, target.z, parameters.radius + ABUNDANCE_REACH);
+    const tribe = services.people.nearestTribe(target.x, target.z, parameters.radius + ABUNDANCE_REACH);
 
     if (tribe === null) {
       return APPLIED;
@@ -97,7 +97,7 @@ export const abundancePower: PowerHandler<"abundance"> = {
 
 export const inspirationPower: PowerHandler<"inspiration"> = {
   apply: (target, parameters, services) => {
-    const tribe = services.society.nearestTribe(target.x, target.z, INSPIRATION_REACH);
+    const tribe = services.people.nearestTribe(target.x, target.z, INSPIRATION_REACH);
 
     if (tribe === null) {
       return refused("There is no tribe nearby to inspire.");
@@ -126,14 +126,14 @@ export const inspirationPower: PowerHandler<"inspiration"> = {
 
 export const healingPower: PowerHandler<"healing"> = {
   apply: (target, parameters, services) => {
-    const people = services.society.livingWithin(target.x, target.z, parameters.radius);
+    const people = services.people.livingWithin(target.x, target.z, parameters.radius);
 
     if (people.length === 0) {
       return refused("There is nobody inside the circle to heal.");
     }
 
     for (const person of people) {
-      const tribe = services.society.findTribe(person.tribeId);
+      const tribe = services.people.findTribe(person.tribeId);
 
       person.health = 1;
       person.hunger = Math.min(person.hunger, HEALED_HUNGER);

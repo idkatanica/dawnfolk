@@ -45,7 +45,7 @@ interface Strike {
 }
 
 export function strikeLightning(strike: Strike, services: PowerServices): void {
-  const { buildings, fauna, fire, society, world } = services;
+  const { buildings, fauna, fire, people, world } = services;
 
   services.effects.add({ isNatural: strike.isNatural, kind: "lightning", x: strike.x, z: strike.z });
 
@@ -58,7 +58,7 @@ export function strikeLightning(strike: Strike, services: PowerServices): void {
     world.markSurfaceCell(cell);
   }
 
-  society.damageArea(strike.x, strike.z, STRIKE_KILL_RADIUS, 3, "lightning");
+  people.damageArea(strike.x, strike.z, STRIKE_KILL_RADIUS, 3, "lightning");
   fauna.damageArea(strike.x, strike.z, STRIKE_KILL_RADIUS, 6, "lightning");
   fauna.scare(strike.x, strike.z, STRIKE_SCARE_RADIUS);
 
@@ -88,7 +88,7 @@ function isRainedOn(cell: number, strike: Strike, services: PowerServices): bool
 }
 
 function teachFire(strike: Strike, services: PowerServices): void {
-  const tribe = services.society.nearestTribe(strike.x, strike.z, TEACHING_DISTANCE);
+  const tribe = services.people.nearestTribe(strike.x, strike.z, TEACHING_DISTANCE);
 
   if (tribe === null) {
     return;
@@ -141,7 +141,7 @@ function reachScale(blast: Blast): number {
 }
 
 export function explode(blast: Blast, services: PowerServices): void {
-  const { buildings, fauna, hazards, society, world } = services;
+  const { buildings, fauna, hazards, people, world } = services;
 
   const reach = blast.radius * BLAST_REACH;
 
@@ -166,7 +166,7 @@ export function explode(blast: Blast, services: PowerServices): void {
     services
   );
   buildings.damageArea(blast.x, blast.z, reach, 120 * blast.power, burnsDebris);
-  society.damageArea(blast.x, blast.z, reach, 1.6 * blast.power, "blast");
+  people.damageArea(blast.x, blast.z, reach, 1.6 * blast.power, "blast");
   fauna.damageArea(blast.x, blast.z, reach, 3 * blast.power, "blast");
   fauna.scare(blast.x, blast.z, blast.radius * 8);
   hazards.addZone({ radius: blast.radius * 4, remainingSeconds: 6, x: blast.x, z: blast.z });
@@ -358,7 +358,7 @@ interface Quake {
 }
 
 export function shakeLand(quake: Quake, services: PowerServices): void {
-  const { buildings, fauna, hazards, random, society, world } = services;
+  const { buildings, fauna, hazards, random, people, world } = services;
 
   shakeTerrain(world, quake, quake.magnitude, random);
 
@@ -373,7 +373,7 @@ export function shakeLand(quake: Quake, services: PowerServices): void {
     services
   );
   buildings.damageArea(quake.x, quake.z, quake.radius, 45 * quake.magnitude, false);
-  society.damageArea(quake.x, quake.z, quake.radius * 0.6, 0.35 * quake.magnitude, "earthquake");
+  people.damageArea(quake.x, quake.z, quake.radius * 0.6, 0.35 * quake.magnitude, "earthquake");
   fauna.scare(quake.x, quake.z, quake.radius * 1.5);
   hazards.addZone({ radius: quake.radius, remainingSeconds: 5, x: quake.x, z: quake.z });
   services.effects.add({

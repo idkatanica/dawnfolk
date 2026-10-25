@@ -116,7 +116,6 @@ describe("staying dry", () => {
       days: 10,
       members: harness.society.membersOf(tribe),
       seconds: 0.1,
-      services: harness.society,
       tribe,
     });
 
