@@ -158,13 +158,39 @@ function reachThrough(target: Float32Array, size: number, column: number, row: n
   return target[(row * size + column) * SHORE_CHANNELS + ShoreChannel.Reach] + 1;
 }
 
-function sweepReach(target: Float32Array, size: number, direction: 1 | -1): void {
-  const first = direction === 1 ? 0 : size - 1;
+function grownRegion(region: CellRegion, cells: number, size: number): CellRegion {
+  const last = size - 1;
 
-  for (let row = first; row >= 0 && row < size; row += direction) {
+  return {
+    firstColumn: Math.max(0, region.firstColumn - cells),
+    firstRow: Math.max(0, region.firstRow - cells),
+    lastColumn: Math.min(last, region.lastColumn + cells),
+    lastRow: Math.min(last, region.lastRow + cells),
+  };
+}
+
+function resetReach(source: ShoreSource, region: CellRegion, target: Float32Array): void {
+  const { levels, size } = source;
+
+  for (let row = region.firstRow; row <= region.lastRow; row += 1) {
+    for (let column = region.firstColumn; column <= region.lastColumn; column += 1) {
+      const cell = row * size + column;
+
+      target[cell * SHORE_CHANNELS + ShoreChannel.Reach] = isWet(levels[cell]) ? 0 : MAXIMUM_REACH;
+    }
+  }
+}
+
+function sweepReach(target: Float32Array, size: number, region: CellRegion, direction: 1 | -1): void {
+  const { firstColumn, firstRow, lastColumn, lastRow } = region;
+
+  const startRow = direction === 1 ? firstRow : lastRow;
+  const startColumn = direction === 1 ? firstColumn : lastColumn;
+
+  for (let row = startRow; row >= firstRow && row <= lastRow; row += direction) {
     const previousRow = row - direction;
 
-    for (let column = first; column >= 0 && column < size; column += direction) {
+    for (let column = startColumn; column >= firstColumn && column <= lastColumn; column += direction) {
       const offset = (row * size + column) * SHORE_CHANNELS + ShoreChannel.Reach;
       const previousColumn = column - direction;
       const nextColumn = column + direction;
@@ -188,29 +214,23 @@ function writeShores(source: ShoreSource, region: CellRegion, target: Float32Arr
   }
 }
 
+function rebuildShores(source: ShoreSource, region: CellRegion, target: Float32Array): void {
+  resetReach(source, region, target);
+  sweepReach(target, source.size, region, 1);
+  sweepReach(target, source.size, region, -1);
+  writeShores(source, region, target);
+}
+
 export function buildShoreField(source: ShoreSource, target: Float32Array): void {
-  const { levels, size } = source;
+  const last = source.size - 1;
 
-  for (let cell = 0; cell < size * size; cell += 1) {
-    target[cell * SHORE_CHANNELS + ShoreChannel.Reach] = isWet(levels[cell]) ? 0 : MAXIMUM_REACH;
-  }
+  rebuildShores(source, { firstColumn: 0, firstRow: 0, lastColumn: last, lastRow: last }, target);
+}
 
-  sweepReach(target, size, 1);
-  sweepReach(target, size, -1);
-  writeShores(source, { firstColumn: 0, firstRow: 0, lastColumn: size - 1, lastRow: size - 1 }, target);
+export function updateShoreField(source: ShoreSource, region: CellRegion, target: Float32Array): void {
+  rebuildShores(source, grownRegion(region, MAXIMUM_REACH, source.size), target);
 }
 
 export function updateShoreDepths(source: ShoreSource, region: CellRegion, target: Float32Array): void {
-  const last = source.size - 1;
-
-  writeShores(
-    source,
-    {
-      firstColumn: Math.max(0, region.firstColumn - 1),
-      firstRow: Math.max(0, region.firstRow - 1),
-      lastColumn: Math.min(last, region.lastColumn + 1),
-      lastRow: Math.min(last, region.lastRow + 1),
-    },
-    target
-  );
+  writeShores(source, grownRegion(region, 1, source.size), target);
 }

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { createRandom } from "../../shared/random.ts";
+import type { CellRegion } from "../../world/change-tracking.ts";
 import { NO_WATER } from "../../world/water.ts";
 import {
   BANK_SINK,
@@ -10,6 +12,7 @@ import {
   ShoreChannel,
   type ShoreSource,
   updateShoreDepths,
+  updateShoreField,
 } from "./shore-field.ts";
 
 const SIZE = 8;
@@ -167,6 +170,78 @@ describe("updateShoreDepths", () => {
     }
 
     updateShoreDepths(source, { firstColumn: 2, firstRow: RIVER_ROW - 1, lastColumn: 4, lastRow: RIVER_ROW }, field);
+
+    expect(Array.from(field)).toEqual(Array.from(build(source)));
+  });
+});
+
+describe("updateShoreField", () => {
+  const LAKE: CellRegion = { firstColumn: 18, firstRow: 18, lastColumn: 21, lastRow: 21 };
+
+  function createDrySource(size: number): ShoreSource {
+    return {
+      cellSize: CELL_SIZE,
+      heights: new Float32Array(size * size),
+      levels: new Float32Array(size * size).fill(NO_WATER),
+      pondDepths: new Float32Array(size * size).fill(NOT_POND),
+      size,
+    };
+  }
+
+  function setLevels(source: ShoreSource, region: CellRegion, level: number): void {
+    for (let row = region.firstRow; row <= region.lastRow; row += 1) {
+      for (let column = region.firstColumn; column <= region.lastColumn; column += 1) {
+        source.levels[row * source.size + column] = level;
+      }
+    }
+  }
+
+  function reachAt(source: ShoreSource, field: Float32Array, column: number, row: number): number {
+    return field[(row * source.size + column) * SHORE_CHANNELS + ShoreChannel.Reach];
+  }
+
+  it("matches a full rebuild as a lake fills and drains, as far as the reach goes", () => {
+    const source = createDrySource(40);
+    const field = build(source);
+
+    setLevels(source, LAKE, 1);
+    updateShoreField(source, LAKE, field);
+
+    expect(Array.from(field)).toEqual(Array.from(build(source)));
+    expect(reachAt(source, field, LAKE.lastColumn + MAXIMUM_REACH - 1, LAKE.lastRow)).toBe(MAXIMUM_REACH - 1);
+
+    setLevels(source, LAKE, NO_WATER);
+    updateShoreField(source, LAKE, field);
+
+    expect(Array.from(field)).toEqual(Array.from(build(source)));
+    expect(reachAt(source, field, LAKE.lastColumn + MAXIMUM_REACH - 1, LAKE.lastRow)).toBe(MAXIMUM_REACH);
+  });
+
+  it.each([
+    [{ firstColumn: 26, firstRow: 24, lastColumn: 36, lastRow: 30 }],
+    [{ firstColumn: 0, firstRow: 50, lastColumn: 9, lastRow: 63 }],
+    [{ firstColumn: 60, firstRow: 0, lastColumn: 63, lastRow: 3 }],
+  ])("matches a full rebuild after the levels change in %o among scattered water", (region) => {
+    const size = 64;
+    const random = createRandom(7);
+    const source = createDrySource(size);
+
+    for (let cell = 0; cell < size * size; cell += 1) {
+      source.heights[cell] = random.between(0, 4);
+      source.levels[cell] = random.chance(0.01) ? source.heights[cell] + random.between(0.1, 2) : NO_WATER;
+    }
+
+    const field = build(source);
+
+    for (let row = region.firstRow; row <= region.lastRow; row += 1) {
+      for (let column = region.firstColumn; column <= region.lastColumn; column += 1) {
+        const cell = row * size + column;
+
+        source.levels[cell] = random.chance(0.3) ? source.heights[cell] + random.between(0.1, 2) : NO_WATER;
+      }
+    }
+
+    updateShoreField(source, region, field);
 
     expect(Array.from(field)).toEqual(Array.from(build(source)));
   });
