@@ -5,6 +5,7 @@ import type { Waypoint } from "../agents/navigation.ts";
 import { levelGround } from "../world/terrain-editing.ts";
 import { CROSSING_GROUND, MONUMENT_GROUND, SPRING_GROUND, type WorldState } from "../world/world-state.ts";
 import type { Building } from "./buildings.ts";
+import { cellsNear, distanceToCell } from "./footprints.ts";
 
 export const DEEPEST_LEVELLING = 1.5;
 const KEPT_RELIEF = 0.04;
@@ -22,39 +23,8 @@ export function isLevelled(kind: BuildingKind): boolean {
   return kind !== "mine" && !isEnclosure(kind);
 }
 
-function shapesFootprint(grid: WorldGrid, cell: number, spot: Waypoint, footprint: number): boolean {
-  const nearestX = Math.max(Math.abs(spot.x - grid.cellCenterX(cell)) - grid.cellSize, 0);
-  const nearestZ = Math.max(Math.abs(spot.z - grid.cellCenterZ(cell)) - grid.cellSize, 0);
-
-  return Math.hypot(nearestX, nearestZ) < footprint;
-}
-
 export function groundUnderFootprint(grid: WorldGrid, spot: Waypoint, footprint: number): number[] {
-  if (footprint <= 0) {
-    return [];
-  }
-
-  const reach = footprint + grid.cellSize;
-  const lastIndex = grid.cellsPerSide - 1;
-
-  const firstColumn = Math.max(0, grid.columnAt(spot.x - reach));
-  const lastColumn = Math.min(lastIndex, grid.columnAt(spot.x + reach));
-  const firstRow = Math.max(0, grid.rowAt(spot.z - reach));
-  const lastRow = Math.min(lastIndex, grid.rowAt(spot.z + reach));
-
-  const cells: number[] = [];
-
-  for (let row = firstRow; row <= lastRow; row += 1) {
-    for (let column = firstColumn; column <= lastColumn; column += 1) {
-      const cell = grid.index(column, row);
-
-      if (shapesFootprint(grid, cell, spot, footprint)) {
-        cells.push(cell);
-      }
-    }
-  }
-
-  return cells;
+  return cellsNear(grid, spot.x, spot.z, footprint, grid.cellSize);
 }
 
 function canReshape(world: WorldState, cell: number): boolean {
@@ -81,7 +51,8 @@ function isPondShore(world: WorldState, cell: number): boolean {
 function isHeldByOther(grid: WorldGrid, cell: number, buildings: readonly Building[]): boolean {
   return buildings.some(
     (building) =>
-      !isEnclosure(building.kind) && shapesFootprint(grid, cell, building, BUILDINGS[building.kind].footprint)
+      !isEnclosure(building.kind) &&
+      distanceToCell(grid, cell, building.x, building.z, grid.cellSize) < BUILDINGS[building.kind].footprint
   );
 }
 

@@ -2,35 +2,32 @@ import type { WorldGrid } from "../../world/world-grid.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import type { WorldState } from "../world/world-state.ts";
 
-function distanceToCell(grid: WorldGrid, column: number, row: number, x: number, z: number): number {
-  const halfCell = grid.cellSize / 2;
-
-  const nearestX = Math.max(Math.abs(x - grid.centerX(column)) - halfCell, 0);
-  const nearestZ = Math.max(Math.abs(z - grid.centerZ(row)) - halfCell, 0);
+export function distanceToCell(grid: WorldGrid, cell: number, x: number, z: number, slack: number): number {
+  const nearestX = Math.max(Math.abs(x - grid.cellCenterX(cell)) - slack, 0);
+  const nearestZ = Math.max(Math.abs(z - grid.cellCenterZ(cell)) - slack, 0);
 
   return Math.hypot(nearestX, nearestZ);
 }
 
-export function footprintCells(grid: WorldGrid, x: number, z: number, radius: number): number[] {
-  if (radius <= 0) {
-    return [];
-  }
-
+export function cellsNear(grid: WorldGrid, x: number, z: number, radius: number, slack: number): number[] {
   const cells: number[] = [];
-  const firstColumn = Math.max(0, grid.columnAt(x - radius));
-  const lastColumn = Math.min(grid.cellsPerSide - 1, grid.columnAt(x + radius));
-  const firstRow = Math.max(0, grid.rowAt(z - radius));
-  const lastRow = Math.min(grid.cellsPerSide - 1, grid.rowAt(z + radius));
+  const bounds = grid.circleBounds(x, z, radius + slack);
 
-  for (let row = firstRow; row <= lastRow; row += 1) {
-    for (let column = firstColumn; column <= lastColumn; column += 1) {
-      if (distanceToCell(grid, column, row, x, z) < radius) {
-        cells.push(grid.index(column, row));
+  for (let row = bounds.firstRow; row <= bounds.lastRow; row += 1) {
+    for (let column = bounds.firstColumn; column <= bounds.lastColumn; column += 1) {
+      const cell = grid.index(column, row);
+
+      if (distanceToCell(grid, cell, x, z, slack) < radius) {
+        cells.push(cell);
       }
     }
   }
 
   return cells;
+}
+
+export function footprintCells(grid: WorldGrid, x: number, z: number, radius: number): number[] {
+  return cellsNear(grid, x, z, radius, grid.cellSize / 2);
 }
 
 export function isDryWay(world: WorldState, from: Waypoint, to: Waypoint): boolean {
