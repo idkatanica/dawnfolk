@@ -23,26 +23,24 @@ import type { MeshData } from "../../models/mesh/mesh-data.ts";
 import {
   buildCropModel,
   buildFenceModel,
-  buildFurrowModel,
   CROP_DETAIL_LEVELS,
   CROP_HEAD_PART,
   type CropDetailLevel,
-  FURROW_RIDGE_TOP,
 } from "../../models/plants/crop-models.ts";
 import { FULL_TURN, hashToUnit } from "../../shared/math.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import type { CellRegion, RowRun } from "../../world/change-tracking.ts";
 import { geometryFromMeshData, InstanceBatch } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { FURROW_SPACING } from "../terrain/field-ground.ts";
+import { type FieldPlan, FurrowAxis } from "../terrain/field-plan.ts";
 import { assignSphereLevels, HIDDEN_LEVEL } from "../view-input.ts";
 import { gustAt, type PlantWeather } from "./plant-material.ts";
 
 const BYTE = 255;
 const FLOATS_PER_PLANT = 8;
 const GROWTH_OFFSET = 4;
-const FLOATS_PER_FENCE = 8;
 const LEVEL_DISTANCES: readonly number[] = [150, 480];
-const ROW_SPACING = 1;
 const FIELD_MARGIN = 0.45;
 const ROW_JITTER = 0.06;
 const PLANT_JITTER = 0.3;
@@ -50,8 +48,6 @@ const CROP_SINK = 0.03;
 const HEAD_START = 0.45;
 const SWAY_STRENGTH = 0.09;
 const CELL_RADIUS_SHARE = 0.75;
-const ORIENTATION_BLOCK = 2;
-const ORIENTATION_SALT = 41.7;
 
 const PLANT_SPACING: Readonly<Record<CropKind, number>> = {
   barley: 0.38,
@@ -89,7 +85,6 @@ const FENCE_FIELDS = [
 interface FieldCell {
   readonly bounds: Sphere;
   fences: Float32Array;
-  furrows: Float32Array;
   growth: number;
   kind: number;
   layout: string;
@@ -97,11 +92,24 @@ interface FieldCell {
   plants: Float32Array;
 }
 
-interface FenceSide {
+interface FieldEdge {
   readonly column: number;
   readonly from: readonly [number, number];
   readonly row: number;
   readonly to: readonly [number, number];
+}
+
+function hasEdge(edges: readonly FieldEdge[], column: number, row: number): boolean {
+  return edges.some((side) => side.column === column && side.row === row);
+}
+
+interface PlantRows {
+  readonly axis: number;
+  readonly column: number;
+  readonly edges: readonly FieldEdge[];
+  readonly growth: number;
+  readonly kind: CropKind;
+  readonly row: number;
 }
 
 function createCropMaterial(weather: PlantWeather): MeshStandardNodeMaterial {
@@ -200,13 +208,16 @@ export class CropField {
   readonly #cells = new Map<number, FieldCell>();
   readonly #cropBatches: readonly (readonly InstanceBatch[])[];
   readonly #fenceBatches: readonly InstanceBatch[];
-  readonly #furrowBatch: InstanceBatch;
   readonly #grownKinds = new Set<number>();
   readonly #mirror: WorldMirror;
+  readonly #plan: FieldPlan;
   #isDirty = true;
+  #planRevision: number;
 
-  constructor(mirror: WorldMirror, weather: PlantWeather) {
+  constructor(mirror: WorldMirror, weather: PlantWeather, plan: FieldPlan) {
     this.#mirror = mirror;
+    this.#plan = plan;
+    this.#planRevision = plan.revision;
 
     const cropMaterial = createCropMaterial(weather);
     const fenceMaterial = createFenceMaterial(mirror.grid.cellSize);
@@ -220,8 +231,6 @@ export class CropField {
     this.#fenceBatches = CROP_DETAIL_LEVELS.map((level: CropDetailLevel) =>
       this.#createBatch(buildFenceModel(mirror.grid.cellSize, level), fenceMaterial, FENCE_FIELDS, true)
     );
-
-    this.#furrowBatch = this.#createBatch(buildFurrowModel(mirror.grid.cellSize), fenceMaterial, FENCE_FIELDS, false);
 
     this.#scanRows(0, mirror.grid.cellsPerSide - 1, false);
   }
@@ -237,6 +246,8 @@ export class CropField {
   }
 
   update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
+    this.#followPlan();
+
     const hasNewLevels = assignSphereLevels(this.#cells.values(), camera, frustum, LEVEL_DISTANCES, detail);
 
     if (!(hasNewLevels || this.#isDirty || this.#grownKinds.size > 0)) {
@@ -249,7 +260,7 @@ export class CropField {
   }
 
   dispose(): void {
-    for (const batch of [...this.#cropBatches.flat(), ...this.#fenceBatches, this.#furrowBatch]) {
+    for (const batch of [...this.#cropBatches.flat(), ...this.#fenceBatches]) {
       batch.dispose();
     }
   }
@@ -284,6 +295,20 @@ export class CropField {
     return ground[grid.index(column, row) * GROUND_CHANNELS + channel];
   }
 
+  #followPlan(): void {
+    if (this.#plan.revision === this.#planRevision) {
+      return;
+    }
+
+    const { grid } = this.#mirror;
+
+    this.#planRevision = this.#plan.revision;
+
+    for (const cell of [...this.#cells.keys()]) {
+      this.#refreshCell(grid.columnOf(cell), grid.rowOf(cell), false);
+    }
+  }
+
   #isFarm(column: number, row: number): boolean {
     return this.#groundAt(column, row, GroundChannel.Ground) === Ground.Farm;
   }
@@ -316,9 +341,10 @@ export class CropField {
       return;
     }
 
-    const sides = isFencedCode(code) ? this.#fenceSides(column, row) : [];
+    const edges = this.#edges(column, row);
+    const axis = this.#plan.axisAt(cell);
     const growth = this.#groundAt(column, row, GroundChannel.Crop);
-    const layout = `${code}:${sides.map((side) => `${side.column},${side.row}`).join(";")}`;
+    const layout = `${code}:${axis}:${edges.map((side) => `${side.column},${side.row}`).join(";")}`;
 
     const existing = this.#cells.get(cell);
 
@@ -328,7 +354,10 @@ export class CropField {
       return;
     }
 
-    this.#cells.set(cell, this.#buildCell(column, row, kind, growth, sides, layout));
+    const fences = isFencedCode(code) ? edges : [];
+    const plants = kind === null ? null : { axis, column, edges, growth: growth / BYTE, kind, row };
+
+    this.#cells.set(cell, this.#buildCell(column, row, plants, growth, fences, layout));
     this.#isDirty = true;
   }
 
@@ -346,7 +375,7 @@ export class CropField {
     this.#grownKinds.add(field.kind);
   }
 
-  #fenceSides(column: number, row: number): FenceSide[] {
+  #edges(column: number, row: number): FieldEdge[] {
     const { grid } = this.#mirror;
 
     const half = grid.cellSize / 2;
@@ -358,7 +387,7 @@ export class CropField {
     const north = centerZ - half;
     const south = centerZ + half;
 
-    const candidates: FenceSide[] = [
+    const candidates: FieldEdge[] = [
       { column, from: [west, north], row: row - 1, to: [east, north] },
       { column, from: [west, south], row: row + 1, to: [east, south] },
       { column: column - 1, from: [west, north], row, to: [west, south] },
@@ -371,9 +400,9 @@ export class CropField {
   #buildCell(
     column: number,
     row: number,
-    kind: CropKind | null,
+    plants: PlantRows | null,
     growth: number,
-    sides: readonly FenceSide[],
+    fences: readonly FieldEdge[],
     layout: string
   ): FieldCell {
     const { grid } = this.#mirror;
@@ -384,44 +413,57 @@ export class CropField {
 
     return {
       bounds: new Sphere(center, grid.cellSize * CELL_RADIUS_SHARE + 1),
-      fences: this.#fenceInstances(sides),
-      furrows: this.#furrowInstances(column, row),
+      fences: this.#fenceInstances(fences),
       growth,
-      kind: kind === null ? HIDDEN_LEVEL : CROP_KINDS.indexOf(kind),
+      kind: plants === null ? HIDDEN_LEVEL : CROP_KINDS.indexOf(plants.kind),
       layout,
       level: HIDDEN_LEVEL,
-      plants: kind === null ? new Float32Array(0) : this.#plantInstances(column, row, kind, growth / BYTE),
+      plants: plants === null ? new Float32Array(0) : this.#plantInstances(plants),
     };
   }
 
-  #plantInstances(column: number, row: number, kind: CropKind, growth: number): Float32Array {
+  #plantInstances({ axis, column, edges, growth, kind, row }: PlantRows): Float32Array {
     const { grid } = this.#mirror;
 
-    const half = grid.cellSize / 2 - FIELD_MARGIN;
+    const isAlongX = axis !== FurrowAxis.AlongZ;
     const spacing = PLANT_SPACING[kind];
     const cell = grid.index(column, row);
     const kindIndex = CROP_KINDS.indexOf(kind);
+    const west = grid.centerX(column) - grid.cellSize / 2;
+    const north = grid.centerZ(row) - grid.cellSize / 2;
+    const rows = Math.round(grid.cellSize / FURROW_SPACING);
 
-    const isAlongX = areRowsAlongX(column, row);
-    const rows = Math.floor((half * 2) / ROW_SPACING) + 1;
-    const perRow = Math.floor((half * 2) / spacing) + 1;
-    const data = new Float32Array(rows * perRow * FLOATS_PER_PLANT);
+    const alongStart = (isAlongX ? west : north) + grid.halfSize;
+    const acrossStart = isAlongX ? north : west;
+    const columnStep = isAlongX ? 1 : 0;
+    const rowStep = isAlongX ? 0 : 1;
+
+    const firstAlong = hasEdge(edges, column - columnStep, row - rowStep) ? FIELD_MARGIN : 0;
+    const lastAlong = grid.cellSize - (hasEdge(edges, column + columnStep, row + rowStep) ? FIELD_MARGIN : 0);
+
+    const firstPlant = Math.ceil((alongStart + firstAlong) / spacing - 0.5);
+    const lastPlant = Math.ceil((alongStart + lastAlong) / spacing - 0.5) - 1;
+
+    const data = new Float32Array(rows * Math.max(0, lastPlant - firstPlant + 1) * FLOATS_PER_PLANT);
 
     let offset = 0;
 
     for (let line = 0; line < rows; line += 1) {
-      for (let plant = 0; plant < perRow; plant += 1) {
-        const across = -half + line * ROW_SPACING + (hashToUnit(cell, line, plant + 0.5) - 0.5) * 2 * ROW_JITTER;
+      for (let plant = firstPlant; plant <= lastPlant; plant += 1) {
+        const across =
+          acrossStart + (line + 0.5) * FURROW_SPACING + (hashToUnit(cell, line, plant + 0.5) - 0.5) * 2 * ROW_JITTER;
         const along =
-          -half + plant * spacing + (hashToUnit(cell, plant, line + 0.25) - 0.5) * 2 * spacing * PLANT_JITTER;
+          (plant + 0.5) * spacing -
+          grid.halfSize +
+          (hashToUnit(cell, plant, line + 0.25) - 0.5) * 2 * spacing * PLANT_JITTER;
 
-        const x = grid.centerX(column) + (isAlongX ? along : across);
-        const z = grid.centerZ(row) + (isAlongX ? across : along);
+        const x = isAlongX ? along : across;
+        const z = isAlongX ? across : along;
 
         data.set(
           [
             x,
-            this.#mirror.heightAt(x, z) + FURROW_RIDGE_TOP - CROP_SINK,
+            this.#mirror.heightAt(x, z) - CROP_SINK,
             z,
             hashToUnit(cell, line + 0.75, plant) * FULL_TURN,
             growth,
@@ -438,32 +480,7 @@ export class CropField {
     return data;
   }
 
-  #furrowInstances(column: number, row: number): Float32Array {
-    const { grid } = this.#mirror;
-
-    const half = grid.cellSize / 2;
-    const inner = half - FIELD_MARGIN;
-    const isAlongX = areRowsAlongX(column, row);
-    const rows = Math.floor((inner * 2) / ROW_SPACING) + 1;
-    const centerX = grid.centerX(column);
-    const centerZ = grid.centerZ(row);
-    const data = new Float32Array(rows * FLOATS_PER_FENCE);
-
-    for (let line = 0; line < rows; line += 1) {
-      const across = -inner + line * ROW_SPACING;
-
-      const fromX = isAlongX ? centerX - half : centerX + across;
-      const fromZ = isAlongX ? centerZ + across : centerZ - half;
-      const toX = isAlongX ? centerX + half : centerX + across;
-      const toZ = isAlongX ? centerZ + across : centerZ + half;
-
-      data.set(this.#segment(fromX, fromZ, toX, toZ), line * FLOATS_PER_FENCE);
-    }
-
-    return data;
-  }
-
-  #fenceInstances(sides: readonly FenceSide[]): Float32Array {
+  #fenceInstances(sides: readonly FieldEdge[]): Float32Array {
     return new Float32Array(sides.flatMap((side) => this.#segment(...side.from, ...side.to)));
   }
 
@@ -502,13 +519,5 @@ export class CropField {
     for (const [level, batch] of this.#fenceBatches.entries()) {
       batch.fill(fields.filter((field) => field.level === level).map((field) => field.fences));
     }
-
-    this.#furrowBatch.fill(fields.map((field) => field.furrows));
   }
-}
-
-function areRowsAlongX(column: number, row: number): boolean {
-  return (
-    hashToUnit(Math.floor(column / ORIENTATION_BLOCK), Math.floor(row / ORIENTATION_BLOCK), ORIENTATION_SALT) < 0.5
-  );
 }

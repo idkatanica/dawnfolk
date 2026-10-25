@@ -27,6 +27,7 @@ import {
   updateShoreField,
 } from "../water/shore-field.ts";
 import type { WorldChanges } from "../world-changes.ts";
+import { FieldPlan } from "./field-plan.ts";
 import { bloomFor } from "./fireweed.ts";
 import { GroundAlbedo } from "./ground-albedo.ts";
 import { IslandOutline } from "./island-outline.ts";
@@ -62,6 +63,7 @@ function surfaceTexture(data: Uint8Array, size: number): DataTexture {
 export class TerrainTextures {
   readonly bloom = uniform(0);
   readonly fords: FordField;
+  readonly fields: FieldPlan;
   readonly height: DataTexture;
   readonly outline: IslandOutline;
   readonly patchSteps: DataTexture;
@@ -93,10 +95,15 @@ export class TerrainTextures {
     this.#buildShore();
     this.surface = surfaceTexture(mirror.surface, size);
     this.#albedo = new GroundAlbedo(mirror);
+    this.fields = new FieldPlan(mirror);
   }
 
   get albedo(): Texture {
     return this.#albedo.texture;
+  }
+
+  get groundAlbedo(): GroundAlbedo {
+    return this.#albedo;
   }
 
   shoreDepthAt(x: number, z: number): number {
@@ -125,6 +132,7 @@ export class TerrainTextures {
 
     if (changes.heightRegion !== null) {
       this.height.needsUpdate = true;
+      this.fields.heightsChanged(changes.heightRegion);
     }
 
     if (changes.hasWaterChanged || changes.waterLevelRegion !== null) {
@@ -144,6 +152,7 @@ export class TerrainTextures {
 
     if (changes.groundRuns.length > 0) {
       this.#albedo.groundChanged();
+      this.fields.groundChanged(changes.groundRuns);
     }
 
     const hasSeasonChanged = Number.isNaN(this.#albedoSeason) || Math.abs(season - this.#albedoSeason) >= SEASON_STEP;
@@ -157,6 +166,7 @@ export class TerrainTextures {
   dispose(): void {
     this.#albedo.dispose();
     this.fords.dispose();
+    this.fields.dispose();
     this.outline.dispose();
     this.height.dispose();
     this.patchSteps.dispose();

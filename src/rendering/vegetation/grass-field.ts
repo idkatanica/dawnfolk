@@ -38,6 +38,7 @@ import {
 } from "three/webgpu";
 import { clamp as clampNumber, FULL_TURN, inverseLerp, saturate } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
+import { fieldClearingNode } from "../terrain/field-ground.ts";
 import { FIREWEED, fireweedOn } from "../terrain/fireweed.ts";
 import { sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
@@ -190,6 +191,7 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
     .mul(float(1).sub(smoothstep(SNOW_START, SNOW_END, surface.r)))
     .mul(float(1).sub(surface.b))
     .mul(float(1).sub(max(fordMarks.x, fordMarks.y)))
+    .mul(float(1).sub(fieldClearingNode(textures, grid, root)))
     .mul(float(1).sub(smoothstep(FADE_START_REACH, 1, reach)))
     .mul(select(isDry.and(isOnIsland), float(1), float(0)))
     .mul(presence);

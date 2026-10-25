@@ -13,7 +13,7 @@ import {
   mx_noise_float,
   normalize,
   normalLocal,
-  normalWorld,
+  normalWorldGeometry,
   positionWorld,
   select,
   sin,
@@ -29,6 +29,7 @@ import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { unitNoise } from "../node-helpers.ts";
 import { fordBedColorNode } from "../water/ford-field.ts";
+import { fieldGroundNode } from "./field-ground.ts";
 import { FIREWEED, fireweedOn } from "./fireweed.ts";
 import type { GroundWarp } from "./ground-warp.ts";
 import { sampleCellsNode } from "./height-sampling.ts";
@@ -191,7 +192,7 @@ export function createTerrainMaterial({
   const broad = mx_fractal_noise_float(positionWorld.mul(0.012), 3, 2, 0.5);
   const patches = mx_noise_float(positionWorld.mul(0.07));
   const fine = mx_noise_float(positionWorld.mul(0.42));
-  const steepness = float(1).sub(normalWorld.y);
+  const steepness = float(1).sub(normalWorldGeometry.y);
   const strataFade = smoothstep(1.2, 0.4, fwidth(positionWorld.y).mul(0.32));
 
   const surface = texture(textures.surface, mapCoordinates);
@@ -202,7 +203,13 @@ export function createTerrainMaterial({
 
   const depth = underwaterDepth(textures, grid);
   const snowCover = smoothstep(0.08, 0.42, surface.r);
-  const mottled = albedo.mul(broad.mul(0.1).add(patches.mul(0.07)).add(fine.mul(0.035)).add(1));
+  const field = fieldGroundNode(
+    textures,
+    grid,
+    albedo.mul(broad.mul(0.1).add(patches.mul(0.07)).add(fine.mul(0.035)).add(1)),
+    vec2(fine, patches)
+  );
+  const mottled = field.color;
   const redStone = smoothstep(0.6, 0.45, albedo.g.div(max(albedo.r, 0.001)));
   const faceShade = mix(float(1), float(STEEP_FACE_SHADE), smoothstep(0.3, 0.7, steepness));
   const rockColor = mix(STONE, albedo.mul(0.85), redStone)
@@ -241,6 +248,7 @@ export function createTerrainMaterial({
   const fireLight = fireLightAt(glow, grid, positionWorld.xz);
 
   material.colorNode = flowering;
+  material.normalNode = field.normal;
   material.roughnessNode = mix(float(0.95), float(0.5), wetness);
   material.emissiveNode = emberGlow(surface.a, positionWorld.xz, fine.mul(0.5).add(0.5)).add(
     scorched.mul(fireLight).mul(GROUND_FIRE_LIGHT)
