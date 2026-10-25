@@ -34,7 +34,7 @@ function frameTransferables(frame: SimulationFrame): ArrayBuffer[] {
   ];
 
   if (frame.heightPatch !== null) {
-    buffers.push(frame.heightPatch.heights.buffer);
+    buffers.push(frame.heightPatch.values.buffer);
   }
 
   if (frame.water !== null) {
@@ -42,7 +42,7 @@ function frameTransferables(frame: SimulationFrame): ArrayBuffer[] {
   }
 
   if (frame.waterLevels !== null) {
-    buffers.push(frame.waterLevels.levels.buffer);
+    buffers.push(frame.waterLevels.values.buffer);
   }
 
   if (frame.vegetation !== null) {

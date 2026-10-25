@@ -1,4 +1,4 @@
-import type { HeightPatch, InitialWorld, PackedRows, SimulationFrame, TribeSummary, WaterLevelPatch } from "./frame.ts";
+import type { InitialWorld, PackedRows, SimulationFrame, TribeSummary } from "./frame.ts";
 import {
   allRows,
   describeBuilding,
@@ -8,10 +8,9 @@ import {
   packBurningCells,
   packChangedSurfaceRows,
   packGroundRows,
-  packHeightPatch,
   packPeople,
+  packRegion,
   packSurfaceRows,
-  packWaterLevels,
 } from "./frame-packing.ts";
 import { type Inspection, inspect } from "./inspection.ts";
 import type { Simulation } from "./simulation.ts";
@@ -41,7 +40,7 @@ export class FrameBuilder {
       chronicle: simulation.chronicle.takeEntries(),
       effects: simulation.effects.takeEffects(),
       groundRows: packGroundRows(world, world.groundChanges.takeRuns()),
-      heightPatch: this.#heightPatch(),
+      heightPatch: packRegion(world, world.terrain.height, world.heightChanges.takeRegion()),
       inspection: this.#inspection(tribes),
       isBusy: simulation.isBusy,
       isPaused: simulation.isPaused,
@@ -57,7 +56,7 @@ export class FrameBuilder {
       tribes,
       vegetation: world.vegetation.takeChanges(),
       water: simulation.takeWaterUpdate(),
-      waterLevels: this.#waterLevels(),
+      waterLevels: packRegion(world, world.terrain.waterSurface, world.waterLevelChanges.takeRegion()),
       weather: describeWeather(simulation.weather, simulation.environment),
     };
   }
@@ -112,30 +111,6 @@ export class FrameBuilder {
       vegetation: world.vegetation.exportBuffers(),
       water: world.water,
     };
-  }
-
-  #heightPatch(): HeightPatch | null {
-    const { world } = this.#simulation;
-
-    const region = world.heightChanges.takeRegion();
-
-    if (region === null) {
-      return null;
-    }
-
-    return packHeightPatch(world, region);
-  }
-
-  #waterLevels(): WaterLevelPatch | null {
-    const { world } = this.#simulation;
-
-    const region = world.waterLevelChanges.takeRegion();
-
-    if (region === null) {
-      return null;
-    }
-
-    return packWaterLevels(world, region);
   }
 
   #inspection(tribes: readonly TribeSummary[]): Inspection | null {

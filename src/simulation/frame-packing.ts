@@ -24,10 +24,9 @@ import type {
   CropCount,
   FarmlandView,
   GoalView,
-  HeightPatch,
   PackedRows,
+  RegionPatch,
   TribeSummary,
-  WaterLevelPatch,
   WeatherView,
 } from "./frame.ts";
 import type { Environment } from "./nature/environment.ts";
@@ -159,7 +158,11 @@ export function allRows(world: WorldState): RowRun[] {
   return [{ firstRow: 0, rowCount: world.grid.cellsPerSide }];
 }
 
-function packRegion(world: WorldState, values: Float32Array, region: CellRegion): Float32Array {
+export function packRegion(world: WorldState, values: Float32Array, region: CellRegion | null): RegionPatch | null {
+  if (region === null) {
+    return null;
+  }
+
   const width = region.lastColumn - region.firstColumn + 1;
   const height = region.lastRow - region.firstRow + 1;
 
@@ -171,15 +174,7 @@ function packRegion(world: WorldState, values: Float32Array, region: CellRegion)
     packed.set(values.subarray(start, start + width), row * width);
   }
 
-  return packed;
-}
-
-export function packHeightPatch(world: WorldState, region: CellRegion): HeightPatch {
-  return { heights: packRegion(world, world.terrain.height, region), region };
-}
-
-export function packWaterLevels(world: WorldState, region: CellRegion): WaterLevelPatch {
-  return { levels: packRegion(world, world.terrain.waterSurface, region), region };
+  return { region, values: packed };
 }
 
 const ARMED_JOBS: ReadonlySet<string> = new Set(["defend", "fight", "hunt", "raid"]);

@@ -24,14 +24,9 @@ export interface PackedRows {
   rowCount: number;
 }
 
-export interface HeightPatch {
-  heights: Float32Array;
+export interface RegionPatch {
   region: CellRegion;
-}
-
-export interface WaterLevelPatch {
-  levels: Float32Array;
-  region: CellRegion;
+  values: Float32Array;
 }
 
 export interface WaterUpdate {
@@ -141,7 +136,7 @@ export interface SimulationFrame {
   chronicle: ChronicleEntry[];
   effects: SimulationEffect[];
   groundRows: PackedRows[];
-  heightPatch: HeightPatch | null;
+  heightPatch: RegionPatch | null;
   inspection: Inspection | null;
   isBusy: boolean;
   isPaused: boolean;
@@ -157,7 +152,7 @@ export interface SimulationFrame {
   tribes: TribeSummary[];
   vegetation: VegetationPatch | null;
   water: WaterUpdate | null;
-  waterLevels: WaterLevelPatch | null;
+  waterLevels: RegionPatch | null;
   weather: WeatherView;
 }
 
