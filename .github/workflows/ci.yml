@@ -52,7 +52,7 @@ jobs:
     timeout-minutes: 10
     environment:
       name: production
-      url: https://dawnfolk.svidskiy.workers.dev
+      url: https://playdawnfolk.com
 
     steps:
       - uses: actions/checkout@v7
