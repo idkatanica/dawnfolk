@@ -411,7 +411,6 @@ export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]
   [Biome.Desert]: [
     { chancePerCell: 0.03, heightScale: 1, species: PlantSpecies.Cactus },
     { chancePerCell: 0.012, heightScale: 1, species: PlantSpecies.Boulder },
-    { chancePerCell: 0.06, heightScale: 1, species: PlantSpecies.DesertShrub },
     { chancePerCell: 0.008, heightScale: 0.85, species: PlantSpecies.Acacia },
     { chancePerCell: 0.004, heightScale: 0.9, species: PlantSpecies.DeadTree },
     { chancePerCell: 0.003, heightScale: 0.9, minimumTemperature: WARM, species: PlantSpecies.Palm },
