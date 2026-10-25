@@ -10,7 +10,7 @@ import { useWorldStore } from "../world/world-store.ts";
 
 const WEATHER_ICONS: Readonly<Record<WeatherKind, GameIconName>> = {
   blizzard: "snow",
-  clear: "sun",
+  clear: "clear",
   cloudy: "cloud",
   fog: "fog",
   heat: "heat",
