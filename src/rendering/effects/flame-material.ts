@@ -32,14 +32,20 @@ export function createFlameMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
   material.blendSrc = OneFactor;
   material.blendDst = OneMinusSrcAlphaFactor;
   material.fog = false;
-  material.positionNode = facingBillboard(axes, placement.xyz, corner, placement.w);
 
-  const downward = normalize(placement.xyz.sub(cameraPosition)).y.negate();
+  const towardCamera = normalize(cameraPosition.sub(placement.xyz));
+  const center = placement.xyz.add(towardCamera.mul(look.z));
 
-  const upright = varying(mix(float(1), float(TOP_DOWN_SQUASH), smoothstep(0.35, 0.97, downward)), "flameUpright");
+  material.positionNode = facingBillboard(axes, center, corner, placement.w);
+
+  const upright = varying(
+    mix(float(1), float(TOP_DOWN_SQUASH), smoothstep(0.35, 0.97, towardCamera.y)),
+    "flameUpright"
+  );
   const shape = varying(corner, "flameCorner");
   const seed = varying(look.x.mul(SEED_SPREAD), "flameSeed");
   const strength = varying(look.y, "flameStrength");
+  const slenderness = varying(look.w, "flameSlenderness");
 
   const across = shape.x.add(0.5);
   const along = shape.y.div(upright);
@@ -60,7 +66,7 @@ export function createFlameMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
   const offset = abs(across.sub(0.5).add(sway));
 
   const profile = pow(max(float(1).sub(height), 0), 0.55)
-    .mul(0.27)
+    .mul(mix(float(0.27), float(0.2), slenderness))
     .mul(smoothstep(-0.04, 0.16, height));
   const inside = select(height.lessThan(1), float(1), float(0));
 
@@ -73,8 +79,10 @@ export function createFlameMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
 
   const color = mix(mix(RIM_COLOR, BODY_COLOR, smoothstep(0.1, 0.55, heat)), CORE_COLOR, smoothstep(0.62, 1, heat));
 
+  const cover = mix(float(0.12), float(0.8), smoothstep(0.2, 0.75, heat));
+
   material.colorNode = color.mul(alpha);
-  material.opacityNode = alpha.mul(0.75);
+  material.opacityNode = alpha.mul(cover);
 
   return material;
 }

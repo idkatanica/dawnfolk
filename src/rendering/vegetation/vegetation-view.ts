@@ -6,9 +6,10 @@ import {
   type MeshStandardNodeMaterial,
   type PerspectiveCamera,
 } from "three/webgpu";
-import { PLANT_SPECIES } from "../../content/plants.ts";
+import { PLANT_SPECIES, PlantSpecies } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import type { VertexChannel } from "../../models/mesh/mesh-data.ts";
+import { MaterialSlot } from "../../models/materials.ts";
+import type { MeshData, VertexChannel } from "../../models/mesh/mesh-data.ts";
 import { buildPlantVariant, PLANT_DETAIL_LEVELS } from "../../models/plants/plant-models.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
@@ -35,6 +36,12 @@ const PLANT_FIELDS = [
   { name: "plantLook", size: 4 },
 ] as const;
 
+interface PlantModel {
+  readonly buckets: readonly number[];
+  readonly mesh: MeshData;
+  readonly species: number;
+}
+
 interface BatchCounts {
   drawn: number;
   shadowed: number;
@@ -44,6 +51,28 @@ interface PlantBatch {
   readonly batch: InstanceBatch;
   readonly buckets: readonly number[];
   readonly counts: BatchCounts;
+}
+
+function crownMiddle(models: readonly PlantModel[], species: number): number {
+  let lowest = Number.POSITIVE_INFINITY;
+  let highest = Number.NEGATIVE_INFINITY;
+
+  for (const { mesh } of models.filter((model) => model.species === species)) {
+    const { channels, positions } = mesh;
+
+    for (const [vertex, slot] of channels.slot.entries()) {
+      if (slot === MaterialSlot.Leaf || slot === MaterialSlot.Needle) {
+        lowest = Math.min(lowest, positions[vertex * 3 + 1]);
+        highest = Math.max(highest, positions[vertex * 3 + 1]);
+      }
+    }
+  }
+
+  if (lowest > highest) {
+    return 0;
+  }
+
+  return (lowest + highest) / 2;
 }
 
 function shadowFrustumOf(sun: DirectionalLight): Frustum {
@@ -79,21 +108,33 @@ export class VegetationView {
     this.#chunkShadows = new Uint8Array(this.chunks.chunks.length);
     this.#looks = PLANT_SPECIES.map(() => new SpeciesLook());
 
-    const materials = this.#looks.map((look) =>
-      createPlantMaterial({ glow, grid: mirror.grid, look, textures, weather: this.weather })
-    );
-
-    this.#batches = PLANT_DETAIL_LEVELS.map((level, levelIndex) =>
+    const models = PLANT_DETAIL_LEVELS.map((level) =>
       bucketGroups(level).map((buckets) => {
         const { species, variant } = PLANT_BUCKETS[buckets[0]];
 
-        return this.#createBatch(
-          geometryFromMeshData(buildPlantVariant(species, variant, level), PLANT_CHANNELS),
-          materials[species],
-          levelIndex,
-          buckets
-        );
+        return { buckets, mesh: buildPlantVariant(species, variant, level), species };
       })
+    );
+
+    const materials = this.#looks.map((look, species) =>
+      createPlantMaterial({
+        crown: {
+          hasTiers: species === PlantSpecies.Spruce,
+          middle: crownMiddle(models[0], species),
+        },
+        glow,
+        grid: mirror.grid,
+        isFlammable: PLANT_SPECIES[species].canopyFuel > 0,
+        look,
+        textures,
+        weather: this.weather,
+      })
+    );
+
+    this.#batches = models.map((levelModels, levelIndex) =>
+      levelModels.map(({ buckets, mesh, species }) =>
+        this.#createBatch(geometryFromMeshData(mesh, PLANT_CHANNELS), materials[species], levelIndex, buckets)
+      )
     );
 
     this.#changedBuckets = this.#batches.map(() => new Set<number>());

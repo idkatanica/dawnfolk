@@ -1,13 +1,14 @@
 import { Group, type PerspectiveCamera, PointLight, Vector3 } from "three/webgpu";
 import { isLitCampfire } from "../../content/buildings.ts";
 import { Ground } from "../../content/grounds.ts";
-import { isTreeSpecies } from "../../content/plants.ts";
+import { isTreeSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import { distanceSquared, hashToUnit } from "../../shared/math.ts";
+import { distanceSquared, fractionalPart, hashToUnit } from "../../shared/math.ts";
 import type { BuildingView } from "../../simulation/frame.ts";
-import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
+import { GROUND_CHANNELS, GroundChannel, SURFACE_CHANNELS, SurfaceChannel } from "../../world/agent-buffers.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 import type { InstanceBatch } from "../instancing.ts";
+import { remainingCrown } from "../vegetation/plant-burning.ts";
 import { CHUNK_CELLS, type VegetationChunks } from "../vegetation/vegetation-chunks.ts";
 import { type CameraAxes, createBillboardBatch } from "./billboards.ts";
 import { createFlameMaterial } from "./flame-material.ts";
@@ -16,7 +17,8 @@ import { createSparkMaterial } from "./spark-material.ts";
 
 const BYTE = 255;
 const FLAME_CELL_LIMIT = 1600;
-const CROWN_FLAME_LIMIT = 900;
+const CROWN_TONGUE_LIMIT = 2400;
+const CROWN_SPARK_LIMIT = 260;
 const SMOKE_COLUMN_LIMIT = 90;
 const SMOKE_CELL_SHARE = 0.2;
 const PUFFS_PER_COLUMN = 6;
@@ -28,6 +30,8 @@ const SPARK_RISE = 26;
 const CAMPFIRE_SPARK_RISE = 9;
 const SMOULDERING = 0.3;
 const CROWN_FIRE = 0.45;
+const CROWN_FLAME_FIRE = 0.1;
+const CROWN_SPARK_RISE = 34;
 const FLAME_LIFT = 0.36;
 const CAMPFIRE_LIGHTS = 3;
 const CAMPFIRE_LIGHT_RANGE = 70;
@@ -40,6 +44,19 @@ interface FireViewOptions {
   readonly axes: CameraAxes;
   readonly chunks: VegetationChunks;
 }
+
+interface CrownTongue {
+  readonly height: number;
+  readonly reach: number;
+  readonly size: number;
+  readonly strength: number;
+}
+
+const CROWN_TONGUES: readonly CrownTongue[] = [
+  { height: 0.64, reach: 0.6, size: 0.5, strength: 0 },
+  { height: 0.4, reach: 1, size: 0.38, strength: 0.3 },
+  { height: 0.86, reach: 0.35, size: 0.4, strength: 0.45 },
+];
 
 interface BurningCell {
   readonly cell: number;
@@ -59,6 +76,32 @@ function isWoodland(mirror: WorldMirror, cell: number): boolean {
   const ground = mirror.ground[cell * GROUND_CHANNELS + GroundChannel.Ground];
 
   return ground === Ground.Forest || ground === Ground.Scrub;
+}
+
+function crownFlameStrength(mirror: WorldMirror, plant: number, intensities: ReadonlyMap<number, number>): number {
+  const { grid, surface, vegetation } = mirror;
+
+  const state = vegetation.state[plant];
+
+  if (!isTreeSpecies(vegetation.species[plant]) || (state !== PlantState.Alive && state !== PlantState.Burnt)) {
+    return 0;
+  }
+
+  const cell = grid.cellAt(vegetation.x[plant], vegetation.z[plant]);
+
+  const intensity = intensities.get(cell);
+
+  if (intensity === undefined) {
+    return 0;
+  }
+
+  if (state === PlantState.Alive) {
+    return intensity;
+  }
+
+  const scorch = surface[cell * SURFACE_CHANNELS + SurfaceChannel.Scorch] / BYTE;
+
+  return intensity * remainingCrown(intensity, scorch);
 }
 
 function campfireHeat(building: BuildingView): number {
@@ -188,13 +231,38 @@ export class FireView {
   }
 
   #addCrownFlames(mirror: WorldMirror, intensities: ReadonlyMap<number, number>): void {
-    const { grid, vegetation } = mirror;
+    let sparks = 0;
+    let tongues = 0;
+
+    for (const chunkIndex of this.#crownFireChunks(mirror, intensities)) {
+      for (const plant of this.#chunks.chunks[chunkIndex].plants) {
+        if (tongues >= CROWN_TONGUE_LIMIT) {
+          return;
+        }
+
+        const strength = crownFlameStrength(mirror, plant, intensities);
+
+        if (strength < CROWN_FLAME_FIRE) {
+          continue;
+        }
+
+        tongues += this.#addCrownTongues(mirror, plant, strength);
+
+        if (sparks < CROWN_SPARK_LIMIT && strength >= SPARKING && hashToUnit(plant, 11) < SPARK_CELL_SHARE) {
+          this.#addCrownSpark(mirror, plant, strength);
+          sparks += 1;
+        }
+      }
+    }
+  }
+
+  #crownFireChunks(mirror: WorldMirror, intensities: ReadonlyMap<number, number>): Set<number> {
+    const { grid } = mirror;
 
     const chunkIndices = new Set<number>();
-    let added = 0;
 
     for (const [cell, intensity] of intensities) {
-      if (intensity < CROWN_FIRE) {
+      if (intensity < CROWN_FLAME_FIRE) {
         continue;
       }
 
@@ -204,34 +272,52 @@ export class FireView {
       chunkIndices.add(chunkRow * this.#chunks.chunksPerSide + chunkColumn);
     }
 
-    for (const chunkIndex of chunkIndices) {
-      for (const plant of this.#chunks.chunks[chunkIndex].plants) {
-        if (added >= CROWN_FLAME_LIMIT) {
-          return;
-        }
+    return chunkIndices;
+  }
 
-        if (vegetation.state[plant] !== PlantState.Alive || !isTreeSpecies(vegetation.species[plant])) {
-          continue;
-        }
+  #addCrownTongues(mirror: WorldMirror, plant: number, strength: number): number {
+    const { vegetation } = mirror;
 
-        const x = vegetation.x[plant];
-        const z = vegetation.z[plant];
+    const x = vegetation.x[plant];
+    const z = vegetation.z[plant];
+    const height = vegetation.height[plant];
+    const seed = vegetation.seed[plant];
+    const ground = mirror.heightAt(x, z);
+    const crownShare = plantSpeciesDefinition(vegetation.species[plant]).form === "conifer" ? 0.14 : 0.3;
+    const crownRadius = height * crownShare;
 
-        const intensity = intensities.get(grid.cellAt(x, z));
+    let added = 0;
 
-        if (intensity === undefined || intensity < CROWN_FIRE) {
-          continue;
-        }
-
-        const height = vegetation.height[plant];
-        const seed = vegetation.seed[plant];
-
-        const size = height * (0.55 + 0.5 * intensity) * (0.8 + 0.4 * seed);
-
-        this.#flames.add([x, mirror.heightAt(x, z) + height * 0.55 + size * 0.2, z, size], [seed, intensity, 0, 0]);
-        added += 1;
+    for (const [index, tongue] of CROWN_TONGUES.entries()) {
+      if (strength < tongue.strength) {
+        continue;
       }
+
+      const angle = hashToUnit(plant, index, 21) * Math.PI * 2;
+      const spread = crownRadius * 0.4 * hashToUnit(plant, index, 22);
+      const size = height * tongue.size * (0.55 + 0.6 * strength) * (0.8 + 0.4 * hashToUnit(plant, index, 23));
+      const tongueX = x + Math.cos(angle) * spread;
+      const tongueZ = z + Math.sin(angle) * spread;
+      const tongueY = ground + height * tongue.height - size * 0.25;
+
+      this.#flames.add(
+        [tongueX, tongueY, tongueZ, size],
+        [fractionalPart(seed + index * 0.37), strength, crownRadius * tongue.reach, 1]
+      );
+      added += 1;
     }
+
+    return added;
+  }
+
+  #addCrownSpark(mirror: WorldMirror, plant: number, strength: number): void {
+    const { vegetation } = mirror;
+
+    const x = vegetation.x[plant];
+    const z = vegetation.z[plant];
+    const top = mirror.heightAt(x, z) + vegetation.height[plant] * 0.7;
+
+    this.#sparks.add([x, top, z, CROWN_SPARK_RISE * (0.6 + strength)], [vegetation.seed[plant], strength, 0, 0]);
   }
 
   #addFireSmoke(mirror: WorldMirror, burning: BurningCell): void {
