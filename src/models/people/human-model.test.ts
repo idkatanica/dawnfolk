@@ -303,6 +303,7 @@ describe("visible parts", () => {
   it("arms hunters with the weapon they carry", () => {
     expect(activityParts("walk", "nothing", "bow")).toEqual(["bow", "quiver"]);
     expect(activityParts("run", "nothing", "spear")).toEqual(["spear"]);
+    expect(activityParts("leap", "nothing", "bow")).toEqual(["bow", "quiver"]);
     expect(activityParts("shoot", "nothing", "bow")).toEqual(["drawnBow", "quiver"]);
     expect(activityParts("throw", "nothing", "spear")).toEqual(["spear"]);
     expect(activityParts("eat", "nothing", "bow")).toEqual([]);
@@ -321,7 +322,7 @@ describe("weapons in hand", () => {
     return posedMesh(mergeMeshes(names.map((name) => highParts[humanPartIndex(name)])), poser);
   }
 
-  it.each(["walk", "run", "idle"] as const)("keeps the bow, the quiver and the spear on a hunter to %s", (clip) => {
+  it.each(["walk", "run", "idle", "leap"] as const)("keeps the bow, the quiver and the spear in hand to %s", (clip) => {
     const body = bodyPartsOf(hunter);
 
     for (const weapon of WEAPON_KINDS) {
