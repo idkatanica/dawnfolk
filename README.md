@@ -26,6 +26,12 @@
     src="https://img.shields.io/badge/WebGPU-three.js-informational"
     alt="WebGPU with three.js"
   >
+  <a
+    href="https://github.com/sponsors/imsvidskiy"
+  ><img
+    src="https://img.shields.io/github/sponsors/imsvidskiy?label=Sponsor&logo=GitHub&color=ea4aaa"
+    alt="Sponsor"
+  ></a>
 </p>
 
 <p align="center">
@@ -33,7 +39,8 @@
   <a href="#features">Features</a> ·
   <a href="#getting-started">Getting started</a> ·
   <a href="#architecture">Architecture</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="CONTRIBUTING.md">Contributing</a> ·
+  <a href="https://github.com/sponsors/imsvidskiy">Sponsor</a>
 </p>
 
 https://github.com/user-attachments/assets/d04e30b3-ad84-4074-a5a0-45f5a0de384b
@@ -114,6 +121,11 @@ src/
 The simulation runs in a Web Worker and posts frames; the main thread mirrors them for the renderer and the HUD,
 and the HUD sends commands back. [AGENTS.md](AGENTS.md#rules-that-are-easy-to-miss) has the rules that keep these
 parts apart.
+
+## Sponsor
+
+Dawnfolk is free and open source. If you enjoy it, you can support its development on
+[GitHub Sponsors](https://github.com/sponsors/imsvidskiy).
 
 ## License
 
