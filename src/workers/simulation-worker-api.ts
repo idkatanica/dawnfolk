@@ -3,6 +3,8 @@ import type { GenerationProgress, WorldRequest } from "../generation/generation-
 import { buffersWithin } from "../shared/buffers.ts";
 import type { InitialWorld, SimulationFrame } from "../simulation/frame.ts";
 import {
+  PLANT_SPECIES_NAMES,
+  restoreSavedWorld,
   SAVE_VERSION,
   type SavedWorldState,
   savedWorldStateSchema,
@@ -126,13 +128,13 @@ export function createSimulationWorkerApi(
     },
     createWorld: (worldRequest, onProgress) => sendWorld(createSimulation(worldRequest, onProgress), worldRequest),
     loadWorld: (saved, onProgress) => {
-      const { request: savedRequest, simulation: snapshot } = readSavedWorld(saved);
+      const state = readSavedWorld(saved);
 
-      const loaded = generateUnsettled(savedRequest, onProgress);
+      const loaded = generateUnsettled(state.request, onProgress);
 
-      loaded.restore(snapshot);
+      restoreSavedWorld(loaded, state);
 
-      return sendWorld(loaded, savedRequest);
+      return sendWorld(loaded, state.request);
     },
     saveWorld: () => {
       if (simulation === null || request === null) {
@@ -146,6 +148,7 @@ export function createSimulationWorkerApi(
       }
 
       const saved: SavedWorldState = {
+        plantSpecies: PLANT_SPECIES_NAMES,
         request,
         simulation: snapshot,
         summary: summarizeWorld(simulation),

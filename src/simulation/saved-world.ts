@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ERAS } from "../content/eras.ts";
+import { PlantSpecies } from "../content/plants.ts";
 import type { WorldRequest } from "../generation/generation-options.ts";
 import { ISLAND_SHAPES } from "../world/island-shape.ts";
 import type { Simulation, SimulationSnapshot } from "./simulation.ts";
@@ -7,6 +8,49 @@ import type { Simulation, SimulationSnapshot } from "./simulation.ts";
 export const SAVE_VERSION = 1;
 
 const LARGEST_CELLS_PER_SIDE = 4096;
+
+const MISSING_SPECIES = -1;
+
+const SPECIES_BY_NAME = new Map<string, number>(Object.entries(PlantSpecies));
+
+export const PLANT_SPECIES_NAMES: readonly string[] = [...SPECIES_BY_NAME.keys()].sort(
+  (first, second) => speciesNamed(first) - speciesNamed(second)
+);
+
+const OLDER_SAVE_PLANT_SPECIES = [
+  "Spruce",
+  "Pine",
+  "Oak",
+  "Birch",
+  "Willow",
+  "Maple",
+  "Bush",
+  "Cactus",
+  "Boulder",
+  "Palm",
+  "Acacia",
+  "Poplar",
+  "DeadTree",
+  "DesertShrub",
+  "Slab",
+  "Cairn",
+  "Scree",
+  "MossyRock",
+  "Sandstone",
+  "FrostedRock",
+  "Menhir",
+  "Dolmen",
+  "Idol",
+  "Pillar",
+  "Arch",
+  "AppleTree",
+  "PearTree",
+  "PlumTree",
+  "Raspberry",
+  "Blueberry",
+  "Currant",
+  "Alder",
+];
 
 export interface WorldSummary {
   day: number;
@@ -19,6 +63,7 @@ export interface WorldSummary {
 }
 
 export interface SavedWorldState {
+  plantSpecies: readonly string[];
   request: WorldRequest;
   simulation: SimulationSnapshot;
   summary: WorldSummary;
@@ -86,11 +131,63 @@ const simulationSnapshotSchema = z.custom<SimulationSnapshot>(
 );
 
 export const savedWorldStateSchema = z.object({
+  plantSpecies: z.array(z.string()).default(() => [...OLDER_SAVE_PLANT_SPECIES]),
   request: worldRequestSchema,
   simulation: simulationSnapshotSchema,
   summary: worldSummarySchema,
   version: z.literal(SAVE_VERSION),
 });
+
+function speciesNamed(name: string): number {
+  const species = SPECIES_BY_NAME.get(name);
+
+  if (species === undefined) {
+    return MISSING_SPECIES;
+  }
+
+  return species;
+}
+
+export function restoreSavedWorld(simulation: Simulation, state: SavedWorldState): void {
+  const current = new Int16Array(256).fill(MISSING_SPECIES);
+
+  for (const [saved, name] of state.plantSpecies.entries()) {
+    current[saved] = speciesNamed(name);
+  }
+
+  const { society, vegetationGrowth, world } = state.simulation;
+  const { species } = world.vegetation;
+  const missing: number[] = [];
+
+  for (let plant = 0; plant < world.vegetation.count; plant += 1) {
+    if (current[species[plant]] === MISSING_SPECIES) {
+      missing.push(plant);
+      species[plant] = PlantSpecies.Boulder;
+    } else {
+      species[plant] = current[species[plant]];
+    }
+  }
+
+  vegetationGrowth.nursery.seedlings = vegetationGrowth.nursery.seedlings
+    .filter((seedling) => current[seedling.species] !== MISSING_SPECIES)
+    .map((seedling) => ({ ...seedling, species: current[seedling.species] }));
+
+  for (const tribe of society.tribes) {
+    for (const plot of tribe.plots) {
+      plot.spots = plot.spots.filter((spot) => current[spot.species] !== MISSING_SPECIES);
+
+      for (const spot of plot.spots) {
+        spot.species = current[spot.species];
+      }
+    }
+  }
+
+  simulation.restore(state.simulation);
+
+  for (const plant of missing) {
+    simulation.world.removePlant(plant);
+  }
+}
 
 export function summarizeWorld(simulation: Simulation): WorldSummary {
   const calendar = simulation.calendar.view();
