@@ -3,7 +3,7 @@ import { createNoiseSampler } from "../shared/noise.ts";
 import { createRandom } from "../shared/random.ts";
 import { slopeAt } from "../world/footing.ts";
 import { hasWater, type River, type RiverPoint } from "../world/water.ts";
-import type { WorldGrid } from "../world/world-grid.ts";
+import { ORTHOGONAL_STEPS, type WorldGrid } from "../world/world-grid.ts";
 
 interface WetlandInputs {
   coastDistance: Float32Array;
@@ -24,12 +24,6 @@ interface WaterReach {
 }
 
 const UNREACHED = -1;
-const ORTHOGONAL_STEPS: readonly (readonly [number, number])[] = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-];
 const LAKE_REACH = 420;
 const RIVER_REACH = 220;
 const RIVER_REACH_PER_WIDTH = 9;

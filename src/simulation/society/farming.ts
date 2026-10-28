@@ -12,6 +12,7 @@ import {
 import { Ground, groundDefinition } from "../../content/grounds.ts";
 import { isWinter } from "../../content/seasons.ts";
 import { FULL_TURN } from "../../shared/math.ts";
+import { ORTHOGONAL_STEPS } from "../../world/world-grid.ts";
 import { aroundPoint } from "../agents/navigation.ts";
 import { NO_BUILDING, PLOT_GROUND, type WorldState } from "../world/world-state.ts";
 import { isDryWay } from "./footprints.ts";
@@ -32,12 +33,6 @@ const TENDED_GROWTH = 0.45;
 const TENDING_DECAY = 0.5;
 const SPROUT_DISPLAY = 0.04;
 const SEASONS_IN_YEAR = 4;
-const NEIGHBOR_STEPS: readonly (readonly [number, number])[] = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-];
 
 export type FieldTask = "harvest" | "sow" | "tend";
 
@@ -81,7 +76,7 @@ function besideExistingField(tribe: Tribe, context: SocietyContext): number | nu
   }
 
   const field = random.pick(tribe.fields);
-  const [columnStep, rowStep] = random.pick(NEIGHBOR_STEPS);
+  const [columnStep, rowStep] = random.pick(ORTHOGONAL_STEPS);
 
   const column = grid.columnOf(field.cell) + columnStep;
   const row = grid.rowOf(field.cell) + rowStep;

@@ -26,6 +26,13 @@ export const NEIGHBOR_OFFSETS: readonly NeighborOffset[] = [
   { column: -1, distance: Math.SQRT2, row: -1 },
 ];
 
+export const ORTHOGONAL_STEPS: readonly (readonly [number, number])[] = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+
 export class WorldGrid {
   readonly cellCount: number;
   readonly cellSize: number;
