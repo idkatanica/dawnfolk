@@ -12,15 +12,15 @@
 
 Install and run the game as in [Getting started](README.md#getting-started).
 `bun install` also installs the Git hooks through
-[Lefthook](https://lefthook.dev): pre-commit runs `ultracite fix` on the staged
-files, and pre-push runs `bun run typecheck` and `bun run test`.
+[Lefthook](https://lefthook.dev): pre-commit fixes the staged files with Biome,
+and pre-push runs `bun run typecheck` and `bun run test`.
 
 ## Scripts and checks
 
 | Command | What it does |
 | --- | --- |
 | `bun run dev` | Serves the game at `http://localhost:5173`, or the next free port |
-| `bun run check` | Lints and checks formatting with Biome (Ultracite preset); `bun run fix` fixes what it can |
+| `bun run check` | Lints and checks formatting with Biome; `bun run fix` fixes what it can |
 | `bun run typecheck` | Runs `tsc --build` over the engine, app and tooling projects |
 | `bun run test` | Runs unit tests in Node and browser tests in Chromium; `bun run test:watch` reruns them on change |
 | `bun run build` | Builds for production; `bun run preview` serves the build |
@@ -39,8 +39,8 @@ Chromium; without Playwright's own browser, point them at a system one:
 
 ## Code
 
-Biome formats and lints with the Ultracite preset at a line width of 120, and
-TypeScript runs under `@tsconfig/bases/strictest`. On top of that:
+Biome formats and lints at a line width of 120, and TypeScript runs under
+`@tsconfig/bases/strictest`. On top of that:
 
 - Write names in full words: `distanceFromCenter`, not `dist`; `column`, not
   `x`. Name a file after what it holds, in kebab case: `water-material.ts`.
