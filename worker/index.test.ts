@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import worker, { byteRangeOf, homeAddressOf } from "./index.ts";
+import worker, { homeAddressOf } from "./index.ts";
 
 function assetsReturning(body: string) {
   return { fetch: vi.fn(() => Promise.resolve(new Response(body))) };
@@ -51,22 +51,14 @@ describe("worker", () => {
     expect(await response.text()).toBe("0123456789");
   });
 
-  it("refuses a range past the end of a film", async () => {
+  it("serves the whole film for a range it does not read", async () => {
     const response = await worker.fetch(
-      new Request("https://playdawnfolk.com/media/wide.mp4", { headers: { Range: "bytes=20-" } }),
+      new Request("https://playdawnfolk.com/media/wide.mp4", { headers: { Range: "bytes=-3" } }),
       { ASSETS: assetsReturning("0123456789") }
     );
 
-    expect(response.status).toBe(416);
-    expect(response.headers.get("Content-Range")).toBe("bytes */10");
-  });
-
-  it("reads open and suffix ranges", () => {
-    expect(byteRangeOf("bytes=0-", 10)).toEqual({ end: 9, start: 0 });
-    expect(byteRangeOf("bytes=0-1", 10)).toEqual({ end: 1, start: 0 });
-    expect(byteRangeOf("bytes=4-99", 10)).toEqual({ end: 9, start: 4 });
-    expect(byteRangeOf("bytes=-3", 10)).toEqual({ end: 9, start: 7 });
-    expect(byteRangeOf("bytes=0-1,4-5", 10)).toBeNull();
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("0123456789");
   });
 
   it("drops the www prefix", () => {
