@@ -6,7 +6,7 @@ import widePoster from "../../app/start-backdrop/wide.webp";
 import { cn } from "../../design/cn.ts";
 import privacyText from "./privacy.md?raw";
 
-const ISLAND_CLASS = "rounded-island border border-paper-edge bg-paper shadow-panel";
+const ISLAND_CLASS = "rounded-island border border-paper-edge bg-paper";
 
 export function PrivacyPage() {
   return (

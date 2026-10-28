@@ -44,12 +44,39 @@
   --color-gold: #c9952c;
 
   --shadow-segment: 0 1px 2px rgb(24 24 27 / 0.1), 0 0 0 0.5px rgb(24 24 27 / 0.08);
-  --shadow-panel: 0 1px 2px rgb(24 24 27 / 0.08), 0 10px 30px -12px rgb(24 24 27 / 0.28);
   --shadow-thumb: 0 1px 3px rgb(24 24 27 / 0.28), 0 0 0 0.5px rgb(24 24 27 / 0.16);
 
   --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
 
   --animate-notice-in: notice-in 0.35s var(--ease-glide);
+  --animate-sponsor-glow: sponsor-glow 6s ease-in-out infinite alternate;
+  --animate-heartbeat: heartbeat 0.9s ease-in-out infinite;
+
+  @keyframes sponsor-glow {
+    from {
+      background-position: 0% 50%;
+    }
+
+    to {
+      background-position: 100% 50%;
+    }
+  }
+
+  @keyframes heartbeat {
+    0%,
+    60%,
+    100% {
+      transform: scale(1);
+    }
+
+    20% {
+      transform: scale(1.22);
+    }
+
+    40% {
+      transform: scale(0.94);
+    }
+  }
 
   @keyframes notice-in {
     from {
@@ -98,6 +125,11 @@
     --dialog-inset-top: 5.25rem;
     --dialog-inset-bottom: 9.5rem;
   }
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
 }
 
 body {

@@ -72,19 +72,17 @@ export function SavesGroup() {
   const { isSaving, save, showAllWorlds } = useSavesGroup();
 
   return (
-    <SettingsGroup
-      action={
-        <TextButton className="h-8 px-3.5" disabled={isSaving} onClick={save} tone="accent">
+    <SettingsGroup description={description} title="Saves">
+      <div className="grid grid-cols-2 gap-2">
+        <TextButton className="border border-paper-edge" onClick={showAllWorlds} tone="quiet">
+          <LayoutGrid aria-hidden="true" size={16} />
+          All worlds
+        </TextButton>
+
+        <TextButton disabled={isSaving} onClick={save} tone="accent">
           Save now
         </TextButton>
-      }
-      description={description}
-      title="Saves"
-    >
-      <TextButton className="-ml-2 self-start px-2" onClick={showAllWorlds} tone="quiet">
-        <LayoutGrid aria-hidden="true" size={16} />
-        All worlds
-      </TextButton>
+      </div>
     </SettingsGroup>
   );
 }

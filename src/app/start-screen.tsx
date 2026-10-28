@@ -158,6 +158,8 @@ export function StartScreen() {
             <p className="text-ink-soft">Guide the first tribes of a floating island.</p>
           </header>
 
+          <hr className="border-line" />
+
           <TitleCard />
         </Island>
 

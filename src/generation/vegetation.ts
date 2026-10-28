@@ -20,7 +20,7 @@ import type { PlantPlacement, VegetationStore } from "../world/vegetation-store.
 import type { WorldGrid } from "../world/world-grid.ts";
 
 export const INITIAL_PLANT_DAY = -999;
-const BIOME_BLEND_CELLS = 3;
+const BIOME_BLEND_CELLS = 8;
 
 export function plantHeight(species: number, random: RandomSource, heightScale: number): number {
   const [shortest, tallest] = plantSpeciesDefinition(species).heightRange;
