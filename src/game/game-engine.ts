@@ -16,6 +16,7 @@ import { KeyboardControls } from "./input/keyboard-controls.ts";
 import { PointerControls } from "./input/pointer-controls.ts";
 import { type LabelPlacement, LabelProjector } from "./label-projector.ts";
 import type { Landmark } from "./landmarks.ts";
+import { ResolutionGovernor } from "./resolution-governor.ts";
 import { type SimulationConnection, WorkerSimulationConnection } from "./simulation-connection.ts";
 import { type PowerSelection, PowerTool } from "./tools/power-tool.ts";
 
@@ -87,12 +88,12 @@ export class GameEngine implements EngineHandle {
   readonly #entityPicker: EntityPicker;
   readonly #keyboard: KeyboardControls;
   readonly #labels: LabelProjector;
-  readonly #maximumPixelRatio: number;
   readonly #pacer = new FramePacer();
   readonly #pointer: PointerControls;
   readonly #renderListeners = new Set<() => void>();
   readonly #renderer: WebGPURenderer;
   readonly #resizeObserver: ResizeObserver;
+  readonly #resolution: ResolutionGovernor;
   readonly #world: WorldRenderer;
   #devicePixelRatio = 0;
   #reportedFocusX = Number.NaN;
@@ -101,7 +102,7 @@ export class GameEngine implements EngineHandle {
 
   constructor(parts: EngineParts) {
     this.#canvas = parts.canvas;
-    this.#maximumPixelRatio = RENDER_QUALITY[parts.quality].maximumPixelRatio;
+    this.#resolution = new ResolutionGovernor(RENDER_QUALITY[parts.quality].maximumPixelRatio);
     this.#renderer = parts.renderer;
     this.session = parts.session;
 
@@ -232,11 +233,14 @@ export class GameEngine implements EngineHandle {
       return;
     }
 
-    if (window.devicePixelRatio !== this.#devicePixelRatio) {
+    const elapsed = this.#pacer.markRendered(time);
+    const hasNewResolution = this.#resolution.record(elapsed, document.hasFocus());
+
+    if (hasNewResolution || window.devicePixelRatio !== this.#devicePixelRatio) {
       this.#resize();
     }
 
-    const realSeconds = clamp(this.#pacer.markRendered(time) / MILLISECONDS_PER_SECOND, 0, LONGEST_FRAME_SECONDS);
+    const realSeconds = clamp(elapsed / MILLISECONDS_PER_SECOND, 0, LONGEST_FRAME_SECONDS);
 
     this.session.update(realSeconds);
     this.#keyboard.update(realSeconds);
@@ -317,7 +321,7 @@ export class GameEngine implements EngineHandle {
 
     this.#devicePixelRatio = window.devicePixelRatio;
     this.#viewport = { height, width };
-    this.#renderer.setDrawingBufferSize(width, height, Math.min(this.#devicePixelRatio, this.#maximumPixelRatio));
+    this.#renderer.setDrawingBufferSize(width, height, this.#resolution.pixelRatio(this.#devicePixelRatio));
     this.camera.camera.aspect = width / height;
     this.camera.camera.updateProjectionMatrix();
   }
