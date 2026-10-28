@@ -23,6 +23,13 @@ interface GrowthConditions {
   season: number;
 }
 
+export interface VegetationGrowthSnapshot {
+  berryDays: number;
+  nursery: NurserySnapshot;
+  succession: SuccessionSnapshot;
+  visitBudget: number;
+}
+
 export function berryGrowthPerDay(season: number): number {
   if (season < 0.2) {
     return 0;
@@ -47,13 +54,6 @@ function berryChange(season: number, days: number, rules: WorldRules): number {
   }
 
   return growth * rules.nature.berryGrowth * days;
-}
-
-export interface VegetationGrowthSnapshot {
-  berryDays: number;
-  nursery: NurserySnapshot;
-  succession: SuccessionSnapshot;
-  visitBudget: number;
 }
 
 export class VegetationGrowthSystem {

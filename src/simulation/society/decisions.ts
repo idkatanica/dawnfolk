@@ -268,7 +268,6 @@ export function decideJob(tick: PersonTick): Job {
 function isAwayOutOfSeason(tick: PersonTick): boolean {
   const { mover } = tick.person;
   const { tribe } = tick;
-
   const { day, season } = tick.context.environment;
 
   if (isExpeditionSeason(season) || day - tick.person.strandedDay < STRANDED_RETRY_DAYS) {
@@ -333,13 +332,13 @@ function mayGatherBerries(tick: PersonTick): boolean {
 
 function childActivity(tick: PersonTick): Job {
   if (!mayGatherBerries(tick)) {
-    return new WanderJob("play", tick);
+    return new WanderJob(tick, "play");
   }
 
   const gathering = findBerries(tick);
 
   if (gathering === null) {
-    return new WanderJob("play", tick);
+    return new WanderJob(tick, "play");
   }
 
   return gathering;
@@ -349,7 +348,7 @@ function adultActivity(tick: PersonTick): Job {
   const work = chooseWork(tick);
 
   if (work === null) {
-    return new WanderJob("idle", tick);
+    return new WanderJob(tick, "idle");
   }
 
   return work;

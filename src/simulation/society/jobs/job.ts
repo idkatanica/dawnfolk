@@ -83,6 +83,17 @@ export interface Job {
   update: (tick: PersonTick) => Job | null;
 }
 
+export interface WorkTarget {
+  readonly radius: number;
+  readonly reach: number;
+  readonly x: number;
+  readonly z: number;
+}
+
+type ErrandProgress = "abandoned" | "finished" | "travelling" | "working";
+
+type ErrandPhase = "abandoned" | "travel" | "work";
+
 function travelPose(person: Person, speed: number): PersonPose {
   if (speed > RUNNING_SPEED) {
     return "run";
@@ -93,13 +104,6 @@ function travelPose(person: Person, speed: number): PersonPose {
   }
 
   return "walk";
-}
-
-export interface WorkTarget {
-  readonly radius: number;
-  readonly reach: number;
-  readonly x: number;
-  readonly z: number;
 }
 
 export function plantTarget(vegetation: VegetationStore, plant: number, reach: number): WorkTarget {
@@ -173,10 +177,6 @@ export function standStill(person: Person, pose: PersonPose): void {
   person.speed = 0;
   stopMoving(person.mover);
 }
-
-type ErrandProgress = "abandoned" | "finished" | "travelling" | "working";
-
-type ErrandPhase = "abandoned" | "travel" | "work";
 
 export class Errand {
   readonly #focus: Waypoint | null;

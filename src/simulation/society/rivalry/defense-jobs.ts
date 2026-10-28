@@ -11,7 +11,7 @@ import { Engagement } from "./engagement.ts";
 import { distanceTo, type Foe, foeMover, isFoeAlive, personFoe } from "./foes.ts";
 import { packFood } from "./provisions.ts";
 import { livingRaiders, RATION_RELIEF, type Raid } from "./raids.ts";
-import { assailantOf, nearestOf } from "./war-parties.ts";
+import { assailantOf, nearestFoeAmong } from "./war-parties.ts";
 
 const GUARD_RADIUS = 110;
 const DEFEND_ENGAGE_RADIUS = 35;
@@ -48,7 +48,7 @@ function nearestRaider(tick: PersonTick, raid: Raid, radius: number): Foe | null
     (raider) => Math.hypot(raider.mover.x - tribe.campX, raider.mover.z - tribe.campZ) < GUARD_RADIUS
   );
 
-  return nearestOf(tick, raiders, radius);
+  return nearestFoeAmong(tick, raiders, radius);
 }
 
 function foeOfDefender(tick: PersonTick, raid: Raid): Foe | null {

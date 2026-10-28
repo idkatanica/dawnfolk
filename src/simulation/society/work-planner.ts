@@ -243,9 +243,7 @@ export function chooseWork(tick: PersonTick): Job | null {
   const construction = constructionNeeds(tick.tribe, tick.context);
 
   const candidates = WORK_OPTIONS.map((option) => ({ option, weight: adjustedWeight(option, tick, construction) }));
-
   const weighted = candidates.filter((candidate) => candidate.weight > 0);
-
   const totalWeight = weighted.reduce((total, candidate) => total + candidate.weight, 0);
 
   if (totalWeight <= 0) {

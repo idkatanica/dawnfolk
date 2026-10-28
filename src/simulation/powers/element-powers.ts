@@ -9,9 +9,9 @@ import { APPLIED, type PowerOutcome, type PowerServices, type PowerTarget, perce
 const FIRE_BRUSH_STRENGTH = 0.75;
 const FIRE_EDGE_FADE = 0.6;
 const RAIN_PER_SECOND = 1.2;
-const RAIN_DEFAULT_INTENSITY = 0.7;
+const DEFAULT_RAIN_INTENSITY = 0.7;
 const SNOW_PER_SECOND = 0.6;
-const SNOW_DEFAULT_INTENSITY = 0.6;
+const DEFAULT_SNOW_INTENSITY = 0.6;
 const DEFAULT_BLAST_POWER = 0.8;
 const METEOR_DISTANCE = 2600;
 const METEOR_ALTITUDE = 3200;
@@ -73,7 +73,7 @@ export function rainPower(
 ): PowerOutcome {
   const { fire, rules, world } = services;
 
-  const intensity = percent(parameters.intensity) / RAIN_DEFAULT_INTENSITY;
+  const intensity = percent(parameters.intensity) / DEFAULT_RAIN_INTENSITY;
 
   const soaking = target.seconds * RAIN_PER_SECOND * intensity * rules.water.rainStrength;
 
@@ -97,7 +97,7 @@ export function snowPower(
 ): PowerOutcome {
   const { fire, rules, world } = services;
 
-  const intensity = percent(parameters.intensity) / SNOW_DEFAULT_INTENSITY;
+  const intensity = percent(parameters.intensity) / DEFAULT_SNOW_INTENSITY;
 
   const snowfall = target.seconds * SNOW_PER_SECOND * intensity * rules.water.snowfall;
 

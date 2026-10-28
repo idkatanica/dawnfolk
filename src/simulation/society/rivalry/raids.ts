@@ -6,6 +6,20 @@ import type { Stock } from "../stock.ts";
 import type { Tribe } from "../tribe.ts";
 import { goodsPhrases } from "./provisions.ts";
 
+export const MARCH_SPEED = 4.2;
+export const RATION_RELIEF = 0.55;
+
+const RAID_OVERHEAD_SECONDS = 160;
+const LISTED_GOODS = 3;
+const TORCHED_ROLES: readonly BuildingRole[] = ["enclosure", "craft"];
+const FIGHTING_HEALTH = 0.6;
+const FIGHTING_HUNGER = 0.5;
+const DEFENDING_HUNGER = 0.85;
+const PARTY_SHARE = 0.5;
+const SMALLEST_PARTY = 3;
+const LARGEST_PARTY = 6;
+const NUMBER_WORDS: readonly string[] = ["no one", "one", "two", "three", "four", "five", "six", "seven", "eight"];
+
 export type RaidPhase = "assault" | "march" | "muster" | "retreat";
 
 export type RaidAim = "burn" | "plunder" | "revenge";
@@ -28,20 +42,6 @@ export interface Raid {
   readonly target: Waypoint;
   readonly warriorIds: readonly number[];
 }
-
-export const MARCH_SPEED = 4.2;
-export const RATION_RELIEF = 0.55;
-
-const RAID_OVERHEAD_SECONDS = 160;
-const LISTED_GOODS = 3;
-const TORCHED_ROLES: readonly BuildingRole[] = ["enclosure", "craft"];
-const FIGHTING_HEALTH = 0.6;
-const FIGHTING_HUNGER = 0.5;
-const DEFENDING_HUNGER = 0.85;
-const PARTY_SHARE = 0.5;
-const SMALLEST_PARTY = 3;
-const LARGEST_PARTY = 6;
-const NUMBER_WORDS: readonly string[] = ["no one", "one", "two", "three", "four", "five", "six", "seven", "eight"];
 
 export function canFight(person: Person): boolean {
   return person.isAlive && !isChild(person) && !isElder(person) && person.health >= 0.45;
@@ -83,8 +83,8 @@ export function chooseWarriors(members: readonly Person[]): Person[] {
   return able.toSorted(strongerFirst).slice(0, partySize(able.length));
 }
 
-export function chooseAim(grievanceFromBlood: boolean, canBurn: boolean, bitterness: number): RaidAim {
-  if (grievanceFromBlood) {
+export function chooseAim(isAvengingBlood: boolean, canBurn: boolean, bitterness: number): RaidAim {
+  if (isAvengingBlood) {
     return "revenge";
   }
 

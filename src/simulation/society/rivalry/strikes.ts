@@ -10,14 +10,6 @@ import { WEAPON_STATS, type WeaponKind, weaponDamage } from "./combat-stats.ts";
 import type { Foe } from "./foes.ts";
 import { wallCover } from "./walls.ts";
 
-export type StrikeOutcome = "blocked" | "hit" | "killed" | "missed";
-
-export interface Battleground {
-  readonly ledger: CombatLedger;
-  readonly random: RandomSource;
-  slay: (victim: Person, slayer: Person, context: SocietyContext) => void;
-}
-
 const GUARD_CHANCE: Readonly<Record<WeaponKind, number>> = { bow: 0.1, none: 0.2, spear: 0.34 };
 const FLAT_FOOTED_GUARD = 0.04;
 const FACING_THRESHOLD = 0.25;
@@ -27,6 +19,14 @@ const SPARED_SHARE = 0.65;
 const SPARED_HEALTH = 0.1;
 const BEAST_DAMAGE_SCALE = 3;
 const FIGHTING_JOBS: ReadonlySet<JobKind> = new Set(["defend", "fight", "raid"]);
+
+export type StrikeOutcome = "blocked" | "hit" | "killed" | "missed";
+
+export interface Battleground {
+  readonly ledger: CombatLedger;
+  readonly random: RandomSource;
+  slay: (victim: Person, slayer: Person, context: SocietyContext) => void;
+}
 
 function isFighting(person: Person): boolean {
   const { job } = person;

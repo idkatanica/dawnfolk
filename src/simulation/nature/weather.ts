@@ -78,20 +78,20 @@ export class WeatherSystem {
     windSpeed: 14,
   };
 
-  snapshot(): WeatherState {
-    return { ...this.state };
-  }
-
-  restore(snapshot: WeatherState): void {
-    this.state = { ...snapshot };
-  }
-
   get name(): string {
     return WEATHER[this.state.kind].name;
   }
 
   get airTemperatureOffset(): number {
     return this.state.temperatureOffset + this.state.userTemperatureOffset;
+  }
+
+  snapshot(): WeatherState {
+    return { ...this.state };
+  }
+
+  restore(snapshot: WeatherState): void {
+    this.state = { ...snapshot };
   }
 
   setKind(kind: WeatherKind): void {

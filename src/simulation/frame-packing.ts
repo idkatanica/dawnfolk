@@ -41,6 +41,12 @@ import { SNOW_CAPACITY, type WorldState } from "./world/world-state.ts";
 
 const BYTE = 255;
 const NO_ROW = -1;
+const ARMED_JOBS: ReadonlySet<string> = new Set(["defend", "fight", "hunt", "raid"]);
+
+interface TribeSources {
+  buildings: BuildingSystem;
+  world: WorldState;
+}
 
 function toByte(value: number): number {
   return Math.round(saturate(value) * BYTE);
@@ -177,8 +183,6 @@ export function packRegion(world: WorldState, values: Float32Array, region: Cell
   return { region, values: packed };
 }
 
-const ARMED_JOBS: ReadonlySet<string> = new Set(["defend", "fight", "hunt", "raid"]);
-
 function shownWeapon(person: Person): number {
   const { job, weapon } = person;
 
@@ -283,11 +287,6 @@ export function describeBuilding(building: Building, world: WorldState): Buildin
     x: building.x,
     z: building.z,
   };
-}
-
-interface TribeSources {
-  buildings: BuildingSystem;
-  world: WorldState;
 }
 
 function buildingCounts(tribe: Tribe, sources: TribeSources): BuildingCount[] {

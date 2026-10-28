@@ -14,6 +14,16 @@ import type { Person } from "./society/person.ts";
 import type { SocietySystem } from "./society/society.ts";
 import type { WorldState } from "./world/world-state.ts";
 
+const ANIMAL_ACTIVITIES = {
+  attack: "Attacking",
+  charge: "Charging",
+  dead: "Dead",
+  fall: "Dead",
+  flinch: "Wounded",
+  run: "Running away",
+  walk: "Wandering",
+} as const;
+
 export interface PersonInspection {
   activity: string;
   age: number;
@@ -91,16 +101,6 @@ interface InspectionSources {
   world: WorldState;
 }
 
-const ANIMAL_ACTIVITIES = {
-  attack: "Attacking",
-  charge: "Charging",
-  dead: "Dead",
-  fall: "Dead",
-  flinch: "Wounded",
-  run: "Running away",
-  walk: "Wandering",
-} as const;
-
 export function inspect(selection: Selection, sources: InspectionSources): Inspection | null {
   switch (selection.kind) {
     case "animal":
@@ -118,7 +118,7 @@ export function inspect(selection: Selection, sources: InspectionSources): Inspe
   }
 }
 
-function tribeName(sources: InspectionSources, tribeId: number): string {
+function tribeName(tribeId: number, sources: InspectionSources): string {
   const tribe = sources.society.findTribe(tribeId);
 
   if (tribe === null) {
@@ -163,7 +163,7 @@ function inspectPerson(id: number, sources: InspectionSources): PersonInspection
     isFemale: person.isFemale,
     kind: "person",
     name: person.name,
-    tribeName: tribeName(sources, person.tribeId),
+    tribeName: tribeName(person.tribeId, sources),
     warmth: person.warmth,
     x: person.mover.x,
     z: person.mover.z,
@@ -204,7 +204,7 @@ function inspectBuilding(id: number, sources: InspectionSources): BuildingInspec
     kind: "building",
     name: BUILDINGS[building.kind].name,
     progress: building.progress,
-    tribeName: tribeName(sources, building.tribeId),
+    tribeName: tribeName(building.tribeId, sources),
     x: building.x,
     z: building.z,
   };

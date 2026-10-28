@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { worldRulesSchema } from "../../../content/world-rules.ts";
 import { createRandom } from "../../../shared/random.ts";
 import type { Animal } from "../../fauna/fauna.ts";
-import { foundTribe, runUntil } from "../../testing/test-rivalry.ts";
+import { chronicleTexts, foundTribe, runUntil } from "../../testing/test-rivalry.ts";
 import { SocietyHarness, tickFor } from "../../testing/test-society.ts";
 import type { Person } from "../person.ts";
 import type { Tribe } from "../tribe.ts";
@@ -25,10 +25,6 @@ function beastHarness(day: number): SocietyHarness {
     rules: BOLD,
     world: { dimensions: { cellSize: 10, cellsPerSide: 96 } },
   });
-}
-
-function stories(harness: SocietyHarness): string[] {
-  return harness.chronicle.takeEntries().map((entry) => `${entry.category}: ${entry.text}`);
 }
 
 function spawnPack(harness: SocietyHarness, x: number, z: number, size: number): Animal[] {
@@ -78,7 +74,7 @@ describe("wolves", () => {
     expect(wanderer.health).toBeLessThan(0.7);
     expect(wolves.some((wolf) => wolf.pose === "attack" || wolf.pose === "charge")).toBe(true);
     expect(fought).toContain("fight");
-    expect(stories(harness)).toContainEqual(expect.stringMatching(WOLF_ATTACK_STORY));
+    expect(chronicleTexts(harness)).toContainEqual(expect.stringMatching(WOLF_ATTACK_STORY));
   });
 
   it("give up when their prey reaches the camp", () => {
@@ -151,7 +147,7 @@ describe("big game", () => {
 
     expect(hunter.isAlive).toBe(false);
     expect(hunter.causeOfDeath).toBe("mammoth");
-    expect(stories(harness)).toContainEqual(expect.stringMatching(TRAMPLE_STORY));
+    expect(chronicleTexts(harness)).toContainEqual(expect.stringMatching(TRAMPLE_STORY));
   });
 
   it("lets a cornered stag lower its head at a person who comes too close", () => {
@@ -173,7 +169,7 @@ describe("big game", () => {
     runUntil(harness, 10, () => !herder.isAlive);
 
     expect(herder.causeOfDeath).toBe("beast");
-    expect(stories(harness)).toContainEqual(expect.stringMatching(GORE_STORY));
+    expect(chronicleTexts(harness)).toContainEqual(expect.stringMatching(GORE_STORY));
   });
 });
 

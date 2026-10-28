@@ -63,18 +63,6 @@ export class FrameBuilder {
     };
   }
 
-  #changedSurfaceRows(): PackedRows[] {
-    const { world } = this.#simulation;
-
-    const runs = world.surfaceChanges.takeRuns();
-
-    if (this.#sentSurface === null) {
-      return packSurfaceRows(world, runs);
-    }
-
-    return packChangedSurfaceRows(world, runs, this.#sentSurface);
-  }
-
   initialWorld(): InitialWorld {
     const { world } = this.#simulation;
     const { terrain } = world;
@@ -113,6 +101,18 @@ export class FrameBuilder {
       vegetation: world.vegetation.exportBuffers(),
       water: mirroredWater(world.water),
     };
+  }
+
+  #changedSurfaceRows(): PackedRows[] {
+    const { world } = this.#simulation;
+
+    const runs = world.surfaceChanges.takeRuns();
+
+    if (this.#sentSurface === null) {
+      return packSurfaceRows(world, runs);
+    }
+
+    return packChangedSurfaceRows(world, runs, this.#sentSurface);
   }
 
   #inspection(tribes: readonly TribeSummary[], environment: Environment): Inspection | null {

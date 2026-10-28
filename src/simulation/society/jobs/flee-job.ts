@@ -20,6 +20,11 @@ const BURNT_OUT = 0.8;
 const STEEP = 1;
 const NOT_WET = -1;
 
+interface Flight {
+  readonly heading: number;
+  readonly reach: number;
+}
+
 export class FleeJob implements Job {
   readonly kind = "flee";
 
@@ -53,11 +58,6 @@ export class FleeJob implements Job {
 
     return null;
   }
-}
-
-interface Flight {
-  readonly heading: number;
-  readonly reach: number;
 }
 
 function safestFlight(world: WorldState, from: Waypoint, danger: Waypoint): Flight {

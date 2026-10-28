@@ -11,7 +11,6 @@ describe("weapons", () => {
     const harness = new SocietyHarness({ day: MORNING });
 
     const tribe = settle(harness, 3);
-
     const tick = firstMemberTick(harness, tribe);
 
     expect(carriedWeapon(tick.person)).toEqual({ kind: "none" });
@@ -29,7 +28,6 @@ describe("weapons", () => {
     const harness = new SocietyHarness({ day: MORNING });
 
     const tribe = settle(harness, 3);
-
     const tick = firstMemberTick(harness, tribe);
 
     tribe.technologies.add("archery");
@@ -46,7 +44,6 @@ describe("hunting with bows", () => {
     const harness = new SocietyHarness({ day: MORNING });
 
     const tribe = settle(harness, 3);
-
     const tick = firstMemberTick(harness, tribe);
 
     tribe.technologies.add("spear");

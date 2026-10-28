@@ -110,11 +110,6 @@ export class Calendar {
     this.#setDate(completedYears * this.yearLength + Math.floor(season * daysPerSeason) + timeOfDay);
   }
 
-  #setDate(date: number): void {
-    this.#anchorDate = date;
-    this.#anchorDay = this.day;
-  }
-
   snapshot(): CalendarSnapshot {
     return {
       anchorDate: this.#anchorDate,
@@ -155,5 +150,10 @@ export class Calendar {
       seasonName: seasonName(this.season),
       year: this.year,
     };
+  }
+
+  #setDate(date: number): void {
+    this.#anchorDate = date;
+    this.#anchorDay = this.day;
   }
 }

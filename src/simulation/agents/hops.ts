@@ -3,6 +3,13 @@ import { HOP_REACH } from "../../world/brooks.ts";
 import type { WorldState } from "../world/world-state.ts";
 import type { Mover } from "./movement.ts";
 
+const SAMPLE_SPACING = 0.25;
+const LANDING_MARGIN = 0.4;
+const SLACK = 4;
+const LEAP_REACH = 1.4;
+const TURN_RATE = 8;
+const NOT_WET = -1;
+
 export interface Hop {
   readonly directionX: number;
   readonly directionZ: number;
@@ -28,13 +35,6 @@ interface WetStretch {
   readonly level: number;
   readonly to: number;
 }
-
-const SAMPLE_SPACING = 0.25;
-const LANDING_MARGIN = 0.4;
-const SLACK = 4;
-const LEAP_REACH = 1.4;
-const TURN_RATE = 8;
-const NOT_WET = -1;
 
 export function isInOpenWater(world: WorldState, x: number, z: number): boolean {
   const cell = world.grid.cellAt(x, z);

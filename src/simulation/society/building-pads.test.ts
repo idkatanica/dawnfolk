@@ -125,13 +125,13 @@ describe("building pads", () => {
     expect(planPad(world, [], { x: -45, z: 0 }, "hut")).not.toBeNull();
   });
 
-  it("leaves the pad of a neighbouring building as it is", () => {
+  it("leaves the pad of a neighboring building as it is", () => {
     const world = slopedWorld(0.08);
     const buildings = new BuildingSystem(world, new IdentifierSource());
 
-    const neighbour = buildings.add({ kind: "hut", rotation: 0, tribeId: 1, x: 0, z: 0 }, createRandom(1));
+    const neighbor = buildings.add({ kind: "hut", rotation: 0, tribeId: 1, x: 0, z: 0 }, createRandom(1));
 
-    const firstPad = planPad(world, [], neighbour, "hut");
+    const firstPad = planPad(world, [], neighbor, "hut");
 
     if (firstPad === null) {
       throw new Error("Expected a pad on open ground");

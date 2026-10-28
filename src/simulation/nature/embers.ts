@@ -40,6 +40,10 @@ export class EmberSystem {
     this.#world = world;
   }
 
+  get flying(): readonly Ember[] {
+    return this.#embers;
+  }
+
   snapshot(): Ember[] {
     return this.#embers.map((ember) => ({ ...ember }));
   }
@@ -47,10 +51,6 @@ export class EmberSystem {
   restore(embers: readonly Ember[]): void {
     this.#embers.length = 0;
     this.#embers.push(...embers.map((ember) => ({ ...ember })));
-  }
-
-  get flying(): readonly Ember[] {
-    return this.#embers;
   }
 
   launch(cell: number, wind: EmberWind, random: RandomSource): Ember {

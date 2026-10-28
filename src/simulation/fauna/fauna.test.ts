@@ -19,6 +19,8 @@ const NO_PEOPLE: PeopleSense = {
 const NO_THREATS: FaunaThreats = { dangerNear: () => null, hunterNear: () => null, people: NO_PEOPLE };
 const SUMMER = 1.6;
 const SPRING = 0.5;
+const WINTER = 3.5;
+const TAME = { ...DEFAULT_WORLD_RULES, nature: { ...DEFAULT_WORLD_RULES.nature, beastBoldness: 0 } };
 
 function createFauna(world: WorldState = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 96 } })) {
   const navigation = new NavigationGrid(world);
@@ -45,6 +47,40 @@ function runFor(fauna: FaunaSystem, seconds: number, overrides: Partial<FaunaTic
   for (let elapsed = 0; elapsed < seconds; elapsed += tick.seconds) {
     fauna.update(tick);
   }
+}
+
+function spawned<Herd>(herd: Herd | null): Herd {
+  if (herd === null) {
+    throw new Error("Expected the herd to spawn");
+  }
+
+  return herd;
+}
+
+function slopedFauna() {
+  return createFauna(
+    createTestWorld({
+      biome: Biome.Alpine,
+      dimensions: { cellSize: 10, cellsPerSide: 96 },
+      heightAt: (x) => 100 + x * 0.5,
+    })
+  );
+}
+
+function edgedFauna() {
+  const world = createTestWorld({ biome: Biome.Forest, dimensions: { cellSize: 10, cellsPerSide: 96 } });
+
+  for (let cell = 0; cell < world.grid.cellCount; cell += 1) {
+    if (world.grid.cellCenterX(cell) < 0) {
+      world.terrain.biome[cell] = Biome.Meadow;
+    }
+  }
+
+  return createFauna(world);
+}
+
+function hares(fauna: FaunaSystem): Animal[] {
+  return fauna.animals.filter((animal) => animal.kind === "hare");
 }
 
 describe("herds", () => {
@@ -164,24 +200,6 @@ describe("animals", () => {
   });
 });
 
-function spawned<Herd>(herd: Herd | null): Herd {
-  if (herd === null) {
-    throw new Error("Expected the herd to spawn");
-  }
-
-  return herd;
-}
-
-function slopedFauna() {
-  return createFauna(
-    createTestWorld({
-      biome: Biome.Alpine,
-      dimensions: { cellSize: 10, cellsPerSide: 96 },
-      heightAt: (x) => 100 + x * 0.5,
-    })
-  );
-}
-
 describe("kinds of animals", () => {
   it("bring ibex to rocky heights when the world is populated", () => {
     const { fauna } = createFauna(
@@ -238,25 +256,6 @@ describe("kinds of animals", () => {
     expect(ANIMALS.wolf.pastureRange[0]).toBeGreaterThan(ANIMALS.deer.pastureRange[0]);
   });
 });
-
-const WINTER = 3.5;
-const TAME = { ...DEFAULT_WORLD_RULES, nature: { ...DEFAULT_WORLD_RULES.nature, beastBoldness: 0 } };
-
-function edgedFauna() {
-  const world = createTestWorld({ biome: Biome.Forest, dimensions: { cellSize: 10, cellsPerSide: 96 } });
-
-  for (let cell = 0; cell < world.grid.cellCount; cell += 1) {
-    if (world.grid.cellCenterX(cell) < 0) {
-      world.terrain.biome[cell] = Biome.Meadow;
-    }
-  }
-
-  return createFauna(world);
-}
-
-function hares(fauna: FaunaSystem): Animal[] {
-  return fauna.animals.filter((animal) => animal.kind === "hare");
-}
 
 describe("hares", () => {
   it("stay out of the big herds that populate the world", () => {

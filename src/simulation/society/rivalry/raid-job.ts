@@ -13,7 +13,7 @@ import { Engagement } from "./engagement.ts";
 import { type Foe, personFoe } from "./foes.ts";
 import { plunderSurplus, totalGoods, unpack } from "./provisions.ts";
 import { buildingName, burnableBuilding, MARCH_SPEED, RATION_RELIEF, type Raid } from "./raids.ts";
-import { assailantOf, formationOffset, nearbyFighters, nearestOf, offsetFrom } from "./war-parties.ts";
+import { assailantOf, formationOffset, nearbyFighters, nearestFoeAmong, offsetFrom } from "./war-parties.ts";
 
 const ENGAGE_RADIUS = 22;
 const CORNERED_RADIUS = 16;
@@ -89,7 +89,7 @@ function nearestFoe(tick: PersonTick, raid: Raid, radius: number): Foe | null {
     return personFoe(attacker);
   }
 
-  return nearestOf(tick, nearbyFighters(tick, raid.defenderId, radius), radius);
+  return nearestFoeAmong(tick, nearbyFighters(tick, raid.defenderId, radius), radius);
 }
 
 export class RaidJob implements Job {

@@ -125,7 +125,6 @@ describe("spreading", () => {
   it("spreads faster when the spread rule is raised", () => {
     const fastRules = worldRulesSchema.parse({ fire: { spreadSpeed: 2.5 } });
     const normal = startFire(createTestWorld(LARGE_WORLD), 20);
-
     const fast = startFire(createTestWorld(LARGE_WORLD), 20, fastRules);
 
     burnFor(normal, 40);

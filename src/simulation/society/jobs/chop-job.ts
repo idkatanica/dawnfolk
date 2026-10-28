@@ -38,7 +38,7 @@ export function findTree(tick: PersonTick): ChopJob | null {
   });
 
   if (tree === null) {
-    markScarce(tribe, "wood", tick.context.environment.day);
+    markScarce(tribe, "wood", day);
 
     return null;
   }

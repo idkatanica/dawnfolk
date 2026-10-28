@@ -7,12 +7,12 @@ import {
 import type { Person, Weapon } from "./person.ts";
 import { knows, type Tribe } from "./tribe.ts";
 
-export type CarriedWeapon = { readonly kind: "none" } | { readonly kind: WeaponKind; readonly material: ToolMaterial };
-
 export const METALS_BY_STRENGTH: readonly ToolMaterial[] = ["iron", "bronze", "copper"];
 
 const ARROWS_TO_HUNT = 3;
 const BOW_HIT_BONUS = 0.08;
+
+export type CarriedWeapon = { readonly kind: "none" } | { readonly kind: WeaponKind; readonly material: ToolMaterial };
 
 export function carriedWeapon(person: Person): CarriedWeapon {
   const { weapon } = person;

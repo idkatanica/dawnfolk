@@ -16,9 +16,9 @@ describe("obstacles", () => {
     plantAt(world, PlantSpecies.Bush, 12);
     world.vegetation.fell(plantAt(world, PlantSpecies.Birch, -6), 0, 0);
 
-    const xs = world.obstacles.near(0, 0, 20).map((obstacle) => obstacle.x);
+    const positions = world.obstacles.near(0, 0, 20).map((obstacle) => obstacle.x);
 
-    expect(xs.sort((first, second) => first - second)).toEqual([0, 6]);
+    expect(positions.sort((first, second) => first - second)).toEqual([0, 6]);
   });
 
   it("include a building until it is cleared", () => {

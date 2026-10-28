@@ -156,8 +156,9 @@ function unevenness(site: Site): number {
 }
 
 function isClearOfOthers(spot: Waypoint, kind: BuildingKind, context: SocietyContext): boolean {
-  const gap = kind === "campfire" ? CAMPFIRE_GAP : BUILDING_GAP;
   const { footprint } = BUILDINGS[kind];
+
+  const gap = kind === "campfire" ? CAMPFIRE_GAP : BUILDING_GAP;
 
   return context.buildings.all.every((other) => {
     if (isEnclosure(other.kind)) {

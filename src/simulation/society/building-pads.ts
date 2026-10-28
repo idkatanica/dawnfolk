@@ -9,7 +9,6 @@ import { cellsNear, distanceToCell } from "./footprints.ts";
 
 export const DEEPEST_LEVELLING = 1.5;
 const KEPT_RELIEF = 0.04;
-
 const COAST_CLEARANCE = 30;
 const POOLING_DEPTH = 0.5;
 

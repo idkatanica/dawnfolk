@@ -34,12 +34,12 @@ export function keepApart(movers: readonly Mover[], world: WorldState, seconds: 
 
   for (const mover of movers) {
     const cell = world.grid.cellAt(mover.x, mover.z);
-    const neighbours = crowd.get(cell);
+    const neighbors = crowd.get(cell);
 
-    if (neighbours === undefined) {
+    if (neighbors === undefined) {
       crowd.set(cell, [mover]);
     } else {
-      neighbours.push(mover);
+      neighbors.push(mover);
     }
   }
 
@@ -60,13 +60,13 @@ function pushAway(mover: Mover, crowd: ReadonlyMap<number, readonly Mover[]>, wo
 
   for (let row = bounds.firstRow; row <= bounds.lastRow; row += 1) {
     for (let column = bounds.firstColumn; column <= bounds.lastColumn; column += 1) {
-      const neighbours = crowd.get(grid.index(column, row));
+      const neighbors = crowd.get(grid.index(column, row));
 
-      if (neighbours === undefined) {
+      if (neighbors === undefined) {
         continue;
       }
 
-      for (const other of neighbours) {
+      for (const other of neighbors) {
         const push = pushFrom(mover, other);
 
         x += push.x;

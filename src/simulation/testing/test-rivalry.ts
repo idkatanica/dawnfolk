@@ -1,13 +1,17 @@
 import { FOOD_KINDS } from "../../content/resources.ts";
+import type { Building } from "../society/buildings.ts";
+import type { Job } from "../society/jobs/job.ts";
 import { createPerson } from "../society/person.ts";
 import type { Tribe } from "../society/tribe.ts";
-import type { SocietyHarness } from "./test-society.ts";
+import { MORNING, type SocietyHarness } from "./test-society.ts";
 
 const ROW_LENGTH = 4;
 const SPACING = 3;
 const ADULT_AGE = 22;
 const CHILD_AGE = 6;
 const ARMORY_SPEARS = 12;
+
+export const SPRING_HARNESS = { day: MORNING, world: { dimensions: { cellSize: 10, cellsPerSide: 96 } } };
 
 export interface TribeFounding {
   readonly adults: number;
@@ -66,4 +70,44 @@ export function runUntil(harness: SocietyHarness, seconds: number, isDone: () =>
   }
 
   return elapsed;
+}
+
+export function foundNeighboringTribes(harness: SocietyHarness, distance: number): readonly [Tribe, Tribe] {
+  const first = foundTribe(harness, { adults: 8, children: 2, x: -distance / 2, z: 0 });
+  const second = foundTribe(harness, { adults: 6, children: 2, x: distance / 2, z: 0 });
+
+  return [first, second];
+}
+
+export function standStill(): Job {
+  const job: Job = { kind: "idle", update: () => job };
+
+  return job;
+}
+
+export function enclosure(kind: "palisade" | "stoneWall", tribe: Tribe, extent: number): Building {
+  return {
+    burningSeconds: 0,
+    cell: 0,
+    cells: [],
+    depositId: -1,
+    extent,
+    fuel: 1,
+    health: 200,
+    id: tribe.id * 100,
+    isRetiring: false,
+    kind,
+    progress: 1,
+    replacesId: null,
+    rotation: 0,
+    seed: 0.5,
+    style: 0,
+    tribeId: tribe.id,
+    x: tribe.campX,
+    z: tribe.campZ,
+  };
+}
+
+export function chronicleTexts(harness: SocietyHarness): string[] {
+  return harness.chronicle.takeEntries().map((entry) => `${entry.category}: ${entry.text}`);
 }

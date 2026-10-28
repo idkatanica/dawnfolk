@@ -1,9 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, it as test, vi } from "vitest";
 import type { TechnologyId } from "../content/technologies.ts";
+import { DEFAULT_GENERATION_OPTIONS, type GenerationOptions } from "../generation/generation-options.ts";
+import { generateWorld } from "../generation/world-generator.ts";
 import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../world/agent-buffers.ts";
+import type { IslandShapeKind } from "../world/island-shape.ts";
+import { isHopping } from "./agents/hops.ts";
 import { setDestination } from "./agents/movement.ts";
-import { Simulation } from "./simulation.ts";
-import { createVegetatedWorld, floodStrip } from "./testing/test-world.ts";
+import { Simulation, type SimulationSnapshot } from "./simulation.ts";
+import { createVegetatedWorld, floodCells, floodStrip } from "./testing/test-world.ts";
 import { TICK_SECONDS } from "./tick.ts";
 
 const WORLD_OPTIONS = { dimensions: { cellSize: 10, cellsPerSide: 96 } };
@@ -17,6 +21,25 @@ const ADVANCED: readonly TechnologyId[] = [
   "pottery",
   "farming",
 ];
+const GENERATION_SEED = 11;
+const GENERATION_OPTIONS: GenerationOptions = {
+  ...DEFAULT_GENERATION_OPTIONS,
+  dimensions: { cellSize: 20, cellsPerSide: 128 },
+};
+const SETTLING_SECONDS = 12;
+const RUN_SECONDS = 600;
+const LONGEST_SPELL_IN_WATER = 5;
+const SETTLERS_BY_CROSSINGS = 2;
+const FLOOD_RADIUS = 45;
+const FLOOD_DEPTH = 1.6;
+const SECONDS_TO_SWIM_OUT = 75;
+
+interface Walker {
+  readonly id: number;
+  readonly isHopping: boolean;
+  readonly x: number;
+  readonly z: number;
+}
 
 function createSimulation(): Simulation {
   const simulation = new Simulation(createVegetatedWorld(WORLD_OPTIONS));
@@ -31,6 +54,121 @@ function advanceFor(simulation: Simulation, seconds: number): void {
   for (let elapsed = 0; elapsed < seconds; elapsed += 0.05) {
     simulation.advance(0.05);
   }
+}
+
+function generateSimulation(): Simulation {
+  return Simulation.generate(GENERATION_SEED, GENERATION_OPTIONS, () => undefined);
+}
+
+function settleLand(simulation: Simulation): void {
+  for (let elapsed = 0; elapsed < SETTLING_SECONDS && simulation.isBusy; elapsed += 0.25) {
+    simulation.advance(0.25);
+  }
+}
+
+function grownSimulation(): Simulation {
+  const simulation = generateSimulation();
+
+  simulation.populate();
+  simulation.execute({ speed: 16, type: "setSpeed" });
+
+  for (const tribe of simulation.society.tribes()) {
+    tribe.technologies.add("fire");
+    tribe.technologies.add("shelter");
+  }
+
+  simulation.runTicks(300);
+  simulation.execute({ parameters: { radius: 60 }, powerId: "raise", type: "usePower", x: 120, z: -80 });
+  simulation.execute({ parameters: { radius: 30 }, powerId: "fire", type: "usePower", x: -150, z: 90 });
+  settleLand(simulation);
+  simulation.runTicks(300);
+
+  return simulation;
+}
+
+function snapshotOf(simulation: Simulation): SimulationSnapshot {
+  const snapshot = simulation.snapshot();
+
+  if (snapshot === null) {
+    throw new Error("The simulation was busy");
+  }
+
+  return snapshot;
+}
+
+function restored(snapshot: SimulationSnapshot): Simulation {
+  const simulation = generateSimulation();
+
+  simulation.restore(structuredClone(snapshot));
+
+  return simulation;
+}
+
+function plantsByCell(simulation: Simulation): number[][] {
+  const { grid, vegetation } = simulation.world;
+
+  return Array.from({ length: grid.cellCount }, (_, cell) => vegetation.plantsInCell(cell));
+}
+
+function populatedIsland(shape: IslandShapeKind): Simulation {
+  const simulation = new Simulation(generateWorld(7, { ...DEFAULT_GENERATION_OPTIONS, shape }));
+
+  simulation.populate();
+
+  for (const crossing of simulation.world.crossings.slice(0, SETTLERS_BY_CROSSINGS)) {
+    simulation.execute({
+      parameters: {},
+      powerId: "tribe",
+      type: "usePower",
+      x: crossing.startX + (crossing.startX - crossing.endX),
+      z: crossing.startZ + (crossing.startZ - crossing.endZ),
+    });
+  }
+
+  return simulation;
+}
+
+function walkers(simulation: Simulation): Walker[] {
+  const people = simulation.society.people.filter((person) => person.isAlive);
+  const animals = simulation.fauna.animals.filter((animal) => animal.isAlive);
+
+  return [...people, ...animals].map(({ id, mover }) => ({ id, isHopping: isHopping(mover), x: mover.x, z: mover.z }));
+}
+
+function isInOpenWater(simulation: Simulation, walker: Walker): boolean {
+  const { world } = simulation;
+
+  return world.isWaterAt(walker.x, walker.z) && world.crossingAt(walker.x, walker.z) === null && !walker.isHopping;
+}
+
+function longestSpellInWater(simulation: Simulation, seconds: number): number {
+  const wetSince = new Map<number, number>();
+
+  let longest = 0;
+
+  for (let tick = 0; tick < seconds / TICK_SECONDS; tick += 1) {
+    simulation.step();
+
+    for (const walker of walkers(simulation)) {
+      if (!isInOpenWater(simulation, walker)) {
+        wetSince.delete(walker.id);
+
+        continue;
+      }
+
+      const since = wetSince.get(walker.id);
+
+      if (since === undefined) {
+        wetSince.set(walker.id, tick);
+
+        continue;
+      }
+
+      longest = Math.max(longest, (tick - since) * TICK_SECONDS);
+    }
+  }
+
+  return longest;
 }
 
 describe("time", () => {
@@ -319,5 +457,109 @@ describe("determinism", () => {
     expect(first.tribes).toEqual(second.tribes);
     expect(first.buildings).toEqual(second.buildings);
     expect(first.buildings.length).toBeGreaterThan(2);
+  });
+});
+
+describe("world snapshots", () => {
+  it("restores a grown world into a fresh island from the same seed", () => {
+    const original = grownSimulation();
+    const snapshot = snapshotOf(original);
+
+    const copy = restored(snapshot);
+
+    expect(original.society.population).toBeGreaterThan(0);
+    expect(original.buildings.all.length).toBeGreaterThan(0);
+    expect(original.fire.burningCount).toBeGreaterThan(0);
+    expect(original.world.heightVersion).toBeGreaterThan(0);
+    expect(snapshotOf(copy)).toStrictEqual(snapshot);
+  });
+
+  it("keeps the world going after a restore", () => {
+    const original = grownSimulation();
+    const snapshot = snapshotOf(original);
+
+    const copy = restored(snapshot);
+
+    const tribeIds = copy.society.tribes().map((tribe) => tribe.id);
+
+    expect(tribeIds).toEqual(original.society.tribes().map((tribe) => tribe.id));
+    expect(copy.society.population).toBe(original.society.population);
+    expect(copy.buildings.all.map((building) => building.id)).toEqual(
+      original.buildings.all.map((building) => building.id)
+    );
+    expect(copy.world.vegetation.aliveCount).toBe(original.world.vegetation.aliveCount);
+    expect(plantsByCell(copy)).toStrictEqual(plantsByCell(original));
+    expect(copy.world.terrain).toStrictEqual(original.world.terrain);
+    expect(copy.calendar.view()).toEqual(original.calendar.view());
+
+    copy.runTicks(600);
+
+    expect(copy.tick).toBe(original.tick + 600);
+    expect(copy.society.tribes().length).toBeGreaterThan(0);
+    expect(copy.calendar.day).toBeGreaterThan(original.calendar.day);
+
+    for (const tribe of copy.society.tribes().filter((survivor) => tribeIds.includes(survivor.id))) {
+      expect(tribe.technologies.has("fire")).toBe(true);
+    }
+  });
+
+  it("sends the restored world to the renderer in full", () => {
+    const original = grownSimulation();
+
+    const copy = restored(snapshotOf(original));
+
+    const initial = copy.initialWorld();
+
+    expect(initial.terrain.height).toEqual(original.world.terrain.height);
+    expect(initial.terrain.waterSurface).toEqual(original.world.terrain.waterSurface);
+    expect(initial.vegetation.count).toBe(original.world.vegetation.count);
+    expect(initial.frame.buildings).toHaveLength(original.buildings.all.length);
+    expect(initial.frame.personCount).toBe(original.society.people.length);
+    expect(initial.frame.tribes.map((tribe) => tribe.id)).toEqual(original.society.tribes().map((tribe) => tribe.id));
+  });
+
+  it("drops jobs and claims that cannot be saved", () => {
+    const original = grownSimulation();
+
+    const snapshot = snapshotOf(original);
+
+    expect(snapshot.society.people.every((person) => person.job === null)).toBe(true);
+    expect(snapshot.society.tribes.every((tribe) => tribe.claimedPlants.size === 0)).toBe(true);
+  });
+
+  it("refuses to save while the land is still settling", () => {
+    const simulation = generateSimulation();
+
+    simulation.execute({ parameters: { radius: 60 }, powerId: "raise", type: "usePower", x: 0, z: 0 });
+    simulation.advance(0.05);
+
+    expect(simulation.isBusy).toBe(true);
+    expect(simulation.snapshot()).toBeNull();
+  });
+});
+
+describe.each(["round", "square"] as const)("a long day on a %s island", (shape) => {
+  test("keeps people and animals out of water and gets them out of a flood", { timeout: 180_000 }, () => {
+    const simulation = populatedIsland(shape);
+
+    expect(longestSpellInWater(simulation, RUN_SECONDS)).toBeLessThan(LONGEST_SPELL_IN_WATER);
+    expect(simulation.society.population).toBeGreaterThan(14);
+
+    const person = simulation.society.people.find((candidate) => candidate.isAlive);
+
+    if (person === undefined) {
+      throw new Error("Expected someone on the island");
+    }
+
+    const { world } = simulation;
+
+    floodCells(world, world.grid.cellsInRadius(person.mover.x, person.mover.z, FLOOD_RADIUS), FLOOD_DEPTH);
+    simulation.navigation.rebuild();
+
+    expect(walkers(simulation).some((walker) => isInOpenWater(simulation, walker))).toBe(true);
+
+    simulation.runTicks(SECONDS_TO_SWIM_OUT / TICK_SECONDS);
+
+    expect(walkers(simulation).filter((walker) => isInOpenWater(simulation, walker))).toEqual([]);
   });
 });
