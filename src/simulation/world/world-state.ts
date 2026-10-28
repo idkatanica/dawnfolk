@@ -35,8 +35,8 @@ export const SPRING_GROUND = -3;
 export const PLOT_GROUND = -4;
 export const CROSSING_GROUND = -5;
 export const SNOW_CAPACITY = 1.2;
-const TRODDEN_GROUND = 0.35;
 
+const TRODDEN_GROUND = 0.35;
 const MAXIMUM_TERRAIN_HEIGHT = 3200;
 const CROSSING_TOLERANCE = 0.01;
 const TERRAIN_LAPSE_RATE = 6.5 / 1000;
@@ -45,6 +45,14 @@ const TRODDEN_LEVELS = 32;
 
 const SPARSE_FIELDS = ["crop", "fire", "heat", "scorch", "trodden"] as const;
 const DENSE_FIELDS = ["snow", "wetness"] as const;
+const SAVED_TERRAIN_LAYERS = [
+  "baseTemperature",
+  "carving",
+  "ground",
+  "height",
+  "riverStrength",
+  "waterSurface",
+] as const;
 
 export interface SurfaceFields {
   crop: Float32Array;
@@ -62,15 +70,6 @@ type SparseField = (typeof SPARSE_FIELDS)[number];
 type DenseField = (typeof DENSE_FIELDS)[number];
 
 type SavedFields = Record<DenseField, Float32Array> & Record<SparseField | "fuel", SparseValues>;
-
-const SAVED_TERRAIN_LAYERS = [
-  "baseTemperature",
-  "carving",
-  "ground",
-  "height",
-  "riverStrength",
-  "waterSurface",
-] as const;
 
 type SavedTerrainLayer = (typeof SAVED_TERRAIN_LAYERS)[number];
 
@@ -116,6 +115,16 @@ function restoreDense(target: Float32Array, saved: Float32Array): void {
   target.set(saved);
 }
 
+function lowestValue(values: Float32Array): number {
+  let lowest = Number.POSITIVE_INFINITY;
+
+  for (const value of values) {
+    lowest = Math.min(lowest, value);
+  }
+
+  return lowest;
+}
+
 function createSurfaceFields(cellCount: number, ground: Uint8Array): SurfaceFields {
   return {
     crop: new Float32Array(cellCount),
@@ -131,8 +140,8 @@ function createSurfaceFields(cellCount: number, ground: Uint8Array): SurfaceFiel
 
 export class WorldState {
   readonly canopyFuel: Float32Array;
-  readonly disturbedDay: Float32Array;
   readonly cropCodes: Uint8Array;
+  readonly disturbedDay: Float32Array;
   readonly deposits: readonly Deposit[];
   readonly fields: SurfaceFields;
   readonly footingChanges = new RegionChangeTracker();
@@ -157,8 +166,8 @@ export class WorldState {
   heightVersion = 0;
   water: WaterFeatures;
   waterVersion = 0;
-  #crossingIndex: CrossingIndex;
   readonly #generatedTerrain: GeneratedTerrain;
+  #crossingIndex: CrossingIndex;
   #hasSuddenHeightEdit = false;
 
   constructor(generated: GeneratedWorld) {
@@ -281,16 +290,6 @@ export class WorldState {
     this.heightVersion = snapshot.heightVersion;
     this.waterVersion = snapshot.waterVersion;
     this.#hasSuddenHeightEdit = false;
-  }
-
-  #vegetationCanopy(): Float32Array {
-    const canopy = new Float32Array(this.grid.cellCount);
-
-    for (let cell = 0; cell < canopy.length; cell += 1) {
-      canopy[cell] = this.vegetation.canopyFuelInCell(cell);
-    }
-
-    return canopy;
   }
 
   heightAt(x: number, z: number): number {
@@ -589,6 +588,16 @@ export class WorldState {
     this.markWaterChanged();
   }
 
+  #vegetationCanopy(): Float32Array {
+    const canopy = new Float32Array(this.grid.cellCount);
+
+    for (let cell = 0; cell < canopy.length; cell += 1) {
+      canopy[cell] = this.vegetation.canopyFuelInCell(cell);
+    }
+
+    return canopy;
+  }
+
   #reserveSprings(springs: readonly Spring[]): void {
     for (const spring of springs) {
       for (const cell of spring.cells) {
@@ -608,14 +617,4 @@ export class WorldState {
       }
     }
   }
-}
-
-function lowestValue(values: Float32Array): number {
-  let lowest = Number.POSITIVE_INFINITY;
-
-  for (const value of values) {
-    lowest = Math.min(lowest, value);
-  }
-
-  return lowest;
 }

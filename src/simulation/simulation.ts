@@ -163,7 +163,7 @@ export class Simulation {
   readonly weather = new WeatherSystem();
   readonly world: WorldState;
   readonly #faunaThreats: FaunaThreats;
-  readonly #frames: FrameBuilder;
+  readonly #frameBuilder: FrameBuilder;
   #isPaused: boolean;
   #notices: string[] = [];
   #selection: Selection | null = null;
@@ -196,7 +196,7 @@ export class Simulation {
     this.rivalry = new RivalrySystem({ chronicle: this.chronicle, effects: this.effects, seed: generated.seed });
     this.services = this.#createServices();
     this.#faunaThreats = this.#createFaunaThreats();
-    this.#frames = new FrameBuilder(this);
+    this.#frameBuilder = new FrameBuilder(this);
     this.#isPaused = false;
   }
 
@@ -448,7 +448,7 @@ export class Simulation {
 
     this.#tickBacklog = Math.min(this.#tickBacklog, TICK_SECONDS);
 
-    return this.#frames.build();
+    return this.#frameBuilder.build();
   }
 
   runTicks(count: number): void {
@@ -476,7 +476,7 @@ export class Simulation {
   }
 
   initialWorld(): InitialWorld {
-    return this.#frames.initialWorld();
+    return this.#frameBuilder.initialWorld();
   }
 
   #gameSeconds(realSeconds: number): number {
@@ -505,6 +505,26 @@ export class Simulation {
       rules: DEFAULT_WORLD_RULES,
       schedule: (delaySeconds, run) => this.schedule(delaySeconds, run),
       world: this.world,
+    };
+  }
+
+  #createFaunaThreats(): FaunaThreats {
+    return {
+      dangerNear: (x, z, radius) => this.hazards.dangerNear(x, z, radius),
+      hunterNear: (x, z, radius) => {
+        const hunter = this.society.nearestPerson(x, z, radius, (person) => {
+          const isStalking = person.job?.kind === "hunt";
+
+          return !isStalking || Math.hypot(person.mover.x - x, person.mover.z - z) < HUNTER_NOTICE_DISTANCE;
+        });
+
+        if (hunter === null) {
+          return null;
+        }
+
+        return { x: hunter.mover.x, z: hunter.mover.z };
+      },
+      people: this.rivalry.senses(this.services),
     };
   }
 
@@ -715,26 +735,6 @@ export class Simulation {
 
     this.effects.add({ ...mover.splash, kind: "splash" });
     mover.splash = null;
-  }
-
-  #createFaunaThreats(): FaunaThreats {
-    return {
-      dangerNear: (x, z, radius) => this.hazards.dangerNear(x, z, radius),
-      hunterNear: (x, z, radius) => {
-        const hunter = this.society.nearestPerson(x, z, radius, (person) => {
-          const isStalking = person.job?.kind === "hunt";
-
-          return !isStalking || Math.hypot(person.mover.x - x, person.mover.z - z) < HUNTER_NOTICE_DISTANCE;
-        });
-
-        if (hunter === null) {
-          return null;
-        }
-
-        return { x: hunter.mover.x, z: hunter.mover.z };
-      },
-      people: this.rivalry.senses(this.services),
-    };
   }
 
   #recordBuildingIncidents(): void {

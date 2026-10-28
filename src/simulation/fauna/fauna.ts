@@ -110,6 +110,8 @@ export interface FaunaTick {
 }
 
 export class FaunaSystem {
+  readonly #animalsById = new Map<number, Animal>();
+  readonly #herdsById = new Map<number, Herd>();
   readonly #identifiers: IdentifierSource;
   readonly #instincts: BeastInstincts;
   readonly #navigation: NavigationGrid;
@@ -117,8 +119,6 @@ export class FaunaSystem {
   readonly #world: WorldState;
   #animals: Animal[] = [];
   #herds: Herd[] = [];
-  readonly #animalsById = new Map<number, Animal>();
-  readonly #herdsById = new Map<number, Herd>();
   #predators: Animal[] = [];
 
   constructor(world: WorldState, navigation: NavigationGrid, identifiers: IdentifierSource) {
@@ -137,6 +137,14 @@ export class FaunaSystem {
       random: createRandom(world.seed * 31 + 7),
       world,
     });
+  }
+
+  get animals(): readonly Animal[] {
+    return this.#animals;
+  }
+
+  get herds(): readonly Herd[] {
+    return this.#herds;
   }
 
   snapshot(): FaunaSnapshot {
@@ -165,14 +173,6 @@ export class FaunaSystem {
 
     this.#smallGameRandom.restore(snapshot.smallGameRandom);
     this.#instincts.restore(snapshot.instincts);
-  }
-
-  get animals(): readonly Animal[] {
-    return this.#animals;
-  }
-
-  get herds(): readonly Herd[] {
-    return this.#herds;
   }
 
   findAnimal(id: number): Animal | null {
@@ -396,6 +396,11 @@ export class FaunaSystem {
     this.#animalsById.set(animal.id, animal);
 
     return animal;
+  }
+
+  #addHerd(herd: Herd): void {
+    this.#herds.push(herd);
+    this.#herdsById.set(herd.id, herd);
   }
 
   #firstMember(herd: Herd): Animal | null {
@@ -950,11 +955,6 @@ export class FaunaSystem {
 
     this.#animals = this.#animals.filter((animal) => animal.isAlive || animal.deathSeconds <= CORPSE_SECONDS);
     this.#herds = this.#herds.filter((herd) => herd.memberIds.length > 0);
-  }
-
-  #addHerd(herd: Herd): void {
-    this.#herds.push(herd);
-    this.#herdsById.set(herd.id, herd);
   }
 }
 

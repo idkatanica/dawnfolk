@@ -1,81 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { worldRulesSchema } from "../../../content/world-rules.ts";
-import { armTribe, foundTribe, runUntil, setFood } from "../../testing/test-rivalry.ts";
+import {
+  armTribe,
+  chronicleTexts,
+  foundNeighboringTribes,
+  foundTribe,
+  runUntil,
+  SPRING_HARNESS,
+  setFood,
+} from "../../testing/test-rivalry.ts";
 import { SocietyHarness, tickFor } from "../../testing/test-society.ts";
-import type { Building } from "../buildings.ts";
 import { assignJob } from "../decisions.ts";
 import { FleeJob } from "../jobs/flee-job.ts";
-import type { Job } from "../jobs/job.ts";
 import { totalFood } from "../stock.ts";
-import type { Tribe } from "../tribe.ts";
-import type { CarriedWeapon } from "../weapons.ts";
-import { FightJob } from "./defense-jobs.ts";
-import { personFoe } from "./foes.ts";
-import { burnableBuilding, type RaidPhase, rationsFor } from "./raids.ts";
+import { type RaidPhase, rationsFor } from "./raids.ts";
 import { sideOf } from "./relations.ts";
-import { strike } from "./strikes.ts";
-import { wallCover } from "./walls.ts";
 
-const MORNING = 0.3;
-const QUIVER = 10;
-const SPEAR: CarriedWeapon = { kind: "spear", material: "stone" };
-const BOW: CarriedWeapon = { kind: "bow", material: "stone" };
-const BARE_HANDS: CarriedWeapon = { kind: "none" };
-const SPRING_HARNESS = { day: MORNING, world: { dimensions: { cellSize: 10, cellsPerSide: 96 } } };
 const FEUD_STORY = /^feud: The .+ became enemies over/u;
 const RAID_SENT_STORY = /^raid: The .+ sent \d warriors against the .+/u;
 const RAID_OUTCOME_STORY = /^raid: The .+ (?:raided|drove off a raid by) the .+/u;
 const PLUNDER_STORY = /^raid: The .+ raided the .+: carried off/u;
-const SLAIN_STORY = /was slain by the/u;
 const GIFTS_STORY = /^peace: The .+ brought gifts to the .+, and they made peace/u;
 const TRUCE_STORY = /^peace: .+ agreed to a truce/u;
-
-function neighbours(harness: SocietyHarness, distance: number): readonly [Tribe, Tribe] {
-  const first = foundTribe(harness, { adults: 8, children: 2, x: -distance / 2, z: 0 });
-  const second = foundTribe(harness, { adults: 6, children: 2, x: distance / 2, z: 0 });
-
-  return [first, second];
-}
-
-function standStill(): Job {
-  const job: Job = { kind: "idle", update: () => job };
-
-  return job;
-}
-
-function enclosure(kind: "palisade" | "stoneWall", tribe: Tribe, extent: number): Building {
-  return {
-    burningSeconds: 0,
-    cell: 0,
-    cells: [],
-    depositId: -1,
-    extent,
-    fuel: 1,
-    health: 200,
-    id: tribe.id * 100,
-    isRetiring: false,
-    kind,
-    progress: 1,
-    replacesId: null,
-    rotation: 0,
-    seed: 0.5,
-    style: 0,
-    tribeId: tribe.id,
-    x: tribe.campX,
-    z: tribe.campZ,
-  };
-}
-
-function chronicleTexts(harness: SocietyHarness): string[] {
-  return harness.chronicle.takeEntries().map((entry) => `${entry.category}: ${entry.text}`);
-}
 
 describe("relations between tribes", () => {
   it("sour into a feud when their lands and hunting grounds overlap", () => {
     const quarrelsome = worldRulesSchema.parse({ life: { rivalry: 3 } });
     const harness = new SocietyHarness({ ...SPRING_HARNESS, rules: quarrelsome });
 
-    const [first, second] = neighbours(harness, 480);
+    const [first, second] = foundNeighboringTribes(harness, 480);
 
     runUntil(harness, 2400, () => harness.rivalry.relations.find(first.id, second.id)?.stance === "hostile");
 
@@ -107,7 +60,7 @@ describe("relations between tribes", () => {
   it("start friendly with the tribe they split from", () => {
     const harness = new SocietyHarness(SPRING_HARNESS);
 
-    const [parent, offshoot] = neighbours(harness, 900);
+    const [parent, offshoot] = foundNeighboringTribes(harness, 900);
 
     offshoot.originId = parent.id;
     harness.run(3);
@@ -123,7 +76,7 @@ describe("a raid", () => {
   it("musters, marches, fights at the enemy camp and comes home to tell of it", () => {
     const harness = new SocietyHarness(SPRING_HARNESS);
 
-    const [raiders, victims] = neighbours(harness, 420);
+    const [raiders, victims] = foundNeighboringTribes(harness, 420);
 
     armTribe(raiders, 200);
     armTribe(victims, 60);
@@ -199,22 +152,10 @@ describe("a raid", () => {
     expect(raiders.stock.copper).toBe(raid?.loot.copper);
   });
 
-  it("sets fire only to what can burn", () => {
-    const harness = new SocietyHarness(SPRING_HARNESS);
-
-    const [victims] = neighbours(harness, 900);
-
-    const wall = enclosure("stoneWall", victims, 40);
-    const palisade = enclosure("palisade", victims, 40);
-
-    expect(burnableBuilding([wall], victims)).toBeNull();
-    expect(burnableBuilding([wall, palisade], victims)).toBe(palisade);
-  });
-
   it("stays home in winter", () => {
     const harness = new SocietyHarness({ ...SPRING_HARNESS, day: 10.4 });
 
-    const [first, second] = neighbours(harness, 420);
+    const [first, second] = foundNeighboringTribes(harness, 420);
 
     const relation = harness.rivalry.relations.meet(first.id, second.id, false);
 
@@ -228,155 +169,11 @@ describe("a raid", () => {
   });
 });
 
-describe("combat", () => {
-  it("lets a spearman get the better of a bare-handed fighter", () => {
-    const harness = new SocietyHarness(SPRING_HARNESS);
-
-    const [first, second] = neighbours(harness, 900);
-    const [spearman] = harness.society.membersOf(first);
-    const [brawler] = harness.society.membersOf(second);
-
-    for (const person of harness.society.people) {
-      person.job = standStill();
-    }
-
-    brawler.mover.x = spearman.mover.x + 6;
-    brawler.mover.z = spearman.mover.z;
-    spearman.job = new FightJob(tickFor(harness, spearman, first), personFoe(brawler), SPEAR);
-    brawler.job = new FightJob(tickFor(harness, brawler, second), personFoe(spearman), BARE_HANDS);
-    runUntil(harness, 40, () => !(spearman.isAlive && brawler.isAlive) || brawler.health < 0.25);
-
-    expect(brawler.health).toBeLessThan(spearman.health);
-    expect(brawler.health).toBeLessThan(0.3);
-  });
-
-  it("blocks some blows of a fighter facing the attack and lets others through", () => {
-    const harness = new SocietyHarness(SPRING_HARNESS);
-
-    const [first, second] = neighbours(harness, 900);
-    const [attacker] = harness.society.membersOf(first);
-    const [defender] = harness.society.membersOf(second);
-
-    defender.mover.x = attacker.mover.x;
-    defender.mover.z = attacker.mover.z + 2;
-    defender.mover.heading = Math.PI;
-    defender.job = new FightJob(tickFor(harness, defender, second), personFoe(attacker), SPEAR);
-
-    const outcomes = Array.from({ length: 60 }, () => {
-      defender.health = 1;
-      harness.rivalry.ledger.update(5);
-
-      return strike(attacker, SPEAR, personFoe(defender), harness.rivalry, harness.context);
-    });
-
-    expect(outcomes).toContain("blocked");
-    expect(outcomes).toContain("hit");
-    expect(outcomes).toContain("missed");
-  });
-
-  it("looses arrows that fly before they wound", () => {
-    const harness = new SocietyHarness(SPRING_HARNESS);
-
-    const [first, second] = neighbours(harness, 900);
-    const [archer] = harness.society.membersOf(first);
-    const [target] = harness.society.membersOf(second);
-
-    for (const person of harness.society.people) {
-      person.job = standStill();
-    }
-
-    first.stock.arrows = QUIVER;
-    target.mover.x = archer.mover.x + 15;
-    target.mover.z = archer.mover.z;
-    archer.job = new FightJob(tickFor(harness, archer, first), personFoe(target), BOW);
-    runUntil(harness, 30, () => target.health < 1);
-
-    const arrows = harness.effects.takeEffects().filter((effect) => effect.kind === "arrow");
-
-    expect(arrows.length).toBeGreaterThan(0);
-    expect(first.stock.arrows).toBe(QUIVER - arrows.length);
-    expect(target.health).toBeLessThan(1);
-    expect(archer.pose === "shoot" || archer.pose === "flinch").toBe(true);
-  });
-
-  it("closes in bare-handed when the tribe has no arrows left", () => {
-    const harness = new SocietyHarness(SPRING_HARNESS);
-
-    const [first, second] = neighbours(harness, 900);
-    const [archer] = harness.society.membersOf(first);
-    const [target] = harness.society.membersOf(second);
-
-    for (const person of harness.society.people) {
-      person.job = standStill();
-    }
-
-    first.stock.arrows = 0;
-    target.mover.x = archer.mover.x + 15;
-    target.mover.z = archer.mover.z;
-    archer.job = new FightJob(tickFor(harness, archer, first), personFoe(target), BOW);
-    runUntil(harness, 20, () => archer.pose === "brawl");
-
-    expect(harness.effects.takeEffects().some((effect) => effect.kind === "arrow")).toBe(false);
-    expect(archer.pose).toBe("brawl");
-  });
-
-  it("shelters defenders behind their own wall", () => {
-    const harness = new SocietyHarness(SPRING_HARNESS);
-
-    const [first, second] = neighbours(harness, 900);
-    const [defender] = harness.society.membersOf(first);
-    const [raider] = harness.society.membersOf(second);
-
-    const palisade = enclosure("palisade", first, 40);
-    const wall = enclosure("stoneWall", first, 40);
-
-    raider.mover.x = first.campX + 60;
-    raider.mover.z = first.campZ;
-    defender.mover.x = first.campX + 10;
-    defender.mover.z = first.campZ;
-
-    expect(wallCover(defender, raider, [])).toBe(0);
-    expect(wallCover(defender, raider, [palisade])).toBeGreaterThan(0);
-    expect(wallCover(defender, raider, [palisade, wall])).toBeGreaterThan(wallCover(defender, raider, [palisade]));
-    expect(wallCover(raider, defender, [palisade])).toBe(0);
-  });
-
-  it("records the fallen and the blood feud they leave behind", () => {
-    const harness = new SocietyHarness(SPRING_HARNESS);
-
-    const [first, second] = neighbours(harness, 900);
-    const [slayer] = harness.society.membersOf(first);
-    const [victim] = harness.society.membersOf(second);
-
-    harness.rivalry.relations.meet(first.id, second.id, false);
-    victim.health = 0.05;
-    victim.mover.x = slayer.mover.x + 1;
-    victim.mover.z = slayer.mover.z;
-
-    for (let attempt = 0; attempt < 20 && victim.isAlive; attempt += 1) {
-      strike(slayer, SPEAR, personFoe(victim), harness.rivalry, harness.context);
-    }
-
-    const relation = harness.rivalry.relations.find(first.id, second.id);
-
-    expect(victim.isAlive).toBe(false);
-    expect(victim.causeOfDeath).toBe("battle");
-    expect(victim.pose).toBe("fall");
-    expect(relation?.lastGrudge).toBe("blood");
-    expect(relation === null ? 0 : sideOf(relation, second.id).deaths).toBe(1);
-    expect(chronicleTexts(harness)).toContainEqual(expect.stringMatching(SLAIN_STORY));
-
-    harness.run(2);
-
-    expect(victim.pose).toBe("dead");
-  });
-});
-
 describe("peace", () => {
   it("comes with gifts carried by an envoy after a long and costly feud", () => {
     const harness = new SocietyHarness(SPRING_HARNESS);
 
-    const [first, second] = neighbours(harness, 420);
+    const [first, second] = foundNeighboringTribes(harness, 420);
 
     const relation = harness.rivalry.relations.meet(first.id, second.id, false);
 
@@ -404,7 +201,7 @@ describe("peace", () => {
   it("keeps the gifts at home until the envoy reaches the other camp", () => {
     const harness = new SocietyHarness(SPRING_HARNESS);
 
-    const [first, second] = neighbours(harness, 420);
+    const [first, second] = foundNeighboringTribes(harness, 420);
 
     const relation = harness.rivalry.relations.meet(first.id, second.id, false);
 
@@ -444,7 +241,7 @@ describe("peace", () => {
   it("is a bare truce when the weary tribe has nothing to give", () => {
     const harness = new SocietyHarness(SPRING_HARNESS);
 
-    const [first, second] = neighbours(harness, 420);
+    const [first, second] = foundNeighboringTribes(harness, 420);
 
     const relation = harness.rivalry.relations.meet(first.id, second.id, false);
 
@@ -470,7 +267,7 @@ describe("determinism", () => {
   function replay(): string[] {
     const harness = new SocietyHarness(SPRING_HARNESS);
 
-    const [raiders, victims] = neighbours(harness, 420);
+    const [raiders, victims] = foundNeighboringTribes(harness, 420);
 
     armTribe(raiders, 200);
     armTribe(victims, 60);

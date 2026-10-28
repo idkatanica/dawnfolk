@@ -18,6 +18,14 @@ const NEXT_BUSH_RADIUS = 70;
 const CHILD_SEARCH_RADIUS = 160;
 const ADULT_SEARCH_RADIUS = 380;
 
+type ForageKind = "gather" | "pick";
+
+interface SearchArea {
+  radius: number;
+  x: number;
+  z: number;
+}
+
 function isRipeBush(tick: PersonTick): (plant: number) => boolean {
   const { vegetation } = tick.context.world;
   const { claimedPlants } = tick.tribe;
@@ -29,12 +37,6 @@ function isRipeBush(tick: PersonTick): (plant: number) => boolean {
 
     return plantSpeciesDefinition(vegetation.species[plant]).givesBerries && vegetation.fruit[plant] > RIPE_BUSH;
   };
-}
-
-interface SearchArea {
-  radius: number;
-  x: number;
-  z: number;
 }
 
 function gatheringArea(tick: PersonTick): SearchArea {
@@ -95,10 +97,10 @@ export function findFruit(tick: PersonTick): ForageJob | null {
 
 class ForageJob implements Job {
   readonly claimedPlant: number;
-  readonly kind: "gather" | "pick";
+  readonly kind: ForageKind;
   readonly #errand: Errand;
 
-  constructor(tick: PersonTick, plant: number, kind: "gather" | "pick") {
+  constructor(tick: PersonTick, plant: number, kind: ForageKind) {
     const target = plantTarget(tick.context.world.vegetation, plant, GATHERING_REACH);
 
     this.claimedPlant = plant;

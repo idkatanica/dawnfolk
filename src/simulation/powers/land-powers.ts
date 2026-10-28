@@ -71,7 +71,6 @@ function liftPower<Id extends "lower" | "raise">(direction: number): PowerHandle
 }
 
 export const raisePower = liftPower<"raise">(1);
-
 export const lowerPower = liftPower<"lower">(-1);
 
 export function flattenPower(

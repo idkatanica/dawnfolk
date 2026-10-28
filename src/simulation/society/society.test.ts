@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { worldRulesSchema } from "../../content/world-rules.ts";
-import { SocietyHarness, settle } from "../testing/test-society.ts";
+import {
+  createStripHarness,
+  firstMemberTick,
+  SocietyHarness,
+  settle,
+  standsOnDryLand,
+} from "../testing/test-society.ts";
+import { floodCells } from "../testing/test-world.ts";
+import { assignJob } from "./decisions.ts";
+import { findBerries } from "./jobs/gather-job.ts";
 import type { Person } from "./person.ts";
 import { totalFood } from "./stock.ts";
 
 const MORNING = 0.3;
 const EVENING = 0.9;
 const LATE_EVENING = 23 / 24;
+const WORK_POSES: ReadonlySet<string> = new Set(["gather", "chop", "dig", "fish", "build", "throw"]);
 
 function placeOnAxis(person: Person, x: number): void {
   person.mover.x = x;
@@ -55,7 +65,6 @@ describe("daily life", () => {
     const harness = new SocietyHarness({ day: MORNING });
 
     const tribe = settle(harness, 4);
-
     const members = harness.society.membersOf(tribe);
 
     for (const person of members) {
@@ -153,7 +162,6 @@ describe("people nearby", () => {
     const harness = new SocietyHarness();
 
     const tribe = settle(harness, 4);
-
     const [first, second, third, fourth] = harness.society.membersOf(tribe);
 
     placeOnAxis(first, 10);
@@ -203,5 +211,67 @@ describe("progress", () => {
     harness.run(480);
 
     expect(tribe.births).toBeGreaterThan(0);
+  });
+});
+
+describe("staying dry", () => {
+  it("lets newcomers arrive on dry land only", () => {
+    const harness = createStripHarness();
+
+    const tribe = settle(harness, 12);
+
+    const members = harness.society.membersOf(tribe);
+
+    expect(members.filter((person) => !standsOnDryLand(harness, person))).toEqual([]);
+  });
+
+  it("walks people out of water that rose around them", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+
+    const tribe = settle(harness, 4);
+
+    const [person] = harness.society.membersOf(tribe);
+
+    floodCells(harness.world, harness.world.grid.cellsInRadius(person.mover.x, person.mover.z, 40), 1.6);
+    harness.navigation.rebuild();
+
+    expect(harness.world.isWaterAt(person.mover.x, person.mover.z)).toBe(true);
+
+    harness.run(60);
+
+    expect(harness.world.isWaterAt(person.mover.x, person.mover.z)).toBe(false);
+  });
+
+  it("drops its work and walks out when the water rises under it", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+
+    const tick = firstMemberTick(harness, settle(harness, 1));
+    const { person } = tick;
+
+    const job = findBerries({ ...tick, person });
+
+    if (job === null) {
+      throw new Error("Expected berries to gather");
+    }
+
+    assignJob(tick, job);
+    harness.run(1);
+
+    floodCells(harness.world, harness.world.grid.cellsInRadius(person.mover.x, person.mover.z, 25), 1);
+    harness.navigation.rebuild();
+    harness.step();
+
+    expect(person.job).toBeNull();
+
+    let workedInWater = false;
+
+    for (let step = 0; step < 600; step += 1) {
+      harness.step();
+      workedInWater =
+        workedInWater || (harness.world.isWaterAt(person.mover.x, person.mover.z) && WORK_POSES.has(person.pose));
+    }
+
+    expect(workedInWater).toBe(false);
+    expect(harness.world.isWaterAt(person.mover.x, person.mover.z)).toBe(false);
   });
 });

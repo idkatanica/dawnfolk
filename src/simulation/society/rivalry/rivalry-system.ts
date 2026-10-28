@@ -290,6 +290,10 @@ export class RivalrySystem implements Battleground {
     this.random = createRandom(dependencies.seed * 13 + 101);
   }
 
+  get raids(): readonly Raid[] {
+    return this.#raids;
+  }
+
   snapshot(): RivalrySnapshot {
     return {
       claims: structuredClone(this.#claims),
@@ -316,10 +320,6 @@ export class RivalrySystem implements Battleground {
     copyDates(this.#restingUntil, snapshot.restingUntil);
     this.#surveyDays = snapshot.surveyDays;
     this.#surveySeconds = snapshot.surveySeconds;
-  }
-
-  get raids(): readonly Raid[] {
-    return this.#raids;
   }
 
   raidOf(id: number): Raid | null {
@@ -399,6 +399,74 @@ export class RivalrySystem implements Battleground {
       x: host.campX,
       z: host.campZ,
     });
+  }
+
+  launchRaid(attacker: Tribe, defender: Tribe, context: SocietyContext): Raid | null {
+    const relation = this.relations.meet(attacker.id, defender.id, areKin(attacker, defender));
+    const warriors = chooseWarriors(context.people.membersOf(attacker));
+
+    if (warriors.length === 0) {
+      return null;
+    }
+
+    const campfire = litCampfireOf(attacker, context.buildings);
+    const canBurn = knows(attacker, "fire") && burnableBuilding(context.buildings.all, defender) !== null;
+    const aim = chooseAim(relation.lastGrudge === "blood", canBurn, -relation.standing / 100);
+    const rally =
+      campfire === null ? { x: attacker.campX, z: attacker.campZ } : towards(campfire, defender, RALLY_DISTANCE);
+
+    const raid: Raid = {
+      aim,
+      attackerId: attacker.id,
+      burned: [],
+      defenderId: defender.id,
+      fallenDefenders: [],
+      fallenRaiders: [],
+      id: this.#nextRaidId,
+      isAlarmRaised: false,
+      loot: emptyStock(),
+      phase: "muster",
+      phaseSeconds: 0,
+      rally,
+      routedIds: new Set(),
+      struckIds: new Set(),
+      target: { x: defender.campX, z: defender.campZ },
+      warriorIds: warriors.map((warrior) => warrior.id),
+    };
+
+    const distance = Math.hypot(attacker.campX - defender.campX, attacker.campZ - defender.campZ);
+    const rations = rationsFor(distance, context.rules.life.hungerRate);
+
+    const provisions = rations * warriors.length * PROVISIONED_SHARE;
+
+    if (totalFood(attacker.stock) < provisions + attacker.memberCount * FOOD_RESERVE) {
+      return null;
+    }
+
+    takeFood(attacker.stock, provisions);
+    this.#nextRaidId += 1;
+    this.#raids.push(raid);
+    this.#restingUntil.set(attacker.id, context.environment.day + RAID_REST_DAYS);
+
+    for (const [slot, warrior] of warriors.entries()) {
+      armForHunt(warrior, attacker);
+
+      const weapon = carriedWeapon(warrior);
+
+      takeUpJob(warrior, attacker, context, (tick) => new RaidJob(tick, raid, weapon, slot, rations));
+    }
+
+    this.#chronicle.record({
+      category: "raid",
+      text: capitalized(
+        `${theTribe(attacker.name)} sent ${warriors.length} warriors against ${theTribe(defender.name)}`
+      ),
+      tribeId: attacker.id,
+      x: attacker.campX,
+      z: attacker.campZ,
+    });
+
+    return raid;
   }
 
   update(seconds: number, days: number, context: SocietyContext): void {
@@ -659,74 +727,6 @@ export class RivalrySystem implements Battleground {
     const distance = Math.hypot(attacker.campX - defender.campX, attacker.campZ - defender.campZ);
 
     return !(isResting || isMourning) && distance < LONGEST_RAID_DISTANCE;
-  }
-
-  launchRaid(attacker: Tribe, defender: Tribe, context: SocietyContext): Raid | null {
-    const relation = this.relations.meet(attacker.id, defender.id, areKin(attacker, defender));
-    const warriors = chooseWarriors(context.people.membersOf(attacker));
-
-    if (warriors.length === 0) {
-      return null;
-    }
-
-    const campfire = litCampfireOf(attacker, context.buildings);
-    const canBurn = knows(attacker, "fire") && burnableBuilding(context.buildings.all, defender) !== null;
-    const aim = chooseAim(relation.lastGrudge === "blood", canBurn, -relation.standing / 100);
-    const rally =
-      campfire === null ? { x: attacker.campX, z: attacker.campZ } : towards(campfire, defender, RALLY_DISTANCE);
-
-    const raid: Raid = {
-      aim,
-      attackerId: attacker.id,
-      burned: [],
-      defenderId: defender.id,
-      fallenDefenders: [],
-      fallenRaiders: [],
-      id: this.#nextRaidId,
-      isAlarmRaised: false,
-      loot: emptyStock(),
-      phase: "muster",
-      phaseSeconds: 0,
-      rally,
-      routedIds: new Set(),
-      struckIds: new Set(),
-      target: { x: defender.campX, z: defender.campZ },
-      warriorIds: warriors.map((warrior) => warrior.id),
-    };
-
-    const distance = Math.hypot(attacker.campX - defender.campX, attacker.campZ - defender.campZ);
-    const rations = rationsFor(distance, context.rules.life.hungerRate);
-
-    const provisions = rations * warriors.length * PROVISIONED_SHARE;
-
-    if (totalFood(attacker.stock) < provisions + attacker.memberCount * FOOD_RESERVE) {
-      return null;
-    }
-
-    takeFood(attacker.stock, provisions);
-    this.#nextRaidId += 1;
-    this.#raids.push(raid);
-    this.#restingUntil.set(attacker.id, context.environment.day + RAID_REST_DAYS);
-
-    for (const [slot, warrior] of warriors.entries()) {
-      armForHunt(warrior, attacker);
-
-      const weapon = carriedWeapon(warrior);
-
-      takeUpJob(warrior, attacker, context, (tick) => new RaidJob(tick, raid, weapon, slot, rations));
-    }
-
-    this.#chronicle.record({
-      category: "raid",
-      text: capitalized(
-        `${theTribe(attacker.name)} sent ${warriors.length} warriors against ${theTribe(defender.name)}`
-      ),
-      tribeId: attacker.id,
-      x: attacker.campX,
-      z: attacker.campZ,
-    });
-
-    return raid;
   }
 
   #advanceRaids(seconds: number, context: SocietyContext): void {

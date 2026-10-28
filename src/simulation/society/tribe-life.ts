@@ -225,7 +225,7 @@ function giveBirth(tick: TribeTick, mother: Person): void {
 
   mother.lastBirthDay = context.environment.day;
   tribe.births += 1;
-  tick.context.people.addPerson(tribe, child);
+  context.people.addPerson(tribe, child);
   assignHomes(tribe, context);
   context.chronicle.record({
     category: "birth",

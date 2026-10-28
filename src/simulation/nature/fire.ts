@@ -63,6 +63,14 @@ export class FireSystem {
     this.#windFactors.fill(1);
   }
 
+  get burningCount(): number {
+    return this.#burning.size;
+  }
+
+  get windStrength(): number {
+    return this.#windStrength;
+  }
+
   snapshot(): FireSnapshot {
     return { burning: this.#burning.snapshot(), heated: this.#heated.snapshot() };
   }
@@ -70,14 +78,6 @@ export class FireSystem {
   restore(snapshot: FireSnapshot): void {
     this.#burning.restore(snapshot.burning);
     this.#heated.restore(snapshot.heated);
-  }
-
-  get burningCount(): number {
-    return this.#burning.size;
-  }
-
-  get windStrength(): number {
-    return this.#windStrength;
   }
 
   burningCells(): Int32Array {

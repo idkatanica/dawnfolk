@@ -75,6 +75,14 @@ export class SocietySystem {
     this.#dependencies = dependencies;
   }
 
+  get people(): readonly Person[] {
+    return this.#people;
+  }
+
+  get population(): number {
+    return this.#people.filter((person) => person.isAlive).length;
+  }
+
   snapshot(): SocietySnapshot {
     return {
       people: this.#people.map(savedPerson),
@@ -100,14 +108,6 @@ export class SocietySystem {
     }
 
     this.#trodden.restore(snapshot.trodden);
-  }
-
-  get people(): readonly Person[] {
-    return this.#people;
-  }
-
-  get population(): number {
-    return this.#people.filter((person) => person.isAlive).length;
   }
 
   tribes(): readonly Tribe[] {

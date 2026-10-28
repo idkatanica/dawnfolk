@@ -8,6 +8,52 @@ import type { WorldState } from "../world/world-state.ts";
 import type { Animal, FaunaTick } from "./fauna.ts";
 import { CALM_FEAR, startleAnimal } from "./fear.ts";
 
+const SCENT_RADIUS = 300;
+const PROWL_RADIUS = 3500;
+const PROWL_HUNGER = 0.55;
+const PROWL_STAND_OFF = 90;
+const HUNT_CHECK_SECONDS = 3;
+const HUNT_CHANCE = 0.9;
+const HUNGER_PER_DAY = 0.7;
+const LONGEST_HUNT_SECONDS = 60;
+const REST_AFTER_FEAST_DAYS = 2;
+const REST_AFTER_FAILURE_DAYS = 1;
+const HURT_SHARE = 0.55;
+const LONE_COMPANIONS = 1;
+const GROUP_COMPANIONS = 3;
+const BITE_REACH = 1.7;
+const BITE_CHANCE = 0.62;
+const BITE_DAMAGE: readonly [number, number] = [0.12, 0.19];
+const BITE_SECONDS: readonly [number, number] = [0.9, 1.4];
+const RETARGET_SECONDS = 0.5;
+const FLINCH_SECONDS = 0.45;
+const STALKING_SPEED_SHARE = 0.85;
+const CHARGE_SECONDS = 7;
+const CHARGE_GIVE_UP_DISTANCE = 50;
+const CHARGE_SPEED_SHARE = 1.2;
+const MAMMOTH_REACH = 3.4;
+const STAG_REACH = 1.8;
+const TRAMPLE_DAMAGE: readonly [number, number] = [0.38, 0.55];
+const GORE_DAMAGE: readonly [number, number] = [0.14, 0.24];
+const MAMMOTH_CHARGE_CHANCE = 0.5;
+const BULL_CHARGE_CHANCE = 0.45;
+const HERD_GUARD_RADIUS = 45;
+const STAG_NOTICE_RADIUS = 5;
+const STAG_CHANCE = 0.4;
+const CORNERED_SECONDS = 0.3;
+const CHASE_HUNGER = 0.3;
+const CHASE_CHANCE = 0.7;
+const CHASE_START_DISTANCE = 45;
+const LONGEST_CHASE_SECONDS = 22;
+const CHASE_SPEED_SHARE = 1.15;
+const POUNCE_REACH = 1.6;
+const PREY_LEAD_SECONDS = 0.6;
+const POUNCE_CHANCE = 0.5;
+const POUNCE_SECONDS: readonly [number, number] = [0.4, 0.8];
+const SMALL_PREY_MEAL = 0.45;
+const REST_AFTER_SMALL_PREY_DAYS = 0.2;
+const REST_AFTER_ESCAPE_DAYS = 0.05;
+
 export interface Quarry {
   readonly companions: number;
   readonly frailty: number;
@@ -102,52 +148,6 @@ interface Strike {
   cooldownSeconds: number;
   retargetSeconds: number;
 }
-
-const SCENT_RADIUS = 300;
-const PROWL_RADIUS = 3500;
-const PROWL_HUNGER = 0.55;
-const PROWL_STAND_OFF = 90;
-const HUNT_CHECK_SECONDS = 3;
-const HUNT_CHANCE = 0.9;
-const HUNGER_PER_DAY = 0.7;
-const LONGEST_HUNT_SECONDS = 60;
-const REST_AFTER_FEAST_DAYS = 2;
-const REST_AFTER_FAILURE_DAYS = 1;
-const HURT_SHARE = 0.55;
-const LONE_COMPANIONS = 1;
-const GROUP_COMPANIONS = 3;
-const BITE_REACH = 1.7;
-const BITE_CHANCE = 0.62;
-const BITE_DAMAGE: readonly [number, number] = [0.12, 0.19];
-const BITE_SECONDS: readonly [number, number] = [0.9, 1.4];
-const RETARGET_SECONDS = 0.5;
-const FLINCH_SECONDS = 0.45;
-const STALKING_SPEED_SHARE = 0.85;
-const CHARGE_SECONDS = 7;
-const CHARGE_GIVE_UP_DISTANCE = 50;
-const CHARGE_SPEED_SHARE = 1.2;
-const MAMMOTH_REACH = 3.4;
-const STAG_REACH = 1.8;
-const TRAMPLE_DAMAGE: readonly [number, number] = [0.38, 0.55];
-const GORE_DAMAGE: readonly [number, number] = [0.14, 0.24];
-const MAMMOTH_CHARGE_CHANCE = 0.5;
-const BULL_CHARGE_CHANCE = 0.45;
-const HERD_GUARD_RADIUS = 45;
-const STAG_NOTICE_RADIUS = 5;
-const STAG_CHANCE = 0.4;
-const CORNERED_SECONDS = 0.3;
-const CHASE_HUNGER = 0.3;
-const CHASE_CHANCE = 0.7;
-const CHASE_START_DISTANCE = 45;
-const LONGEST_CHASE_SECONDS = 22;
-const CHASE_SPEED_SHARE = 1.15;
-const POUNCE_REACH = 1.6;
-const PREY_LEAD_SECONDS = 0.6;
-const POUNCE_CHANCE = 0.5;
-const POUNCE_SECONDS: readonly [number, number] = [0.4, 0.8];
-const SMALL_PREY_MEAL = 0.45;
-const REST_AFTER_SMALL_PREY_DAYS = 0.2;
-const REST_AFTER_ESCAPE_DAYS = 0.05;
 
 function nightFactor(hours: number): number {
   if (hours >= 20 || hours < 5.5) {
@@ -249,6 +249,12 @@ function followHunt(mood: PackMood, hunt: PackHunt, members: readonly Animal[], 
     mood.hunt = null;
     mood.restDays = REST_AFTER_FAILURE_DAYS;
     scatter(members, prey);
+  }
+}
+
+function scatter(animals: readonly Animal[], from: Waypoint): void {
+  for (const animal of animals) {
+    startleAnimal(animal, from.x, from.z, 1);
   }
 }
 
@@ -725,11 +731,5 @@ export class BeastInstincts {
         this.#flinches.set(id, remaining - seconds);
       }
     }
-  }
-}
-
-function scatter(animals: readonly Animal[], from: Waypoint): void {
-  for (const animal of animals) {
-    startleAnimal(animal, from.x, from.z, 1);
   }
 }

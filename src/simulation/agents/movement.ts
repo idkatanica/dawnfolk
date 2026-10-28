@@ -48,6 +48,20 @@ export interface Mover {
   z: number;
 }
 
+interface RouteOptions {
+  readonly arrivalDistance?: number;
+  readonly mayPlanRoute?: boolean;
+}
+
+interface StepAttempt {
+  isEscapingWater: boolean;
+  isLeavingWater: boolean;
+  obstacles: readonly Obstacle[];
+  seconds: number;
+  speed: number;
+  step: number;
+}
+
 export function createMover(x: number, z: number, heading: number, radius = PERSON_RADIUS): Mover {
   return {
     arrivalDistance: FINAL_ARRIVAL_DISTANCE,
@@ -93,11 +107,6 @@ export function savedMover(mover: Mover, keepsRoute: boolean): Mover {
   forgetReplans(saved);
 
   return saved;
-}
-
-interface RouteOptions {
-  readonly arrivalDistance?: number;
-  readonly mayPlanRoute?: boolean;
 }
 
 export function setDestination(
@@ -196,7 +205,7 @@ export function moveAlong(
 
   if (
     distanceLeft < arrivalDistanceAt(mover, distanceLeft, world, navigation) ||
-    isBehindObstacle(waypoint, distanceLeft, mover, obstacles)
+    isBehindObstacle(mover, waypoint, distanceLeft, obstacles)
   ) {
     mover.pathIndex += 1;
     stopMoving(mover);
@@ -257,15 +266,6 @@ function terrainSpeedFactor(mover: Mover, world: WorldState): number {
   }
 
   return groundDefinition(world.terrain.ground[cell]).walkSpeed;
-}
-
-interface StepAttempt {
-  isEscapingWater: boolean;
-  isLeavingWater: boolean;
-  obstacles: readonly Obstacle[];
-  seconds: number;
-  speed: number;
-  step: number;
 }
 
 function tryStep(
@@ -414,9 +414,9 @@ function isAround(obstacle: Obstacle, mover: Mover): boolean {
 }
 
 function isBehindObstacle(
+  mover: Mover,
   waypoint: Waypoint,
   distanceLeft: number,
-  mover: Mover,
   obstacles: readonly Obstacle[]
 ): boolean {
   return obstacles.some((obstacle) => {

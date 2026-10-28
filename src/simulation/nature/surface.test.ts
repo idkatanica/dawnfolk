@@ -8,6 +8,21 @@ import { SNOW_CAPACITY, type WorldState } from "../world/world-state.ts";
 import { ROWS_PER_TICK, type SurfaceConditions, SurfaceSystem } from "./surface.ts";
 
 const DRY_NOON: SurfaceConditions = { airTemperatureOffset: 0, isSnowfall: false, precipitation: 0, sunlight: 0.8 };
+const WEATHER_SCHEDULE: readonly { conditions: SurfaceConditions; ticks: number }[] = [
+  { conditions: DRY_NOON, ticks: 40 },
+  { conditions: { airTemperatureOffset: 0, isSnowfall: false, precipitation: 0.6, sunlight: 0.2 }, ticks: 30 },
+  { conditions: DRY_NOON, ticks: 200 },
+  { conditions: { airTemperatureOffset: -10, isSnowfall: true, precipitation: 0.5, sunlight: 0 }, ticks: 30 },
+  { conditions: { airTemperatureOffset: 8, isSnowfall: false, precipitation: 0, sunlight: 1 }, ticks: 300 },
+  { conditions: { airTemperatureOffset: -20, isSnowfall: false, precipitation: 0.02, sunlight: 0 }, ticks: 60 },
+  { conditions: { airTemperatureOffset: 4, isSnowfall: false, precipitation: 0, sunlight: 0.5 }, ticks: 300 },
+];
+
+interface ReferenceStep {
+  conditions: SurfaceConditions;
+  days: number;
+  seconds: number;
+}
 
 function runSurface(
   world: WorldState,
@@ -20,12 +35,6 @@ function runSurface(
   for (let elapsed = 0; elapsed < seconds; elapsed += TICK_SECONDS) {
     surface.update(TICK_SECONDS, TICK_SECONDS / 240, conditions, rules);
   }
-}
-
-interface ReferenceStep {
-  conditions: SurfaceConditions;
-  days: number;
-  seconds: number;
 }
 
 function referenceCell(world: WorldState, cell: number, step: ReferenceStep): void {
@@ -164,16 +173,6 @@ function firstDifferentCell(values: Float32Array, expected: Float32Array): numbe
 
   return bits.findIndex((value, cell) => value !== expectedBits[cell]);
 }
-
-const WEATHER_SCHEDULE: readonly { conditions: SurfaceConditions; ticks: number }[] = [
-  { conditions: DRY_NOON, ticks: 40 },
-  { conditions: { airTemperatureOffset: 0, isSnowfall: false, precipitation: 0.6, sunlight: 0.2 }, ticks: 30 },
-  { conditions: DRY_NOON, ticks: 200 },
-  { conditions: { airTemperatureOffset: -10, isSnowfall: true, precipitation: 0.5, sunlight: 0 }, ticks: 30 },
-  { conditions: { airTemperatureOffset: 8, isSnowfall: false, precipitation: 0, sunlight: 1 }, ticks: 300 },
-  { conditions: { airTemperatureOffset: -20, isSnowfall: false, precipitation: 0.02, sunlight: 0 }, ticks: 60 },
-  { conditions: { airTemperatureOffset: 4, isSnowfall: false, precipitation: 0, sunlight: 0.5 }, ticks: 300 },
-];
 
 describe("surface", () => {
   it("visits every row once per pass", () => {

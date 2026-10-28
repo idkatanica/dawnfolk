@@ -1,16 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { BROOK_STRENGTH } from "../../world/brooks.ts";
-import { isHopping } from "../agents/hops.ts";
-import { moveAlong } from "../agents/movement.ts";
-import { firstMemberTick, SocietyHarness, settle } from "../testing/test-society.ts";
+import { headTo } from "../society/jobs/job.ts";
+import { firstMemberTick, MORNING, SocietyHarness, settle } from "../testing/test-society.ts";
 import { riverStrip } from "../testing/test-world.ts";
-import { headTo } from "./jobs/job.ts";
-
-const MORNING = 0.3;
+import { isHopping } from "./hops.ts";
+import { moveAlong } from "./movement.ts";
 
 describe("hopping over a brook", () => {
   it("keeps going once it has leapt, whatever else comes up", () => {
     const harness = new SocietyHarness({ day: MORNING });
+
     const tick = firstMemberTick(harness, settle(harness, 1));
     const { person } = tick;
 

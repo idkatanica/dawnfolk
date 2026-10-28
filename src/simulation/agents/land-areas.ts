@@ -4,6 +4,7 @@ import { bordersBrook, hopTargets, NOT_CLEAR, Passage, traceHops } from "../../w
 import type { Crossing } from "../../world/crossings.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { WorldState } from "../world/world-state.ts";
+import type { Waypoint } from "./navigation.ts";
 import { nearestWalkableSpot, pointInsideCell } from "./walkable-ground.ts";
 
 export const NO_REGION = -1;
@@ -28,11 +29,6 @@ const FORWARD_STEPS: readonly (readonly [number, number])[] = [
   [-1, 1],
 ];
 
-interface Point {
-  readonly x: number;
-  readonly z: number;
-}
-
 interface AreaStep {
   readonly area: number;
   readonly crossing: number;
@@ -40,7 +36,7 @@ interface AreaStep {
 
 interface Route {
   readonly cost: number;
-  readonly waypoints: Point[];
+  readonly waypoints: Waypoint[];
 }
 
 interface AreaSeed {
@@ -138,7 +134,7 @@ export class LandAreas {
     );
   }
 
-  regionNear(point: Point): number {
+  regionNear(point: Waypoint): number {
     const region = this.#regionAtLand(point);
 
     if (region !== NO_REGION) {
@@ -154,7 +150,7 @@ export class LandAreas {
     return this.#regionAtLand(nearestWalkableSpot(this.#world, point, SNAP_RADIUS));
   }
 
-  nearestInRegion(point: Point, region: number, fallback: Point): Point {
+  nearestInRegion(point: Waypoint, region: number, fallback: Waypoint): Waypoint {
     for (const radius of REGION_SEARCH_RADII) {
       const spot = this.#nearestCellInRegion(point, region, radius);
 
@@ -166,8 +162,8 @@ export class LandAreas {
     return this.#retreatToward(point, fallback, region);
   }
 
-  isClear(from: Point, to: Point): boolean {
-    const passageOf = (cell: number, enter: number, leave: number): Passage => {
+  isClear(from: Waypoint, to: Waypoint): boolean {
+    const hops = traceHops(this.#world.grid, from, to, (cell, enter, leave) => {
       const passage = this.#passageOf(cell);
 
       if (passage === Passage.Ground) {
@@ -175,12 +171,12 @@ export class LandAreas {
       }
 
       return this.#staysOnDeck(from, to, enter, leave) ? Passage.Ground : passage;
-    };
+    });
 
-    return traceHops(this.#world.grid, from, to, passageOf) !== NOT_CLEAR;
+    return hops !== NOT_CLEAR;
   }
 
-  walkLength(from: Point, to: Point): number {
+  walkLength(from: Waypoint, to: Waypoint): number {
     const start = this.#onLand(from);
     const goal = this.#onLand(to);
 
@@ -216,7 +212,7 @@ export class LandAreas {
     return length + Math.hypot(goal.x - previous.x, goal.z - previous.z);
   }
 
-  route(from: Point, to: Point): Point[] | null {
+  route(from: Waypoint, to: Waypoint): Waypoint[] | null {
     const goal = this.#onLand(to);
 
     if (goal === null) {
@@ -248,7 +244,7 @@ export class LandAreas {
     return [...head, ...found.waypoints, ...tail];
   }
 
-  #routeOffDeck(from: Point, goal: Point, crossing: Crossing, tail: readonly Point[]): Point[] | null {
+  #routeOffDeck(from: Waypoint, goal: Waypoint, crossing: Crossing, tail: readonly Waypoint[]): Waypoint[] | null {
     let best: Route | null = null;
 
     for (const end of [
@@ -275,7 +271,7 @@ export class LandAreas {
     return [...best.waypoints, ...tail];
   }
 
-  #onLand(point: Point): Point | null {
+  #onLand(point: Waypoint): Waypoint | null {
     const cell = this.#world.grid.cellAt(point.x, point.z);
 
     if (cell >= 0 && this.#walkable[cell] === 1) {
@@ -291,7 +287,7 @@ export class LandAreas {
     return spot;
   }
 
-  #regionAtLand(point: Point): number {
+  #regionAtLand(point: Waypoint): number {
     const cell = this.#world.grid.cellAt(point.x, point.z);
 
     if (cell < 0 || this.#walkable[cell] === 0) {
@@ -301,7 +297,7 @@ export class LandAreas {
     return this.#regionOfArea[this.#areaOfCell[cell]];
   }
 
-  #routeOnLand(from: Point, to: Point): Route | null {
+  #routeOnLand(from: Waypoint, to: Waypoint): Route | null {
     const { grid } = this.#world;
 
     const startArea = this.#areaOfCell[grid.cellAt(from.x, from.z)];
@@ -317,7 +313,7 @@ export class LandAreas {
       return null;
     }
 
-    const waypoints: Point[] = [];
+    const waypoints: Waypoint[] = [];
 
     let legFrom = from;
     let legAreas = [startArea];
@@ -346,7 +342,7 @@ export class LandAreas {
     return { cost: this.#areaScore[goalArea], waypoints };
   }
 
-  #endsFrom(crossing: Crossing, area: number): readonly [Point, Point] {
+  #endsFrom(crossing: Crossing, area: number): readonly [Waypoint, Waypoint] {
     const start = { x: crossing.startX, z: crossing.startZ };
     const end = { x: crossing.endX, z: crossing.endZ };
 
@@ -357,7 +353,7 @@ export class LandAreas {
     return [end, start];
   }
 
-  #refineLeg(from: Point, to: Point, areas: readonly number[]): Point[] {
+  #refineLeg(from: Waypoint, to: Waypoint, areas: readonly number[]): Waypoint[] {
     const { grid } = this.#world;
 
     this.#allowedStamp += 1;
@@ -377,8 +373,8 @@ export class LandAreas {
     return this.#straighten(from, [...points, to]);
   }
 
-  #straighten(from: Point, points: readonly Point[]): Point[] {
-    const straightened: Point[] = [];
+  #straighten(from: Waypoint, points: readonly Waypoint[]): Waypoint[] {
+    const straightened: Waypoint[] = [];
 
     let current = from;
     let next = 0;
@@ -406,7 +402,7 @@ export class LandAreas {
     return straightened;
   }
 
-  #staysOnDeck(from: Point, to: Point, enter: number, leave: number): boolean {
+  #staysOnDeck(from: Waypoint, to: Waypoint, enter: number, leave: number): boolean {
     const length = Math.hypot(to.x - from.x, to.z - from.z);
     const samples = Math.max(1, Math.ceil(((leave - enter) * length) / DECK_SAMPLE_SPACING));
 
@@ -459,16 +455,15 @@ export class LandAreas {
   #findHops(): void {
     const { grid } = this.#world;
 
-    const passageOf = (cell: number): Passage => this.#passageOf(cell);
     const hopsFrom = new Map<number, Set<number>>();
     const targets: number[] = [];
 
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
-      if (this.#walkable[cell] === 0 || !bordersBrook(grid, cell, passageOf)) {
+      if (this.#walkable[cell] === 0 || !bordersBrook(grid, cell, (neighbor) => this.#passageOf(neighbor))) {
         continue;
       }
 
-      for (const target of hopTargets(grid, cell, passageOf)) {
+      for (const target of hopTargets(grid, cell, (neighbor) => this.#passageOf(neighbor))) {
         addHop(hopsFrom, cell, target);
         addHop(hopsFrom, target, cell);
       }
@@ -906,8 +901,8 @@ export class LandAreas {
     return cells.reverse();
   }
 
-  #nearestCellInRegion(point: Point, region: number, radius: number): Point | null {
-    let nearest: Point | null = null;
+  #nearestCellInRegion(point: Waypoint, region: number, radius: number): Waypoint | null {
+    let nearest: Waypoint | null = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
 
     for (const cell of this.#world.grid.cellsInRadius(point.x, point.z, radius)) {
@@ -928,7 +923,7 @@ export class LandAreas {
     return nearest;
   }
 
-  #retreatToward(point: Point, fallback: Point, region: number): Point {
+  #retreatToward(point: Waypoint, fallback: Waypoint, region: number): Waypoint {
     const length = Math.hypot(fallback.x - point.x, fallback.z - point.z);
     const steps = Math.ceil(length / RETREAT_STEP);
 

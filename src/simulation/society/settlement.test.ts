@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { SocietyHarness, settle } from "../testing/test-society.ts";
 import { floodStrip, fordAcross } from "../testing/test-world.ts";
 import type { Person } from "./person.ts";
-import { considerSplit, scoreSite, siteSearchNear } from "./settlement.ts";
+import { considerSplit, findCampSite, scoreSite, siteSearchNear } from "./settlement.ts";
 import type { Tribe } from "./tribe.ts";
+
+const TRIBE_SIZE = 6;
 
 interface SplittingTribe {
   harness: SocietyHarness;
@@ -13,6 +15,7 @@ interface SplittingTribe {
 
 function settleSplittingTribe(youngestAge: number): SplittingTribe {
   const harness = new SocietyHarness();
+
   const tribe = settle(harness, 20);
   const members = harness.society.membersOf(tribe);
 
@@ -63,6 +66,47 @@ describe("camp sites", () => {
     const backFromTheBank = scoreSite({ x: -100, z: 100 }, search, harness.context, []);
 
     expect(onTheBank).toBeLessThan(backFromTheBank);
+  });
+
+  it("are unsuitable on steep or burning ground", () => {
+    const harness = new SocietyHarness();
+
+    const search = siteSearchNear({ x: 0, z: 0 }, 200, null);
+
+    for (const cell of harness.world.grid.cellsInRadius(0, 0, 30)) {
+      harness.world.fields.fire[cell] = 0.5;
+    }
+
+    expect(scoreSite({ x: 0, z: 0 }, search, harness.context, [])).toBe(Number.NEGATIVE_INFINITY);
+    expect(scoreSite({ x: 200, z: 100 }, search, harness.context, [])).toBeGreaterThan(-5);
+  });
+
+  it("do not count burnt trees and bushes as food and wood nearby", () => {
+    const harness = new SocietyHarness();
+
+    const search = siteSearchNear({ x: 0, z: 0 }, 200, null);
+
+    const before = scoreSite({ x: 0, z: 0 }, search, harness.context, []);
+
+    for (const cell of harness.world.grid.cellsInRadius(0, 0, 200)) {
+      harness.world.vegetation.burnTreesInCell(cell, 1.5);
+    }
+
+    expect(scoreSite({ x: 0, z: 0 }, search, harness.context, [])).toBeLessThan(before - 2);
+  });
+
+  it("keep away from other tribes", () => {
+    const harness = new SocietyHarness();
+
+    const tribe = settle(harness, TRIBE_SIZE);
+
+    const site = findCampSite(siteSearchNear({ x: tribe.campX, z: tribe.campZ }, 400, null), harness.context, [tribe]);
+
+    if (site === null) {
+      throw new Error("Expected a camp site");
+    }
+
+    expect(Math.hypot(site.x - tribe.campX, site.z - tribe.campZ)).toBeGreaterThan(100);
   });
 });
 

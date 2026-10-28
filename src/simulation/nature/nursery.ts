@@ -94,7 +94,6 @@ export class Nursery {
 
   #isStillGrowing(seedling: Seedling): boolean {
     const { vegetation } = this.#world;
-
     const { index } = seedling;
 
     return (

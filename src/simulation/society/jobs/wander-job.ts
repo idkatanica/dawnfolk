@@ -19,7 +19,7 @@ export class WanderJob implements Job {
   #lingerSeconds: number;
   #phase: WanderPhase = "travel";
 
-  constructor(kind: WanderKind, tick: PersonTick) {
+  constructor(tick: PersonTick, kind: WanderKind) {
     const { random } = tick.context;
     const [nearest, farthest] = WANDER_RANGES[kind];
 

@@ -26,23 +26,6 @@ const FRAGMENT_SPREAD = 2.4;
 const ROLL_SALT = 41.3;
 const FRAGMENT_SALT = 7.7;
 
-type DamageOdds = readonly [readonly number[], readonly number[], readonly number[]];
-
-type HarmLevel = Exclude<MonumentDamageLevel, typeof MonumentDamage.Standing>;
-
-interface Ruination {
-  readonly odds: DamageOdds;
-  readonly order: readonly number[];
-}
-
-function ruination<Piece extends MonumentPiece>(
-  piece: Piece,
-  order: readonly PieceForm<Piece>[],
-  odds: DamageOdds
-): Ruination {
-  return { odds, order: order.map((form) => pieceFormIndex(piece, form)) };
-}
-
 const RUINATIONS: Readonly<Record<MonumentPiece, Ruination>> = {
   [PlantSpecies.Arch]: ruination(
     PlantSpecies.Arch,
@@ -100,8 +83,6 @@ const RUINATIONS: Readonly<Record<MonumentPiece, Ruination>> = {
   ),
 };
 
-export type Catastrophe = "earthquake" | "explosion" | "meteor";
-
 const CATASTROPHE_NAMES: Readonly<Record<Catastrophe, string>> = {
   earthquake: "The earthquake",
   explosion: "The blast",
@@ -114,6 +95,17 @@ const RUIN_VERBS: Readonly<Record<HarmLevel, string>> = {
   [MonumentDamage.Rubble]: "shattered",
 };
 
+export type Catastrophe = "earthquake" | "explosion" | "meteor";
+
+type DamageOdds = readonly [readonly number[], readonly number[], readonly number[]];
+
+type HarmLevel = Exclude<MonumentDamageLevel, typeof MonumentDamage.Standing>;
+
+interface Ruination {
+  readonly odds: DamageOdds;
+  readonly order: readonly number[];
+}
+
 export interface Shock {
   readonly catastrophe: Catastrophe;
   readonly reach: number;
@@ -125,6 +117,14 @@ export interface Shock {
 export interface MonumentHarm {
   readonly damage: HarmLevel;
   readonly monument: Monument;
+}
+
+function ruination<Piece extends MonumentPiece>(
+  piece: Piece,
+  order: readonly PieceForm<Piece>[],
+  odds: DamageOdds
+): Ruination {
+  return { odds, order: order.map((form) => pieceFormIndex(piece, form)) };
 }
 
 function damageFrom(shock: Shock, monument: Monument): HarmLevel | null {

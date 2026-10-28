@@ -7,7 +7,7 @@ import { workSeconds } from "../tools.ts";
 import { learn, type Tribe } from "../tribe.ts";
 import { nearCamp } from "../tribe-places.ts";
 import { type CraftOrder, chooseCraft } from "../workshops.ts";
-import { Errand, headTo, headToWork, type Job } from "./job.ts";
+import { Errand, headTo, headToWork, type Job, type WorkTarget } from "./job.ts";
 
 const WORKSHOP_SPEED = 1.6;
 const CAMP_WORK_SPREAD = 5;
@@ -80,7 +80,7 @@ export class CraftJob implements Job {
       return;
     }
 
-    const target = {
+    const target: WorkTarget = {
       radius: BUILDINGS[station.kind].footprint * STATION_SHARE,
       reach: STATION_REACH,
       x: station.x,

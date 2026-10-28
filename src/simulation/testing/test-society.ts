@@ -1,5 +1,7 @@
+import type { TechnologyId } from "../../content/technologies.ts";
 import { DEFAULT_WORLD_RULES, type WorldRules } from "../../content/world-rules.ts";
 import { createRandom, type RandomSource } from "../../shared/random.ts";
+import { WorldGrid } from "../../world/world-grid.ts";
 import { HazardMap } from "../agents/hazards.ts";
 import { NavigationGrid } from "../agents/navigation.ts";
 import { Chronicle } from "../chronicle.ts";
@@ -10,7 +12,7 @@ import { Calendar } from "../nature/calendar.ts";
 import { describeEnvironment } from "../nature/environment.ts";
 import { FireSystem } from "../nature/fire.ts";
 import { WeatherSystem } from "../nature/weather.ts";
-import { BuildingSystem } from "../society/buildings.ts";
+import { type Building, BuildingSystem } from "../society/buildings.ts";
 import type { Job } from "../society/jobs/job.ts";
 import type { Person } from "../society/person.ts";
 import { RivalrySystem } from "../society/rivalry/rivalry-system.ts";
@@ -19,9 +21,28 @@ import type { PersonTick, SocietyContext } from "../society/society-context.ts";
 import type { Tribe } from "../society/tribe.ts";
 import { TICK_SECONDS } from "../tick.ts";
 import { WorldState } from "../world/world-state.ts";
-import { createVegetatedWorld, type TestWorldOptions } from "./test-world.ts";
+import { createVegetatedWorld, depositAround, type TestWorldOptions } from "./test-world.ts";
 
 const SEED = 3;
+const MINING_DIMENSIONS = { cellSize: 10, cellsPerSide: 96 };
+
+export const MORNING = 0.3;
+export const STRIP_HALF_WIDTH = 10;
+export const THROUGH_MINING: readonly TechnologyId[] = [
+  "fire",
+  "shelter",
+  "spear",
+  "fishing",
+  "storage",
+  "archery",
+  "huts",
+  "pottery",
+  "farming",
+  "totem",
+  "weaving",
+  "orchards",
+  "mining",
+];
 
 interface SocietyHarnessOptions {
   day: number;
@@ -178,4 +199,63 @@ export function runToCompletion(job: Job, tick: PersonTick, limitSeconds: number
   }
 
   return false;
+}
+
+export function teach(tribe: Tribe, technologies: readonly TechnologyId[], eraIndex: number | null = null): Tribe {
+  for (const technology of technologies) {
+    tribe.technologies.add(technology);
+  }
+
+  if (eraIndex !== null) {
+    tribe.eraIndex = eraIndex;
+  }
+
+  return tribe;
+}
+
+export function completeStructure(tribe: Tribe, building: Building): Building {
+  building.progress = 1;
+  tribe.buildings.structureIds.push(building.id);
+
+  return building;
+}
+
+export function createMiningHarness(): SocietyHarness {
+  const grid = new WorldGrid(MINING_DIMENSIONS);
+
+  return new SocietyHarness({
+    day: MORNING,
+    world: { deposits: [depositAround(grid, "copper", 160, 40)], dimensions: MINING_DIMENSIONS },
+  });
+}
+
+export function moveToSeason(harness: SocietyHarness, season: number): void {
+  harness.calendar.setSeason(season);
+  harness.context.environment = describeEnvironment(harness.calendar, harness.weather);
+}
+
+export function createStripHarness(): SocietyHarness {
+  const harness = new SocietyHarness({ day: MORNING });
+
+  const { grid, terrain } = harness.world;
+
+  for (let cell = 0; cell < grid.cellCount; cell += 1) {
+    if (Math.abs(grid.cellCenterX(cell)) > STRIP_HALF_WIDTH) {
+      terrain.waterSurface[cell] = terrain.height[cell] + 2;
+    }
+  }
+
+  harness.navigation.rebuild();
+
+  return harness;
+}
+
+export function standsOnDryLand(harness: SocietyHarness, person: Person): boolean {
+  return harness.world.isWalkableAt(person.mover.x, person.mover.z);
+}
+
+export function isOnDryFooting(harness: SocietyHarness, x: number, z: number): boolean {
+  const cell = harness.world.grid.cellAt(x, z);
+
+  return harness.world.isWalkable(cell) && !harness.world.touchesWater(cell);
 }

@@ -24,6 +24,19 @@ const PAIRED_FRAILTY = 0.4;
 const WOUNDED_HEALTH = 0.5;
 const STEADFAST_JOBS: ReadonlySet<JobKind> = new Set(["defend", "fight", "flee", "hide", "raid"]);
 
+interface Deed {
+  readonly ending: string;
+  readonly verb: string;
+}
+
+const KILLING_DEEDS: Readonly<Record<BeastBlow["kind"], Deed>> = {
+  bite: { ending: "", verb: "killed" },
+  gore: { ending: " to death", verb: "gored" },
+  trample: { ending: "", verb: "trampled" },
+};
+
+const ATTACK: Deed = { ending: "", verb: "attacked" };
+
 function isSheltered(person: Person, tribe: Tribe, context: SocietyContext): boolean {
   const { x, z } = person.mover;
 
@@ -63,19 +76,6 @@ function beastName(blow: BeastBlow): string {
 
   return blow.attacker.kind === "ibex" ? "an ibex" : "a stag";
 }
-
-interface Deed {
-  readonly ending: string;
-  readonly verb: string;
-}
-
-const KILLING_DEEDS: Readonly<Record<BeastBlow["kind"], Deed>> = {
-  bite: { ending: "", verb: "killed" },
-  gore: { ending: " to death", verb: "gored" },
-  trample: { ending: "", verb: "trampled" },
-};
-
-const ATTACK: Deed = { ending: "", verb: "attacked" };
 
 export class BeastEncounters implements PeopleSense {
   readonly #context: SocietyContext;

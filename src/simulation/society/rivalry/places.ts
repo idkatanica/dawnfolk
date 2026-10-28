@@ -21,7 +21,7 @@ const BIOME_PLACES: Readonly<Record<number, string>> = {
   [Biome.Tundra]: "on the tundra",
 };
 
-function waterNearby(world: WorldState, x: number, z: number): string | null {
+function describeWaterNearby(world: WorldState, x: number, z: number): string | null {
   let isLake = false;
 
   for (const cell of world.grid.cellsInRadius(x, z, WATER_SEARCH_RADIUS)) {
@@ -42,7 +42,7 @@ export function describePlace(world: WorldState, x: number, z: number, home: Tri
     return "close to their camp";
   }
 
-  const water = waterNearby(world, x, z);
+  const water = describeWaterNearby(world, x, z);
 
   if (water !== null) {
     return water;

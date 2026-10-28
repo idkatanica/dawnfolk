@@ -24,7 +24,7 @@ export function offsetFrom(point: Waypoint, offset: Waypoint, scale: number): Wa
   return { x: point.x + offset.x * scale, z: point.z + offset.z * scale };
 }
 
-function isStandingFoe(person: Person): boolean {
+function isStandingFighter(person: Person): boolean {
   if (!canFight(person)) {
     return false;
   }
@@ -32,7 +32,7 @@ function isStandingFoe(person: Person): boolean {
   return person.job === null || person.job.kind !== "flee";
 }
 
-export function nearestOf(tick: PersonTick, candidates: readonly Person[], radius: number): Foe | null {
+export function nearestFoeAmong(tick: PersonTick, candidates: readonly Person[], radius: number): Foe | null {
   const { mover } = tick.person;
 
   let nearest: Person | null = null;
@@ -59,7 +59,7 @@ export function nearbyFighters(tick: PersonTick, tribeId: number, radius: number
 
   return tick.context.people
     .livingWithin(mover.x, mover.z, radius)
-    .filter((person) => person.tribeId === tribeId && isStandingFoe(person));
+    .filter((person) => person.tribeId === tribeId && isStandingFighter(person));
 }
 
 export function assailantOf(tick: PersonTick, tribeId: number): Person | null {

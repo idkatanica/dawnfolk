@@ -51,13 +51,6 @@ export interface LightningEffect {
   z: number;
 }
 
-export interface SplashEffect {
-  kind: "splash";
-  level: number;
-  x: number;
-  z: number;
-}
-
 export interface MeteorEffect {
   durationSeconds: number;
   fromX: number;
@@ -67,6 +60,13 @@ export interface MeteorEffect {
   radius: number;
   toX: number;
   toZ: number;
+}
+
+export interface SplashEffect {
+  kind: "splash";
+  level: number;
+  x: number;
+  z: number;
 }
 
 export type SimulationEffect =

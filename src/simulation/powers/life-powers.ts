@@ -58,13 +58,9 @@ function herdPower<Id extends "deer" | "hare" | "ibex" | "mammoth" | "wolf">(
 }
 
 export const deerPower = herdPower("deer", "Deer need flat, dry land.");
-
 export const mammothPower = herdPower("mammoth", "Mammoths need flat, dry land.");
-
 export const ibexPower = herdPower("ibex", "Ibex need dry land they can stand on.");
-
 export const harePower = herdPower("hare", "Hares need dry land away from water.");
-
 export const wolfPower = herdPower("wolf", "Wolves need flat, dry land.");
 
 function ripenBushes(services: PowerServices, x: number, z: number, radius: number): void {

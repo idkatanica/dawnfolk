@@ -11,11 +11,14 @@ import {
 } from "./saved-world.ts";
 import { Simulation } from "./simulation.ts";
 
-const SEED = 11;
-const OPTIONS: GenerationOptions = { ...DEFAULT_GENERATION_OPTIONS, dimensions: { cellSize: 20, cellsPerSide: 128 } };
+const GENERATION_SEED = 11;
+const GENERATION_OPTIONS: GenerationOptions = {
+  ...DEFAULT_GENERATION_OPTIONS,
+  dimensions: { cellSize: 20, cellsPerSide: 128 },
+};
 
-function generate(): Simulation {
-  return Simulation.generate(SEED, OPTIONS, () => undefined);
+function generateSimulation(): Simulation {
+  return Simulation.generate(GENERATION_SEED, GENERATION_OPTIONS, () => undefined);
 }
 
 function savedState(simulation: Simulation): SavedWorldState {
@@ -27,7 +30,7 @@ function savedState(simulation: Simulation): SavedWorldState {
 
   return {
     plantSpecies: PLANT_SPECIES_NAMES,
-    request: { options: OPTIONS, seed: SEED },
+    request: { options: GENERATION_OPTIONS, seed: GENERATION_SEED },
     simulation: snapshot,
     summary: summarizeWorld(simulation),
     version: SAVE_VERSION,
@@ -36,7 +39,7 @@ function savedState(simulation: Simulation): SavedWorldState {
 
 describe("saved worlds", () => {
   it("finds each plant species by name when the list order changes", () => {
-    const original = generate();
+    const original = generateSimulation();
     const state = savedState(original);
     const savedNames = [...PLANT_SPECIES_NAMES].reverse();
     const { species } = state.simulation.world.vegetation;
@@ -46,7 +49,7 @@ describe("saved worlds", () => {
       species[plant] = lastIndex - species[plant];
     }
 
-    const loaded = generate();
+    const loaded = generateSimulation();
 
     restoreSavedWorld(loaded, { ...state, plantSpecies: savedNames });
 
@@ -54,7 +57,7 @@ describe("saved worlds", () => {
   });
 
   it("removes plants whose species no longer exists", () => {
-    const original = generate();
+    const original = generateSimulation();
     const state = savedState(original);
     const plant = 0;
 
@@ -62,7 +65,7 @@ describe("saved worlds", () => {
 
     state.simulation.world.vegetation.species[plant] = PLANT_SPECIES_NAMES.length;
 
-    const loaded = generate();
+    const loaded = generateSimulation();
 
     restoreSavedWorld(loaded, { ...state, plantSpecies: [...PLANT_SPECIES_NAMES, "Retired"] });
 
@@ -71,7 +74,7 @@ describe("saved worlds", () => {
   });
 
   it("reads saves made before plant species were named", () => {
-    const state = savedState(generate());
+    const state = savedState(generateSimulation());
     const { plantSpecies: _, ...unnamed } = state;
 
     const result = savedWorldStateSchema.parse(unnamed);

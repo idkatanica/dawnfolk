@@ -45,6 +45,22 @@ interface Strike {
   z: number;
 }
 
+interface Blast {
+  burnsDebris: boolean;
+  catastrophe: Catastrophe;
+  power: number;
+  radius: number;
+  x: number;
+  z: number;
+}
+
+interface Quake {
+  magnitude: number;
+  radius: number;
+  x: number;
+  z: number;
+}
+
 export function strikeLightning(strike: Strike, services: PowerServices): void {
   const { buildings, fauna, fire, people, world } = services;
 
@@ -126,15 +142,6 @@ function isStrikeSite(cell: number, acceptsAnyLand: boolean, services: PowerServ
   }
 
   return acceptsAnyLand || world.terrain.height[cell] > HIGH_GROUND || world.canopyFuel[cell] > TALL_FOREST;
-}
-
-interface Blast {
-  burnsDebris: boolean;
-  catastrophe: Catastrophe;
-  power: number;
-  radius: number;
-  x: number;
-  z: number;
 }
 
 function reachScale(blast: Blast): number {
@@ -349,13 +356,6 @@ function vaporize(cell: number, services: PowerServices): void {
   fields.snow[cell] = 0;
   services.world.clearPlants(cell, true);
   services.world.markDisturbed(cell, services.environment.day);
-}
-
-interface Quake {
-  magnitude: number;
-  radius: number;
-  x: number;
-  z: number;
 }
 
 export function shakeLand(quake: Quake, services: PowerServices): void {

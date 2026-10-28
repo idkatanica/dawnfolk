@@ -7,14 +7,6 @@ import { amountOf, hasResources } from "./stock.ts";
 import { knows, type Tribe } from "./tribe.ts";
 import { headMaterial, METALS_BY_STRENGTH } from "./weapons.ts";
 
-export interface CraftOrder {
-  inputs: ResourceAmounts;
-  material: ToolMaterial | null;
-  outputs: ResourceAmounts;
-  recipe: RecipeId;
-  station: Building | null;
-}
-
 const POTTERY_TARGET = 12;
 const METAL_TARGET = 10;
 const ARROW_TARGET = 36;
@@ -22,6 +14,14 @@ const TOOLSET_METAL = 6;
 const SPEARS_PER_MEMBER = 0.25;
 const BOWS_PER_MEMBER = 0.2;
 const CRAFT_ORDER: readonly RecipeId[] = ["tools", "pottery", "copper", "bronze", "iron", "spears", "bows", "arrows"];
+
+export interface CraftOrder {
+  inputs: ResourceAmounts;
+  material: ToolMaterial | null;
+  outputs: ResourceAmounts;
+  recipe: RecipeId;
+  station: Building | null;
+}
 
 function nextToolMaterial(tribe: Tribe): ToolMaterial | null {
   for (const material of METALS_BY_STRENGTH) {

@@ -1,6 +1,13 @@
 import type { ResourceAmounts } from "../../content/recipes.ts";
 import { FOOD_KINDS, type FoodKind, RESOURCE_KINDS, RESOURCES, type ResourceKind } from "../../content/resources.ts";
 
+const EATING_ORDER: readonly FoodKind[] = ["fish", "meat", "berries", "fruit", "vegetables", "grain"];
+const STOREHOUSE_SPOILAGE = 0.35;
+const GRANARY_SPOILAGE = 0.4;
+const POTTERY_SPOILAGE = 0.75;
+const POTTERY_FOR_FULL_EFFECT = 10;
+const OVERFLOW_SPOILAGE = 4;
+
 export type Stock = Record<ResourceKind, number>;
 
 export interface Storage {
@@ -9,13 +16,6 @@ export interface Storage {
   hasStorehouse: boolean;
   pottery: number;
 }
-
-const EATING_ORDER: readonly FoodKind[] = ["fish", "meat", "berries", "fruit", "vegetables", "grain"];
-const STOREHOUSE_SPOILAGE = 0.35;
-const GRANARY_SPOILAGE = 0.4;
-const POTTERY_SPOILAGE = 0.75;
-const POTTERY_FOR_FULL_EFFECT = 10;
-const OVERFLOW_SPOILAGE = 4;
 
 export function emptyStock(): Stock {
   return {

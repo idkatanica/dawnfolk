@@ -51,6 +51,13 @@ interface SiteSearch {
   radius: number;
 }
 
+interface Surroundings {
+  bushes: number;
+  marsh: number;
+  samples: number;
+  trees: number;
+}
+
 export function scoreSite(
   point: Waypoint,
   search: SiteSearch,
@@ -60,7 +67,6 @@ export function scoreSite(
   const { world } = context;
 
   const cell = world.grid.cellAt(point.x, point.z);
-
   const longestWalk = LONGEST_MIGRATION_DAYS * context.environment.daySeconds * MIGRANT_PACE;
 
   if (!(isCampable(world, cell, point) && context.navigation.walkLength(search.origin, point) <= longestWalk)) {
@@ -120,20 +126,13 @@ function isBesideWater(world: WorldState, point: Waypoint): boolean {
   return world.grid.cellsInRadius(point.x, point.z, TOO_CLOSE_TO_WATER).some((cell) => world.isWater(cell));
 }
 
-interface Surroundings {
-  bushes: number;
-  marsh: number;
-  samples: number;
-  trees: number;
-}
-
 function surveySurroundings(world: WorldState, center: number): Surroundings {
   const { grid } = world;
 
   const centerColumn = grid.columnOf(center);
   const centerRow = grid.rowOf(center);
 
-  const count: Surroundings = { bushes: 0, marsh: 0, samples: 0, trees: 0 };
+  const surroundings: Surroundings = { bushes: 0, marsh: 0, samples: 0, trees: 0 };
 
   for (let rowOffset = -FORAGE_REACH_CELLS; rowOffset <= FORAGE_REACH_CELLS; rowOffset += 2) {
     for (let columnOffset = -FORAGE_REACH_CELLS; columnOffset <= FORAGE_REACH_CELLS; columnOffset += 2) {
@@ -144,26 +143,26 @@ function surveySurroundings(world: WorldState, center: number): Surroundings {
         continue;
       }
 
-      countSurroundings(world, grid.index(column, row), count);
+      countSurroundings(world, grid.index(column, row), surroundings);
     }
   }
 
-  return count;
+  return surroundings;
 }
 
-function forageScore(count: Surroundings): number {
-  return Math.min(4, count.bushes * 0.4) + Math.min(2.5, count.trees * 0.06);
+function forageScore(surroundings: Surroundings): number {
+  return Math.min(4, surroundings.bushes * 0.4) + Math.min(2.5, surroundings.trees * 0.06);
 }
 
-function marshScore(count: Surroundings): number {
-  return count.samples === 0 ? 0 : (count.marsh / count.samples) * MARSH_AVERSION;
+function marshScore(surroundings: Surroundings): number {
+  return surroundings.samples === 0 ? 0 : (surroundings.marsh / surroundings.samples) * MARSH_AVERSION;
 }
 
-function countSurroundings(world: WorldState, cell: number, count: Surroundings): void {
+function countSurroundings(world: WorldState, cell: number, surroundings: Surroundings): void {
   const { terrain, vegetation } = world;
 
-  count.samples += 1;
-  count.marsh += terrain.biome[cell] === Biome.Swamp ? 1 : 0;
+  surroundings.samples += 1;
+  surroundings.marsh += terrain.biome[cell] === Biome.Swamp ? 1 : 0;
 
   for (let plant = vegetation.firstPlantInCell(cell); plant !== NO_PLANT; plant = vegetation.nextPlantInCell(plant)) {
     if (!vegetation.isAlive(plant)) {
@@ -172,8 +171,8 @@ function countSurroundings(world: WorldState, cell: number, count: Surroundings)
 
     const species = vegetation.species[plant];
 
-    count.bushes += plantSpeciesDefinition(species).givesBerries ? 1 : 0;
-    count.trees += isLivingTreeSpecies(species) ? 1 : 0;
+    surroundings.bushes += plantSpeciesDefinition(species).givesBerries ? 1 : 0;
+    surroundings.trees += isLivingTreeSpecies(species) ? 1 : 0;
   }
 }
 
@@ -440,6 +439,7 @@ export function considerSplit(tribe: Tribe, members: readonly Person[], context:
     ...siteSearchNear(campPoint(tribe), SPLIT_SEARCH_RADIUS, tribe),
     minimumNeighborDistance: SPLIT_NEIGHBOR_DISTANCE,
   };
+
   const site = findCampSite(search, context, context.people.tribes());
 
   if (site === null) {

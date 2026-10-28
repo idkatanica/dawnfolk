@@ -16,9 +16,9 @@ import { NO_PLANT, type PlantPlacement } from "../../world/vegetation-store.ts";
 import { NO_BUILDING, type WorldState } from "../world/world-state.ts";
 import type { Nursery } from "./nursery.ts";
 
-const SHRUB_GROWING_DAYS = 3;
 export const TREE_GROWING_DAYS = 14;
 
+const SHRUB_GROWING_DAYS = 3;
 const VISITS_PER_CELL_PER_DAY = 2;
 const SHRUB_DELAY_DAYS = 2;
 const TREE_DELAY_DAYS = 4;
@@ -32,6 +32,7 @@ const SEED_BEARING_DAYS = 8;
 const LONGEST_RECOVERY_DAYS = 72;
 const CLIMAX_SALT = 61.7;
 const SPREAD_WITHIN_CELL = 0.8;
+const BARE_CLIMAX: Climax = { shrubs: [], trees: [] };
 
 interface Climax {
   readonly shrubs: readonly PlantPlacement[];
@@ -42,8 +43,6 @@ interface Cover {
   shrubs: number;
   trees: number;
 }
-
-const BARE_CLIMAX: Climax = { shrubs: [], trees: [] };
 
 export interface SuccessionSnapshot {
   random: RandomState;

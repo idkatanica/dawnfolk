@@ -8,9 +8,7 @@ import type { Simulation, SimulationSnapshot } from "./simulation.ts";
 export const SAVE_VERSION = 1;
 
 const LARGEST_CELLS_PER_SIDE = 4096;
-
 const MISSING_SPECIES = -1;
-
 const SPECIES_BY_NAME = new Map<string, number>(Object.entries(PlantSpecies));
 
 export const PLANT_SPECIES_NAMES: readonly string[] = [...SPECIES_BY_NAME.keys()].sort(
@@ -149,10 +147,10 @@ function speciesNamed(name: string): number {
 }
 
 export function restoreSavedWorld(simulation: Simulation, state: SavedWorldState): void {
-  const current = new Int16Array(256).fill(MISSING_SPECIES);
+  const currentSpecies = new Int16Array(256).fill(MISSING_SPECIES);
 
-  for (const [saved, name] of state.plantSpecies.entries()) {
-    current[saved] = speciesNamed(name);
+  for (const [savedSpecies, name] of state.plantSpecies.entries()) {
+    currentSpecies[savedSpecies] = speciesNamed(name);
   }
 
   const { society, vegetationGrowth, world } = state.simulation;
@@ -160,24 +158,24 @@ export function restoreSavedWorld(simulation: Simulation, state: SavedWorldState
   const missing: number[] = [];
 
   for (let plant = 0; plant < world.vegetation.count; plant += 1) {
-    if (current[species[plant]] === MISSING_SPECIES) {
+    if (currentSpecies[species[plant]] === MISSING_SPECIES) {
       missing.push(plant);
       species[plant] = PlantSpecies.Boulder;
     } else {
-      species[plant] = current[species[plant]];
+      species[plant] = currentSpecies[species[plant]];
     }
   }
 
   vegetationGrowth.nursery.seedlings = vegetationGrowth.nursery.seedlings
-    .filter((seedling) => current[seedling.species] !== MISSING_SPECIES)
-    .map((seedling) => ({ ...seedling, species: current[seedling.species] }));
+    .filter((seedling) => currentSpecies[seedling.species] !== MISSING_SPECIES)
+    .map((seedling) => ({ ...seedling, species: currentSpecies[seedling.species] }));
 
   for (const tribe of society.tribes) {
     for (const plot of tribe.plots) {
-      plot.spots = plot.spots.filter((spot) => current[spot.species] !== MISSING_SPECIES);
+      plot.spots = plot.spots.filter((spot) => currentSpecies[spot.species] !== MISSING_SPECIES);
 
       for (const spot of plot.spots) {
-        spot.species = current[spot.species];
+        spot.species = currentSpecies[spot.species];
       }
     }
   }

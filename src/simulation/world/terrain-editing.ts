@@ -30,6 +30,12 @@ interface AreaCell {
   row: number;
 }
 
+interface Levelling {
+  readonly keptRelief: number;
+  readonly largestChange: number;
+  readonly level: number;
+}
+
 function areaRegion(world: WorldState, area: CircleArea): CellRegion {
   return world.grid.circleBounds(area.x, area.z, area.radius);
 }
@@ -125,12 +131,6 @@ function regionAround(world: WorldState, cells: readonly number[]): CellRegion {
   };
 }
 
-interface Levelling {
-  readonly keptRelief: number;
-  readonly largestChange: number;
-  readonly level: number;
-}
-
 export function levelGround(world: WorldState, cells: readonly number[], levelling: Levelling): void {
   const { keptRelief, largestChange, level } = levelling;
 
@@ -152,7 +152,7 @@ export function levelGround(world: WorldState, cells: readonly number[], levelli
 
 export function smoothTerrain(world: WorldState, area: CircleArea, strength: number): void {
   const heights = world.terrain.height;
-  const size = world.grid.cellsPerSide;
+  const { cellsPerSide } = world.grid;
 
   const targets = editableCells(world, area).map((areaCell) => {
     const { cell } = areaCell;
@@ -160,12 +160,12 @@ export function smoothTerrain(world: WorldState, area: CircleArea, strength: num
     const average =
       (heights[cell - 1] +
         heights[cell + 1] +
-        heights[cell - size] +
-        heights[cell + size] +
-        heights[cell - size - 1] +
-        heights[cell - size + 1] +
-        heights[cell + size - 1] +
-        heights[cell + size + 1]) /
+        heights[cell - cellsPerSide] +
+        heights[cell + cellsPerSide] +
+        heights[cell - cellsPerSide - 1] +
+        heights[cell - cellsPerSide + 1] +
+        heights[cell + cellsPerSide - 1] +
+        heights[cell + cellsPerSide + 1]) /
       8;
 
     const amount = saturate(brushFalloff(areaCell.distance, area.radius) * strength);

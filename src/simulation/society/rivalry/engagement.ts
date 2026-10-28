@@ -22,6 +22,7 @@ const SPOT_SEARCH_RADIUS = 20;
 const ELBOW_ROOM = 0.9;
 const LONGEST_SHUFFLE_SECONDS = 2;
 const ARRIVAL_DISTANCE = 0.4;
+const MELEE_POSES: Readonly<Record<"none" | "spear", PersonPose>> = { none: "brawl", spear: "thrust" };
 
 export type EngagementState = "closing" | "striking";
 
@@ -30,10 +31,8 @@ function isCrowded(tick: PersonTick): boolean {
 
   return tick.context.people
     .livingWithin(person.mover.x, person.mover.z, ELBOW_ROOM)
-    .some((neighbour) => neighbour.id < person.id);
+    .some((neighbor) => neighbor.id < person.id);
 }
-
-const MELEE_POSES: Readonly<Record<"none" | "spear", PersonPose>> = { none: "brawl", spear: "thrust" };
 
 function faceFoe(tick: PersonTick, foe: Foe): void {
   const target = foeMover(foe);

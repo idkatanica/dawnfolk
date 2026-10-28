@@ -9,6 +9,18 @@ import type { SocietyContext } from "./society-context.ts";
 import { knows, type Tribe } from "./tribe.ts";
 import { campPoint } from "./tribe-places.ts";
 
+const DWELLING_LADDER: readonly BuildingKind[] = ["tent", "hut", "longhouse", "stoneHouse"];
+const MAXIMUM_SHELTERS = 12;
+const SPARE_BEDS = 2;
+const MINE_SPREAD = 0.7;
+const ENCLOSURE_MARGIN = 8;
+const SMALLEST_ENCLOSURE = 42;
+const SMALLEST_WALLED_CAMP = 5;
+const NEAREST_DWELLING = 14;
+const FARTHEST_DWELLING = 28;
+const DWELLING_SPREAD = 2.4;
+const FIELDS_FOR_GRANARY = 2;
+
 export interface BuildingPlan {
   depositId: number;
   extent: number;
@@ -20,20 +32,6 @@ export interface BuildingPlan {
 }
 
 type Planner = (tribe: Tribe, context: SocietyContext) => BuildingPlan | null;
-
-const DWELLING_LADDER: readonly BuildingKind[] = ["tent", "hut", "longhouse", "stoneHouse"];
-
-const MAXIMUM_SHELTERS = 12;
-const SPARE_BEDS = 2;
-
-const MINE_SPREAD = 0.7;
-const ENCLOSURE_MARGIN = 8;
-const SMALLEST_ENCLOSURE = 42;
-const SMALLEST_WALLED_CAMP = 5;
-const NEAREST_DWELLING = 14;
-const FARTHEST_DWELLING = 28;
-const DWELLING_SPREAD = 2.4;
-const FIELDS_FOR_GRANARY = 2;
 
 function campPlan(tribe: Tribe, kind: BuildingKind, nearest: number, farthest: number): BuildingPlan {
   return {

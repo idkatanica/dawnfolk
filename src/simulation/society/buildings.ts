@@ -6,6 +6,8 @@ import type { FireSystem } from "../nature/fire.ts";
 import { NO_BUILDING, type WorldState } from "../world/world-state.ts";
 import { footprintCells } from "./footprints.ts";
 
+export const NO_DEPOSIT = -1;
+
 const CATCHING_FIRE = 0.15;
 const BURN_DAMAGE_FACTOR = 1.1;
 const SOAKED_GROUND = 0.6;
@@ -39,8 +41,6 @@ export interface Building {
   x: number;
   z: number;
 }
-
-export const NO_DEPOSIT = -1;
 
 export interface BuildingLoss {
   building: Building;

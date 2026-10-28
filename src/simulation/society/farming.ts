@@ -33,6 +33,7 @@ const TENDED_GROWTH = 0.45;
 const TENDING_DECAY = 0.5;
 const SPROUT_DISPLAY = 0.04;
 const SEASONS_IN_YEAR = 4;
+const TASK_PRIORITY: Readonly<Record<FieldTask, number>> = { harvest: 3, sow: 2, tend: 1 };
 
 export type FieldTask = "harvest" | "sow" | "tend";
 
@@ -263,8 +264,6 @@ export function fieldTask(tribe: Tribe, field: Field, season: number): FieldTask
 
   return null;
 }
-
-const TASK_PRIORITY: Readonly<Record<FieldTask, number>> = { harvest: 3, sow: 2, tend: 1 };
 
 export function neediestField(tribe: Tribe, season: number): Field | null {
   let neediest: Field | null = null;

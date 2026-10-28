@@ -14,14 +14,6 @@ import type { SocietyContext } from "./society-context.ts";
 import { knows, type Plot, type PlotKind, type PlotSpot, type Tribe } from "./tribe.ts";
 import { campPoint } from "./tribe-places.ts";
 
-interface PlotLayout {
-  columns: number;
-  matureDays: number;
-  rows: number;
-  saplingHeight: number;
-  spacing: number;
-}
-
 const LAYOUTS: Readonly<Record<PlotKind, PlotLayout>> = {
   orchard: { columns: 3, matureDays: 10, rows: 2, saplingHeight: 1.4, spacing: 6.5 },
   woodlot: { columns: 3, matureDays: 14, rows: 2, saplingHeight: 2.2, spacing: 5 },
@@ -43,6 +35,14 @@ const FRUIT_FALL_PER_DAY = 1.5;
 const SPECIES_SALT = 7.7;
 const HEIGHT_SALT = 3.3;
 const FALLBACK_TIMBER: readonly PlantSpeciesIndex[] = [PlantSpecies.Oak, PlantSpecies.Birch, PlantSpecies.Pine];
+
+interface PlotLayout {
+  columns: number;
+  matureDays: number;
+  rows: number;
+  saplingHeight: number;
+  spacing: number;
+}
 
 function plotWanted(tribe: Tribe): PlotKind | null {
   const kinds = tribe.plots.map((plot) => plot.kind);

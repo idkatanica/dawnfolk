@@ -67,10 +67,8 @@ describe("staying warm", () => {
 
     const place = nearestWarmPlace(tick);
 
-    expect(place).not.toBeNull();
-
     if (place === null) {
-      return;
+      throw new Error("Expected a warm place");
     }
 
     tick.person.mover.x = house.x + 40;

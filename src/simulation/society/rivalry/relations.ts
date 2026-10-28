@@ -1,5 +1,22 @@
 import { clamp } from "../../../shared/math.ts";
 
+const LOWEST_STANDING = -100;
+const HIGHEST_STANDING = 100;
+const KIN_STANDING = 60;
+const STRANGER_STANDING = 0;
+const KIN_REST = 25;
+const STRANGER_REST = -5;
+const TRUCE_REST = 20;
+const RECOVERY_PER_DAY = 0.06;
+const GRIEVANCE_DECAY_PER_DAY = 0.12;
+const WEARINESS_DECAY_PER_DAY = 0.06;
+const BECOMES_HOSTILE = -50;
+const STAYS_HOSTILE = -35;
+const BECOMES_WARY = -15;
+const STAYS_WARY = -8;
+const BECOMES_FRIENDLY = 30;
+const STAYS_FRIENDLY = 22;
+
 export type Stance = "friendly" | "hostile" | "neutral" | "wary";
 
 export type Grudge = "blood" | "hunting" | "land" | "plunder" | "trespass";
@@ -22,23 +39,6 @@ export interface Relation {
   standing: number;
   truceUntilDay: number;
 }
-
-const LOWEST_STANDING = -100;
-const HIGHEST_STANDING = 100;
-const KIN_STANDING = 60;
-const STRANGER_STANDING = 0;
-const KIN_REST = 25;
-const STRANGER_REST = -5;
-const TRUCE_REST = 20;
-const RECOVERY_PER_DAY = 0.06;
-const GRIEVANCE_DECAY_PER_DAY = 0.12;
-const WEARINESS_DECAY_PER_DAY = 0.06;
-const BECOMES_HOSTILE = -50;
-const STAYS_HOSTILE = -35;
-const BECOMES_WARY = -15;
-const STAYS_WARY = -8;
-const BECOMES_FRIENDLY = 30;
-const STAYS_FRIENDLY = 22;
 
 function pairKey(firstId: number, secondId: number): string {
   return `${Math.min(firstId, secondId)}:${Math.max(firstId, secondId)}`;
