@@ -71,9 +71,11 @@ Age to the Iron Age on a procedurally generated island rendered with WebGPU.
 
 ## Stack
 
-Bun · Vite 8 · React 19 with the React Compiler · TypeScript 7 (`@tsconfig/bases` strictest) · three.js r186
-(WebGPU + TSL, WebGL 2 fallback) · Base UI · Tailwind CSS 4 · Zustand · Zod · Comlink · Biome with Ultracite ·
-Vitest 5 (node and browser projects) · Playwright · Lefthook.
+- **App:** Bun, Vite 8, React 19 with the React Compiler, TypeScript 7
+- **Graphics:** three.js r186 on WebGPU with TSL, WebGL 2 fallback
+- **Interface:** Base UI, Tailwind CSS 4, Zustand
+- **Data:** Zod, Comlink
+- **Tooling:** Biome with Ultracite, Vitest 5, Playwright, Lefthook
 
 ## Getting started
 
@@ -92,31 +94,22 @@ bun run dev  # http://localhost:5173
 
 ```
 src/
-  shared/      math, seeded random, noise, astronomy
-  content/     data registries: grounds, biomes, plants, animals, weather, technologies, buildings, powers,
-               world rules (powers and rules are zod schemas with UI metadata)
-  world/       world grid and the data shared by the simulation and the renderer
-  generation/  relief → erosion → hydrology → climate, wetlands and biomes → ruins and river crossings → vegetation →
-               ore deposits
-  simulation/  deterministic fixed-tick simulation: nature (calendar, weather, fire, embers, surface, growth),
-               agents (navigation, movement), fauna, society (people, jobs, tribes, buildings, settlement,
-               rivalry), powers, commands, frames
-  workers/     the simulation worker (Comlink)
-  game/        main thread: worker connection, world mirror, session, engine loop, god camera, input, power tools
-  models/      procedural model engine: mesh builder, rig and clips, people, animals, plants and rocks,
-               buildings, monuments, crossings
-  rendering/   WebGPU renderer: sky, height fog and atmosphere, terrain and water patches, bog pools and lily pads,
-               waterfalls, vegetation chunks and grass, skinned agents with far markers, buildings, fire, smoke,
-               weather, bloom
-  design/      design system: paper islands, game icons, buttons, fields, meters, tooltips, formatting
-  features/    UI features with their stores: time, powers, inspector, journal, tribes and rivalry, minimap,
-               map labels, notices, settings, new world, saves, project links, privacy page
-  app/         app shell, start screen, engine launch, HUD layouts
+  shared/      math, seeded random, noise
+  content/     game data: plants, animals, buildings, powers
+  world/       world grid shared by simulation and renderer
+  generation/  island generation from a seed
+  simulation/  nature, animals and tribes
+  workers/     simulation worker
+  game/        session, camera, input
+  models/      procedural meshes and animation
+  rendering/   WebGPU renderer
+  design/      design system
+  features/    interface features
+  app/         app shell and start screen
 ```
 
-The simulation runs in a Web Worker and posts frames; the main thread mirrors them for the renderer and the HUD,
-and the HUD sends commands back. [AGENTS.md](AGENTS.md#rules-that-are-easy-to-miss) has the rules that keep these
-parts apart.
+The simulation runs in a Web Worker. The renderer and the HUD read its frames and send commands back.
+[AGENTS.md](AGENTS.md#rules-that-are-easy-to-miss) has the rules that keep these parts apart.
 
 ## Sponsor
 
