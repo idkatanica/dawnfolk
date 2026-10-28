@@ -16,7 +16,7 @@ const SELECT_HINT = "Tap people, animals, buildings or land to see their details
 const TILE_CLASS =
   "grid size-10.5 shrink-0 snap-start place-items-center rounded-xl outline-none transition-[background-color,box-shadow,scale] duration-150 hover:bg-paper-hover focus-visible:ring-2 focus-visible:ring-dawn active:scale-95 pointer-coarse:size-12";
 
-const CHOSEN_TILE_CLASS = "bg-white shadow-segment hover:bg-white";
+const CHOSEN_TILE_CLASS = "bg-white shadow-segment ring-2 ring-dawn hover:bg-white";
 
 function TileHint({ description, name }: { readonly description: string; readonly name: string }) {
   return (
@@ -49,7 +49,7 @@ function PowerTile({ powerId }: { readonly powerId: PowerId }) {
       <Toolbar.Button
         aria-label={power.name}
         aria-pressed={isSelected}
-        className={cn(TILE_CLASS, { [`${CHOSEN_TILE_CLASS} ring-dawn ring-2`]: isSelected })}
+        className={cn(TILE_CLASS, { [CHOSEN_TILE_CLASS]: isSelected })}
         onClick={toggle}
       >
         <GameIcon name={POWER_ICONS[powerId]} size={34} />
