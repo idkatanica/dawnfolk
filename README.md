@@ -57,11 +57,11 @@ Age to the Iron Age on a procedurally generated island rendered with WebGPU.
 
 ## Stack
 
-- **App:** Bun, Vite 8, React 19, TypeScript 7
-- **Graphics:** three.js r186 on WebGPU with TSL, WebGL 2 fallback
-- **Interface:** Base UI, Tailwind CSS 4, Zustand
+- **App:** Bun, Vite, React, TypeScript
+- **Graphics:** three.js with WebGPU and TSL, WebGL 2 fallback
+- **Interface:** Base UI, Tailwind CSS, Zustand
 - **Data:** Zod, Comlink
-- **Tooling:** Biome, Vitest 5, Playwright, Lefthook
+- **Tooling:** Biome, Vitest, Playwright, Lefthook
 
 ## Getting started
 
