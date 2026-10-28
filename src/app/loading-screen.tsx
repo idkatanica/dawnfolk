@@ -50,9 +50,9 @@ function Caption({ name, progress }: CaptionProps) {
   const label = stageLabel(progress);
 
   return (
-    <div className="p-safe absolute inset-0">
-      <div className="flex h-full flex-col items-center justify-between py-3 text-center" role="status">
-        <h2 className={cn("text-ink text-3xl tracking-tight wrap-break-word", CAPTION_GLOW)}>{name}</h2>
+    <div className="p-safe absolute inset-x-0 bottom-0">
+      <div className="flex flex-col items-center gap-1 py-3 text-center" role="status">
+        <h2 className={cn("text-ink text-2xl tracking-tight wrap-break-word", CAPTION_GLOW)}>{name}</h2>
 
         <p className={cn("text-ink-soft animate-stage-in italic", CAPTION_GLOW)} key={label}>
           {label}…

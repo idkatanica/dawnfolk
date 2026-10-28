@@ -6,6 +6,9 @@ export const PAPER_SURFACE = "border border-paper-edge bg-paper";
 
 export const FIELD_SURFACE = "rounded-full bg-white/60 px-4 text-sm ring-1 ring-ink/8 ring-inset";
 
+export const MENU_ITEM =
+  "flex h-11 cursor-default items-center gap-3 rounded-xl px-3 text-sm text-ink outline-none select-none data-highlighted:bg-paper-hover";
+
 export const POPUP_MOTION =
   "origin-(--transform-origin) transition-[scale,opacity] data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0";
 

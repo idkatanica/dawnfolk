@@ -1,11 +1,12 @@
-import { ChevronRight, Trash2 } from "lucide-react";
+import { Menu } from "@base-ui/react/menu";
+import { Ellipsis, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useLaunchStore } from "../../app/launch-store.ts";
 import { IconButton, TextButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
-import { FOCUS_RING } from "../../design/styles.ts";
+import { FOCUS_RING, MENU_ITEM, PAPER_SURFACE, POPUP_MOTION } from "../../design/styles.ts";
 import type { SavedWorldListing } from "./save-database.ts";
-import { describeSummary, formatSavedAt } from "./saved-time.ts";
+import { describePeople, formatSavedAt } from "./saved-time.ts";
 import { useSavesStore } from "./saves-store.ts";
 import { useNow } from "./use-now.ts";
 
@@ -16,12 +17,19 @@ interface SavedWorldRowProps {
   readonly world: SavedWorldListing;
 }
 
-function worldDetails(world: SavedWorldListing): string {
+interface WorldMenuProps {
+  readonly name: string;
+  readonly onDelete: () => void;
+}
+
+function worldDetails(world: SavedWorldListing, now: number): string {
+  const savedAt = formatSavedAt(world.savedAt, now);
+
   if (!world.isLoadable || world.summary === null) {
-    return "Saved by another version of Dawnfolk";
+    return `Saved by another version of Dawnfolk · ${savedAt}`;
   }
 
-  return describeSummary(world.summary);
+  return `${describePeople(world.summary.population)} · ${savedAt}`;
 }
 
 function useSavedWorldRow(world: SavedWorldListing) {
@@ -46,6 +54,35 @@ function useSavedWorldRow(world: SavedWorldListing) {
   }
 
   return { handleConfirmDelete, handleDelete, handleKeep, handleOpen, isConfirming };
+}
+
+function WorldMenu({ name, onDelete }: WorldMenuProps) {
+  return (
+    <Menu.Root>
+      <Menu.Trigger
+        render={
+          <IconButton
+            className="text-ink-soft size-9"
+            icon={<Ellipsis aria-hidden="true" size={16} />}
+            label={`More for ${name}`}
+          />
+        }
+      />
+
+      <Menu.Portal>
+        <Menu.Positioner align="end" className="z-50" sideOffset={6}>
+          <Menu.Popup
+            className={cn(PAPER_SURFACE, POPUP_MOTION, "rounded-island min-w-40 p-1.5 duration-150 outline-none")}
+          >
+            <Menu.Item className={MENU_ITEM} onClick={onDelete}>
+              <Trash2 aria-hidden="true" className="text-ink-soft" size={17} />
+              Delete
+            </Menu.Item>
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
+  );
 }
 
 function SavedWorldRow({ now, world }: SavedWorldRowProps) {
@@ -82,24 +119,13 @@ function SavedWorldRow({ now, world }: SavedWorldRowProps) {
         type="button"
       >
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex items-baseline justify-between gap-3">
-            <span className="text-ink truncate text-sm font-medium">{world.name}</span>
+          <span className="text-ink truncate text-sm font-medium">{world.name}</span>
 
-            <span className="text-ink-soft shrink-0 text-xs">{formatSavedAt(world.savedAt, now)}</span>
-          </span>
-
-          <span className="text-ink-soft truncate text-xs">{worldDetails(world)}</span>
+          <span className="text-ink-soft truncate text-xs">{worldDetails(world, now)}</span>
         </span>
-
-        {world.isLoadable ? <ChevronRight aria-hidden="true" className="text-ink-soft shrink-0" size={16} /> : null}
       </button>
 
-      <IconButton
-        className="size-9"
-        icon={<Trash2 aria-hidden="true" size={16} />}
-        label={`Delete ${world.name}`}
-        onClick={handleDelete}
-      />
+      <WorldMenu name={world.name} onDelete={handleDelete} />
     </div>
   );
 }

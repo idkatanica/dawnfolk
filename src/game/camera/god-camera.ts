@@ -4,7 +4,7 @@ import { clamp, wrapAngle } from "../../shared/math.ts";
 const MAXIMUM_DISTANCE_IN_HALF_SIZES = 3.5;
 const MAXIMUM_PITCH = 1.48;
 const MINIMUM_DISTANCE = 4;
-const OPENING_DISTANCE_IN_HALF_SIZES = 1.25;
+const OPENING_DISTANCE_IN_HALF_SIZES = 1.6;
 const MINIMUM_PITCH = 0.08;
 const SMOOTHING_RATE = 9;
 const CLEARANCE = 1.2;

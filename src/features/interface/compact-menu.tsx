@@ -3,7 +3,7 @@ import { BookOpen, Map as MapIcon, Maximize2, Menu as MenuIcon, Minimize2, Setti
 import type { ReactNode } from "react";
 import { IconButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
-import { PAPER_SURFACE, POPUP_MOTION } from "../../design/styles.ts";
+import { MENU_ITEM, PAPER_SURFACE, POPUP_MOTION } from "../../design/styles.ts";
 import { useSidePanel } from "../journal/use-side-panel.ts";
 import { useInterfaceStore } from "./interface-store.ts";
 import { useFullscreen } from "./use-fullscreen.ts";
@@ -29,10 +29,7 @@ function useCompactMenu() {
 
 function MenuEntry({ children, icon, onClick }: MenuEntryProps) {
   return (
-    <Menu.Item
-      className="text-ink data-highlighted:bg-paper-hover flex h-11 cursor-default items-center gap-3 rounded-xl px-3 text-sm outline-none select-none"
-      onClick={onClick}
-    >
+    <Menu.Item className={MENU_ITEM} onClick={onClick}>
       <span className="text-ink-soft">{icon}</span>
 
       {children}
