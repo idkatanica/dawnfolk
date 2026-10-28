@@ -18,6 +18,10 @@ export function aroundPoint(center: Waypoint, distance: number, angle: number): 
   return { x: center.x + Math.cos(angle) * distance, z: center.z + Math.sin(angle) * distance };
 }
 
+function isDryLand(world: WorldState, cell: number): boolean {
+  return world.isOnIsland(cell) && !world.isWater(cell);
+}
+
 export class NavigationGrid {
   readonly #areas: LandAreas;
   readonly #shoreQueue: Int32Array;
@@ -275,8 +279,4 @@ export class NavigationGrid {
 
     return landing;
   }
-}
-
-function isDryLand(world: WorldState, cell: number): boolean {
-  return world.isOnIsland(cell) && !world.isWater(cell);
 }

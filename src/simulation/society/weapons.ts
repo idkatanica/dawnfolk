@@ -87,5 +87,5 @@ export function armForHunt(person: Person, tribe: Tribe): Weapon | null {
     return person.weapon;
   }
 
-  return current !== null && isUsable(current, tribe) ? current : null;
+  return null;
 }

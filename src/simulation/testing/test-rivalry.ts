@@ -5,13 +5,13 @@ import { createPerson } from "../society/person.ts";
 import type { Tribe } from "../society/tribe.ts";
 import { MORNING, type SocietyHarness } from "./test-society.ts";
 
+export const SPRING_HARNESS = { day: MORNING, world: { dimensions: { cellSize: 10, cellsPerSide: 96 } } };
+
 const ROW_LENGTH = 4;
 const SPACING = 3;
 const ADULT_AGE = 22;
 const CHILD_AGE = 6;
 const ARMORY_SPEARS = 12;
-
-export const SPRING_HARNESS = { day: MORNING, world: { dimensions: { cellSize: 10, cellsPerSide: 96 } } };
 
 export interface TribeFounding {
   readonly adults: number;

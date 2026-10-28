@@ -3,7 +3,7 @@ import type { ResourceAmounts } from "../../content/recipes.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import { aroundPoint, type Waypoint } from "../agents/navigation.ts";
 import { NO_BUILDING } from "../world/world-state.ts";
-import { type BuildingPad, DEEPEST_LEVELLING, isLevelled, levelPad, planPad } from "./building-pads.ts";
+import { type BuildingPad, DEEPEST_LEVELING, isLeveled, levelPad, planPad } from "./building-pads.ts";
 import type { Building, BuildingLoss } from "./buildings.ts";
 import { type BuildingPlan, buildingPlans } from "./camp-plan.ts";
 import { addFieldIfNeeded } from "./farming.ts";
@@ -125,13 +125,13 @@ function placeBuilding(tribe: Tribe, plan: BuildingPlan, context: SocietyContext
       continue;
     }
 
-    if (!isLevelled(plan.kind)) {
+    if (!isLeveled(plan.kind)) {
       return startBuilding(tribe, plan, { pad: null, spot }, context);
     }
 
     const site: Site = { pad: planPad(world, context.buildings.all, spot, plan.kind), spot };
 
-    if (unevenness(site) <= DEEPEST_LEVELLING) {
+    if (unevenness(site) <= DEEPEST_LEVELING) {
       return startBuilding(tribe, plan, site, context);
     }
 

@@ -147,44 +147,44 @@ describe("water recomputation", () => {
   });
 });
 
-describe("water recomputation over levelled land", () => {
+describe("water recomputation over leveled land", () => {
   it("reports only the heights that recomputing changed", () => {
-    const levelled = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 48 } });
+    const leveled = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 48 } });
 
-    const recomputation = new WaterRecomputation(levelled);
+    const recomputation = new WaterRecomputation(leveled);
 
     for (let row = 10; row < 20; row += 1) {
-      const cell = levelled.grid.index(30, row);
+      const cell = leveled.grid.index(30, row);
 
-      levelled.terrain.carving[cell] = 3;
-      levelled.terrain.height[cell] = 97;
+      leveled.terrain.carving[cell] = 3;
+      leveled.terrain.height[cell] = 97;
     }
 
     recomputation.recompute();
 
-    expect(levelled.heightChanges.takeRegion()).toEqual({ firstColumn: 28, firstRow: 8, lastColumn: 32, lastRow: 21 });
+    expect(leveled.heightChanges.takeRegion()).toEqual({ firstColumn: 28, firstRow: 8, lastColumn: 32, lastRow: 21 });
 
     recomputation.recompute();
 
-    expect(levelled.heightChanges.takeRegion()).toBeNull();
+    expect(leveled.heightChanges.takeRegion()).toBeNull();
   });
 
-  it("does not raise the old channel again once the land over it was levelled", () => {
-    const levelled = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 24 } });
+  it("does not raise the old channel again once the land over it was leveled", () => {
+    const leveled = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 24 } });
 
-    const recomputation = new WaterRecomputation(levelled);
+    const recomputation = new WaterRecomputation(leveled);
 
     for (let row = 4; row < 20; row += 1) {
-      const cell = levelled.grid.index(12, row);
+      const cell = leveled.grid.index(12, row);
 
-      levelled.terrain.carving[cell] = 3;
-      levelled.terrain.height[cell] = 97;
+      leveled.terrain.carving[cell] = 3;
+      leveled.terrain.height[cell] = 97;
     }
 
-    flattenTerrain(levelled, { radius: 60, x: 5, z: 5 }, 100, 1);
+    flattenTerrain(leveled, { radius: 60, x: 5, z: 5 }, 100, 1);
     recomputation.recompute();
 
-    expect(levelled.terrain.height[levelled.grid.cellAt(5, 5)]).toBeCloseTo(100, 2);
+    expect(leveled.terrain.height[leveled.grid.cellAt(5, 5)]).toBeCloseTo(100, 2);
   });
 });
 

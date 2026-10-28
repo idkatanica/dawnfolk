@@ -46,7 +46,7 @@ class FishJob implements Job {
       return null;
     }
 
-    if (progress !== "travelling") {
+    if (progress !== "traveling") {
       faceTowards(tick.person.mover, this.#spot.waterX, this.#spot.waterZ);
     }
 

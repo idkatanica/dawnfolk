@@ -24,17 +24,10 @@ describe("hunting mammoths", () => {
 
     const tick = firstMemberTick(harness, tribe);
 
-    const herd = harness.fauna.spawnHerd("mammoth", tribe.campX + 40, tribe.campZ, 1, harness.random);
-
-    if (herd === null) {
-      throw new Error("Expected a mammoth herd");
-    }
-
-    const mammoth = harness.fauna.findAnimal(herd.memberIds[0]);
-
-    if (mammoth === null) {
-      throw new Error("Expected a mammoth");
-    }
+    const mammoth = firstAnimal(
+      harness,
+      harness.fauna.spawnHerd("mammoth", tribe.campX + 40, tribe.campZ, 1, harness.random)
+    );
 
     mammoth.health = 1000;
     tick.person.health = 0.3;
@@ -82,17 +75,10 @@ describe("choosing game", () => {
 
     const tick = firstMemberTick(harness, tribe);
 
-    const herd = harness.fauna.spawnHerd("ibex", tribe.campX + 20, tribe.campZ, 1, harness.random);
-
-    if (herd === null) {
-      throw new Error("Expected an ibex herd");
-    }
-
-    const ibex = harness.fauna.findAnimal(herd.memberIds[0]);
-
-    if (ibex === null) {
-      throw new Error("Expected an ibex");
-    }
+    const ibex = firstAnimal(
+      harness,
+      harness.fauna.spawnHerd("ibex", tribe.campX + 20, tribe.campZ, 1, harness.random)
+    );
 
     tick.person.mover.x = ibex.mover.x + 6;
     tick.person.mover.z = ibex.mover.z;

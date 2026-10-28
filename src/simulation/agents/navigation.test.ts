@@ -35,17 +35,22 @@ function expectPath(path: Waypoint[] | null): Waypoint[] {
   return path;
 }
 
-function touchesWater(world: WorldState, from: Waypoint, path: readonly Waypoint[]): boolean {
+function isWetAlong(
+  from: Waypoint,
+  path: readonly Waypoint[],
+  samples: number,
+  isWet: (x: number, z: number) => boolean
+): boolean {
   let current = from;
 
   for (const waypoint of path) {
-    for (let sample = 1; sample <= 20; sample += 1) {
-      const amount = sample / 20;
+    for (let sample = 1; sample <= samples; sample += 1) {
+      const amount = sample / samples;
 
       const x = current.x + (waypoint.x - current.x) * amount;
       const z = current.z + (waypoint.z - current.z) * amount;
 
-      if (world.isWaterAt(x, z)) {
+      if (isWet(x, z)) {
         return true;
       }
     }
@@ -54,6 +59,22 @@ function touchesWater(world: WorldState, from: Waypoint, path: readonly Waypoint
   }
 
   return false;
+}
+
+function touchesWater(world: WorldState, from: Waypoint, path: readonly Waypoint[]): boolean {
+  return isWetAlong(from, path, 20, (x, z) => world.isWaterAt(x, z));
+}
+
+function wadesOutsideTheFord(world: WorldState, from: Waypoint, path: readonly Waypoint[]): boolean {
+  return isWetAlong(from, path, 200, (x, z) => world.isWaterAt(x, z) && world.crossingAt(x, z) === null);
+}
+
+function riverWithFord(): WorldState {
+  const world = createTestWorld({ ...RIVER_WORLD, crossings: [fordAcross(-24, 24, 60)] });
+
+  floodStrip(world, 20, 1.5);
+
+  return world;
 }
 
 function crossesSpring(world: WorldState, from: Waypoint, to: Waypoint): boolean {
@@ -178,35 +199,6 @@ describe("navigation grid", () => {
 });
 
 describe("crossings", () => {
-  function riverWithFord(): WorldState {
-    const world = createTestWorld({ ...RIVER_WORLD, crossings: [fordAcross(-24, 24, 60)] });
-
-    floodStrip(world, 20, 1.5);
-
-    return world;
-  }
-
-  function wadesOutsideTheFord(world: WorldState, from: Waypoint, path: readonly Waypoint[]): boolean {
-    let current = from;
-
-    for (const waypoint of path) {
-      for (let sample = 1; sample <= 200; sample += 1) {
-        const amount = sample / 200;
-
-        const x = current.x + (waypoint.x - current.x) * amount;
-        const z = current.z + (waypoint.z - current.z) * amount;
-
-        if (world.isWaterAt(x, z) && world.crossingAt(x, z) === null) {
-          return true;
-        }
-      }
-
-      current = waypoint;
-    }
-
-    return false;
-  }
-
   it("routes between opposite banks over the ford and nowhere else", () => {
     const world = riverWithFord();
     const from = { x: -150, z: -100 };

@@ -33,6 +33,21 @@ export interface BuildingPlan {
 
 type Planner = (tribe: Tribe, context: SocietyContext) => BuildingPlan | null;
 
+const PLANNERS: readonly Planner[] = [
+  singleBuilding("campfire", 0, 4),
+  shelterPlan,
+  singleBuilding("storehouse", 9, 18),
+  singleBuilding("kiln", 18, 34),
+  singleBuilding("granary", 10, 22, hasFields),
+  minePlan,
+  singleBuilding("smelter", 20, 36),
+  singleBuilding("totem", 6, 12),
+  upgradePlan,
+  singleBuilding("workshop", 16, 32),
+  singleBuilding("forge", 20, 36),
+  enclosurePlan,
+];
+
 function campPlan(tribe: Tribe, kind: BuildingKind, nearest: number, farthest: number): BuildingPlan {
   return {
     depositId: NO_DEPOSIT,
@@ -283,21 +298,6 @@ function enclosurePlan(tribe: Tribe, context: SocietyContext): BuildingPlan | nu
 function hasFields(tribe: Tribe): boolean {
   return tribe.fields.length >= FIELDS_FOR_GRANARY;
 }
-
-const PLANNERS: readonly Planner[] = [
-  singleBuilding("campfire", 0, 4),
-  shelterPlan,
-  singleBuilding("storehouse", 9, 18),
-  singleBuilding("kiln", 18, 34),
-  singleBuilding("granary", 10, 22, hasFields),
-  minePlan,
-  singleBuilding("smelter", 20, 36),
-  singleBuilding("totem", 6, 12),
-  upgradePlan,
-  singleBuilding("workshop", 16, 32),
-  singleBuilding("forge", 20, 36),
-  enclosurePlan,
-];
 
 function keptInside(plan: BuildingPlan, tribe: Tribe, context: SocietyContext): BuildingPlan {
   const enclosure = enclosureOf(tribe, context);

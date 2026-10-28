@@ -62,6 +62,55 @@ interface TribeArrival {
   z: number;
 }
 
+function savedPerson(person: Person): Person {
+  const saved: Person = structuredClone({ ...person, job: null, mover: savedMover(person.mover, false) });
+
+  if (saved.isAlive && saved.mover.hop === null) {
+    saved.pose = "idle";
+    saved.speed = 0;
+  }
+
+  return saved;
+}
+
+function deathAccountOf(person: Person, tribe: Tribe, cause: DeathCause, account: DeathAccount | null): DeathAccount {
+  if (account !== null) {
+    return account;
+  }
+
+  return {
+    category: cause === "age" ? "death" : "warning",
+    text: `${person.name} of ${tribe.name} ${DEATH_MESSAGES[cause]}`,
+  };
+}
+
+function settleFall(person: Person): void {
+  if (person.pose === "fall" && person.deathSeconds > FALL_SECONDS) {
+    person.pose = "dead";
+  }
+}
+
+function isLivingWithin(person: Person, x: number, z: number, radius: number): boolean {
+  return person.isAlive && Math.hypot(person.mover.x - x, person.mover.z - z) < radius;
+}
+
+function newcomerAge(isGrownUp: boolean, random: RandomSource): number {
+  if (isGrownUp) {
+    return random.between(17, 35);
+  }
+
+  return random.between(4, 11);
+}
+
+function keepHopping(tick: PersonTick): void {
+  const { context, person, seconds } = tick;
+  const { hop } = person.mover;
+
+  person.pose = isLeaping(person.mover) ? "leap" : "run";
+  person.speed = hop === null ? 0 : hop.speed;
+  moveAlong(person.mover, seconds, person.speed, context.world, context.navigation);
+}
+
 export class SocietySystem {
   readonly #dependencies: SocietyDependencies;
   readonly #peopleById = new Map<number, Person>();
@@ -332,7 +381,7 @@ export class SocietySystem {
     }
 
     this.#trodden.update(days, context, this.#tribes);
-    this.#removeRemains(seconds);
+    this.#removeRemains();
   }
 
   #newcomer(tribe: Tribe, site: Waypoint, member: number, arrival: TribeArrival): Person {
@@ -423,8 +472,8 @@ export class SocietySystem {
     person.phase += seconds * person.speed * POSE_PHASE_RATE;
   }
 
-  #removeRemains(seconds: number): void {
-    const hasExpired = this.#people.some((person) => !person.isAlive && person.deathSeconds + seconds > CORPSE_SECONDS);
+  #removeRemains(): void {
+    const hasExpired = this.#people.some((person) => !person.isAlive && person.deathSeconds > CORPSE_SECONDS);
 
     if (!hasExpired) {
       return;
@@ -444,53 +493,4 @@ export class SocietySystem {
 
     this.#people = remaining;
   }
-}
-
-function savedPerson(person: Person): Person {
-  const saved: Person = structuredClone({ ...person, job: null, mover: savedMover(person.mover, false) });
-
-  if (saved.isAlive && saved.mover.hop === null) {
-    saved.pose = "idle";
-    saved.speed = 0;
-  }
-
-  return saved;
-}
-
-function deathAccountOf(person: Person, tribe: Tribe, cause: DeathCause, account: DeathAccount | null): DeathAccount {
-  if (account !== null) {
-    return account;
-  }
-
-  return {
-    category: cause === "age" ? "death" : "warning",
-    text: `${person.name} of ${tribe.name} ${DEATH_MESSAGES[cause]}`,
-  };
-}
-
-function settleFall(person: Person): void {
-  if (person.pose === "fall" && person.deathSeconds > FALL_SECONDS) {
-    person.pose = "dead";
-  }
-}
-
-function isLivingWithin(person: Person, x: number, z: number, radius: number): boolean {
-  return person.isAlive && Math.hypot(person.mover.x - x, person.mover.z - z) < radius;
-}
-
-function newcomerAge(isGrownUp: boolean, random: RandomSource): number {
-  if (isGrownUp) {
-    return random.between(17, 35);
-  }
-
-  return random.between(4, 11);
-}
-
-function keepHopping(tick: PersonTick): void {
-  const { context, person, seconds } = tick;
-  const { hop } = person.mover;
-
-  person.pose = isLeaping(person.mover) ? "leap" : "run";
-  person.speed = hop === null ? 0 : hop.speed;
-  moveAlong(person.mover, seconds, person.speed, context.world, context.navigation);
 }

@@ -50,24 +50,6 @@ const OLDER_SAVE_PLANT_SPECIES = [
   "Alder",
 ];
 
-export interface WorldSummary {
-  day: number;
-  eraIndex: number;
-  eraName: string;
-  population: number;
-  seasonName: string;
-  tribeCount: number;
-  year: number;
-}
-
-export interface SavedWorldState {
-  plantSpecies: readonly string[];
-  request: WorldRequest;
-  simulation: SimulationSnapshot;
-  summary: WorldSummary;
-  version: number;
-}
-
 const worldRequestSchema = z.object({
   options: z.object({
     dimensions: z.object({
@@ -135,6 +117,24 @@ export const savedWorldStateSchema = z.object({
   summary: worldSummarySchema,
   version: z.literal(SAVE_VERSION),
 });
+
+export interface WorldSummary {
+  day: number;
+  eraIndex: number;
+  eraName: string;
+  population: number;
+  seasonName: string;
+  tribeCount: number;
+  year: number;
+}
+
+export interface SavedWorldState {
+  plantSpecies: readonly string[];
+  request: WorldRequest;
+  simulation: SimulationSnapshot;
+  summary: WorldSummary;
+  version: number;
+}
 
 function speciesNamed(name: string): number {
   const species = SPECIES_BY_NAME.get(name);

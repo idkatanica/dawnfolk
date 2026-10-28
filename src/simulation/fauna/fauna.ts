@@ -109,6 +109,58 @@ export interface FaunaTick {
   threats: FaunaThreats;
 }
 
+function settleFall(animal: Animal): void {
+  if (animal.pose === "fall" && animal.deathSeconds > FALL_SECONDS) {
+    animal.pose = "dead";
+  }
+}
+
+function kindForBiome(biome: number, random: RandomSource): AnimalKind | null {
+  const kinds = animalsAt(biome);
+
+  const total = kinds.reduce((sum, kind) => sum + ANIMALS[kind].abundance, 0);
+
+  let remaining = random.next() * total;
+
+  for (const kind of kinds) {
+    remaining -= ANIMALS[kind].abundance;
+
+    if (remaining < 0) {
+      return kind;
+    }
+  }
+
+  return null;
+}
+
+function litterSize(range: readonly [number, number], random: RandomSource): number {
+  const [smallest, largest] = range;
+
+  if (smallest === largest) {
+    return smallest;
+  }
+
+  return random.integer(smallest, largest + 1);
+}
+
+function isFavoriteBiome(kind: AnimalKind, biome: number): boolean {
+  return ANIMALS[kind].favoriteBiomes.some((favorite) => favorite === biome);
+}
+
+function phaseRate(kind: AnimalKind): number {
+  if (kind === "mammoth") {
+    return 0.55;
+  }
+
+  return 1;
+}
+
+function hopSpeedOf(kind: AnimalKind): number {
+  const { runSpeed, walkSpeed } = ANIMALS[kind];
+
+  return kind === "mammoth" ? walkSpeed : runSpeed;
+}
+
 export class FaunaSystem {
   readonly #animalsById = new Map<number, Animal>();
   readonly #herdsById = new Map<number, Herd>();
@@ -428,14 +480,14 @@ export class FaunaSystem {
   #isHomeGround(kind: AnimalKind, cell: number): boolean {
     const biome = this.#world.terrain.biome[cell];
 
-    if (isFavouriteBiome(kind, biome)) {
+    if (isFavoriteBiome(kind, biome)) {
       return true;
     }
 
-    return ANIMALS[kind].edgeBiomes.some((edge) => edge === biome) && this.#bordersFavourite(kind, cell);
+    return ANIMALS[kind].edgeBiomes.some((edge) => edge === biome) && this.#bordersFavorite(kind, cell);
   }
 
-  #bordersFavourite(kind: AnimalKind, cell: number): boolean {
+  #bordersFavorite(kind: AnimalKind, cell: number): boolean {
     const { grid, terrain } = this.#world;
 
     const column = grid.columnOf(cell);
@@ -445,7 +497,7 @@ export class FaunaSystem {
       for (let columnStep = -EDGE_REACH_CELLS; columnStep <= EDGE_REACH_CELLS; columnStep += 1) {
         const isInside = grid.contains(column + columnStep, row + rowStep);
 
-        if (isInside && isFavouriteBiome(kind, terrain.biome[grid.index(column + columnStep, row + rowStep)])) {
+        if (isInside && isFavoriteBiome(kind, terrain.biome[grid.index(column + columnStep, row + rowStep)])) {
           return true;
         }
       }
@@ -883,11 +935,15 @@ export class FaunaSystem {
   #foundGroup(herd: Herd, random: RandomSource): boolean {
     const leader = this.#firstMember(herd);
 
+    if (leader === null) {
+      return false;
+    }
+
     const grown = this.#membersOf(herd)
       .filter((member) => member !== leader && member.youth <= ADULT_YOUTH)
       .slice(-DISPERSING_MEMBERS);
 
-    if (leader === null || grown.length < DISPERSING_MEMBERS) {
+    if (grown.length < DISPERSING_MEMBERS) {
       return false;
     }
 
@@ -956,56 +1012,4 @@ export class FaunaSystem {
     this.#animals = this.#animals.filter((animal) => animal.isAlive || animal.deathSeconds <= CORPSE_SECONDS);
     this.#herds = this.#herds.filter((herd) => herd.memberIds.length > 0);
   }
-}
-
-function settleFall(animal: Animal): void {
-  if (animal.pose === "fall" && animal.deathSeconds > FALL_SECONDS) {
-    animal.pose = "dead";
-  }
-}
-
-function kindForBiome(biome: number, random: RandomSource): AnimalKind | null {
-  const kinds = animalsAt(biome);
-
-  const total = kinds.reduce((sum, kind) => sum + ANIMALS[kind].abundance, 0);
-
-  let remaining = random.next() * total;
-
-  for (const kind of kinds) {
-    remaining -= ANIMALS[kind].abundance;
-
-    if (remaining < 0) {
-      return kind;
-    }
-  }
-
-  return null;
-}
-
-function litterSize(range: readonly [number, number], random: RandomSource): number {
-  const [smallest, largest] = range;
-
-  if (smallest === largest) {
-    return smallest;
-  }
-
-  return random.integer(smallest, largest + 1);
-}
-
-function isFavouriteBiome(kind: AnimalKind, biome: number): boolean {
-  return ANIMALS[kind].favouriteBiomes.some((favourite) => favourite === biome);
-}
-
-function phaseRate(kind: AnimalKind): number {
-  if (kind === "mammoth") {
-    return 0.55;
-  }
-
-  return 1;
-}
-
-function hopSpeedOf(kind: AnimalKind): number {
-  const { runSpeed, walkSpeed } = ANIMALS[kind];
-
-  return kind === "mammoth" ? walkSpeed : runSpeed;
 }

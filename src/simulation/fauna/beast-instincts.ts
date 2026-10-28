@@ -242,7 +242,6 @@ function followHunt(mood: PackMood, hunt: PackHunt, members: readonly Animal[], 
   }
 
   const isBroken = members.length < hunt.startingSize || members.some((member) => isHurt(member));
-
   const isGuarded = prey.isSheltered || prey.companions >= GROUP_COMPANIONS;
 
   if (isGuarded || isBroken || hunt.seconds > LONGEST_HUNT_SECONDS) {
@@ -629,7 +628,6 @@ export class BeastInstincts {
     charge.seconds += tick.seconds;
 
     const target = tick.threats.people.locate(charge.targetId);
-    const reach = animal.kind === "mammoth" ? MAMMOTH_REACH : STAG_REACH;
 
     if (target === null || charge.hasStruck || charge.seconds > CHARGE_SECONDS) {
       this.#endCharge(animal, target);
@@ -638,6 +636,7 @@ export class BeastInstincts {
     }
 
     const distance = Math.hypot(target.x - animal.mover.x, target.z - animal.mover.z);
+    const reach = animal.kind === "mammoth" ? MAMMOTH_REACH : STAG_REACH;
 
     if (distance > CHARGE_GIVE_UP_DISTANCE) {
       this.#endCharge(animal, target);

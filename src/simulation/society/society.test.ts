@@ -3,9 +3,10 @@ import { worldRulesSchema } from "../../content/world-rules.ts";
 import {
   createStripHarness,
   firstMemberTick,
+  isOnDryLand,
+  MORNING,
   SocietyHarness,
   settle,
-  standsOnDryLand,
 } from "../testing/test-society.ts";
 import { floodCells } from "../testing/test-world.ts";
 import { assignJob } from "./decisions.ts";
@@ -13,7 +14,6 @@ import { findBerries } from "./jobs/gather-job.ts";
 import type { Person } from "./person.ts";
 import { totalFood } from "./stock.ts";
 
-const MORNING = 0.3;
 const EVENING = 0.9;
 const LATE_EVENING = 23 / 24;
 const WORK_POSES: ReadonlySet<string> = new Set(["gather", "chop", "dig", "fish", "build", "throw"]);
@@ -222,7 +222,7 @@ describe("staying dry", () => {
 
     const members = harness.society.membersOf(tribe);
 
-    expect(members.filter((person) => !standsOnDryLand(harness, person))).toEqual([]);
+    expect(members.filter((person) => !isOnDryLand(harness, person))).toEqual([]);
   });
 
   it("walks people out of water that rose around them", () => {

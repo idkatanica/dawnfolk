@@ -26,6 +26,29 @@ const FRAGMENT_SPREAD = 2.4;
 const ROLL_SALT = 41.3;
 const FRAGMENT_SALT = 7.7;
 
+export type Catastrophe = "earthquake" | "explosion" | "meteor";
+
+const CATASTROPHE_NAMES: Readonly<Record<Catastrophe, string>> = {
+  earthquake: "The earthquake",
+  explosion: "The blast",
+  meteor: "The meteor",
+};
+
+type DamageOdds = readonly [readonly number[], readonly number[], readonly number[]];
+
+type HarmLevel = Exclude<MonumentDamageLevel, typeof MonumentDamage.Standing>;
+
+const RUIN_VERBS: Readonly<Record<HarmLevel, string>> = {
+  [MonumentDamage.Leaning]: "cracked",
+  [MonumentDamage.Fallen]: "toppled",
+  [MonumentDamage.Rubble]: "shattered",
+};
+
+interface Ruination {
+  readonly odds: DamageOdds;
+  readonly order: readonly number[];
+}
+
 const RUINATIONS: Readonly<Record<MonumentPiece, Ruination>> = {
   [PlantSpecies.Arch]: ruination(
     PlantSpecies.Arch,
@@ -83,29 +106,6 @@ const RUINATIONS: Readonly<Record<MonumentPiece, Ruination>> = {
   ),
 };
 
-const CATASTROPHE_NAMES: Readonly<Record<Catastrophe, string>> = {
-  earthquake: "The earthquake",
-  explosion: "The blast",
-  meteor: "The meteor",
-};
-
-const RUIN_VERBS: Readonly<Record<HarmLevel, string>> = {
-  [MonumentDamage.Leaning]: "cracked",
-  [MonumentDamage.Fallen]: "toppled",
-  [MonumentDamage.Rubble]: "shattered",
-};
-
-export type Catastrophe = "earthquake" | "explosion" | "meteor";
-
-type DamageOdds = readonly [readonly number[], readonly number[], readonly number[]];
-
-type HarmLevel = Exclude<MonumentDamageLevel, typeof MonumentDamage.Standing>;
-
-interface Ruination {
-  readonly odds: DamageOdds;
-  readonly order: readonly number[];
-}
-
 export interface Shock {
   readonly catastrophe: Catastrophe;
   readonly reach: number;
@@ -114,7 +114,7 @@ export interface Shock {
   readonly z: number;
 }
 
-export interface MonumentHarm {
+interface MonumentHarm {
   readonly damage: HarmLevel;
   readonly monument: Monument;
 }

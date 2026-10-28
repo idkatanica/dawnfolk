@@ -39,6 +39,6 @@ describe("orchards", () => {
     expect(vegetation.isAlive(tree.plant)).toBe(true);
     expect(vegetation.height[tree.plant]).toBeGreaterThan(sapling * 2);
     expect(vegetation.fruit[tree.plant]).toBeGreaterThan(0.3);
-    expect(ripestFruitTree(tribe, harness.world, tribe.claimedPlants)).toBe(tree.plant);
+    expect(ripestFruitTree(tribe, harness.world)).toBe(tree.plant);
   });
 });

@@ -95,10 +95,10 @@ function nearestFoe(tick: PersonTick, raid: Raid, radius: number): Foe | null {
 export class RaidJob implements Job {
   readonly kind = "raid";
   readonly raidId: number;
-  readonly weapon: CarriedWeapon;
   readonly #engagement: Engagement;
   readonly #loot: Stock = emptyStock();
   readonly #offset: Waypoint;
+  readonly #weapon: CarriedWeapon;
   #destination: Destination | null = null;
   #leg: Leg = "outward";
   #rations: number;
@@ -106,7 +106,7 @@ export class RaidJob implements Job {
 
   constructor(tick: PersonTick, raid: Raid, weapon: CarriedWeapon, slot: number, rations: number) {
     this.raidId = raid.id;
-    this.weapon = weapon;
+    this.#weapon = weapon;
     this.#engagement = new Engagement(weapon, tick.context.rivalry.random.next());
     this.#offset = formationOffset(slot);
     this.#rations = rations;
@@ -278,7 +278,7 @@ export class RaidJob implements Job {
       return true;
     }
 
-    person.pose = this.weapon.kind === "spear" ? "charge" : "run";
+    person.pose = this.#weapon.kind === "spear" ? "charge" : "run";
 
     return false;
   }

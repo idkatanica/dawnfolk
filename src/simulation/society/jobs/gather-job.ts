@@ -78,7 +78,7 @@ export function findBerries(tick: PersonTick): ForageJob | null {
 }
 
 export function findFruit(tick: PersonTick): ForageJob | null {
-  const tree = ripestFruitTree(tick.tribe, tick.context.world, tick.tribe.claimedPlants);
+  const tree = ripestFruitTree(tick.tribe, tick.context.world);
 
   if (tree === null) {
     return null;

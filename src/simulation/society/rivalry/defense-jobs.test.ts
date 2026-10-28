@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { foundNeighboringTribes, runUntil, SPRING_HARNESS, standStill } from "../../testing/test-rivalry.ts";
 import { SocietyHarness, tickFor } from "../../testing/test-society.ts";
 import type { CarriedWeapon } from "../weapons.ts";
+import { BARE_HANDS } from "./combat-stats.ts";
 import { FightJob } from "./defense-jobs.ts";
 import { personFoe } from "./foes.ts";
 
 const QUIVER = 10;
 const SPEAR: CarriedWeapon = { kind: "spear", material: "stone" };
 const BOW: CarriedWeapon = { kind: "bow", material: "stone" };
-const BARE_HANDS: CarriedWeapon = { kind: "none" };
 
 describe("combat", () => {
   it("lets a spearman get the better of a bare-handed fighter", () => {

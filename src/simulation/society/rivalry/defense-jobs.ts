@@ -61,21 +61,36 @@ function foeOfDefender(tick: PersonTick, raid: Raid): Foe | null {
   return nearestRaider(tick, raid, DEFEND_ENGAGE_RADIUS);
 }
 
+function shelterFrom(tribe: Tribe, threat: Waypoint | null, random: RandomSource): Waypoint {
+  if (threat === null) {
+    return nearCamp(tribe, REFUGE_SPREAD, random);
+  }
+
+  const awayX = tribe.campX - threat.x;
+  const awayZ = tribe.campZ - threat.z;
+  const length = Math.max(1, Math.hypot(awayX, awayZ));
+
+  return {
+    x: tribe.campX + (awayX / length) * HIDING_DISTANCE + random.signed() * REFUGE_SPREAD,
+    z: tribe.campZ + (awayZ / length) * HIDING_DISTANCE + random.signed() * REFUGE_SPREAD,
+  };
+}
+
 export class DefendJob implements Job {
   readonly kind = "defend";
-  readonly raidId: number;
   readonly #engagement: Engagement;
   readonly #post: Waypoint;
+  readonly #raidId: number;
   #guardState: GuardState = "roaming";
 
   constructor(tick: PersonTick, raid: Raid, weapon: CarriedWeapon) {
-    this.raidId = raid.id;
+    this.#raidId = raid.id;
     this.#engagement = new Engagement(weapon, tick.context.rivalry.random.next());
     this.#post = guardPost(tick.tribe, raid, tick.person);
   }
 
   update(tick: PersonTick): Job | null {
-    const raid = tick.context.rivalry.raidOf(this.raidId);
+    const raid = tick.context.rivalry.raidOf(this.#raidId);
 
     if (raid === null) {
       return null;
@@ -158,21 +173,6 @@ export class FightJob implements Job {
 
     return this;
   }
-}
-
-function shelterFrom(tribe: Tribe, threat: Waypoint | null, random: RandomSource): Waypoint {
-  if (threat === null) {
-    return nearCamp(tribe, REFUGE_SPREAD, random);
-  }
-
-  const awayX = tribe.campX - threat.x;
-  const awayZ = tribe.campZ - threat.z;
-  const length = Math.max(1, Math.hypot(awayX, awayZ));
-
-  return {
-    x: tribe.campX + (awayX / length) * HIDING_DISTANCE + random.signed() * REFUGE_SPREAD,
-    z: tribe.campZ + (awayZ / length) * HIDING_DISTANCE + random.signed() * REFUGE_SPREAD,
-  };
 }
 
 export class ShelterJob implements Job {

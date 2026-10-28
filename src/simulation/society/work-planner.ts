@@ -34,43 +34,6 @@ const EXPEDITION_MEALS_PER_PERSON = 2;
 const COLD_SEASON_FIRE_WOOD = 12;
 const AUTUMN = 2;
 
-function expeditionBuilders(tick: PersonTick): number {
-  return tick.context.people
-    .membersOf(tick.tribe)
-    .filter((member) => member.job !== null && member.job.kind === "build" && member.job.isExpedition === true).length;
-}
-
-function constructionSite(tick: PersonTick): Building | null {
-  return tick.context.buildings.find(tick.tribe.buildings.constructionSiteId);
-}
-
-function fireWoodReserve(season: number): number {
-  if (season >= AUTUMN) {
-    return COLD_SEASON_FIRE_WOOD;
-  }
-
-  return FIRE_WOOD;
-}
-
-function woodNeed(tick: PersonTick, construction: ResourceAmounts): number {
-  const { tribe } = tick;
-
-  const fireWood = knows(tribe, "fire") ? fireWoodReserve(tick.context.environment.season) : 0;
-  const craftWood = knows(tribe, "pottery") ? CRAFTING_WOOD : 0;
-
-  const wanted = 6 + amountOf(construction, "wood") + fireWood + craftWood;
-
-  return Math.max(0.1, 1 - tribe.stock.wood / wanted);
-}
-
-function stoneWanted(tick: PersonTick, construction: ResourceAmounts): number {
-  const { tribe } = tick;
-
-  const reserve = knows(tribe, "masonry") ? MASONRY_STONE : 4;
-
-  return amountOf(construction, "stone") + reserve + 2;
-}
-
 const WORK_OPTIONS: readonly WorkOption[] = [
   {
     kind: "build",
@@ -228,6 +191,43 @@ const WORK_OPTIONS: readonly WorkOption[] = [
   },
   ...ERA_WORK_OPTIONS,
 ];
+
+function expeditionBuilders(tick: PersonTick): number {
+  return tick.context.people
+    .membersOf(tick.tribe)
+    .filter((member) => member.job !== null && member.job.kind === "build" && member.job.isExpedition === true).length;
+}
+
+function constructionSite(tick: PersonTick): Building | null {
+  return tick.context.buildings.find(tick.tribe.buildings.constructionSiteId);
+}
+
+function fireWoodReserve(season: number): number {
+  if (season >= AUTUMN) {
+    return COLD_SEASON_FIRE_WOOD;
+  }
+
+  return FIRE_WOOD;
+}
+
+function woodNeed(tick: PersonTick, construction: ResourceAmounts): number {
+  const { tribe } = tick;
+
+  const fireWood = knows(tribe, "fire") ? fireWoodReserve(tick.context.environment.season) : 0;
+  const craftWood = knows(tribe, "pottery") ? CRAFTING_WOOD : 0;
+
+  const wanted = 6 + amountOf(construction, "wood") + fireWood + craftWood;
+
+  return Math.max(0.1, 1 - tribe.stock.wood / wanted);
+}
+
+function stoneWanted(tick: PersonTick, construction: ResourceAmounts): number {
+  const { tribe } = tick;
+
+  const reserve = knows(tribe, "masonry") ? MASONRY_STONE : 4;
+
+  return amountOf(construction, "stone") + reserve + 2;
+}
 
 function adjustedWeight(option: WorkOption, tick: PersonTick, construction: ResourceAmounts): number {
   const weight = option.weight(tick, construction);

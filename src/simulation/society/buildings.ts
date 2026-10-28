@@ -98,6 +98,24 @@ export function setAlight(building: Building): void {
   building.burningSeconds = Math.max(building.burningSeconds, BUILDINGS[building.kind].burnTime);
 }
 
+function rainDamage(tick: BuildingTick): number {
+  const { precipitation } = tick.weather;
+
+  if (precipitation <= CAMPFIRE_RAIN) {
+    return 0;
+  }
+
+  if (!tick.random.chance(tick.seconds * 0.02 * precipitation)) {
+    return 0;
+  }
+
+  return CAMPFIRE_RAIN;
+}
+
+function isEscapeWeather(weather: BuildingWeather): boolean {
+  return weather.drought > ESCAPE_DROUGHT && weather.windSpeed > ESCAPE_WIND;
+}
+
 export class BuildingSystem {
   readonly #identifiers: IdentifierSource;
   readonly #world: WorldState;
@@ -347,7 +365,6 @@ export class BuildingSystem {
     const { grid } = this.#world;
 
     const offset = random.pick(NEIGHBOR_OFFSETS);
-
     const column = grid.columnOf(cell) + offset.column;
     const row = grid.rowOf(cell) + offset.row;
 
@@ -357,22 +374,4 @@ export class BuildingSystem {
 
     return grid.index(column, row);
   }
-}
-
-function rainDamage(tick: BuildingTick): number {
-  const { precipitation } = tick.weather;
-
-  if (precipitation <= CAMPFIRE_RAIN) {
-    return 0;
-  }
-
-  if (!tick.random.chance(tick.seconds * 0.02 * precipitation)) {
-    return 0;
-  }
-
-  return CAMPFIRE_RAIN;
-}
-
-function isEscapeWeather(weather: BuildingWeather): boolean {
-  return weather.drought > ESCAPE_DROUGHT && weather.windSpeed > ESCAPE_WIND;
 }

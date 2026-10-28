@@ -410,10 +410,6 @@ export class Simulation {
     this.weather.setKind(weather);
   }
 
-  schedule(delaySeconds: number, run: () => void): void {
-    this.#tasks.push({ remainingSeconds: delaySeconds, run });
-  }
-
   takeNotices(): string[] {
     const notices = this.#notices;
 
@@ -487,6 +483,10 @@ export class Simulation {
     return realSeconds * this.#speed;
   }
 
+  #schedule(delaySeconds: number, run: () => void): void {
+    this.#tasks.push({ remainingSeconds: delaySeconds, run });
+  }
+
   #createServices(): PowerServices {
     return {
       buildings: this.buildings,
@@ -503,7 +503,7 @@ export class Simulation {
       random: this.random,
       rivalry: this.rivalry,
       rules: DEFAULT_WORLD_RULES,
-      schedule: (delaySeconds, run) => this.schedule(delaySeconds, run),
+      schedule: (delaySeconds, run) => this.#schedule(delaySeconds, run),
       world: this.world,
     };
   }

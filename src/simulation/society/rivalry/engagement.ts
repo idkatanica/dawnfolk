@@ -24,7 +24,7 @@ const LONGEST_SHUFFLE_SECONDS = 2;
 const ARRIVAL_DISTANCE = 0.4;
 const MELEE_POSES: Readonly<Record<"none" | "spear", PersonPose>> = { none: "brawl", spear: "thrust" };
 
-export type EngagementState = "closing" | "striking";
+type EngagementState = "closing" | "striking";
 
 function isCrowded(tick: PersonTick): boolean {
   const { person } = tick;
@@ -41,13 +41,13 @@ function faceFoe(tick: PersonTick, foe: Foe): void {
 }
 
 export class Engagement {
-  readonly weapon: CarriedWeapon;
+  readonly #weapon: CarriedWeapon;
   #cooldownSeconds: number;
   #retargetSeconds = 0;
   #shufflingSeconds = 0;
 
   constructor(weapon: CarriedWeapon, firstDelay: number) {
-    this.weapon = weapon;
+    this.#weapon = weapon;
     this.#cooldownSeconds = firstDelay * WEAPON_STATS[weapon.kind].strikeSeconds;
   }
 
@@ -63,8 +63,8 @@ export class Engagement {
 
     const distance = distanceTo(person.mover, foe);
 
-    if (!isRanged(this.weapon)) {
-      return this.#fight(tick, foe, distance, this.weapon);
+    if (!isRanged(this.#weapon)) {
+      return this.#fight(tick, foe, distance, this.#weapon);
     }
 
     if (!canShoot(tick.tribe)) {
@@ -133,7 +133,7 @@ export class Engagement {
 
     this.#cooldownSeconds = this.#nextCooldown(tick);
     tick.tribe.stock.arrows -= 1;
-    tick.context.rivalry.loose(person, this.weapon, foe);
+    tick.context.rivalry.loose(person, this.#weapon, foe);
 
     return "striking";
   }
@@ -174,7 +174,7 @@ export class Engagement {
     }
 
     walk(tick, runSpeed(person));
-    person.pose = this.weapon.kind === "spear" ? "charge" : "run";
+    person.pose = this.#weapon.kind === "spear" ? "charge" : "run";
   }
 
   #backOff(tick: PersonTick, foe: Foe): void {
@@ -206,7 +206,7 @@ export class Engagement {
   }
 
   #nextCooldown(tick: PersonTick): number {
-    const { strikeSeconds } = WEAPON_STATS[this.weapon.kind];
+    const { strikeSeconds } = WEAPON_STATS[this.#weapon.kind];
 
     return strikeSeconds * (1 + tick.context.rivalry.random.signed() * STRIKE_SPREAD);
   }

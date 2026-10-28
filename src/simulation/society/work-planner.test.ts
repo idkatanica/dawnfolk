@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PlantSpecies } from "../../content/plants.ts";
-import { firstMemberTick, SocietyHarness, settle } from "../testing/test-society.ts";
+import { firstMemberTick, SocietyHarness, settle, teach } from "../testing/test-society.ts";
 import { plantInCell } from "../testing/test-world.ts";
 import { planConstruction } from "./construction.ts";
 import { chooseWork } from "./work-planner.ts";
@@ -37,10 +37,7 @@ describe("work planning", () => {
     campfire.progress = 1;
     tribe.buildings.campfireId = campfire.id;
 
-    for (const technology of ["fire", "shelter", "storage", "huts"] as const) {
-      tribe.technologies.add(technology);
-    }
-
+    teach(tribe, ["fire", "shelter", "storage", "huts"]);
     tribe.stock.stone = 3;
     tribe.stock.wood = 40;
     plantInCell(harness.world, harness.world.grid.cellAt(tribe.campX + 30, tribe.campZ), PlantSpecies.Boulder);

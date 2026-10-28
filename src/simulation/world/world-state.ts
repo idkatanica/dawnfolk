@@ -149,7 +149,6 @@ export class WorldState {
   readonly groundChanges: RowChangeTracker;
   readonly heightChanges = new RegionChangeTracker();
   readonly initialCanopyFuel: Float32Array;
-  readonly lowestHeight: number;
   readonly monumentConditions: readonly MonumentCondition[];
   readonly monuments: readonly Monument[];
   readonly obstacles: ObstacleMap;
@@ -167,6 +166,7 @@ export class WorldState {
   water: WaterFeatures;
   waterVersion = 0;
   readonly #generatedTerrain: GeneratedTerrain;
+  readonly #lowestHeight: number;
   #crossingIndex: CrossingIndex;
   #hasSuddenHeightEdit = false;
 
@@ -194,7 +194,7 @@ export class WorldState {
     this.surfaceChanges = new RowChangeTracker(this.grid.cellsPerSide);
     this.surfaceEdits = new RowChangeTracker(this.grid.cellsPerSide);
     this.groundChanges = new RowChangeTracker(this.grid.cellsPerSide);
-    this.lowestHeight = lowestValue(generated.terrain.height);
+    this.#lowestHeight = lowestValue(generated.terrain.height);
 
     for (let cell = 0; cell < this.grid.cellCount; cell += 1) {
       this.refreshCanopy(cell);
@@ -463,7 +463,7 @@ export class WorldState {
 
   setHeight(cell: number, height: number): void {
     const previous = this.terrain.height[cell];
-    const next = clamp(height, this.lowestHeight - LOWEST_EDIT_BELOW_ORIGINAL, MAXIMUM_TERRAIN_HEIGHT);
+    const next = clamp(height, this.#lowestHeight - LOWEST_EDIT_BELOW_ORIGINAL, MAXIMUM_TERRAIN_HEIGHT);
 
     this.terrain.height[cell] = next;
     this.terrain.baseTemperature[cell] -= TERRAIN_LAPSE_RATE * (next - previous);

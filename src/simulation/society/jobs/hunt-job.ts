@@ -80,6 +80,102 @@ function chooseGame(tick: PersonTick, hunters: number): Animal | null {
   return smallGameDistance < gameDistance * SMALL_GAME_PREFERENCE ? smallGame : game;
 }
 
+function loose(tick: PersonTick, animal: Animal, isHit: boolean): void {
+  const { mover } = tick.person;
+  const { random } = tick.context;
+
+  const missX = isHit ? 0 : random.signed() * 4;
+  const missZ = isHit ? 0 : random.signed() * 4;
+
+  const toX = animal.mover.x + missX;
+  const toZ = animal.mover.z + missZ;
+
+  tick.tribe.stock.arrows -= 1;
+  tick.context.effects.add({
+    durationSeconds: Math.hypot(toX - mover.x, toZ - mover.z) / ARROW_SPEED,
+    fromX: mover.x,
+    fromZ: mover.z,
+    isHit,
+    kind: "arrow",
+    toX,
+    toZ,
+  });
+}
+
+function provokeAnimal(tick: PersonTick, animal: Animal): void {
+  const { mover } = tick.person;
+
+  tick.context.fauna.provoke(animal, { id: tick.person.id, x: mover.x, z: mover.z }, tick.context.rules);
+}
+
+function hitChance(tick: PersonTick, animal: Animal, weapon: Weapon): number {
+  const definition = ANIMALS[animal.kind];
+
+  const bonus = weaponHitBonus(weapon);
+
+  if (definition.huntingPartySize === null || definition.huntingPartySize <= 1) {
+    return definition.hitChance + bonus;
+  }
+
+  const helpers = tick.context.people.countNear(
+    animal.mover.x,
+    animal.mover.z,
+    HELPER_RANGE,
+    (person) => person.tribeId === tick.tribe.id && person.job?.kind === "hunt"
+  );
+
+  return definition.hitChance + bonus + HELPER_HIT_BONUS * helpers;
+}
+
+function sufferCounterattack(tick: PersonTick, animal: Animal, distance: number): void {
+  if (animal.kind !== "mammoth" || distance >= MAMMOTH_REACH) {
+    return;
+  }
+
+  if (!tick.context.random.chance(MAMMOTH_COUNTERATTACK)) {
+    return;
+  }
+
+  tick.person.health -= MAMMOTH_WOUND;
+
+  if (tick.person.health <= 0) {
+    tick.context.people.kill(tick.person, "mammoth");
+
+    return;
+  }
+
+  tick.context.chronicle.record({
+    category: "warning",
+    text: `${tick.person.name} was hurt by a mammoth`,
+    tribeId: tick.tribe.id,
+    x: tick.person.mover.x,
+    z: tick.person.mover.z,
+  });
+}
+
+function bringDown(tick: PersonTick, animal: Animal): Job {
+  const { food } = ANIMALS[animal.kind];
+
+  const carried = Math.min(MAXIMUM_CARRIED_MEAT, food);
+
+  tick.context.fauna.kill(animal, "hunt");
+  pickUp(tick.person, "meat", carried, "meat");
+  tick.tribe.stock.meat += food - carried;
+  learn(tick.tribe, 3, tick.context.rules);
+
+  if (!ANIMALS[animal.kind].isSmallGame) {
+    tick.context.chronicle.record({
+      category: "hunt",
+      text: `${tick.tribe.name} hunters brought down ${animalWithArticle(animal.kind)}`,
+      tribeId: tick.tribe.id,
+      x: animal.mover.x,
+      z: animal.mover.z,
+    });
+  }
+
+  return new DeliverJob(tick);
+}
+
 export class HuntJob implements Job {
   readonly kind = "hunt";
   readonly #animalId: number;
@@ -184,102 +280,4 @@ export class HuntJob implements Job {
 
     return bringDown(tick, animal);
   }
-}
-
-function loose(tick: PersonTick, animal: Animal, isHit: boolean): void {
-  const { mover } = tick.person;
-  const { random } = tick.context;
-
-  const missX = isHit ? 0 : random.signed() * 4;
-  const missZ = isHit ? 0 : random.signed() * 4;
-
-  const toX = animal.mover.x + missX;
-  const toZ = animal.mover.z + missZ;
-
-  tick.tribe.stock.arrows -= 1;
-  tick.context.effects.add({
-    durationSeconds: Math.hypot(toX - mover.x, toZ - mover.z) / ARROW_SPEED,
-    fromX: mover.x,
-    fromZ: mover.z,
-    isHit,
-    kind: "arrow",
-    toX,
-    toZ,
-  });
-}
-
-function provokeAnimal(tick: PersonTick, animal: Animal): void {
-  const { mover } = tick.person;
-
-  tick.context.fauna.provoke(animal, { id: tick.person.id, x: mover.x, z: mover.z }, tick.context.rules);
-}
-
-function hitChance(tick: PersonTick, animal: Animal, weapon: Weapon): number {
-  const definition = ANIMALS[animal.kind];
-
-  const bonus = weaponHitBonus(weapon);
-
-  if (definition.huntingPartySize === null || definition.huntingPartySize <= 1) {
-    return definition.hitChance + bonus;
-  }
-
-  const helpers = tick.context.people.countNear(
-    animal.mover.x,
-    animal.mover.z,
-    HELPER_RANGE,
-    (person) => person.tribeId === tick.tribe.id && person.job?.kind === "hunt"
-  );
-
-  return definition.hitChance + bonus + HELPER_HIT_BONUS * helpers;
-}
-
-function sufferCounterattack(tick: PersonTick, animal: Animal, distance: number): void {
-  if (animal.kind !== "mammoth" || distance >= MAMMOTH_REACH) {
-    return;
-  }
-
-  if (!tick.context.random.chance(MAMMOTH_COUNTERATTACK)) {
-    return;
-  }
-
-  tick.person.health -= MAMMOTH_WOUND;
-
-  if (tick.person.health <= 0) {
-    tick.context.people.kill(tick.person, "mammoth");
-
-    return;
-  }
-
-  tick.context.chronicle.record({
-    category: "warning",
-    text: `${tick.person.name} was hurt by a mammoth`,
-    tribeId: tick.tribe.id,
-    x: tick.person.mover.x,
-    z: tick.person.mover.z,
-  });
-}
-
-function bringDown(tick: PersonTick, animal: Animal): Job {
-  const { food } = ANIMALS[animal.kind];
-
-  const carried = Math.min(MAXIMUM_CARRIED_MEAT, food);
-
-  tick.context.fauna.kill(animal, "hunt");
-  pickUp(tick.person, "meat", carried, "meat");
-  tick.tribe.stock.meat += food - carried;
-  learn(tick.tribe, 3, tick.context.rules);
-
-  if (ANIMALS[animal.kind].isSmallGame) {
-    return new DeliverJob(tick);
-  }
-
-  tick.context.chronicle.record({
-    category: "hunt",
-    text: `${tick.tribe.name} hunters brought down ${animalWithArticle(animal.kind)}`,
-    tribeId: tick.tribe.id,
-    x: animal.mover.x,
-    z: animal.mover.z,
-  });
-
-  return new DeliverJob(tick);
 }

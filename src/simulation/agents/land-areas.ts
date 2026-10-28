@@ -757,7 +757,7 @@ export class LandAreas {
       const area = heap.pop();
 
       if (area === goal) {
-        return this.#areaSteps(start, goal);
+        return this.#areaSteps(goal);
       }
 
       if (this.#areaClosed[area] === search) {
@@ -791,15 +791,11 @@ export class LandAreas {
     }
   }
 
-  #areaSteps(start: number, goal: number): AreaStep[] {
+  #areaSteps(goal: number): AreaStep[] {
     const steps: AreaStep[] = [];
 
     for (let area = goal; area !== NOWHERE; area = this.#areaFrom[area]) {
       steps.push({ area, crossing: this.#areaVia[area] });
-
-      if (area === start) {
-        break;
-      }
     }
 
     return steps.reverse();
@@ -823,7 +819,7 @@ export class LandAreas {
       const cell = heap.pop();
 
       if (cell === goal) {
-        return this.#cellSteps(start, goal);
+        return this.#cellSteps(goal);
       }
 
       if (this.#cellClosed[cell] === search) {
@@ -887,15 +883,11 @@ export class LandAreas {
     return (Math.max(columns, rows) + (Math.SQRT2 - 1) * Math.min(columns, rows)) * grid.cellSize;
   }
 
-  #cellSteps(start: number, goal: number): number[] {
+  #cellSteps(goal: number): number[] {
     const cells: number[] = [];
 
     for (let cell = goal; cell !== NOWHERE; cell = this.#cellFrom[cell]) {
       cells.push(cell);
-
-      if (cell === start) {
-        break;
-      }
     }
 
     return cells.reverse();

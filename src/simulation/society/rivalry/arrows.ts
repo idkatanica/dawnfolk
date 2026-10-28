@@ -35,6 +35,26 @@ function hitChance(weapon: CarriedWeapon, foe: Foe, distance: number): number {
   return accuracy * range * (speed > MOVING_TARGET ? MOVING_TARGET_PENALTY : 1);
 }
 
+function land(flight: ArrowFlight, battleground: Battleground, context: SocietyContext): void {
+  const { foe } = flight;
+
+  const target = foeMover(foe);
+
+  const isStillThere = Math.hypot(target.x - flight.landX, target.z - flight.landZ) < LANDING_TOLERANCE + foeGirth(foe);
+
+  if (!(flight.isHit && isFoeAlive(foe) && isStillThere)) {
+    return;
+  }
+
+  if (foe.kind === "animal") {
+    hurtAnimal(foe.animal, flight.damage, flight.shooter, context);
+
+    return;
+  }
+
+  hurtPerson(foe.person, flight.damage, flight.shooter, battleground, context);
+}
+
 export class ArrowFlights {
   readonly #effects: EffectLog;
   #flights: ArrowFlight[] = [];
@@ -85,11 +105,11 @@ export class ArrowFlights {
       return;
     }
 
-    const landed = this.#flights.filter((flight) => flight.remainingSeconds - seconds <= 0);
-
     for (const flight of this.#flights) {
       flight.remainingSeconds -= seconds;
     }
+
+    const landed = this.#flights.filter((flight) => flight.remainingSeconds <= 0);
 
     this.#flights = this.#flights.filter((flight) => flight.remainingSeconds > 0);
 
@@ -97,24 +117,4 @@ export class ArrowFlights {
       land(flight, battleground, context);
     }
   }
-}
-
-function land(flight: ArrowFlight, battleground: Battleground, context: SocietyContext): void {
-  const { foe } = flight;
-
-  const target = foeMover(foe);
-
-  const isStillThere = Math.hypot(target.x - flight.landX, target.z - flight.landZ) < LANDING_TOLERANCE + foeGirth(foe);
-
-  if (!(flight.isHit && isFoeAlive(foe) && isStillThere)) {
-    return;
-  }
-
-  if (foe.kind === "animal") {
-    hurtAnimal(foe.animal, flight.damage, flight.shooter, context);
-
-    return;
-  }
-
-  hurtPerson(foe.person, flight.damage, flight.shooter, battleground, context);
 }

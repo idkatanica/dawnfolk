@@ -7,12 +7,20 @@ import { headTo, type Job, standStill, walk } from "./job.ts";
 
 type WanderKind = "idle" | "play";
 
-type WanderPhase = "linger" | "travel";
-
 const WANDER_RANGES: Readonly<Record<WanderKind, readonly [number, number]>> = {
   idle: [6, 24],
   play: [6, 32],
 };
+
+type WanderPhase = "linger" | "travel";
+
+function wanderSpeed(kind: WanderKind, person: Person): number {
+  if (kind === "play") {
+    return runSpeed(person) * 0.7;
+  }
+
+  return walkSpeed(person) * 0.7;
+}
 
 export class WanderJob implements Job {
   readonly kind: WanderKind;
@@ -56,12 +64,4 @@ export class WanderJob implements Job {
       this.#phase = "linger";
     }
   }
-}
-
-function wanderSpeed(kind: WanderKind, person: Person): number {
-  if (kind === "play") {
-    return runSpeed(person) * 0.7;
-  }
-
-  return walkSpeed(person) * 0.7;
 }

@@ -504,6 +504,7 @@ function wouldWadeOnTheWay(mover: Mover, x: number, z: number, world: WorldState
 
 function hasWaterAround(fromX: number, fromZ: number, toX: number, toZ: number, world: WorldState): boolean {
   const { grid } = world;
+
   const last = grid.cellsPerSide - 1;
   const firstColumn = Math.max(0, grid.columnAt(Math.min(fromX, toX) - BOUNDARY_MARGIN));
   const lastColumn = Math.min(last, grid.columnAt(Math.max(fromX, toX) + BOUNDARY_MARGIN));

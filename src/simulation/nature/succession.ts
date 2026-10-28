@@ -49,6 +49,81 @@ export interface SuccessionSnapshot {
   visitBudget: number;
 }
 
+function coverOf(world: WorldState, cell: number): Cover {
+  const { vegetation } = world;
+
+  const cover: Cover = { shrubs: 0, trees: 0 };
+
+  for (let plant = vegetation.firstPlantInCell(cell); plant !== NO_PLANT; plant = vegetation.nextPlantInCell(plant)) {
+    if (!vegetation.isAlive(plant)) {
+      continue;
+    }
+
+    if (isTreeSpecies(vegetation.species[plant])) {
+      cover.trees += 1;
+    } else if (isShrubSpecies(vegetation.species[plant])) {
+      cover.shrubs += 1;
+    }
+  }
+
+  return cover;
+}
+
+export function climaxOf(world: WorldState, cell: number): Climax {
+  const { grid, terrain } = world;
+
+  const biome = terrain.biome[cell];
+
+  if (!isBiomeIndex(biome)) {
+    return BARE_CLIMAX;
+  }
+
+  const column = grid.columnOf(cell);
+  const row = grid.rowOf(cell);
+  const temperature = terrain.baseTemperature[cell];
+  const clearing = clearingAt(terrain, cell);
+  const { holdsTrees } = groundDefinition(terrain.ground[cell]);
+
+  const shrubs: PlantPlacement[] = [];
+  const trees: PlantPlacement[] = [];
+
+  for (const [ruleIndex, rule] of PLANTING_RULES[biome].entries()) {
+    const { form, heightRange } = plantSpeciesDefinition(rule.species);
+
+    const salt = CLIMAX_SALT + ruleIndex * 7;
+
+    if (form === "stone" || !canGrowAt(rule, temperature)) {
+      continue;
+    }
+
+    if (hashToUnit(column, row, salt) >= plantingChance(rule, clearing, holdsTrees)) {
+      continue;
+    }
+
+    if (!world.canGrowWild(cell, rule.species)) {
+      continue;
+    }
+
+    const placement: PlantPlacement = {
+      bornDay: 0,
+      height: lerp(heightRange[0], heightRange[1], hashToUnit(column, row, salt + 1)) * rule.heightScale,
+      rotation: hashToUnit(column, row, salt + 2) * FULL_TURN,
+      seed: hashToUnit(column, row, salt + 3),
+      species: rule.species,
+      x: grid.centerX(column) + (hashToUnit(column, row, salt + 4) - 0.5) * SPREAD_WITHIN_CELL * grid.cellSize,
+      z: grid.centerZ(row) + (hashToUnit(column, row, salt + 5) - 0.5) * SPREAD_WITHIN_CELL * grid.cellSize,
+    };
+
+    if (isTreeSpecies(rule.species)) {
+      trees.push(placement);
+    } else {
+      shrubs.push(placement);
+    }
+  }
+
+  return { shrubs, trees };
+}
+
 export class Succession {
   readonly #nursery: Nursery;
   readonly #random: RandomSource;
@@ -177,79 +252,4 @@ export class Succession {
 
     return false;
   }
-}
-
-function coverOf(world: WorldState, cell: number): Cover {
-  const { vegetation } = world;
-
-  const cover: Cover = { shrubs: 0, trees: 0 };
-
-  for (let plant = vegetation.firstPlantInCell(cell); plant !== NO_PLANT; plant = vegetation.nextPlantInCell(plant)) {
-    if (!vegetation.isAlive(plant)) {
-      continue;
-    }
-
-    if (isTreeSpecies(vegetation.species[plant])) {
-      cover.trees += 1;
-    } else if (isShrubSpecies(vegetation.species[plant])) {
-      cover.shrubs += 1;
-    }
-  }
-
-  return cover;
-}
-
-export function climaxOf(world: WorldState, cell: number): Climax {
-  const { grid, terrain } = world;
-
-  const biome = terrain.biome[cell];
-
-  if (!isBiomeIndex(biome)) {
-    return BARE_CLIMAX;
-  }
-
-  const column = grid.columnOf(cell);
-  const row = grid.rowOf(cell);
-  const temperature = terrain.baseTemperature[cell];
-  const clearing = clearingAt(terrain, cell);
-  const { holdsTrees } = groundDefinition(terrain.ground[cell]);
-
-  const shrubs: PlantPlacement[] = [];
-  const trees: PlantPlacement[] = [];
-
-  for (const [ruleIndex, rule] of PLANTING_RULES[biome].entries()) {
-    const { form, heightRange } = plantSpeciesDefinition(rule.species);
-
-    const salt = CLIMAX_SALT + ruleIndex * 7;
-
-    if (form === "stone" || !canGrowAt(rule, temperature)) {
-      continue;
-    }
-
-    if (hashToUnit(column, row, salt) >= plantingChance(rule, clearing, holdsTrees)) {
-      continue;
-    }
-
-    if (!world.canGrowWild(cell, rule.species)) {
-      continue;
-    }
-
-    const placement: PlantPlacement = {
-      bornDay: 0,
-      height: lerp(heightRange[0], heightRange[1], hashToUnit(column, row, salt + 1)) * rule.heightScale,
-      rotation: hashToUnit(column, row, salt + 2) * FULL_TURN,
-      seed: hashToUnit(column, row, salt + 3),
-      species: rule.species,
-      x: grid.centerX(column) + (hashToUnit(column, row, salt + 4) - 0.5) * SPREAD_WITHIN_CELL * grid.cellSize,
-      z: grid.centerZ(row) + (hashToUnit(column, row, salt + 5) - 0.5) * SPREAD_WITHIN_CELL * grid.cellSize,
-    };
-
-    if (isTreeSpecies(rule.species)) {
-      trees.push(placement);
-    } else {
-      shrubs.push(placement);
-    }
-  }
-
-  return { shrubs, trees };
 }
