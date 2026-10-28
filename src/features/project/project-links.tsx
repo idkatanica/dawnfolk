@@ -61,6 +61,10 @@ export function ProjectLinks({ className }: { readonly className?: string | unde
         <Heart aria-hidden="true" size={16} />
         Sponsor
       </ExternalLink>
+
+      <a className={LINK_CLASS} href="/privacy/">
+        Privacy
+      </a>
     </nav>
   );
 }
