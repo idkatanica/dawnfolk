@@ -58,12 +58,26 @@ export function renderedHeightNode(textures: TerrainTextures, grid: WorldGrid, p
   const below = heightAt(start.x, end.y);
   const diagonal = heightAt(end.x, end.y);
 
-  const nearTriangle = first.add(right.sub(first).mul(along.x)).add(below.sub(first).mul(along.y));
-  const farTriangle = diagonal
-    .add(below.sub(diagonal).mul(float(1).sub(along.x)))
-    .add(right.sub(diagonal).mul(float(1).sub(along.y)));
+  const center = first.add(right).add(below).add(diagonal).mul(0.25);
+  const across = float(1).sub(along);
 
-  return select(along.x.add(along.y).lessThanEqual(1), nearTriangle, farTriangle);
+  const bottomTriangle = first.add(right.sub(first).mul(along.x)).add(center.mul(2).sub(first).sub(right).mul(along.y));
+  const topTriangle = below
+    .add(diagonal.sub(below).mul(along.x))
+    .add(center.mul(2).sub(below).sub(diagonal).mul(across.y));
+  const leftTriangle = first.add(below.sub(first).mul(along.y)).add(center.mul(2).sub(first).sub(below).mul(along.x));
+  const rightTriangle = right
+    .add(diagonal.sub(right).mul(along.y))
+    .add(center.mul(2).sub(right).sub(diagonal).mul(across.x));
+
+  const isAboveFirstDiagonal = along.y.greaterThan(along.x);
+  const isAboveSecondDiagonal = along.y.greaterThan(across.x);
+
+  return select(
+    isAboveFirstDiagonal,
+    select(isAboveSecondDiagonal, topTriangle, leftTriangle),
+    select(isAboveSecondDiagonal, rightTriangle, bottomTriangle)
+  );
 }
 
 export function coarseGroundOffsetNode(textures: TerrainTextures, grid: WorldGrid, point: Node<"vec2">): Node<"float"> {

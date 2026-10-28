@@ -133,45 +133,65 @@ export function createWaterMaterial(
   const cellSize = float(grid.cellSize);
   const halfSize = float(grid.halfSize);
 
+  const step = attribute("patchStep", "float");
+  const isCenter = attribute("quadCenter", "float").greaterThan(0.5);
   const cell = clamp(attribute("origin", "vec2").add(attribute("cell", "vec2")), vec2(0, 0), vec2(last, last));
 
-  function levelAt(offsetX: number, offsetZ: number) {
-    return textureLoad(textures.water, ivec2(clamp(cell.add(vec2(offsetX, offsetZ)), vec2(0, 0), vec2(last, last)))).x;
+  function clampedCell(base: Node<"vec2">, offsetX: number, offsetZ: number): Node<"ivec2"> {
+    return ivec2(clamp(base.add(vec2(offsetX, offsetZ)), vec2(0, 0), vec2(last, last)));
   }
 
-  const own = levelAt(0, 0);
-  const east = levelAt(1, 0);
-  const west = levelAt(-1, 0);
-  const south = levelAt(0, 1);
-  const north = levelAt(0, -1);
-  const ground = textureLoad(textures.height, ivec2(cell)).x;
-  const reach = textureLoad(textures.shore, ivec2(cell)).w;
-  const step = attribute("patchStep", "float");
+  function vertexLevel(vertex: Node<"vec2">): Node<"float"> {
+    function levelAt(offsetX: number, offsetZ: number) {
+      return textureLoad(textures.water, clampedCell(vertex, offsetX, offsetZ)).x;
+    }
 
-  const diagonalLevel = max(max(levelAt(1, 1), levelAt(-1, -1)), max(levelAt(1, -1), levelAt(-1, 1)));
+    const own = levelAt(0, 0);
+    const besideLevel = max(max(levelAt(1, 0), levelAt(-1, 0)), max(levelAt(0, 1), levelAt(0, -1)));
+    const diagonalLevel = max(max(levelAt(1, 1), levelAt(-1, -1)), max(levelAt(1, -1), levelAt(-1, 1)));
+    const ground = textureLoad(textures.height, clampedCell(vertex, 0, 0)).x;
+    const reach = textureLoad(textures.shore, clampedCell(vertex, 0, 0)).w;
 
-  const neighborLevel = max(max(max(east, west), max(south, north)), diagonalLevel);
-  const isOwnWater = own.greaterThan(PRESENT_LEVEL);
-  const besideLevel = max(max(east, west), max(south, north));
-  const isCoarseShore = step.greaterThan(1.5).and(reach.lessThanEqual(step.add(COARSE_REACH_MARGIN)));
+    const neighborLevel = max(besideLevel, diagonalLevel);
+    const isOwnWater = own.greaterThan(PRESENT_LEVEL);
+    const isCoarseShore = step.greaterThan(1.5).and(reach.lessThanEqual(step.add(COARSE_REACH_MARGIN)));
 
-  const isNearWater = neighborLevel.greaterThan(PRESENT_LEVEL);
-  const bankLevel = min(
-    select(besideLevel.greaterThan(PRESENT_LEVEL), besideLevel, neighborLevel),
-    ground.sub(BANK_SINK)
-  );
+    const isNearWater = neighborLevel.greaterThan(PRESENT_LEVEL);
+    const bankLevel = min(
+      select(besideLevel.greaterThan(PRESENT_LEVEL), besideLevel, neighborLevel),
+      ground.sub(BANK_SINK)
+    );
 
-  const level = select(
-    isOwnWater,
-    own,
-    select(isCoarseShore, ground.add(COARSE_LIFT), select(isNearWater, bankLevel, ground.sub(HIDDEN_DEPTH)))
-  );
+    return select(
+      isOwnWater,
+      own,
+      select(isCoarseShore, ground.add(COARSE_LIFT), select(isNearWater, bankLevel, ground.sub(HIDDEN_DEPTH)))
+    );
+  }
 
-  material.positionNode = vec3(
-    cell.x.add(0.5).mul(cellSize).sub(halfSize),
-    level,
-    cell.y.add(0.5).mul(cellSize).sub(halfSize)
-  );
+  function cornerOf(column: number, row: number): Node<"vec2"> {
+    return clamp(cell.add(vec2(column, row).mul(step)), vec2(0, 0), vec2(last, last));
+  }
+
+  material.positionNode = Fn(() => {
+    const point = cell.toVar();
+    const level = float(0).toVar();
+
+    If(isCenter, () => {
+      const corners = [cornerOf(0, 0), cornerOf(1, 0), cornerOf(0, 1), cornerOf(1, 1)];
+
+      const [first, right, below, diagonal] = corners;
+
+      point.assign(first.add(diagonal).mul(0.5));
+      level.assign(
+        vertexLevel(first).add(vertexLevel(right)).add(vertexLevel(below)).add(vertexLevel(diagonal)).mul(0.25)
+      );
+    }).Else(() => {
+      level.assign(vertexLevel(cell));
+    });
+
+    return vec3(point.x.add(0.5).mul(cellSize).sub(halfSize), level, point.y.add(0.5).mul(cellSize).sub(halfSize));
+  })();
 
   const shore = sampleCellsNode(textures.shore, grid, positionWorld.xz);
   const viewDistance = distance(positionWorld, cameraPosition);

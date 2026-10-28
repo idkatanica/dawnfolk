@@ -54,7 +54,7 @@ function latticeLines(
   const column = (x + halfSize) / cellSize - 0.5;
   const row = (z + halfSize) / cellSize - 0.5;
 
-  return [Math.floor(column), Math.floor(row), Math.floor(column + row)];
+  return [Math.floor(column), Math.floor(row), Math.floor(column + row), Math.floor(column - row)];
 }
 
 function coastOf(outline: IslandOutline): readonly CoastPoint[] {

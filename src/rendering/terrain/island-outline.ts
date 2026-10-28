@@ -19,7 +19,7 @@ export interface CoastPoint {
   readonly radius: number;
 }
 
-type LatticeLines = readonly [column: number, row: number, diagonal: number];
+type LatticeLines = readonly [column: number, row: number, diagonal: number, antidiagonal: number];
 
 export type OutlineSide = "across" | "inside" | "outside";
 
@@ -159,7 +159,7 @@ function latticeLinesAt(grid: WorldGrid, radii: Float32Array, angle: number): La
   const column = (Math.cos(angle) * radius + grid.halfSize) / grid.cellSize - 0.5;
   const row = (Math.sin(angle) * radius + grid.halfSize) / grid.cellSize - 0.5;
 
-  return [Math.floor(column), Math.floor(row), Math.floor(column + row)];
+  return [Math.floor(column), Math.floor(row), Math.floor(column + row), Math.floor(column - row)];
 }
 
 function refineCrossing(grid: WorldGrid, radii: Float32Array, family: number, from: number, to: number): number {
