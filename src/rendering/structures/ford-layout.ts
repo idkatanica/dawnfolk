@@ -8,7 +8,7 @@ import {
 } from "../../world/crossings.ts";
 import { NO_WATER } from "../../world/water.ts";
 
-export type FordStoneKind = "boulder" | "pebble" | "slab" | "step";
+type FordStoneKind = "boulder" | "pebble" | "slab" | "step";
 
 export interface FordStone {
   readonly along: number;
@@ -64,9 +64,9 @@ interface LineStep {
 export const LARGEST_STEP_GAP = 0.5;
 export const STONE_SINK = 0.3;
 export const BAR_SHALLOWEST = 0.28;
-export const BAR_DEEPEST = 0.5;
-export const BAR_FOOT = 3.8;
-export const BAR_ACROSS: readonly number[] = [-BAR_FOOT, -2.7, -1.9, -1.3, -0.6, 0, 0.6, 1.3, 1.9, 2.7, BAR_FOOT];
+const BAR_DEEPEST = 0.5;
+const BAR_FOOT = 3.8;
+const BAR_ACROSS: readonly number[] = [-BAR_FOOT, -2.7, -1.9, -1.3, -0.6, 0, 0.6, 1.3, 1.9, 2.7, BAR_FOOT];
 
 const SCAN_STEP = 0.25;
 const BEYOND_ENDS = 4;
@@ -139,7 +139,7 @@ export function visibleWaterSpan(ford: Ford, surroundings: FordSurroundings): Wa
   return start <= end ? { end, start } : null;
 }
 
-export function stepRadius(span: WaterSpan, along: number, spread: number): number {
+function stepRadius(span: WaterSpan, along: number, spread: number): number {
   const fromBank = Math.max(0, Math.min(along - span.start, span.end - along));
 
   const size = lerp(BANK_RADIUS, MIDSTREAM_RADIUS, smoothstep(0, NEAR_BANK, fromBank));
@@ -151,7 +151,7 @@ function swellAt(ford: Ford, along: number, salt: number): number {
   return 0.5 + 0.5 * Math.sin(along * 0.7 + ford.seed * 40 + salt) * Math.cos(along * 0.23 + ford.seed * 17 - salt);
 }
 
-export function barDepthAt(ford: Ford, along: number): number {
+function barDepthAt(ford: Ford, along: number): number {
   return lerp(BAR_SHALLOWEST, BAR_DEEPEST, swellAt(ford, along, 0));
 }
 

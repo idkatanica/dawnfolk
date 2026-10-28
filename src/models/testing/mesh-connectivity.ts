@@ -386,7 +386,7 @@ export function detachedPieces(
   return pieces.filter((_, index) => !attached.has(index));
 }
 
-export function describePiece(mesh: MeshData, piece: MeshPiece): string {
+function describePiece(mesh: MeshData, piece: MeshPiece): string {
   const parts = new Set(piece.vertices.map((vertex) => mesh.channels.part[vertex]));
   const slots = new Set(piece.vertices.map((vertex) => mesh.channels.slot[vertex]));
 

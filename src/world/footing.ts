@@ -14,7 +14,7 @@ interface WildTerrain extends FootingTerrain {
   readonly woodland: Float32Array;
 }
 
-export const WALKABLE_SLOPE = 1.15;
+const WALKABLE_SLOPE = 1.15;
 
 const STAND_SALT = 19.19;
 

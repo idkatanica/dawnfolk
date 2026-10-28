@@ -5,7 +5,7 @@ import { useIsTouch } from "./use-media-query.ts";
 
 const ISLAND_RADIUS = 18;
 
-export type IslandSurface = "glass" | "solid";
+type IslandSurface = "glass" | "solid";
 
 const REFRACTING_GLASS: Partial<GlassSurfaceOptions> = {
   backgroundOpacity: 0.5,

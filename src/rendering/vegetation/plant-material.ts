@@ -95,7 +95,7 @@ const STRICTLY_ABOVE = 0.0001;
 const FALLEN_TILT = Math.PI / 2 - 0.06;
 const FALLEN_CHARRING = 0.85;
 
-export interface CrownShape {
+interface CrownShape {
   readonly hasTiers: boolean;
   readonly middle: number;
 }

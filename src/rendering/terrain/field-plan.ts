@@ -14,7 +14,7 @@ export const FurrowAxis = {
   None: 0,
 } as const;
 
-export type FurrowAxisCode = (typeof FurrowAxis)[keyof typeof FurrowAxis];
+type FurrowAxisCode = (typeof FurrowAxis)[keyof typeof FurrowAxis];
 
 const BYTE = 255;
 const CONTOUR_SLOPE = 0.04;

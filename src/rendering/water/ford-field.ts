@@ -30,8 +30,8 @@ import { distanceToSegment } from "../../shared/math.ts";
 import { type Crossing, crossingLength, type Ford } from "../../world/crossings.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 
-export const FORD_BED_HALF_WIDTH = 2;
-export const FORD_PATH_HALF_WIDTH = 0.75;
+const FORD_BED_HALF_WIDTH = 2;
+const FORD_PATH_HALF_WIDTH = 0.75;
 export const FORD_PATH_REACH = 9;
 
 const FORD_SAND = vec3(0.5, 0.42, 0.27);
