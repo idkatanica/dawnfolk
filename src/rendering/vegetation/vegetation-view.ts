@@ -14,6 +14,7 @@ import { buildPlantVariant, PLANT_DETAIL_LEVELS } from "../../models/plants/plan
 import type { CellRegion } from "../../world/change-tracking.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
 import { geometryFromMeshData, InstanceBatch } from "../instancing.ts";
+import { SHADOW_ONLY_LAYER } from "../shadow-only-layer.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { HIDDEN_LEVEL } from "../view-input.ts";
 import { createPlantMaterial, PlantWeather, SpeciesLook } from "./plant-material.ts";
@@ -28,6 +29,8 @@ import {
 
 const LEVEL_DISTANCES: readonly number[] = [160, 600, 1600, 4200];
 const SHADOW_LEVEL_COUNT = 2;
+const NEAREST_LEVEL = 0;
+const SHADOW_PROXY_LEVEL = 1;
 
 const PLANT_CHANNELS: readonly VertexChannel[] = ["flutter", "part", "shade", "slot", "sway"];
 
@@ -139,6 +142,7 @@ export class VegetationView {
   readonly #chunkShadows: Uint8Array;
   readonly #dirtyLevels = new Set<number>();
   readonly #looks: readonly SpeciesLook[];
+  readonly #shadowProxies: readonly PlantBatch[];
 
   constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow) {
     this.chunks = new VegetationChunks(mirror);
@@ -175,6 +179,10 @@ export class VegetationView {
       )
     );
 
+    this.#shadowProxies = models[SHADOW_PROXY_LEVEL].map(({ buckets, mesh, species }) =>
+      this.#createShadowProxy(geometryFromMeshData(mesh, PLANT_CHANNELS), materials[species], buckets)
+    );
+
     this.#changedBuckets = this.#batches.map(() => new Set<number>());
 
     for (const level of this.#batches.keys()) {
@@ -201,7 +209,7 @@ export class VegetationView {
   }
 
   dispose(): void {
-    for (const plants of this.#batches.flat()) {
+    for (const plants of [...this.#batches.flat(), ...this.#shadowProxies]) {
       plants.batch.dispose();
     }
   }
@@ -215,7 +223,7 @@ export class VegetationView {
     const batch = new InstanceBatch(geometry, material, PLANT_FIELDS, 64);
     const counts: BatchCounts = { drawn: 0, shadowed: 0 };
 
-    batch.mesh.castShadow = levelIndex < SHADOW_LEVEL_COUNT;
+    batch.mesh.castShadow = levelIndex !== NEAREST_LEVEL && levelIndex < SHADOW_LEVEL_COUNT;
     batch.mesh.receiveShadow = true;
     batch.mesh.onBeforeShadow = () => {
       geometry.instanceCount = counts.shadowed;
@@ -226,6 +234,20 @@ export class VegetationView {
     this.group.add(batch.mesh);
 
     return { batch, buckets, counts };
+  }
+
+  #createShadowProxy(
+    geometry: InstancedBufferGeometry,
+    material: MeshStandardNodeMaterial,
+    buckets: readonly number[]
+  ): PlantBatch {
+    const batch = new InstanceBatch(geometry, material, PLANT_FIELDS, 64);
+
+    batch.mesh.castShadow = true;
+    batch.mesh.layers.set(SHADOW_ONLY_LAYER);
+    this.group.add(batch.mesh);
+
+    return { batch, buckets, counts: { drawn: 0, shadowed: 0 } };
   }
 
   #paintSeason(season: number): void {
@@ -315,6 +337,14 @@ export class VegetationView {
       for (const batch of batches) {
         if (isWhole || batch.buckets.some((bucket) => changed.has(bucket))) {
           fillPlants(batch, chunks, casters.length);
+        }
+      }
+
+      if (level === NEAREST_LEVEL) {
+        for (const proxy of this.#shadowProxies) {
+          if (isWhole || proxy.buckets.some((bucket) => changed.has(bucket))) {
+            fillPlants(proxy, casters, casters.length);
+          }
         }
       }
 
