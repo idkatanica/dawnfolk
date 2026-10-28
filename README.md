@@ -47,27 +47,13 @@ Age to the Iron Age on a procedurally generated island rendered with WebGPU.
 
 ## Features
 
-- **A living island.** Named and grown from a seed, round or square, with rivers from caves and ponds, lakes,
-  waterfalls off the edge, wooded swamps with lily pools, biomes, seasons and snow.
-- **Ruins and crossings.** Megaliths of a forgotten people, and stepping stones or fallen logs where rivers can be
-  crossed.
-- **Tribes.** People gather, hunt, fish, farm, build, pray, migrate and split, and climb from the Stone Age to the
-  Iron Age with pottery, linen, fields, mines, smelters and forges.
-- **Feuds and peace.** Quarrels over land lead to raids by archers and spearmen; weary tribes send envoys with gifts.
-- **Wildlife.** Herds of deer, mammoths and ibex, fast-breeding hares, and wolf packs that hunt them and stalk lone
-  people at night.
-- **Powers.** Fire, lightning, rain, snow, meteors, earthquakes, terraforming, forests, healing, animals and new
-  tribes, each with its own settings; world rules are adjustable too.
-- **Scars that heal.** Fire spreads with the wind, craters on rivers fill into lakes, monuments fall, and burnt land
-  grows back over a few years.
-- **Procedural models.** People, animals, plants, rocks and buildings are built from seeds and animated with
-  skeletal clips.
-- **A readable map.** Named peaks, lakes and ruins, tribe banners that fly you to their camp, and far markers on the
-  island and the minimap.
-- **Saves.** Worlds save in the browser as you play and when you leave; continue the last one or pick from the
-  list.
-- **A calm HUD.** Solid paper panels that read over any terrain, painted
-  icons for game things, and a compact layout for phones.
+- **Island.** Generated from a seed, with rivers, lakes, waterfalls, swamps, biomes, seasons and snow.
+- **Tribes.** People gather, hunt, farm and build, and grow from the Stone Age to the Iron Age.
+- **Feuds.** Tribes raid each other over land and later make peace.
+- **Wildlife.** Herds of deer, mammoths and ibex, hares, and wolf packs that hunt them.
+- **Powers.** Fire, lightning, rain, snow, meteors, earthquakes, terraforming and more.
+- **Healing land.** Burnt land grows back, and craters fill into lakes.
+- **Saves.** Worlds save in the browser on their own.
 
 ## Stack
 
@@ -75,7 +61,7 @@ Age to the Iron Age on a procedurally generated island rendered with WebGPU.
 - **Graphics:** three.js r186 on WebGPU with TSL, WebGL 2 fallback
 - **Interface:** Base UI, Tailwind CSS 4, Zustand
 - **Data:** Zod, Comlink
-- **Tooling:** Biome with Ultracite, Vitest 5, Playwright, Lefthook
+- **Tooling:** Biome, Vitest 5, Playwright, Lefthook
 
 ## Getting started
 
