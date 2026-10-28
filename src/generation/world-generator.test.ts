@@ -9,7 +9,7 @@ import type { TerrainData } from "../world/terrain-data.ts";
 import { sampleHeight } from "../world/terrain-sampling.ts";
 import { hasWater, NO_WATER, type River, type RiverPoint, SPRING_KINDS } from "../world/water.ts";
 import { NEIGHBOR_OFFSETS, WorldGrid } from "../world/world-grid.ts";
-import { DEFAULT_GENERATION_OPTIONS, type GenerationProgress } from "./generation-options.ts";
+import { DEFAULT_GENERATION_OPTIONS, type GenerationProgress, type IslandSketch } from "./generation-options.ts";
 import { type GeneratedWorld, generateWorld } from "./world-generator.ts";
 
 const TEST_DIMENSIONS = { cellSize: 40, cellsPerSide: 128 };
@@ -23,6 +23,7 @@ const JUNCTION_CELLS = 1.5;
 let world: GeneratedWorld;
 let squareWorld: GeneratedWorld;
 const stages = new Set<string>();
+const sketches = new Map<string, IslandSketch | null>();
 const testWorlds = new Map<string, GeneratedWorld>();
 
 function testWorld(seed: number, shape: IslandShapeKind = "round"): GeneratedWorld {
@@ -38,6 +39,7 @@ function testWorld(seed: number, shape: IslandShapeKind = "round"): GeneratedWor
     { dimensions: TEST_DIMENSIONS, erosionStrength: 1, shape },
     (progress: GenerationProgress) => {
       stages.add(progress.stage);
+      sketches.set(progress.stage, progress.island);
     }
   );
 
@@ -568,6 +570,16 @@ beforeAll(() => {
 describe("world generation", () => {
   it("reports every stage", () => {
     expect([...stages].sort()).toEqual(["climate", "erosion", "relief", "vegetation", "water"]);
+  });
+
+  it("sketches the island as it forms", () => {
+    expect(sketches.get("relief")).toBeNull();
+    expect(sketches.get("erosion")).toMatchObject({ ground: null, waterSurface: null });
+    expect(sketches.get("climate")).toMatchObject({ ground: null, waterSurface: expect.any(Float32Array) });
+    expect(sketches.get("vegetation")).toMatchObject({
+      ground: expect.any(Uint8Array),
+      waterSurface: expect.any(Float32Array),
+    });
   });
 
   it("differs between seeds", () => {

@@ -46,13 +46,55 @@
 
   --ease-glide: cubic-bezier(0.32, 0.72, 0, 1);
 
+  --animate-descend: descend 30s var(--ease-glide) forwards;
   --animate-notice-in: notice-in 0.35s var(--ease-glide);
+
+  @keyframes descend {
+    to {
+      transform: scale(1.12);
+    }
+  }
 
   @keyframes notice-in {
     from {
       opacity: 0;
       transform: translateY(-8px) scale(0.97);
     }
+  }
+}
+
+:root {
+  --dialog-inset-top: 0.75rem;
+  --dialog-inset-bottom: 0.75rem;
+
+  color-scheme: light;
+}
+
+@media (min-height: 34rem) {
+  :root {
+    --dialog-inset-top: 5.25rem;
+    --dialog-inset-bottom: 9.5rem;
+  }
+}
+
+body {
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  color: var(--color-ink);
+  background: var(--color-canvas);
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+@layer components {
+  .island {
+    --color-ink-muted: #5f5f68;
+
+    overflow: clip;
+    pointer-events: auto;
   }
 }
 
@@ -84,41 +126,6 @@
 @utility scrollbar-none {
   @supports (scrollbar-width: none) {
     scrollbar-width: none;
-  }
-}
-
-:root {
-  --dialog-inset-top: 0.75rem;
-  --dialog-inset-bottom: 0.75rem;
-
-  color-scheme: light;
-}
-
-@media (min-height: 34rem) {
-  :root {
-    --dialog-inset-top: 5.25rem;
-    --dialog-inset-bottom: 9.5rem;
-  }
-}
-
-button:not(:disabled),
-[role="button"]:not([aria-disabled="true"]) {
-  cursor: pointer;
-}
-
-body {
-  overscroll-behavior: none;
-  -webkit-font-smoothing: antialiased;
-  color: var(--color-ink);
-  background: var(--color-canvas);
-}
-
-@layer components {
-  .island {
-    --color-ink-muted: #5f5f68;
-
-    overflow: clip;
-    pointer-events: auto;
   }
 }
 
