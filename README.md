@@ -85,7 +85,7 @@ You need [Bun](https://bun.sh) 1.4 or later and a browser with WebGPU or WebGL 2
 git clone https://github.com/imsvidskiy/dawnfolk.git
 cd dawnfolk
 bun install
-bun run dev  # http://localhost:5173
+bun run dev                                           # http://localhost:5173
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md) has the other scripts, the checks and the code style.
