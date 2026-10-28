@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useLaunchStore } from "../../app/launch-store.ts";
 import { IconButton, TextButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
-import { FOCUS_RING, MENU_ITEM, PAPER_SURFACE, POPUP_MOTION } from "../../design/styles.ts";
+import { FOCUS_RING, MENU_ITEM, MENU_POPUP } from "../../design/styles.ts";
 import type { SavedWorldListing } from "./save-database.ts";
 import { describePeople, formatSavedAt } from "./saved-time.ts";
 import { useSavesStore } from "./saves-store.ts";
@@ -71,9 +71,7 @@ function WorldMenu({ name, onDelete }: WorldMenuProps) {
 
       <Menu.Portal>
         <Menu.Positioner align="end" className="z-50" sideOffset={6}>
-          <Menu.Popup
-            className={cn(PAPER_SURFACE, POPUP_MOTION, "rounded-island min-w-40 p-1.5 duration-150 outline-none")}
-          >
+          <Menu.Popup className={cn(MENU_POPUP, "min-w-40")}>
             <Menu.Item className={MENU_ITEM} onClick={onDelete}>
               <Trash2 aria-hidden="true" className="text-ink-soft" size={17} />
               Delete

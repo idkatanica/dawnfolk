@@ -12,6 +12,8 @@ export const MENU_ITEM =
 export const POPUP_MOTION =
   "origin-(--transform-origin) transition-[scale,opacity] data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0";
 
+export const MENU_POPUP = `${PAPER_SURFACE} ${POPUP_MOTION} rounded-island p-1.5 duration-150 outline-none`;
+
 export const SEGMENT_CHOSEN = "text-ink shadow-segment bg-white";
 
 export const SEGMENT_TRACK = "flex gap-0.5 rounded-full bg-ink/6 p-0.5";
