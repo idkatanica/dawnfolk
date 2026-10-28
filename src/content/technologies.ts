@@ -139,7 +139,7 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
   {
     cost: 570,
     id: "ploughing",
-    name: "Ploughing",
+    name: "Plowing",
     needs: null,
     requires: ["copper"],
   },
