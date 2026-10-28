@@ -48,10 +48,18 @@
 
   --animate-descend: descend 30s var(--ease-glide) forwards;
   --animate-notice-in: notice-in 0.35s var(--ease-glide);
+  --animate-stage-in: stage-in 0.5s var(--ease-glide);
 
   @keyframes descend {
     to {
       transform: scale(1.12);
+    }
+  }
+
+  @keyframes stage-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
     }
   }
 

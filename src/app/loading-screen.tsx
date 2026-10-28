@@ -1,12 +1,14 @@
 import { RotateCcw } from "lucide-react";
 import { TextButton } from "../design/buttons.tsx";
-import { Island } from "../design/island.tsx";
+import { cn } from "../design/cn.ts";
 import type { GenerationProgress, GenerationStage } from "../generation/generation-options.ts";
 import { CloudSeaBackdrop } from "./cloud-sea-backdrop.tsx";
 import type { EngineStatus } from "./engine-launcher.ts";
 import { useEngineStore } from "./engine-store.ts";
 import { IslandSketchView } from "./island-sketch-view.tsx";
 import { useLaunchStore } from "./launch-store.ts";
+
+const CAPTION_GLOW = "[text-shadow:0_0_12px_rgb(255_255_255/0.9),0_0_2px_rgb(255_255_255/0.9)]";
 
 const STAGE_LABELS: Readonly<Record<GenerationStage, string>> = {
   climate: "Settling the climate",
@@ -20,6 +22,11 @@ interface LoadingSceneProps {
   readonly name: string;
   readonly progress: GenerationProgress | null;
   readonly seed: number;
+}
+
+interface CaptionProps {
+  readonly name: string;
+  readonly progress: GenerationProgress | null;
 }
 
 interface FailureMessageProps {
@@ -39,6 +46,22 @@ function startAgain(): void {
   useLaunchStore.getState().relaunch({});
 }
 
+function Caption({ name, progress }: CaptionProps) {
+  const label = stageLabel(progress);
+
+  return (
+    <div className="p-safe absolute inset-0">
+      <div className="flex h-full flex-col items-center justify-between py-3 text-center" role="status">
+        <h2 className={cn("text-ink text-3xl tracking-tight wrap-break-word", CAPTION_GLOW)}>{name}</h2>
+
+        <p className={cn("text-ink-soft animate-stage-in italic", CAPTION_GLOW)} key={label}>
+          {label}…
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function LoadingScene({ name, progress, seed }: LoadingSceneProps) {
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -50,15 +73,7 @@ function LoadingScene({ name, progress, seed }: LoadingSceneProps) {
         </div>
       </div>
 
-      <div className="p-safe absolute inset-x-0 bottom-0 flex justify-center">
-        <Island className="flex max-w-full flex-col items-center gap-0.5 px-6 py-3 text-center">
-          <div role="status">
-            <h2 className="text-ink text-xl wrap-break-word">{name}</h2>
-
-            <p className="text-ink-soft text-sm">{stageLabel(progress)}…</p>
-          </div>
-        </Island>
-      </div>
+      <Caption name={name} progress={progress} />
     </div>
   );
 }
