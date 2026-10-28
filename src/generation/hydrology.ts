@@ -18,10 +18,31 @@ import { interpolatePoint, makeSurfaceDescend, smoothRiverPath } from "./river-p
 import { type RiverLand, spaceRiverChains } from "./river-spacing.ts";
 import { placeSprings } from "./springs.ts";
 
+export const NO_CELL = -1;
+
 const DIAGONAL_REACH = 0.75;
 const BANK_DEPTH = 0.7;
 const SHALLOWEST_WATER = 0.05;
 const MINIMUM_BANK_WIDTH = 6;
+const REJECTED_LAKE = -2;
+const FILL_EPSILON = 1e-3;
+const FLOODED_DEPTH = 0.25;
+const BANK_HEIGHT = 1.6;
+const DEEPEST_BANK_CUT = 2;
+const BANK_FREEBOARD = 0.2;
+const DEEPEST_BANK_LOWERING = 10;
+const BANK_LOWERING_FADE = 0.2;
+const MINIMUM_POINT_DROP = 0.04;
+const SHALLOWEST_CHANNEL = 0.6;
+const DESCENT_PASSES = 8;
+const LIFT_ALLOWANCE = 0.3;
+const FLOW_REACH = 15;
+const PINCH_PASSES = 2;
+const PINCHED_DEPTH = 0.6;
+const OPPOSITE_SIDES = [
+  [0, 1],
+  [1, 0],
+] as const;
 
 interface HydrologyOptions {
   lakeMinimumArea: number;
@@ -50,19 +71,6 @@ interface CellThresholds {
   riverBasinMinimumCells: number;
   riverBasinMinimumDepth: number;
   riverThreshold: number;
-}
-
-function toCellThresholds(options: HydrologyOptions, grid: WorldGrid): CellThresholds {
-  const cellArea = grid.cellSize * grid.cellSize;
-
-  return {
-    lakeMinimumCatchment: options.lakeMinimumCatchmentArea / cellArea,
-    lakeMinimumCells: Math.max(1, options.lakeMinimumArea / cellArea),
-    lakeMinimumDepth: options.lakeMinimumDepth,
-    riverBasinMinimumCells: Math.max(1, options.riverBasinMinimumArea / cellArea),
-    riverBasinMinimumDepth: options.riverBasinMinimumDepth,
-    riverThreshold: options.riverCatchmentArea / cellArea,
-  };
 }
 
 interface HydrologyResult {
@@ -94,26 +102,63 @@ export interface RiverChain {
   mouthReceiver: number;
 }
 
-export const NO_CELL = -1;
-const REJECTED_LAKE = -2;
-const FILL_EPSILON = 1e-3;
-const FLOODED_DEPTH = 0.25;
-const BANK_HEIGHT = 1.6;
-const DEEPEST_BANK_CUT = 2;
-const BANK_FREEBOARD = 0.2;
-const DEEPEST_BANK_LOWERING = 10;
-const BANK_LOWERING_FADE = 0.2;
-const MINIMUM_POINT_DROP = 0.04;
-const SHALLOWEST_CHANNEL = 0.6;
-const DESCENT_PASSES = 8;
-const LIFT_ALLOWANCE = 0.3;
-const FLOW_REACH = 15;
-const PINCH_PASSES = 2;
-const PINCHED_DEPTH = 0.6;
-const OPPOSITE_SIDES = [
-  [0, 1],
-  [1, 0],
-] as const;
+interface FloodedArea {
+  cells: number[];
+  level: number;
+  maximumAccumulation: number;
+  maximumDepth: number;
+}
+
+interface NeighborCell {
+  readonly cell: number;
+  readonly outwardX: number;
+  readonly outwardZ: number;
+}
+
+interface ChannelTargets {
+  coastDistance: Float32Array;
+  grid: WorldGrid;
+  heights: Float32Array;
+  lakeIds: Int32Array;
+  riverStrength: Uint8Array;
+  threshold: number;
+  uncarvedHeights: Float32Array;
+  waterSurface: Float32Array;
+}
+
+interface ChannelSample {
+  along: number;
+  distance: number;
+  segment: number;
+}
+
+type ChannelSamples = Map<number, ChannelSample>;
+
+interface PinchedBank {
+  readonly cell: number;
+  readonly level: number;
+  readonly strength: number;
+}
+
+interface BankLowering {
+  readonly cuts: Float32Array;
+  readonly floors: Float32Array;
+  readonly heap: MinHeap;
+  readonly isBesideWater: Uint8Array;
+}
+
+function toCellThresholds(options: HydrologyOptions, grid: WorldGrid): CellThresholds {
+  const cellArea = grid.cellSize * grid.cellSize;
+
+  return {
+    lakeMinimumCatchment: options.lakeMinimumCatchmentArea / cellArea,
+    lakeMinimumCells: Math.max(1, options.lakeMinimumArea / cellArea),
+    lakeMinimumDepth: options.lakeMinimumDepth,
+    riverBasinMinimumCells: Math.max(1, options.riverBasinMinimumArea / cellArea),
+    riverBasinMinimumDepth: options.riverBasinMinimumDepth,
+    riverThreshold: options.riverCatchmentArea / cellArea,
+  };
+}
 
 export function touchesOffIsland(cell: number, grid: WorldGrid, coastDistance: Float32Array): boolean {
   const column = grid.columnOf(cell);
@@ -140,17 +185,16 @@ function fillDepressions(heights: Float32Array, grid: WorldGrid, coastDistance: 
   const closed = new Uint8Array(grid.cellCount);
   const receivers = new Int32Array(grid.cellCount).fill(NO_CELL);
   const order = new Int32Array(grid.cellCount);
+  const heap = new MinHeap(size * 16);
   let processed = 0;
 
-  const heap = new MinHeap(size * 16);
-
-  function seedCell(cellIndex: number): void {
-    if (closed[cellIndex] === 1 || !isOnIsland(coastDistance, cellIndex)) {
+  function seedCell(cell: number): void {
+    if (closed[cell] === 1 || !isOnIsland(coastDistance, cell)) {
       return;
     }
 
-    closed[cellIndex] = 1;
-    heap.push(cellIndex, filled[cellIndex]);
+    closed[cell] = 1;
+    heap.push(cell, filled[cell]);
   }
 
   for (let position = 0; position < size; position += 1) {
@@ -203,7 +247,6 @@ function fillDepressions(heights: Float32Array, grid: WorldGrid, coastDistance: 
 
   for (let position = processed - 1; position >= 0; position -= 1) {
     const cell = order[position];
-
     const receiver = receivers[cell];
 
     if (receiver !== NO_CELL) {
@@ -212,13 +255,6 @@ function fillDepressions(heights: Float32Array, grid: WorldGrid, coastDistance: 
   }
 
   return { accumulation, filled, order, receivers };
-}
-
-interface FloodedArea {
-  cells: number[];
-  level: number;
-  maximumAccumulation: number;
-  maximumDepth: number;
 }
 
 function collectFloodedArea(
@@ -311,7 +347,6 @@ function findLakes(
     }
 
     const id = lakes.length;
-
     const area = collectFloodedArea(cell, heights, network, grid, lakeIds, id);
 
     const center = averageCell(area.cells, grid);
@@ -457,7 +492,6 @@ function riverPointFor(
   threshold: number
 ): RiverPoint {
   const flow = network.accumulation[cell];
-
   const strength = riverStrengthFor(flow, threshold);
 
   return {
@@ -468,12 +502,6 @@ function riverPointFor(
     x: grid.cellCenterX(cell),
     z: grid.cellCenterZ(cell),
   };
-}
-
-interface NeighborCell {
-  readonly cell: number;
-  readonly outwardX: number;
-  readonly outwardZ: number;
 }
 
 function buildRivers(chains: readonly RiverChain[], land: RiverLand): River[] {
@@ -650,25 +678,6 @@ function channelBed(distanceFromCenter: number, point: RiverPoint, uncarvedHeigh
   return Math.max(shapedBank, lowestBank);
 }
 
-interface ChannelTargets {
-  coastDistance: Float32Array;
-  grid: WorldGrid;
-  heights: Float32Array;
-  lakeIds: Int32Array;
-  riverStrength: Uint8Array;
-  threshold: number;
-  uncarvedHeights: Float32Array;
-  waterSurface: Float32Array;
-}
-
-interface ChannelSample {
-  along: number;
-  distance: number;
-  segment: number;
-}
-
-type ChannelSamples = Map<number, ChannelSample>;
-
 function sampleSegment(points: readonly RiverPoint[], segment: number, grid: WorldGrid, samples: ChannelSamples): void {
   const start = points[segment];
   const end = points[segment + 1];
@@ -691,10 +700,8 @@ function sampleSegment(points: readonly RiverPoint[], segment: number, grid: Wor
       const z = grid.centerZ(row);
 
       const along = saturate(((x - start.x) * segmentX + (z - start.z) * segmentZ) / lengthSquared);
-
       const distance = Math.hypot(x - (start.x + segmentX * along), z - (start.z + segmentZ * along));
       const cell = grid.index(column, row);
-
       const nearest = samples.get(cell);
 
       if (nearest === undefined || distance < nearest.distance) {
@@ -847,12 +854,6 @@ function keepRiversDescending(rivers: readonly River[], targets: ChannelTargets)
   }
 }
 
-interface PinchedBank {
-  readonly cell: number;
-  readonly level: number;
-  readonly strength: number;
-}
-
 function isRiverWaterAt(column: number, row: number, targets: ChannelTargets): boolean {
   const { grid, heights, riverStrength, waterSurface } = targets;
 
@@ -949,13 +950,6 @@ function findWaterfalls(rivers: readonly River[]): Waterfall[] {
   return waterfalls;
 }
 
-interface BankLowering {
-  readonly cuts: Float32Array;
-  readonly floors: Float32Array;
-  readonly heap: MinHeap;
-  readonly isBesideWater: Uint8Array;
-}
-
 function isDryLand(cell: number, targets: ChannelTargets): boolean {
   return isOnIsland(targets.coastDistance, cell) && !hasWater(targets.waterSurface[cell], targets.heights[cell]);
 }
@@ -1017,7 +1011,6 @@ function startBankLowering(targets: ChannelTargets): BankLowering {
     }
 
     const floor = water + BANK_FREEBOARD;
-
     const cut = clamp(uncarvedHeights[cell] - floor, 0, DEEPEST_BANK_LOWERING);
 
     lowering.floors[cell] = floor;
@@ -1059,7 +1052,6 @@ function spreadBankLowering(lowering: BankLowering, targets: ChannelTargets): vo
       }
 
       const neighbor = grid.index(neighborColumn, neighborRow);
-
       const cut = cuts[cell] - BANK_LOWERING_FADE * offset.distance * grid.cellSize;
 
       if (cut <= cuts[neighbor] || settled[neighbor] === 1 || !isDryLand(neighbor, targets)) {
@@ -1129,7 +1121,6 @@ export function computeHydrology(
   const { lakeIds, lakes, riverThreshold, waterSurface } = basins;
 
   const riverStrength = new Uint8Array(grid.cellCount);
-
   const land: RiverLand = { basins, coastDistance, grid, heights };
 
   const chains = spaceRiverChains(traceRiverChains(basins.network, lakeIds, riverThreshold), land);

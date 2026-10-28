@@ -5,24 +5,6 @@ import { slopeAt } from "../world/footing.ts";
 import { hasWater, type River, type RiverPoint } from "../world/water.ts";
 import { ORTHOGONAL_STEPS, type WorldGrid } from "../world/world-grid.ts";
 
-interface WetlandInputs {
-  coastDistance: Float32Array;
-  desert: Float64Array;
-  grid: WorldGrid;
-  heights: Float32Array;
-  lakeIds: Int32Array;
-  riverStrength: Uint8Array;
-  rivers: readonly River[];
-  seed: number;
-  waterSurface: Float32Array;
-}
-
-interface WaterReach {
-  distance: Float32Array;
-  level: Float32Array;
-  span: Float32Array;
-}
-
 const UNREACHED = -1;
 const LAKE_REACH = 420;
 const RIVER_REACH = 220;
@@ -56,6 +38,24 @@ const SMALLEST_WETLAND = 3000;
 const POOL_SPAN = 24;
 const POOL_THRESHOLD = 0.16;
 const POOL_WETNESS = 0.5;
+
+interface WetlandInputs {
+  coastDistance: Float32Array;
+  desert: Float64Array;
+  grid: WorldGrid;
+  heights: Float32Array;
+  lakeIds: Int32Array;
+  riverStrength: Uint8Array;
+  rivers: readonly River[];
+  seed: number;
+  waterSurface: Float32Array;
+}
+
+interface WaterReach {
+  distance: Float32Array;
+  level: Float32Array;
+  span: Float32Array;
+}
 
 function isStillWater(inputs: WetlandInputs, cell: number): boolean {
   if (!hasWater(inputs.waterSurface[cell], inputs.heights[cell])) {

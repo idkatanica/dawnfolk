@@ -70,7 +70,6 @@ function isClearOf(grid: WorldGrid, cell: number, ponds: readonly Pond[]): boole
 function shuffled(cells: number[], random: RandomSource): number[] {
   for (let index = cells.length - 1; index > 0; index -= 1) {
     const swap = random.integer(0, index + 1);
-
     const kept = cells[index];
 
     cells[index] = cells[swap];

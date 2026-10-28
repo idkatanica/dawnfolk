@@ -54,17 +54,17 @@ export class WorldGrid {
     return row * this.cellsPerSide + column;
   }
 
-  columnOf(cellIndex: number): number {
-    return cellIndex % this.cellsPerSide;
+  columnOf(cell: number): number {
+    return cell % this.cellsPerSide;
   }
 
-  rowOf(cellIndex: number): number {
-    return Math.floor(cellIndex / this.cellsPerSide);
+  rowOf(cell: number): number {
+    return Math.floor(cell / this.cellsPerSide);
   }
 
-  isOnEdge(cellIndex: number): boolean {
-    const column = this.columnOf(cellIndex);
-    const row = this.rowOf(cellIndex);
+  isOnEdge(cell: number): boolean {
+    const column = this.columnOf(cell);
+    const row = this.rowOf(cell);
     const last = this.cellsPerSide - 1;
 
     return column === 0 || row === 0 || column === last || row === last;
@@ -101,12 +101,12 @@ export class WorldGrid {
     return -this.halfSize + (row + 0.5) * this.cellSize;
   }
 
-  cellCenterX(cellIndex: number): number {
-    return this.centerX(this.columnOf(cellIndex));
+  cellCenterX(cell: number): number {
+    return this.centerX(this.columnOf(cell));
   }
 
-  cellCenterZ(cellIndex: number): number {
-    return this.centerZ(this.rowOf(cellIndex));
+  cellCenterZ(cell: number): number {
+    return this.centerZ(this.rowOf(cell));
   }
 
   isInside(x: number, z: number, margin: number): boolean {
@@ -147,6 +147,37 @@ export class WorldGrid {
     visit: (cell: number, enter: number, leave: number) => boolean
   ): boolean {
     return this.#walk(fromX, fromZ, toX, toZ, true, visit);
+  }
+
+  circleBounds(x: number, z: number, radius: number): CellRegion {
+    const last = this.cellsPerSide - 1;
+
+    return {
+      firstColumn: Math.max(0, this.columnAt(x - radius)),
+      firstRow: Math.max(0, this.rowAt(z - radius)),
+      lastColumn: Math.min(last, this.columnAt(x + radius)),
+      lastRow: Math.min(last, this.rowAt(z + radius)),
+    };
+  }
+
+  cellsInRadius(x: number, z: number, radius: number): number[] {
+    const cells: number[] = [];
+    const bounds = this.circleBounds(x, z, radius);
+    const radiusSquared = radius * radius;
+
+    for (let row = bounds.firstRow; row <= bounds.lastRow; row += 1) {
+      const deltaZ = this.centerZ(row) - z;
+
+      for (let column = bounds.firstColumn; column <= bounds.lastColumn; column += 1) {
+        const deltaX = this.centerX(column) - x;
+
+        if (deltaX * deltaX + deltaZ * deltaZ <= radiusSquared) {
+          cells.push(this.index(column, row));
+        }
+      }
+    }
+
+    return cells;
   }
 
   #walk(
@@ -214,36 +245,5 @@ export class WorldGrid {
     const edge = -this.halfSize + (line + (step > 0 ? 1 : 0)) * this.cellSize;
 
     return (edge - from) / delta;
-  }
-
-  circleBounds(x: number, z: number, radius: number): CellRegion {
-    const lastIndex = this.cellsPerSide - 1;
-
-    return {
-      firstColumn: Math.max(0, this.columnAt(x - radius)),
-      firstRow: Math.max(0, this.rowAt(z - radius)),
-      lastColumn: Math.min(lastIndex, this.columnAt(x + radius)),
-      lastRow: Math.min(lastIndex, this.rowAt(z + radius)),
-    };
-  }
-
-  cellsInRadius(x: number, z: number, radius: number): number[] {
-    const cells: number[] = [];
-    const bounds = this.circleBounds(x, z, radius);
-    const radiusSquared = radius * radius;
-
-    for (let row = bounds.firstRow; row <= bounds.lastRow; row += 1) {
-      const deltaZ = this.centerZ(row) - z;
-
-      for (let column = bounds.firstColumn; column <= bounds.lastColumn; column += 1) {
-        const deltaX = this.centerX(column) - x;
-
-        if (deltaX * deltaX + deltaZ * deltaZ <= radiusSquared) {
-          cells.push(this.index(column, row));
-        }
-      }
-    }
-
-    return cells;
   }
 }

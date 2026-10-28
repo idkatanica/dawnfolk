@@ -31,6 +31,11 @@ export const PlantSpecies = {
 
 export type PlantSpeciesIndex = (typeof PlantSpecies)[keyof typeof PlantSpecies];
 
+export const TREE_SPACING = 5;
+
+const UNDERGROWTH_IN_CLEARINGS = 0.55;
+const WARM = 12;
+
 type PlantForm = "broadleaf" | "conifer" | "deadwood" | "monument" | "shrub" | "succulent" | "stone";
 
 export interface PlantSpeciesDefinition {
@@ -336,8 +341,6 @@ export function isMonumentSpecies(index: number): boolean {
   return plantSpeciesDefinition(index).form === "monument";
 }
 
-const UNDERGROWTH_IN_CLEARINGS = 0.55;
-
 export function woodlandShare(index: number, woodland: number): number {
   if (isTreeSpecies(index)) {
     return woodland;
@@ -356,10 +359,6 @@ export interface PlantingRule {
   minimumTemperature?: number;
   species: PlantSpeciesIndex;
 }
-
-export const TREE_SPACING = 5;
-
-const WARM = 12;
 
 export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> = {
   [Biome.Alpine]: [

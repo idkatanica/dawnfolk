@@ -74,10 +74,6 @@ export interface IslandPoint {
   z: number;
 }
 
-export function islandPointAt(grid: WorldGrid, column: number, row: number): IslandPoint {
-  return { x: grid.centerX(column) / grid.halfSize, z: grid.centerZ(row) / grid.halfSize };
-}
-
 interface ReliefSample {
   coastDistance: number;
   desert: number;
@@ -98,6 +94,10 @@ interface ReliefNoise {
   sample: NoiseGradient;
   secondary: NoiseSampler;
   shape: GradientNoise;
+}
+
+export function islandPointAt(grid: WorldGrid, column: number, row: number): IslandPoint {
+  return { x: grid.centerX(column) / grid.halfSize, z: grid.centerZ(row) / grid.halfSize };
 }
 
 function desertMask(noise: NoiseSampler, point: IslandPoint): number {

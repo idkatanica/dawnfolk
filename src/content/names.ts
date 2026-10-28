@@ -63,7 +63,6 @@ const MALE_NAMES: readonly string[] = [
 
 export function tribeIdentity(tribeNumber: number): TribeIdentity {
   const identity = TRIBE_TOTEMS[tribeNumber % TRIBE_TOTEMS.length];
-
   const round = Math.floor(tribeNumber / TRIBE_TOTEMS.length);
 
   if (round === 0) {

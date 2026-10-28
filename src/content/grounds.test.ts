@@ -1,0 +1,26 @@
+import { describe, expect, it } from "vitest";
+import { GROUNDS, Ground, seasonalGroundColor } from "./grounds.ts";
+
+describe("grounds", () => {
+  it("lists grounds in the order of their indices", () => {
+    expect(GROUNDS.map((ground) => ground.index)).toEqual(GROUNDS.map((_ground, position) => position));
+    expect(GROUNDS).toHaveLength(Object.keys(Ground).length);
+  });
+
+  it("blends ground colours at the end of a season", () => {
+    const midSummer = seasonalGroundColor(Ground.Meadow, 1.2);
+    const lateSummer = seasonalGroundColor(Ground.Meadow, 1.95);
+
+    expect(midSummer).toEqual([0.48, 0.48, 0.3]);
+    expect(lateSummer[0]).toBeGreaterThan(midSummer[0]);
+  });
+
+  it("grows grass on soft ground and none on bare stone or eternal snow", () => {
+    const covers = GROUNDS.map((ground) => ground.grass);
+
+    expect(covers.every((cover) => cover >= 0 && cover <= 1)).toBe(true);
+    expect(GROUNDS[Ground.Meadow].grass).toBe(1);
+    expect(GROUNDS[Ground.Forest].grass).toBeLessThan(GROUNDS[Ground.Meadow].grass);
+    expect([Ground.Rock, Ground.RedRock, Ground.Snow].map((index) => GROUNDS[index].grass)).toEqual([0, 0, 0]);
+  });
+});

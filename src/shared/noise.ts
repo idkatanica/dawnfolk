@@ -14,6 +14,7 @@ export interface NoiseSampler {
 const RIDGE_ROUNDING = 0.012;
 const FRACTAL_LACUNARITY = 2.03;
 const RIDGED_LACUNARITY = 2.05;
+const RIDGE_WEIGHTING = 1.6;
 
 class SimplexSampler implements NoiseSampler {
   readonly #noise: NoiseFunction2D;
@@ -51,7 +52,7 @@ class SimplexSampler implements NoiseSampler {
       let ridge = 1 - Math.sqrt(value * value + RIDGE_ROUNDING);
 
       ridge = ridge * ridge * weight;
-      weight = Math.min(1, ridge * 1.6);
+      weight = Math.min(1, ridge * RIDGE_WEIGHTING);
       sum += ridge * amplitude;
       normalization += amplitude;
       amplitude *= gain;

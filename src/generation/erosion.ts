@@ -29,6 +29,41 @@ interface Neighborhood {
   rows: Int32Array;
 }
 
+interface DropletTerrain {
+  readonly brush: ErosionBrush;
+  readonly map: Float32Array;
+  readonly resistance: Float32Array;
+  readonly size: number;
+}
+
+interface CoarseSpan {
+  readonly after: Int32Array;
+  readonly amount: Float64Array;
+  readonly before: Int32Array;
+}
+
+export interface ErosionScale {
+  readonly dropletsPerCell: number;
+  readonly factor: number;
+}
+
+export interface ErosionPlan {
+  readonly coarseReach: Float32Array;
+  readonly resistance: Float32Array;
+  readonly scales: readonly ErosionScale[];
+}
+
+interface SlopeRelaxation {
+  readonly active: Uint8Array;
+  readonly cellSize: number;
+  readonly change: Float32Array;
+  readonly excesses: Float64Array;
+  readonly heights: Float32Array;
+  readonly neighborhood: Neighborhood;
+  readonly size: number;
+  readonly talus: Float32Array;
+}
+
 function createBrush(radius: number, size: number): ErosionBrush {
   const columns: number[] = [];
   const rows: number[] = [];
@@ -111,7 +146,6 @@ function erode(
     }
 
     const index = center + offsets[brushIndex];
-
     const take = Math.min(map[index], amount * weights[brushIndex]);
 
     map[index] -= take;
@@ -133,13 +167,6 @@ function depositedAmount(heightChange: number, sediment: number, capacity: numbe
   return (sediment - capacity) * DEPOSITION_SPEED;
 }
 
-interface DropletTerrain {
-  readonly brush: ErosionBrush;
-  readonly map: Float32Array;
-  readonly resistance: Float32Array;
-  readonly size: number;
-}
-
 function simulateDroplet(terrain: DropletTerrain, random: RandomSource): void {
   const { brush, map, size } = terrain;
 
@@ -150,7 +177,6 @@ function simulateDroplet(terrain: DropletTerrain, random: RandomSource): void {
   let speed = 1;
   let water = 1;
   let sediment = 0;
-
   let x = random.next() * limit;
   let z = random.next() * limit;
 
@@ -190,7 +216,6 @@ function simulateDroplet(terrain: DropletTerrain, random: RandomSource): void {
     }
 
     const heightChange = heightAt(map, size, x, z) - startHeight;
-
     const capacity = Math.max(-heightChange * speed * water * CAPACITY, MINIMUM_CAPACITY);
 
     if (sediment > capacity || heightChange > 0) {
@@ -248,12 +273,6 @@ function downsample(heights: Float32Array, size: number, factor: number): Float3
   return coarse;
 }
 
-interface CoarseSpan {
-  readonly after: Int32Array;
-  readonly amount: Float64Array;
-  readonly before: Int32Array;
-}
-
 function coarseSpans(size: number, factor: number, coarseSize: number): CoarseSpan {
   const last = coarseSize - 1;
   const spans: CoarseSpan = {
@@ -302,17 +321,6 @@ function addUpsampledChange(
   }
 }
 
-export interface ErosionScale {
-  readonly dropletsPerCell: number;
-  readonly factor: number;
-}
-
-export interface ErosionPlan {
-  readonly coarseReach: Float32Array;
-  readonly resistance: Float32Array;
-  readonly scales: readonly ErosionScale[];
-}
-
 export function erodeAcrossScales(
   heights: Float32Array,
   size: number,
@@ -341,17 +349,6 @@ export function erodeAcrossScales(
       coarseReach
     );
   }
-}
-
-interface SlopeRelaxation {
-  readonly active: Uint8Array;
-  readonly cellSize: number;
-  readonly change: Float32Array;
-  readonly excesses: Float64Array;
-  readonly heights: Float32Array;
-  readonly neighborhood: Neighborhood;
-  readonly size: number;
-  readonly talus: Float32Array;
 }
 
 function shedExcess(relaxation: SlopeRelaxation, column: number, row: number): boolean {

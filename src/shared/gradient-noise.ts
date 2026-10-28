@@ -33,7 +33,6 @@ function shuffledTable(random: RandomSource): Uint8Array {
 
   for (let index = TABLE_SIZE - 1; index > 0; index -= 1) {
     const swap = Math.floor(random.next() * (index + 1));
-
     const kept = table[index];
 
     table[index] = table[swap];

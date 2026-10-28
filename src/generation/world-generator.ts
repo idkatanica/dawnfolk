@@ -30,18 +30,6 @@ import { carveValleys } from "./valleys.ts";
 import { plantInitialVegetation } from "./vegetation.ts";
 import { openWoodland } from "./woodland.ts";
 
-export interface GeneratedWorld {
-  crossings: readonly Crossing[];
-  deposits: readonly Deposit[];
-  dimensions: GridDimensions;
-  monuments: readonly Monument[];
-  seed: number;
-  shape: IslandShapeKind;
-  terrain: TerrainData;
-  vegetation: VegetationStore;
-  water: WaterFeatures;
-}
-
 const VEGETATION_CAPACITY_PER_CELL = 1.25;
 const SOIL_TALUS = 0.78;
 const BEDROCK_TALUS = 0.92;
@@ -57,6 +45,18 @@ const UPLAND_HEIGHT = 650;
 const VALLEY_CELL_SIZES = [40, 20] as const;
 const VALLEY_DROPLETS_PER_CELL = 1.6;
 const GULLY_DROPLETS_PER_CELL = 1.2;
+
+export interface GeneratedWorld {
+  crossings: readonly Crossing[];
+  deposits: readonly Deposit[];
+  dimensions: GridDimensions;
+  monuments: readonly Monument[];
+  seed: number;
+  shape: IslandShapeKind;
+  terrain: TerrainData;
+  vegetation: VegetationStore;
+  water: WaterFeatures;
+}
 
 function erosionScales(grid: WorldGrid, strength: number): ErosionScale[] {
   const coarse = VALLEY_CELL_SIZES.map((meters) => Math.round(meters / grid.cellSize))
@@ -82,7 +82,7 @@ function talusSlopes(heights: Float32Array, dryness: Float32Array): Float32Array
   });
 }
 
-function digLakeBasins(grid: WorldGrid, heights: Float32Array, relief: Relief): void {
+function digLakeBasins(heights: Float32Array, grid: WorldGrid, relief: Relief): void {
   for (let row = 0; row < grid.cellsPerSide; row += 1) {
     for (let column = 0; column < grid.cellsPerSide; column += 1) {
       heights[grid.index(column, row)] -= relief.basinDepthAt(islandPointAt(grid, column, row));
@@ -157,7 +157,7 @@ export function generateWorld(
     createRandom(seed * 7 + 3),
     erosionPlan(grid, heights, dryness, options.erosionStrength)
   );
-  digLakeBasins(grid, heights, relief);
+  digLakeBasins(heights, grid, relief);
   digRiverLakes(heights, {
     boundaryDistance: boundaryDistances(grid, relief),
     coastDistance,

@@ -38,7 +38,9 @@ describe("ore and clay deposits", () => {
   it("put ore veins on hillsides and clay on gentle ground", () => {
     const { height } = world.terrain;
 
-    const steepestOf = (deposit: Deposit) => Math.max(...deposit.cells.map((cell) => slopeAt(height, grid, cell)));
+    function steepestOf(deposit: Deposit): number {
+      return Math.max(...deposit.cells.map((cell) => slopeAt(height, grid, cell)));
+    }
 
     for (const clay of world.deposits.filter((deposit) => deposit.kind === "clay")) {
       expect(steepestOf(clay)).toBeLessThanOrEqual(0.25);

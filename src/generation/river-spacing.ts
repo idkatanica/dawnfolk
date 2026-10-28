@@ -40,14 +40,14 @@ function pathLength(grid: WorldGrid, cells: readonly number[]): number {
   return length;
 }
 
-function widthAt(spacing: Spacing, cell: number): number {
+function widthAt(cell: number, spacing: Spacing): number {
   const { basins } = spacing;
 
   return riverWidthFor(basins.network.accumulation[cell], basins.riverThreshold);
 }
 
-function spacingBetween(spacing: Spacing, cell: number, other: number): number {
-  const wider = Math.max(widthAt(spacing, cell), widthAt(spacing, other));
+function spacingBetween(cell: number, other: number, spacing: Spacing): number {
+  const wider = Math.max(widthAt(cell, spacing), widthAt(other, spacing));
 
   return Math.max(
     SMALLEST_SPACING,
@@ -56,7 +56,7 @@ function spacingBetween(spacing: Spacing, cell: number, other: number): number {
   );
 }
 
-function nearestRiver(spacing: Spacing, cell: number, isAllowed: (other: number) => boolean): NearbyRiver | null {
+function nearestRiver(cell: number, isAllowed: (other: number) => boolean, spacing: Spacing): NearbyRiver | null {
   const { grid, owners } = spacing;
 
   const reach = Math.ceil(spacing.reach / grid.cellSize);
@@ -136,7 +136,7 @@ function clearHead(cells: readonly number[], spacing: Spacing): number {
   const clearance = Math.max(HEAD_CLEARANCE, spacing.grid.cellSize * SPACING_CELLS);
 
   return cells.findIndex((cell) => {
-    const nearest = nearestRiver(spacing, cell, anyRiver);
+    const nearest = nearestRiver(cell, anyRiver, spacing);
 
     return nearest === null || nearest.distance >= clearance;
   });
@@ -150,7 +150,7 @@ function isNaturalConfluence(chain: RiverChain, from: number, spacing: Spacing):
   }
 
   const approach = [...chain.cells.slice(from), chain.joinsCell];
-  const closest = spacingBetween(spacing, chain.cells[from], chain.joinsCell);
+  const closest = spacingBetween(chain.cells[from], chain.joinsCell, spacing);
 
   return pathLength(grid, approach) <= NATURAL_APPROACH * closest;
 }
@@ -158,15 +158,15 @@ function isNaturalConfluence(chain: RiverChain, from: number, spacing: Spacing):
 function junctionFor(cell: number, spacing: Spacing): number {
   const { heights } = spacing;
 
-  const nearest = nearestRiver(spacing, cell, anyRiver);
+  const nearest = nearestRiver(cell, anyRiver, spacing);
 
-  if (nearest === null || nearest.distance >= spacingBetween(spacing, cell, nearest.cell)) {
+  if (nearest === null || nearest.distance >= spacingBetween(cell, nearest.cell, spacing)) {
     return NO_CELL;
   }
 
-  const lower = nearestRiver(spacing, cell, (other) => heights[other] <= heights[cell]);
+  const lower = nearestRiver(cell, (other) => heights[other] <= heights[cell], spacing);
 
-  if (lower === null || lower.distance >= spacingBetween(spacing, cell, lower.cell)) {
+  if (lower === null || lower.distance >= spacingBetween(cell, lower.cell, spacing)) {
     return NO_CELL;
   }
 

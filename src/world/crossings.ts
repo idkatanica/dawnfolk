@@ -40,13 +40,13 @@ export interface FallenLog {
   readonly tipZ: number;
 }
 
-const CROSSING_HALF_WIDTH: Readonly<Record<CrossingKind, number>> = { ford: 0.85, log: 0.55 };
 export const STONE_RISE = 0.18;
 export const STEPPING_STONE_VARIANTS = 4;
 export const LOG_ROOT_BEHIND = 1.5;
 export const LOG_TIP_BEYOND = 0.9;
 export const LOG_TAPER = 0.72;
 
+const CROSSING_HALF_WIDTH: Readonly<Record<CrossingKind, number>> = { ford: 0.85, log: 0.55 };
 const LOG_STEP_OFF = 0.6;
 const LOG_THINNEST = 0.3;
 const LOG_THICKEST = 0.46;
@@ -138,13 +138,13 @@ export function logRadiusAt(crossing: CrossingSpan, along: number): number {
 
 export function fallenLog(log: LogBridge): FallenLog {
   const length = Math.max(1e-6, crossingLength(log));
-  const rootAtStart = isRootAtStart(log);
+  const hasRootAtStart = isRootAtStart(log);
   const direction = directionOf(log);
 
   const startBottom = log.startDeck - 2 * logRadiusAt(log, 0);
   const endBottom = log.endDeck - 2 * logRadiusAt(log, length);
-  const startReach = rootAtStart ? LOG_ROOT_BEHIND : LOG_TIP_BEYOND;
-  const endReach = rootAtStart ? LOG_TIP_BEYOND : LOG_ROOT_BEHIND;
+  const startReach = hasRootAtStart ? LOG_ROOT_BEHIND : LOG_TIP_BEYOND;
+  const endReach = hasRootAtStart ? LOG_TIP_BEYOND : LOG_ROOT_BEHIND;
 
   const rise = (endBottom - startBottom) / length;
   const rootRadius = logRootRadius(length, log.seed);
@@ -160,8 +160,8 @@ export function fallenLog(log: LogBridge): FallenLog {
     z: log.endZ + direction.z * endReach,
   };
 
-  const root = rootAtStart ? startEnd : endEnd;
-  const tip = rootAtStart ? endEnd : startEnd;
+  const root = hasRootAtStart ? startEnd : endEnd;
+  const tip = hasRootAtStart ? endEnd : startEnd;
 
   return {
     rootBottom: root.bottom,
@@ -182,7 +182,6 @@ export function crossingCells(grid: WorldGrid, crossing: Crossing, margin = 0): 
   for (let along = -margin; along <= length + margin; along += CELL_SAMPLE_SPACING) {
     for (let sample = 0; sample < CELL_SAMPLES_ACROSS; sample += 1) {
       const point = pointOnCrossing(crossing, along, lerp(-reach, reach, sample / (CELL_SAMPLES_ACROSS - 1)));
-
       const cell = grid.cellAt(point.x, point.z);
 
       if (cell >= 0) {

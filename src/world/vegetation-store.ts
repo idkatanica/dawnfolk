@@ -268,33 +268,6 @@ export class VegetationStore implements VegetationChannels {
     return expired;
   }
 
-  #kill(index: number, day: number, state: number): void {
-    if (this.state[index] !== PlantState.Alive) {
-      return;
-    }
-
-    this.#untrackBerryBush(index);
-    this.state[index] = state;
-    this.#burntDay[index] = day;
-    this.#burntQueue.push({ day: this.#burntDay[index], index });
-    this.fruit[index] = 0;
-    this.#aliveCount -= 1;
-    this.#changed.add(index);
-  }
-
-  #isDead(index: number): boolean {
-    return this.state[index] === PlantState.Burnt || this.state[index] === PlantState.Fallen;
-  }
-
-  #compactBurntQueue(): void {
-    if (this.#burntQueueStart < BURNT_QUEUE_COMPACTION || this.#burntQueueStart * 2 < this.#burntQueue.length) {
-      return;
-    }
-
-    this.#burntQueue.splice(0, this.#burntQueueStart);
-    this.#burntQueueStart = 0;
-  }
-
   wearDown(index: number): number {
     if (this.state[index] !== PlantState.Alive) {
       return 0;
@@ -309,32 +282,32 @@ export class VegetationStore implements VegetationChannels {
     return this.state[index] === PlantState.Alive;
   }
 
-  firstPlantInCell(cellIndex: number): number {
-    return this.#firstInCell[cellIndex];
+  firstPlantInCell(cell: number): number {
+    return this.#firstInCell[cell];
   }
 
   nextPlantInCell(index: number): number {
     return this.#nextInCell[index];
   }
 
-  plantsInCell(cellIndex: number): number[] {
+  plantsInCell(cell: number): number[] {
     const plants: number[] = [];
 
-    for (let index = this.#firstInCell[cellIndex]; index !== NO_PLANT; index = this.#nextInCell[index]) {
+    for (let index = this.#firstInCell[cell]; index !== NO_PLANT; index = this.#nextInCell[index]) {
       plants.push(index);
     }
 
     return plants;
   }
 
-  hasPlantsInCell(cellIndex: number): boolean {
-    return this.#firstInCell[cellIndex] !== NO_PLANT;
+  hasPlantsInCell(cell: number): boolean {
+    return this.#firstInCell[cell] !== NO_PLANT;
   }
 
-  canopyFuelInCell(cellIndex: number): number {
+  canopyFuelInCell(cell: number): number {
     let fuel = 0;
 
-    for (let index = this.#firstInCell[cellIndex]; index !== NO_PLANT; index = this.#nextInCell[index]) {
+    for (let index = this.#firstInCell[cell]; index !== NO_PLANT; index = this.#nextInCell[index]) {
       if (this.state[index] === PlantState.Alive) {
         fuel += plantSpeciesDefinition(this.species[index]).canopyFuel;
       }
@@ -343,10 +316,10 @@ export class VegetationStore implements VegetationChannels {
     return fuel;
   }
 
-  burnTreesInCell(cellIndex: number, day: number): number {
+  burnTreesInCell(cell: number, day: number): number {
     let burnt = 0;
 
-    for (let index = this.#firstInCell[cellIndex]; index !== NO_PLANT; index = this.#nextInCell[index]) {
+    for (let index = this.#firstInCell[cell]; index !== NO_PLANT; index = this.#nextInCell[index]) {
       if (this.state[index] === PlantState.Alive && plantSpeciesDefinition(this.species[index]).canopyFuel > 0) {
         this.burn(index, day);
         burnt += 1;
@@ -356,8 +329,8 @@ export class VegetationStore implements VegetationChannels {
     return burnt;
   }
 
-  clearCell(cellIndex: number, includesStones: boolean): void {
-    for (const index of this.plantsInCell(cellIndex)) {
+  clearCell(cell: number, includesStones: boolean): void {
+    for (const index of this.plantsInCell(cell)) {
       const { form } = plantSpeciesDefinition(this.species[index]);
 
       if (form !== "monument" && (includesStones || form !== "stone")) {
@@ -393,10 +366,10 @@ export class VegetationStore implements VegetationChannels {
     return false;
   }
 
-  countTreesInCell(cellIndex: number): number {
+  countTreesInCell(cell: number): number {
     let trees = 0;
 
-    for (let index = this.#firstInCell[cellIndex]; index !== NO_PLANT; index = this.#nextInCell[index]) {
+    for (let index = this.#firstInCell[cell]; index !== NO_PLANT; index = this.#nextInCell[index]) {
       if (this.state[index] === PlantState.Alive && isTreeSpecies(this.species[index])) {
         trees += 1;
       }
@@ -433,7 +406,6 @@ export class VegetationStore implements VegetationChannels {
 
   exportBuffers(): VegetationBuffers {
     const count = this.#count;
-
     const buffers: VegetationBuffers = { ...createVegetationChannels(count), count };
 
     for (const channel of VEGETATION_CHANNELS) {
@@ -445,7 +417,6 @@ export class VegetationStore implements VegetationChannels {
 
   snapshot(): VegetationSnapshot {
     const count = this.#count;
-
     const queue = this.#burntQueue.slice(this.#burntQueueStart);
 
     return {
@@ -502,6 +473,33 @@ export class VegetationStore implements VegetationChannels {
     this.#changed.clear();
   }
 
+  #kill(index: number, day: number, state: number): void {
+    if (this.state[index] !== PlantState.Alive) {
+      return;
+    }
+
+    this.#untrackBerryBush(index);
+    this.state[index] = state;
+    this.#burntDay[index] = day;
+    this.#burntQueue.push({ day: this.#burntDay[index], index });
+    this.fruit[index] = 0;
+    this.#aliveCount -= 1;
+    this.#changed.add(index);
+  }
+
+  #isDead(index: number): boolean {
+    return this.state[index] === PlantState.Burnt || this.state[index] === PlantState.Fallen;
+  }
+
+  #compactBurntQueue(): void {
+    if (this.#burntQueueStart < BURNT_QUEUE_COMPACTION || this.#burntQueueStart * 2 < this.#burntQueue.length) {
+      return;
+    }
+
+    this.#burntQueue.splice(0, this.#burntQueueStart);
+    this.#burntQueueStart = 0;
+  }
+
   #relinkCells(): void {
     const isFollower = new Uint8Array(this.#count);
 
@@ -516,10 +514,10 @@ export class VegetationStore implements VegetationChannels {
     this.#firstInCell.fill(NO_PLANT);
 
     for (let index = 0; index < this.#count; index += 1) {
-      const cellIndex = this.cell[index];
+      const cell = this.cell[index];
 
-      if (cellIndex >= 0 && cellIndex < this.#firstInCell.length && isFollower[index] === 0) {
-        this.#firstInCell[cellIndex] = index;
+      if (cell >= 0 && cell < this.#firstInCell.length && isFollower[index] === 0) {
+        this.#firstInCell[cell] = index;
       }
     }
   }
@@ -631,26 +629,26 @@ export class VegetationStore implements VegetationChannels {
     }
   }
 
-  #linkToCell(index: number, cellIndex: number): void {
-    this.cell[index] = cellIndex;
+  #linkToCell(index: number, cell: number): void {
+    this.cell[index] = cell;
 
-    if (cellIndex === NO_PLANT) {
+    if (cell === NO_PLANT) {
       return;
     }
 
-    this.#nextInCell[index] = this.#firstInCell[cellIndex];
-    this.#firstInCell[cellIndex] = index;
+    this.#nextInCell[index] = this.#firstInCell[cell];
+    this.#firstInCell[cell] = index;
   }
 
   #unlinkFromCell(index: number): void {
-    const cellIndex = this.cell[index];
+    const cell = this.cell[index];
 
-    if (cellIndex === NO_PLANT) {
+    if (cell === NO_PLANT) {
       return;
     }
 
     let previous = NO_PLANT;
-    let current = this.#firstInCell[cellIndex];
+    let current = this.#firstInCell[cell];
 
     while (current !== NO_PLANT && current !== index) {
       previous = current;
@@ -658,7 +656,7 @@ export class VegetationStore implements VegetationChannels {
     }
 
     if (current === index && previous === NO_PLANT) {
-      this.#firstInCell[cellIndex] = this.#nextInCell[index];
+      this.#firstInCell[cell] = this.#nextInCell[index];
     } else if (current === index) {
       this.#nextInCell[previous] = this.#nextInCell[index];
     }
