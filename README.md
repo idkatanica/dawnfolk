@@ -40,7 +40,7 @@
   <a href="https://github.com/sponsors/imsvidskiy">Sponsor</a>
 </p>
 
-https://github.com/user-attachments/assets/d04e30b3-ad84-4074-a5a0-45f5a0de384b
+https://github.com/user-attachments/assets/bc99af11-0acd-4cca-85cc-39c3b5a4b256
 
 Shape the land, call rain, fire and lightning, and watch small tribes gather, build, feud and climb from the Stone
 Age to the Iron Age on a procedurally generated island rendered with WebGPU.
