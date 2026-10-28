@@ -193,7 +193,7 @@ export function planDeposits(grid: WorldGrid, terrain: TerrainData, seed: number
   return planner.placed;
 }
 
-export function exposeDeposits(deposits: readonly Deposit[], terrain: TerrainData, vegetation: VegetationStore): void {
+export function exposeDeposits(terrain: TerrainData, vegetation: VegetationStore, deposits: readonly Deposit[]): void {
   for (const deposit of deposits) {
     const { ground } = DEPOSITS[deposit.kind];
 

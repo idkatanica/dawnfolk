@@ -1,6 +1,8 @@
 import { uniformFloat64 } from "pure-rand/distribution/uniformFloat64";
 import { xoroshiro128plus, xoroshiro128plusFromState } from "pure-rand/generator/xoroshiro128plus";
 
+const WARM_UP_DRAWS = 4;
+
 export type RandomState = readonly number[];
 
 export interface RandomSource {
@@ -68,8 +70,6 @@ class SeededRandom implements RandomSource {
     return createRandom(seed);
   }
 }
-
-const WARM_UP_DRAWS = 4;
 
 export function createRandom(seed: number): RandomSource {
   const generator = xoroshiro128plus(seed);

@@ -40,14 +40,14 @@ function pathLength(grid: WorldGrid, cells: readonly number[]): number {
   return length;
 }
 
-function widthAt(cell: number, spacing: Spacing): number {
+function widthAt(spacing: Spacing, cell: number): number {
   const { basins } = spacing;
 
   return riverWidthFor(basins.network.accumulation[cell], basins.riverThreshold);
 }
 
-function spacingBetween(cell: number, other: number, spacing: Spacing): number {
-  const wider = Math.max(widthAt(cell, spacing), widthAt(other, spacing));
+function spacingBetween(spacing: Spacing, cell: number, other: number): number {
+  const wider = Math.max(widthAt(spacing, cell), widthAt(spacing, other));
 
   return Math.max(
     SMALLEST_SPACING,
@@ -56,7 +56,7 @@ function spacingBetween(cell: number, other: number, spacing: Spacing): number {
   );
 }
 
-function nearestRiver(cell: number, isAllowed: (other: number) => boolean, spacing: Spacing): NearbyRiver | null {
+function nearestRiver(spacing: Spacing, cell: number, isAllowed: (other: number) => boolean): NearbyRiver | null {
   const { grid, owners } = spacing;
 
   const reach = Math.ceil(spacing.reach / grid.cellSize);
@@ -92,7 +92,7 @@ function anyRiver(): boolean {
   return true;
 }
 
-function followToRiver(chain: RiverChain, spacing: Spacing): RiverChain {
+function followToRiver(spacing: Spacing, chain: RiverChain): RiverChain {
   const { lakeIds, network } = spacing.basins;
 
   if (chain.joinsCell === NO_CELL || spacing.owners[chain.joinsCell] !== NO_CELL) {
@@ -116,14 +116,14 @@ function followToRiver(chain: RiverChain, spacing: Spacing): RiverChain {
   return { cells, joinsCell: NO_CELL, mouthReceiver: NO_CELL };
 }
 
-function endAtCoast(chain: RiverChain, spacing: Spacing): RiverChain {
+function endAtCoast(spacing: Spacing, chain: RiverChain): RiverChain {
   const { coastDistance, grid } = spacing;
 
   if (chain.joinsCell !== NO_CELL || chain.mouthReceiver !== NO_CELL) {
     return chain;
   }
 
-  const mouth = chain.cells.findIndex((cell) => grid.isOnEdge(cell) || touchesOffIsland(cell, grid, coastDistance));
+  const mouth = chain.cells.findIndex((cell) => grid.isOnEdge(cell) || touchesOffIsland(grid, coastDistance, cell));
 
   if (mouth < 0) {
     return chain;
@@ -132,17 +132,17 @@ function endAtCoast(chain: RiverChain, spacing: Spacing): RiverChain {
   return { ...chain, cells: chain.cells.slice(0, mouth + 1) };
 }
 
-function clearHead(cells: readonly number[], spacing: Spacing): number {
+function clearHead(spacing: Spacing, cells: readonly number[]): number {
   const clearance = Math.max(HEAD_CLEARANCE, spacing.grid.cellSize * SPACING_CELLS);
 
   return cells.findIndex((cell) => {
-    const nearest = nearestRiver(cell, anyRiver, spacing);
+    const nearest = nearestRiver(spacing, cell, anyRiver);
 
     return nearest === null || nearest.distance >= clearance;
   });
 }
 
-function isNaturalConfluence(chain: RiverChain, from: number, spacing: Spacing): boolean {
+function isNaturalConfluence(spacing: Spacing, chain: RiverChain, from: number): boolean {
   const { grid } = spacing;
 
   if (chain.joinsCell === NO_CELL) {
@@ -150,44 +150,44 @@ function isNaturalConfluence(chain: RiverChain, from: number, spacing: Spacing):
   }
 
   const approach = [...chain.cells.slice(from), chain.joinsCell];
-  const closest = spacingBetween(chain.cells[from], chain.joinsCell, spacing);
+  const closest = spacingBetween(spacing, chain.cells[from], chain.joinsCell);
 
   return pathLength(grid, approach) <= NATURAL_APPROACH * closest;
 }
 
-function junctionFor(cell: number, spacing: Spacing): number {
+function junctionFor(spacing: Spacing, cell: number): number {
   const { heights } = spacing;
 
-  const nearest = nearestRiver(cell, anyRiver, spacing);
+  const nearest = nearestRiver(spacing, cell, anyRiver);
 
-  if (nearest === null || nearest.distance >= spacingBetween(cell, nearest.cell, spacing)) {
+  if (nearest === null || nearest.distance >= spacingBetween(spacing, cell, nearest.cell)) {
     return NO_CELL;
   }
 
-  const lower = nearestRiver(cell, (other) => heights[other] <= heights[cell], spacing);
+  const lower = nearestRiver(spacing, cell, (other) => heights[other] <= heights[cell]);
 
-  if (lower === null || lower.distance >= spacingBetween(cell, lower.cell, spacing)) {
+  if (lower === null || lower.distance >= spacingBetween(spacing, cell, lower.cell)) {
     return NO_CELL;
   }
 
   return lower.cell;
 }
 
-function spacedChain(chain: RiverChain, spacing: Spacing): RiverChain | null {
-  const followed = endAtCoast(followToRiver(chain, spacing), spacing);
+function spacedChain(spacing: Spacing, chain: RiverChain): RiverChain | null {
+  const followed = endAtCoast(spacing, followToRiver(spacing, chain));
 
-  const head = clearHead(followed.cells, spacing);
+  const head = clearHead(spacing, followed.cells);
 
   if (head < 0) {
     return null;
   }
 
   for (let index = head; index < followed.cells.length; index += 1) {
-    if (isNaturalConfluence(followed, index, spacing)) {
+    if (isNaturalConfluence(spacing, followed, index)) {
       break;
     }
 
-    const junction = junctionFor(followed.cells[index], spacing);
+    const junction = junctionFor(spacing, followed.cells[index]);
 
     if (junction !== NO_CELL) {
       return { cells: followed.cells.slice(head, index + 1), joinsCell: junction, mouthReceiver: junction };
@@ -197,7 +197,7 @@ function spacedChain(chain: RiverChain, spacing: Spacing): RiverChain | null {
   return { ...followed, cells: followed.cells.slice(head) };
 }
 
-function isFedByLake(chain: RiverChain, spacing: Spacing): boolean {
+function isFedByLake(spacing: Spacing, chain: RiverChain): boolean {
   const { basins, grid } = spacing;
 
   const [head] = chain.cells;
@@ -207,10 +207,10 @@ function isFedByLake(chain: RiverChain, spacing: Spacing): boolean {
     .some((cell) => basins.lakeIds[cell] !== NO_CELL);
 }
 
-function isLongEnough(chain: RiverChain, spacing: Spacing): boolean {
+function isLongEnough(spacing: Spacing, chain: RiverChain): boolean {
   const cells = chain.joinsCell === NO_CELL ? chain.cells : [...chain.cells, chain.joinsCell];
 
-  return pathLength(spacing.grid, cells) >= SHORTEST_RIVER || isFedByLake(chain, spacing);
+  return pathLength(spacing.grid, cells) >= SHORTEST_RIVER || isFedByLake(spacing, chain);
 }
 
 function byMouthFlow(basins: DrainageBasins): (first: RiverChain, second: RiverChain) => number {
@@ -229,7 +229,7 @@ function byMouthFlow(basins: DrainageBasins): (first: RiverChain, second: RiverC
   };
 }
 
-export function spaceRiverChains(chains: readonly RiverChain[], land: RiverLand): RiverChain[] {
+export function spaceRiverChains(land: RiverLand, chains: readonly RiverChain[]): RiverChain[] {
   const { basins, grid } = land;
 
   const spacing: Spacing = {
@@ -241,9 +241,9 @@ export function spaceRiverChains(chains: readonly RiverChain[], land: RiverLand)
   const spaced: RiverChain[] = [];
 
   for (const chain of [...chains].sort(byMouthFlow(basins))) {
-    const kept = spacedChain(chain, spacing);
+    const kept = spacedChain(spacing, chain);
 
-    if (kept === null || !isLongEnough(kept, spacing)) {
+    if (kept === null || !isLongEnough(spacing, kept)) {
       continue;
     }
 

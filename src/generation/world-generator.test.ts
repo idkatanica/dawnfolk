@@ -26,6 +26,21 @@ const stages = new Set<string>();
 const sketches = new Map<string, IslandSketch | null>();
 const testWorlds = new Map<string, GeneratedWorld>();
 
+interface SwampSurvey {
+  readonly faults: string[];
+  landCells: number;
+  patches: number;
+  poolCells: number;
+  swampCells: number;
+}
+
+interface PointBounds {
+  maximumX: number;
+  maximumZ: number;
+  minimumX: number;
+  minimumZ: number;
+}
+
 function testWorld(seed: number, shape: IslandShapeKind = "round"): GeneratedWorld {
   const key = `${seed}:${shape}`;
   const cached = testWorlds.get(key);
@@ -167,14 +182,6 @@ function closestTreeGap(generated: GeneratedWorld): number {
   }
 
   return closest;
-}
-
-interface SwampSurvey {
-  readonly faults: string[];
-  landCells: number;
-  patches: number;
-  poolCells: number;
-  swampCells: number;
 }
 
 function surveySwamps(generated: GeneratedWorld): SwampSurvey {
@@ -485,13 +492,6 @@ function confluencesOf(rivers: readonly River[], first: River, second: River, re
   }
 
   return confluences;
-}
-
-interface PointBounds {
-  maximumX: number;
-  maximumZ: number;
-  minimumX: number;
-  minimumZ: number;
 }
 
 function boundsOf(points: readonly RiverPoint[]): PointBounds {

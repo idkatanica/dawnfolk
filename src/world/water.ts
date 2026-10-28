@@ -4,6 +4,8 @@ export const NO_WATER = -10_000;
 
 export const POND_SHORE_SLOPE = 0.3;
 
+export const SPRING_KINDS = ["pond", "cave"] as const;
+
 const POND_STRETCH = 0.08;
 const POND_RIPPLE = 0.05;
 const NARROWEST_RIVER = 3.5;
@@ -11,6 +13,8 @@ const WIDEST_RIVER = 26;
 const RIVER_WIDTH_PER_STRENGTH = 3.4;
 const RIVER_CODE_AT_SOURCE = 40;
 const RIVER_CODE_PER_STRENGTH = 30;
+
+type SpringKind = (typeof SPRING_KINDS)[number];
 
 export interface Lake {
   cellCount: number;
@@ -43,10 +47,6 @@ export interface Waterfall {
   x: number;
   z: number;
 }
-
-export const SPRING_KINDS = ["pond", "cave"] as const;
-
-type SpringKind = (typeof SPRING_KINDS)[number];
 
 export interface Spring {
   readonly cells: readonly number[];

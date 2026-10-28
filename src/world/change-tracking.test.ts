@@ -8,7 +8,7 @@ describe("row change tracker", () => {
     expect(tracker.takeRuns()).toEqual([]);
   });
 
-  it("merges neighbouring rows into runs", () => {
+  it("merges neighboring rows into runs", () => {
     const tracker = new RowChangeTracker(16);
 
     tracker.markRow(2);

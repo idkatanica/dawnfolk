@@ -13,6 +13,12 @@ const UNTOUCHED_DISTANCE = 120;
 const RIDGE_HEIGHT = 10;
 const RIDGE_SPREAD = 2 * 30 * 30;
 
+interface CarvedWater {
+  readonly carved: Float32Array;
+  readonly riverStrength: Uint8Array;
+  readonly waterSurface: Float32Array;
+}
+
 function carveValley(wallSlope: number, ridgeHeight = 0) {
   const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 64 });
 
@@ -34,12 +40,6 @@ function carveValley(wallSlope: number, ridgeHeight = 0) {
   );
 
   return { carved, grid, result, uncarved };
-}
-
-interface CarvedWater {
-  readonly carved: Float32Array;
-  readonly riverStrength: Uint8Array;
-  readonly waterSurface: Float32Array;
 }
 
 function riverLevelBeside(grid: WorldGrid, cell: number, water: CarvedWater): number {
@@ -123,7 +123,7 @@ describe("river carving", () => {
     }
   });
 
-  it("lowers steep valley walls by at most ten metres and never notches them", () => {
+  it("lowers steep valley walls by at most ten meters and never notches them", () => {
     const { carved, grid, uncarved } = carveValley(STEEP_WALLS);
 
     let deepestWallCut = 0;

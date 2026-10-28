@@ -41,7 +41,7 @@ describe("seeded random", () => {
     expect(createRandom(5).derive(1).next()).not.toBe(createRandom(5).derive(2).next());
   });
 
-  it("spreads the first values of neighbouring seeds", () => {
+  it("spreads the first values of neighboring seeds", () => {
     const firstValues = [1, 2, 3, 13, 90, 167, 244].map((seed) => createRandom(seed).next());
 
     expect(Math.min(...firstValues)).toBeLessThan(0.5);

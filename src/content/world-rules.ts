@@ -1,10 +1,6 @@
 import { z } from "zod";
 import { groupMetadata, rangeParameter } from "./parameters.ts";
 
-function multiplier(label: string, description: string, maximum = 3, minimum = 0.2) {
-  return rangeParameter({ defaultValue: 1, description, label, maximum, minimum, step: 0.1, unit: "multiplier" });
-}
-
 export const worldRulesSchema = z.object({
   fire: z
     .object({
@@ -12,7 +8,7 @@ export const worldRulesSchema = z.object({
       embers: multiplier("Embers", "How often burning crowns throw embers ahead of the front.", 3, 0),
       flammability: multiplier("Flammability", "How easily heat sets fresh ground alight."),
       slopeInfluence: multiplier("Uphill push", "How much faster fire climbs slopes.", 2.5, 0),
-      spreadSpeed: multiplier("Spread speed", "How quickly flames heat their neighbours."),
+      spreadSpeed: multiplier("Spread speed", "How quickly flames heat their neighbors."),
       windInfluence: multiplier("Wind push", "How strongly wind drives the fire front.", 2.5, 0),
     })
     .prefault({})
@@ -22,7 +18,7 @@ export const worldRulesSchema = z.object({
       birthRate: multiplier("Births", "How often families have children.", 3, 0),
       hungerRate: multiplier("Hunger", "How quickly people get hungry.", 2, 0.3),
       learningSpeed: multiplier("Learning", "How quickly tribes make discoveries.", 5),
-      rivalry: multiplier("Rivalry", "How quickly neighbouring tribes fall out, raid and fight.", 3, 0),
+      rivalry: multiplier("Rivalry", "How quickly neighboring tribes fall out, raid and fight.", 3, 0),
     })
     .prefault({})
     .meta(groupMetadata("People", "How tribes grow, eat and learn.")),
@@ -65,6 +61,10 @@ export const worldRulesSchema = z.object({
 export type WorldRules = z.output<typeof worldRulesSchema>;
 
 export const DEFAULT_WORLD_RULES: WorldRules = worldRulesSchema.parse({});
+
+function multiplier(label: string, description: string, maximum = 3, minimum = 0.2) {
+  return rangeParameter({ defaultValue: 1, description, label, maximum, minimum, step: 0.1, unit: "multiplier" });
+}
 
 export function readWorldRules(value: unknown): WorldRules {
   const result = worldRulesSchema.safeParse(value);

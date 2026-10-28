@@ -242,7 +242,7 @@ export function generateWorld(
 
   const deposits = planDeposits(grid, terrain, seed, reserved);
 
-  exposeDeposits(deposits, terrain, vegetation);
+  exposeDeposits(terrain, vegetation, deposits);
   vegetation.discardChanges();
 
   return {

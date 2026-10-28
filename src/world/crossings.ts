@@ -2,6 +2,21 @@ import { clamp, lerp, smoothstep } from "../shared/math.ts";
 import { NO_WATER } from "./water.ts";
 import type { WorldGrid } from "./world-grid.ts";
 
+export const STONE_RISE = 0.18;
+export const STEPPING_STONE_VARIANTS = 4;
+export const LOG_ROOT_BEHIND = 1.5;
+export const LOG_TIP_BEYOND = 0.9;
+export const LOG_TAPER = 0.72;
+
+const CROSSING_HALF_WIDTH: Readonly<Record<CrossingKind, number>> = { ford: 0.85, log: 0.55 };
+const LOG_STEP_OFF = 0.6;
+const LOG_THINNEST = 0.3;
+const LOG_THICKEST = 0.46;
+const LOG_THICKNESS_PER_METER = 0.012;
+const LOG_SHORTEST = 9;
+const CELL_SAMPLE_SPACING = 0.5;
+const CELL_SAMPLES_ACROSS = 5;
+
 interface CrossingSpan {
   readonly endX: number;
   readonly endZ: number;
@@ -25,12 +40,12 @@ export type Crossing = Ford | LogBridge;
 
 export type CrossingKind = Crossing["kind"];
 
-export interface CrossingPoint {
+interface CrossingPoint {
   readonly across: number;
   readonly along: number;
 }
 
-export interface FallenLog {
+interface FallenLog {
   readonly rootBottom: number;
   readonly rootRadius: number;
   readonly rootX: number;
@@ -39,21 +54,6 @@ export interface FallenLog {
   readonly tipX: number;
   readonly tipZ: number;
 }
-
-export const STONE_RISE = 0.18;
-export const STEPPING_STONE_VARIANTS = 4;
-export const LOG_ROOT_BEHIND = 1.5;
-export const LOG_TIP_BEYOND = 0.9;
-export const LOG_TAPER = 0.72;
-
-const CROSSING_HALF_WIDTH: Readonly<Record<CrossingKind, number>> = { ford: 0.85, log: 0.55 };
-const LOG_STEP_OFF = 0.6;
-const LOG_THINNEST = 0.3;
-const LOG_THICKEST = 0.46;
-const LOG_THICKNESS_PER_METER = 0.012;
-const LOG_SHORTEST = 9;
-const CELL_SAMPLE_SPACING = 0.5;
-const CELL_SAMPLES_ACROSS = 5;
 
 export function crossingLength(crossing: CrossingSpan): number {
   return Math.hypot(crossing.endX - crossing.startX, crossing.endZ - crossing.startZ);

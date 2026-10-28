@@ -43,8 +43,6 @@ const APPROACH = 7;
 const WATERFALL_CLEARANCE = 120;
 const LAKE_CLEARANCE = 30;
 const COAST_CLEARANCE = 45;
-const STRICT_BANKS: BankLimits = { approach: 0.95, landing: 0.6 };
-const LENIENT_BANKS: BankLimits = { approach: 1.05, landing: 0.8 };
 const LOG_LONGEST_WATER = 22;
 const LOG_PREFERRED_WATER = 16;
 const LOG_STEEPEST_PITCH = 0.25;
@@ -84,7 +82,7 @@ interface CrossingTerrain {
   readonly waterSurface: Float32Array;
 }
 
-export interface CrossingSurvey {
+interface CrossingSurvey {
   readonly grid: WorldGrid;
   readonly isBlocked: (cell: number) => boolean;
   readonly lakeIds: Int32Array;
@@ -101,6 +99,9 @@ interface BankLimits {
   readonly approach: number;
   readonly landing: number;
 }
+
+const STRICT_BANKS: BankLimits = { approach: 0.95, landing: 0.6 };
+const LENIENT_BANKS: BankLimits = { approach: 1.05, landing: 0.8 };
 
 interface Bank {
   readonly cell: number;
@@ -160,334 +161,6 @@ interface Wading {
   readonly highest: number;
   readonly lowest: number;
   readonly span: number;
-}
-
-class CrossingPlanner {
-  readonly placed: Crossing[];
-  readonly survey: CrossingSurvey;
-  #nextId: number;
-
-  constructor(survey: CrossingSurvey, kept: readonly Crossing[]) {
-    this.survey = survey;
-    this.placed = [...kept];
-    this.#nextId = kept.reduce((highest, crossing) => Math.max(highest, crossing.id + 1), 0);
-  }
-
-  planRiver(course: RiverCourse, limits: BankLimits): void {
-    if (course.length < SHORTEST_RIVER) {
-      return;
-    }
-
-    const usableEnd = course.length - MOUTH_MARGIN;
-    const anchors = this.#anchorsOn(course);
-    const widening = wideningAlong(this.survey, course);
-
-    let cursor =
-      widening > SOURCE_MARGIN
-        ? widening + SPACING_ALONG
-        : SOURCE_MARGIN + Math.min(FIRST_OFFSET, (usableEnd - SOURCE_MARGIN) * 0.3);
-    let anchorIndex = 0;
-
-    while (cursor <= usableEnd) {
-      const nextAnchor = anchorIndex < anchors.length ? anchors[anchorIndex] : Number.POSITIVE_INFINITY;
-
-      if (nextAnchor <= cursor + WINDOW) {
-        cursor = Math.max(cursor, nextAnchor + SPACING_ALONG);
-        anchorIndex += 1;
-
-        continue;
-      }
-
-      const last = Math.min(cursor + WINDOW, usableEnd, nextAnchor - SPACING_ALONG);
-      const best = this.#bestIn(course, {
-        connects: () => true,
-        from: cursor,
-        limits,
-        spacing: SPACING_ELSEWHERE,
-        to: last,
-      });
-
-      if (best === null) {
-        cursor += WINDOW;
-
-        continue;
-      }
-
-      this.#place(best.crossing);
-      cursor = best.along + SPACING_ALONG;
-    }
-  }
-
-  linkBanks(courses: readonly RiverCourse[]): void {
-    const regions = new BankRegions(this.survey, this.placed);
-
-    for (const course of courses) {
-      for (let along = SOURCE_MARGIN; along <= course.length - MOUTH_MARGIN; along += LINK_STEP) {
-        const banks = banksAcross(this.survey, course, along, regions);
-
-        if (banks === null || !regions.separates(banks.start, banks.end)) {
-          continue;
-        }
-
-        const best = this.#bestIn(course, {
-          connects: (crossing) => regions.wouldJoin(crossing),
-          from: Math.max(SOURCE_MARGIN, along - LINK_WINDOW),
-          limits: LENIENT_BANKS,
-          spacing: LINK_SPACING,
-          to: Math.min(course.length - MOUTH_MARGIN, along + LINK_WINDOW),
-        });
-
-        if (best === null) {
-          continue;
-        }
-
-        this.#place(best.crossing);
-        regions.join(best.crossing);
-      }
-    }
-  }
-
-  #place(crossing: Crossing): void {
-    this.placed.push(crossing);
-    this.#nextId += 1;
-  }
-
-  #anchorsOn(course: RiverCourse): number[] {
-    const anchors: number[] = [];
-
-    for (const crossing of this.placed) {
-      const middle = { x: (crossing.startX + crossing.endX) / 2, z: (crossing.startZ + crossing.endZ) / 2 };
-      const nearest = nearestAlong(course, middle);
-
-      if (nearest.distance < ON_RIVER) {
-        anchors.push(nearest.along);
-      }
-    }
-
-    return anchors.sort((first, second) => first - second);
-  }
-
-  #bestIn(course: RiverCourse, stretch: Stretch): Candidate | null {
-    let best: Candidate | null = null;
-
-    for (let along = stretch.from; along <= stretch.to; along += CANDIDATE_SPACING) {
-      for (const turn of AXIS_TURNS) {
-        const candidate = this.#candidateAt(course, along, turn, stretch);
-
-        if (candidate !== null && (best === null || candidate.score > best.score)) {
-          best = candidate;
-        }
-      }
-    }
-
-    return best;
-  }
-
-  #candidateAt(course: RiverCourse, along: number, turn: number, stretch: Stretch): Candidate | null {
-    const center = pointAlong(course, along);
-
-    if (!(this.#isClearOfFalls(center) && this.#isSpaced(center, stretch.spacing))) {
-      return null;
-    }
-
-    const centerCell = this.survey.grid.cellAt(center.x, center.z);
-
-    if (centerCell < 0 || isBrookCell(this.survey.terrain, centerCell)) {
-      return null;
-    }
-
-    const behind = pointAlong(course, along - TANGENT_REACH);
-    const ahead = pointAlong(course, along + TANGENT_REACH);
-    const across = Math.atan2(ahead.x - behind.x, -(ahead.z - behind.z)) + turn;
-
-    const site = measureSite(this.survey, {
-      center,
-      directionX: Math.cos(across),
-      directionZ: Math.sin(across),
-      limits: stretch.limits,
-    });
-
-    if (site === null) {
-      return null;
-    }
-
-    const kind = chooseKind(site);
-
-    if (kind === null) {
-      return null;
-    }
-
-    const crossing = buildCrossing(site, kind, this.#nextId, siteSeed(this.survey.grid, center));
-
-    if (!stretch.connects(crossing)) {
-      return null;
-    }
-
-    return { along, crossing, score: siteScore(this.survey, site, kind) - Math.abs(turn) };
-  }
-
-  #isClearOfFalls(point: Point): boolean {
-    const { grid, lakeIds, water } = this.survey;
-
-    const isNearFall = water.waterfalls.some(
-      (waterfall) => Math.hypot(waterfall.x - point.x, waterfall.z - point.z) < WATERFALL_CLEARANCE
-    );
-
-    if (isNearFall) {
-      return false;
-    }
-
-    return grid.cellsInRadius(point.x, point.z, LAKE_CLEARANCE).every((cell) => lakeIds[cell] === NO_LAKE);
-  }
-
-  #isSpaced(point: Point, spacing: number): boolean {
-    return this.placed.every((crossing) => {
-      const middleX = (crossing.startX + crossing.endX) / 2;
-      const middleZ = (crossing.startZ + crossing.endZ) / 2;
-
-      return Math.hypot(middleX - point.x, middleZ - point.z) >= spacing;
-    });
-  }
-}
-
-class BankRegions {
-  readonly #grid: WorldGrid;
-  readonly #isGround: Uint8Array;
-  readonly #parent: Int32Array;
-  readonly #size: Int32Array;
-
-  constructor(survey: CrossingSurvey, crossings: readonly Crossing[]) {
-    const { grid } = survey;
-
-    const passages = Array.from({ length: grid.cellCount }, (_, cell) => passageIn(survey, cell));
-
-    function passageOf(cell: number): Passage {
-      return passages[cell];
-    }
-
-    this.#grid = grid;
-    this.#isGround = new Uint8Array(grid.cellCount);
-    this.#parent = new Int32Array(grid.cellCount);
-    this.#size = new Int32Array(grid.cellCount).fill(1);
-
-    for (let cell = 0; cell < grid.cellCount; cell += 1) {
-      this.#parent[cell] = cell;
-      this.#isGround[cell] = passages[cell] === Passage.Ground ? 1 : 0;
-    }
-
-    for (let cell = 0; cell < grid.cellCount; cell += 1) {
-      if (this.#isGround[cell] === 0) {
-        continue;
-      }
-
-      this.#joinNeighbors(cell);
-
-      if (!bordersBrook(grid, cell, passageOf)) {
-        continue;
-      }
-
-      for (const target of hopTargets(grid, cell, passageOf)) {
-        this.#union(cell, target);
-      }
-    }
-
-    for (const crossing of crossings) {
-      this.join(crossing);
-    }
-  }
-
-  isGround(cell: number): boolean {
-    return cell >= 0 && this.#isGround[cell] === 1;
-  }
-
-  separates(first: number, second: number): boolean {
-    const firstRoot = this.#find(first);
-    const secondRoot = this.#find(second);
-
-    if (firstRoot === secondRoot) {
-      return false;
-    }
-
-    return Math.min(this.#size[firstRoot], this.#size[secondRoot]) >= SMALLEST_LINKED_REGION;
-  }
-
-  wouldJoin(crossing: Crossing): boolean {
-    const start = this.#grid.cellAt(crossing.startX, crossing.startZ);
-    const end = this.#grid.cellAt(crossing.endX, crossing.endZ);
-
-    return this.isGround(start) && this.isGround(end) && this.separates(start, end);
-  }
-
-  join(crossing: Crossing): void {
-    const start = this.#grid.cellAt(crossing.startX, crossing.startZ);
-    const end = this.#grid.cellAt(crossing.endX, crossing.endZ);
-
-    if (this.isGround(start) && this.isGround(end)) {
-      this.#union(start, end);
-    }
-  }
-
-  #joinNeighbors(cell: number): void {
-    const grid = this.#grid;
-
-    const column = grid.columnOf(cell);
-    const row = grid.rowOf(cell);
-
-    if (column + 1 < grid.cellsPerSide && this.#isGround[cell + 1] === 1) {
-      this.#union(cell, cell + 1);
-    }
-
-    if (row + 1 >= grid.cellsPerSide) {
-      return;
-    }
-
-    const below = cell + grid.cellsPerSide;
-    const isBelowGround = this.#isGround[below] === 1;
-
-    if (isBelowGround) {
-      this.#union(cell, below);
-    }
-
-    for (const side of [-1, 1]) {
-      const sideColumn = column + side;
-
-      if (sideColumn < 0 || sideColumn >= grid.cellsPerSide) {
-        continue;
-      }
-
-      const isOpen = this.#isGround[cell + side] === 1 && isBelowGround;
-
-      if (isOpen && this.#isGround[below + side] === 1) {
-        this.#union(cell, below + side);
-      }
-    }
-  }
-
-  #find(cell: number): number {
-    let root = cell;
-
-    while (this.#parent[root] !== root) {
-      this.#parent[root] = this.#parent[this.#parent[root]];
-      root = this.#parent[root];
-    }
-
-    return root;
-  }
-
-  #union(first: number, second: number): void {
-    const firstRoot = this.#find(first);
-    const secondRoot = this.#find(second);
-
-    if (firstRoot === secondRoot) {
-      return;
-    }
-
-    const [larger, smaller] =
-      this.#size[firstRoot] >= this.#size[secondRoot] ? [firstRoot, secondRoot] : [secondRoot, firstRoot];
-
-    this.#parent[smaller] = larger;
-    this.#size[larger] += this.#size[smaller];
-  }
 }
 
 function passageIn(survey: CrossingSurvey, cell: number): Passage {
@@ -593,10 +266,10 @@ function segmentAt(course: RiverCourse, along: number): number {
 }
 
 function interpolationAt(course: RiverCourse, along: number): { amount: number; index: number } {
-  const { lengths, river } = course;
+  const { lengths } = course;
 
   const clamped = clamp(along, 0, course.length);
-  const index = Math.min(segmentAt(course, clamped), river.points.length - 2);
+  const index = segmentAt(course, clamped);
   const span = lengths[index + 1] - lengths[index];
 
   return { amount: span > 0 ? (clamped - lengths[index]) / span : 0, index };
@@ -946,6 +619,334 @@ function remeasure(survey: CrossingSurvey, crossing: Crossing): Crossing | null 
   }
 
   return buildCrossing(site, crossing.kind, crossing.id, crossing.seed);
+}
+
+class CrossingPlanner {
+  readonly placed: Crossing[];
+  readonly survey: CrossingSurvey;
+  #nextId: number;
+
+  constructor(survey: CrossingSurvey, kept: readonly Crossing[]) {
+    this.survey = survey;
+    this.placed = [...kept];
+    this.#nextId = kept.reduce((highest, crossing) => Math.max(highest, crossing.id + 1), 0);
+  }
+
+  planRiver(course: RiverCourse, limits: BankLimits): void {
+    if (course.length < SHORTEST_RIVER) {
+      return;
+    }
+
+    const usableEnd = course.length - MOUTH_MARGIN;
+    const anchors = this.#anchorsOn(course);
+    const widening = wideningAlong(this.survey, course);
+
+    let cursor =
+      widening > SOURCE_MARGIN
+        ? widening + SPACING_ALONG
+        : SOURCE_MARGIN + Math.min(FIRST_OFFSET, (usableEnd - SOURCE_MARGIN) * 0.3);
+    let anchorIndex = 0;
+
+    while (cursor <= usableEnd) {
+      const nextAnchor = anchorIndex < anchors.length ? anchors[anchorIndex] : Number.POSITIVE_INFINITY;
+
+      if (nextAnchor <= cursor + WINDOW) {
+        cursor = Math.max(cursor, nextAnchor + SPACING_ALONG);
+        anchorIndex += 1;
+
+        continue;
+      }
+
+      const last = Math.min(cursor + WINDOW, usableEnd, nextAnchor - SPACING_ALONG);
+      const best = this.#bestIn(course, {
+        connects: () => true,
+        from: cursor,
+        limits,
+        spacing: SPACING_ELSEWHERE,
+        to: last,
+      });
+
+      if (best === null) {
+        cursor += WINDOW;
+
+        continue;
+      }
+
+      this.#place(best.crossing);
+      cursor = best.along + SPACING_ALONG;
+    }
+  }
+
+  linkBanks(courses: readonly RiverCourse[]): void {
+    const regions = new BankRegions(this.survey, this.placed);
+
+    for (const course of courses) {
+      for (let along = SOURCE_MARGIN; along <= course.length - MOUTH_MARGIN; along += LINK_STEP) {
+        const banks = banksAcross(this.survey, course, along, regions);
+
+        if (banks === null || !regions.separates(banks.start, banks.end)) {
+          continue;
+        }
+
+        const best = this.#bestIn(course, {
+          connects: (crossing) => regions.wouldJoin(crossing),
+          from: Math.max(SOURCE_MARGIN, along - LINK_WINDOW),
+          limits: LENIENT_BANKS,
+          spacing: LINK_SPACING,
+          to: Math.min(course.length - MOUTH_MARGIN, along + LINK_WINDOW),
+        });
+
+        if (best === null) {
+          continue;
+        }
+
+        this.#place(best.crossing);
+        regions.join(best.crossing);
+      }
+    }
+  }
+
+  #place(crossing: Crossing): void {
+    this.placed.push(crossing);
+    this.#nextId += 1;
+  }
+
+  #anchorsOn(course: RiverCourse): number[] {
+    const anchors: number[] = [];
+
+    for (const crossing of this.placed) {
+      const middle = { x: (crossing.startX + crossing.endX) / 2, z: (crossing.startZ + crossing.endZ) / 2 };
+      const nearest = nearestAlong(course, middle);
+
+      if (nearest.distance < ON_RIVER) {
+        anchors.push(nearest.along);
+      }
+    }
+
+    return anchors.sort((first, second) => first - second);
+  }
+
+  #bestIn(course: RiverCourse, stretch: Stretch): Candidate | null {
+    let best: Candidate | null = null;
+
+    for (let along = stretch.from; along <= stretch.to; along += CANDIDATE_SPACING) {
+      for (const turn of AXIS_TURNS) {
+        const candidate = this.#candidateAt(course, along, turn, stretch);
+
+        if (candidate !== null && (best === null || candidate.score > best.score)) {
+          best = candidate;
+        }
+      }
+    }
+
+    return best;
+  }
+
+  #candidateAt(course: RiverCourse, along: number, turn: number, stretch: Stretch): Candidate | null {
+    const center = pointAlong(course, along);
+
+    if (!(this.#isClearOfFalls(center) && this.#isSpaced(center, stretch.spacing))) {
+      return null;
+    }
+
+    const centerCell = this.survey.grid.cellAt(center.x, center.z);
+
+    if (centerCell < 0 || isBrookCell(this.survey.terrain, centerCell)) {
+      return null;
+    }
+
+    const behind = pointAlong(course, along - TANGENT_REACH);
+    const ahead = pointAlong(course, along + TANGENT_REACH);
+    const across = Math.atan2(ahead.x - behind.x, -(ahead.z - behind.z)) + turn;
+
+    const site = measureSite(this.survey, {
+      center,
+      directionX: Math.cos(across),
+      directionZ: Math.sin(across),
+      limits: stretch.limits,
+    });
+
+    if (site === null) {
+      return null;
+    }
+
+    const kind = chooseKind(site);
+
+    if (kind === null) {
+      return null;
+    }
+
+    const crossing = buildCrossing(site, kind, this.#nextId, siteSeed(this.survey.grid, center));
+
+    if (!stretch.connects(crossing)) {
+      return null;
+    }
+
+    return { along, crossing, score: siteScore(this.survey, site, kind) - Math.abs(turn) };
+  }
+
+  #isClearOfFalls(point: Point): boolean {
+    const { grid, lakeIds, water } = this.survey;
+
+    const isNearFall = water.waterfalls.some(
+      (waterfall) => Math.hypot(waterfall.x - point.x, waterfall.z - point.z) < WATERFALL_CLEARANCE
+    );
+
+    if (isNearFall) {
+      return false;
+    }
+
+    return grid.cellsInRadius(point.x, point.z, LAKE_CLEARANCE).every((cell) => lakeIds[cell] === NO_LAKE);
+  }
+
+  #isSpaced(point: Point, spacing: number): boolean {
+    return this.placed.every((crossing) => {
+      const middleX = (crossing.startX + crossing.endX) / 2;
+      const middleZ = (crossing.startZ + crossing.endZ) / 2;
+
+      return Math.hypot(middleX - point.x, middleZ - point.z) >= spacing;
+    });
+  }
+}
+
+class BankRegions {
+  readonly #grid: WorldGrid;
+  readonly #isGround: Uint8Array;
+  readonly #parent: Int32Array;
+  readonly #size: Int32Array;
+
+  constructor(survey: CrossingSurvey, crossings: readonly Crossing[]) {
+    const { grid } = survey;
+
+    const passages = Array.from({ length: grid.cellCount }, (_, cell) => passageIn(survey, cell));
+
+    function passageOf(cell: number): Passage {
+      return passages[cell];
+    }
+
+    this.#grid = grid;
+    this.#isGround = new Uint8Array(grid.cellCount);
+    this.#parent = new Int32Array(grid.cellCount);
+    this.#size = new Int32Array(grid.cellCount).fill(1);
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      this.#parent[cell] = cell;
+      this.#isGround[cell] = passages[cell] === Passage.Ground ? 1 : 0;
+    }
+
+    for (let cell = 0; cell < grid.cellCount; cell += 1) {
+      if (this.#isGround[cell] === 0) {
+        continue;
+      }
+
+      this.#joinNeighbors(cell);
+
+      if (!bordersBrook(grid, cell, passageOf)) {
+        continue;
+      }
+
+      for (const target of hopTargets(grid, cell, passageOf)) {
+        this.#union(cell, target);
+      }
+    }
+
+    for (const crossing of crossings) {
+      this.join(crossing);
+    }
+  }
+
+  isGround(cell: number): boolean {
+    return cell >= 0 && this.#isGround[cell] === 1;
+  }
+
+  separates(first: number, second: number): boolean {
+    const firstRoot = this.#find(first);
+    const secondRoot = this.#find(second);
+
+    if (firstRoot === secondRoot) {
+      return false;
+    }
+
+    return Math.min(this.#size[firstRoot], this.#size[secondRoot]) >= SMALLEST_LINKED_REGION;
+  }
+
+  wouldJoin(crossing: Crossing): boolean {
+    const start = this.#grid.cellAt(crossing.startX, crossing.startZ);
+    const end = this.#grid.cellAt(crossing.endX, crossing.endZ);
+
+    return this.isGround(start) && this.isGround(end) && this.separates(start, end);
+  }
+
+  join(crossing: Crossing): void {
+    const start = this.#grid.cellAt(crossing.startX, crossing.startZ);
+    const end = this.#grid.cellAt(crossing.endX, crossing.endZ);
+
+    if (this.isGround(start) && this.isGround(end)) {
+      this.#union(start, end);
+    }
+  }
+
+  #joinNeighbors(cell: number): void {
+    const grid = this.#grid;
+
+    const column = grid.columnOf(cell);
+    const row = grid.rowOf(cell);
+
+    if (column + 1 < grid.cellsPerSide && this.#isGround[cell + 1] === 1) {
+      this.#union(cell, cell + 1);
+    }
+
+    if (row + 1 >= grid.cellsPerSide) {
+      return;
+    }
+
+    const below = cell + grid.cellsPerSide;
+    const isBelowGround = this.#isGround[below] === 1;
+
+    if (isBelowGround) {
+      this.#union(cell, below);
+    }
+
+    for (const side of [-1, 1]) {
+      const sideColumn = column + side;
+
+      if (sideColumn < 0 || sideColumn >= grid.cellsPerSide) {
+        continue;
+      }
+
+      const isOpen = this.#isGround[cell + side] === 1 && isBelowGround;
+
+      if (isOpen && this.#isGround[below + side] === 1) {
+        this.#union(cell, below + side);
+      }
+    }
+  }
+
+  #find(cell: number): number {
+    let root = cell;
+
+    while (this.#parent[root] !== root) {
+      this.#parent[root] = this.#parent[this.#parent[root]];
+      root = this.#parent[root];
+    }
+
+    return root;
+  }
+
+  #union(first: number, second: number): void {
+    const firstRoot = this.#find(first);
+    const secondRoot = this.#find(second);
+
+    if (firstRoot === secondRoot) {
+      return;
+    }
+
+    const [larger, smaller] =
+      this.#size[firstRoot] >= this.#size[secondRoot] ? [firstRoot, secondRoot] : [secondRoot, firstRoot];
+
+    this.#parent[smaller] = larger;
+    this.#size[larger] += this.#size[smaller];
+  }
 }
 
 export function planCrossings(survey: CrossingSurvey, kept: readonly Crossing[] = []): Crossing[] {

@@ -45,6 +45,15 @@ interface Layout {
   readonly pieces: readonly LaidPiece[];
 }
 
+const LAYOUTS: Readonly<Record<MonumentKind, (random: RandomSource) => Layout>> = {
+  cairn,
+  colonnade,
+  dolmen,
+  idol,
+  menhirRow,
+  stoneCircle,
+};
+
 interface MonumentPlan {
   readonly monuments: readonly Monument[];
   readonly pieces: readonly PlantPlacement[];
@@ -286,15 +295,6 @@ function cairn(random: RandomSource): Layout {
 
   return { court: 0, pieces };
 }
-
-const LAYOUTS: Readonly<Record<MonumentKind, (random: RandomSource) => Layout>> = {
-  cairn,
-  colonnade,
-  dolmen,
-  idol,
-  menhirRow,
-  stoneCircle,
-};
 
 function placePieces(layout: Layout, site: Site): PlacedPiece[] {
   const cosine = Math.cos(site.angle);

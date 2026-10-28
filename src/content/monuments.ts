@@ -2,14 +2,6 @@ import { saturate } from "../shared/math.ts";
 import { Biome, type BiomeIndex } from "./biomes.ts";
 import { PlantSpecies } from "./plants.ts";
 
-export type MonumentPiece =
-  | typeof PlantSpecies.Arch
-  | typeof PlantSpecies.Cairn
-  | typeof PlantSpecies.Dolmen
-  | typeof PlantSpecies.Idol
-  | typeof PlantSpecies.Menhir
-  | typeof PlantSpecies.Pillar;
-
 export const PIECE_FORMS = {
   [PlantSpecies.Arch]: ["standing", "collapsed"],
   [PlantSpecies.Cairn]: ["tall", "low"],
@@ -19,39 +11,23 @@ export const PIECE_FORMS = {
   [PlantSpecies.Pillar]: ["standing", "stump", "fallen"],
 } as const satisfies Readonly<Record<MonumentPiece, readonly string[]>>;
 
-export type PieceForm<Piece extends MonumentPiece> = (typeof PIECE_FORMS)[Piece][number];
-
-export function isMonumentPiece(species: number): species is MonumentPiece {
-  return Object.hasOwn(PIECE_FORMS, species);
-}
-
-export function pieceFormIndex<Piece extends MonumentPiece>(piece: Piece, form: PieceForm<Piece>): number {
-  const forms: readonly string[] = PIECE_FORMS[piece];
-
-  return forms.indexOf(form);
-}
-
-export function seedOfForm(piece: MonumentPiece, formIndex: number, jitter: number): number {
-  return (formIndex + 0.1 + 0.8 * jitter) / PIECE_FORMS[piece].length;
-}
-
-export function pieceSeed<Piece extends MonumentPiece>(piece: Piece, form: PieceForm<Piece>, jitter: number): number {
-  return seedOfForm(piece, pieceFormIndex(piece, form), jitter);
-}
-
-export function formIndexOf(piece: MonumentPiece, seed: number): number {
-  const count = PIECE_FORMS[piece].length;
-
-  return Math.min(count - 1, Math.floor(seed * count));
-}
-
-export function jitterOf(piece: MonumentPiece, seed: number): number {
-  const count = PIECE_FORMS[piece].length;
-
-  return saturate((seed * count - formIndexOf(piece, seed) - 0.1) / 0.8);
-}
-
 export const MONUMENT_KINDS = ["stoneCircle", "menhirRow", "dolmen", "idol", "colonnade", "cairn"] as const;
+
+export const MONUMENT_SLOPE = 0.3;
+
+const OPEN_LAND: readonly BiomeIndex[] = [Biome.Meadow, Biome.Steppe, Biome.Scrub, Biome.Tundra];
+const DRY_LAND: readonly BiomeIndex[] = [Biome.Desert, Biome.Steppe, Biome.Scrub, Biome.Mesa];
+const WOODS: readonly BiomeIndex[] = [Biome.Forest, Biome.Taiga];
+
+export type MonumentPiece =
+  | typeof PlantSpecies.Arch
+  | typeof PlantSpecies.Cairn
+  | typeof PlantSpecies.Dolmen
+  | typeof PlantSpecies.Idol
+  | typeof PlantSpecies.Menhir
+  | typeof PlantSpecies.Pillar;
+
+export type PieceForm<Piece extends MonumentPiece> = (typeof PIECE_FORMS)[Piece][number];
 
 export type MonumentKind = (typeof MONUMENT_KINDS)[number];
 
@@ -63,10 +39,6 @@ interface MonumentDefinition {
   readonly names: readonly string[];
   readonly setting: MonumentSetting;
 }
-
-const OPEN_LAND: readonly BiomeIndex[] = [Biome.Meadow, Biome.Steppe, Biome.Scrub, Biome.Tundra];
-const DRY_LAND: readonly BiomeIndex[] = [Biome.Desert, Biome.Steppe, Biome.Scrub, Biome.Mesa];
-const WOODS: readonly BiomeIndex[] = [Biome.Forest, Biome.Taiga];
 
 export const MONUMENTS: Readonly<Record<MonumentKind, MonumentDefinition>> = {
   cairn: {
@@ -107,4 +79,32 @@ export const MONUMENTS: Readonly<Record<MonumentKind, MonumentDefinition>> = {
   },
 };
 
-export const MONUMENT_SLOPE = 0.3;
+export function isMonumentPiece(species: number): species is MonumentPiece {
+  return Object.hasOwn(PIECE_FORMS, species);
+}
+
+export function pieceFormIndex<Piece extends MonumentPiece>(piece: Piece, form: PieceForm<Piece>): number {
+  const forms: readonly string[] = PIECE_FORMS[piece];
+
+  return forms.indexOf(form);
+}
+
+export function seedOfForm(piece: MonumentPiece, formIndex: number, jitter: number): number {
+  return (formIndex + 0.1 + 0.8 * jitter) / PIECE_FORMS[piece].length;
+}
+
+export function pieceSeed<Piece extends MonumentPiece>(piece: Piece, form: PieceForm<Piece>, jitter: number): number {
+  return seedOfForm(piece, pieceFormIndex(piece, form), jitter);
+}
+
+export function formIndexOf(piece: MonumentPiece, seed: number): number {
+  const count = PIECE_FORMS[piece].length;
+
+  return Math.min(count - 1, Math.floor(seed * count));
+}
+
+export function jitterOf(piece: MonumentPiece, seed: number): number {
+  const count = PIECE_FORMS[piece].length;
+
+  return saturate((seed * count - formIndexOf(piece, seed) - 0.1) / 0.8);
+}

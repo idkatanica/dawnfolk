@@ -5,9 +5,13 @@ export const CROP_KINDS = ["wheat", "barley", "flax", "carrots", "turnips", "bea
 
 export type CropKind = (typeof CROP_KINDS)[number];
 
+export const CROP_CODE_NONE = 0;
+
+export const FENCED_CROP_OFFSET = 16;
+
 type SeasonWindow = readonly [start: number, end: number];
 
-export interface CropDefinition {
+interface CropDefinition {
   growSeasons: number;
   harvest: SeasonWindow;
   name: string;
@@ -73,10 +77,6 @@ export const CROPS: Readonly<Record<CropKind, CropDefinition>> = {
     yield: 24,
   },
 };
-
-export const CROP_CODE_NONE = 0;
-
-export const FENCED_CROP_OFFSET = 16;
 
 export function cropCode(kind: CropKind): number {
   return CROP_KINDS.indexOf(kind) + 1;

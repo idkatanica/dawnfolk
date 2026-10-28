@@ -26,14 +26,14 @@ const CAVE_MASS_MARGIN = 6;
 const SPRING_SALT = 83.1;
 const SIZE_SALT = 17.3;
 
-export interface SpringSiting {
+interface SpringSiting {
   readonly grid: WorldGrid;
   readonly heights: Float32Array;
   readonly lakeIds: Int32Array;
   readonly riverThreshold: number;
 }
 
-export interface SpringPlan {
+interface SpringPlan {
   readonly channels: (readonly RiverPoint[])[];
   readonly springs: Spring[];
 }
@@ -76,7 +76,7 @@ function downstreamDirection(river: River): Direction | null {
   return { x: (target.x - head.x) / length, z: (target.z - head.z) / length };
 }
 
-function slopeBehind(head: RiverPoint, direction: Direction, siting: SpringSiting): number {
+function slopeBehind(siting: SpringSiting, head: RiverPoint, direction: Direction): number {
   const { grid, heights } = siting;
 
   const ground = sampleHeight(heights, grid, head.x, head.z);
@@ -92,7 +92,7 @@ function slopeBehind(head: RiverPoint, direction: Direction, siting: SpringSitin
   return steepest;
 }
 
-function isFedByLake(head: RiverPoint, siting: SpringSiting): boolean {
+function isFedByLake(siting: SpringSiting, head: RiverPoint): boolean {
   const { grid, lakeIds } = siting;
 
   return grid.cellsInRadius(head.x, head.z, grid.cellSize * LAKE_REACH_CELLS).some((cell) => lakeIds[cell] >= 0);
@@ -132,13 +132,13 @@ function pondAround(site: SpringSite, radius: number): Spring {
   };
 }
 
-function fittedPond(site: SpringSite, siting: SpringSiting): Spring | null {
+function fittedPond(siting: SpringSiting, site: SpringSite): Spring | null {
   const wanted = pondRadius(site, siting.riverThreshold);
 
   for (let step = 0; step < POND_SIZES; step += 1) {
     const pond = pondAround(site, Math.max(SMALLEST_POND, wanted * POND_SHRINK ** step));
 
-    if (pondFits(pond, siting.grid, siting.heights)) {
+    if (pondFits(siting.grid, siting.heights, pond)) {
       return pond;
     }
   }
@@ -146,14 +146,14 @@ function fittedPond(site: SpringSite, siting: SpringSiting): Spring | null {
   return null;
 }
 
-function pondSpring(pond: Spring, siting: SpringSiting): SpringPlanEntry {
+function pondSpring(siting: SpringSiting, pond: Spring): SpringPlanEntry {
   return {
     channel: null,
     spring: { ...pond, cells: siting.grid.cellsInRadius(pond.x, pond.z, pond.radius + POND_RIM) },
   };
 }
 
-function caveSpring(site: SpringSite, siting: SpringSiting): SpringPlanEntry {
+function caveSpring(siting: SpringSiting, site: SpringSite): SpringPlanEntry {
   const { direction, head, seed } = site;
 
   const width = caveWidth(site);
@@ -183,12 +183,12 @@ function caveSpring(site: SpringSite, siting: SpringSiting): SpringPlanEntry {
   };
 }
 
-function siteAt(river: River, siting: SpringSiting): SpringSite | null {
+function siteAt(siting: SpringSiting, river: River): SpringSite | null {
   const [head] = river.points;
 
   const direction = downstreamDirection(river);
 
-  if (direction === null || isFedByLake(head, siting)) {
+  if (direction === null || isFedByLake(siting, head)) {
     return null;
   }
 
@@ -201,36 +201,36 @@ function siteAt(river: River, siting: SpringSiting): SpringSite | null {
     river,
     seed: hashToUnit(column, row, SPRING_SALT),
     sizing: hashToUnit(column, row, SIZE_SALT),
-    slope: slopeBehind(head, direction, siting),
+    slope: slopeBehind(siting, head, direction),
   };
 }
 
-function springAt(site: SpringSite, siting: SpringSiting): SpringPlanEntry {
+function springAt(siting: SpringSiting, site: SpringSite): SpringPlanEntry {
   if (site.slope >= CAVE_SLOPE) {
-    return caveSpring(site, siting);
+    return caveSpring(siting, site);
   }
 
-  const pond = fittedPond(site, siting);
+  const pond = fittedPond(siting, site);
 
   if (pond === null) {
-    return caveSpring(site, siting);
+    return caveSpring(siting, site);
   }
 
-  return pondSpring(pond, siting);
+  return pondSpring(siting, pond);
 }
 
-export function placeSprings(rivers: readonly River[], siting: SpringSiting): SpringPlan {
+export function placeSprings(siting: SpringSiting, rivers: readonly River[]): SpringPlan {
   const channels: (readonly RiverPoint[])[] = [];
   const springs: Spring[] = [];
 
   for (const river of rivers) {
-    const site = siteAt(river, siting);
+    const site = siteAt(siting, river);
 
     if (site === null) {
       continue;
     }
 
-    const entry = springAt(site, siting);
+    const entry = springAt(siting, site);
 
     if (entry.channel !== null) {
       channels.push(entry.channel);

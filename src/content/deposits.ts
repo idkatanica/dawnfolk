@@ -10,7 +10,7 @@ export const DEPOSIT_KINDS = [...MINED_DEPOSIT_KINDS, "clay"] as const;
 
 export type DepositKind = (typeof DEPOSIT_KINDS)[number];
 
-export interface DepositDefinition {
+interface DepositDefinition {
   ground: GroundIndex;
   name: string;
   perSquareKilometer: number;
