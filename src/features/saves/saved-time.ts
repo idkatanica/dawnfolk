@@ -1,5 +1,3 @@
-import type { WorldSummary } from "../../simulation/saved-world.ts";
-
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
@@ -26,8 +24,10 @@ export function formatSavedAt(savedAt: number, now: number): string {
   return relativeTime.format(-Math.round(elapsed / DAY), "day");
 }
 
-export function describeSummary(summary: WorldSummary): string {
-  const people = summary.population === 1 ? "1 person" : `${summary.population} people`;
+export function describePeople(population: number): string {
+  if (population === 1) {
+    return "1 person";
+  }
 
-  return [`Year ${summary.year}, ${summary.seasonName}`, people, summary.eraName].join(" · ");
+  return `${population} people`;
 }

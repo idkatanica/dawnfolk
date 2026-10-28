@@ -3,7 +3,7 @@ import { BookOpen, Map as MapIcon, Maximize2, Menu as MenuIcon, Minimize2, Setti
 import type { ReactNode } from "react";
 import { IconButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
-import { PAPER_SURFACE, POPUP_MOTION } from "../../design/styles.ts";
+import { MENU_ITEM, MENU_POPUP } from "../../design/styles.ts";
 import { useSidePanel } from "../journal/use-side-panel.ts";
 import { useInterfaceStore } from "./interface-store.ts";
 import { useFullscreen } from "./use-fullscreen.ts";
@@ -29,10 +29,7 @@ function useCompactMenu() {
 
 function MenuEntry({ children, icon, onClick }: MenuEntryProps) {
   return (
-    <Menu.Item
-      className="text-ink data-highlighted:bg-paper-hover flex h-11 cursor-default items-center gap-3 rounded-xl px-3 text-sm outline-none select-none"
-      onClick={onClick}
-    >
+    <Menu.Item className={MENU_ITEM} onClick={onClick}>
       <span className="text-ink-soft">{icon}</span>
 
       {children}
@@ -65,9 +62,7 @@ export function CompactMenu() {
 
       <Menu.Portal>
         <Menu.Positioner align="end" className="z-50" sideOffset={10}>
-          <Menu.Popup
-            className={cn(PAPER_SURFACE, POPUP_MOTION, "rounded-island min-w-52 p-1.5 duration-150 outline-none")}
-          >
+          <Menu.Popup className={cn(MENU_POPUP, "min-w-52")}>
             <MenuEntry icon={<BookOpen aria-hidden="true" size={17} />} onClick={handleJournal}>
               Tribes and chronicle
             </MenuEntry>
