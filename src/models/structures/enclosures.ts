@@ -16,10 +16,6 @@ import {
   type StructureLevel,
 } from "./structure-parts.ts";
 
-export type EnclosureKind = "palisade" | "stoneWall";
-
-export type EnclosurePiece = "gate" | "segment";
-
 export const ENCLOSURE_SEGMENT_LENGTH = 5.6;
 export const ENCLOSURE_FOOTING_DEPTH = 0.3;
 
@@ -38,10 +34,30 @@ const PILLAR_X = 1.35;
 const PILLAR_WIDTH = 0.9;
 const PILLAR_TOP = 3.1;
 
+export type EnclosureKind = "palisade" | "stoneWall";
+
+export type EnclosurePiece = "gate" | "segment";
+
 interface Span {
   readonly from: number;
   readonly to: number;
 }
+
+interface PieceBuilder {
+  readonly build: (context: StructureContext) => void;
+  readonly seed: number;
+}
+
+const PIECE_BUILDERS: Readonly<Record<EnclosureKind, Readonly<Record<EnclosurePiece, PieceBuilder>>>> = {
+  palisade: {
+    gate: { build: palisadeGate, seed: 71 },
+    segment: { build: palisadeSegment, seed: 73 },
+  },
+  stoneWall: {
+    gate: { build: stoneWallGate, seed: 79 },
+    segment: { build: stoneWallSegment, seed: 83 },
+  },
+};
 
 function stakeRadius(context: StructureContext): number {
   return detail(context, 0.18, 0.3);
@@ -57,7 +73,7 @@ function railInset(context: StructureContext): number {
   return reach + detail(context, RAIL_GRIP, 0.03);
 }
 
-function stakeRun(context: StructureContext, span: Span): void {
+function addStakeRun(context: StructureContext, span: Span): void {
   const spacing = stakeSpacing(context);
   const radius = stakeRadius(context);
 
@@ -89,10 +105,10 @@ function stakeRun(context: StructureContext, span: Span): void {
 }
 
 function palisadeSegment(context: StructureContext): void {
-  stakeRun(context, { from: -HALF_SEGMENT, to: HALF_SEGMENT });
+  addStakeRun(context, { from: -HALF_SEGMENT, to: HALF_SEGMENT });
 }
 
-function banner(context: StructureContext, top: number, front: number, order: number): void {
+function addBanner(context: StructureContext, top: number, front: number, order: number): void {
   const width = 0.8;
   const height = 1;
 
@@ -106,7 +122,7 @@ function palisadeGate(context: StructureContext): void {
   const postRadius = 0.24;
 
   for (const side of [-1, 1]) {
-    stakeRun(
+    addStakeRun(
       context,
       side < 0
         ? { from: -HALF_SEGMENT, to: -GATE_POST_X - postRadius }
@@ -128,10 +144,10 @@ function palisadeGate(context: StructureContext): void {
     buildOrder: 0.88,
     slot: MaterialSlot.Wood,
   });
-  banner(context, GATE_LINTEL_HEIGHT + 0.05, 0.1, 0.96);
+  addBanner(context, GATE_LINTEL_HEIGHT + 0.05, 0.1, 0.96);
 }
 
-function stoneCourse(context: StructureContext, span: Span, course: number): void {
+function addStoneCourse(context: StructureContext, span: Span, course: number): void {
   const bottom = course * COURSE_HEIGHT - ENCLOSURE_FOOTING_DEPTH;
   const top = Math.min(WALL_TOP, (course + 1) * COURSE_HEIGHT - ENCLOSURE_FOOTING_DEPTH);
 
@@ -152,12 +168,12 @@ function stoneCourse(context: StructureContext, span: Span, course: number): voi
   }
 }
 
-function stoneRun(context: StructureContext, span: Span): void {
+function addStoneRun(context: StructureContext, span: Span): void {
   if (isDetailed(context)) {
     const courses = Math.ceil((WALL_TOP + ENCLOSURE_FOOTING_DEPTH) / COURSE_HEIGHT);
 
     for (let course = 0; course < courses; course += 1) {
-      stoneCourse(context, span, course);
+      addStoneCourse(context, span, course);
     }
   } else {
     addBlock(
@@ -175,14 +191,14 @@ function stoneRun(context: StructureContext, span: Span): void {
 }
 
 function stoneWallSegment(context: StructureContext): void {
-  stoneRun(context, { from: -HALF_SEGMENT, to: HALF_SEGMENT });
+  addStoneRun(context, { from: -HALF_SEGMENT, to: HALF_SEGMENT });
 }
 
 function stoneWallGate(context: StructureContext): void {
   const pillarHalf = PILLAR_WIDTH / 2;
 
   for (const side of [-1, 1]) {
-    stoneRun(
+    addStoneRun(
       context,
       side < 0
         ? { from: -HALF_SEGMENT, to: -PILLAR_X - pillarHalf + 0.05 }
@@ -204,24 +220,8 @@ function stoneWallGate(context: StructureContext): void {
     buildOrder: 0.88,
     slot: MaterialSlot.Wood,
   });
-  banner(context, PILLAR_TOP - 0.1, WALL_THICKNESS / 2 + 0.03, 0.96);
+  addBanner(context, PILLAR_TOP - 0.1, WALL_THICKNESS / 2 + 0.03, 0.96);
 }
-
-interface PieceBuilder {
-  readonly build: (context: StructureContext) => void;
-  readonly seed: number;
-}
-
-const PIECE_BUILDERS: Readonly<Record<EnclosureKind, Readonly<Record<EnclosurePiece, PieceBuilder>>>> = {
-  palisade: {
-    gate: { build: palisadeGate, seed: 71 },
-    segment: { build: palisadeSegment, seed: 73 },
-  },
-  stoneWall: {
-    gate: { build: stoneWallGate, seed: 79 },
-    segment: { build: stoneWallSegment, seed: 83 },
-  },
-};
 
 export function buildEnclosurePiece(kind: EnclosureKind, piece: EnclosurePiece, level: StructureLevel): MeshData {
   const { build, seed } = PIECE_BUILDERS[kind][piece];

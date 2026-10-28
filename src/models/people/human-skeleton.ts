@@ -23,8 +23,6 @@ export const HumanBone = {
 
 type HumanBoneIndex = (typeof HumanBone)[keyof typeof HumanBone];
 
-export const HUMAN_BONE_COUNT = 17;
-
 export const HumanJoint = {
   Ankle: [0.1, 0.085, -0.012],
   Chest: [0, 1.22, 0],
@@ -39,17 +37,11 @@ export const HumanJoint = {
   Wrist: [0.215, 0.885, 0.01],
 } as const satisfies Readonly<Record<string, Triple>>;
 
+export const HUMAN_BONE_COUNT = 17;
+
 export type Side = -1 | 1;
 
 export const SIDES: readonly Side[] = [1, -1];
-
-export function otherSide(side: Side): Side {
-  return side === 1 ? -1 : 1;
-}
-
-export function onSide(point: Triple, side: Side): Triple {
-  return [point[0] * side, point[1], point[2]];
-}
 
 interface SideBones {
   readonly foot: HumanBoneIndex;
@@ -80,6 +72,39 @@ const RIGHT_BONES: SideBones = {
   thigh: HumanBone.ThighRight,
   upperArm: HumanBone.UpperArmRight,
 };
+
+export const HUMAN_SKELETON = createSkeleton({
+  bodyContacts: [
+    ...sideContacts(1),
+    ...sideContacts(-1),
+    { bone: HumanBone.Pelvis, position: [0, 0.86, -0.1] },
+    { bone: HumanBone.Chest, position: [0, 1.3, -0.125] },
+    { bone: HumanBone.Chest, position: [0, 1.3, 0.13] },
+    { bone: HumanBone.Head, position: [0, 1.64, -0.11] },
+    { bone: HumanBone.Head, position: [0, 1.75, 0] },
+    { bone: HumanBone.Head, position: [0, 1.62, 0.12] },
+  ],
+  bones: [
+    { joint: HumanJoint.Pelvis, name: "pelvis", parent: NO_PARENT },
+    { joint: HumanJoint.Spine, name: "spine", parent: HumanBone.Pelvis },
+    { joint: HumanJoint.Chest, name: "chest", parent: HumanBone.Spine },
+    { joint: HumanJoint.Neck, name: "neck", parent: HumanBone.Chest },
+    { joint: HumanJoint.Head, name: "head", parent: HumanBone.Neck },
+    ...armBones(1),
+    ...armBones(-1),
+    ...legBones(1),
+    ...legBones(-1),
+  ],
+  footContacts: [...footContacts(1), ...footContacts(-1)],
+});
+
+export function otherSide(side: Side): Side {
+  return side === 1 ? -1 : 1;
+}
+
+export function onSide(point: Triple, side: Side): Triple {
+  return [point[0] * side, point[1], point[2]];
+}
 
 export function sideBones(side: Side): SideBones {
   return side === 1 ? LEFT_BONES : RIGHT_BONES;
@@ -126,28 +151,3 @@ function sideContacts(side: Side): ContactPoint[] {
     { bone: hand, position: [0.215 * side, 0.8, 0.02] },
   ];
 }
-
-export const HUMAN_SKELETON = createSkeleton({
-  bodyContacts: [
-    ...sideContacts(1),
-    ...sideContacts(-1),
-    { bone: HumanBone.Pelvis, position: [0, 0.86, -0.1] },
-    { bone: HumanBone.Chest, position: [0, 1.3, -0.125] },
-    { bone: HumanBone.Chest, position: [0, 1.3, 0.13] },
-    { bone: HumanBone.Head, position: [0, 1.64, -0.11] },
-    { bone: HumanBone.Head, position: [0, 1.75, 0] },
-    { bone: HumanBone.Head, position: [0, 1.62, 0.12] },
-  ],
-  bones: [
-    { joint: HumanJoint.Pelvis, name: "pelvis", parent: NO_PARENT },
-    { joint: HumanJoint.Spine, name: "spine", parent: HumanBone.Pelvis },
-    { joint: HumanJoint.Chest, name: "chest", parent: HumanBone.Spine },
-    { joint: HumanJoint.Neck, name: "neck", parent: HumanBone.Chest },
-    { joint: HumanJoint.Head, name: "head", parent: HumanBone.Neck },
-    ...armBones(1),
-    ...armBones(-1),
-    ...legBones(1),
-    ...legBones(-1),
-  ],
-  footContacts: [...footContacts(1), ...footContacts(-1)],
-});

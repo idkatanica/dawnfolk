@@ -12,7 +12,6 @@ import { FOLIAGE_FLUTTER, type PlantDetailLevel, plantSway, type TreeLook } from
 import { GOLDEN_ANGLE, type TreeStructure } from "./tree-structure.ts";
 
 export const BERRY_PART = 1;
-
 export const BERRY_RADIUS = 0.062;
 
 const CLUSTER_RIPENING_STEP = 0.618_034;
@@ -22,7 +21,6 @@ const LONGEST_REACH = CLUSTER_SPREAD * 2.5;
 const BERRY_LIFT = 0.35;
 const HIGHEST_CLUSTER = 0.9;
 const LOWEST_CLUSTER = -0.05;
-
 const CLUSTER_COUNTS: Readonly<Record<PlantDetailLevel, number>> = { far: 0, high: 8, low: 0, medium: 4 };
 
 export function isBerryPart(part: number): boolean {

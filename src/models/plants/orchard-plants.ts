@@ -43,6 +43,30 @@ export const ORCHARD_VARIANT_COUNTS = {
   [CultivatedSpecies.Raspberry]: 3,
 } as const satisfies Readonly<Partial<Record<PlantSpeciesIndex, number>>>;
 
+const TRUNK_SEGMENTS = 3;
+const STEM_SIDES = 3;
+const STEM_WIDENING = 1.18;
+const HANGING_STEP = 1.45;
+const FRUIT_SINK = 0.4;
+const PEAR_CENTER = 0.72;
+const ORCHARD_SPECIES: ReadonlySet<number> = new Set(Object.keys(ORCHARD_HEIGHTS).map(Number));
+const FRUIT_TREE_LOOK: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
+const LEAF_NOISE = createVolumeNoise(createRandom(7171));
+const GROUNDED_ENVELOPE = 0.8;
+const BURIED_MARGIN = 0.01;
+
+const FRUIT_TREE_GENERATORS: Readonly<Record<FruitTreeSpecies, (seed: number) => TreeStructure>> = {
+  [CultivatedSpecies.AppleTree]: apple,
+  [CultivatedSpecies.PearTree]: pear,
+  [CultivatedSpecies.PlumTree]: plum,
+};
+
+const BUSH_GENERATORS: Readonly<Record<BushSpecies, (seed: number) => BushStructure>> = {
+  [CultivatedSpecies.Blueberry]: blueberry,
+  [CultivatedSpecies.Currant]: currant,
+  [CultivatedSpecies.Raspberry]: raspberry,
+};
+
 type OrchardSpecies = keyof typeof ORCHARD_HEIGHTS;
 
 type FruitShape = "pear" | "round";
@@ -54,6 +78,13 @@ interface Tessellation {
   readonly segments: number;
 }
 
+const ROUND_FRUIT: Tessellation = { rings: 3, segments: 5 };
+const POINTED_BERRY: Tessellation = { rings: 2, segments: 5 };
+const SQUARE_BERRY: Tessellation = { rings: 3, segments: 4 };
+const DISTANT_BERRY: Tessellation = { rings: 2, segments: 4 };
+const TREE_FRUIT: Readonly<Record<FruitDetail, Tessellation>> = { high: ROUND_FRUIT, medium: ROUND_FRUIT };
+const ROUND_BERRY: Readonly<Record<FruitDetail, Tessellation>> = { high: ROUND_FRUIT, medium: DISTANT_BERRY };
+
 interface FruitLook {
   readonly counts: Readonly<Record<FruitDetail, number>>;
   readonly hanging: number;
@@ -64,37 +95,6 @@ interface FruitLook {
   readonly slot: MaterialSlotIndex;
   readonly tessellation: Readonly<Record<FruitDetail, Tessellation>>;
 }
-
-interface StemOptions {
-  readonly gravity: number;
-  readonly length: number;
-  readonly radiusEnd: number;
-  readonly radiusStart: number;
-  readonly spread: number;
-  readonly tilt: number;
-  readonly wobble: number;
-}
-
-const TRUNK_SEGMENTS = 3;
-const STEM_SIDES = 3;
-const STEM_WIDENING = 1.18;
-const HANGING_STEP = 1.45;
-const FRUIT_SINK = 0.4;
-const PEAR_CENTER = 0.72;
-
-const ORCHARD_SPECIES: ReadonlySet<number> = new Set(Object.keys(ORCHARD_HEIGHTS).map(Number));
-
-const FRUIT_TREE_LOOK: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
-const LEAF_NOISE = createVolumeNoise(createRandom(7171));
-const GROUNDED_ENVELOPE = 0.8;
-const BURIED_MARGIN = 0.01;
-
-const ROUND_FRUIT: Tessellation = { rings: 3, segments: 5 };
-const POINTED_BERRY: Tessellation = { rings: 2, segments: 5 };
-const SQUARE_BERRY: Tessellation = { rings: 3, segments: 4 };
-const DISTANT_BERRY: Tessellation = { rings: 2, segments: 4 };
-const TREE_FRUIT: Readonly<Record<FruitDetail, Tessellation>> = { high: ROUND_FRUIT, medium: ROUND_FRUIT };
-const ROUND_BERRY: Readonly<Record<FruitDetail, Tessellation>> = { high: ROUND_FRUIT, medium: DISTANT_BERRY };
 
 const FRUIT_LOOKS: Readonly<Record<OrchardSpecies, FruitLook>> = {
   [CultivatedSpecies.AppleTree]: {
@@ -159,6 +159,54 @@ const FRUIT_LOOKS: Readonly<Record<OrchardSpecies, FruitLook>> = {
   },
 };
 
+interface StemOptions {
+  readonly gravity: number;
+  readonly length: number;
+  readonly radiusEnd: number;
+  readonly radiusStart: number;
+  readonly spread: number;
+  readonly tilt: number;
+  readonly wobble: number;
+}
+
+interface BushLeaf {
+  readonly center: Vector3;
+  readonly radius: number;
+  readonly squash: number;
+  readonly tint: number;
+}
+
+interface BushStructure {
+  readonly height: number;
+  readonly leaves: readonly BushLeaf[];
+  readonly stems: readonly (readonly TubePoint[])[];
+}
+
+interface BushGrowth extends Growth {
+  readonly leaves: BushLeaf[];
+  readonly stems: TubePoint[][];
+}
+
+type FruitTreeSpecies =
+  | typeof CultivatedSpecies.AppleTree
+  | typeof CultivatedSpecies.PearTree
+  | typeof CultivatedSpecies.PlumTree;
+
+type BushSpecies = Exclude<OrchardSpecies, FruitTreeSpecies>;
+
+interface FruitHost {
+  readonly center: Vector3;
+  readonly squash: number;
+}
+
+interface FruitPlacement {
+  readonly detail: FruitDetail;
+  readonly height: number;
+  readonly hosts: readonly FruitHost[];
+  readonly look: FruitLook;
+  readonly seed: number;
+}
+
 function growStem(growth: Growth, azimuth: number, options: StemOptions): TubePoint[] {
   const { random } = growth;
 
@@ -188,8 +236,8 @@ function apple(seed: number): TreeStructure {
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
-    forks: true,
     height: random.between(1.3, 1.75),
+    isForked: true,
     lean: random.between(0.03, 0.15),
     radiusBottom: 0.245,
     radiusTop: 0.17,
@@ -239,8 +287,8 @@ function pear(seed: number): TreeStructure {
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
-    forks: false,
     height: random.between(1.6, 2.1),
+    isForked: false,
     lean: random.between(0, 0.06),
     radiusBottom: 0.225,
     radiusTop: 0.15,
@@ -289,8 +337,8 @@ function plum(seed: number): TreeStructure {
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
-    forks: true,
     height: random.between(1.05, 1.4),
+    isForked: true,
     lean: random.between(0.03, 0.15),
     radiusBottom: 0.205,
     radiusTop: 0.15,
@@ -320,24 +368,6 @@ function plum(seed: number): TreeStructure {
   addBlob(growth, toVector(tipOf(trunk)).add(new Vector3(0, 2.5, 0)), random.between(1.1, 1.3), 0.85);
 
   return finish(growth, ORCHARD_HEIGHTS[CultivatedSpecies.PlumTree]);
-}
-
-interface BushLeaf {
-  readonly center: Vector3;
-  readonly radius: number;
-  readonly squash: number;
-  readonly tint: number;
-}
-
-interface BushStructure {
-  readonly height: number;
-  readonly leaves: readonly BushLeaf[];
-  readonly stems: readonly (readonly TubePoint[])[];
-}
-
-interface BushGrowth extends Growth {
-  readonly leaves: BushLeaf[];
-  readonly stems: TubePoint[][];
 }
 
 function createBushGrowth(seed: number): BushGrowth {
@@ -438,25 +468,6 @@ function currant(seed: number): BushStructure {
   return finishBush(growth, CultivatedSpecies.Currant);
 }
 
-type FruitTreeSpecies =
-  | typeof CultivatedSpecies.AppleTree
-  | typeof CultivatedSpecies.PearTree
-  | typeof CultivatedSpecies.PlumTree;
-
-type BushSpecies = Exclude<OrchardSpecies, FruitTreeSpecies>;
-
-const FRUIT_TREE_GENERATORS: Readonly<Record<FruitTreeSpecies, (seed: number) => TreeStructure>> = {
-  [CultivatedSpecies.AppleTree]: apple,
-  [CultivatedSpecies.PearTree]: pear,
-  [CultivatedSpecies.PlumTree]: plum,
-};
-
-const BUSH_GENERATORS: Readonly<Record<BushSpecies, (seed: number) => BushStructure>> = {
-  [CultivatedSpecies.Blueberry]: blueberry,
-  [CultivatedSpecies.Currant]: currant,
-  [CultivatedSpecies.Raspberry]: raspberry,
-};
-
 export function isOrchardModel(species: number): species is OrchardSpecies {
   return ORCHARD_SPECIES.has(species);
 }
@@ -489,19 +500,6 @@ function fruitLift(look: FruitLook): number {
   }
 
   return 0;
-}
-
-interface FruitHost {
-  readonly center: Vector3;
-  readonly squash: number;
-}
-
-interface FruitPlacement {
-  readonly detail: FruitDetail;
-  readonly height: number;
-  readonly hosts: readonly FruitHost[];
-  readonly look: FruitLook;
-  readonly seed: number;
 }
 
 function fruitMeshes(plant: MeshData, placement: FruitPlacement): MeshData[] {

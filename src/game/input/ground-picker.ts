@@ -1,5 +1,10 @@
 import { type PerspectiveCamera, Raycaster, Vector2, Vector3 } from "three/webgpu";
 
+const LONGEST_RAY = 30_000;
+const SHORTEST_STEP = 0.5;
+const STEP_PER_DISTANCE = 0.006;
+const REFINEMENT_STEPS = 12;
+
 export type HeightField = (x: number, z: number) => number;
 
 export interface ScreenPoint {
@@ -11,11 +16,6 @@ export interface ViewportSize {
   readonly height: number;
   readonly width: number;
 }
-
-const LONGEST_RAY = 30_000;
-const SHORTEST_STEP = 0.5;
-const STEP_PER_DISTANCE = 0.006;
-const REFINEMENT_STEPS = 12;
 
 export class GroundPicker {
   readonly #camera: PerspectiveCamera;

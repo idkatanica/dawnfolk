@@ -4,7 +4,7 @@ import { HUMAN_SKELETON, HumanBone } from "../people/human-skeleton.ts";
 import { uniformScales } from "../testing/uniform-scales.ts";
 import { degrees } from "./curves.ts";
 import { Pose } from "./pose.ts";
-import { createSkeleton, NO_PARENT } from "./skeleton.ts";
+import { NO_PARENT } from "./skeleton.ts";
 import { PALETTE_FLOATS_PER_BONE, SkeletonPoser } from "./skeleton-poser.ts";
 
 const IDENTITY_ROWS = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
@@ -96,20 +96,5 @@ describe("skeleton poser", () => {
 
     expect(hand.y).toBeGreaterThan(1.9);
     expect(hand.x).toBeLessThan(0.19);
-  });
-});
-
-describe("skeleton definitions", () => {
-  it("refuses bones listed before their parents", () => {
-    expect(() =>
-      createSkeleton({
-        bodyContacts: [],
-        bones: [
-          { joint: [0, 0, 0], name: "root", parent: NO_PARENT },
-          { joint: [0, 1, 0], name: "loop", parent: 1 },
-        ],
-        footContacts: [],
-      })
-    ).toThrow(RangeError);
   });
 });

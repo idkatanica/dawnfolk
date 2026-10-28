@@ -3,6 +3,26 @@ import { colorFromPalette, mixColors, scaleColor } from "../../shared/color.ts";
 import { lerp } from "../../shared/math.ts";
 import { createRandom, type RandomSource } from "../../shared/random.ts";
 
+const DEER_COATS: readonly number[] = [0x6e_4a_2e, 0x7a_4e_30, 0x8a_5a_36, 0x9a_6a_40, 0xa8_7a_4c];
+const DEER_BELLY = 0xe0_cc_aa;
+const MAMMOTH_COATS: readonly number[] = [0x3e_2a_1e, 0x4a_34_24, 0x5c_3e_28, 0x6a_4a_30, 0x7a_58_3a];
+const IBEX_COATS: readonly number[] = [0x6e_5c_48, 0x7e_68_50, 0x8e_76_5a, 0x9c_86_66];
+const IBEX_BELLY = 0xdc_d0_b8;
+const HARE_COATS: readonly number[] = [0x6e_5a_44, 0x7e_66_4c, 0x8c_74_58, 0x96_80_64, 0x84_78_68];
+const HARE_WHITE = 0xf2_ee_e6;
+const HARE_STATURE = 1.3;
+const WOLF_COATS: readonly number[] = [0x5a_56_52, 0x7a_74_6c, 0x8c_84_78, 0x96_86_6c, 0xb8_b2_a8];
+const WOLF_BLACK = 0x2e_2a_28;
+const WOLF_BELLY = 0xd8_d0_c2;
+
+const APPEARANCES: Readonly<Record<AnimalKind, (random: RandomSource, youth: number) => AnimalAppearance>> = {
+  deer: deerAppearance,
+  hare: hareAppearance,
+  ibex: ibexAppearance,
+  mammoth: mammothAppearance,
+  wolf: wolfAppearance,
+};
+
 export interface AnimalAppearance {
   readonly antlerSize: number;
   readonly coat: number;
@@ -22,18 +42,6 @@ interface AnimalAppearanceInput {
   readonly seed: number;
   readonly youth: number;
 }
-
-const DEER_COATS: readonly number[] = [0x6e_4a_2e, 0x7a_4e_30, 0x8a_5a_36, 0x9a_6a_40, 0xa8_7a_4c];
-const DEER_BELLY = 0xe0_cc_aa;
-const MAMMOTH_COATS: readonly number[] = [0x3e_2a_1e, 0x4a_34_24, 0x5c_3e_28, 0x6a_4a_30, 0x7a_58_3a];
-const IBEX_COATS: readonly number[] = [0x6e_5c_48, 0x7e_68_50, 0x8e_76_5a, 0x9c_86_66];
-const IBEX_BELLY = 0xdc_d0_b8;
-const HARE_COATS: readonly number[] = [0x6e_5a_44, 0x7e_66_4c, 0x8c_74_58, 0x96_80_64, 0x84_78_68];
-const HARE_WHITE = 0xf2_ee_e6;
-const HARE_STATURE = 1.3;
-const WOLF_COATS: readonly number[] = [0x5a_56_52, 0x7a_74_6c, 0x8c_84_78, 0x96_86_6c, 0xb8_b2_a8];
-const WOLF_BLACK = 0x2e_2a_28;
-const WOLF_BELLY = 0xd8_d0_c2;
 
 function youthScale(youth: number): number {
   return lerp(1, 0.42, youth);
@@ -148,14 +156,6 @@ function wolfAppearance(random: RandomSource, youth: number): AnimalAppearance {
     tuskLength: 0,
   };
 }
-
-const APPEARANCES: Readonly<Record<AnimalKind, (random: RandomSource, youth: number) => AnimalAppearance>> = {
-  deer: deerAppearance,
-  hare: hareAppearance,
-  ibex: ibexAppearance,
-  mammoth: mammothAppearance,
-  wolf: wolfAppearance,
-};
 
 export function animalAppearance(input: AnimalAppearanceInput): AnimalAppearance {
   const random = createRandom(Math.floor(input.seed * 2_147_483_647) + 7);

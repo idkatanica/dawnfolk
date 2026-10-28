@@ -23,6 +23,34 @@ import {
 } from "./structure-parts.ts";
 
 const GLOWING_EMBERS = { part: GLOW_PART, slot: MaterialSlot.Ember } as const;
+const GRANARY_STILT_RING = 1.2;
+const GRANARY_STILT_HEIGHT = 0.5;
+const GRANARY_CAP_HEIGHT = 0.09;
+const GRANARY_FLOOR_HEIGHT = 0.16;
+const GRANARY_FLOOR_RADIUS = 1.7;
+const GRANARY_WALL_RADIUS = 1.5;
+const GRANARY_WALL_TOP = 2.15;
+const GRANARY_ROOF_BOTTOM = 2;
+const GRANARY_ROOF_TOP = 3.9;
+const GRANARY_ROOF_RADIUS = 2;
+const GRANARY_BAND_BOTTOM = 1.66;
+const GRANARY_BAND_TOP = 1.8;
+const GRANARY_WALL_TAPER = 0.04;
+const FLOOR_BOTTOM = GRANARY_STILT_HEIGHT + GRANARY_CAP_HEIGHT;
+const FLOOR_TOP = FLOOR_BOTTOM + GRANARY_FLOOR_HEIGHT;
+const KILN_TOP = 2.3;
+const SHED_HALF_WIDTH = 1.95;
+const SHED_HALF_DEPTH = 1.35;
+const SHED_BACK_HEIGHT = 2.1;
+const SHED_FRONT_HEIGHT = 2.6;
+const SHED_ROOF_THICKNESS = 0.22;
+const SHAFT_BASE = 0.4;
+const SHAFT_TOP = 2.1;
+const FORGE_HALF_WIDTH = 1.85;
+const FORGE_HALF_DEPTH = 1.45;
+const FORGE_POST_HEIGHT = 2.55;
+const FORGE_EAVE = 2.4;
+const FORGE_RIDGE = 3.4;
 
 function radiusOf(point: SurfacePoint): number {
   return Math.hypot(point.position.x, point.position.z);
@@ -42,24 +70,6 @@ function addDrum(
   );
 }
 
-const GRANARY_STILT_RING = 1.2;
-const GRANARY_STILT_HEIGHT = 0.5;
-const GRANARY_CAP_HEIGHT = 0.09;
-const GRANARY_FLOOR_HEIGHT = 0.16;
-const GRANARY_FLOOR_RADIUS = 1.7;
-const GRANARY_WALL_RADIUS = 1.5;
-const GRANARY_WALL_TOP = 2.15;
-const GRANARY_ROOF_BOTTOM = 2;
-const GRANARY_ROOF_TOP = 3.9;
-const GRANARY_ROOF_RADIUS = 2;
-
-const GRANARY_BAND_BOTTOM = 1.66;
-const GRANARY_BAND_TOP = 1.8;
-const GRANARY_WALL_TAPER = 0.04;
-
-const FLOOR_BOTTOM = GRANARY_STILT_HEIGHT + GRANARY_CAP_HEIGHT;
-const FLOOR_TOP = FLOOR_BOTTOM + GRANARY_FLOOR_HEIGHT;
-
 function granaryWallRadius(height: number): number {
   const bottom = FLOOR_TOP - 0.01;
 
@@ -77,7 +87,7 @@ function thatchCone(bottom: number, top: number, radius: number): LoftSection[] 
   ];
 }
 
-function granaryStilts(context: StructureContext): void {
+function addGranaryStilts(context: StructureContext): void {
   const stilts = detail(context, 6, 4);
   const sides = detail(context, 8, 5);
 
@@ -106,7 +116,7 @@ function granaryStilts(context: StructureContext): void {
   }
 }
 
-function granaryStore(context: StructureContext): void {
+function addGranaryStore(context: StructureContext): void {
   const segments = detail(context, 16, 8);
 
   context.builder.add(
@@ -174,7 +184,7 @@ function granaryStore(context: StructureContext): void {
   });
 }
 
-function granaryLadder(context: StructureContext): void {
+function addGranaryLadder(context: StructureContext): void {
   const foot = 2.25;
   const top = 1.62;
 
@@ -195,10 +205,10 @@ function granaryLadder(context: StructureContext): void {
   }
 }
 
-export function granary(context: StructureContext): void {
-  granaryStilts(context);
-  granaryStore(context);
-  granaryLadder(context);
+export function addGranary(context: StructureContext): void {
+  addGranaryStilts(context);
+  addGranaryStore(context);
+  addGranaryLadder(context);
 
   for (const [x, z, height] of [
     [2.05, 0.9, 0.7],
@@ -209,13 +219,11 @@ export function granary(context: StructureContext): void {
   }
 }
 
-const KILN_TOP = 2.3;
-
 function kilnDomeSlot(point: SurfacePoint): MaterialSlotIndex {
   return point.position.y > KILN_TOP - 0.06 && radiusOf(point) < 0.22 ? MaterialSlot.Ash : MaterialSlot.Clay;
 }
 
-function kilnDome(context: StructureContext): void {
+function addKilnDome(context: StructureContext): void {
   context.builder.add(
     lathe(
       [
@@ -260,15 +268,15 @@ function kilnDome(context: StructureContext): void {
   }
 }
 
-function kilnMouth(context: StructureContext): void {
+function addKilnMouth(context: StructureContext): void {
   addBlock(context, [0.62, 0.58, 0.6], [0, 0.29, 1.17], { buildOrder: 0.3, slot: MaterialSlot.Ash });
   addBlock(context, [0.95, 0.18, 0.62], [0, 0.66, 1.18], { buildOrder: 0.36, slot: MaterialSlot.Clay });
   addRock(context, [0, 0.1, 1.38], 0.2, [1.3, 0.45, 0.8], { ...GLOWING_EMBERS, buildOrder: 0.9 });
 }
 
-export function kiln(context: StructureContext): void {
-  kilnDome(context);
-  kilnMouth(context);
+export function addKiln(context: StructureContext): void {
+  addKilnDome(context);
+  addKilnMouth(context);
   addLogPile(context, [1.62, 0, -0.85], Math.PI / 2, 1.4, 0.7);
 
   for (const [x, z, height] of [
@@ -280,13 +288,7 @@ export function kiln(context: StructureContext): void {
   }
 }
 
-const SHED_HALF_WIDTH = 1.95;
-const SHED_HALF_DEPTH = 1.35;
-const SHED_BACK_HEIGHT = 2.1;
-const SHED_FRONT_HEIGHT = 2.6;
-const SHED_ROOF_THICKNESS = 0.22;
-
-function shedFrame(context: StructureContext): void {
+function addShedFrame(context: StructureContext): void {
   for (const x of [-SHED_HALF_WIDTH, SHED_HALF_WIDTH]) {
     addLog(context, [x, 0, SHED_HALF_DEPTH], [x, SHED_FRONT_HEIGHT, SHED_HALF_DEPTH], 0.09, {
       buildOrder: 0.15,
@@ -315,7 +317,7 @@ function shedFrame(context: StructureContext): void {
   );
 }
 
-function workbench(context: StructureContext): void {
+function addWorkbench(context: StructureContext): void {
   const top = 0.86;
   const middleX = -0.2;
   const middleZ = -0.55;
@@ -372,7 +374,7 @@ function workbench(context: StructureContext): void {
   );
 }
 
-function weaponRack(context: StructureContext): void {
+function addWeaponRack(context: StructureContext): void {
   const x = -SHED_HALF_WIDTH;
   const railHeight = 1.35;
 
@@ -389,7 +391,7 @@ function weaponRack(context: StructureContext): void {
   }
 }
 
-function anvilStone(context: StructureContext, x: number, z: number, order: number): void {
+function addAnvilStone(context: StructureContext, x: number, z: number, order: number): void {
   addDrum(context, [x, 0, z], 0.26, 0.54, MaterialSlot.Wood, order);
   addBlock(context, [0.46, 0.18, 0.2], [x, 0.62, z], { buildOrder: order + 0.05, slot: MaterialSlot.Metal });
   addSpike(context, [x + 0.2, 0.63, z], [x + 0.42, 0.66, z], 0.07, {
@@ -398,16 +400,16 @@ function anvilStone(context: StructureContext, x: number, z: number, order: numb
   });
 }
 
-export function workshop(context: StructureContext): void {
-  shedFrame(context);
+export function addWorkshop(context: StructureContext): void {
+  addShedFrame(context);
   addBlock(context, [SHED_HALF_WIDTH * 2 + 0.1, 1.3, 0.14], [0, 0.65, -SHED_HALF_DEPTH], {
     buildOrder: 0.35,
     shade: (point) => 0.75 + 0.25 * saturate(point.position.y / 1.3),
     slot: MaterialSlot.Daub,
   });
-  workbench(context);
-  weaponRack(context);
-  anvilStone(context, 1.15, 0.45, 0.75);
+  addWorkbench(context);
+  addWeaponRack(context);
+  addAnvilStone(context, 1.15, 0.45, 0.75);
   addBlock(context, [SHED_HALF_WIDTH * 2 + 0.3, 0.42, 0.04], [0, SHED_FRONT_HEIGHT - 0.1, SHED_HALF_DEPTH + 0.3], {
     buildOrder: 0.95,
     slot: MaterialSlot.Accent,
@@ -418,14 +420,11 @@ export function workshop(context: StructureContext): void {
   }
 }
 
-const SHAFT_BASE = 0.4;
-const SHAFT_TOP = 2.1;
-
 function shaftSlot(point: SurfacePoint): MaterialSlotIndex {
   return point.position.y > SHAFT_TOP - 0.15 && radiusOf(point) < 0.36 ? MaterialSlot.Ash : MaterialSlot.Clay;
 }
 
-function smelterShaft(context: StructureContext): void {
+function addSmelterShaft(context: StructureContext): void {
   addDrum(context, [0, 0, 0], 0.8, 0.44, MaterialSlot.Stone, 0.06);
 
   const stones = detail(context, 8, 5);
@@ -468,7 +467,7 @@ function smelterShaft(context: StructureContext): void {
   addBlock(context, [0.24, 0.1, 0.62], [0, 0.05, 1.02], { buildOrder: 0.3, slot: MaterialSlot.Clay });
 }
 
-function bellows(context: StructureContext): void {
+function addBellows(context: StructureContext): void {
   for (const side of [-1, 1]) {
     addRock(context, [side * 0.42, 0.17, -0.98], 0.32, [1.1, 0.55, 0.9], {
       buildOrder: 0.5,
@@ -482,22 +481,16 @@ function bellows(context: StructureContext): void {
   }
 }
 
-export function smelter(context: StructureContext): void {
-  smelterShaft(context);
-  bellows(context);
+export function addSmelter(context: StructureContext): void {
+  addSmelterShaft(context);
+  addBellows(context);
   addMound(context, [1.15, 0, 0.55], 0.36, [1.2, 0.55, 1], { buildOrder: 0.65, shade: 0.5, slot: MaterialSlot.Ash });
   addBlock(context, [0.5, 0.12, 0.3], [-1.1, 0.06, 0.7], { buildOrder: 0.6, slot: MaterialSlot.Stone });
   addBlock(context, [0.32, 0.06, 0.14], [-1.1, 0.12, 0.7], { buildOrder: 0.92, slot: MaterialSlot.Metal });
   addFlag(context, [1, 0, -1], 2.6, 0.4, 0.97);
 }
 
-const FORGE_HALF_WIDTH = 1.85;
-const FORGE_HALF_DEPTH = 1.45;
-const FORGE_POST_HEIGHT = 2.55;
-const FORGE_EAVE = 2.4;
-const FORGE_RIDGE = 3.4;
-
-function forgeHearth(context: StructureContext): void {
+function addForgeHearth(context: StructureContext): void {
   addBlock(context, [1.5, 0.85, 1], [0, 0.425, -0.75], {
     buildOrder: 0.1,
     shade: stoneShade,
@@ -512,12 +505,12 @@ function forgeHearth(context: StructureContext): void {
   addBlock(context, [0.9, 0.14, 0.7], [0, 4.1, -1.18], { buildOrder: 0.96, slot: MaterialSlot.PaleStone });
 }
 
-function quenchTrough(context: StructureContext): void {
+function addQuenchTrough(context: StructureContext): void {
   addBlock(context, [1, 0.45, 0.42], [-1.05, 0.225, 0.5], { buildOrder: 0.55, slot: MaterialSlot.Wood });
   addBlock(context, [0.84, 0.04, 0.3], [-1.05, 0.44, 0.5], { buildOrder: 0.6, shade: 0.6, slot: MaterialSlot.Ash });
 }
 
-export function forge(context: StructureContext): void {
+export function addForge(context: StructureContext): void {
   for (const x of [-FORGE_HALF_WIDTH, FORGE_HALF_WIDTH]) {
     for (const z of [-FORGE_HALF_DEPTH, FORGE_HALF_DEPTH]) {
       addLog(context, [x, 0, z], [x, FORGE_POST_HEIGHT, z], 0.1, { buildOrder: 0.2, slot: MaterialSlot.Wood });
@@ -537,11 +530,11 @@ export function forge(context: StructureContext): void {
     thickness: 0.34,
   });
 
-  forgeHearth(context);
-  anvilStone(context, 0.55, 0.6, 0.7);
+  addForgeHearth(context);
+  addAnvilStone(context, 0.55, 0.6, 0.7);
   addLog(context, [0.42, 0.725, 0.66], [0.72, 0.725, 0.74], 0.018, { buildOrder: 0.93, slot: MaterialSlot.Wood });
   addBlock(context, [0.08, 0.06, 0.13], [0.74, 0.735, 0.74], { buildOrder: 0.93, slot: MaterialSlot.Metal });
-  quenchTrough(context);
+  addQuenchTrough(context);
   context.builder.add(card(0.5, 0.9), {
     style: { buildOrder: 0.97, slot: MaterialSlot.Accent },
     transform: transformOf({ position: [FORGE_HALF_WIDTH - 0.3, 1.2, FORGE_HALF_DEPTH] }),

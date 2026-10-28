@@ -46,11 +46,8 @@ function dimple(point: Node<"vec2">, salt: number): Node<"vec2"> {
   const age = fract(time.mul(DIMPLES_PER_SECOND).add(hash(key.bitXor(SALT_PHASE))));
 
   const offset = fract(point).sub(center);
-
   const reach = length(offset);
-
   const front = reach.sub(age.mul(DIMPLE_REACH)).div(CREST_WIDTH);
-
   const crest = front.mul(exp(front.mul(front).negate())).mul(float(1).sub(age));
 
   return offset.div(max(reach, 0.001)).mul(crest);

@@ -57,13 +57,9 @@ export class GroundRing {
     const side = attribute("ringSide", "float");
 
     const distance = this.#radius.add(side.sub(0.5).mul(this.#width));
-
     const point = this.#center.add(vec2(cos(angle), sin(angle)).mul(distance));
-
     const lift = float(0.7).add(this.#radius.mul(0.006));
-
     const height = sampleHeightNode(textures.height, grid, point).add(lift);
-
     const dash = smoothstep(-0.2, 0.2, sin(angle.mul(24).sub(time.mul(1.6))));
 
     material.positionNode = vec3(point.x, height, point.y);

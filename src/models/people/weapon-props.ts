@@ -14,13 +14,11 @@ const STRING_RADIUS = 0.0035;
 const ARROW_RADIUS = 0.0065;
 const ARROWHEAD_LENGTH = 0.11;
 const ARROW_AIM: Triple = [0.4, -0.9, -0.16];
-
 const QUIVER_BOTTOM: Triple = [0.11, 0.96, -0.14];
 const QUIVER_TOP: Triple = [-0.09, 1.44, -0.15];
 const QUIVER_RADIUS = 0.048;
 const QUIVER_ARROWS = 4;
 const FAR_QUIVER_SINK = 0.035;
-
 const PICK_HAFT_LENGTH = 0.62;
 const PICK_HAFT_RADIUS = 0.017;
 
@@ -132,7 +130,7 @@ function alongQuiver(share: number): Triple {
   ];
 }
 
-function addQuiverArrow(builder: MeshBuilder, index: number, detail: HumanDetail): void {
+function addQuiverArrow(builder: MeshBuilder, detail: HumanDetail, index: number): void {
   const spread = (index - (QUIVER_ARROWS - 1) / 2) * 0.014;
 
   const [baseX, baseY, baseZ] = alongQuiver(0.8);
@@ -186,7 +184,7 @@ export function addQuiver(builder: MeshBuilder, detail: HumanDetail): void {
   }
 
   for (let index = 0; index < QUIVER_ARROWS; index += 1) {
-    addQuiverArrow(builder, index, detail);
+    addQuiverArrow(builder, detail, index);
   }
 }
 

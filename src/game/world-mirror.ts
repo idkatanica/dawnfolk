@@ -33,6 +33,15 @@ function moveChannel<Channel extends VegetationChannel>(
   channels[channel] = grown[channel];
 }
 
+function applyRows(rows: readonly PackedRows[], target: Uint8Array, changes: RowChangeTracker): void {
+  for (const run of rows) {
+    const bytesPerRow = run.data.length / run.rowCount;
+
+    target.set(run.data, run.firstRow * bytesPerRow);
+    changes.markRows(run.firstRow, run.firstRow + run.rowCount - 1);
+  }
+}
+
 export class MirroredVegetation implements VegetationChannels {
   bornDay: Float32Array;
   count: number;
@@ -98,15 +107,6 @@ export class MirroredVegetation implements VegetationChannels {
     for (const channel of VEGETATION_CHANNELS) {
       moveChannel(this, grown, channel);
     }
-  }
-}
-
-function applyRows(rows: readonly PackedRows[], target: Uint8Array, changes: RowChangeTracker): void {
-  for (const run of rows) {
-    const bytesPerRow = run.data.length / run.rowCount;
-
-    target.set(run.data, run.firstRow * bytesPerRow);
-    changes.markRows(run.firstRow, run.firstRow + run.rowCount - 1);
   }
 }
 

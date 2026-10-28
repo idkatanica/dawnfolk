@@ -11,18 +11,18 @@ import type { CellRegion } from "../../world/change-tracking.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
 import { GroundWarp } from "./ground-warp.ts";
 import type { GroundArea, IslandOutline } from "./island-outline.ts";
-import { type HeightRange, type PatchContent, type PatchCorner, PatchGrid, type PatchPiece } from "./patch-grid.ts";
+import { type HeightRange, type PatchContent, PatchGrid, type PatchPiece } from "./patch-grid.ts";
 import { createTerrainMaterial } from "./terrain-material.ts";
 import { PATCH_CELLS } from "./terrain-patches.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
-
-const SKIRT_ALLOWANCE = 220;
-const COAST_PIECE_CELLS = 16;
 
 const TerrainMaterial = {
   Coastal: 1,
   Inland: 0,
 } as const;
+
+const SKIRT_ALLOWANCE = 220;
+const COAST_PIECE_CELLS = 16;
 
 export class TerrainView {
   readonly group = new Group();
@@ -60,7 +60,7 @@ export class TerrainView {
     const inland = createTerrainMaterial({ ...options, cutsAtCoast: false });
 
     this.#levels = new Int8Array(patchesPerSide * patchesPerSide);
-    this.#inland = this.#createGrid((corner) => this.#measureInland(corner), [inland], PATCH_CELLS);
+    this.#inland = this.#createGrid((region) => this.#measureInland(region), [inland], PATCH_CELLS);
 
     if (textures.outline.coast === null) {
       this.#materials = [inland];
@@ -70,7 +70,7 @@ export class TerrainView {
     }
 
     this.#materials = [inland, createTerrainMaterial({ ...options, cutsAtCoast: true })];
-    this.#coast = this.#createGrid((corner) => this.#measureCoast(corner), this.#materials, COAST_PIECE_CELLS);
+    this.#coast = this.#createGrid((region) => this.#measureCoast(region), this.#materials, COAST_PIECE_CELLS);
   }
 
   get patchLevels(): Readonly<Int8Array> {
@@ -116,7 +116,7 @@ export class TerrainView {
   }
 
   #createGrid(
-    measure: (corner: PatchCorner) => PatchContent | null,
+    measure: (region: CellRegion) => PatchContent | null,
     materials: readonly Material[],
     pieceCells: number
   ): PatchGrid {
@@ -133,27 +133,27 @@ export class TerrainView {
     return patches;
   }
 
-  #measureInland(corner: PatchCorner): PatchContent | null {
-    if (this.#outline.sideOf(this.#areaOf(corner), this.#mirror.grid.cellSize) !== "inside") {
+  #measureInland(region: CellRegion): PatchContent | null {
+    if (this.#outline.sideOf(this.#areaOf(region), this.#mirror.grid.cellSize) !== "inside") {
       return null;
     }
 
-    const piece = { firstColumn: corner.firstColumn, firstRow: corner.firstRow, material: TerrainMaterial.Inland };
+    const piece = { firstColumn: region.firstColumn, firstRow: region.firstRow, material: TerrainMaterial.Inland };
 
-    return { ...this.#heightsOf(corner), pieces: [piece] };
+    return { ...this.#heightsOf(region), pieces: [piece] };
   }
 
-  #measureCoast(corner: PatchCorner): PatchContent | null {
+  #measureCoast(region: CellRegion): PatchContent | null {
     const { cellSize } = this.#mirror.grid;
 
-    if (this.#outline.sideOf(this.#areaOf(corner), cellSize) !== "across") {
+    if (this.#outline.sideOf(this.#areaOf(region), cellSize) !== "across") {
       return null;
     }
 
     const pieces: PatchPiece[] = [];
 
-    for (let row = corner.firstRow; row < corner.lastRow; row += COAST_PIECE_CELLS) {
-      for (let column = corner.firstColumn; column < corner.lastColumn; column += COAST_PIECE_CELLS) {
+    for (let row = region.firstRow; row < region.lastRow; row += COAST_PIECE_CELLS) {
+      for (let column = region.firstColumn; column < region.lastColumn; column += COAST_PIECE_CELLS) {
         const piece = {
           firstColumn: column,
           firstRow: row,
@@ -175,30 +175,30 @@ export class TerrainView {
       return null;
     }
 
-    return { ...this.#heightsOf(corner), pieces };
+    return { ...this.#heightsOf(region), pieces };
   }
 
-  #areaOf(corner: PatchCorner): GroundArea {
+  #areaOf(region: CellRegion): GroundArea {
     const { grid } = this.#mirror;
 
     const last = grid.cellsPerSide - 1;
 
     return {
-      maximumX: grid.centerX(Math.min(last, corner.lastColumn)),
-      maximumZ: grid.centerZ(Math.min(last, corner.lastRow)),
-      minimumX: grid.centerX(corner.firstColumn),
-      minimumZ: grid.centerZ(corner.firstRow),
+      maximumX: grid.centerX(Math.min(last, region.lastColumn)),
+      maximumZ: grid.centerZ(Math.min(last, region.lastRow)),
+      minimumX: grid.centerX(region.firstColumn),
+      minimumZ: grid.centerZ(region.firstRow),
     };
   }
 
-  #heightsOf(corner: PatchCorner): HeightRange {
+  #heightsOf(region: CellRegion): HeightRange {
     const { grid, terrain } = this.#mirror;
 
     let lowest = Number.POSITIVE_INFINITY;
     let highest = Number.NEGATIVE_INFINITY;
 
-    for (let row = corner.firstRow; row <= corner.lastRow; row += 1) {
-      for (let column = corner.firstColumn; column <= corner.lastColumn; column += 1) {
+    for (let row = region.firstRow; row <= region.lastRow; row += 1) {
+      for (let column = region.firstColumn; column <= region.lastColumn; column += 1) {
         const height = terrain.height[grid.index(column, row)];
 
         lowest = Math.min(lowest, height);

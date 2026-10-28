@@ -1,6 +1,13 @@
 import { type Matrix4, Vector3 } from "three";
 import { segmentTransform } from "./transforms.ts";
 
+const PARALLEL_LIMIT = 1e-12;
+const firstEdge = new Vector3();
+const secondEdge = new Vector3();
+const fromFirst = new Vector3();
+const perpendicular = new Vector3();
+const across = new Vector3();
+
 interface Surface {
   readonly indices: Uint32Array;
   readonly positions: Float32Array;
@@ -16,14 +23,6 @@ interface SurfaceHit {
 type TriangleFilter = (triangle: number) => boolean;
 
 type Corners = readonly [Vector3, Vector3, Vector3];
-
-const PARALLEL_LIMIT = 1e-12;
-
-const firstEdge = new Vector3();
-const secondEdge = new Vector3();
-const fromFirst = new Vector3();
-const perpendicular = new Vector3();
-const across = new Vector3();
 
 function everyTriangle(): boolean {
   return true;

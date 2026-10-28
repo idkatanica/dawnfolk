@@ -66,15 +66,6 @@ const FORD_WATER_DEPTH = 0.45;
 const FORD_SHALLOWING = 0.92;
 const FORD_RIPPLES = 0.45;
 
-export class WaterLook {
-  readonly daylight = uniform(1);
-  readonly horizonColor = uniform(new Color(0xcf_e2_f0));
-  readonly precipitation = uniform(0);
-  readonly rainfall = uniform(0);
-  readonly windTravel = uniform(new Vector2());
-  readonly zenithColor = uniform(new Color(0x4c_8c_d6));
-}
-
 function shoreWobble(depth: Node<"float">, viewDistance: Node<"float">): Node<"float"> {
   const point = positionWorld.xz;
   const fineWobble = smoothstep(FINE_WOBBLE_FAR, FINE_WOBBLE_NEAR, viewDistance).mul(0.35);
@@ -123,6 +114,38 @@ function waveNormal(point: Node<"vec2">, strength: Node<"float">): Node<"vec3"> 
   );
 }
 
+function surfaceNormal(
+  flow: Node<"vec2">,
+  slope: Node<"float">,
+  viewDistance: Node<"float">,
+  look: WaterLook
+): Node<"vec3"> {
+  const speed = clamp(slope.mul(55), 0, FASTEST_FLOW);
+  const direction = select(slope.greaterThan(0.0001), normalize(flow), vec2(0, 0));
+
+  const cycle = time.mul(0.22);
+  const calming = smoothstep(1800, 150, viewDistance).mul(0.85).add(0.15);
+  const rapids = smoothstep(RAPIDS_START, STEEP_RUN, slope);
+
+  const phase = fract(cycle);
+  const otherPhase = fract(cycle.add(0.5));
+
+  const drift = look.windTravel;
+  const travel = direction.mul(speed).mul(7);
+  const blend = abs(phase.mul(2).sub(1));
+  const strength = float(1.1)
+    .add(speed.mul(0.6))
+    .mul(calming)
+    .mul(float(1).sub(rapids.mul(RAPIDS_CALMING)));
+
+  const pointA = positionWorld.xz.sub(drift).sub(travel.mul(phase));
+  const pointB = positionWorld.xz.sub(drift).sub(travel.mul(otherPhase)).add(vec2(13.7, 4.1));
+
+  const waves = normalize(mix(waveNormal(pointA, strength), waveNormal(pointB, strength), blend));
+
+  return normalize(waves.add(vec3(flow.x, 0, flow.y)));
+}
+
 export function createWaterMaterial(
   textures: TerrainTextures,
   grid: WorldGrid,
@@ -142,7 +165,7 @@ export function createWaterMaterial(
   }
 
   function vertexLevel(vertex: Node<"vec2">): Node<"float"> {
-    function levelAt(offsetX: number, offsetZ: number) {
+    function levelAt(offsetX: number, offsetZ: number): Node<"float"> {
       return textureLoad(textures.water, clampedCell(vertex, offsetX, offsetZ)).x;
     }
 
@@ -156,7 +179,6 @@ export function createWaterMaterial(
     const neighborLevel = max(besideLevel, diagonalLevel);
     const isOwnWater = own.greaterThan(PRESENT_LEVEL);
     const isCoarseShore = step.greaterThan(1.5).and(reach.lessThanEqual(step.add(COARSE_REACH_MARGIN)));
-
     const isNearWater = neighborLevel.greaterThan(PRESENT_LEVEL);
     const bankLevel = min(
       select(besideLevel.greaterThan(PRESENT_LEVEL), besideLevel, neighborLevel),
@@ -179,9 +201,7 @@ export function createWaterMaterial(
     const level = float(0).toVar();
 
     If(isCenter, () => {
-      const corners = [cornerOf(0, 0), cornerOf(1, 0), cornerOf(0, 1), cornerOf(1, 1)];
-
-      const [first, right, below, diagonal] = corners;
+      const [first, right, below, diagonal] = [cornerOf(0, 0), cornerOf(1, 0), cornerOf(0, 1), cornerOf(1, 1)];
 
       point.assign(first.add(diagonal).mul(0.5));
       level.assign(
@@ -269,34 +289,11 @@ export function createWaterMaterial(
   return material;
 }
 
-function surfaceNormal(
-  flow: Node<"vec2">,
-  slope: Node<"float">,
-  viewDistance: Node<"float">,
-  look: WaterLook
-): Node<"vec3"> {
-  const speed = clamp(slope.mul(55), 0, FASTEST_FLOW);
-  const direction = select(slope.greaterThan(0.0001), normalize(flow), vec2(0, 0));
-
-  const cycle = time.mul(0.22);
-  const calming = smoothstep(1800, 150, viewDistance).mul(0.85).add(0.15);
-  const rapids = smoothstep(RAPIDS_START, STEEP_RUN, slope);
-
-  const phase = fract(cycle);
-  const otherPhase = fract(cycle.add(0.5));
-
-  const drift = look.windTravel;
-  const travel = direction.mul(speed).mul(7);
-  const blend = abs(phase.mul(2).sub(1));
-  const strength = float(1.1)
-    .add(speed.mul(0.6))
-    .mul(calming)
-    .mul(float(1).sub(rapids.mul(RAPIDS_CALMING)));
-
-  const pointA = positionWorld.xz.sub(drift).sub(travel.mul(phase));
-  const pointB = positionWorld.xz.sub(drift).sub(travel.mul(otherPhase)).add(vec2(13.7, 4.1));
-
-  const waves = normalize(mix(waveNormal(pointA, strength), waveNormal(pointB, strength), blend));
-
-  return normalize(waves.add(vec3(flow.x, 0, flow.y)));
+export class WaterLook {
+  readonly daylight = uniform(1);
+  readonly horizonColor = uniform(new Color(0xcf_e2_f0));
+  readonly precipitation = uniform(0);
+  readonly rainfall = uniform(0);
+  readonly windTravel = uniform(new Vector2());
+  readonly zenithColor = uniform(new Color(0x4c_8c_d6));
 }

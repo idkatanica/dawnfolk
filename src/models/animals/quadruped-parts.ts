@@ -12,10 +12,6 @@ import { LEG_ENDS, LEG_SIDES, type LegEnd, QuadrupedBone, type QuadrupedFrame } 
 
 type LegPoint = readonly [radius: number, y: number, z: number, inset?: number];
 
-export function legPath(x: number, points: readonly LegPoint[]): TubePoint[] {
-  return points.map(([radius, y, z, inset = 0]) => ({ radius, x: x - inset, y, z }));
-}
-
 interface LegOptions {
   readonly blend: number;
   readonly detail: DetailSteps;
@@ -24,6 +20,17 @@ interface LegOptions {
   readonly seam: number;
   readonly segments: number;
   readonly slot: number | ((point: SurfacePoint) => number);
+}
+
+interface EyeOptions {
+  readonly direction: Triple;
+  readonly origin: Triple;
+  readonly radius: number;
+  readonly sink: number;
+}
+
+export function legPath(x: number, points: readonly LegPoint[]): TubePoint[] {
+  return points.map(([radius, y, z, inset = 0]) => ({ radius, x: x - inset, y, z }));
 }
 
 export function addLegs(builder: MeshBuilder, options: LegOptions): void {
@@ -49,13 +56,6 @@ export function addLegs(builder: MeshBuilder, options: LegOptions): void {
 
 export function hoofBelow(height: number): (point: SurfacePoint) => number {
   return (point) => (point.position.y < height ? MaterialSlot.Hoof : MaterialSlot.Coat);
-}
-
-interface EyeOptions {
-  readonly direction: Triple;
-  readonly origin: Triple;
-  readonly radius: number;
-  readonly sink: number;
 }
 
 export function addEyes(builder: MeshBuilder, head: Shape, options: EyeOptions): void {

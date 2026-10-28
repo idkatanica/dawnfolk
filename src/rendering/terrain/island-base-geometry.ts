@@ -137,7 +137,6 @@ function placeVertex(outline: BaseOutline, point: PerimeterPoint, ring: RingVert
   const { x, z } = point;
 
   const angle = Math.atan2(z, x);
-
   const ridges = noise.fractal(Math.cos(angle) * 9, ring.depth * 2.4, Math.sin(angle) * 9, { octaves: 3 });
   const lumps = noise.fractal(x * 0.0021, ring.depth * 3.1 + 7, z * 0.0021, { octaves: 3 });
 
@@ -181,7 +180,6 @@ function pushStrips(indices: number[], pointCount: number, ringCount: number, fi
 
 function buildCliff(outline: BaseOutline): BufferGeometry {
   const rings = cliffRings(outline.cliffBands);
-
   const positions: number[] = [];
   const topPoints: number[] = [];
   const cliffAmounts: number[] = [];
@@ -216,7 +214,6 @@ function pushStitch(indices: number[], rimCount: number, stride: number, ringCou
     const below = rimCount + coarse * ringCount;
     const nextBelow = rimCount + ((coarse + 1) % coarseCount) * ringCount;
     const firstRim = coarse * stride;
-
     const lastRim = Math.min(firstRim + stride, rimCount);
 
     for (let rim = firstRim; rim < lastRim; rim += 1) {

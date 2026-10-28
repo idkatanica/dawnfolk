@@ -10,6 +10,7 @@ import { QUADRUPED_CLIPS } from "./quadruped-clips.ts";
 import { QuadrupedBone } from "./quadruped-skeleton.ts";
 
 const MUZZLE_REACH = 0.3;
+const FIGHTERS = ANIMAL_KINDS.filter((kind) => !ANIMALS[kind].isSmallGame);
 
 function posed(kind: AnimalKind, clip: AnimalPose, phase: number): SkeletonPoser {
   const species = ANIMAL_SPECIES[kind];
@@ -32,8 +33,6 @@ function muzzle(kind: AnimalKind, poser: SkeletonPoser): Vector3 {
 
   return poser.skinPoint(QuadrupedBone.Head, new Vector3(x, y, z + MUZZLE_REACH), new Vector3());
 }
-
-const FIGHTERS = ANIMAL_KINDS.filter((kind) => !ANIMALS[kind].isSmallGame);
 
 describe.each(FIGHTERS)("%s fight clips", (kind) => {
   test("throws the head into the strike", () => {

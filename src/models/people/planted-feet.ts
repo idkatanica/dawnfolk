@@ -13,7 +13,6 @@ const STEEPEST_BALL_OF_FOOT = degrees(40);
 const WIDEST_STEP_BACK = degrees(30);
 const FRONT_SIDE: Side = 1;
 const BACK_SIDE = otherSide(FRONT_SIDE);
-
 const pitch = new Quaternion();
 const roll = new Quaternion();
 const yaw = new Quaternion();
@@ -22,6 +21,15 @@ const thighRotation = new Quaternion();
 const shinRotation = new Quaternion();
 const footRotation = new Quaternion();
 const point = new Vector3();
+
+interface LegChain {
+  readonly ankle: Vector3;
+  readonly contacts: readonly Vector3[];
+  readonly hip: Vector3;
+  readonly knee: Vector3;
+}
+
+const LEG_CHAINS: Readonly<Record<Side, LegChain>> = { [-1]: legChain(-1), 1: legChain(1) };
 
 function angleOf(pose: Pose, bone: number, axis: number): number {
   return pose.angles[bone * ANGLES_PER_BONE + axis];
@@ -43,13 +51,6 @@ function between(from: Triple, to: Triple): Vector3 {
   return new Vector3(...to).sub(new Vector3(...from));
 }
 
-interface LegChain {
-  readonly ankle: Vector3;
-  readonly contacts: readonly Vector3[];
-  readonly hip: Vector3;
-  readonly knee: Vector3;
-}
-
 function legChain(side: Side): LegChain {
   const { foot } = sideBones(side);
 
@@ -66,8 +67,6 @@ function legChain(side: Side): LegChain {
     knee: between(hip, knee),
   };
 }
-
-const LEG_CHAINS: Readonly<Record<Side, LegChain>> = { [-1]: legChain(-1), 1: legChain(1) };
 
 function lowestContact(pose: Pose, side: Side): number {
   const bones = sideBones(side);

@@ -47,7 +47,6 @@ export function geometryFromMeshData(mesh: MeshData, channels: readonly VertexCh
   const [maximumX, maximumY, maximumZ] = mesh.bounds.maximum;
 
   const center = new Vector3((minimumX + maximumX) / 2, (minimumY + maximumY) / 2, (minimumZ + maximumZ) / 2);
-
   const radius = center.distanceTo(new Vector3(maximumX, maximumY, maximumZ));
 
   geometry.boundingSphere = new Sphere(center, radius);

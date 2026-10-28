@@ -32,14 +32,49 @@ export const TREE_HEIGHTS = {
   [PlantSpecies.Willow]: 12,
 } as const satisfies Readonly<Partial<Record<PlantSpeciesIndex, number>>>;
 
+export const TREE_GENERATORS: Readonly<Partial<Record<PlantSpeciesIndex, TreeGenerator>>> = {
+  [PlantSpecies.Acacia]: acacia,
+  [PlantSpecies.Alder]: alder,
+  [PlantSpecies.Birch]: birch,
+  [PlantSpecies.Bush]: bush,
+  [PlantSpecies.DeadTree]: deadTree,
+  [PlantSpecies.DesertShrub]: desertShrub,
+  [PlantSpecies.Maple]: maple,
+  [PlantSpecies.Oak]: oak,
+  [PlantSpecies.Palm]: palm,
+  [PlantSpecies.Pine]: pine,
+  [PlantSpecies.Poplar]: poplar,
+  [PlantSpecies.Spruce]: spruce,
+  [PlantSpecies.Willow]: willow,
+};
+
+const FORK_HEIGHT = 0.93;
+const DRAPE_SHARE = 0.68;
+const STUBS_PER_TIER = 3;
+const BARE_TOP_TIERS = 2;
+const TUCKED_SHARE = 0.12;
+const BLOB_COVER = 0.45;
+const DESERT_SHRUB_FORMS: readonly ((growth: Growth) => void)[] = [addSagebrush, addRosette, addGrassTuft];
+
+export const DESERT_SHRUB_FORM_COUNT = DESERT_SHRUB_FORMS.length;
+
+interface FrondShape {
+  readonly droop: number;
+  readonly length: number;
+  readonly segments: number;
+  readonly width: number;
+}
+
+type TreeGenerator = (seed: number, variant: number) => TreeStructure;
+
 function oak(seed: number): TreeStructure {
   const growth = createGrowth(seed);
 
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
-    forks: true,
     height: random.between(5, 6.4),
+    isForked: true,
     lean: random.between(0, 0.1),
     radiusBottom: 0.56,
     radiusTop: 0.36,
@@ -113,8 +148,8 @@ function birch(seed: number): TreeStructure {
     const trunk = addTrunk(
       growth,
       {
-        forks: false,
         height: random.between(16, 18.5) - stem * 2,
+        isForked: false,
         lean: stemLean(random, stems),
         radiusBottom: 0.3 - stem * 0.06,
         radiusTop: 0.06,
@@ -149,16 +184,14 @@ function birch(seed: number): TreeStructure {
   return finish(growth, TREE_HEIGHTS[PlantSpecies.Birch]);
 }
 
-const FORK_HEIGHT = 0.93;
-
 function maple(seed: number): TreeStructure {
   const growth = createGrowth(seed);
 
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
-    forks: true,
     height: random.between(4, 5.2),
+    isForked: true,
     lean: random.between(0, 0.07),
     radiusBottom: 0.45,
     radiusTop: 0.32,
@@ -201,16 +234,14 @@ function maple(seed: number): TreeStructure {
   return finish(growth, TREE_HEIGHTS[PlantSpecies.Maple]);
 }
 
-const DRAPE_SHARE = 0.68;
-
 function willow(seed: number): TreeStructure {
   const growth = createGrowth(seed);
 
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
-    forks: true,
     height: random.between(2.6, 3.4),
+    isForked: true,
     lean: random.between(0.04, 0.16),
     radiusBottom: 0.55,
     radiusTop: 0.42,
@@ -260,8 +291,8 @@ function alder(seed: number): TreeStructure {
     const trunk = addTrunk(
       growth,
       {
-        forks: false,
         height: random.between(11, 13) - stem * 1.5,
+        isForked: false,
         lean: stemLean(random, stems),
         radiusBottom: 0.32 - stem * 0.05,
         radiusTop: 0.08,
@@ -314,8 +345,8 @@ function spruce(seed: number): TreeStructure {
   const height = TREE_HEIGHTS[PlantSpecies.Spruce] * random.between(0.94, 1.02);
 
   const trunk = addTrunk(growth, {
-    forks: false,
     height,
+    isForked: false,
     lean: random.between(0, 0.03),
     radiusBottom: 0.42,
     radiusTop: 0.04,
@@ -352,9 +383,6 @@ function spruce(seed: number): TreeStructure {
   return finish(growth, height);
 }
 
-const STUBS_PER_TIER = 3;
-const BARE_TOP_TIERS = 2;
-
 function addSpruceStubs(growth: Growth, trunk: readonly TubePoint[], height: number): void {
   const { random } = growth;
 
@@ -378,8 +406,6 @@ function addSpruceStubs(growth: Growth, trunk: readonly TubePoint[], height: num
   }
 }
 
-const TUCKED_SHARE = 0.12;
-
 function skirtCeiling(foliage: readonly Foliage[]): number {
   const skirts = foliage.filter((item) => item.kind === "skirt");
   const highest = skirts.reduce((top, skirt) => (skirt.top > top.top ? skirt : top));
@@ -400,8 +426,8 @@ function pine(seed: number): TreeStructure {
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
-    forks: false,
     height: random.between(19, 21.5),
+    isForked: false,
     lean: random.between(0.02, 0.1),
     radiusBottom: 0.42,
     radiusTop: 0.12,
@@ -468,13 +494,6 @@ function bush(seed: number): TreeStructure {
 
 function addFrond(growth: Growth, points: readonly TubePoint[]): void {
   growth.foliage.push({ kind: "frond", points, tint: jitter(growth.random, 0.1) });
-}
-
-interface FrondShape {
-  readonly droop: number;
-  readonly length: number;
-  readonly segments: number;
-  readonly width: number;
 }
 
 function frondPath(growth: Growth, start: Vector3, direction: Vector3, shape: FrondShape): TubePoint[] {
@@ -557,8 +576,8 @@ function acacia(seed: number): TreeStructure {
   const { random } = growth;
 
   const trunk = addTrunk(growth, {
-    forks: true,
     height: random.between(2.4, 3.4),
+    isForked: true,
     lean: random.between(0.05, 0.22),
     radiusBottom: 0.34,
     radiusTop: 0.26,
@@ -616,8 +635,8 @@ function poplar(seed: number): TreeStructure {
   const height = random.between(18, 20.5);
 
   const trunk = addTrunk(growth, {
-    forks: false,
     height,
+    isForked: false,
     lean: random.between(0, 0.04),
     radiusBottom: 0.4,
     radiusTop: 0.07,
@@ -662,8 +681,6 @@ function poplar(seed: number): TreeStructure {
   return finish(growth, TREE_HEIGHTS[PlantSpecies.Poplar]);
 }
 
-const BLOB_COVER = 0.45;
-
 function blobCeiling(foliage: readonly Foliage[]): number {
   return foliage.reduce((ceiling, item) => {
     if (item.kind !== "blob") {
@@ -682,8 +699,8 @@ function deadTree(seed: number): TreeStructure {
   const isStump = random.chance(0.25);
 
   const trunk = addTrunk(growth, {
-    forks: false,
     height: isStump ? random.between(3.5, 5) : random.between(7, 9.5),
+    isForked: false,
     lean: random.between(0, 0.18),
     radiusBottom: 0.42,
     radiusTop: isStump ? 0.3 : 0.1,
@@ -722,7 +739,7 @@ function deadTree(seed: number): TreeStructure {
   return finish(growth, TREE_HEIGHTS[PlantSpecies.DeadTree]);
 }
 
-function sagebrush(growth: Growth): void {
+function addSagebrush(growth: Growth): void {
   const { random } = growth;
 
   const stems = random.integer(7, 11);
@@ -751,7 +768,7 @@ function sagebrush(growth: Growth): void {
   addBlob(growth, new Vector3(0, random.between(0.5, 0.65), 0), random.between(0.5, 0.6), 0.7);
 }
 
-function rosette(growth: Growth): void {
+function addRosette(growth: Growth): void {
   const { random } = growth;
 
   const leaves = random.integer(16, 24);
@@ -784,7 +801,7 @@ function rosette(growth: Growth): void {
   growth.branches.push({ depth: 1, points: stalk });
 }
 
-function grassTuft(growth: Growth): void {
+function addGrassTuft(growth: Growth): void {
   const { random } = growth;
 
   const blades = random.integer(14, 20);
@@ -812,10 +829,6 @@ function grassTuft(growth: Growth): void {
   }
 }
 
-const DESERT_SHRUB_FORMS: readonly ((growth: Growth) => void)[] = [sagebrush, rosette, grassTuft];
-
-export const DESERT_SHRUB_FORM_COUNT = DESERT_SHRUB_FORMS.length;
-
 function desertShrub(seed: number, variant: number): TreeStructure {
   const growth = createGrowth(seed);
 
@@ -823,21 +836,3 @@ function desertShrub(seed: number, variant: number): TreeStructure {
 
   return finish(growth, TREE_HEIGHTS[PlantSpecies.DesertShrub]);
 }
-
-type TreeGenerator = (seed: number, variant: number) => TreeStructure;
-
-export const TREE_GENERATORS: Readonly<Partial<Record<PlantSpeciesIndex, TreeGenerator>>> = {
-  [PlantSpecies.Acacia]: acacia,
-  [PlantSpecies.Alder]: alder,
-  [PlantSpecies.Birch]: birch,
-  [PlantSpecies.Bush]: bush,
-  [PlantSpecies.DeadTree]: deadTree,
-  [PlantSpecies.DesertShrub]: desertShrub,
-  [PlantSpecies.Maple]: maple,
-  [PlantSpecies.Oak]: oak,
-  [PlantSpecies.Palm]: palm,
-  [PlantSpecies.Pine]: pine,
-  [PlantSpecies.Poplar]: poplar,
-  [PlantSpecies.Spruce]: spruce,
-  [PlantSpecies.Willow]: willow,
-};

@@ -97,7 +97,6 @@ function createRibbonMaterial(brightnesses: PerObjectValues): MeshBasicNodeMater
   const width = attribute("ribbonWidth", "float");
 
   const toCamera = normalize(cameraPosition.sub(positionLocal));
-
   const across = normalize(cross(tangent, toCamera));
 
   material.positionNode = positionLocal.add(across.mul(side.mul(width)));

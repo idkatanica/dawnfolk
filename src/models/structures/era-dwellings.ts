@@ -26,8 +26,55 @@ const LONGHOUSE_ROOF_THICKNESS = 0.42;
 const LONGHOUSE_DOOR_HALF_WIDTH = 0.56;
 const LONGHOUSE_DOOR_TOP = 2.25;
 const TIMBER_SPACING = 2.1;
+const HOUSE_HALF_LENGTH = 3.6;
+const HOUSE_HALF_WIDTH = 2.7;
+const HOUSE_WALL_TOP = 2.4;
+const HOUSE_EAVE = 2.25;
+const HOUSE_EAVE_REACH = 3;
+const HOUSE_RIDGE = 4.6;
+const HOUSE_ROOF_HALF_LENGTH = 3.95;
+const HOUSE_DOOR_HALF_WIDTH = 0.52;
+const HOUSE_DOOR_TOP = 2;
+const HOUSE_WINDOW_X = 2;
+const HOUSE_WINDOW_BOTTOM = 1.2;
+const HOUSE_WINDOW_TOP = 1.7;
+const COURSE_HEIGHT = 0.34;
+const STONE_DEPTH = 0.14;
+const STONE_PROUD = 0.04;
+const STONE_SALT = 17.9;
 
-function gable(context: StructureContext, x: number): void {
+interface Opening {
+  readonly bottom: number;
+  readonly left: number;
+  readonly right: number;
+  readonly top: number;
+}
+
+const FRONT_OPENINGS: readonly Opening[] = [
+  { bottom: 0, left: -HOUSE_DOOR_HALF_WIDTH - 0.1, right: HOUSE_DOOR_HALF_WIDTH + 0.1, top: HOUSE_DOOR_TOP + 0.25 },
+  {
+    bottom: HOUSE_WINDOW_BOTTOM - 0.1,
+    left: -HOUSE_WINDOW_X - 0.4,
+    right: -HOUSE_WINDOW_X + 0.4,
+    top: HOUSE_WINDOW_TOP + 0.25,
+  },
+  {
+    bottom: HOUSE_WINDOW_BOTTOM - 0.1,
+    left: HOUSE_WINDOW_X - 0.4,
+    right: HOUSE_WINDOW_X + 0.4,
+    top: HOUSE_WINDOW_TOP + 0.25,
+  },
+];
+
+interface WallFace {
+  readonly halfLength: number;
+  readonly isAlongX: boolean;
+  readonly offset: number;
+  readonly openings: readonly Opening[];
+  readonly side: number;
+}
+
+function addGable(context: StructureContext, x: number): void {
   const base = LONGHOUSE_WALL_TOP - 0.1;
   const halfWidth = LONGHOUSE_HALF_WIDTH - 0.05;
 
@@ -47,7 +94,7 @@ function gable(context: StructureContext, x: number): void {
   );
 }
 
-function crossedTimbers(context: StructureContext, x: number): void {
+function addCrossedTimbers(context: StructureContext, x: number): void {
   for (const side of [-1, 1]) {
     addLog(context, [x, LONGHOUSE_RIDGE - 1.3, side * 1.1], [x, LONGHOUSE_RIDGE + 0.75, -side * 0.55], 0.075, {
       buildOrder: 0.95,
@@ -56,7 +103,7 @@ function crossedTimbers(context: StructureContext, x: number): void {
   }
 }
 
-function longhouseWalls(context: StructureContext): void {
+function addLonghouseWalls(context: StructureContext): void {
   const wallHeight = LONGHOUSE_WALL_TOP - LONGHOUSE_FOOTING + 0.05;
 
   addBlock(
@@ -101,7 +148,7 @@ function longhouseWalls(context: StructureContext): void {
   }
 }
 
-function longhouseDoor(context: StructureContext): void {
+function addLonghouseDoor(context: StructureContext): void {
   const front = LONGHOUSE_HALF_WIDTH;
   const doorHeight = LONGHOUSE_DOOR_TOP - LONGHOUSE_FOOTING;
 
@@ -139,7 +186,7 @@ function longhouseDoor(context: StructureContext): void {
   }
 }
 
-function longhouseRoof(context: StructureContext): void {
+function addLonghouseRoof(context: StructureContext): void {
   addPitchedRoof(context, {
     eave: LONGHOUSE_EAVE,
     length: LONGHOUSE_ROOF_HALF_LENGTH * 2,
@@ -154,8 +201,8 @@ function longhouseRoof(context: StructureContext): void {
   });
 
   for (const side of [-1, 1]) {
-    gable(context, side * (LONGHOUSE_HALF_LENGTH - 0.05));
-    crossedTimbers(context, side * (LONGHOUSE_ROOF_HALF_LENGTH - 0.1));
+    addGable(context, side * (LONGHOUSE_HALF_LENGTH - 0.05));
+    addCrossedTimbers(context, side * (LONGHOUSE_ROOF_HALF_LENGTH - 0.1));
   }
 
   addBlock(context, [1, 0.4, 1], [1.6, LONGHOUSE_RIDGE + 0.05, 0], {
@@ -165,55 +212,15 @@ function longhouseRoof(context: StructureContext): void {
   });
 }
 
-export function longhouse(context: StructureContext): void {
-  longhouseWalls(context);
-  longhouseDoor(context);
-  longhouseRoof(context);
+export function addLonghouse(context: StructureContext): void {
+  addLonghouseWalls(context);
+  addLonghouseDoor(context);
+  addLonghouseRoof(context);
 
   if (isDetailed(context)) {
     addLogPile(context, [-4.2, 0, LONGHOUSE_HALF_WIDTH + 0.55], 0, 1.6, 0.6);
   }
 }
-
-const HOUSE_HALF_LENGTH = 3.6;
-const HOUSE_HALF_WIDTH = 2.7;
-const HOUSE_WALL_TOP = 2.4;
-const HOUSE_EAVE = 2.25;
-const HOUSE_EAVE_REACH = 3;
-const HOUSE_RIDGE = 4.6;
-const HOUSE_ROOF_HALF_LENGTH = 3.95;
-const HOUSE_DOOR_HALF_WIDTH = 0.52;
-const HOUSE_DOOR_TOP = 2;
-const HOUSE_WINDOW_X = 2;
-const HOUSE_WINDOW_BOTTOM = 1.2;
-const HOUSE_WINDOW_TOP = 1.7;
-const COURSE_HEIGHT = 0.34;
-const STONE_DEPTH = 0.14;
-const STONE_PROUD = 0.04;
-const STONE_SALT = 17.9;
-
-interface Opening {
-  readonly bottom: number;
-  readonly left: number;
-  readonly right: number;
-  readonly top: number;
-}
-
-const FRONT_OPENINGS: readonly Opening[] = [
-  { bottom: 0, left: -HOUSE_DOOR_HALF_WIDTH - 0.1, right: HOUSE_DOOR_HALF_WIDTH + 0.1, top: HOUSE_DOOR_TOP + 0.25 },
-  {
-    bottom: HOUSE_WINDOW_BOTTOM - 0.1,
-    left: -HOUSE_WINDOW_X - 0.4,
-    right: -HOUSE_WINDOW_X + 0.4,
-    top: HOUSE_WINDOW_TOP + 0.25,
-  },
-  {
-    bottom: HOUSE_WINDOW_BOTTOM - 0.1,
-    left: HOUSE_WINDOW_X - 0.4,
-    right: HOUSE_WINDOW_X + 0.4,
-    top: HOUSE_WINDOW_TOP + 0.25,
-  },
-];
 
 function overlapsOpening(
   openings: readonly Opening[],
@@ -227,15 +234,13 @@ function overlapsOpening(
   );
 }
 
-interface WallFace {
-  readonly halfLength: number;
-  readonly isAlongX: boolean;
-  readonly offset: number;
-  readonly openings: readonly Opening[];
-  readonly side: number;
-}
-
-function claddingStone(context: StructureContext, face: WallFace, left: number, right: number, course: number): void {
+function addCladdingStone(
+  context: StructureContext,
+  face: WallFace,
+  left: number,
+  right: number,
+  course: number
+): void {
   const bottom = course * COURSE_HEIGHT;
   const top = Math.min(HOUSE_WALL_TOP - 0.05, bottom + COURSE_HEIGHT - 0.02);
   const middle = (left + right) / 2;
@@ -244,7 +249,6 @@ function claddingStone(context: StructureContext, face: WallFace, left: number, 
   const shade = 0.72 + 0.28 * hashToUnit(course, middle * 3.1, STONE_SALT);
 
   const size: Triple = face.isAlongX ? [length, top - bottom, STONE_DEPTH] : [STONE_DEPTH, top - bottom, length];
-
   const position: Triple = face.isAlongX
     ? [middle, (bottom + top) / 2, outward]
     : [outward, (bottom + top) / 2, middle];
@@ -256,7 +260,7 @@ function claddingStone(context: StructureContext, face: WallFace, left: number, 
   });
 }
 
-function cladFace(context: StructureContext, face: WallFace): void {
+function addCladding(context: StructureContext, face: WallFace): void {
   const courses = Math.floor(HOUSE_WALL_TOP / COURSE_HEIGHT);
 
   for (let course = 0; course < courses; course += 1) {
@@ -265,11 +269,10 @@ function cladFace(context: StructureContext, face: WallFace): void {
     for (let block = 0; left < face.halfLength - 0.2; block += 1) {
       const length = 0.5 + 0.45 * hashToUnit(course, block, STONE_SALT + face.offset);
       const right = Math.min(face.halfLength - 0.06, left + length);
-
       const bottom = course * COURSE_HEIGHT;
 
       if (!overlapsOpening(face.openings, left, right, bottom, bottom + COURSE_HEIGHT)) {
-        claddingStone(context, face, left, right, course);
+        addCladdingStone(context, face, left, right, course);
       }
 
       left = right;
@@ -277,7 +280,7 @@ function cladFace(context: StructureContext, face: WallFace): void {
   }
 }
 
-function houseWalls(context: StructureContext): void {
+function addHouseWalls(context: StructureContext): void {
   addBlock(context, [HOUSE_HALF_LENGTH * 2, HOUSE_WALL_TOP, HOUSE_HALF_WIDTH * 2], [0, HOUSE_WALL_TOP / 2, 0], {
     buildOrder: rising(0.05, 0.45, 0, HOUSE_WALL_TOP),
     shade: stoneShade,
@@ -296,11 +299,11 @@ function houseWalls(context: StructureContext): void {
   ];
 
   for (const face of faces) {
-    cladFace(context, face);
+    addCladding(context, face);
   }
 }
 
-function houseFront(context: StructureContext): void {
+function addHouseFront(context: StructureContext): void {
   const front = HOUSE_HALF_WIDTH;
 
   addBlock(context, [HOUSE_DOOR_HALF_WIDTH * 2, HOUSE_DOOR_TOP, 0.1], [0, HOUSE_DOOR_TOP / 2, front + 0.02], {
@@ -332,7 +335,7 @@ function houseFront(context: StructureContext): void {
   }
 }
 
-function houseRoof(context: StructureContext): void {
+function addHouseRoof(context: StructureContext): void {
   addPitchedRoof(context, {
     eave: HOUSE_EAVE,
     length: HOUSE_ROOF_HALF_LENGTH * 2,
@@ -376,10 +379,10 @@ function houseRoof(context: StructureContext): void {
   });
 }
 
-export function stoneHouse(context: StructureContext): void {
-  houseWalls(context);
-  houseFront(context);
-  houseRoof(context);
+export function addStoneHouse(context: StructureContext): void {
+  addHouseWalls(context);
+  addHouseFront(context);
+  addHouseRoof(context);
 
   addLogPile(context, [HOUSE_HALF_LENGTH + 0.42, 0, 0.6], Math.PI / 2, 1.5, 0.62);
 }

@@ -19,8 +19,6 @@ import {
 } from "../stones.ts";
 import type { PlantDetailLevel } from "./tree-mesher.ts";
 
-type RockSpecies = typeof PlantSpecies.Boulder | typeof PlantSpecies.MossyRock | typeof PlantSpecies.Sandstone;
-
 export const ROCK_HEIGHTS = {
   [PlantSpecies.Boulder]: 1.7,
   [PlantSpecies.MossyRock]: 1.5,
@@ -38,10 +36,50 @@ const STONE_DETAIL: Readonly<Record<PlantDetailLevel, number>> = { far: 0, high:
 const STRATA_SEGMENTS: Readonly<Record<PlantDetailLevel, number>> = { far: 4, high: 14, low: 6, medium: 9 };
 const UP: Triple = [0, 1, 0];
 const DOWN: Triple = [0, -1, 0];
+const BOULDER_COMPANIONS: readonly (readonly number[])[] = [[], [0.62], [], [0.58, 0.46]];
+const MOSSY_LOOK: StoneLook = { lichen: 0.16, moss: 0.62 };
+
+const SANDSTONE_STRATA: readonly (readonly (readonly [number, number])[])[] = [
+  [
+    [0.62, 0.6],
+    [0.5, 0.55],
+    [0.42, 0.5],
+    [0.36, 0.45],
+  ],
+  [
+    [1.85, 0.7],
+    [1.55, 0.68],
+    [1.22, 0.66],
+    [0.85, 0.62],
+  ],
+  [
+    [1.3, 0.45],
+    [1.12, 0.4],
+    [1.36, 0.45],
+    [1.18, 0.4],
+    [1.0, 0.4],
+  ],
+];
+
+type RockSpecies = typeof PlantSpecies.Boulder | typeof PlantSpecies.MossyRock | typeof PlantSpecies.Sandstone;
 
 interface RockContext extends StoneContext {
   readonly level: PlantDetailLevel;
   readonly variant: number;
+}
+
+const ROCK_MESHERS: Readonly<Record<RockSpecies, (context: RockContext) => void>> = {
+  [PlantSpecies.Boulder]: addBoulder,
+  [PlantSpecies.MossyRock]: addMossyRock,
+  [PlantSpecies.Sandstone]: addSandstone,
+};
+
+const ROCK_SPECIES: ReadonlySet<number> = new Set(Object.keys(ROCK_MESHERS).map(Number));
+
+interface Stratum {
+  readonly bottom: number;
+  readonly radius: number;
+  readonly top: number;
 }
 
 function chisel(context: RockContext, options: ChiselOptions): Shape {
@@ -61,9 +99,7 @@ function roundStone(context: RockContext, radius: number, roughness: number): Sh
   );
 }
 
-const BOULDER_COMPANIONS: readonly (readonly number[])[] = [[], [0.62], [], [0.58, 0.46]];
-
-function boulder(context: RockContext): void {
+function addBoulder(context: RockContext): void {
   const { random, variant } = context;
 
   const radius = variant === 2 ? 1.35 : 1.25;
@@ -98,9 +134,7 @@ function boulder(context: RockContext): void {
   }
 }
 
-const MOSSY_LOOK: StoneLook = { lichen: 0.16, moss: 0.62 };
-
-function mossyRock(context: RockContext): void {
+function addMossyRock(context: RockContext): void {
   const { random, variant } = context;
 
   if (variant === 1) {
@@ -133,12 +167,6 @@ function mossyRock(context: RockContext): void {
     },
     MOSSY_LOOK
   );
-}
-
-interface Stratum {
-  readonly bottom: number;
-  readonly radius: number;
-  readonly top: number;
 }
 
 function strataSections(strata: readonly Stratum[], random: RandomSource): LoftSection[] {
@@ -206,29 +234,7 @@ function bandSlot(height: number, seed: number): (point: SurfacePoint) => Materi
   };
 }
 
-const SANDSTONE_STRATA: readonly (readonly (readonly [number, number])[])[] = [
-  [
-    [0.62, 0.6],
-    [0.5, 0.55],
-    [0.42, 0.5],
-    [0.36, 0.45],
-  ],
-  [
-    [1.85, 0.7],
-    [1.55, 0.68],
-    [1.22, 0.66],
-    [0.85, 0.62],
-  ],
-  [
-    [1.3, 0.45],
-    [1.12, 0.4],
-    [1.36, 0.45],
-    [1.18, 0.4],
-    [1.0, 0.4],
-  ],
-];
-
-function sandstone(context: RockContext): void {
+function addSandstone(context: RockContext): void {
   const { builder, level, random, variant } = context;
 
   const strata = stack(-0.3, SANDSTONE_STRATA[variant % SANDSTONE_STRATA.length]);
@@ -265,14 +271,6 @@ function sandstone(context: RockContext): void {
     { lichen: 0, moss: 0, slot: MaterialSlot.SandstoneBand }
   );
 }
-
-const ROCK_MESHERS: Readonly<Record<RockSpecies, (context: RockContext) => void>> = {
-  [PlantSpecies.Boulder]: boulder,
-  [PlantSpecies.MossyRock]: mossyRock,
-  [PlantSpecies.Sandstone]: sandstone,
-};
-
-const ROCK_SPECIES: ReadonlySet<number> = new Set(Object.keys(ROCK_MESHERS).map(Number));
 
 export function isRockModel(species: PlantSpeciesIndex): species is RockSpecies {
   return ROCK_SPECIES.has(species);

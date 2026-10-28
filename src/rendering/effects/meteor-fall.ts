@@ -40,8 +40,8 @@ export class MeteorFall implements ActiveEffect {
   readonly #sparks: Spark[] = [];
   readonly #to: Vector3;
   #age = 0;
-  #sparkDebt = 0;
   #sparkCount = 0;
+  #sparkDebt = 0;
   #travelled = 0;
 
   constructor(context: EffectContext, effect: MeteorEffect) {

@@ -30,11 +30,6 @@ export const MarkerPass = {
 
 type MarkerPassCode = (typeof MarkerPass)[keyof typeof MarkerPass];
 
-interface MarkerPaint {
-  readonly color: Node<"vec3">;
-  readonly coverage: Node<"float">;
-}
-
 const RING_COLOR = vec3(1, 1, 1);
 const SELECTION_COLOR = color(0xdd_6f_35);
 const HALO_OPACITY = 0.7;
@@ -42,13 +37,17 @@ const HALO_CORE_PIXELS = 0.75;
 const CORNER_ROUNDING = 1;
 const ROOT_THREE = Math.sqrt(3);
 
+interface MarkerPaint {
+  readonly color: Node<"vec3">;
+  readonly coverage: Node<"float">;
+}
+
 function circleDistance(point: Node<"vec2">, radius: Node<"float">): Node<"float"> {
   return length(point).sub(radius);
 }
 
 function diamondDistance(point: Node<"vec2">, radius: Node<"float">): Node<"float"> {
   const turned = abs(vec2(point.x.add(point.y), point.y.sub(point.x)).mul(Math.SQRT1_2));
-
   const reach = turned.sub(radius.mul(Math.SQRT1_2).sub(CORNER_ROUNDING));
 
   return length(max(reach, 0))
@@ -98,7 +97,6 @@ function paintOf(pass: MarkerPassCode, edge: Node<"float">, fill: Node<"vec3">, 
   }
 
   const smoothing = max(fwidth(edge), 0.001);
-
   const body = coverageInside(edge, smoothing);
 
   if (pass === MarkerPass.Ring) {
@@ -133,7 +131,6 @@ export function createMarkerMaterial(
 
   const shape = varying(corner, "markerCorner");
   const pixels = style.y;
-
   const point = vec2(shape.x, shape.y.sub(0.5)).mul(pixels);
   const radius = pixels.mul(0.5).sub(MARKER_HALO_PIXELS);
 

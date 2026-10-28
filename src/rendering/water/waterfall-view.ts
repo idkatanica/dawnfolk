@@ -124,7 +124,6 @@ function findLip(waterfall: Waterfall, textures: TerrainTextures): Lip {
   const [outwardX, outwardZ] = textures.outline.outwardAt(centerX, centerZ);
 
   const lip = { centerX, centerZ, outwardX, outwardZ, top: waterfall.top };
-
   const left = wetEdge(lip, -1, textures);
   const right = wetEdge(lip, 1, textures);
 
@@ -155,14 +154,12 @@ function addCurtain(writer: CurtainWriter, lip: Lip, outline: IslandOutline, pli
 
   for (let along = 0; along <= ALONG_SEGMENTS; along += 1) {
     const amount = FADE_END * (along / ALONG_SEGMENTS) ** ROW_CROWDING;
-
     const drop = amount * FALL_HEIGHT;
     const outward = faceOffset(drop, faceDepth);
     const spread = 1 + (BOTTOM_SPREAD - 1) * amount;
 
     for (let step = 0; step <= across; step += 1) {
       const sideAmount = step / across;
-
       const offset = -lip.left + sideAmount * width;
       const [rimX, rimZ] = outline.atCoast(lip.centerX + sideX * offset, lip.centerZ + sideZ * offset);
       const spreadX = sideX * offset * (spread - 1);
@@ -185,7 +182,6 @@ function addCurtain(writer: CurtainWriter, lip: Lip, outline: IslandOutline, pli
   for (let along = 0; along < ALONG_SEGMENTS; along += 1) {
     for (let step = 0; step < across; step += 1) {
       const corner = firstVertex + along * rowLength + step;
-
       const below = corner + rowLength;
 
       writer.indices.push(corner, below, corner + 1, corner + 1, below, below + 1);
@@ -218,7 +214,6 @@ function createCurtainMaterial(): MeshBasicNodeMaterial {
   const falling = smoothstep(0, TINTED_DROP, drop);
 
   const sheet = mix(smoothstep(0.3, 0.75, streaks.mul(0.75).add(spray.mul(0.25))), float(0.5), mist);
-
   const fallColor = mix(vec3(0.72, 0.84, 0.9), vec3(1, 1, 1), sheet);
 
   material.colorNode = mix(WATER_TINT, fallColor, falling);

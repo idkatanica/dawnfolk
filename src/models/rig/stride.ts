@@ -3,6 +3,8 @@ import type { Pose } from "./pose.ts";
 import type { Skeleton } from "./skeleton.ts";
 import type { SkeletonPoser } from "./skeleton-poser.ts";
 
+const SAMPLES_PER_CYCLE = 96;
+
 type PoseSampler = (pose: Pose, phase: number) => void;
 
 interface StrideMeasurement {
@@ -17,8 +19,6 @@ interface PlantedContact {
   readonly index: number;
   readonly z: number;
 }
-
-const SAMPLES_PER_CYCLE = 96;
 
 function lowestContact(measurement: StrideMeasurement, point: Vector3): PlantedContact {
   const { poser, skeleton } = measurement;

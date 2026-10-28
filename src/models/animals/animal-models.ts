@@ -7,7 +7,7 @@ import type { Skeleton } from "../rig/skeleton.ts";
 import type { AnimalAppearance } from "./animal-appearance.ts";
 import { ANIMAL_DETAILS, type AnimalDetail, type AnimalDetailLevel } from "./animal-detail.ts";
 import { addDeerBody, addFawnSpots, addLargeAntlers, addSmallAntlers, DEER_FRAME, DEER_GAIT } from "./deer-model.ts";
-import { addHareBody, HARE_FRAME, HARE_GAIT, hareEarMotion } from "./hare-model.ts";
+import { addHareBody, HARE_FRAME, HARE_GAIT, moveHareEars } from "./hare-model.ts";
 import { addIbexBody, addLongHorns, addShortHorns, IBEX_FRAME, IBEX_GAIT } from "./ibex-model.ts";
 import {
   addLongTusks,
@@ -15,7 +15,7 @@ import {
   addShortTusks,
   MAMMOTH_FRAME,
   MAMMOTH_GAIT,
-  mammothTrunkMotion,
+  moveMammothTrunk,
 } from "./mammoth-model.ts";
 import { type AnimalClipContext, applyAnimalClip, type ExtraMotion, type GaitStyle } from "./quadruped-clips.ts";
 import { createQuadrupedSkeleton, LEG_ENDS, LEG_SIDES, legBones, QuadrupedBone } from "./quadruped-skeleton.ts";
@@ -34,10 +34,6 @@ interface AnimalSpecies {
   readonly gait: GaitStyle;
   readonly parts: readonly PartDefinition[];
   readonly skeleton: Skeleton;
-}
-
-function always(): boolean {
-  return true;
 }
 
 export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
@@ -61,7 +57,7 @@ export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
     skeleton: createQuadrupedSkeleton(DEER_FRAME),
   },
   hare: {
-    extraMotion: hareEarMotion,
+    extraMotion: moveHareEars,
     gait: HARE_GAIT,
     parts: [{ build: addHareBody, isShown: always, name: "body" }],
     skeleton: createQuadrupedSkeleton(HARE_FRAME),
@@ -81,7 +77,7 @@ export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
     skeleton: createQuadrupedSkeleton(IBEX_FRAME),
   },
   mammoth: {
-    extraMotion: mammothTrunkMotion,
+    extraMotion: moveMammothTrunk,
     gait: MAMMOTH_GAIT,
     parts: [
       { build: addMammothBody, isShown: always, name: "body" },
@@ -104,6 +100,10 @@ export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
     skeleton: createQuadrupedSkeleton(WOLF_FRAME),
   },
 };
+
+function always(): boolean {
+  return true;
+}
 
 export function animalBoneScales(kind: AnimalKind, appearance: AnimalAppearance): Float32Array {
   const scales = new Float32Array(ANIMAL_SPECIES[kind].skeleton.bones.length * 3).fill(appearance.size);

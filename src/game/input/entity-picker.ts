@@ -8,7 +8,10 @@ import { normalizedToPixels, projectToNormalized } from "./screen-projection.ts"
 
 const PICK_RADIUS_PIXELS = 26;
 const PERSON_CENTER_HEIGHT = 0.9 * FIGURE_SCALE;
+const ANIMAL_CENTER_HEIGHT = 1.2;
 const BUILDING_PICK_RADIUS_PIXELS = 40;
+const BUILDING_CENTER_HEIGHT = 1.5;
+const BUILDING_PICK_PENALTY_PIXELS = 8;
 const SMALLEST_OCCLUSION_MARGIN = 12;
 const OCCLUSION_MARGIN_PER_METER = 0.04;
 
@@ -31,7 +34,7 @@ interface AgentLayout {
 }
 
 const PEOPLE: AgentLayout = { fields: PersonField, kind: "person", lift: PERSON_CENTER_HEIGHT, stride: PERSON_STRIDE };
-const ANIMALS: AgentLayout = { fields: AnimalField, kind: "animal", lift: 1.2, stride: ANIMAL_STRIDE };
+const ANIMALS: AgentLayout = { fields: AnimalField, kind: "animal", lift: ANIMAL_CENTER_HEIGHT, stride: ANIMAL_STRIDE };
 
 export class EntityPicker {
   readonly #camera: PerspectiveCamera;
@@ -99,11 +102,11 @@ export class EntityPicker {
     const candidates: Candidate[] = [];
 
     for (const building of frame.buildings) {
-      const hit = this.#screenHit(building.x, 1.5, building.z, screen, viewport);
+      const hit = this.#screenHit(building.x, BUILDING_CENTER_HEIGHT, building.z, screen, viewport);
 
       if (hit.distance < BUILDING_PICK_RADIUS_PIXELS) {
         candidates.push({
-          distance: hit.distance + 8,
+          distance: hit.distance + BUILDING_PICK_PENALTY_PIXELS,
           reach: hit.reach,
           selection: { id: building.id, kind: "building" },
         });

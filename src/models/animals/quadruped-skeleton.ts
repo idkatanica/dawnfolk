@@ -22,6 +22,9 @@ export const QuadrupedBone = {
   UpperHindRight: 15,
 } as const;
 
+export const LEG_SIDES: readonly LegSide[] = [1, -1];
+export const LEG_ENDS: readonly LegEnd[] = ["front", "hind"];
+
 type LegJoints = readonly [upper: Triple, lower: Triple, hoof: Triple];
 
 export interface QuadrupedFrame {
@@ -71,10 +74,6 @@ const LEG_BONES: Readonly<Record<LegEnd, Readonly<Record<"left" | "right", LegBo
     },
   },
 };
-
-export const LEG_SIDES: readonly LegSide[] = [1, -1];
-
-export const LEG_ENDS: readonly LegEnd[] = ["front", "hind"];
 
 export function legBones(end: LegEnd, side: LegSide): LegBones {
   return LEG_BONES[end][side === 1 ? "left" : "right"];

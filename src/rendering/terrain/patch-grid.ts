@@ -35,13 +35,6 @@ export interface HeightRange {
   readonly lowest: number;
 }
 
-export interface PatchCorner {
-  readonly firstColumn: number;
-  readonly firstRow: number;
-  readonly lastColumn: number;
-  readonly lastRow: number;
-}
-
 export interface PatchPiece {
   readonly firstColumn: number;
   readonly firstRow: number;
@@ -54,8 +47,8 @@ export interface PatchContent extends HeightRange {
 
 interface Patch {
   readonly bounds: Box3;
-  readonly corner: PatchCorner;
   pieces: readonly PatchPiece[];
+  readonly region: CellRegion;
 }
 
 interface PatchLevel {
@@ -64,14 +57,14 @@ interface PatchLevel {
   readonly origins: InstancedBufferAttribute;
 }
 
-type PatchMeasure = (corner: PatchCorner) => PatchContent | null;
+type PatchMeasure = (region: CellRegion) => PatchContent | null;
 
-function overlaps(region: CellRegion, corner: PatchCorner): boolean {
+function overlaps(changed: CellRegion, region: CellRegion): boolean {
   return (
-    region.lastColumn >= corner.firstColumn - 1 &&
-    region.firstColumn <= corner.lastColumn + 1 &&
-    region.lastRow >= corner.firstRow - 1 &&
-    region.firstRow <= corner.lastRow + 1
+    changed.lastColumn >= region.firstColumn - 1 &&
+    changed.firstColumn <= region.lastColumn + 1 &&
+    changed.lastRow >= region.firstRow - 1 &&
+    changed.firstRow <= region.lastRow + 1
   );
 }
 
@@ -102,7 +95,6 @@ export class PatchGrid {
   constructor(grid: WorldGrid, measure: PatchMeasure, options: PatchGridOptions) {
     const patchesPerSide = Math.ceil(grid.cellsPerSide / PATCH_CELLS);
     const piecesPerPatch = (PATCH_CELLS / options.pieceCells) ** 2;
-
     const patchCount = patchesPerSide * patchesPerSide;
 
     this.#grid = grid;
@@ -127,7 +119,7 @@ export class PatchGrid {
 
   remeasure(region: CellRegion | null): void {
     for (const patch of this.#patches) {
-      if (region === null || overlaps(region, patch.corner)) {
+      if (region === null || overlaps(region, patch.region)) {
         this.#measurePatch(patch);
       }
     }
@@ -182,7 +174,6 @@ export class PatchGrid {
 
   #place(piece: PatchPiece, level: number): void {
     const counts = this.#counts[piece.material];
-
     const slot = counts[level];
 
     this.#levels[piece.material][level].origins.setXY(slot, piece.firstColumn, piece.firstRow);
@@ -212,14 +203,14 @@ export class PatchGrid {
     const firstColumn = column * PATCH_CELLS;
     const firstRow = row * PATCH_CELLS;
 
-    const corner = {
+    const region = {
       firstColumn,
       firstRow,
       lastColumn: Math.min(last, firstColumn + PATCH_CELLS),
       lastRow: Math.min(last, firstRow + PATCH_CELLS),
     };
 
-    const patch: Patch = { bounds: new Box3(), corner, pieces: [] };
+    const patch: Patch = { bounds: new Box3(), pieces: [], region };
 
     this.#measurePatch(patch);
 
@@ -227,7 +218,7 @@ export class PatchGrid {
   }
 
   #measurePatch(patch: Patch): void {
-    const content = this.#measure(patch.corner);
+    const content = this.#measure(patch.region);
 
     for (const levels of this.#levels) {
       for (const level of levels) {
@@ -242,10 +233,10 @@ export class PatchGrid {
     }
 
     const grid = this.#grid;
-    const { corner } = patch;
+    const { region } = patch;
 
     patch.pieces = content.pieces;
-    patch.bounds.min.set(grid.centerX(corner.firstColumn), content.lowest, grid.centerZ(corner.firstRow));
-    patch.bounds.max.set(grid.centerX(corner.lastColumn), content.highest, grid.centerZ(corner.lastRow));
+    patch.bounds.min.set(grid.centerX(region.firstColumn), content.lowest, grid.centerZ(region.firstRow));
+    patch.bounds.max.set(grid.centerX(region.lastColumn), content.highest, grid.centerZ(region.lastRow));
   }
 }

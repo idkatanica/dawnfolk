@@ -9,6 +9,94 @@ import { HumanBone, otherSide, SIDES, type Side } from "./human-skeleton.ts";
 import { RUNNING, runningLegs, WALKING, walkingLegs } from "./leg-cycles.ts";
 import { plantFeet } from "./planted-feet.ts";
 
+const LEAP_STRIDE = 1.45;
+const LEAP_LIFT = 0.24;
+const KNEELING_SIDE: Side = -1;
+const STEADY_SIDE: Side = 1;
+
+const CHOP_SHOULDER: readonly Keyframe[] = [
+  [0, 160],
+  [0.34, 168],
+  [0.5, 38],
+  [0.62, 22],
+  [0.8, 90],
+];
+
+const CHOP_ELBOW: readonly Keyframe[] = [
+  [0, 52],
+  [0.34, 58],
+  [0.5, 12],
+  [0.62, 16],
+  [0.8, 40],
+];
+
+const CHOP_BEND: readonly Keyframe[] = [
+  [0, -8],
+  [0.34, -10],
+  [0.5, 18],
+  [0.62, 24],
+  [0.8, 6],
+];
+
+const MINE_SHOULDER: readonly Keyframe[] = [
+  [0, 150],
+  [0.38, 172],
+  [0.56, 30],
+  [0.68, 22],
+  [0.86, 95],
+];
+
+const MINE_ELBOW: readonly Keyframe[] = [
+  [0, 70],
+  [0.38, 78],
+  [0.56, 6],
+  [0.68, 10],
+  [0.86, 50],
+];
+
+const MINE_BEND: readonly Keyframe[] = [
+  [0, -6],
+  [0.38, -10],
+  [0.56, 30],
+  [0.68, 34],
+  [0.86, 10],
+];
+
+const MINE_WRIST: readonly Keyframe[] = [
+  [0, 0],
+  [0.38, 0],
+  [0.56, -30],
+  [0.68, -34],
+  [0.86, -10],
+];
+
+const DRAW_FORWARD: readonly Keyframe[] = [
+  [0, 100],
+  [0.12, 100],
+  [0.42, 105],
+  [0.62, 105],
+  [0.67, 100],
+  [0.85, 95],
+];
+
+const DRAW_OUTWARD: readonly Keyframe[] = [
+  [0, -50],
+  [0.12, -50],
+  [0.42, 10],
+  [0.62, 10],
+  [0.67, 18],
+  [0.85, -20],
+];
+
+const DRAW_ELBOW: readonly Keyframe[] = [
+  [0, 10],
+  [0.12, 10],
+  [0.42, 125],
+  [0.62, 125],
+  [0.67, 135],
+  [0.85, 60],
+];
+
 type HumanTool = "axe" | "basket" | "diggingStick" | "drawnBow" | "hammerStone" | "pickaxe" | "spear";
 
 export interface HumanClipContext {
@@ -23,10 +111,28 @@ export interface HumanClip {
   readonly tool: HumanTool | null;
 }
 
-const LEAP_STRIDE = 1.45;
-const LEAP_LIFT = 0.24;
-const KNEELING_SIDE: Side = -1;
-const STEADY_SIDE: Side = 1;
+export const HUMAN_CLIPS: Readonly<Record<PersonPose, HumanClip>> = {
+  build: { apply: build, timing: seconds(0.9), tool: "hammerStone" },
+  carry: { apply: carry, timing: STRIDE_TIMING, tool: null },
+  chop: { apply: chop, timing: seconds(1.45), tool: "axe" },
+  dead: { apply: dead, timing: seconds(10), tool: null },
+  dig: { apply: dig, timing: seconds(1.6), tool: "diggingStick" },
+  eat: { apply: eat, timing: seconds(2.6), tool: null },
+  fish: { apply: fish, timing: seconds(3.4), tool: "spear" },
+  gather: { apply: gather, timing: seconds(2.2), tool: "basket" },
+  idle: { apply: idle, timing: seconds(5.5), tool: null },
+  leap: { apply: leap, timing: STRIDE_TIMING, tool: null },
+  mine: { apply: mine, timing: seconds(1.3), tool: "pickaxe" },
+  play: { apply: play, timing: seconds(0.95), tool: null },
+  pray: { apply: pray, timing: seconds(4.8), tool: null },
+  run: { apply: run, timing: STRIDE_TIMING, tool: null },
+  shoot: { apply: shoot, timing: seconds(1.8), tool: "drawnBow" },
+  sit: { apply: sit, timing: seconds(7), tool: null },
+  sleep: { apply: sleep, timing: seconds(6), tool: null },
+  throw: { apply: throwSpear, timing: seconds(1.7), tool: "spear" },
+  walk: { apply: walk, timing: STRIDE_TIMING, tool: null },
+  ...FIGHT_CLIPS,
+};
 
 function strideScale(context: HumanClipContext, stride: number): number {
   if (context.ageGroup === "elder") {
@@ -205,30 +311,6 @@ function gather(pose: Pose, phase: number, context: HumanClipContext): void {
   stoop(pose, context);
 }
 
-const CHOP_SHOULDER: readonly Keyframe[] = [
-  [0, 160],
-  [0.34, 168],
-  [0.5, 38],
-  [0.62, 22],
-  [0.8, 90],
-];
-
-const CHOP_ELBOW: readonly Keyframe[] = [
-  [0, 52],
-  [0.34, 58],
-  [0.5, 12],
-  [0.62, 16],
-  [0.8, 40],
-];
-
-const CHOP_BEND: readonly Keyframe[] = [
-  [0, -8],
-  [0.34, -10],
-  [0.5, 18],
-  [0.62, 24],
-  [0.8, 6],
-];
-
 function chop(pose: Pose, phase: number): void {
   const shoulder = degrees(keyframes(phase, CHOP_SHOULDER));
   const elbow = degrees(keyframes(phase, CHOP_ELBOW));
@@ -351,38 +433,6 @@ function throwSpear(pose: Pose, phase: number): void {
   plantFeet(pose);
 }
 
-const MINE_SHOULDER: readonly Keyframe[] = [
-  [0, 150],
-  [0.38, 172],
-  [0.56, 30],
-  [0.68, 22],
-  [0.86, 95],
-];
-
-const MINE_ELBOW: readonly Keyframe[] = [
-  [0, 70],
-  [0.38, 78],
-  [0.56, 6],
-  [0.68, 10],
-  [0.86, 50],
-];
-
-const MINE_BEND: readonly Keyframe[] = [
-  [0, -6],
-  [0.38, -10],
-  [0.56, 30],
-  [0.68, 34],
-  [0.86, 10],
-];
-
-const MINE_WRIST: readonly Keyframe[] = [
-  [0, 0],
-  [0.38, 0],
-  [0.56, -30],
-  [0.68, -34],
-  [0.86, -10],
-];
-
 function mine(pose: Pose, phase: number): void {
   const shoulder = degrees(keyframes(phase, MINE_SHOULDER));
   const elbow = degrees(keyframes(phase, MINE_ELBOW));
@@ -407,33 +457,6 @@ function mine(pose: Pose, phase: number): void {
 
   plantFeet(pose);
 }
-
-const DRAW_FORWARD: readonly Keyframe[] = [
-  [0, 100],
-  [0.12, 100],
-  [0.42, 105],
-  [0.62, 105],
-  [0.67, 100],
-  [0.85, 95],
-];
-
-const DRAW_OUTWARD: readonly Keyframe[] = [
-  [0, -50],
-  [0.12, -50],
-  [0.42, 10],
-  [0.62, 10],
-  [0.67, 18],
-  [0.85, -20],
-];
-
-const DRAW_ELBOW: readonly Keyframe[] = [
-  [0, 10],
-  [0.12, 10],
-  [0.42, 125],
-  [0.62, 125],
-  [0.67, 135],
-  [0.85, 60],
-];
 
 function shoot(pose: Pose, phase: number): void {
   const breath = wave(phase * 2) * degrees(1.2);
@@ -573,29 +596,6 @@ function dead(pose: Pose): void {
     bendAnkle(pose, side, -degrees(30));
   }
 }
-
-export const HUMAN_CLIPS: Readonly<Record<PersonPose, HumanClip>> = {
-  build: { apply: build, timing: seconds(0.9), tool: "hammerStone" },
-  carry: { apply: carry, timing: STRIDE_TIMING, tool: null },
-  chop: { apply: chop, timing: seconds(1.45), tool: "axe" },
-  dead: { apply: dead, timing: seconds(10), tool: null },
-  dig: { apply: dig, timing: seconds(1.6), tool: "diggingStick" },
-  eat: { apply: eat, timing: seconds(2.6), tool: null },
-  fish: { apply: fish, timing: seconds(3.4), tool: "spear" },
-  gather: { apply: gather, timing: seconds(2.2), tool: "basket" },
-  idle: { apply: idle, timing: seconds(5.5), tool: null },
-  leap: { apply: leap, timing: STRIDE_TIMING, tool: null },
-  mine: { apply: mine, timing: seconds(1.3), tool: "pickaxe" },
-  play: { apply: play, timing: seconds(0.95), tool: null },
-  pray: { apply: pray, timing: seconds(4.8), tool: null },
-  run: { apply: run, timing: STRIDE_TIMING, tool: null },
-  shoot: { apply: shoot, timing: seconds(1.8), tool: "drawnBow" },
-  sit: { apply: sit, timing: seconds(7), tool: null },
-  sleep: { apply: sleep, timing: seconds(6), tool: null },
-  throw: { apply: throwSpear, timing: seconds(1.7), tool: "spear" },
-  walk: { apply: walk, timing: STRIDE_TIMING, tool: null },
-  ...FIGHT_CLIPS,
-};
 
 export function applyHumanClip(pose: Pose, clipPose: PersonPose, phase: number, context: HumanClipContext): void {
   pose.reset();

@@ -1,4 +1,10 @@
 import { smoothstep } from "../../shared/math.ts";
+import type { Triple } from "./transforms.ts";
+
+const INSIDE_TOLERANCE = 1e-4;
+const SEAM_EPSILON = 1e-4;
+const SHORTEST_SUM = 0.3;
+const barycentric = new Float64Array(3);
 
 export interface SeamSurface {
   readonly firstTriangle: number;
@@ -23,8 +29,6 @@ interface PreparedSurface {
   readonly surface: SeamSurface;
 }
 
-type Vector = readonly [number, number, number];
-
 interface Nearest {
   readonly distance: number;
   readonly normalX: number;
@@ -41,10 +45,6 @@ interface Blend {
   readonly normalZ: number;
   readonly weight: number;
 }
-
-const INSIDE_TOLERANCE = 1e-4;
-const SEAM_EPSILON = 1e-4;
-const SHORTEST_SUM = 0.3;
 
 function prepareSurface(geometry: SeamGeometry, surface: SeamSurface): PreparedSurface {
   const { indices, positions } = geometry;
@@ -123,8 +123,6 @@ function boundsOverlap(first: PreparedSurface, second: PreparedSurface, margin: 
 
   return true;
 }
-
-const barycentric = new Float64Array(3);
 
 function setWeights(first: number, second: number, third: number): void {
   barycentric[0] = first;
@@ -400,7 +398,7 @@ function collectBlends(
   }
 }
 
-function seamNormal(normals: Float32Array, offset: number, blend: Blend): Vector | null {
+function seamNormal(normals: Float32Array, offset: number, blend: Blend): Triple | null {
   if (blend.isReference) {
     return [blend.normalX, blend.normalY, blend.normalZ];
   }

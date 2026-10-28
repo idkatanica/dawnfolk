@@ -61,6 +61,11 @@ const RIPE_TINTS: Readonly<Record<CropKind, Tint>> = {
   wheat: [0.78, 0.64, 0.3],
 };
 
+export interface FieldGround {
+  readonly color: Node<"vec3">;
+  readonly normal: Node<"vec3">;
+}
+
 function tintTable(tints: Readonly<Record<CropKind, Tint>>) {
   return uniformArray<"vec3">(
     CROP_KINDS.map((kind) => {
@@ -84,11 +89,6 @@ function cropColor(code: Node<"int">, growth: Node<"float">): Node<"vec4"> {
   const coverage = select(isBare, float(0), smoothstep(0.08, 0.7, growth).mul(CROP_COVERAGE));
 
   return vec4(color, coverage);
-}
-
-export interface FieldGround {
-  readonly color: Node<"vec3">;
-  readonly normal: Node<"vec3">;
 }
 
 export function fieldGroundNode(
@@ -155,7 +155,6 @@ export function fieldGroundNode(
 
 export function fieldClearingNode(textures: TerrainTextures, grid: WorldGrid, point: Node<"vec2">): Node<"float"> {
   const { shares } = fieldSharesNode(textures.fields.texture, grid, point, [BORDER_EDGE], float(0));
-
   const [reach] = shares;
 
   return smoothstep(0.08, 0.3, reach);

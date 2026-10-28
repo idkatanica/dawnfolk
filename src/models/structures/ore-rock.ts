@@ -6,6 +6,10 @@ import { type Triple, transformOf } from "../mesh/transforms.ts";
 import { chiseledStone, STONE_NOISE } from "../stones.ts";
 import { detail, type StructureContext } from "./structure-parts.ts";
 
+const STREAK_FREQUENCY = 1.4;
+const STREAK_TILT = 0.8;
+const STREAK_STRETCH = 2.6;
+
 export interface OreLook {
   readonly ore: MaterialSlotIndex;
   readonly richness: number;
@@ -17,10 +21,6 @@ interface OreChunk {
   readonly radius: number;
   readonly squash: Triple;
 }
-
-const STREAK_FREQUENCY = 1.4;
-const STREAK_TILT = 0.8;
-const STREAK_STRETCH = 2.6;
 
 function centroidAt(shape: Shape, triangle: number): Triple {
   let x = 0;

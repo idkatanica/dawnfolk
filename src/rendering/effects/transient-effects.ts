@@ -12,6 +12,27 @@ import type { InstanceBatch } from "../instancing.ts";
 import type { EffectMeshes, RibbonPoint } from "./effect-meshes.ts";
 import type { GroundRing } from "./ground-ring.ts";
 
+const BOLT_HEIGHT = 1100;
+const BOLT_SUBDIVISIONS = 6;
+const BOLT_SECONDS = 0.55;
+const EXPLOSION_SECONDS = 3;
+const EARTHQUAKE_SECONDS = 3.2;
+const BLESSING_SECONDS = 3;
+const DUST_PUFFS = 26;
+const SPARKLES = 70;
+const RING_COLOR = 0xff_f0_d8;
+const SPLASH_SECONDS = 0.55;
+const SPLASH_DROPS = 9;
+const SPLASH_COLOR: readonly [number, number, number] = [0.86, 0.93, 0.97];
+const WATER_DUST: readonly [number, number, number] = [0.85, 0.9, 0.95];
+const LAND_DUST: readonly [number, number, number] = [0.3, 0.27, 0.24];
+
+const BLESSING_COLORS: Readonly<Record<BlessingEffect["style"], readonly [number, number, number]>> = {
+  abundance: [1, 0.78, 0.3],
+  healing: [0.45, 1, 0.55],
+  inspiration: [0.55, 0.75, 1],
+};
+
 export interface SpriteSinks {
   readonly dust: InstanceBatch;
   readonly glow: InstanceBatch;
@@ -33,27 +54,6 @@ export interface ActiveEffect {
   readonly meshes: readonly Mesh[];
   readonly update: (seconds: number, sinks: SpriteSinks) => boolean;
 }
-
-const BOLT_HEIGHT = 1100;
-const BOLT_SUBDIVISIONS = 6;
-const BOLT_SECONDS = 0.55;
-const EXPLOSION_SECONDS = 3;
-const EARTHQUAKE_SECONDS = 3.2;
-const BLESSING_SECONDS = 3;
-const DUST_PUFFS = 26;
-const SPARKLES = 70;
-const RING_COLOR = 0xff_f0_d8;
-const SPLASH_SECONDS = 0.55;
-const SPLASH_DROPS = 9;
-const SPLASH_COLOR: readonly [number, number, number] = [0.86, 0.93, 0.97];
-const WATER_DUST: readonly [number, number, number] = [0.85, 0.9, 0.95];
-const LAND_DUST: readonly [number, number, number] = [0.3, 0.27, 0.24];
-
-const BLESSING_COLORS: Readonly<Record<BlessingEffect["style"], readonly [number, number, number]>> = {
-  abundance: [1, 0.78, 0.3],
-  healing: [0.45, 1, 0.55],
-  inspiration: [0.55, 0.75, 1],
-};
 
 function jaggedPath(start: Vector3, end: Vector3, roughness: number): Vector3[] {
   let points = [start, end];
@@ -96,10 +96,30 @@ function toRibbon(points: readonly Vector3[], width: number): RibbonPoint[] {
 function branchFrom(trunk: readonly Vector3[], share: number): RibbonPoint[] {
   const start = trunk[Math.floor(trunk.length * share)];
   const length = BOLT_HEIGHT * (0.12 + Math.random() * 0.15);
-
   const offset = new Vector3((Math.random() - 0.5) * length, -length, (Math.random() - 0.5) * length);
 
   return toRibbon(jaggedPath(start, start.clone().add(offset), 0.5).slice(0, 24), 0.7);
+}
+
+function addPuffs(sinks: SpriteSinks, center: Vector3, spread: number, age: number, color: readonly number[]): void {
+  const fade = (1 - smoothstep(0.2, 1, age / EXPLOSION_SECONDS)) * 0.8;
+  const look = [color[0], color[1], color[2], fade];
+
+  for (let puff = 0; puff < DUST_PUFFS; puff += 1) {
+    const angle = hashToUnit(puff, 1) * FULL_TURN;
+    const reach = (0.3 + hashToUnit(puff, 2) * 0.9) * spread * (0.4 + age * 0.9);
+    const rise = (6 + hashToUnit(puff, 3) * 24) * Math.sqrt(age);
+
+    sinks.dust.add(
+      [
+        center.x + Math.cos(angle) * reach,
+        center.y + rise,
+        center.z + Math.sin(angle) * reach,
+        spread * 0.35 + age * 9,
+      ],
+      look
+    );
+  }
 }
 
 export class LightningStrike implements ActiveEffect {
@@ -113,7 +133,6 @@ export class LightningStrike implements ActiveEffect {
     const skyOffset = new Vector3((Math.random() - 0.5) * 300, BOLT_HEIGHT, (Math.random() - 0.5) * 300);
 
     const trunk = jaggedPath(ground.clone().add(skyOffset), ground, 0.42);
-
     const strands = [toRibbon(trunk, 1.6), ...[0.3, 0.55, 0.7].map((share) => branchFrom(trunk, share))];
 
     this.#effectMeshes = context.meshes;
@@ -135,27 +154,6 @@ export class LightningStrike implements ActiveEffect {
 
   finish(): void {
     this.#bolt.geometry.dispose();
-  }
-}
-
-function addPuffs(sinks: SpriteSinks, center: Vector3, spread: number, age: number, color: readonly number[]): void {
-  const fade = (1 - smoothstep(0.2, 1, age / EXPLOSION_SECONDS)) * 0.8;
-  const look = [color[0], color[1], color[2], fade];
-
-  for (let puff = 0; puff < DUST_PUFFS; puff += 1) {
-    const angle = hashToUnit(puff, 1) * FULL_TURN;
-    const reach = (0.3 + hashToUnit(puff, 2) * 0.9) * spread * (0.4 + age * 0.9);
-    const rise = (6 + hashToUnit(puff, 3) * 24) * Math.sqrt(age);
-
-    sinks.dust.add(
-      [
-        center.x + Math.cos(angle) * reach,
-        center.y + rise,
-        center.z + Math.sin(angle) * reach,
-        spread * 0.35 + age * 9,
-      ],
-      look
-    );
   }
 }
 
@@ -230,7 +228,6 @@ export class EmberFlight implements ActiveEffect {
 
     const duration = Math.max(0.2, this.#effect.durationSeconds);
     const flicker = 0.6 + Math.random() * 0.4;
-
     const progress = saturate(this.#age / duration);
 
     const position = this.#position.lerpVectors(this.#from, this.#to, progress);

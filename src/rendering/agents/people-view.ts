@@ -54,8 +54,8 @@ const GEAR_COLORS: Readonly<Record<ToolMaterial, number>> = {
 };
 
 const LEVEL_DISTANCES: LevelDistances = { far: 420 * FIGURE_SCALE, high: 70 * FIGURE_SCALE, low: 120 * FIGURE_SCALE };
+const BOUNDING_LIFT = 0.9 * FIGURE_SCALE;
 const BOUNDING_RADIUS = 1.4 * FIGURE_SCALE;
-const BODY_CENTER = 0.9 * FIGURE_SCALE;
 const WEAPON_CHOICES: readonly (WeaponKind | null)[] = [null, ...WEAPON_KINDS];
 const GEAR_COLOR_INDEX = PERSON_LAYOUT.colorSlots.indexOf(MaterialSlot.Metal);
 const WADING_DEPTH = 1.1;
@@ -96,9 +96,9 @@ function colorsOf(appearance: PersonAppearance): Color[] {
 export class PeopleView {
   readonly #activityParts = activityTable();
   readonly #batches: PartBatches;
-  readonly #gearColors = gearColors();
   readonly #blendedPose = new Pose(HUMAN_BONE_COUNT);
   readonly #bounds = new Sphere(new Vector3(), BOUNDING_RADIUS);
+  readonly #gearColors = gearColors();
   readonly #markerAnchor = new Vector3();
   readonly #markerStyles = new Map<number, MarkerStyle>();
   readonly #palette = new AgentPalette(PERSON_LAYOUT);
@@ -116,7 +116,6 @@ export class PeopleView {
     this.#tribes = tribes;
 
     const material = createSkinnedMaterial(this.#palette, PERSON_LAYOUT);
-
     const farParts = buildHumanParts(HUMAN_DETAILS.far);
 
     this.#batches = new PartBatches(
@@ -159,7 +158,6 @@ export class PeopleView {
     this.#figureCount = rows;
     forgetUnseen(this.#visuals, this.#seen);
     this.#batches.commit();
-
     this.#palette.finish(rows);
   }
 
@@ -176,10 +174,9 @@ export class PeopleView {
 
     const y = standingHeight(input.mirror, x, z, WADING_DEPTH);
 
-    this.#bounds.center.set(x, y + BODY_CENTER, z);
+    this.#bounds.center.set(x, y + BOUNDING_LIFT, z);
 
     const distance = input.camera.position.distanceTo(this.#bounds.center);
-
     const level = detailLevel(distance, LEVEL_DISTANCES, input.detail);
 
     this.#mark(input, offset, this.#markerAnchor.set(x, y + MARKER_LIFT, z));

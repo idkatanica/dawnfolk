@@ -2,13 +2,7 @@ import type { Frustum, Group, MeshStandardNodeMaterial, PerspectiveCamera } from
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { NO_WATER } from "../../world/water.ts";
-import {
-  type HeightRange,
-  type PatchContent,
-  type PatchCorner,
-  PatchGrid,
-  type PatchPiece,
-} from "../terrain/patch-grid.ts";
+import { type HeightRange, type PatchContent, PatchGrid, type PatchPiece } from "../terrain/patch-grid.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { createWaterMaterial, WaterLook } from "./water-material.ts";
 
@@ -25,7 +19,7 @@ export class WaterView {
   constructor(mirror: WorldMirror, textures: TerrainTextures) {
     this.#mirror = mirror;
     this.#material = createWaterMaterial(textures, mirror.grid, this.look);
-    this.#patches = new PatchGrid(mirror.grid, (corner) => this.#measure(corner), {
+    this.#patches = new PatchGrid(mirror.grid, (region) => this.#measure(region), {
       castsShadow: false,
       edges: "open",
       materials: [this.#material],
@@ -51,8 +45,8 @@ export class WaterView {
     this.#material.dispose();
   }
 
-  #measure(corner: PatchCorner): PatchContent | null {
-    const { firstColumn, firstRow, lastColumn, lastRow } = corner;
+  #measure(region: CellRegion): PatchContent | null {
+    const { firstColumn, firstRow, lastColumn, lastRow } = region;
 
     const pieces: PatchPiece[] = [];
 
@@ -83,13 +77,13 @@ export class WaterView {
     return { highest: highest + WAVE_ALLOWANCE, lowest: lowest - WAVE_ALLOWANCE, pieces };
   }
 
-  #levelsAround(corner: PatchCorner): HeightRange | null {
+  #levelsAround(region: CellRegion): HeightRange | null {
     const { grid, terrain } = this.#mirror;
 
-    const firstColumn = Math.max(0, corner.firstColumn - NEIGHBOR_MARGIN);
-    const firstRow = Math.max(0, corner.firstRow - NEIGHBOR_MARGIN);
-    const lastColumn = Math.min(grid.cellsPerSide - 1, corner.lastColumn + NEIGHBOR_MARGIN);
-    const lastRow = Math.min(grid.cellsPerSide - 1, corner.lastRow + NEIGHBOR_MARGIN);
+    const firstColumn = Math.max(0, region.firstColumn - NEIGHBOR_MARGIN);
+    const firstRow = Math.max(0, region.firstRow - NEIGHBOR_MARGIN);
+    const lastColumn = Math.min(grid.cellsPerSide - 1, region.lastColumn + NEIGHBOR_MARGIN);
+    const lastRow = Math.min(grid.cellsPerSide - 1, region.lastRow + NEIGHBOR_MARGIN);
 
     let lowest = Number.POSITIVE_INFINITY;
     let highest = Number.NEGATIVE_INFINITY;

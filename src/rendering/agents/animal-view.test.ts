@@ -60,7 +60,7 @@ function farthestReach(kind: AnimalKind): number {
   return farthest;
 }
 
-describe("AnimalView culling", () => {
+describe("animal view culling", () => {
   it.each(ANIMAL_KINDS)("keeps the largest %s inside its cull sphere through every clip", (kind) => {
     expect(farthestReach(kind)).toBeLessThanOrEqual(ANIMAL_BOUNDING_RADIUS);
   });

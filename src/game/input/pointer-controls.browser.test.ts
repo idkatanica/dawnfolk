@@ -1,5 +1,5 @@
 import { PerspectiveCamera } from "three/webgpu";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { GodCamera } from "../camera/god-camera.ts";
 import { GroundPicker } from "./ground-picker.ts";
 import { PointerControls } from "./pointer-controls.ts";
@@ -73,12 +73,8 @@ function wait(milliseconds: number): Promise<void> {
 }
 
 describe("pointer controls", () => {
-  beforeEach(() => {
-    rigs.length = 0;
-  });
-
   afterEach(() => {
-    for (const rig of rigs) {
+    for (const rig of rigs.splice(0)) {
       rig.controls.dispose();
       rig.canvas.remove();
     }

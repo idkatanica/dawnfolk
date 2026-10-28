@@ -66,8 +66,8 @@ const COLORS_BY_SLOT: Readonly<Record<MaterialSlotIndex, number>> = {
   [MaterialSlot.Ash]: 0x3a_35_32,
   [MaterialSlot.Bark]: 0x5f_4a_3a,
   [MaterialSlot.Basalt]: 0x5a_57_52,
-  [MaterialSlot.BirchBark]: 0xe9_e4_d8,
   [MaterialSlot.Berry]: 0xb8_26_3a,
+  [MaterialSlot.BirchBark]: 0xe9_e4_d8,
   [MaterialSlot.Blossom]: 0xee_7c_a2,
   [MaterialSlot.Blueberry]: 0x3a_4a_8f,
   [MaterialSlot.Bone]: 0xe8_dc_c4,
@@ -116,6 +116,8 @@ const COLORS_BY_SLOT: Readonly<Record<MaterialSlotIndex, number>> = {
   [MaterialSlot.Wood]: 0x8b_6a_48,
 };
 
+export const SLOT_COLOR_TABLE: readonly number[] = buildColorTable();
+
 function buildColorTable(): number[] {
   const table = new Array<number>(MATERIAL_SLOT_COUNT).fill(0);
 
@@ -125,5 +127,3 @@ function buildColorTable(): number[] {
 
   return table;
 }
-
-export const SLOT_COLOR_TABLE: readonly number[] = buildColorTable();

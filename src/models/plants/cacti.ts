@@ -10,6 +10,22 @@ import type { PlantDetailLevel } from "./tree-mesher.ts";
 
 export const CACTUS_FORMS = ["saguaro", "organPipe", "barrel", "pricklyPear"] as const;
 
+const RIB_DEPTH = 0.09;
+const STEM_SEAM = 0.6;
+const PAD_SEAM = 0.1;
+const PAD_ROOTING = 0.55;
+const PAD_THICKNESS = 0.3;
+const PAD_STRETCH = 1.3;
+
+const FORM_BUILDERS: Readonly<
+  Record<CactusForm, (builder: MeshBuilder, random: RandomSource, detail: CactusDetail) => void>
+> = {
+  barrel: addBarrel,
+  organPipe: addOrganPipe,
+  pricklyPear: addPricklyPear,
+  saguaro: addSaguaro,
+};
+
 type CactusForm = (typeof CACTUS_FORMS)[number];
 
 interface CactusDetail {
@@ -26,7 +42,21 @@ const CACTUS_DETAILS: Readonly<Record<PlantDetailLevel, CactusDetail>> = {
   medium: { maximumStems: 6, ribs: 7, segments: 9, withFlowers: true },
 };
 
-const RIB_DEPTH = 0.09;
+interface Column {
+  readonly height: number;
+  readonly leanX: number;
+  readonly leanZ: number;
+  readonly radius: number;
+  readonly x: number;
+  readonly z: number;
+}
+
+interface Pad {
+  readonly center: Vector3;
+  readonly size: number;
+  readonly tilt: number;
+  readonly turn: number;
+}
 
 function ribbed(ribs: number, depth = RIB_DEPTH): (around: number) => number {
   if (ribs === 0) {
@@ -38,15 +68,6 @@ function ribbed(ribs: number, depth = RIB_DEPTH): (around: number) => number {
 
 function stemShade(top: number): (point: SurfacePoint) => number {
   return (point) => 0.72 + 0.3 * smoothstep(0, Math.min(1.5, top), point.position.y);
-}
-
-interface Column {
-  readonly height: number;
-  readonly leanX: number;
-  readonly leanZ: number;
-  readonly radius: number;
-  readonly x: number;
-  readonly z: number;
 }
 
 function columnSections(column: Column, ribs: number): LoftSection[] {
@@ -76,10 +97,6 @@ function columnSections(column: Column, ribs: number): LoftSection[] {
     { centerX: x + leanX, centerZ: z + leanZ, radiusX: 0, radiusZ: 0, y: height },
   ];
 }
-
-const STEM_SEAM = 0.6;
-const PAD_SEAM = 0.1;
-const PAD_ROOTING = 0.55;
 
 function addColumn(builder: MeshBuilder, column: Column, detail: CactusDetail): void {
   builder.add(loft(columnSections(column, detail.ribs), detail.segments), {
@@ -127,7 +144,7 @@ function saguaroArm(start: number, angle: number, trunkRadius: number, random: R
   ];
 }
 
-function saguaro(builder: MeshBuilder, random: RandomSource, detail: CactusDetail): void {
+function addSaguaro(builder: MeshBuilder, random: RandomSource, detail: CactusDetail): void {
   const height = random.between(3.5, 4.3);
   const radius = random.between(0.28, 0.34);
 
@@ -156,7 +173,7 @@ function saguaro(builder: MeshBuilder, random: RandomSource, detail: CactusDetai
   }
 }
 
-function organPipe(builder: MeshBuilder, random: RandomSource, detail: CactusDetail): void {
+function addOrganPipe(builder: MeshBuilder, random: RandomSource, detail: CactusDetail): void {
   const stems = random.integer(5, 9);
   const stemDetail = { ...detail, segments: Math.max(5, detail.segments - 3) };
 
@@ -192,7 +209,7 @@ function barrelSections(height: number, radius: number, ribs: number): LoftSecti
   ];
 }
 
-function barrel(builder: MeshBuilder, random: RandomSource, detail: CactusDetail): void {
+function addBarrel(builder: MeshBuilder, random: RandomSource, detail: CactusDetail): void {
   const barrels = random.integer(2, 5);
 
   for (let index = 0; index < barrels; index += 1) {
@@ -217,16 +234,6 @@ function barrel(builder: MeshBuilder, random: RandomSource, detail: CactusDetail
     }
   }
 }
-
-interface Pad {
-  readonly center: Vector3;
-  readonly size: number;
-  readonly tilt: number;
-  readonly turn: number;
-}
-
-const PAD_THICKNESS = 0.3;
-const PAD_STRETCH = 1.3;
 
 function padTransform(pad: Pad) {
   return transformOf({
@@ -257,7 +264,7 @@ function childPad(parent: Pad, random: RandomSource): Pad {
   };
 }
 
-function pricklyPear(builder: MeshBuilder, random: RandomSource, detail: CactusDetail): void {
+function addPricklyPear(builder: MeshBuilder, random: RandomSource, detail: CactusDetail): void {
   const bases = random.integer(2, 4);
   const pads: Pad[] = [];
   const tips: Pad[] = [];
@@ -317,15 +324,6 @@ function pricklyPear(builder: MeshBuilder, random: RandomSource, detail: CactusD
     }
   }
 }
-
-const FORM_BUILDERS: Readonly<
-  Record<CactusForm, (builder: MeshBuilder, random: RandomSource, detail: CactusDetail) => void>
-> = {
-  barrel,
-  organPipe,
-  pricklyPear,
-  saguaro,
-};
 
 export function cactusForm(variant: number): CactusForm {
   return CACTUS_FORMS[variant % CACTUS_FORMS.length];

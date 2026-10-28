@@ -30,10 +30,10 @@ import { distanceToSegment } from "../../shared/math.ts";
 import { type Crossing, crossingLength, type Ford } from "../../world/crossings.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 
-const FORD_BED_HALF_WIDTH = 2;
-const FORD_PATH_HALF_WIDTH = 0.75;
 export const FORD_PATH_REACH = 9;
 
+const FORD_BED_HALF_WIDTH = 2;
+const FORD_PATH_HALF_WIDTH = 0.75;
 const FORD_SAND = vec3(0.5, 0.42, 0.27);
 const FORD_GRAVEL = vec3(0.3, 0.28, 0.24);
 const EDGE_WOBBLE = 0.6;
@@ -47,7 +47,7 @@ interface FordFrame {
   readonly length: Node<"float">;
 }
 
-function fieldTexture(data: Float32Array, width: number, height: number, format: PixelFormat) {
+function fieldTexture(data: Float32Array, width: number, height: number, format: PixelFormat): DataTexture {
   const texture = new DataTexture(data, width, height, format, FloatType);
 
   texture.minFilter = NearestFilter;
@@ -61,6 +61,46 @@ function fieldTexture(data: Float32Array, width: number, height: number, format:
 
 function isFord(crossing: Crossing): crossing is Ford {
   return crossing.kind === "ford";
+}
+
+function edgeWobble(point: Node<"vec2">): Node<"float"> {
+  return mx_noise_float(vec3(point.mul(0.45), 2.3)).mul(EDGE_WOBBLE);
+}
+
+function beyondFord(frame: FordFrame): Node<"float"> {
+  return max(frame.along.negate(), frame.along.sub(frame.length));
+}
+
+function bedOf(frame: FordFrame, wobble: Node<"float">): Node<"float"> {
+  const width = float(FORD_BED_HALF_WIDTH).add(wobble);
+
+  const across = smoothstep(width, width.mul(0.55), abs(frame.across));
+  const along = smoothstep(BED_OVERHANG, 0, beyondFord(frame));
+
+  return across.mul(along);
+}
+
+function pathOf(frame: FordFrame, point: Node<"vec2">, wobble: Node<"float">): Node<"float"> {
+  const beyond = max(beyondFord(frame), 0);
+  const narrowing = min(beyond.div(FORD_PATH_REACH), 1);
+  const bend = mx_noise_float(vec3(point.mul(0.08), 5.1))
+    .mul(narrowing)
+    .mul(1.4);
+  const width = float(FORD_PATH_HALF_WIDTH)
+    .mul(float(1.25).sub(narrowing.mul(0.55)))
+    .add(wobble.mul(0.4));
+
+  const across = smoothstep(width, width.mul(0.35), abs(frame.across.sub(bend)));
+  const along = smoothstep(FORD_PATH_REACH, FORD_PATH_REACH * 0.55, beyond);
+
+  return across.mul(along);
+}
+
+export function fordBedColorNode(position: Node<"vec3">): Node<"vec3"> {
+  const patches = mx_noise_float(position.mul(0.21));
+  const pebbles = smoothstep(0.05, 0.4, mx_noise_float(position.mul(1.9)).add(patches.mul(0.3)));
+
+  return mix(FORD_SAND, FORD_GRAVEL, pebbles.mul(0.8)).mul(patches.mul(0.12).add(1));
 }
 
 export class FordField {
@@ -118,11 +158,6 @@ export class FordField {
     this.segments.needsUpdate = true;
   }
 
-  dispose(): void {
-    this.cells.dispose();
-    this.segments.dispose();
-  }
-
   marksNode(point: Node<"vec2">): Node<"vec2"> {
     const grid = this.#grid;
     const last = grid.cellsPerSide - 1;
@@ -158,44 +193,9 @@ export class FordField {
       return marks;
     })();
   }
-}
 
-function edgeWobble(point: Node<"vec2">): Node<"float"> {
-  return mx_noise_float(vec3(point.mul(0.45), 2.3)).mul(EDGE_WOBBLE);
-}
-
-function beyondFord(frame: FordFrame): Node<"float"> {
-  return max(frame.along.negate(), frame.along.sub(frame.length));
-}
-
-function bedOf(frame: FordFrame, wobble: Node<"float">): Node<"float"> {
-  const width = float(FORD_BED_HALF_WIDTH).add(wobble);
-
-  const across = smoothstep(width, width.mul(0.55), abs(frame.across));
-  const along = smoothstep(BED_OVERHANG, 0, beyondFord(frame));
-
-  return across.mul(along);
-}
-
-function pathOf(frame: FordFrame, point: Node<"vec2">, wobble: Node<"float">): Node<"float"> {
-  const beyond = max(beyondFord(frame), 0);
-  const narrowing = min(beyond.div(FORD_PATH_REACH), 1);
-  const bend = mx_noise_float(vec3(point.mul(0.08), 5.1))
-    .mul(narrowing)
-    .mul(1.4);
-  const width = float(FORD_PATH_HALF_WIDTH)
-    .mul(float(1.25).sub(narrowing.mul(0.55)))
-    .add(wobble.mul(0.4));
-
-  const across = smoothstep(width, width.mul(0.35), abs(frame.across.sub(bend)));
-  const along = smoothstep(FORD_PATH_REACH, FORD_PATH_REACH * 0.55, beyond);
-
-  return across.mul(along);
-}
-
-export function fordBedColorNode(position: Node<"vec3">): Node<"vec3"> {
-  const patches = mx_noise_float(position.mul(0.21));
-  const pebbles = smoothstep(0.05, 0.4, mx_noise_float(position.mul(1.9)).add(patches.mul(0.3)));
-
-  return mix(FORD_SAND, FORD_GRAVEL, pebbles.mul(0.8)).mul(patches.mul(0.12).add(1));
+  dispose(): void {
+    this.cells.dispose();
+    this.segments.dispose();
+  }
 }

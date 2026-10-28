@@ -19,23 +19,12 @@ import {
   toVector,
 } from "./tree-structure.ts";
 
-export type PlantDetailLevel = "far" | "high" | "low" | "medium";
-
-export interface TreeLook {
-  readonly bark: MaterialSlotIndex;
-  readonly foliage: MaterialSlotIndex;
-  readonly hasBarkMarks: boolean;
-}
+export const FOLIAGE_FLUTTER = 1;
 
 const MESH_NOISE = createVolumeNoise(createRandom(5150));
-
 const BLOB_LIMITS: Readonly<Record<PlantDetailLevel, number>> = { far: 1, high: 9, low: 1, medium: 4 };
-
 const GROUNDED_CROWN_LIFT = 0.8;
-
 const SWAY_GROWTH = 1.4;
-
-export const FOLIAGE_FLUTTER = 1;
 
 const BRANCH_SIDES: Readonly<Record<PlantDetailLevel, readonly number[]>> = {
   far: [3, 3, 3],
@@ -45,8 +34,67 @@ const BRANCH_SIDES: Readonly<Record<PlantDetailLevel, readonly number[]>> = {
 };
 
 const CONE_SEGMENTS: Readonly<Record<PlantDetailLevel, number>> = { far: 5, high: 7, low: 7, medium: 7 };
-
 const SPIKE_SIDES = 3;
+
+const DOME: readonly (readonly [reach: number, radius: number])[] = [
+  [0.45, 0.82],
+  [0.8, 0.5],
+  [0.98, 0],
+];
+
+const LOW_STEM_TAPER = 0.6;
+const LOW_CONE_TRUNK = 0.5;
+const MAXIMUM_BRANCH_DEPTHS: Readonly<Record<PlantDetailLevel, number>> = { far: 0, high: 2, low: 0, medium: 1 };
+const SHOULDER_HEIGHT = 0.38;
+const SHOULDER_RADIUS = 0.62;
+const TIP_HEIGHT = 0.92;
+const TIP_RADIUS = 0.16;
+const HOLLOW_VERTICES = 1;
+const DRAPE_FALL = 0.5;
+const FRINGE_DEPTH = 0.62;
+const DRAPE_TEETH: Readonly<Record<PlantDetailLevel, number>> = { far: 4, high: 8, low: 4, medium: 5 };
+
+export type PlantDetailLevel = "far" | "high" | "low" | "medium";
+
+export interface TreeLook {
+  readonly bark: MaterialSlotIndex;
+  readonly foliage: MaterialSlotIndex;
+  readonly hasBarkMarks: boolean;
+}
+
+interface SkirtDetail {
+  readonly hasRoundedUnderside: boolean;
+  readonly segments: number;
+  readonly teeth: number;
+}
+
+const SKIRT_DETAILS: Readonly<Record<PlantDetailLevel, SkirtDetail>> = {
+  far: { hasRoundedUnderside: false, segments: 7, teeth: 6 },
+  high: { hasRoundedUnderside: true, segments: 10, teeth: 8 },
+  low: { hasRoundedUnderside: false, segments: 7, teeth: 6 },
+  medium: { hasRoundedUnderside: false, segments: 8, teeth: 7 },
+};
+
+interface MergedBlob {
+  readonly center: Vector3;
+  readonly drape: number;
+  readonly radius: number;
+  readonly squash: number;
+  readonly tint: number;
+  readonly weight: number;
+}
+
+interface Reach {
+  readonly maximum: Vector3;
+  readonly minimum: Vector3;
+}
+
+interface LowCone {
+  readonly bottom: number;
+  readonly center: FoliageSkirt["center"];
+  readonly radius: number;
+  readonly top: number;
+}
 
 function silhouetteWidth(sides: number): number {
   return sides * Math.sin(Math.PI / sides);
@@ -115,14 +163,6 @@ function foliageStyle(structure: TreeStructure, look: TreeLook, tint: number, ce
   };
 }
 
-const DOME: readonly (readonly [reach: number, radius: number])[] = [
-  [0.45, 0.82],
-  [0.8, 0.5],
-  [0.98, 0],
-];
-
-const LOW_STEM_TAPER = 0.6;
-
 function domed(points: readonly TubePoint[]): TubePoint[] {
   const last = points.at(-1);
   const before = points.at(-2);
@@ -153,14 +193,12 @@ function branchPoints(branch: Branch, structure: TreeStructure, level: PlantDeta
     return lowTrunk(points, structure);
   }
 
-  if (branch.forks === true) {
+  if (branch.isForked === true) {
     return domed(points);
   }
 
   return points;
 }
-
-const LOW_CONE_TRUNK = 0.5;
 
 function lowTrunk(points: readonly TubePoint[], structure: TreeStructure): TubePoint[] {
   const crown = lowCone(structure);
@@ -212,8 +250,6 @@ function branchSeam(points: readonly TubePoint[], level: PlantDetailLevel): { se
   return { seam: clamp(root.radius * 1.5, 0.05, 0.45) };
 }
 
-const MAXIMUM_BRANCH_DEPTHS: Readonly<Record<PlantDetailLevel, number>> = { far: 0, high: 2, low: 0, medium: 1 };
-
 function addBranches(builder: MeshBuilder, structure: TreeStructure, look: TreeLook, level: PlantDetailLevel): void {
   for (const branch of structure.branches) {
     if (branch.depth > MAXIMUM_BRANCH_DEPTHS[level]) {
@@ -241,25 +277,6 @@ function addBranches(builder: MeshBuilder, structure: TreeStructure, look: TreeL
 function thinned(points: readonly TubePoint[]): TubePoint[] {
   return points.filter((_point, index) => index % 2 === 0 || index === points.length - 1);
 }
-
-interface SkirtDetail {
-  readonly hasRoundedUnderside: boolean;
-  readonly segments: number;
-  readonly teeth: number;
-}
-
-const SKIRT_DETAILS: Readonly<Record<PlantDetailLevel, SkirtDetail>> = {
-  far: { hasRoundedUnderside: false, segments: 7, teeth: 6 },
-  high: { hasRoundedUnderside: true, segments: 10, teeth: 8 },
-  low: { hasRoundedUnderside: false, segments: 7, teeth: 6 },
-  medium: { hasRoundedUnderside: false, segments: 8, teeth: 7 },
-};
-
-const SHOULDER_HEIGHT = 0.38;
-const SHOULDER_RADIUS = 0.62;
-const TIP_HEIGHT = 0.92;
-const TIP_RADIUS = 0.16;
-const HOLLOW_VERTICES = 1;
 
 function skirtCrown(skirt: FoliageSkirt, isCovered: boolean): LoftSection[] {
   const { bottom, radius, top } = skirt;
@@ -344,10 +361,6 @@ function addSkirt(
     transform: transformOf({ position: [skirt.center[0], 0, skirt.center[2]] }),
   });
 }
-
-const DRAPE_FALL = 0.5;
-const FRINGE_DEPTH = 0.62;
-const DRAPE_TEETH: Readonly<Record<PlantDetailLevel, number>> = { far: 4, high: 8, low: 4, medium: 5 };
 
 function weepingShape(foliage: FoliageBlob, drape: number, level: PlantDetailLevel): Shape {
   const { radius, squash } = foliage;
@@ -476,15 +489,6 @@ function addFrond(
   });
 }
 
-interface MergedBlob {
-  readonly center: Vector3;
-  readonly drape: number;
-  readonly radius: number;
-  readonly squash: number;
-  readonly tint: number;
-  readonly weight: number;
-}
-
 function mergeClosest(blobs: MergedBlob[]): MergedBlob[] {
   let bestDistance = Number.POSITIVE_INFINITY;
   let bestFirst = 0;
@@ -570,11 +574,6 @@ function crownEnvelope(structure: TreeStructure): FoliageBlob {
   };
 }
 
-interface Reach {
-  readonly maximum: Vector3;
-  readonly minimum: Vector3;
-}
-
 function foliageReach(foliage: Foliage): Reach {
   if (foliage.kind === "frond") {
     const points = foliage.points.map(toVector);
@@ -612,13 +611,6 @@ function lowCrownCenter(structure: TreeStructure): Vector3 | null {
   }
 
   return new Vector3(...crownEnvelope(structure).center);
-}
-
-interface LowCone {
-  readonly bottom: number;
-  readonly center: FoliageSkirt["center"];
-  readonly radius: number;
-  readonly top: number;
 }
 
 function lowCone(structure: TreeStructure): LowCone | null {

@@ -2,6 +2,13 @@ import { clamp } from "../../shared/math.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { NO_WATER } from "../../world/water.ts";
 
+export const ShoreChannel = {
+  Depth: 0,
+  FlowX: 1,
+  FlowZ: 2,
+  Reach: 3,
+} as const;
+
 export const PRESENT_LEVEL = NO_WATER / 2;
 export const BANK_SINK = 0.3;
 export const DRY_DEPTH = -1;
@@ -11,13 +18,6 @@ export const NOT_POND = Number.POSITIVE_INFINITY;
 
 const CORNER_BRIDGE = 0.25;
 const SOFT_SHORE_SINK = 0.05;
-
-export const ShoreChannel = {
-  Depth: 0,
-  FlowX: 1,
-  FlowZ: 2,
-  Reach: 3,
-} as const;
 
 export interface ShoreSource {
   readonly cellSize: number;

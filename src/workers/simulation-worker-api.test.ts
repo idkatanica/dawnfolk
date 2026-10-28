@@ -4,7 +4,7 @@ import { DEFAULT_WORLD_REQUEST, type WorldRequest } from "../generation/generati
 import type { InitialWorld } from "../simulation/frame.ts";
 import { Simulation } from "../simulation/simulation.ts";
 import { createVegetatedWorld } from "../simulation/testing/test-world.ts";
-import { createSimulationWorkerApi } from "./simulation-worker-api.ts";
+import { createSimulationWorkerApi, type SimulationWorkerApi } from "./simulation-worker-api.ts";
 
 interface WorldSender {
   createWorld: (request: WorldRequest) => InitialWorld;
@@ -47,7 +47,7 @@ describe("creating the world", () => {
 });
 
 describe("saving the world", () => {
-  function createApi() {
+  function createApi(): SimulationWorkerApi {
     return createSimulationWorkerApi(
       () => new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 } })),
       () => new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 } }))

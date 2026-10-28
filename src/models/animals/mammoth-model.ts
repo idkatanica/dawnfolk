@@ -83,26 +83,7 @@ export const MAMMOTH_GAIT: GaitStyle = {
   walkSwing: degrees(16),
 };
 
-interface BodyRing {
-  readonly back: number;
-  readonly front: number;
-  readonly halfWidth: number;
-  readonly y: number;
-}
-
 const HEM_HEIGHT = 1.16;
-
-const BODY_RINGS: readonly BodyRing[] = [
-  { back: -1.22, front: 0.98, halfWidth: 0.78, y: HEM_HEIGHT },
-  { back: -1.42, front: 1.14, halfWidth: 0.9, y: 1.4 },
-  { back: -1.56, front: 1.24, halfWidth: 0.94, y: 1.84 },
-  { back: -1.58, front: 1.28, halfWidth: 0.92, y: 2.3 },
-  { back: -1.45, front: 1.22, halfWidth: 0.86, y: 2.7 },
-  { back: -1.05, front: 1.1, halfWidth: 0.74, y: 3.05 },
-  { back: -0.55, front: 0.98, halfWidth: 0.6, y: 3.32 },
-  { back: -0.1, front: 0.84, halfWidth: 0.44, y: 3.52 },
-  { back: 0.18, front: 0.66, halfWidth: 0.25, y: 3.64 },
-];
 
 const HEAD: readonly BodySection[] = [
   { centerY: 2.72, halfHeight: 0, halfWidth: 0, z: 0.42 },
@@ -117,20 +98,90 @@ const HEAD: readonly BodySection[] = [
 ];
 
 const FUR_NOISE = createVolumeNoise(createRandom(7171));
-
 const FUR_DEPTH = 0.035;
 const HEM_DEPTH = 0.1;
 const STRAND_DEPTH = 0.13;
 const BOXINESS = 2.5;
-
 const BODY_SEAM = 0.3;
 const HEAD_SEAM = 0.22;
 const LEG_SEAM = 0.26;
 const TAIL_SEAM = 0.12;
 const TRUNK_SEAM = 0.18;
 const EAR_SEAM = 0.08;
-
 const BLEND = 0.2;
+
+const LEGS: Readonly<Record<"front" | "hind", readonly TubePoint[]>> = {
+  front: legPath(0.45, [
+    [0.24, 2.25, 0.6],
+    [0.37, 1.7, 0.6],
+    [0.32, 1.25, 0.6],
+    [0.27, 0.6, 0.63],
+    [0.28, 0.14, 0.66],
+    [0.3, 0, 0.66],
+  ]),
+  hind: legPath(0.48, [
+    [0.26, 2.15, -0.98],
+    [0.38, 1.66, -0.93],
+    [0.31, 1.2, -0.86],
+    [0.26, 0.6, -1],
+    [0.27, 0.14, -0.98],
+    [0.29, 0, -0.98],
+  ]),
+};
+
+const TRUNK_STYLE = chainStyle(
+  createChain(
+    [QuadrupedBone.Head, MammothBone.TrunkBase, MammothBone.TrunkMiddle, MammothBone.TrunkTip],
+    [
+      { axis: [0, -0.6, 0.3], blend: 0.1, position: [0, 2.45, 1.85] },
+      { axis: [0, -1, 0.1], blend: 0.12, position: [0, 1.78, 2.02] },
+      { axis: [0, -1, 0.05], blend: 0.1, position: [0, 1.12, 2.04] },
+    ]
+  )
+);
+
+const TRUNK: readonly TubePoint[] = [
+  { radius: 0.24, x: 0, y: 2.8, z: 1.62 },
+  { radius: 0.21, x: 0, y: 2.56, z: 1.9 },
+  { radius: 0.17, x: 0, y: 2.15, z: 2.02 },
+  { radius: 0.13, x: 0, y: 1.65, z: 2.04 },
+  { radius: 0.1, x: 0, y: 1.18, z: 2.04 },
+  { radius: 0.08, x: 0, y: 0.98, z: 2.12 },
+  { radius: 0.065, x: 0, y: 0.92, z: 2.24 },
+];
+
+const EYE_RADIUS = 0.045;
+const EAR_SIZE: Triple = [0.27, 0.07, 0.2];
+const HEAD_CURVATURE = 0.7;
+
+const TAIL: readonly TubePoint[] = [
+  { radius: 0.13, x: 0, y: 2.48, z: -1.36 },
+  { radius: 0.09, x: 0, y: 2.36, z: -1.62 },
+  { radius: 0.06, x: 0, y: 2.1, z: -1.72 },
+  { radius: 0.05, x: 0, y: 1.86, z: -1.74 },
+  { radius: 0.085, x: 0, y: 1.72, z: -1.74 },
+  { radius: 0.07, x: 0, y: 1.58, z: -1.73 },
+  { radius: 0, x: 0, y: 1.48, z: -1.72 },
+];
+
+interface BodyRing {
+  readonly back: number;
+  readonly front: number;
+  readonly halfWidth: number;
+  readonly y: number;
+}
+
+const BODY_RINGS: readonly BodyRing[] = [
+  { back: -1.22, front: 0.98, halfWidth: 0.78, y: HEM_HEIGHT },
+  { back: -1.42, front: 1.14, halfWidth: 0.9, y: 1.4 },
+  { back: -1.56, front: 1.24, halfWidth: 0.94, y: 1.84 },
+  { back: -1.58, front: 1.28, halfWidth: 0.92, y: 2.3 },
+  { back: -1.45, front: 1.22, halfWidth: 0.86, y: 2.7 },
+  { back: -1.05, front: 1.1, halfWidth: 0.74, y: 3.05 },
+  { back: -0.55, front: 0.98, halfWidth: 0.6, y: 3.32 },
+  { back: -0.1, front: 0.84, halfWidth: 0.44, y: 3.52 },
+  { back: 0.18, front: 0.66, halfWidth: 0.25, y: 3.64 },
+];
 
 function boxy(around: number): number {
   const angle = around * FULL_TURN;
@@ -189,50 +240,6 @@ function headShape(detail: AnimalDetail): Shape {
   });
 }
 
-const LEGS: Readonly<Record<"front" | "hind", readonly TubePoint[]>> = {
-  front: legPath(0.45, [
-    [0.24, 2.25, 0.6],
-    [0.37, 1.7, 0.6],
-    [0.32, 1.25, 0.6],
-    [0.27, 0.6, 0.63],
-    [0.28, 0.14, 0.66],
-    [0.3, 0, 0.66],
-  ]),
-  hind: legPath(0.48, [
-    [0.26, 2.15, -0.98],
-    [0.38, 1.66, -0.93],
-    [0.31, 1.2, -0.86],
-    [0.26, 0.6, -1],
-    [0.27, 0.14, -0.98],
-    [0.29, 0, -0.98],
-  ]),
-};
-
-const TRUNK_STYLE = chainStyle(
-  createChain(
-    [QuadrupedBone.Head, MammothBone.TrunkBase, MammothBone.TrunkMiddle, MammothBone.TrunkTip],
-    [
-      { axis: [0, -0.6, 0.3], blend: 0.1, position: [0, 2.45, 1.85] },
-      { axis: [0, -1, 0.1], blend: 0.12, position: [0, 1.78, 2.02] },
-      { axis: [0, -1, 0.05], blend: 0.1, position: [0, 1.12, 2.04] },
-    ]
-  )
-);
-
-const TRUNK: readonly TubePoint[] = [
-  { radius: 0.24, x: 0, y: 2.8, z: 1.62 },
-  { radius: 0.21, x: 0, y: 2.56, z: 1.9 },
-  { radius: 0.17, x: 0, y: 2.15, z: 2.02 },
-  { radius: 0.13, x: 0, y: 1.65, z: 2.04 },
-  { radius: 0.1, x: 0, y: 1.18, z: 2.04 },
-  { radius: 0.08, x: 0, y: 0.98, z: 2.12 },
-  { radius: 0.065, x: 0, y: 0.92, z: 2.24 },
-];
-
-const EYE_RADIUS = 0.045;
-const EAR_SIZE: Triple = [0.27, 0.07, 0.2];
-const HEAD_CURVATURE = 0.7;
-
 function earShape(detail: AnimalDetail): Shape {
   const { segments } = detail;
 
@@ -246,8 +253,8 @@ function earShape(detail: AnimalDetail): Shape {
 
 function addFace(builder: MeshBuilder, head: Shape, detail: AnimalDetail): void {
   const style = rigidStyle(QuadrupedBone.Head);
-  const eye = outermostHit(head, new Vector3(0, 2.92, 1.5), new Vector3(1, -0.05, 0.75));
-  const ear = outermostHit(head, new Vector3(0, 3.02, 1.12), new Vector3(1, 0.12, -0.2));
+  const eyeHit = outermostHit(head, new Vector3(0, 2.92, 1.5), new Vector3(1, -0.05, 0.75));
+  const earHit = outermostHit(head, new Vector3(0, 3.02, 1.12), new Vector3(1, 0.12, -0.2));
   const eyeShape = sphere(EYE_RADIUS, 6, 4);
   const flap = earShape(detail);
   const eyeStyle = { ...style, slot: MaterialSlot.Eye };
@@ -256,18 +263,18 @@ function addFace(builder: MeshBuilder, head: Shape, detail: AnimalDetail): void 
   for (const side of LEG_SIDES) {
     const mirror = sideMirror(side);
 
-    if (eye !== null && detail.hasSmallParts) {
+    if (eyeHit !== null && detail.hasSmallParts) {
       builder.add(eyeShape, {
         style: eyeStyle,
-        transform: combine(mirror, surfaceTransform(eye, EYE_RADIUS * 0.65)),
+        transform: combine(mirror, surfaceTransform(eyeHit, EYE_RADIUS * 0.65)),
       });
     }
 
-    if (ear !== null) {
+    if (earHit !== null) {
       builder.add(flap, {
         seam: EAR_SEAM,
         style: earStyle,
-        transform: combine(mirror, surfaceTransform(ear, 0.005)),
+        transform: combine(mirror, surfaceTransform(earHit, 0.005)),
       });
     }
   }
@@ -283,16 +290,6 @@ function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
   });
   addFace(builder, head, detail);
 }
-
-const TAIL: readonly TubePoint[] = [
-  { radius: 0.13, x: 0, y: 2.48, z: -1.36 },
-  { radius: 0.09, x: 0, y: 2.36, z: -1.62 },
-  { radius: 0.06, x: 0, y: 2.1, z: -1.72 },
-  { radius: 0.05, x: 0, y: 1.86, z: -1.74 },
-  { radius: 0.085, x: 0, y: 1.72, z: -1.74 },
-  { radius: 0.07, x: 0, y: 1.58, z: -1.73 },
-  { radius: 0, x: 0, y: 1.48, z: -1.72 },
-];
 
 function tuskPath(length: number): TubePoint[] {
   return [
@@ -350,7 +347,7 @@ export function addMammothBody(builder: MeshBuilder, detail: AnimalDetail): void
   });
 }
 
-export function mammothTrunkMotion(pose: Pose, clip: AnimalPose, phase: number): void {
+export function moveMammothTrunk(pose: Pose, clip: AnimalPose, phase: number): void {
   if (clip === "graze") {
     pose.rotate(MammothBone.TrunkBase, degrees(8), 0, 0);
     pose.rotate(MammothBone.TrunkMiddle, degrees(22) + degrees(10) * wave(phase * 3), 0, 0);

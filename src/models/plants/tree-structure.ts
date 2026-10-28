@@ -5,9 +5,13 @@ import type { RandomSource } from "../../shared/random.ts";
 import { pointAlong, type TubePoint } from "../mesh/shapes.ts";
 import type { Triple } from "../mesh/transforms.ts";
 
+export const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
+const UP = new Vector3(0, 1, 0);
+
 export interface Branch {
   readonly depth: number;
-  readonly forks?: boolean;
+  readonly isForked?: boolean;
   readonly points: readonly TubePoint[];
 }
 
@@ -56,8 +60,6 @@ interface BranchGrowth {
   readonly start: Vector3;
   readonly wobble: number;
 }
-
-const UP = new Vector3(0, 1, 0);
 
 export function growBranch(growth: BranchGrowth): TubePoint[] {
   const { bend, gravity, length, noise, radiusEnd, radiusStart, segments, wobble } = growth;
@@ -142,8 +144,6 @@ export function sideDirection(axis: Vector3, azimuth: number, tilt: number): Vec
 
   return axis.clone().multiplyScalar(Math.cos(tilt)).addScaledVector(outward, Math.sin(tilt)).normalize();
 }
-
-export const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
 export function jitter(random: RandomSource, amount: number): number {
   return random.signed() * amount;

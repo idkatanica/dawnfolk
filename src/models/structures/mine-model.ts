@@ -18,8 +18,6 @@ import {
   scaledMesh,
 } from "./structure-parts.ts";
 
-export type MineOre = MinedDepositKind;
-
 export const MINE_SCALE = 1.5;
 
 const ORE_SLOTS: Readonly<Record<MineOre, MaterialSlotIndex>> = {
@@ -38,14 +36,15 @@ const RAIL_START = 0.55;
 const RAIL_END = 2.05;
 const CART_Z = 1.5;
 const WHEEL_RADIUS = 0.17;
-
 const ORE_RICHNESS: Readonly<Record<MineOre, number>> = { copper: 0.13, iron: 0.15, tin: 0.12 };
+
+export type MineOre = MinedDepositKind;
 
 function oreLook(ore: MineOre, richness: number): OreLook {
   return { ore: ORE_SLOTS[ore], richness, rock: MaterialSlot.Stone };
 }
 
-function hill(context: StructureContext, ore: MineOre): void {
+function addHill(context: StructureContext, ore: MineOre): void {
   const mound = moundShape(context, [0, 0, MOUND_CENTER], MOUND_RADIUS, [1.15, 1.3, 0.92]);
 
   addStreakedRock(context, mound, oreLook(ore, ORE_RICHNESS[ore]), {
@@ -54,7 +53,7 @@ function hill(context: StructureContext, ore: MineOre): void {
   });
 }
 
-function portal(context: StructureContext): void {
+function addPortal(context: StructureContext): void {
   addBlock(context, [1.3, 1.95, 0.5], [0, 0.975, 0.3], { buildOrder: 0.3, slot: MaterialSlot.Ash });
 
   for (const side of [-1, 1]) {
@@ -98,7 +97,7 @@ function portal(context: StructureContext): void {
   });
 }
 
-function track(context: StructureContext): void {
+function addTrack(context: StructureContext): void {
   const length = RAIL_END - RAIL_START;
 
   for (const side of [-1, 1]) {
@@ -117,7 +116,7 @@ function track(context: StructureContext): void {
   }
 }
 
-function load(context: StructureContext, ore: MineOre): void {
+function addLoad(context: StructureContext, ore: MineOre): void {
   const chunks = detail(context, 4, 2);
 
   for (let chunk = 0; chunk < chunks; chunk += 1) {
@@ -133,9 +132,9 @@ function load(context: StructureContext, ore: MineOre): void {
   }
 }
 
-function cart(context: StructureContext, ore: MineOre): void {
+function addCart(context: StructureContext, ore: MineOre): void {
   addBlock(context, [0.85, 0.42, 0.62], [0, 0.48, CART_Z], { buildOrder: 0.8, slot: MaterialSlot.Wood });
-  load(context, ore);
+  addLoad(context, ore);
 
   for (const side of [-1, 1]) {
     for (const offset of [-0.2, 0.2]) {
@@ -158,25 +157,25 @@ function cart(context: StructureContext, ore: MineOre): void {
   }
 }
 
-function heaps(context: StructureContext, ore: MineOre): void {
+function addHeaps(context: StructureContext, ore: MineOre): void {
   context.builder.add(facetShape(moundShape(context, [1.95, 0, 1], 0.85, [1.2, 0.6, 1])), {
     style: { buildOrder: 0.7, shade: 0.85, slot: MaterialSlot.PaleStone },
   });
   addOreHeap(context, [-1.7, 0, 1.4], 0.5, oreLook(ore, ORE_RICHNESS[ore] * 2.5));
 }
 
-function mineWith(context: StructureContext, ore: MineOre): void {
-  hill(context, ore);
-  portal(context);
-  track(context);
-  cart(context, ore);
-  heaps(context, ore);
+function addMine(context: StructureContext, ore: MineOre): void {
+  addHill(context, ore);
+  addPortal(context);
+  addTrack(context);
+  addCart(context, ore);
+  addHeaps(context, ore);
 }
 
 export function buildMineModel(ore: MineOre, level: StructureLevel): MeshData {
   const builder = new MeshBuilder();
 
-  mineWith({ builder, level, random: createRandom(ore.length * 37 + 11) }, ore);
+  addMine({ builder, level, random: createRandom(ore.length * 37 + 11) }, ore);
 
   return scaledMesh(builder.build(), MINE_SCALE);
 }

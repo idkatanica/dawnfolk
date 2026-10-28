@@ -68,6 +68,14 @@ const GLOWING_KINDS: ReadonlySet<BuildingKind> = new Set(["forge", "kiln", "smel
 const ENCLOSURE_KINDS: readonly EnclosureKind[] = ["palisade", "stoneWall"];
 const ENCLOSURE_PIECES: readonly EnclosurePiece[] = ["segment", "gate"];
 const BUILDING_CHANNELS = ["buildOrder", "part", "shade", "slot"] as const;
+const GROUND_BAND = 0.3;
+const PLINTH_INSET = 0.1;
+const PLINTH_TOP = -0.03;
+const PLINTH_FOOTING = 0.6;
+const TALLEST_PLINTH = 3;
+const SINKING_ALLOWANCE = 0.6;
+const ROUND_PLINTH_SIDES = 14;
+const STONE_COURSE = 0.42;
 
 const BUILDING_FIELDS = [
   { name: "buildingPlacement", size: 4 },
@@ -81,14 +89,8 @@ const PLINTH_FIELDS = [
   { name: "plinthLook", size: 4 },
 ] as const;
 
-const GROUND_BAND = 0.3;
-const PLINTH_INSET = 0.1;
-const PLINTH_TOP = -0.03;
-const PLINTH_FOOTING = 0.6;
-const TALLEST_PLINTH = 3;
-const SINKING_ALLOWANCE = 0.6;
-const ROUND_PLINTH_SIDES = 14;
-const STONE_COURSE = 0.42;
+type GroundProbe = readonly [number, number];
+
 const CENTER_PROBE: readonly GroundProbe[] = [[0, 0]];
 const MINE_GROUND_PROBES: readonly GroundProbe[] = [
   [0, 0],
@@ -99,8 +101,6 @@ const MINE_GROUND_PROBES: readonly GroundProbe[] = [
   [-1.1, 0.4],
   [1.1, 0.4],
 ].map(([x, z]): GroundProbe => [x * MINE_SCALE, z * MINE_SCALE]);
-
-type GroundProbe = readonly [number, number];
 
 interface GroundBox {
   readonly centerX: number;
@@ -138,6 +138,11 @@ interface PiecePlacement {
   readonly rotation: number;
   readonly x: number;
   readonly z: number;
+}
+
+interface Seat {
+  readonly floor: number;
+  readonly lowest: number;
 }
 
 interface PlacedPiece {
@@ -185,7 +190,6 @@ function groundBoxOf(mesh: MeshData, isRound: boolean): GroundBox {
 
 function plinthFooting(high: MeshData, isRound: boolean): Footing {
   const box = groundBoxOf(high, isRound);
-
   const probes: GroundProbe[] = [];
 
   for (const sideX of [-0.5, 0, 0.5]) {
@@ -195,11 +199,6 @@ function plinthFooting(high: MeshData, isRound: boolean): Footing {
   }
 
   return { lift: TALLEST_PLINTH, plinth: box, probes, sinking: SINKING_ALLOWANCE };
-}
-
-interface Seat {
-  readonly floor: number;
-  readonly lowest: number;
 }
 
 function seatOf(mirror: WorldMirror, piece: PiecePlacement, footing: Footing): Seat {
@@ -242,9 +241,7 @@ function createBuildingMaterial(textures: TerrainTextures, grid: WorldGrid): Mes
   const part = int(attribute("part", "float").add(0.5));
 
   const progress = look.x;
-
   const isBuilt = buildOrder.lessThanEqual(progress.add(0.001));
-
   const local = positionLocal.mul(select(isBuilt, float(1), float(0)));
 
   material.positionNode = placedOnGround(local, placement, textures, grid);

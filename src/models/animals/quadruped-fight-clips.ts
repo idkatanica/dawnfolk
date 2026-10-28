@@ -14,12 +14,42 @@ import {
 } from "./quadruped-motion.ts";
 import { LEG_ENDS, LEG_SIDES, QuadrupedBone } from "./quadruped-skeleton.ts";
 
+export const QUADRUPED_FIGHT_CLIPS: Readonly<Record<AnimalFightPose, AnimalClip>> = {
+  attack: { apply: attack, timing: seconds(0.9) },
+  charge: { apply: charge, timing: STRIDE_TIMING },
+  fall: { apply: fall, timing: { cycleSeconds: 1.3, kind: "once" } },
+  flinch: { apply: flinch, timing: { cycleSeconds: 0.5, kind: "once" } },
+};
+
 const LUNGE: readonly Keyframe[] = [
   [0, 0],
   [0.3, -0.6],
   [0.48, 1],
   [0.62, 0.9],
   [0.86, 0],
+];
+
+const JOLT: readonly Keyframe[] = [
+  [0, 0],
+  [0.2, 1],
+  [0.5, 0.6],
+  [0.99, 0],
+];
+
+const COLLAPSE: readonly Keyframe[] = [
+  [0, 0],
+  [0.22, 0.15],
+  [0.6, 0.92],
+  [0.7, 1],
+  [0.99, 1],
+];
+
+const BUCKLE: readonly Keyframe[] = [
+  [0, 0],
+  [0.25, 1],
+  [0.55, 0.7],
+  [0.72, 0],
+  [0.99, 0],
 ];
 
 function attack(pose: Pose, phase: number, context: AnimalClipContext): void {
@@ -57,13 +87,6 @@ function charge(pose: Pose, phase: number, context: AnimalClipContext): void {
   pose.height = 0.1 * Math.max(0, wave(phase, -0.62));
 }
 
-const JOLT: readonly Keyframe[] = [
-  [0, 0],
-  [0.2, 1],
-  [0.5, 0.6],
-  [0.99, 0],
-];
-
 function flinch(pose: Pose, phase: number, context: AnimalClipContext): void {
   const jolt = keyframes(Math.min(phase, 0.99), JOLT);
 
@@ -85,22 +108,6 @@ function flinch(pose: Pose, phase: number, context: AnimalClipContext): void {
     }
   }
 }
-
-const COLLAPSE: readonly Keyframe[] = [
-  [0, 0],
-  [0.22, 0.15],
-  [0.6, 0.92],
-  [0.7, 1],
-  [0.99, 1],
-];
-
-const BUCKLE: readonly Keyframe[] = [
-  [0, 0],
-  [0.25, 1],
-  [0.55, 0.7],
-  [0.72, 0],
-  [0.99, 0],
-];
 
 function fall(pose: Pose, phase: number, context: AnimalClipContext): void {
   const progress = Math.min(phase, 0.99);
@@ -126,10 +133,3 @@ function fall(pose: Pose, phase: number, context: AnimalClipContext): void {
     }
   }
 }
-
-export const QUADRUPED_FIGHT_CLIPS: Readonly<Record<AnimalFightPose, AnimalClip>> = {
-  attack: { apply: attack, timing: seconds(0.9) },
-  charge: { apply: charge, timing: STRIDE_TIMING },
-  fall: { apply: fall, timing: { cycleSeconds: 1.3, kind: "once" } },
-  flinch: { apply: flinch, timing: { cycleSeconds: 0.5, kind: "once" } },
-};

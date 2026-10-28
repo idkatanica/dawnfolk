@@ -43,7 +43,7 @@ function largestStep(atmosphere: Atmosphere, fromHours: number, toHours: number)
   return largest;
 }
 
-describe("Atmosphere", () => {
+describe("atmosphere", () => {
   it("fades the moonlight in after sunset", () => {
     const atmosphere = createAtmosphere();
 

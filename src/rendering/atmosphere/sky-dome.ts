@@ -59,9 +59,7 @@ function starField(direction: Node<"vec3">) {
 
   const faceIndex = select(isSideX, float(1), select(isTopY, float(2), float(3)));
   const scaled = faceCoordinates.mul(STAR_CELLS_PER_FACE).add(STAR_CELLS_PER_FACE * 2);
-
   const cell = floor(scaled);
-
   const seed = vec3(cell, faceIndex.mul(97.31));
 
   const presence = starHash(seed, 0);
@@ -72,7 +70,6 @@ function starField(direction: Node<"vec3">) {
   const twinkle = sin(time.mul(brightness.mul(3).add(1.2)).add(brightness.mul(40)))
     .mul(0.25)
     .add(0.75);
-
   const shape = smoothstep(0.24, 0.02, distanceToStar);
 
   return vec3(0.85, 0.9, 1).mul(
@@ -115,7 +112,6 @@ export class SkyDome {
   #skyColor() {
     return Fn(() => {
       const direction = normalize(positionWorld.sub(cameraPosition));
-
       const height = direction.y;
 
       const sky = mix(this.horizonColor, this.zenithColor, pow(max(height, 0), 0.5));
@@ -162,7 +158,6 @@ export class SkyDome {
       .add(0.5);
 
     const projected = direction.xz.div(height.add(0.12)).mul(0.9).sub(this.cloudOffset);
-
     const density = mx_fractal_noise_float(vec3(projected, time.mul(0.004)), 4, 2.1, 0.5)
       .mul(0.5)
       .add(0.5);

@@ -8,6 +8,11 @@ import { deformShape, type Shape, transformShape } from "../mesh/shape.ts";
 import { blob, box, card, cone, cylinder, lathe } from "../mesh/shapes.ts";
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
 
+export const GLOW_PART = 1;
+
+const STRUCTURE_NOISE = createVolumeNoise(createRandom(5151));
+const SHADE_SALT = 41.3;
+
 export type StructureLevel = "high" | "low";
 
 export interface StructureContext {
@@ -18,11 +23,24 @@ export interface StructureContext {
 
 type Order = number | ((point: SurfacePoint) => number);
 
-export const GLOW_PART = 1;
+interface PitchedRoof {
+  readonly eave: number;
+  readonly length: number;
+  readonly ridge: number;
+  readonly span: number;
+  readonly style: VertexStyle;
+  readonly thickness: number;
+}
 
-const STRUCTURE_NOISE = createVolumeNoise(createRandom(5151));
+type Outline = readonly (readonly [number, number])[];
 
-const SHADE_SALT = 41.3;
+interface SlabSpan {
+  readonly from: readonly [y: number, z: number];
+  readonly overhang: number;
+  readonly thickness: number;
+  readonly to: readonly [y: number, z: number];
+  readonly width: number;
+}
 
 export function isDetailed(context: StructureContext): boolean {
   return context.level === "high";
@@ -250,17 +268,6 @@ export function addPitchedRoof(context: StructureContext, roof: PitchedRoof): vo
   }
 }
 
-interface PitchedRoof {
-  readonly eave: number;
-  readonly length: number;
-  readonly ridge: number;
-  readonly span: number;
-  readonly style: VertexStyle;
-  readonly thickness: number;
-}
-
-type Outline = readonly (readonly [number, number])[];
-
 export function prism(outline: Outline, depth: number): Shape {
   const positions: number[] = [];
   const normals: number[] = [];
@@ -286,9 +293,11 @@ export function prism(outline: Outline, depth: number): Shape {
     for (let corner = 1; corner < corners.length - 1; corner += 1) {
       if (facing > 0) {
         indices.push(corners[0], corners[corner], corners[corner + 1]);
-      } else {
-        indices.push(corners[0], corners[corner + 1], corners[corner]);
+
+        continue;
       }
+
+      indices.push(corners[0], corners[corner + 1], corners[corner]);
     }
   }
 
@@ -338,14 +347,6 @@ export function addSpike(
     style,
     transform: segmentTransform(base, tip),
   });
-}
-
-interface SlabSpan {
-  readonly from: readonly [y: number, z: number];
-  readonly overhang: number;
-  readonly thickness: number;
-  readonly to: readonly [y: number, z: number];
-  readonly width: number;
 }
 
 export function addSlab(context: StructureContext, span: SlabSpan, style: VertexStyle): void {

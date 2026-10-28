@@ -6,7 +6,7 @@ const RUN = 2;
 const FALL = 3;
 const DEAD = 4;
 
-describe("AgentMotion", () => {
+describe("agent motion", () => {
   it("advances the phase by game time and the clip rate", () => {
     const motion = new AgentMotion(WALK, 0.1, 0);
 

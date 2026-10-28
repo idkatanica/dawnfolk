@@ -7,41 +7,140 @@ import { type Triple, transformOf } from "./transforms.ts";
 
 const POLE_RADIUS = 1e-5;
 const RIBBON_FOLD = 0.35;
+const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
+const LENGTHWISE = transformOf({ rotation: [Math.PI / 2, 0, 0] });
 
-class ShapeWriter {
-  readonly #along = new GrowableFloatArray();
-  readonly #around = new GrowableFloatArray();
-  readonly #indices = new GrowableIndexArray();
-  readonly #normals = new GrowableFloatArray();
-  readonly #positions = new GrowableFloatArray();
-  #vertexCount = 0;
+const BOX_CORNERS: readonly (readonly [number, number])[] = [
+  [-1, -1],
+  [1, -1],
+  [1, 1],
+  [-1, 1],
+];
 
-  vertex(position: Vector3, normal: Vector3, along: number, around: number): number {
-    this.#positions.pushThree(position.x, position.y, position.z);
-    this.#normals.pushThree(normal.x, normal.y, normal.z);
-    this.#along.push(along);
-    this.#around.push(around);
-    this.#vertexCount += 1;
+const ICOSAHEDRON_VERTICES: readonly (readonly [number, number, number])[] = [
+  [-1, GOLDEN_RATIO, 0],
+  [1, GOLDEN_RATIO, 0],
+  [-1, -GOLDEN_RATIO, 0],
+  [1, -GOLDEN_RATIO, 0],
+  [0, -1, GOLDEN_RATIO],
+  [0, 1, GOLDEN_RATIO],
+  [0, -1, -GOLDEN_RATIO],
+  [0, 1, -GOLDEN_RATIO],
+  [GOLDEN_RATIO, 0, -1],
+  [GOLDEN_RATIO, 0, 1],
+  [-GOLDEN_RATIO, 0, -1],
+  [-GOLDEN_RATIO, 0, 1],
+];
 
-    return this.#vertexCount - 1;
-  }
+const ICOSAHEDRON_FACES: readonly (readonly [number, number, number])[] = [
+  [0, 11, 5],
+  [0, 5, 1],
+  [0, 1, 7],
+  [0, 7, 10],
+  [0, 10, 11],
+  [1, 5, 9],
+  [5, 11, 4],
+  [11, 10, 2],
+  [10, 7, 6],
+  [7, 1, 8],
+  [3, 9, 4],
+  [3, 4, 2],
+  [3, 2, 6],
+  [3, 6, 8],
+  [3, 8, 9],
+  [4, 9, 5],
+  [2, 4, 11],
+  [6, 2, 10],
+  [8, 6, 7],
+  [9, 8, 1],
+];
 
-  triangle(first: number, second: number, third: number): void {
-    this.#indices.pushTriangle(first, second, third);
-  }
-
-  finish(): Shape {
-    return {
-      along: this.#along.toArray(),
-      around: this.#around.toArray(),
-      indices: this.#indices.toArray(),
-      normals: this.#normals.toArray(),
-      positions: this.#positions.toArray(),
-    };
-  }
+interface BoxFace {
+  normal: Vector3;
+  tangentU: Vector3;
+  tangentV: Vector3;
 }
 
+const BOX_FACES: readonly BoxFace[] = [
+  { normal: new Vector3(1, 0, 0), tangentU: new Vector3(0, 1, 0), tangentV: new Vector3(0, 0, 1) },
+  { normal: new Vector3(-1, 0, 0), tangentU: new Vector3(0, 0, 1), tangentV: new Vector3(0, 1, 0) },
+  { normal: new Vector3(0, 1, 0), tangentU: new Vector3(0, 0, 1), tangentV: new Vector3(1, 0, 0) },
+  { normal: new Vector3(0, -1, 0), tangentU: new Vector3(1, 0, 0), tangentV: new Vector3(0, 0, 1) },
+  { normal: new Vector3(0, 0, 1), tangentU: new Vector3(1, 0, 0), tangentV: new Vector3(0, 1, 0) },
+  { normal: new Vector3(0, 0, -1), tangentU: new Vector3(0, 1, 0), tangentV: new Vector3(1, 0, 0) },
+];
+
 type Ring = readonly number[];
+
+interface ProfilePoint {
+  readonly radius: number;
+  readonly y: number;
+}
+
+interface ProfileNormal {
+  radial: number;
+  vertical: number;
+}
+
+export interface LoftSection {
+  readonly centerX?: number;
+  readonly centerZ?: number;
+  readonly radiusX: number;
+  readonly radiusZ: number;
+  readonly ripple?: (around: number) => number;
+  readonly y: number;
+}
+
+interface PanelOptions {
+  readonly angularSegments: number;
+  readonly endAngle: number;
+  readonly sections: readonly LoftSection[];
+  readonly startAngle: number;
+  readonly thickness: number;
+}
+
+interface CylinderOptions {
+  readonly height: number;
+  readonly radialSegments?: number;
+  readonly radiusBottom: number;
+  readonly radiusTop: number;
+}
+
+export interface TubePoint {
+  readonly radius: number;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+}
+
+interface TubeOptions {
+  readonly hasEndCap?: boolean;
+  readonly hasStartCap?: boolean;
+  readonly radialSegments?: number;
+}
+
+interface TubeFrame {
+  binormal: Vector3;
+  normal: Vector3;
+  tangent: Vector3;
+}
+
+interface BlobOptions {
+  readonly detail?: number;
+  readonly frequency?: number;
+  readonly noise: VolumeNoise;
+  readonly offset?: Triple;
+  readonly radius: number;
+  readonly roughness?: number;
+}
+
+export interface BodySection {
+  readonly centerX?: number;
+  readonly centerY: number;
+  readonly halfHeight: number;
+  readonly halfWidth: number;
+  readonly z: number;
+}
 
 function connectRings(writer: ShapeWriter, lower: Ring, upper: Ring): void {
   const segments = Math.max(lower.length, upper.length);
@@ -84,16 +183,6 @@ function capRing(writer: ShapeWriter, center: number, ring: Ring, isFacingForwar
 
     writer.triangle(center, ring[segment], ring[next]);
   }
-}
-
-interface ProfilePoint {
-  readonly radius: number;
-  readonly y: number;
-}
-
-interface ProfileNormal {
-  radial: number;
-  vertical: number;
 }
 
 function profileNormal(profile: readonly ProfilePoint[], index: number): ProfileNormal {
@@ -195,15 +284,6 @@ export function sphere(radius: number, segments = 12, rings = 8): Shape {
   return lathe(profile, segments);
 }
 
-export interface LoftSection {
-  readonly centerX?: number;
-  readonly centerZ?: number;
-  readonly radiusX: number;
-  readonly radiusZ: number;
-  readonly ripple?: (around: number) => number;
-  readonly y: number;
-}
-
 function sectionLengths(sections: readonly LoftSection[]): number[] {
   const lengths = [0];
 
@@ -271,14 +351,6 @@ export function loft(sections: readonly LoftSection[], segments: number): Shape 
   const shape = writer.finish();
 
   return { ...shape, normals: computeSmoothNormals(shape.positions, shape.indices) };
-}
-
-interface PanelOptions {
-  readonly angularSegments: number;
-  readonly endAngle: number;
-  readonly sections: readonly LoftSection[];
-  readonly startAngle: number;
-  readonly thickness: number;
 }
 
 function panelRow(
@@ -361,13 +433,6 @@ export function panel(options: PanelOptions): Shape {
   return { ...shape, normals: computeSmoothNormals(shape.positions, shape.indices) };
 }
 
-interface CylinderOptions {
-  readonly height: number;
-  readonly radialSegments?: number;
-  readonly radiusBottom: number;
-  readonly radiusTop: number;
-}
-
 export function cylinder(options: CylinderOptions): Shape {
   const { height, radialSegments = 8, radiusBottom, radiusTop } = options;
 
@@ -414,28 +479,6 @@ export function cone(radius: number, height: number, segments = 8): Shape {
   return cylinder({ height, radialSegments: segments, radiusBottom: radius, radiusTop: 0 });
 }
 
-interface BoxFace {
-  normal: Vector3;
-  tangentU: Vector3;
-  tangentV: Vector3;
-}
-
-const BOX_FACES: readonly BoxFace[] = [
-  { normal: new Vector3(1, 0, 0), tangentU: new Vector3(0, 1, 0), tangentV: new Vector3(0, 0, 1) },
-  { normal: new Vector3(-1, 0, 0), tangentU: new Vector3(0, 0, 1), tangentV: new Vector3(0, 1, 0) },
-  { normal: new Vector3(0, 1, 0), tangentU: new Vector3(0, 0, 1), tangentV: new Vector3(1, 0, 0) },
-  { normal: new Vector3(0, -1, 0), tangentU: new Vector3(1, 0, 0), tangentV: new Vector3(0, 0, 1) },
-  { normal: new Vector3(0, 0, 1), tangentU: new Vector3(1, 0, 0), tangentV: new Vector3(0, 1, 0) },
-  { normal: new Vector3(0, 0, -1), tangentU: new Vector3(0, 1, 0), tangentV: new Vector3(1, 0, 0) },
-];
-
-const BOX_CORNERS: readonly (readonly [number, number])[] = [
-  [-1, -1],
-  [1, -1],
-  [1, 1],
-  [-1, 1],
-];
-
 export function box(width: number, height: number, depth: number): Shape {
   const writer = new ShapeWriter();
   const halfSize = new Vector3(width / 2, height / 2, depth / 2);
@@ -456,93 +499,6 @@ export function box(width: number, height: number, depth: number): Shape {
   }
 
   return writer.finish();
-}
-
-const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
-
-const ICOSAHEDRON_VERTICES: readonly (readonly [number, number, number])[] = [
-  [-1, GOLDEN_RATIO, 0],
-  [1, GOLDEN_RATIO, 0],
-  [-1, -GOLDEN_RATIO, 0],
-  [1, -GOLDEN_RATIO, 0],
-  [0, -1, GOLDEN_RATIO],
-  [0, 1, GOLDEN_RATIO],
-  [0, -1, -GOLDEN_RATIO],
-  [0, 1, -GOLDEN_RATIO],
-  [GOLDEN_RATIO, 0, -1],
-  [GOLDEN_RATIO, 0, 1],
-  [-GOLDEN_RATIO, 0, -1],
-  [-GOLDEN_RATIO, 0, 1],
-];
-
-const ICOSAHEDRON_FACES: readonly (readonly [number, number, number])[] = [
-  [0, 11, 5],
-  [0, 5, 1],
-  [0, 1, 7],
-  [0, 7, 10],
-  [0, 10, 11],
-  [1, 5, 9],
-  [5, 11, 4],
-  [11, 10, 2],
-  [10, 7, 6],
-  [7, 1, 8],
-  [3, 9, 4],
-  [3, 4, 2],
-  [3, 2, 6],
-  [3, 6, 8],
-  [3, 8, 9],
-  [4, 9, 5],
-  [2, 4, 11],
-  [6, 2, 10],
-  [8, 6, 7],
-  [9, 8, 1],
-];
-
-class IcosphereMesh {
-  readonly faces: [number, number, number][];
-  readonly points: Vector3[];
-  readonly #midpoints = new Map<number, number>();
-
-  constructor() {
-    this.points = ICOSAHEDRON_VERTICES.map(([x, y, z]) => new Vector3(x, y, z).normalize());
-    this.faces = ICOSAHEDRON_FACES.map(([first, second, third]) => [first, second, third]);
-  }
-
-  subdivide(): void {
-    const faces = this.faces.splice(0);
-
-    this.#midpoints.clear();
-
-    for (const [first, second, third] of faces) {
-      const firstMiddle = this.#midpoint(first, second);
-      const secondMiddle = this.#midpoint(second, third);
-      const thirdMiddle = this.#midpoint(third, first);
-
-      this.faces.push(
-        [first, firstMiddle, thirdMiddle],
-        [second, secondMiddle, firstMiddle],
-        [third, thirdMiddle, secondMiddle],
-        [firstMiddle, secondMiddle, thirdMiddle]
-      );
-    }
-  }
-
-  #midpoint(first: number, second: number): number {
-    const key = Math.min(first, second) * 1_000_003 + Math.max(first, second);
-
-    const known = this.#midpoints.get(key);
-
-    if (known !== undefined) {
-      return known;
-    }
-
-    const point = this.points[first].clone().add(this.points[second]).normalize();
-
-    this.points.push(point);
-    this.#midpoints.set(key, this.points.length - 1);
-
-    return this.points.length - 1;
-  }
 }
 
 export function icosphere(radius: number, detail = 1): Shape {
@@ -567,13 +523,6 @@ export function icosphere(radius: number, detail = 1): Shape {
   return writer.finish();
 }
 
-export interface TubePoint {
-  readonly radius: number;
-  readonly x: number;
-  readonly y: number;
-  readonly z: number;
-}
-
 export function pointAlong(points: readonly TubePoint[], amount: number): TubePoint {
   const scaled = clamp(amount * (points.length - 1), 0, points.length - 1.000_001);
   const index = Math.floor(scaled);
@@ -587,18 +536,6 @@ export function pointAlong(points: readonly TubePoint[], amount: number): TubePo
     y: lerp(from.y, to.y, fraction),
     z: lerp(from.z, to.z, fraction),
   };
-}
-
-interface TubeOptions {
-  readonly hasEndCap?: boolean;
-  readonly hasStartCap?: boolean;
-  readonly radialSegments?: number;
-}
-
-interface TubeFrame {
-  binormal: Vector3;
-  normal: Vector3;
-  tangent: Vector3;
 }
 
 function tubeTangents(points: readonly Vector3[]): Vector3[] {
@@ -948,18 +885,8 @@ export function disc(radius: number, segments: number): Shape {
   return writer.finish();
 }
 
-interface BlobOptions {
-  readonly detail?: number;
-  readonly frequency?: number;
-  readonly noise: VolumeNoise;
-  readonly offset?: Triple;
-  readonly radius: number;
-  readonly roughness?: number;
-}
-
 export function blob(options: BlobOptions): Shape {
-  const { detail = 1, frequency = 1.4, offset = [0, 0, 0], roughness = 0.22 } = options;
-  const { noise, radius } = options;
+  const { detail = 1, frequency = 1.4, noise, offset = [0, 0, 0], radius, roughness = 0.22 } = options;
 
   return displaceShape(
     icosphere(radius, detail),
@@ -974,16 +901,6 @@ export function blob(options: BlobOptions): Shape {
   );
 }
 
-export interface BodySection {
-  readonly centerX?: number;
-  readonly centerY: number;
-  readonly halfHeight: number;
-  readonly halfWidth: number;
-  readonly z: number;
-}
-
-const LENGTHWISE = transformOf({ rotation: [Math.PI / 2, 0, 0] });
-
 export function lengthwiseLoft(sections: readonly BodySection[], segments: number): Shape {
   const loftSections = sections.map(({ centerX = 0, centerY, halfHeight, halfWidth, z }) => ({
     centerX,
@@ -994,4 +911,84 @@ export function lengthwiseLoft(sections: readonly BodySection[], segments: numbe
   }));
 
   return transformShape(loft(loftSections, segments), LENGTHWISE);
+}
+
+class ShapeWriter {
+  readonly #along = new GrowableFloatArray();
+  readonly #around = new GrowableFloatArray();
+  readonly #indices = new GrowableIndexArray();
+  readonly #normals = new GrowableFloatArray();
+  readonly #positions = new GrowableFloatArray();
+  #vertexCount = 0;
+
+  vertex(position: Vector3, normal: Vector3, along: number, around: number): number {
+    this.#positions.pushThree(position.x, position.y, position.z);
+    this.#normals.pushThree(normal.x, normal.y, normal.z);
+    this.#along.push(along);
+    this.#around.push(around);
+    this.#vertexCount += 1;
+
+    return this.#vertexCount - 1;
+  }
+
+  triangle(first: number, second: number, third: number): void {
+    this.#indices.pushTriangle(first, second, third);
+  }
+
+  finish(): Shape {
+    return {
+      along: this.#along.toArray(),
+      around: this.#around.toArray(),
+      indices: this.#indices.toArray(),
+      normals: this.#normals.toArray(),
+      positions: this.#positions.toArray(),
+    };
+  }
+}
+
+class IcosphereMesh {
+  readonly faces: [number, number, number][];
+  readonly points: Vector3[];
+  readonly #midpoints = new Map<number, number>();
+
+  constructor() {
+    this.points = ICOSAHEDRON_VERTICES.map(([x, y, z]) => new Vector3(x, y, z).normalize());
+    this.faces = ICOSAHEDRON_FACES.map(([first, second, third]) => [first, second, third]);
+  }
+
+  subdivide(): void {
+    const faces = this.faces.splice(0);
+
+    this.#midpoints.clear();
+
+    for (const [first, second, third] of faces) {
+      const firstMiddle = this.#midpoint(first, second);
+      const secondMiddle = this.#midpoint(second, third);
+      const thirdMiddle = this.#midpoint(third, first);
+
+      this.faces.push(
+        [first, firstMiddle, thirdMiddle],
+        [second, secondMiddle, firstMiddle],
+        [third, thirdMiddle, secondMiddle],
+        [firstMiddle, secondMiddle, thirdMiddle]
+      );
+    }
+  }
+
+  #midpoint(first: number, second: number): number {
+    const key = Math.min(first, second) * 1_000_003 + Math.max(first, second);
+
+    const known = this.#midpoints.get(key);
+
+    if (known !== undefined) {
+      return known;
+    }
+
+    const point = this.points[first].clone().add(this.points[second]).normalize();
+
+    this.points.push(point);
+    this.#midpoints.set(key, this.points.length - 1);
+
+    return this.points.length - 1;
+  }
 }

@@ -1,5 +1,6 @@
 import { Vector3 } from "three/webgpu";
 import { describe, expect, it } from "vitest";
+import type { Selection } from "../../simulation/commands.ts";
 import type { SimulationFrame } from "../../simulation/frame.ts";
 import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
@@ -41,7 +42,7 @@ function peopleAt(...positions: readonly (readonly [number, number])[]): Float32
   return people;
 }
 
-function pickAt(heightAt: HeightField, ...positions: readonly (readonly [number, number])[]) {
+function pickAt(heightAt: HeightField, ...positions: readonly (readonly [number, number])[]): Selection | null {
   const camera = cameraLookingAt(0, 0);
   const frame = frameWithPeople(...positions);
 

@@ -10,6 +10,52 @@ import { plantFeet } from "./planted-feet.ts";
 const WEAPON_SIDE: Side = -1;
 const GUARD_SIDE: Side = 1;
 
+const THRUST_REACH: readonly Keyframe[] = [
+  [0, 0],
+  [0.28, 0],
+  [0.44, -1],
+  [0.54, 1],
+  [0.66, 1],
+  [0.86, 0],
+];
+
+const LEFT_PUNCH: readonly Keyframe[] = [
+  [0, 0],
+  [0.12, 1],
+  [0.26, 0.1],
+  [0.5, 0],
+];
+
+const RIGHT_PUNCH: readonly Keyframe[] = [
+  [0, 0],
+  [0.5, 0],
+  [0.62, 1],
+  [0.76, 0.1],
+];
+
+const FLINCH_JOLT: readonly Keyframe[] = [
+  [0, 0],
+  [0.18, 1],
+  [0.45, 0.7],
+  [0.99, 0],
+];
+
+const FALL_DROP: readonly Keyframe[] = [
+  [0, 0],
+  [0.2, 0.12],
+  [0.55, 0.85],
+  [0.66, 1],
+  [0.99, 1],
+];
+
+const FALL_STAGGER: readonly Keyframe[] = [
+  [0, 0],
+  [0.16, 1],
+  [0.4, 0.6],
+  [0.66, 0],
+  [0.99, 0],
+];
+
 interface ArmAngles {
   readonly elbow: number;
   readonly forward: number;
@@ -25,10 +71,6 @@ interface Stance {
   readonly guardArm: ArmAngles;
   readonly headTurn: number;
   readonly weaponArm: ArmAngles;
-}
-
-function arm(forward: number, outward: number, elbow: number, twist = 0, wrist = 0): ArmAngles {
-  return { elbow, forward, outward, twist, wrist };
 }
 
 const SPEAR_GUARD: Stance = {
@@ -76,6 +118,20 @@ const PARRY: Stance = {
   weaponArm: arm(95, 82, 114, -89, -37),
 };
 
+export const FIGHT_CLIPS: Readonly<Record<FightPose, HumanClip>> = {
+  block: { apply: block, timing: seconds(1.2), tool: null },
+  brawl: { apply: brawl, timing: seconds(0.9), tool: null },
+  charge: { apply: charge, timing: STRIDE_TIMING, tool: null },
+  fall: { apply: fall, timing: { cycleSeconds: 1.5, kind: "once" }, tool: null },
+  flinch: { apply: flinch, timing: { cycleSeconds: 0.5, kind: "once" }, tool: null },
+  march: { apply: march, timing: STRIDE_TIMING, tool: null },
+  thrust: { apply: thrust, timing: seconds(1.1), tool: null },
+};
+
+function arm(forward: number, outward: number, elbow: number, twist = 0, wrist = 0): ArmAngles {
+  return { elbow, forward, outward, twist, wrist };
+}
+
 function mixAngles(from: ArmAngles, to: ArmAngles, amount: number): ArmAngles {
   return {
     elbow: from.elbow + (to.elbow - from.elbow) * amount,
@@ -116,9 +172,9 @@ function poseUpperBody(pose: Pose, stance: Stance): void {
 }
 
 function strideOf(context: HumanClipContext): number {
-  const elderly = context.ageGroup === "elder" ? 0.8 : 1;
+  const ageFactor = context.ageGroup === "elder" ? 0.8 : 1;
 
-  return context.motion.stride * elderly;
+  return context.motion.stride * ageFactor;
 }
 
 function fightingLegs(pose: Pose, crouch: number, lunge: number): void {
@@ -153,15 +209,6 @@ function charge(pose: Pose, phase: number, context: HumanClipContext): void {
   pose.height = 0.05 * Math.max(0, wave(phase * 2, -0.05));
 }
 
-const THRUST_REACH: readonly Keyframe[] = [
-  [0, 0],
-  [0.28, 0],
-  [0.44, -1],
-  [0.54, 1],
-  [0.66, 1],
-  [0.86, 0],
-];
-
 function spearStance(reach: number): Stance {
   if (reach >= 0) {
     return mixStances(SPEAR_GUARD, SPEAR_LUNGE, reach);
@@ -180,20 +227,6 @@ function thrust(pose: Pose, phase: number): void {
 
   plantFeet(pose);
 }
-
-const LEFT_PUNCH: readonly Keyframe[] = [
-  [0, 0],
-  [0.12, 1],
-  [0.26, 0.1],
-  [0.5, 0],
-];
-
-const RIGHT_PUNCH: readonly Keyframe[] = [
-  [0, 0],
-  [0.5, 0],
-  [0.62, 1],
-  [0.76, 0.1],
-];
 
 function punchingArm(pose: Pose, side: Side, punch: number): void {
   swingArm(pose, side, { forward: degrees(52) + degrees(38) * punch, outward: -degrees(12) });
@@ -225,13 +258,6 @@ function block(pose: Pose, phase: number): void {
   plantFeet(pose);
 }
 
-const FLINCH_JOLT: readonly Keyframe[] = [
-  [0, 0],
-  [0.18, 1],
-  [0.45, 0.7],
-  [0.99, 0],
-];
-
 function flinch(pose: Pose, phase: number): void {
   const jolt = keyframes(Math.min(phase, 0.99), FLINCH_JOLT);
 
@@ -248,22 +274,6 @@ function flinch(pose: Pose, phase: number): void {
 
   plantFeet(pose);
 }
-
-const FALL_DROP: readonly Keyframe[] = [
-  [0, 0],
-  [0.2, 0.12],
-  [0.55, 0.85],
-  [0.66, 1],
-  [0.99, 1],
-];
-
-const FALL_STAGGER: readonly Keyframe[] = [
-  [0, 0],
-  [0.16, 1],
-  [0.4, 0.6],
-  [0.66, 0],
-  [0.99, 0],
-];
 
 function fall(pose: Pose, phase: number): void {
   const progress = Math.min(phase, 0.99);
@@ -295,13 +305,3 @@ function fall(pose: Pose, phase: number): void {
     bendAnkle(pose, side, -degrees(30) * drop);
   }
 }
-
-export const FIGHT_CLIPS: Readonly<Record<FightPose, HumanClip>> = {
-  block: { apply: block, timing: seconds(1.2), tool: null },
-  brawl: { apply: brawl, timing: seconds(0.9), tool: null },
-  charge: { apply: charge, timing: STRIDE_TIMING, tool: null },
-  fall: { apply: fall, timing: { cycleSeconds: 1.5, kind: "once" }, tool: null },
-  flinch: { apply: flinch, timing: { cycleSeconds: 0.5, kind: "once" }, tool: null },
-  march: { apply: march, timing: STRIDE_TIMING, tool: null },
-  thrust: { apply: thrust, timing: seconds(1.1), tool: null },
-};

@@ -18,13 +18,6 @@ export const MarkerImportance = {
 
 type MarkerImportanceLevel = (typeof MarkerImportance)[keyof typeof MarkerImportance];
 
-export interface MarkerStyle {
-  readonly color: number;
-  readonly extent: number;
-  readonly importance: MarkerImportanceLevel;
-  readonly shape: MarkerShapeCode;
-}
-
 export const MARKER_HALO_PIXELS = 3;
 export const MARKER_RING_PIXELS = 1.5;
 export const MARKER_SELECTION_PIXELS = 2;
@@ -37,6 +30,13 @@ const SMALLEST_SCALE = 0.55;
 const SCALE_PER_HERD_MEMBER = 0.06;
 const LARGEST_HERD_SCALE = 1.35;
 const SCATTERED_HERD_EXTENTS = 2.5;
+
+export interface MarkerStyle {
+  readonly color: number;
+  readonly extent: number;
+  readonly importance: MarkerImportanceLevel;
+  readonly shape: MarkerShapeCode;
+}
 
 export const ANIMAL_MARKERS: Readonly<Record<AnimalKind, MarkerStyle>> = {
   deer: { color: 0xd9_a5_5c, extent: 13, importance: MarkerImportance.Animal, shape: MarkerShape.Diamond },

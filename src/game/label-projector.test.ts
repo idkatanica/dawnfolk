@@ -11,14 +11,14 @@ function ridgeHeight(x: number, z: number): number {
   return isOnRidge ? 500 : 0;
 }
 
-function wallAroundCentre(x: number, z: number): number {
-  const isOutsideCentre = Math.abs(x) > 100 || Math.abs(z) > 100;
+function wallAroundCenter(x: number, z: number): number {
+  const isOutsideCenter = Math.abs(x) > 100 || Math.abs(z) > 100;
 
-  return isOutsideCentre ? 5000 : 0;
+  return isOutsideCenter ? 5000 : 0;
 }
 
 describe("label projector", () => {
-  it("puts the point under the screen centre in the middle of the viewport", () => {
+  it("puts the point under the screen center in the middle of the viewport", () => {
     const projector = new LabelProjector(cameraLookingAt(100, -50), FLAT_GROUND, WORLD_HALF_SIZE);
 
     const placement = projector.place(100, -50, 0, VIEWPORT);
@@ -74,7 +74,7 @@ describe("label projector", () => {
   it("ignores terrain beyond the island edge", () => {
     const projector = new LabelProjector(
       cameraLookingAt(0, 0),
-      { heightAt: wallAroundCentre, surfaceAt: () => 0 },
+      { heightAt: wallAroundCenter, surfaceAt: () => 0 },
       100
     );
 

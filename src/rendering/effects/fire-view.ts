@@ -109,7 +109,6 @@ function crownFlameStrength(mirror: WorldMirror, plant: number, intensities: Rea
   }
 
   const cell = grid.cellAt(vegetation.x[plant], vegetation.z[plant]);
-
   const intensity = intensities.get(cell);
 
   if (intensity === undefined) {
@@ -202,7 +201,6 @@ export class FireView {
 
   #rebuild(mirror: WorldMirror, camera: PerspectiveCamera): void {
     const cells = nearestBurningCells(mirror, camera);
-
     const intensities = new Map(cells.map((burning) => [burning.cell, burning.intensity]));
 
     this.#flames.begin();
@@ -244,7 +242,6 @@ export class FireView {
       const scale = hashToUnit(burning.cell, flame, 3);
       const x = left + (0.1 + 0.8 * hashToUnit(burning.cell, flame, 1)) * grid.cellSize;
       const z = top + (0.1 + 0.8 * hashToUnit(burning.cell, flame, 2)) * grid.cellSize;
-
       const size = (1.6 + 4.4 * burning.intensity) * (0.65 + 0.7 * scale);
 
       this.#flames.add([x, mirror.heightAt(x, z) + size * FLAME_LIFT, z, size], [scale, burning.intensity, 0, 0]);
@@ -370,7 +367,6 @@ export class FireView {
 
     for (let spark = 0; spark < SPARKS_PER_CELL; spark += 1) {
       const seed = hashToUnit(burning.cell, spark, 7);
-
       const sparkX = x + (seed - 0.5) * grid.cellSize;
       const sparkZ = z + (hashToUnit(burning.cell, spark, 8) - 0.5) * grid.cellSize;
 
@@ -400,7 +396,6 @@ export class FireView {
 
       for (let flame = 0; flame < 2; flame += 1) {
         const seed = hashToUnit(building.id, flame);
-
         const size = (2.4 - flame * 0.7) * (0.75 + heat * 0.35);
 
         this.#flames.add(

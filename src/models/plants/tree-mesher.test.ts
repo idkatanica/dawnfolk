@@ -6,7 +6,6 @@ import { meshTree, type PlantDetailLevel, plantSway, type TreeLook } from "./tre
 import type { TreeStructure } from "./tree-structure.ts";
 
 const LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low", "far"];
-
 const LOOK: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
 
 const TREE: TreeStructure = {
@@ -59,12 +58,11 @@ const SHRUB: TreeStructure = {
 };
 
 const WEEPING_CROWN = { center: [3, 7.5, 0], drape: 2.5, kind: "blob", radius: 2, squash: 0.8, tint: 0 } as const;
-
 const WEEPING: TreeStructure = { ...TREE, foliage: [WEEPING_CROWN] };
 
 const FORKED: TreeStructure = {
   ...TREE,
-  branches: TREE.branches.map((branch) => (branch.depth === 0 ? { ...branch, forks: true } : branch)),
+  branches: TREE.branches.map((branch) => (branch.depth === 0 ? { ...branch, isForked: true } : branch)),
 };
 
 const FROND_TREE: TreeStructure = {

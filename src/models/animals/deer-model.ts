@@ -103,8 +103,31 @@ const HEAD_SEAM = 0.05;
 const LEG_SEAM = 0.08;
 const TAIL_SEAM = 0.03;
 const EAR_SEAM = 0.02;
-
 const BLEND = 0.06;
+const EAR = transformOf({ position: [0, 0.075, 0], scale: [0.036, 0.085, 0.014] });
+
+const TAIL: readonly TubePoint[] = [
+  { radius: 0.045, x: 0, y: 1.1, z: -0.7 },
+  { radius: 0.045, x: 0, y: 1.1, z: -0.79 },
+  { radius: 0.034, x: 0, y: 1.03, z: -0.86 },
+  { radius: 0, x: 0, y: 0.95, z: -0.88 },
+];
+
+const TINE_RADIUS = 0.014;
+const SPOT_COUNT = 14;
+const SPOT_RAY_HEIGHT = 1;
+const SPOT_FLATNESS = transformOf({ scale: [1, 0.5, 1] });
+
+interface AntlerTine {
+  readonly along: number;
+  readonly reach: Triple;
+}
+
+const ANTLER_TINES: readonly AntlerTine[] = [
+  { along: 0.27, reach: [0.02, 0.05, 0.14] },
+  { along: 0.48, reach: [0.04, 0.05, 0.13] },
+  { along: 0.66, reach: [0.06, 0.12, 0.07] },
+];
 
 function coatSlot(point: SurfacePoint): number {
   const { y, z } = point.position;
@@ -135,8 +158,6 @@ function headShape(detail: AnimalDetail): Shape {
 
   return transformShape(muzzle, transformOf({ scale: [0.78, 1, 1] }));
 }
-
-const EAR = transformOf({ position: [0, 0.075, 0], scale: [0.036, 0.085, 0.014] });
 
 function addFace(builder: MeshBuilder, shape: Shape, detail: AnimalDetail): void {
   if (!detail.hasSmallParts) {
@@ -172,13 +193,6 @@ function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
     });
   }
 }
-
-const TAIL: readonly TubePoint[] = [
-  { radius: 0.045, x: 0, y: 1.1, z: -0.7 },
-  { radius: 0.045, x: 0, y: 1.1, z: -0.79 },
-  { radius: 0.034, x: 0, y: 1.03, z: -0.86 },
-  { radius: 0, x: 0, y: 0.95, z: -0.88 },
-];
 
 export function addDeerBody(builder: MeshBuilder, detail: AnimalDetail): void {
   const { segments } = detail;
@@ -234,19 +248,6 @@ function antlerBeam(scale: number): TubePoint[] {
   ];
 }
 
-interface AntlerTine {
-  readonly along: number;
-  readonly reach: Triple;
-}
-
-const TINE_RADIUS = 0.014;
-
-const ANTLER_TINES: readonly AntlerTine[] = [
-  { along: 0.27, reach: [0.02, 0.05, 0.14] },
-  { along: 0.48, reach: [0.04, 0.05, 0.13] },
-  { along: 0.66, reach: [0.06, 0.12, 0.07] },
-];
-
 function antlerTine(beam: readonly TubePoint[], tine: AntlerTine, scale: number): TubePoint[] {
   const root = pointAlong(beam, tine.along);
   const [x, y, z] = tine.reach;
@@ -281,10 +282,6 @@ export function addSmallAntlers(builder: MeshBuilder, detail: AnimalDetail): voi
 export function addLargeAntlers(builder: MeshBuilder, detail: AnimalDetail): void {
   addAntlers(builder, detail, 1.1);
 }
-
-const SPOT_COUNT = 14;
-const SPOT_RAY_HEIGHT = 1;
-const SPOT_FLATNESS = transformOf({ scale: [1, 0.5, 1] });
 
 export function addFawnSpots(builder: MeshBuilder, detail: AnimalDetail): void {
   if (!detail.hasSmallParts) {

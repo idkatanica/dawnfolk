@@ -31,6 +31,26 @@ export interface ChiselOptions {
   readonly roughness: number;
 }
 
+interface Weathering {
+  readonly base: MaterialSlotIndex;
+  readonly frost: number;
+  readonly lichen: number;
+  readonly moss: number;
+  readonly seed: number;
+}
+
+export interface StoneContext {
+  readonly builder: MeshBuilder;
+  readonly height: number;
+  readonly random: RandomSource;
+}
+
+export interface StoneLook {
+  readonly lichen: number;
+  readonly moss: number;
+  readonly slot?: MaterialSlotIndex;
+}
+
 function randomPlane(random: RandomSource, depth: number): CuttingPlane {
   const height = random.signed();
   const angle = random.next() * FULL_TURN;
@@ -82,14 +102,6 @@ export function chiseledStone(random: RandomSource, options: ChiselOptions, deta
   );
 }
 
-interface Weathering {
-  readonly base: MaterialSlotIndex;
-  readonly frost: number;
-  readonly lichen: number;
-  readonly moss: number;
-  readonly seed: number;
-}
-
 export function weatheredSlot(weathering: Weathering): (point: SurfacePoint) => MaterialSlotIndex {
   const { base, frost, lichen, moss, seed } = weathering;
 
@@ -124,18 +136,6 @@ export function groundShade(height: number): (point: SurfacePoint) => number {
 
     return (0.62 + 0.38 * smoothstep(-0.1, height * 0.7, position.y)) * (0.93 + 0.07 * streaks);
   };
-}
-
-export interface StoneContext {
-  readonly builder: MeshBuilder;
-  readonly height: number;
-  readonly random: RandomSource;
-}
-
-export interface StoneLook {
-  readonly lichen: number;
-  readonly moss: number;
-  readonly slot?: MaterialSlotIndex;
 }
 
 export function addStone(context: StoneContext, shape: Shape, placement: TransformOptions, look: StoneLook): void {

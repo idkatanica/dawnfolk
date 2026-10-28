@@ -42,6 +42,7 @@ describe("resolution governor", () => {
     const governor = new ResolutionGovernor(2);
 
     playFrames(governor, 40, 120);
+
     const lowered = governor.pixelRatio(2);
 
     playFrames(governor, 1000 / 60, 3000);

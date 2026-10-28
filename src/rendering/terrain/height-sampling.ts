@@ -9,10 +9,9 @@ export function sampleCellsNode(cells: DataTexture, grid: WorldGrid, point: Node
   const cellCoordinate = point.add(grid.halfSize).div(grid.cellSize).sub(0.5);
 
   const base = floor(cellCoordinate);
-
   const fraction = cellCoordinate.sub(base);
 
-  function valueAt(column: number, row: number) {
+  function valueAt(column: number, row: number): Node<"vec4"> {
     return textureLoad(cells, ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(last, last))));
   }
 

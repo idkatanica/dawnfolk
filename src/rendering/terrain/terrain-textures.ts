@@ -53,20 +53,8 @@ function floatTexture(data: Float32Array, size: number, format: PixelFormat = Re
   return texture;
 }
 
-function wetlandTexture(data: Uint8Array, size: number): DataTexture {
-  const texture = new DataTexture(data, size, size, RGFormat, UnsignedByteType);
-
-  texture.minFilter = LinearFilter;
-  texture.magFilter = LinearFilter;
-  texture.wrapS = ClampToEdgeWrapping;
-  texture.wrapT = ClampToEdgeWrapping;
-  texture.needsUpdate = true;
-
-  return texture;
-}
-
-function surfaceTexture(data: Uint8Array, size: number): DataTexture {
-  const texture = new DataTexture(data, size, size, RGBAFormat, UnsignedByteType);
+function byteTexture(data: Uint8Array, size: number, format: PixelFormat): DataTexture {
+  const texture = new DataTexture(data, size, size, format, UnsignedByteType);
 
   texture.minFilter = LinearFilter;
   texture.magFilter = LinearFilter;
@@ -80,8 +68,8 @@ function surfaceTexture(data: Uint8Array, size: number): DataTexture {
 export class TerrainTextures {
   readonly bloom = uniform(0);
   readonly daylight = uniform(1);
-  readonly fords: FordField;
   readonly fields: FieldPlan;
+  readonly fords: FordField;
   readonly height: DataTexture;
   readonly outline: IslandOutline;
   readonly patchSteps: DataTexture;
@@ -94,8 +82,8 @@ export class TerrainTextures {
   readonly #albedo: GroundAlbedo;
   readonly #mirror: WorldMirror;
   readonly #patchStepData: Float32Array;
-  readonly #shoreData: Float32Array;
   readonly #pondDepths: Float32Array;
+  readonly #shoreData: Float32Array;
   readonly #wetlandData: Uint8Array;
   #albedoSeason = Number.NaN;
 
@@ -114,10 +102,10 @@ export class TerrainTextures {
     this.#pondDepths = new Float32Array(size * size);
     this.shore = floatTexture(this.#shoreData, size, RGBAFormat);
     this.#buildShore();
-    this.surface = surfaceTexture(mirror.surface, size);
+    this.surface = byteTexture(mirror.surface, size, RGBAFormat);
     this.#wetlandData = new Uint8Array(size * size * WETLAND_CHANNELS);
     this.#paintWetland({ firstRow: 0, rowCount: size });
-    this.wetland = wetlandTexture(this.#wetlandData, size);
+    this.wetland = byteTexture(this.#wetlandData, size, RGFormat);
     this.#albedo = new GroundAlbedo(mirror);
     this.fields = new FieldPlan(mirror);
   }
@@ -214,7 +202,6 @@ export class TerrainTextures {
 
     for (let cell = firstCell; cell < lastCell; cell += 1) {
       const ground = terrain.ground[cell];
-
       const isPool = isPoolGround(ground);
 
       this.#wetlandData[cell * WETLAND_CHANNELS] = isPool || ground === Ground.Swamp ? BYTE : 0;

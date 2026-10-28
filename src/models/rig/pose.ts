@@ -1,5 +1,11 @@
 import type { Grounding } from "./skeleton.ts";
 
+export const RotationAxis = {
+  Pitch: 0,
+  Roll: 1,
+  Yaw: 2,
+} as const;
+
 export const ANGLES_PER_BONE = 3;
 
 export type ClipTiming =
@@ -13,11 +19,13 @@ export function seconds(cycleSeconds: number): ClipTiming {
   return { cycleSeconds, kind: "seconds" };
 }
 
-export const RotationAxis = {
-  Pitch: 0,
-  Roll: 1,
-  Yaw: 2,
-} as const;
+function blendedGrounding(from: Grounding, to: Grounding): Grounding {
+  if (from === "body" || to === "body") {
+    return "body";
+  }
+
+  return "feet";
+}
 
 export class Pose {
   readonly angles: Float32Array;
@@ -50,12 +58,4 @@ export class Pose {
     this.height = from.height + (to.height - from.height) * amount;
     this.grounding = blendedGrounding(from.grounding, to.grounding);
   }
-}
-
-function blendedGrounding(from: Grounding, to: Grounding): Grounding {
-  if (from === "body" || to === "body") {
-    return "body";
-  }
-
-  return "feet";
 }

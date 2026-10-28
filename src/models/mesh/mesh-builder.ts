@@ -11,6 +11,8 @@ import {
 import { blendSeamNormals, type SeamSurface } from "./seams.ts";
 import { readShapeVertex, type Shape, shapeVertexCount } from "./shape.ts";
 
+const IDENTITY = new Matrix4();
+
 export interface SurfacePoint {
   readonly along: number;
   readonly around: number;
@@ -28,8 +30,6 @@ interface Placement {
   readonly style?: VertexStyle;
   readonly transform?: Matrix4;
 }
-
-const IDENTITY = new Matrix4();
 
 export function resolveChannel(value: ChannelValue | undefined, fallback: number, point: SurfacePoint): number {
   if (value === undefined) {

@@ -2,15 +2,15 @@ import type { Vector3 } from "three/webgpu";
 import { lerp, smoothstep } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 
-export interface SightGround {
-  readonly grid: Pick<WorldGrid, "halfSize">;
-  readonly heightAt: (x: number, z: number) => number;
-}
-
 const SIGHT_SAMPLES = 24;
 const SIGHT_REACH = 0.97;
 const SMALLEST_SOFTNESS = 2;
 const SOFTNESS_PER_METER = 0.004;
+
+export interface SightGround {
+  readonly grid: Pick<WorldGrid, "halfSize">;
+  readonly heightAt: (x: number, z: number) => number;
+}
 
 export function terrainSight(eye: Vector3, target: Vector3, ground: SightGround): number {
   const { halfSize } = ground.grid;
@@ -21,7 +21,6 @@ export function terrainSight(eye: Vector3, target: Vector3, ground: SightGround)
 
   for (let sample = 1; sample <= SIGHT_SAMPLES; sample += 1) {
     const amount = (sample / SIGHT_SAMPLES) * SIGHT_REACH;
-
     const x = lerp(eye.x, target.x, amount);
     const z = lerp(eye.z, target.z, amount);
 

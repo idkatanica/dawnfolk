@@ -39,7 +39,6 @@ export class CloudSea {
       .mul(0.5)
       .add(0.5);
     const towardSun = coordinates.add(this.sunDirection.xz.mul(0.035));
-
     const sunwardDensity = mx_fractal_noise_float(vec3(towardSun, time.mul(0.003)), 3, 2.05, 0.52)
       .mul(0.5)
       .add(0.5);

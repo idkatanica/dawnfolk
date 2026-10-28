@@ -18,16 +18,16 @@ import {
   type SpriteSinks,
 } from "./transient-effects.ts";
 
+const FLASH_DECAY = 7;
+const LIGHT_DECAY = 5;
+const LIGHT_DISTANCE = 900;
+
 interface EffectViewOptions {
   readonly axes: CameraAxes;
   readonly createRing: () => GroundRing;
   readonly heightAt: (x: number, z: number) => number;
   readonly shake: (amount: number, x: number, z: number) => void;
 }
-
-const FLASH_DECAY = 7;
-const LIGHT_DECAY = 5;
-const LIGHT_DISTANCE = 900;
 
 export class EffectView {
   readonly group = new Group();
