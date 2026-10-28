@@ -32,7 +32,7 @@ export function CompactTopBar() {
   return (
     <Island>
       <header className={cn(BAR_CLASS, "gap-2 pr-1 pl-3")}>
-        <CompactClock className="flex-1" />
+        <CompactClock />
 
         <TimeControls />
 

@@ -1,4 +1,5 @@
 import { GameIcon } from "../../design/game-icon.tsx";
+import { RowButton } from "../../design/row-button.tsx";
 import type { ChronicleEntry } from "../../simulation/chronicle.ts";
 import { useShowSpot } from "../inspector/use-focus-camera.ts";
 import { useWorldStore } from "../world/world-store.ts";
@@ -10,21 +11,15 @@ function ChronicleItem({ entry }: { readonly entry: ChronicleEntry }) {
   const showPlace = useShowSpot(entry.x, entry.z);
 
   return (
-    <li>
-      <button
-        className="hover:bg-paper-hover focus-visible:ring-dawn flex w-full items-start gap-3 rounded-xl px-2.5 py-2 text-left transition-colors outline-none focus-visible:ring-2"
-        onClick={showPlace}
-        type="button"
-      >
-        <GameIcon name={CHRONICLE_ICONS[entry.category]} size={24} />
+    <RowButton
+      className="items-start rounded-xl py-2"
+      leading={<GameIcon name={CHRONICLE_ICONS[entry.category]} />}
+      onClick={showPlace}
+    >
+      <span className="text-ink text-sm leading-snug">{entry.text}</span>
 
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-ink text-sm leading-snug">{entry.text}</span>
-
-          <span className="text-ink-muted text-xs">Day {Math.floor(entry.day) + 1}</span>
-        </span>
-      </button>
-    </li>
+      <span className="text-ink-muted text-xs">Day {Math.floor(entry.day) + 1}</span>
+    </RowButton>
   );
 }
 

@@ -4,7 +4,7 @@ import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { Pause } from "lucide-react";
 import { useSendCommand } from "../../app/use-engine.ts";
 import { cn } from "../../design/cn.ts";
-import { SEGMENT, SEGMENT_TRACK } from "../../design/segmented.ts";
+import { SEGMENT, SEGMENT_TRACK } from "../../design/styles.ts";
 import { SIMULATION_SPEEDS } from "../../simulation/tick.ts";
 import { useWorldStore } from "../world/world-store.ts";
 

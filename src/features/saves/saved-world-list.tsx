@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useLaunchStore } from "../../app/launch-store.ts";
 import { IconButton, TextButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
+import { FOCUS_RING } from "../../design/styles.ts";
 import type { SavedWorldListing } from "./save-database.ts";
 import { describeSummary, formatSavedAt } from "./saved-time.ts";
 import { useSavesStore } from "./saves-store.ts";
@@ -60,11 +61,7 @@ function SavedWorldRow({ now, world }: SavedWorldRowProps) {
             Keep
           </TextButton>
 
-          <TextButton
-            className="bg-ember hover:bg-ember/90 h-8 px-3 text-white hover:text-white"
-            onClick={confirmDelete}
-            tone="quiet"
-          >
+          <TextButton className="h-8 px-3" onClick={confirmDelete} tone="danger">
             Delete
           </TextButton>
         </div>
@@ -76,7 +73,8 @@ function SavedWorldRow({ now, world }: SavedWorldRowProps) {
     <div className="flex items-center gap-1 pr-1">
       <button
         className={cn(
-          "focus-visible:ring-dawn flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors duration-150 outline-none focus-visible:ring-2",
+          FOCUS_RING,
+          "flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors duration-150",
           "enabled:hover:bg-paper-hover disabled:cursor-not-allowed disabled:opacity-60"
         )}
         disabled={!world.isLoadable}

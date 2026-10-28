@@ -6,7 +6,7 @@ import { cn } from "../../design/cn.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
 import { Island } from "../../design/island.tsx";
-import { SEGMENT, SEGMENT_TRACK } from "../../design/segmented.ts";
+import { SEGMENT, SEGMENT_TRACK } from "../../design/styles.ts";
 import { WithTooltip } from "../../design/tooltip.tsx";
 import { POWER_ICONS } from "./power-icons.tsx";
 import { usePowerStore } from "./power-store.ts";
@@ -92,14 +92,10 @@ const KIND_ICONS: Readonly<Record<PowerCategory, GameIconName>> = {
   life: POWER_ICONS.tribe,
 };
 
-function useChosenKind() {
-  const [kind, setKind] = useState<PowerCategory>(() => {
-    const { selectedPowerId } = usePowerStore.getState();
+function initialKind(): PowerCategory {
+  const { selectedPowerId } = usePowerStore.getState();
 
-    return selectedPowerId === null ? "elements" : POWERS[selectedPowerId].category;
-  });
-
-  return { kind, setKind };
+  return selectedPowerId === null ? "elements" : POWERS[selectedPowerId].category;
 }
 
 interface KindChoice {
@@ -179,7 +175,7 @@ function useWheelScrollsSideways(rowReference: RefObject<HTMLDivElement | null>)
 
 export function PowerDock({ className }: { readonly className?: string | undefined }) {
   const rowReference = useRef<HTMLDivElement>(null);
-  const { kind, setKind } = useChosenKind();
+  const [kind, setKind] = useState(initialKind);
 
   useWheelScrollsSideways(rowReference);
 

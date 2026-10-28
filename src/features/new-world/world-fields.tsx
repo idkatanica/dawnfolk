@@ -3,6 +3,7 @@ import type { ChangeEvent } from "react";
 import { IconButton } from "../../design/buttons.tsx";
 import { ChoiceField, type ChoiceOption } from "../../design/choice-field.tsx";
 import { cn } from "../../design/cn.ts";
+import { FIELD_SURFACE } from "../../design/styles.ts";
 import type { IslandShapeKind } from "../../world/island-shape.ts";
 import { LONGEST_WORLD_NAME } from "./world-names.ts";
 
@@ -11,8 +12,7 @@ const SHAPE_OPTIONS: readonly ChoiceOption[] = [
   { icon: <Square aria-hidden="true" size={14} />, label: "Square", value: "square" },
 ];
 
-const FIELD =
-  "flex min-w-0 flex-1 items-center gap-2 rounded-full bg-white/60 px-4 text-sm ring-1 ring-ink/8 ring-inset focus-within:ring-2 focus-within:ring-dawn";
+const FIELD = cn(FIELD_SURFACE, "focus-within:ring-dawn flex min-w-0 flex-1 items-center gap-2 focus-within:ring-2");
 
 interface RolledFieldProps {
   readonly className?: string | undefined;

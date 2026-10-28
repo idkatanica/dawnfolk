@@ -122,11 +122,11 @@ function TitleCard() {
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <TextButton className={`${BIG_BUTTON_CLASS} border-paper-edge border`} onClick={showNewWorld} tone="quiet">
+        <TextButton className={BIG_BUTTON_CLASS} onClick={showNewWorld} tone="outline">
           New world
         </TextButton>
 
-        <TextButton className={`${BIG_BUTTON_CLASS} border-paper-edge border`} onClick={showWorlds} tone="quiet">
+        <TextButton className={BIG_BUTTON_CLASS} onClick={showWorlds} tone="outline">
           All worlds
         </TextButton>
       </div>

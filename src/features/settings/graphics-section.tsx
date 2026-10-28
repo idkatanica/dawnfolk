@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { type LaunchChanges, useLaunchStore, type WorldChoice } from "../../app/launch-store.ts";
+import { useLaunchStore, type WorldChoice } from "../../app/launch-store.ts";
 import { storeQuality } from "../../app/preferences.ts";
 import { TextButton } from "../../design/buttons.tsx";
 import { ChoiceField } from "../../design/choice-field.tsx";
@@ -9,36 +9,24 @@ import { useInterfaceStore } from "../interface/interface-store.ts";
 import { useWorldDraft } from "../new-world/use-world-draft.ts";
 import { NameField, SeedField, ShapeChoice } from "../new-world/world-fields.tsx";
 import { SavesGroup } from "../saves/saves-group.tsx";
-import { saveBeforeLeaving } from "../saves/saves-store.ts";
+import { useLeaveWorld } from "../saves/use-leave-world.ts";
 import { GROUP_CLASS, GroupHeading, SettingsGroup } from "./settings-group.tsx";
 
 const QUALITY_LABELS: Readonly<Record<QualityLevel, string>> = { high: "High", low: "Light", medium: "Balanced" };
 
 const QUALITY_OPTIONS = QUALITY_LEVELS.map((level) => ({ label: QUALITY_LABELS[level], value: level }));
 
-function useRelaunch() {
-  const relaunch = useLaunchStore((state) => state.relaunch);
-  const setSettingsOpen = useInterfaceStore((state) => state.setSettingsOpen);
-
-  return (changes: LaunchChanges) => {
-    setSettingsOpen(false);
-    saveBeforeLeaving(() => relaunch(changes));
-  };
-}
-
 function useCreateWorld() {
   const createWorld = useLaunchStore((state) => state.createWorld);
-  const setSettingsOpen = useInterfaceStore((state) => state.setSettingsOpen);
+  const leaveWorld = useLeaveWorld();
 
-  return (choice: WorldChoice) => {
-    setSettingsOpen(false);
-    saveBeforeLeaving(() => createWorld(choice));
-  };
+  return (choice: WorldChoice) => leaveWorld(() => createWorld(choice));
 }
 
 function useQualityChoice() {
   const active = useLaunchStore((state) => state.launch.quality);
-  const relaunch = useRelaunch();
+  const relaunch = useLaunchStore((state) => state.relaunch);
+  const leaveWorld = useLeaveWorld();
 
   const [quality, setQuality] = useState(active);
 
@@ -52,7 +40,7 @@ function useQualityChoice() {
   }
 
   function applyQuality(): void {
-    relaunch({ quality });
+    leaveWorld(() => relaunch({ quality }));
   }
 
   return { applyQuality, changeQuality, hasChanged: quality !== active, quality };

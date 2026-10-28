@@ -4,9 +4,10 @@ import remarkGfm from "remark-gfm";
 import tallPoster from "../../app/start-backdrop/tall.webp";
 import widePoster from "../../app/start-backdrop/wide.webp";
 import { cn } from "../../design/cn.ts";
+import { FOCUS_RING, PAPER_SURFACE } from "../../design/styles.ts";
 import privacyText from "./privacy.md?raw";
 
-const ISLAND_CLASS = "rounded-island border border-paper-edge bg-paper";
+const ISLAND_CLASS = cn(PAPER_SURFACE, "rounded-island");
 
 export function PrivacyPage() {
   return (
@@ -21,7 +22,8 @@ export function PrivacyPage() {
         <a
           className={cn(
             ISLAND_CLASS,
-            "text-ink hover:text-dawn-strong focus-visible:ring-dawn inline-flex h-11 items-center gap-2 self-start px-4 text-sm font-semibold transition-colors duration-150 outline-none focus-visible:ring-2"
+            FOCUS_RING,
+            "text-ink hover:text-dawn-strong inline-flex h-11 items-center gap-2 self-start px-4 text-sm font-semibold transition-colors duration-150"
           )}
           href="/"
         >
