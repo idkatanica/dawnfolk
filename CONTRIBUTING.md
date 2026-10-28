@@ -101,6 +101,34 @@ Commits follow
 - Attach screenshots for visible changes in a comment, so they stay out of the
   merge commit.
 
+## Releases
+
+A release is a version bump on `main`, a tag on its merge commit, and notes on
+GitHub. Merging the bump deploys it like any other change.
+
+1. Pick the version. While Dawnfolk is below 1.0, raise the minor version when
+   the release adds features or changes the worlds a seed makes, and the patch
+   version otherwise.
+2. On a `release/X.Y.Z` branch, set `version` in `package.json` and commit it
+   as `chore(release): bump version to X.Y.Z`. Open a pull request with that
+   title and merge it once CI passes.
+3. Tag the merge commit and publish the notes in one step:
+   `gh release create vX.Y.Z --target <merge commit> --title vX.Y.Z --notes-file <notes>`.
+
+Write the notes for players, from the pull requests merged since the last
+release, and check each line against them:
+
+- Open with one sentence: `Dawnfolk X.Y.Z` and what the release brings.
+- Then the sections `Added`, `Changed` and `Fixed`, each only when it has
+  entries, in that order. A fix belongs in `Fixed` only when the bug shipped in
+  an earlier release; a bug made and fixed between two releases is not listed.
+- Write each entry as a full sentence about what a player sees. Refactors and
+  dependency updates go last in `Changed` as one line each, such as "A code
+  pass removed repeated work. The game plays the same."
+- End with `**Contributors**:` and the GitHub logins of every commit author in
+  the range, and `**Full changelog**:` with the compare link
+  `https://github.com/imsvidskiy/dawnfolk/compare/vPREVIOUS...vX.Y.Z`.
+
 ## License
 
 Dawnfolk is under the [MIT license](LICENSE). By submitting a contribution, you
