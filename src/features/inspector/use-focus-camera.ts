@@ -6,7 +6,7 @@ import { useInterfaceStore } from "../interface/interface-store.ts";
 
 const FOCUS_DISTANCE = 260;
 
-export function useFocusCamera() {
+function useFocusCamera() {
   const engine = useEngine();
 
   function focus(x: number, z: number, selection: Selection | null = null): void {

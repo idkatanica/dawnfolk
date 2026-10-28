@@ -1,3 +1,4 @@
+import { saturate } from "../shared/math.ts";
 import { Biome, type BiomeIndex } from "./biomes.ts";
 import { PlantSpecies } from "./plants.ts";
 
@@ -47,7 +48,7 @@ export function formIndexOf(piece: MonumentPiece, seed: number): number {
 export function jitterOf(piece: MonumentPiece, seed: number): number {
   const count = PIECE_FORMS[piece].length;
 
-  return Math.min(1, Math.max(0, (seed * count - formIndexOf(piece, seed) - 0.1) / 0.8));
+  return saturate((seed * count - formIndexOf(piece, seed) - 0.1) / 0.8);
 }
 
 export const MONUMENT_KINDS = ["stoneCircle", "menhirRow", "dolmen", "idol", "colonnade", "cairn"] as const;

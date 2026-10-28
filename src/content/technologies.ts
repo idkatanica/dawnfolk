@@ -24,7 +24,7 @@ const TECHNOLOGY_IDS = [
 
 export type TechnologyId = (typeof TECHNOLOGY_IDS)[number];
 
-export interface MaterialNeed {
+interface MaterialNeed {
   amount: number;
   resource: ResourceKind;
 }

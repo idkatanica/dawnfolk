@@ -75,7 +75,7 @@ const HOMELINESS: Readonly<Record<number, number>> = {
   [Biome.Water]: 0,
 };
 
-export interface CrossingTerrain {
+interface CrossingTerrain {
   readonly biome: Uint8Array;
   readonly coastDistance: Float32Array;
   readonly ground: Uint8Array;

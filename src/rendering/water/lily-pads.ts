@@ -234,11 +234,11 @@ function placeLilies(mirror: WorldMirror): LilyPlacements {
   return placements;
 }
 
-export function lilyPresenceFor(season: number): number {
+function lilyPresenceFor(season: number): number {
   return Math.max(1 - smoothstepNumber(2.5, 2.95, season), smoothstepNumber(3.55, 3.95, season));
 }
 
-export function lilyBloomFor(season: number): number {
+function lilyBloomFor(season: number): number {
   return smoothstepNumber(0.35, 0.7, season) * (1 - smoothstepNumber(2, 2.35, season));
 }
 
