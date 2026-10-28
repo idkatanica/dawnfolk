@@ -61,19 +61,16 @@ export function brushFalloff(distance: number, radius: number): number {
   return 0.5 + 0.5 * Math.cos((Math.min(distance, radius) / radius) * Math.PI);
 }
 
-function isEditable(world: WorldState, areaCell: AreaCell): boolean {
+function editableCells(world: WorldState, area: CircleArea): AreaCell[] {
   const lastEditable = world.grid.cellsPerSide - UNEDITABLE_RIM;
 
-  return (
-    areaCell.column >= UNEDITABLE_RIM &&
-    areaCell.row >= UNEDITABLE_RIM &&
-    areaCell.column < lastEditable &&
-    areaCell.row < lastEditable
+  return cellsInArea(world, area).filter(
+    (areaCell) =>
+      areaCell.column >= UNEDITABLE_RIM &&
+      areaCell.row >= UNEDITABLE_RIM &&
+      areaCell.column < lastEditable &&
+      areaCell.row < lastEditable
   );
-}
-
-function editableCells(world: WorldState, area: CircleArea): AreaCell[] {
-  return cellsInArea(world, area).filter((areaCell) => isEditable(world, areaCell));
 }
 
 export function raiseTerrain(world: WorldState, area: CircleArea, amount: number): void {
