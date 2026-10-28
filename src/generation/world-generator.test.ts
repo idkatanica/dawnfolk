@@ -445,11 +445,43 @@ function confluencesOf(rivers: readonly River[], first: River, second: River, re
   return confluences;
 }
 
+interface PointBounds {
+  maximumX: number;
+  maximumZ: number;
+  minimumX: number;
+  minimumZ: number;
+}
+
+function boundsOf(points: readonly RiverPoint[]): PointBounds {
+  const bounds = {
+    maximumX: Number.NEGATIVE_INFINITY,
+    maximumZ: Number.NEGATIVE_INFINITY,
+    minimumX: Number.POSITIVE_INFINITY,
+    minimumZ: Number.POSITIVE_INFINITY,
+  };
+
+  for (const point of points) {
+    bounds.minimumX = Math.min(bounds.minimumX, point.x);
+    bounds.maximumX = Math.max(bounds.maximumX, point.x);
+    bounds.minimumZ = Math.min(bounds.minimumZ, point.z);
+    bounds.maximumZ = Math.max(bounds.maximumZ, point.z);
+  }
+
+  return bounds;
+}
+
+function squaredDistanceToBounds(point: RiverPoint, bounds: PointBounds): number {
+  const offsetX = Math.max(bounds.minimumX - point.x, 0, point.x - bounds.maximumX);
+  const offsetZ = Math.max(bounds.minimumZ - point.z, 0, point.z - bounds.maximumZ);
+
+  return offsetX * offsetX + offsetZ * offsetZ;
+}
+
 function closestDistinctRivers(generated: GeneratedWorld): number {
   const { cellSize } = generated.dimensions;
   const { rivers } = generated.water;
 
-  let closest = Number.POSITIVE_INFINITY;
+  let closestSquared = Number.POSITIVE_INFINITY;
 
   for (const [index, first] of rivers.entries()) {
     for (const second of rivers.slice(index + 1)) {
@@ -459,15 +491,26 @@ function closestDistinctRivers(generated: GeneratedWorld): number {
         return confluences.every((confluence) => !isNear(point, confluence, CONFLUENCE_REACH));
       }
 
-      for (const point of first.points.filter(isApart)) {
-        for (const other of second.points.filter(isApart)) {
-          closest = Math.min(closest, Math.hypot(point.x - other.x, point.z - other.z));
+      const firstPoints = first.points.filter(isApart);
+      const secondPoints = second.points.filter(isApart);
+      const secondBounds = boundsOf(secondPoints);
+
+      for (const point of firstPoints) {
+        if (squaredDistanceToBounds(point, secondBounds) >= closestSquared) {
+          continue;
+        }
+
+        for (const other of secondPoints) {
+          const offsetX = point.x - other.x;
+          const offsetZ = point.z - other.z;
+
+          closestSquared = Math.min(closestSquared, offsetX * offsetX + offsetZ * offsetZ);
         }
       }
     }
   }
 
-  return closest;
+  return Math.sqrt(closestSquared);
 }
 
 function distanceToWaterfall(generated: GeneratedWorld, grid: WorldGrid, cell: number): number {
