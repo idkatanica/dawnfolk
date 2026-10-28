@@ -1,10 +1,12 @@
 import { lerp } from "../shared/math.ts";
 import type { RiverPoint } from "../world/water.ts";
 
-export function smoothRiverPath(points: readonly RiverPoint[], iterations: number): RiverPoint[] {
+const SMOOTHING_PASSES = 2;
+
+export function smoothRiverPath(points: readonly RiverPoint[]): RiverPoint[] {
   let current = [...points];
 
-  for (let iteration = 0; iteration < iterations; iteration += 1) {
+  for (let iteration = 0; iteration < SMOOTHING_PASSES; iteration += 1) {
     current = chaikinPass(current);
   }
 

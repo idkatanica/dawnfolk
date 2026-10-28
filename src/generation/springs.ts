@@ -52,6 +52,7 @@ interface SpringSite {
   readonly direction: Direction;
   readonly head: RiverPoint;
   readonly river: River;
+  readonly seed: number;
   readonly sizing: number;
   readonly slope: number;
 }
@@ -114,8 +115,8 @@ function channelPoint(head: RiverPoint, x: number, z: number, width: number, dep
   return { depth, flow: head.flow, surface: head.surface, width, x, z };
 }
 
-function pondAround(site: SpringSite, radius: number, seed: number): Spring {
-  const { direction, head } = site;
+function pondAround(site: SpringSite, radius: number): Spring {
+  const { direction, head, seed } = site;
 
   return {
     cells: [],
@@ -131,11 +132,11 @@ function pondAround(site: SpringSite, radius: number, seed: number): Spring {
   };
 }
 
-function fittedPond(site: SpringSite, siting: SpringSiting, seed: number): Spring | null {
+function fittedPond(site: SpringSite, siting: SpringSiting): Spring | null {
   const wanted = pondRadius(site, siting.riverThreshold);
 
   for (let step = 0; step < POND_SIZES; step += 1) {
-    const pond = pondAround(site, Math.max(SMALLEST_POND, wanted * POND_SHRINK ** step), seed);
+    const pond = pondAround(site, Math.max(SMALLEST_POND, wanted * POND_SHRINK ** step));
 
     if (pondFits(pond, siting.grid, siting.heights)) {
       return pond;
@@ -152,8 +153,8 @@ function pondSpring(pond: Spring, siting: SpringSiting): SpringPlanEntry {
   };
 }
 
-function caveSpring(site: SpringSite, siting: SpringSiting, seed: number): SpringPlanEntry {
-  const { direction, head } = site;
+function caveSpring(site: SpringSite, siting: SpringSiting): SpringPlanEntry {
+  const { direction, head, seed } = site;
 
   const width = caveWidth(site);
 
@@ -198,20 +199,21 @@ function siteAt(river: River, siting: SpringSiting): SpringSite | null {
     direction,
     head,
     river,
+    seed: hashToUnit(column, row, SPRING_SALT),
     sizing: hashToUnit(column, row, SIZE_SALT),
     slope: slopeBehind(head, direction, siting),
   };
 }
 
-function springAt(site: SpringSite, siting: SpringSiting, seed: number): SpringPlanEntry {
+function springAt(site: SpringSite, siting: SpringSiting): SpringPlanEntry {
   if (site.slope >= CAVE_SLOPE) {
-    return caveSpring(site, siting, seed);
+    return caveSpring(site, siting);
   }
 
-  const pond = fittedPond(site, siting, seed);
+  const pond = fittedPond(site, siting);
 
   if (pond === null) {
-    return caveSpring(site, siting, seed);
+    return caveSpring(site, siting);
   }
 
   return pondSpring(pond, siting);
@@ -228,9 +230,7 @@ export function placeSprings(rivers: readonly River[], siting: SpringSiting): Sp
       continue;
     }
 
-    const seed = hashToUnit(siting.grid.columnAt(site.head.x), siting.grid.rowAt(site.head.z), SPRING_SALT);
-
-    const entry = springAt(site, siting, seed);
+    const entry = springAt(site, siting);
 
     if (entry.channel !== null) {
       channels.push(entry.channel);
