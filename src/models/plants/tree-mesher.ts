@@ -39,9 +39,9 @@ export const FOLIAGE_FLUTTER = 1;
 
 const BRANCH_SIDES: Readonly<Record<PlantDetailLevel, readonly number[]>> = {
   far: [3, 3, 3],
-  high: [7, 5, 4],
+  high: [6, 4, 3],
   low: [4, 3, 3],
-  medium: [5, 4, 3],
+  medium: [5, 3, 3],
 };
 
 const CONE_SEGMENTS: Readonly<Record<PlantDetailLevel, number>> = { far: 5, high: 7, low: 7, medium: 7 };
@@ -250,7 +250,7 @@ interface SkirtDetail {
 
 const SKIRT_DETAILS: Readonly<Record<PlantDetailLevel, SkirtDetail>> = {
   far: { hasRoundedUnderside: false, segments: 7, teeth: 6 },
-  high: { hasRoundedUnderside: true, segments: 14, teeth: 11 },
+  high: { hasRoundedUnderside: true, segments: 10, teeth: 8 },
   low: { hasRoundedUnderside: false, segments: 7, teeth: 6 },
   medium: { hasRoundedUnderside: false, segments: 8, teeth: 7 },
 };
