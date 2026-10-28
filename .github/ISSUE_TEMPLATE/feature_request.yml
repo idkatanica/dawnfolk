@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://www.schemastore.org/github-issue-forms.json
 
 name: Feature request
-description: An idea for a power, a tribe behaviour or the interface
+description: An idea for a power, a tribe behavior or the interface
 labels: [ enhancement ]
 
 body:

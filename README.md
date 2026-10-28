@@ -90,7 +90,7 @@ src/
   rendering/   WebGPU renderer
   design/      design system
   features/    interface features
-  app/         app shell and start screen
+  app/         app shell, start and loading screens
 ```
 
 The simulation runs in a Web Worker. The renderer and the HUD read its frames and send commands back.

@@ -2,7 +2,7 @@
 
 A god game about the first tribes on a floating island, in TypeScript with three.js and React. The
 [README](README.md#architecture) has the code map, and [CONTRIBUTING.md](CONTRIBUTING.md) has the code style,
-commits and pull requests. This file lists what agents tend to miss.
+commits, pull requests and releases. This file lists what agents tend to miss.
 
 ## Commands
 
@@ -15,12 +15,12 @@ bun run test       # unit tests in Node, browser tests in Chromium
 - Run all three before you push. Browser tests need Chromium; [Scripts and checks](CONTRIBUTING.md#scripts-and-checks)
   shows how to point them at a system one.
 - Run one area with `bunx vitest run --project unit src/generation`.
-- Merging to `main` deploys playdawnfolk.com. Leave the merge to a person unless they ask you to merge.
-- Releases follow [CONTRIBUTING.md](CONTRIBUTING.md#releases). Leave publishing one to a person unless they ask.
+- Merging to `main` deploys playdawnfolk.com. Leave merges and [releases](CONTRIBUTING.md#releases) to a person
+  unless they ask.
 
 ## Seeing a change
 
-- Rendering changes are checked by looking. Open a reproducible scene, such as
+- Visible changes are checked by looking. Open a reproducible scene, such as
   `?seed=7&shape=round&quality=high&paused=1&hours=11&camera=x,z,distance,pitch,yaw`, and compare screenshots before
   and after at 1440×900, 768×1024 and 390×844. Keep the screenshots outside the repository.
 - Look at a far view too. Water, terrain and vegetation switch level of detail with distance.
@@ -53,4 +53,5 @@ bun run test       # unit tests in Node, browser tests in Chromium
 - Panels are islands from `design/island.tsx`: solid paper, no glass or blur. Islands in one row have the same height.
 - Saves store technology ids, plant species names and snapshot fields. Renaming one breaks old saves unless loading
   maps it.
-- Several agents may share this checkout. Work in your own `git worktree` and stage only your own files.
+- Several agents may share this checkout. Work in your own `git worktree`, stage only your own files, and remove only
+  the worktrees and branches you created.
