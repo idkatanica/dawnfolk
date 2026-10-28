@@ -62,10 +62,19 @@ export function ProjectLinks({ className, hasPrivacy = true }: ProjectLinksProps
         <StarCount />
       </ExternalLink>
 
-      <ExternalLink href={SPONSOR_ADDRESS} label="Sponsor Dawnfolk">
-        <Heart aria-hidden="true" size={16} />
+      <a
+        aria-label="Sponsor Dawnfolk"
+        className={cn(
+          LINK_CLASS,
+          "group animate-sponsor-glow bg-[linear-gradient(110deg,rgb(242_107_58/0.16),rgb(236_72_153/0.14),rgb(242_107_58/0.06),rgb(251_146_60/0.18))] bg-size-[300%_100%] text-dawn-strong hover:text-dawn-strong"
+        )}
+        href={SPONSOR_ADDRESS}
+        rel="noopener"
+        target="_blank"
+      >
+        <Heart aria-hidden="true" className="fill-dawn/25 group-hover:animate-heartbeat" size={16} />
         Sponsor
-      </ExternalLink>
+      </a>
 
       {hasPrivacy ? (
         <a className={LINK_CLASS} href="/privacy/">

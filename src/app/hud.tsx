@@ -35,17 +35,17 @@ function WideHud() {
       </div>
 
       <div className="flex items-end gap-3">
-        <div className="flex min-w-fit flex-1 flex-col items-start gap-3">
-          <Island className="px-1.5 py-1">
-            <ProjectLinks hasPrivacy={false} />
-          </Island>
-
+        <div className="flex min-w-fit flex-1">
           <MinimapIsland />
         </div>
 
         <PowerDock className="min-w-0" />
 
-        <div aria-hidden="true" className="flex-1" />
+        <div className="flex flex-1 justify-end">
+          <Island className="px-1.5 py-1">
+            <ProjectLinks hasPrivacy={false} />
+          </Island>
+        </div>
       </div>
     </div>
   );
