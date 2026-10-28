@@ -9,6 +9,7 @@ import { cn } from "../../design/cn.ts";
 import { Island } from "../../design/island.tsx";
 import { SEGMENT, SEGMENT_TRACK } from "../../design/segmented.ts";
 import { type SettingsTab, useInterfaceStore } from "../interface/interface-store.ts";
+import { ProjectLinks } from "../project/project-links.tsx";
 import { GraphicsSection } from "./graphics-section.tsx";
 import { TimeSection } from "./time-section.tsx";
 import { WeatherSection } from "./weather-section.tsx";
@@ -115,6 +116,8 @@ export function SettingsDialog() {
                   </ScrollArea.Scrollbar>
                 </ScrollArea.Root>
               </Tabs.Root>
+
+              <ProjectLinks className="border-paper-edge border-t px-3 py-2" />
             </Island>
           </Dialog.Popup>
         </Dialog.Viewport>

@@ -4,6 +4,7 @@ import { TextButton } from "../design/buttons.tsx";
 import { Logo } from "../design/logo.tsx";
 import { useWorldDraft } from "../features/new-world/use-world-draft.ts";
 import { NameField, SeedField, ShapeChoice } from "../features/new-world/world-fields.tsx";
+import { ProjectLinks } from "../features/project/project-links.tsx";
 import { loadGameEngine, loadHud } from "./engine-launcher.ts";
 import { useLaunchStore } from "./launch-store.ts";
 
@@ -50,6 +51,8 @@ export function StartScreen() {
             <ArrowRight aria-hidden="true" size={16} />
           </TextButton>
         </form>
+
+        <ProjectLinks />
       </div>
     </div>
   );
