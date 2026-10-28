@@ -627,7 +627,7 @@ export class RivalrySystem implements Battleground {
   }
 
   #advanceRaids(seconds: number, context: SocietyContext): void {
-    for (const raid of [...this.#raids]) {
+    for (const raid of this.#raids) {
       raid.phaseSeconds += seconds;
       this.#advanceRaid(raid, context);
     }

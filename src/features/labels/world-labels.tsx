@@ -78,9 +78,11 @@ function FeudMark({ mood }: { readonly mood: TribeMood }) {
     return null;
   }
 
+  const label = mood === "raiding" ? "Raid under way" : "In a feud";
+
   return (
-    <span className="flex" title={mood === "raiding" ? "Raid under way" : "In a feud"}>
-      <GameIcon label={mood === "raiding" ? "Raid under way" : "In a feud"} name="raid" size={18} />
+    <span className="flex" title={label}>
+      <GameIcon label={label} name="raid" size={18} />
     </span>
   );
 }

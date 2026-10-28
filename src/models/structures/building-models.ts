@@ -28,14 +28,7 @@ import { GLOW_PART, rising, type StructureContext, type StructureLevel, scaledMe
 
 const STRUCTURE_NOISE = createVolumeNoise(createRandom(3131));
 
-function addLog(
-  context: StructureContext,
-  start: Triple,
-  end: Triple,
-  radius: number,
-  slot: MaterialSlotIndex,
-  order: number
-): void {
+function addLog(context: StructureContext, start: Triple, end: Triple, radius: number, order: number): void {
   const sides = context.level === "high" ? 6 : 4;
 
   context.builder.add(
@@ -46,7 +39,7 @@ function addLog(
       radiusTop: radius * 0.85,
     }),
     {
-      style: { buildOrder: order, slot },
+      style: { buildOrder: order, slot: MaterialSlot.Wood },
       transform: segmentTransform(start, end),
     }
   );
@@ -122,7 +115,6 @@ function campfire(context: StructureContext): void {
       [Math.cos(angle) * 0.48, 0.04, Math.sin(angle) * 0.48],
       [Math.cos(angle) * 0.06, 0.62, Math.sin(angle) * 0.06],
       0.055,
-      MaterialSlot.Wood,
       0.4 + (log / logs) * 0.6
     );
   }
@@ -155,7 +147,7 @@ function addTentPole(context: StructureContext, angle: number, order: number): v
     return [Math.cos(angle) * reach, height, Math.sin(angle) * reach];
   }
 
-  addLog(context, pointAt(0), pointAt(TENT_HEIGHT + TENT_POLE_OVERHANG), 0.045, MaterialSlot.Wood, order);
+  addLog(context, pointAt(0), pointAt(TENT_HEIGHT + TENT_POLE_OVERHANG), 0.045, order);
 }
 
 function addTentDoor(context: StructureContext, sides: number): void {
@@ -276,7 +268,6 @@ function addHutDoor(context: StructureContext): void {
       [x, 0, onWall(x, HUT_SILL, HUT_POST_SINK + 0.06)],
       [x, HUT_DOOR_TOP + 0.08, onWall(x, HUT_DOOR_TOP, HUT_POST_SINK)],
       HUT_POST_RADIUS,
-      MaterialSlot.Wood,
       0.3
     );
   }
@@ -288,7 +279,6 @@ function addHutDoor(context: StructureContext): void {
     [-lintelEnd, HUT_DOOR_TOP + 0.02, onWall(0, HUT_DOOR_TOP, -0.02)],
     [lintelEnd, HUT_DOOR_TOP + 0.02, onWall(0, HUT_DOOR_TOP, -0.02)],
     HUT_POST_RADIUS,
-    MaterialSlot.Wood,
     0.32
   );
 }
@@ -357,7 +347,7 @@ function hut(context: StructureContext): void {
 
   addHutDoor(context);
   addFlag(context, [0, 0, 0], { bottom: 3.75, height: 0.35, turn: 0.3, width: 0.5 });
-  addLog(context, [0, 3.4, 0], [0, 4.2, 0], 0.03, MaterialSlot.Wood, 0.98);
+  addLog(context, [0, 3.4, 0], [0, 4.2, 0], 0.03, 0.98);
 }
 
 const STORE_WALL_TOP = 2.25;
@@ -393,7 +383,7 @@ function storehouse(context: StructureContext): void {
     [-1.1, 0.9],
     [1.1, 0.9],
   ] as const) {
-    addLog(context, [x, 0, z], [x, 1, z], 0.09, MaterialSlot.Wood, 0.1);
+    addLog(context, [x, 0, z], [x, 1, z], 0.09, 0.1);
   }
 
   builder.add(box(2.6, 0.16, 2.2), {
@@ -417,7 +407,7 @@ function storehouse(context: StructureContext): void {
     });
   }
 
-  addLog(context, [0, RIDGE_HEIGHT, -1.38], [0, RIDGE_HEIGHT, 1.38], 0.075, MaterialSlot.Wood, 0.88);
+  addLog(context, [0, RIDGE_HEIGHT, -1.38], [0, RIDGE_HEIGHT, 1.38], 0.075, 0.88);
 
   builder.add(card(0.7, 0.9), {
     style: { buildOrder: 0.6, slot: MaterialSlot.Ash },
@@ -425,7 +415,7 @@ function storehouse(context: StructureContext): void {
   });
 
   for (const offset of [-0.25, 0.25]) {
-    addLog(context, [offset, 0, 1.75], [offset, 1.15, 1], 0.03, MaterialSlot.Wood, 0.5);
+    addLog(context, [offset, 0, 1.75], [offset, 1.15, 1], 0.03, 0.5);
   }
 
   for (let rung = 1; rung < 4; rung += 1) {
@@ -434,7 +424,7 @@ function storehouse(context: StructureContext): void {
     const y = 1.15 * amount;
     const z = 1.75 - 0.75 * amount;
 
-    addLog(context, [-0.25, y, z], [0.25, y, z], 0.022, MaterialSlot.Wood, 0.5);
+    addLog(context, [-0.25, y, z], [0.25, y, z], 0.022, 0.5);
   }
 
   for (const [x, z, height] of [
@@ -458,7 +448,7 @@ function storehouse(context: StructureContext): void {
   }
 
   addFlag(context, [0, 0, 1.2], { bottom: 3.55, height: 0.4, turn: 0, width: 0.6 });
-  addLog(context, [0, 3, 1.2], [0, 4, 1.2], 0.025, MaterialSlot.Wood, 0.99);
+  addLog(context, [0, 3, 1.2], [0, 4, 1.2], 0.025, 0.99);
 }
 
 const TOTEM_HEADS = 3;

@@ -24,6 +24,7 @@ import {
   Group,
   type InstancedBufferGeometry,
   MeshStandardNodeMaterial,
+  type Node,
   Sphere,
   Vector3,
 } from "three/webgpu";
@@ -215,6 +216,21 @@ function seatOf(mirror: WorldMirror, piece: PiecePlacement, footing: Footing): S
   return { floor: Math.max(lowest, Math.min(highest - footing.sinking, lowest + footing.lift)), lowest };
 }
 
+function placedOnGround(
+  local: Node<"vec3">,
+  placement: Node<"vec4">,
+  textures: TerrainTextures,
+  grid: WorldGrid
+): Node<"vec3"> {
+  const ground = vec3(0, coarseGroundOffsetNode(textures, grid, placement.xz), 0);
+
+  return Fn(() => {
+    normalLocal.assign(rotateAroundUp(normalLocal, placement.w));
+
+    return rotateAroundUp(local, placement.w).add(placement.xyz).add(ground);
+  })();
+}
+
 function createBuildingMaterial(textures: TerrainTextures, grid: WorldGrid): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial();
   const placement = attribute("buildingPlacement", "vec4");
@@ -231,13 +247,7 @@ function createBuildingMaterial(textures: TerrainTextures, grid: WorldGrid): Mes
 
   const local = positionLocal.mul(select(isBuilt, float(1), float(0)));
 
-  const ground = vec3(0, coarseGroundOffsetNode(textures, grid, placement.xz), 0);
-
-  material.positionNode = Fn(() => {
-    normalLocal.assign(rotateAroundUp(normalLocal, placement.w));
-
-    return rotateAroundUp(local, placement.w).add(placement.xyz).add(ground);
-  })();
+  material.positionNode = placedOnGround(local, placement, textures, grid);
 
   const slotColors = slotColorTable();
   const accent = look.yzw;
@@ -283,13 +293,7 @@ function createPlinthMaterial(textures: TerrainTextures, grid: WorldGrid): MeshS
     positionLocal.z.mul(box.w).add(box.y)
   );
 
-  const ground = vec3(0, coarseGroundOffsetNode(textures, grid, placement.xz), 0);
-
-  material.positionNode = Fn(() => {
-    normalLocal.assign(rotateAroundUp(normalLocal, placement.w));
-
-    return rotateAroundUp(local, placement.w).add(placement.xyz).add(ground);
-  })();
+  material.positionNode = placedOnGround(local, placement, textures, grid);
 
   const grain = mx_noise_float(positionWorld.mul(1.3)).mul(0.22).add(0.86);
   const mortar = smoothstep(0, 0.1, fract(positionWorld.y.div(STONE_COURSE)))

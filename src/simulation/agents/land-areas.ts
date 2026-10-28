@@ -139,10 +139,10 @@ export class LandAreas {
   }
 
   regionNear(point: Point): number {
-    const cell = this.#world.grid.cellAt(point.x, point.z);
+    const region = this.#regionAtLand(point);
 
-    if (cell >= 0 && this.#walkable[cell] === 1) {
-      return this.#regionOfArea[this.#areaOfCell[cell]];
+    if (region !== NO_REGION) {
+      return region;
     }
 
     const crossing = this.#world.crossingAt(point.x, point.z);

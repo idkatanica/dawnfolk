@@ -161,7 +161,7 @@ function fillDepressions(heights: Float32Array, grid: WorldGrid, coastDistance: 
   }
 
   for (let cell = 0; cell < grid.cellCount; cell += 1) {
-    if (isOnIsland(coastDistance, cell) && touchesOffIsland(cell, grid, coastDistance)) {
+    if (touchesOffIsland(cell, grid, coastDistance)) {
       seedCell(cell);
     }
   }

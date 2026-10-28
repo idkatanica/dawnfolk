@@ -265,7 +265,7 @@ export class BeastInstincts {
     }
 
     if (this.#random.chance(STAG_CHANCE * tick.rules.nature.beastBoldness)) {
-      this.#charges.set(animal.id, { blow: "gore", hasStruck: false, seconds: 0, targetId: person.id });
+      this.#startCharge(animal, person.id, "gore");
     }
   }
 

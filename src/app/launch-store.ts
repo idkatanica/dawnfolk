@@ -74,7 +74,7 @@ export const useLaunchStore = create<LaunchStore>()((set, get) => {
       replaceAddress(window.location.pathname);
       set({ isChoosingWorld: true });
     },
-    continueWorld: (worldId, choice) => launchWorld(worldId, choice),
+    continueWorld: launchWorld,
     createWorld: (choice) => launchWorld(createWorldId(), choice),
     isChoosingWorld: !choosesWorld(window.location.search),
     launch: readLaunchOptions(window.location.search),

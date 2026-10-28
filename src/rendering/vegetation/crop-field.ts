@@ -331,9 +331,7 @@ export class CropField {
     const code = this.#groundAt(column, row, GroundChannel.CropKind);
     const kind = cropOfCode(code);
 
-    const isShown = this.#isFarm(column, row);
-
-    if (!isShown) {
+    if (!this.#isFarm(column, row)) {
       if (this.#cells.delete(cell)) {
         this.#isDirty = true;
       }

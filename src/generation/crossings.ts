@@ -318,7 +318,7 @@ class CrossingPlanner {
       return null;
     }
 
-    return { along, crossing, score: siteScore(this.survey, site, kind, center) - Math.abs(turn) };
+    return { along, crossing, score: siteScore(this.survey, site, kind) - Math.abs(turn) };
   }
 
   #isClearOfFalls(point: Point): boolean {
@@ -842,8 +842,9 @@ function homeliness(survey: CrossingSurvey, cell: number): number {
   return HOMELINESS[terrain.biome[cell]] + swampy;
 }
 
-function siteScore(survey: CrossingSurvey, site: Site, kind: CrossingKind, center: Point): number {
+function siteScore(survey: CrossingSurvey, site: Site, kind: CrossingKind): number {
   const { grid } = survey;
+  const { center } = site;
 
   const flatness = -(site.start.slope + site.end.slope) * 3;
   const home = homeliness(survey, site.start.cell) + homeliness(survey, site.end.cell);

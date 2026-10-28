@@ -1,9 +1,9 @@
-import { PIECE_FORMS } from "../../content/monuments.ts";
+import { isMonumentPiece, PIECE_FORMS } from "../../content/monuments.ts";
 import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
 import { MaterialSlot } from "../materials.ts";
 import { isClosed, shellsOf, withoutBuriedOverlaps, withoutBuriedTriangles } from "../mesh/buried-triangles.ts";
 import { type MeshData, mergeMeshes, vertexCount } from "../mesh/mesh-data.ts";
-import { isMonumentModel, MONUMENT_HEIGHTS, meshMonument } from "../structures/monuments.ts";
+import { MONUMENT_HEIGHTS, meshMonument } from "../structures/monuments.ts";
 import { berryClusters } from "./berries.ts";
 import { CACTUS_FORMS, cactusForm, meshCactus } from "./cacti.ts";
 import { isOrchardModel, meshOrchardPlant, ORCHARD_HEIGHTS, ORCHARD_VARIANT_COUNTS } from "./orchard-plants.ts";
@@ -111,7 +111,7 @@ export function buildPlantVariant(species: PlantSpeciesIndex, variant: number, l
     return meshRock(species, seed, variant, level);
   }
 
-  if (isMonumentModel(species)) {
+  if (isMonumentPiece(species)) {
     return meshMonument(species, seed, variant, level);
   }
 
@@ -145,7 +145,7 @@ export function plantVariantCount(species: PlantSpeciesIndex): number {
 }
 
 export function farVariantOf(species: PlantSpeciesIndex, variant: number): number {
-  return FORM_PER_VARIANT.has(species) || isMonumentModel(species) ? variant : 0;
+  return FORM_PER_VARIANT.has(species) || isMonumentPiece(species) ? variant : 0;
 }
 
 export function buildPlantVariants(species: PlantSpeciesIndex, level: PlantDetailLevel): MeshData[] {
