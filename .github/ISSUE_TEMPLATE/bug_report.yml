@@ -1,15 +1,12 @@
 name: Bug report
-description: The island, the tribes or the interface do not behave as they should
+description: Something in the game doesn't work as it should
+labels: [bug]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        The seed, the quality level and the browser make most bugs reproducible on the first try. Security problems go through [private vulnerability reporting](https://github.com/imsvidskiy/dawnfolk/security/advisories/new) instead.
   - type: textarea
     id: what-happened
     attributes:
       label: What happened
-      description: What you did, what you saw, and what you expected instead.
+      description: What you did, what you saw, and what you expected.
       placeholder: A river broke into separate pools when I zoomed out.
     validations:
       required: true
@@ -17,53 +14,18 @@ body:
     id: steps
     attributes:
       label: Steps to reproduce
-      description: The URL with its parameters, and what you did after the island rose.
+      description: The page address helps, it holds the seed.
       placeholder: |
-        1. Open http://localhost:5173/?seed=7&quality=high&paused=1
-        2. Zoom out past 2 km
-    validations:
-      required: true
+        1. Open https://playdawnfolk.com/?seed=7
+        2. Zoom out far
   - type: input
-    id: version
+    id: device
     attributes:
-      label: Version
-      placeholder: 0.5.2 or a commit
-    validations:
-      required: true
-  - type: dropdown
-    id: area
-    attributes:
-      label: Area
-      multiple: true
-      options:
-        - Terrain and water
-        - Vegetation and fire
-        - Tribes and animals
-        - Powers
-        - Interface
-        - Performance
-    validations:
-      required: true
-  - type: dropdown
-    id: quality
-    attributes:
-      label: Quality
-      options:
-        - Low
-        - Medium
-        - High
-        - Unsure
-    validations:
-      required: true
-  - type: input
-    id: browser
-    attributes:
-      label: Browser, OS and GPU
-      placeholder: Chrome 141 on macOS 27, Apple M3
+      label: Browser and device
+      placeholder: Chrome on a MacBook Air M3
     validations:
       required: true
   - type: textarea
     id: screenshot
     attributes:
       label: Screenshot
-      description: What you see on screen.
