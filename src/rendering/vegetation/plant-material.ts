@@ -81,10 +81,15 @@ export class SpeciesLook {
 
 const CHARCOAL = vec3(0.035, 0.03, 0.028);
 const SNOW = vec3(0.86, 0.9, 0.95);
-const LEAF_PATTERN_SCALE = 1.9;
-const LEAF_PATTERN_STRENGTH = 0.16;
-const LEAF_BUMP_SCALE = 2.6;
-const LEAF_BUMP_STRENGTH = 0.55;
+const LEAF_STYLE = new URLSearchParams(globalThis.location?.search).get("leaves") ?? "current";
+const LEAF_STYLES: Record<string, readonly [number, number, number, number]> = {
+  current: [1.9, 0.16, 2.6, 0.55],
+  facets: [1, 0, 1, 0],
+  smooth: [1, 0, 1, 0],
+  soft: [0.7, 0.08, 1.2, 0.12],
+};
+const [LEAF_PATTERN_SCALE, LEAF_PATTERN_STRENGTH, LEAF_BUMP_SCALE, LEAF_BUMP_STRENGTH] =
+  LEAF_STYLES[LEAF_STYLE] ?? LEAF_STYLES.current;
 const LEAF_DETAIL_FADE_START = 1600;
 const LEAF_DETAIL_FADE_END = 2400;
 const CROWN_FIRE_LIGHT = 0.45;
@@ -278,8 +283,11 @@ export function createPlantMaterial({
   const burning = burnGlow({ embers, flames, phase: placement.x.mul(0.37).fract().mul(6), smoulder });
 
   material.emissiveNode = vertexColor.mul(fireLight).mul(CROWN_FIRE_LIGHT).add(burning);
-  material.normalNode = normalize(normalView.add(leafBump));
+  if (LEAF_STYLE !== "facets") {
+    material.normalNode = normalize(normalView.add(leafBump));
+  }
   material.roughnessNode = float(0.88);
+  material.flatShading = LEAF_STYLE === "facets";
 
   return material;
 }

@@ -41,10 +41,6 @@ export function useIsCompact(): boolean {
   return useMediaQuery(COMPACT_QUERY);
 }
 
-export function useIsTouch(): boolean {
-  return useMediaQuery(TOUCH_QUERY);
-}
-
 export function usePrefersCalm(): boolean {
   return useMediaQuery(CALM_QUERY);
 }

@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "@svidskiy/glass-surface-react/style.css" layer(components);
 
 @theme {
   --font-sans: "Nunito Variable", ui-sans-serif, system-ui, sans-serif;
@@ -28,7 +27,6 @@
   --color-paper-edge: rgb(24 24 27 / 0.08);
   --color-paper-hover: rgb(24 24 27 / 0.05);
   --color-paper-press: rgb(24 24 27 / 0.09);
-  --color-veil: rgb(255 255 255 / 0.55);
 
   --color-dawn: #f26b3a;
   --color-dawn-strong: #c2410c;
@@ -115,19 +113,8 @@ body {
   .island {
     --color-ink-muted: #5f5f68;
 
-    pointer-events: auto;
-  }
-
-  .island-solid,
-  .island.glass-surface {
     overflow: clip;
-  }
-
-  .island > .glass-surface__content {
-    display: block;
-    height: auto;
-    padding: 0;
-    overflow: hidden;
+    pointer-events: auto;
   }
 }
 
