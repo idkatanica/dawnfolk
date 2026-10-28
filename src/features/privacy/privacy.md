@@ -27,7 +27,7 @@ The legal basis is legitimate interest: the game can't reach you without it.
 
 ### Star count from GitHub
 
-The start screen and Settings show how many stars Dawnfolk has on GitHub. Your browser asks the GitHub API for that number directly, so GitHub receives your IP address and browser type. The request carries no cookies or GitHub sign-in. GitHub handles it under the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
+The start screen, the game and Settings show how many stars Dawnfolk has on GitHub. Your browser asks the GitHub API for that number directly, so GitHub receives your IP address and browser type. The request carries no cookies or GitHub sign-in. GitHub handles it under the [GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
 
 The legal basis is legitimate interest in showing the project's current star count.
 

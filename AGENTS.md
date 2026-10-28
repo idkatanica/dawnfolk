@@ -1,7 +1,7 @@
 # Dawnfolk
 
 A god game about the first tribes on a floating island, in TypeScript with
-three.js WebGPU and React. [README](README.md#architecture) has the code map,
+three.js and React. [README](README.md#architecture) has the code map,
 and [CONTRIBUTING.md](CONTRIBUTING.md) the commands, checks, code style,
 commits and pull requests; follow both. This file adds what is easy to miss.
 

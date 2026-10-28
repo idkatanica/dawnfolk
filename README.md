@@ -42,8 +42,7 @@
 
 https://github.com/user-attachments/assets/bc99af11-0acd-4cca-85cc-39c3b5a4b256
 
-Shape the land, call rain, fire and lightning, and watch small tribes gather, build, feud and climb from the Stone
-Age to the Iron Age on a procedurally generated island rendered with WebGPU.
+Shape the land, call rain, fire and lightning, and watch small tribes grow from the Stone Age to the Iron Age.
 
 ## Features
 
