@@ -121,9 +121,9 @@ export function SavedWorldList() {
   }
 
   return (
-    <section aria-labelledby="saved-worlds-title" className="w-full max-w-sm">
-      <Island className="flex flex-col gap-2 p-3">
-        <h2 className="px-2 pt-1 font-semibold text-ink text-lg" id="saved-worlds-title">
+    <section aria-labelledby="saved-worlds-title" className="w-full">
+      <Island className="flex flex-col gap-2 p-4">
+        <h2 className="px-2 pt-1 font-semibold text-ink text-xl" id="saved-worlds-title">
           Your worlds
         </h2>
 

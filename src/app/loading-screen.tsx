@@ -94,7 +94,7 @@ export function LoadingScreen() {
   }
 
   return (
-    <div className="absolute inset-0 grid place-items-center bg-sky p-6">
+    <div className="absolute inset-0 grid place-items-center bg-canvas p-6">
       <StatusMessage status={status} />
     </div>
   );
