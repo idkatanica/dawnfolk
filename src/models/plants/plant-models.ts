@@ -36,6 +36,38 @@ const VARIANT_COUNTS: Readonly<Record<PlantSpeciesIndex, number>> = {
   [PlantSpecies.Willow]: 4,
 };
 
+const SHAPE_SEEDS: Readonly<Record<PlantSpeciesIndex, number>> = {
+  [PlantSpecies.Acacia]: 10,
+  [PlantSpecies.Alder]: 31,
+  [PlantSpecies.AppleTree]: 25,
+  [PlantSpecies.Arch]: 24,
+  [PlantSpecies.Birch]: 3,
+  [PlantSpecies.Blueberry]: 29,
+  [PlantSpecies.Boulder]: 8,
+  [PlantSpecies.Bush]: 6,
+  [PlantSpecies.Cactus]: 7,
+  [PlantSpecies.Cairn]: 15,
+  [PlantSpecies.Currant]: 30,
+  [PlantSpecies.DeadTree]: 12,
+  [PlantSpecies.DesertShrub]: 13,
+  [PlantSpecies.Dolmen]: 21,
+  [PlantSpecies.Idol]: 22,
+  [PlantSpecies.Maple]: 5,
+  [PlantSpecies.Menhir]: 20,
+  [PlantSpecies.MossyRock]: 17,
+  [PlantSpecies.Oak]: 2,
+  [PlantSpecies.Palm]: 9,
+  [PlantSpecies.PearTree]: 26,
+  [PlantSpecies.Pillar]: 23,
+  [PlantSpecies.Pine]: 1,
+  [PlantSpecies.PlumTree]: 27,
+  [PlantSpecies.Poplar]: 11,
+  [PlantSpecies.Raspberry]: 28,
+  [PlantSpecies.Sandstone]: 18,
+  [PlantSpecies.Spruce]: 0,
+  [PlantSpecies.Willow]: 4,
+};
+
 const CANONICAL_HEIGHTS: Readonly<Record<PlantSpeciesIndex, number>> = {
   ...TREE_HEIGHTS,
   ...ROCK_HEIGHTS,
@@ -97,7 +129,7 @@ function withoutBuriedFoliage(tree: MeshData, berries: readonly MeshData[], look
 }
 
 function variantSeed(species: PlantSpeciesIndex, variant: number): number {
-  return species * 1000 + variant * 77 + 13;
+  return SHAPE_SEEDS[species] * 1000 + variant * 77 + 13;
 }
 
 export function buildPlantVariant(species: PlantSpeciesIndex, variant: number, level: PlantDetailLevel): MeshData {

@@ -87,7 +87,6 @@ const FOLIAGE_KEYS: Readonly<Record<PlantSpeciesIndex, readonly FoliageKey[]>> =
   [PlantSpecies.DeadTree]: LEAFLESS,
   [PlantSpecies.DesertShrub]: evergreen(0x8c_9a_68, 0x80_88_5e),
   [PlantSpecies.Dolmen]: STONEWORK,
-  [PlantSpecies.FrostedRock]: STONEWORK,
   [PlantSpecies.Idol]: STONEWORK,
   [PlantSpecies.Maple]: deciduous(0x4e_8c_32, 0xc4_3e_24),
   [PlantSpecies.Menhir]: STONEWORK,
@@ -101,8 +100,6 @@ const FOLIAGE_KEYS: Readonly<Record<PlantSpeciesIndex, readonly FoliageKey[]>> =
   [PlantSpecies.Poplar]: deciduous(0x5a_92_38, 0xe2_c0_38),
   [PlantSpecies.Raspberry]: berryBush(0x5c_8e_3a, 0xb0_8a_2e),
   [PlantSpecies.Sandstone]: STONEWORK,
-  [PlantSpecies.Scree]: STONEWORK,
-  [PlantSpecies.Slab]: STONEWORK,
   [PlantSpecies.Spruce]: evergreen(0x2c_56_38, 0x27_48_3a),
   [PlantSpecies.Willow]: deciduous(0x82_a8_44, 0xbc_b0_46),
 };

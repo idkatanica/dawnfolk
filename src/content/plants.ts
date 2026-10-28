@@ -4,29 +4,26 @@ import { CULTIVATED_PLANT_SPECIES, CultivatedSpecies } from "./cultivated-plants
 
 export const PlantSpecies = {
   Acacia: 10,
-  Alder: 31,
-  Arch: 24,
+  Alder: 28,
+  Arch: 21,
   Birch: 3,
   Boulder: 8,
   Bush: 6,
   Cactus: 7,
-  Cairn: 15,
+  Cairn: 14,
   DeadTree: 12,
   DesertShrub: 13,
-  Dolmen: 21,
-  FrostedRock: 19,
-  Idol: 22,
+  Dolmen: 18,
+  Idol: 19,
   Maple: 5,
-  Menhir: 20,
-  MossyRock: 17,
+  Menhir: 17,
+  MossyRock: 15,
   Oak: 2,
   Palm: 9,
-  Pillar: 23,
+  Pillar: 20,
   Pine: 1,
   Poplar: 11,
-  Sandstone: 18,
-  Scree: 16,
-  Slab: 14,
+  Sandstone: 16,
   Spruce: 0,
   Willow: 4,
   ...CultivatedSpecies,
@@ -205,17 +202,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
   },
   {
     canopyFuel: 0,
-    form: "stone",
-    givesBerries: false,
-    heightRange: [0.5, 1],
-    index: PlantSpecies.Slab,
-    name: "Flat slab",
-    radiusPerMeter: 2.4,
-    steepestSlope: 0.8,
-    wood: 0,
-  },
-  {
-    canopyFuel: 0,
     form: "monument",
     givesBerries: false,
     heightRange: [1.3, 4.4],
@@ -223,17 +209,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     name: "Cairn",
     radiusPerMeter: 0.79,
     steepestSlope: 0.35,
-    wood: 0,
-  },
-  {
-    canopyFuel: 0,
-    form: "stone",
-    givesBerries: false,
-    heightRange: [0.6, 1.1],
-    index: PlantSpecies.Scree,
-    name: "Scree",
-    radiusPerMeter: 2.1,
-    steepestSlope: 1,
     wood: 0,
   },
   {
@@ -256,17 +231,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
     name: "Sandstone",
     radiusPerMeter: 0.6,
     steepestSlope: 0.95,
-    wood: 0,
-  },
-  {
-    canopyFuel: 0,
-    form: "stone",
-    givesBerries: false,
-    heightRange: [1.2, 2.4],
-    index: PlantSpecies.FrostedRock,
-    name: "Frosted rock",
-    radiusPerMeter: 1.15,
-    steepestSlope: 1.05,
     wood: 0,
   },
   {
@@ -389,13 +353,11 @@ export function woodlandShare(index: number, woodland: number): number {
 export interface PlantingRule {
   chancePerCell: number;
   heightScale: number;
-  maximumTemperature?: number;
   minimumTemperature?: number;
   species: PlantSpeciesIndex;
 }
 
 const WARM = 12;
-const COLD = 3.5;
 
 export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> = {
   [Biome.Alpine]: [
@@ -478,55 +440,23 @@ export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]
 };
 
 export const ROCK_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> = {
-  [Biome.Alpine]: [
-    { chancePerCell: 0.03, heightScale: 1, species: PlantSpecies.Scree },
-    { chancePerCell: 0.025, heightScale: 1, maximumTemperature: COLD, species: PlantSpecies.FrostedRock },
-  ],
-  [Biome.Beach]: [{ chancePerCell: 0.003, heightScale: 0.8, species: PlantSpecies.Slab }],
-  [Biome.Desert]: [
-    { chancePerCell: 0.005, heightScale: 1, species: PlantSpecies.Sandstone },
-    { chancePerCell: 0.002, heightScale: 0.8, species: PlantSpecies.Slab },
-  ],
+  [Biome.Alpine]: [],
+  [Biome.Beach]: [],
+  [Biome.Desert]: [{ chancePerCell: 0.005, heightScale: 1, species: PlantSpecies.Sandstone }],
   [Biome.Forest]: [{ chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.MossyRock }],
-  [Biome.Glacier]: [
-    { chancePerCell: 0.03, heightScale: 1, species: PlantSpecies.FrostedRock },
-    { chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.Scree },
-  ],
-  [Biome.Meadow]: [
-    { chancePerCell: 0.005, heightScale: 1, species: PlantSpecies.Slab },
-    { chancePerCell: 0.002, heightScale: 0.8, species: PlantSpecies.MossyRock },
-  ],
-  [Biome.Mesa]: [
-    { chancePerCell: 0.025, heightScale: 1, species: PlantSpecies.Sandstone },
-    { chancePerCell: 0.005, heightScale: 1, species: PlantSpecies.Scree },
-  ],
-  [Biome.Scrub]: [
-    { chancePerCell: 0.006, heightScale: 1, species: PlantSpecies.Scree },
-    { chancePerCell: 0.004, heightScale: 1, species: PlantSpecies.Slab },
-  ],
-  [Biome.Steppe]: [
-    { chancePerCell: 0.005, heightScale: 1, species: PlantSpecies.Slab },
-    { chancePerCell: 0.003, heightScale: 1, species: PlantSpecies.Scree },
-  ],
+  [Biome.Glacier]: [],
+  [Biome.Meadow]: [{ chancePerCell: 0.002, heightScale: 0.8, species: PlantSpecies.MossyRock }],
+  [Biome.Mesa]: [{ chancePerCell: 0.025, heightScale: 1, species: PlantSpecies.Sandstone }],
+  [Biome.Scrub]: [],
+  [Biome.Steppe]: [],
   [Biome.Swamp]: [{ chancePerCell: 0.006, heightScale: 0.8, species: PlantSpecies.MossyRock }],
-  [Biome.Taiga]: [
-    { chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.MossyRock },
-    { chancePerCell: 0.004, heightScale: 1, maximumTemperature: COLD, species: PlantSpecies.FrostedRock },
-  ],
-  [Biome.Tundra]: [
-    { chancePerCell: 0.008, heightScale: 1, species: PlantSpecies.Slab },
-    { chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.Scree },
-    { chancePerCell: 0.012, heightScale: 1, maximumTemperature: COLD, species: PlantSpecies.FrostedRock },
-  ],
+  [Biome.Taiga]: [{ chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.MossyRock }],
+  [Biome.Tundra]: [],
   [Biome.Water]: [],
 };
 
 export function canGrowAt(rule: PlantingRule, temperature: number): boolean {
-  if (rule.minimumTemperature !== undefined && temperature <= rule.minimumTemperature) {
-    return false;
-  }
-
-  return rule.maximumTemperature === undefined || temperature < rule.maximumTemperature;
+  return rule.minimumTemperature === undefined || temperature > rule.minimumTemperature;
 }
 
 export function regrowingSpecies(biome: BiomeIndex, temperature: number): readonly PlantSpeciesIndex[] {

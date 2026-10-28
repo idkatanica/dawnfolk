@@ -133,21 +133,20 @@ export interface StoneContext {
 }
 
 export interface StoneLook {
-  readonly frost?: number;
   readonly lichen: number;
   readonly moss: number;
   readonly slot?: MaterialSlotIndex;
 }
 
 export function addStone(context: StoneContext, shape: Shape, placement: TransformOptions, look: StoneLook): void {
-  const { frost = 0, slot = MaterialSlot.Stone } = look;
+  const { slot = MaterialSlot.Stone } = look;
 
   context.builder.add(shape, {
     style: {
       shade: groundShade(context.height),
       slot: weatheredSlot({
         base: slot,
-        frost,
+        frost: 0,
         lichen: look.lichen,
         moss: look.moss,
         seed: context.random.next() * 40,

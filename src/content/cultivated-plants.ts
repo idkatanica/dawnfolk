@@ -2,12 +2,12 @@ import { Biome, type BiomeIndex } from "./biomes.ts";
 import type { PlantingRule, PlantSpeciesDefinition, PlantSpeciesIndex } from "./plants.ts";
 
 export const CultivatedSpecies = {
-  AppleTree: 25,
-  Blueberry: 29,
-  Currant: 30,
-  PearTree: 26,
-  PlumTree: 27,
-  Raspberry: 28,
+  AppleTree: 22,
+  Blueberry: 26,
+  Currant: 27,
+  PearTree: 23,
+  PlumTree: 24,
+  Raspberry: 25,
 } as const;
 
 export const CULTIVATED_PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
