@@ -37,14 +37,13 @@ export function createFlameMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
   material.fog = false;
 
   const towardCamera = normalize(cameraPosition.sub(placement.xyz));
-  const center = placement.xyz.add(towardCamera.mul(look.z));
+  const squash = mix(float(1), float(TOP_DOWN_SQUASH), smoothstep(0.35, 0.97, towardCamera.y));
+  const centering = axes.up.mul(placement.w.mul(float(0.5).sub(squash.mul(0.5))));
+  const center = placement.xyz.add(towardCamera.mul(look.z)).add(centering);
 
   material.positionNode = facingBillboard(axes, center, corner, placement.w);
 
-  const upright = varying(
-    mix(float(1), float(TOP_DOWN_SQUASH), smoothstep(0.35, 0.97, towardCamera.y)),
-    "flameUpright"
-  );
+  const upright = varying(squash, "flameUpright");
   const shape = varying(corner, "flameCorner");
   const seed = varying(look.x.mul(SEED_SPREAD), "flameSeed");
   const strength = varying(look.y, "flameStrength");
