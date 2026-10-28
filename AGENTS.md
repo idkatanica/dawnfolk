@@ -16,6 +16,7 @@ bun run test       # unit tests in Node, browser tests in Chromium
   `CHROMIUM_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`.
 - Run one area with `bunx vitest run --project unit src/generation`.
 - Merging to `main` deploys playdawnfolk.com. Leave the merge to a person unless they ask you to merge.
+- Releases follow [CONTRIBUTING.md](CONTRIBUTING.md#releases). Leave publishing one to a person unless they ask.
 
 ## Seeing a change
 
