@@ -1,24 +1,17 @@
 import {
   abs,
   attribute,
-  cameraPosition,
   clamp,
   dot,
   Fn,
   float,
   fract,
-  If,
   int,
   ivec2,
   mix,
-  mx_noise_float,
-  mx_noise_vec3,
-  normalize,
   normalLocal,
-  normalView,
   normalWorld,
   positionLocal,
-  positionWorld,
   sin,
   smoothstep,
   step,
@@ -81,17 +74,6 @@ export class SpeciesLook {
 
 const CHARCOAL = vec3(0.035, 0.03, 0.028);
 const SNOW = vec3(0.86, 0.9, 0.95);
-const LEAF_STYLE = new URLSearchParams(globalThis.location?.search).get("leaves") ?? "current";
-const LEAF_STYLES: Record<string, readonly [number, number, number, number]> = {
-  current: [1.9, 0.16, 2.6, 0.55],
-  facets: [1, 0, 1, 0],
-  smooth: [1, 0, 1, 0],
-  soft: [0.7, 0.08, 1.2, 0.12],
-};
-const [LEAF_PATTERN_SCALE, LEAF_PATTERN_STRENGTH, LEAF_BUMP_SCALE, LEAF_BUMP_STRENGTH] =
-  LEAF_STYLES[LEAF_STYLE] ?? LEAF_STYLES.current;
-const LEAF_DETAIL_FADE_START = 1600;
-const LEAF_DETAIL_FADE_END = 2400;
 const CROWN_FIRE_LIGHT = 0.45;
 const CROWN_BURN_SHRINK = 0.6;
 const TIER_BURN_SHRINK = 0.85;
@@ -139,32 +121,6 @@ function tiltOver(vector: Node<"vec3">): Node<"vec3"> {
   const sine = Math.sin(FALLEN_TILT);
 
   return vec3(vector.x, vector.y.mul(cosine).sub(vector.z.mul(sine)), vector.y.mul(sine).add(vector.z.mul(cosine)));
-}
-
-function leafPatternAt(foliage: Node<"float">): Node<"float"> {
-  return Fn(() => {
-    const pattern = float(1).toVar();
-
-    If(foliage.greaterThan(0), () => {
-      pattern.assign(
-        mx_noise_float(positionWorld.mul(LEAF_PATTERN_SCALE)).mul(foliage.mul(LEAF_PATTERN_STRENGTH)).add(1)
-      );
-    });
-
-    return pattern;
-  })();
-}
-
-function leafBumpAt(foliage: Node<"float">): Node<"vec3"> {
-  return Fn(() => {
-    const bump = vec3(0).toVar();
-
-    If(foliage.greaterThan(0), () => {
-      bump.assign(mx_noise_vec3(positionWorld.mul(LEAF_BUMP_SCALE)).mul(foliage.mul(LEAF_BUMP_STRENGTH)));
-    });
-
-    return bump;
-  })();
 }
 
 export function createPlantMaterial({
@@ -267,27 +223,16 @@ export function createPlantMaterial({
   const shaded = baseColor.mul(shade).mul(variation);
 
   const vertexColor = varying(charredColor(shaded, charring, CHARCOAL), "plantColor");
-  const leafDetail = float(1).sub(
-    smoothstep(LEAF_DETAIL_FADE_START, LEAF_DETAIL_FADE_END, placement.xyz.distance(cameraPosition))
-  );
-  const foliageMask = varying(foliage.mul(float(1).sub(dead)).mul(leafDetail), "plantFoliage");
   const snowOnTop = snow.mul(smoothstep(0.25, 0.75, normalWorld.y));
-
-  const leafPattern = leafPatternAt(foliageMask);
-  const leafBump = leafBumpAt(foliageMask);
 
   const fireLight = varying(fireLightAt(glow, grid, placement.xz), "plantFireLight");
 
-  material.colorNode = mix(vertexColor.mul(leafPattern), SNOW, snowOnTop);
+  material.colorNode = mix(vertexColor, SNOW, snowOnTop);
 
   const burning = burnGlow({ embers, flames, phase: placement.x.mul(0.37).fract().mul(6), smoulder });
 
   material.emissiveNode = vertexColor.mul(fireLight).mul(CROWN_FIRE_LIGHT).add(burning);
-  if (LEAF_STYLE !== "facets") {
-    material.normalNode = normalize(normalView.add(leafBump));
-  }
   material.roughnessNode = float(0.88);
-  material.flatShading = LEAF_STYLE === "facets";
 
   return material;
 }
