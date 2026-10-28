@@ -1,4 +1,4 @@
-import "@fontsource-variable/geist";
+import "@fontsource-variable/nunito";
 import "./features/privacy/privacy.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
