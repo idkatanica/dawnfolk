@@ -75,6 +75,20 @@ function overlaps(region: CellRegion, corner: PatchCorner): boolean {
   );
 }
 
+function isPatchVisible(patch: Patch, frustum: Frustum): boolean {
+  return patch.pieces.length > 0 && frustum.intersectsBox(patch.bounds);
+}
+
+function patchLevelFor(distance: number, detail: number): number {
+  const index = PATCH_LEVEL_DISTANCES.findIndex((limit) => distance < limit * detail);
+
+  if (index === -1) {
+    return PATCH_STEPS.length - 1;
+  }
+
+  return index;
+}
+
 export class PatchGrid {
   readonly group = new Group();
   readonly #chosenLevels: Int8Array;
@@ -128,13 +142,12 @@ export class PatchGrid {
     }
 
     for (const [index, patch] of this.#patches.entries()) {
-      if (!this.#isVisible(patch, frustum)) {
+      if (!isPatchVisible(patch, frustum)) {
         continue;
       }
 
       const shared = sharedLevels === undefined ? NO_LEVEL : sharedLevels[index];
-      const level =
-        shared === NO_LEVEL ? this.#levelFor(patch.bounds.distanceToPoint(camera.position), detail) : shared;
+      const level = shared === NO_LEVEL ? patchLevelFor(patch.bounds.distanceToPoint(camera.position), detail) : shared;
 
       this.#chosenLevels[index] = level;
 
@@ -165,20 +178,6 @@ export class PatchGrid {
         level.geometry.dispose();
       }
     }
-  }
-
-  #isVisible(patch: Patch, frustum: Frustum): boolean {
-    return patch.pieces.length > 0 && frustum.intersectsBox(patch.bounds);
-  }
-
-  #levelFor(distance: number, detail: number): number {
-    const index = PATCH_LEVEL_DISTANCES.findIndex((limit) => distance < limit * detail);
-
-    if (index === -1) {
-      return PATCH_STEPS.length - 1;
-    }
-
-    return index;
   }
 
   #place(piece: PatchPiece, level: number): void {

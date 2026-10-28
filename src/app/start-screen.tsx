@@ -35,7 +35,7 @@ function Subview({ children, onBack, title }: SubviewProps) {
           />
         )}
 
-        <h2 className="font-bold text-ink text-xl">{title}</h2>
+        <h2 className="text-ink text-xl font-bold">{title}</h2>
       </div>
 
       {children}
@@ -122,11 +122,11 @@ function TitleCard() {
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <TextButton className={`${BIG_BUTTON_CLASS} border border-paper-edge`} onClick={showNewWorld} tone="quiet">
+        <TextButton className={`${BIG_BUTTON_CLASS} border-paper-edge border`} onClick={showNewWorld} tone="quiet">
           New world
         </TextButton>
 
-        <TextButton className={`${BIG_BUTTON_CLASS} border border-paper-edge`} onClick={showWorlds} tone="quiet">
+        <TextButton className={`${BIG_BUTTON_CLASS} border-paper-edge border`} onClick={showWorlds} tone="quiet">
           All worlds
         </TextButton>
       </div>
@@ -153,7 +153,7 @@ export function StartScreen() {
           <header className="flex flex-col items-center gap-2 text-center">
             <Logo className="size-16" />
 
-            <h1 className="font-extrabold text-4xl text-ink tracking-tight">Dawnfolk</h1>
+            <h1 className="text-ink text-4xl font-extrabold tracking-tight">Dawnfolk</h1>
 
             <p className="text-ink-soft">Guide the first tribes of a floating island.</p>
           </header>

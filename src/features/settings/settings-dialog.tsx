@@ -34,7 +34,7 @@ function isSettingsTab(value: unknown): value is SettingsTab {
 
 function SectionTab({ section }: { readonly section: SettingsSection }) {
   return (
-    <Tabs.Tab className={cn(SEGMENT, "pointer-coarse:h-10 flex-1 text-sm")} value={section.value}>
+    <Tabs.Tab className={cn(SEGMENT, "flex-1 text-sm pointer-coarse:h-10")} value={section.value}>
       {section.label}
     </Tabs.Tab>
   );
@@ -72,15 +72,15 @@ export function SettingsDialog() {
   return (
     <Dialog.Root onOpenChange={setOpen} open={isOpen}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-40 bg-ink/12 transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0" />
+        <Dialog.Backdrop className="bg-ink/12 fixed inset-0 z-40 transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0" />
 
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center px-3 pt-(--dialog-inset-top) pb-(--dialog-inset-bottom)">
-          <Dialog.Popup className="w-dialog outline-none transition-[scale,opacity] duration-200 ease-glide data-ending-style:scale-97 data-starting-style:scale-97 data-ending-style:opacity-0 data-starting-style:opacity-0">
-            <Island className="flex max-h-dialog flex-col">
+          <Dialog.Popup className="w-dialog ease-glide transition-[scale,opacity] duration-200 outline-none data-ending-style:scale-97 data-ending-style:opacity-0 data-starting-style:scale-97 data-starting-style:opacity-0">
+            <Island className="max-h-dialog flex flex-col">
               <Tabs.Root className="flex min-h-0 flex-col" onValueChange={changeTab} value={tab}>
                 <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-4 sm:px-6">
                   <div className="flex min-w-0 flex-col gap-0.5">
-                    <Dialog.Title className="font-semibold text-ink text-lg leading-tight">Settings</Dialog.Title>
+                    <Dialog.Title className="text-ink text-lg leading-tight font-semibold">Settings</Dialog.Title>
 
                     <Dialog.Description className="text-ink-soft text-sm">
                       Shape how the world of {worldName} behaves.
@@ -90,7 +90,7 @@ export function SettingsDialog() {
                   <Dialog.Close
                     render={
                       <IconButton
-                        className="-mt-1.5 -mr-2 pointer-coarse:size-10 size-9"
+                        className="-mt-1.5 -mr-2 size-9 pointer-coarse:size-10"
                         icon={<X aria-hidden="true" size={18} />}
                         label="Close settings"
                       />
@@ -112,7 +112,7 @@ export function SettingsDialog() {
                   </ScrollArea.Viewport>
 
                   <ScrollArea.Scrollbar className="mr-1 mb-4 w-1 rounded-full opacity-0 transition-opacity data-hovering:opacity-100 data-scrolling:opacity-100">
-                    <ScrollArea.Thumb className="w-full rounded-full bg-ink/25" />
+                    <ScrollArea.Thumb className="bg-ink/25 w-full rounded-full" />
                   </ScrollArea.Scrollbar>
                 </ScrollArea.Root>
               </Tabs.Root>

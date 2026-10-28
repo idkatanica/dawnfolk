@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { openIsland, WORLD_RISING_TIMEOUT } from "./launch.ts";
 
-const NEW_SEED_ADDRESS = /seed=42/;
+const NEW_SEED_ADDRESS = /seed=42/u;
 
 test("the wide layout opens the journal and grows a new world from the settings without reloading", async ({
   page,

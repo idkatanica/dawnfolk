@@ -40,7 +40,7 @@ export function StartBackdrop() {
   const backdrop = isPortrait ? TALL : WIDE;
 
   return (
-    <div aria-hidden="true" className="fixed inset-0 bg-canvas">
+    <div aria-hidden="true" className="bg-canvas fixed inset-0">
       {prefersCalm ? (
         <img alt="" className={BACKDROP_CLASS} height={backdrop.height} src={backdrop.poster} width={backdrop.width} />
       ) : (

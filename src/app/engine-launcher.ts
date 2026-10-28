@@ -54,6 +54,16 @@ function createCanvas(container: HTMLElement): HTMLCanvasElement {
   return canvas;
 }
 
+function applyLaunchTime(engine: GameEngine, launch: LaunchOptions): void {
+  if (launch.hours !== null) {
+    engine.session.send({ hours: launch.hours, type: "setHours" });
+  }
+
+  if (launch.isPaused) {
+    engine.session.send({ isPaused: true, type: "setPaused" });
+  }
+}
+
 export class EngineLauncher {
   readonly #canvas: HTMLCanvasElement;
   readonly #onStatus: EngineStatusListener;
@@ -105,7 +115,7 @@ export class EngineLauncher {
 
     this.#state = "running";
     this.#engine = engine;
-    this.#applyLaunchTime(engine, launch);
+    applyLaunchTime(engine, launch);
 
     if (import.meta.env.DEV) {
       Reflect.set(window, "dawnfolk", engine);
@@ -116,16 +126,6 @@ export class EngineLauncher {
       this.#onStatus(status);
     });
     this.#onStatus({ engine, kind: "ready" });
-  }
-
-  #applyLaunchTime(engine: GameEngine, launch: LaunchOptions): void {
-    if (launch.hours !== null) {
-      engine.session.send({ hours: launch.hours, type: "setHours" });
-    }
-
-    if (launch.isPaused) {
-      engine.session.send({ isPaused: true, type: "setPaused" });
-    }
   }
 
   #progress(progress: GenerationProgress): void {

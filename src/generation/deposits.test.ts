@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { DEPOSIT_KINDS, DEPOSITS } from "../content/deposits.ts";
 import { isTreeSpecies } from "../content/plants.ts";
+import type { Deposit } from "../world/deposits.ts";
 import { slopeAt } from "../world/footing.ts";
 import { isWaterCell } from "../world/terrain-sampling.ts";
 import { WorldGrid } from "../world/world-grid.ts";
@@ -35,14 +36,16 @@ describe("ore and clay deposits", () => {
   });
 
   it("put ore veins on hillsides and clay on gentle ground", () => {
-    for (const deposit of world.deposits) {
-      const slopes = deposit.cells.map((cell) => slopeAt(world.terrain.height, grid, cell));
+    const { height } = world.terrain;
 
-      if (deposit.kind === "clay") {
-        expect(Math.max(...slopes)).toBeLessThanOrEqual(0.25);
-      } else {
-        expect(Math.max(...slopes)).toBeLessThanOrEqual(0.72);
-      }
+    const steepestOf = (deposit: Deposit) => Math.max(...deposit.cells.map((cell) => slopeAt(height, grid, cell)));
+
+    for (const clay of world.deposits.filter((deposit) => deposit.kind === "clay")) {
+      expect(steepestOf(clay)).toBeLessThanOrEqual(0.25);
+    }
+
+    for (const ore of world.deposits.filter((deposit) => deposit.kind !== "clay")) {
+      expect(steepestOf(ore)).toBeLessThanOrEqual(0.72);
     }
   });
 
@@ -62,12 +65,12 @@ describe("ore and clay deposits", () => {
     const veins = new Set(world.deposits.flatMap((deposit) => deposit.cells));
     const { vegetation } = world;
 
-    for (let plant = 0; plant < vegetation.count; plant += 1) {
-      const cell = grid.cellAt(vegetation.x[plant], vegetation.z[plant]);
+    const trees = Array.from({ length: vegetation.count }, (_, plant) => plant).filter(
+      (plant) => vegetation.isAlive(plant) && isTreeSpecies(vegetation.species[plant])
+    );
 
-      if (vegetation.isAlive(plant) && isTreeSpecies(vegetation.species[plant])) {
-        expect(veins.has(cell)).toBe(false);
-      }
+    for (const tree of trees) {
+      expect(veins.has(grid.cellAt(vegetation.x[tree], vegetation.z[tree]))).toBe(false);
     }
   });
 });

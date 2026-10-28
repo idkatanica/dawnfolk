@@ -145,7 +145,7 @@ function JournalSection({ isHidden, onClose }: JournalSectionProps) {
   return (
     <section aria-label="Journal" className="flex min-h-0 flex-1 flex-col gap-3" hidden={isHidden}>
       <header className="flex items-center justify-between gap-2 pl-1">
-        <h2 className="font-semibold text-ink text-lg leading-tight outline-none" data-panel-heading="" tabIndex={-1}>
+        <h2 className="text-ink text-lg leading-tight font-semibold outline-none" data-panel-heading="" tabIndex={-1}>
           Journal
         </h2>
 
@@ -194,7 +194,7 @@ export function SidePanel({ className }: { readonly className?: string | undefin
   }
 
   return (
-    <Island className={cn("flex w-journal flex-col", className)}>
+    <Island className={cn("w-journal flex flex-col", className)}>
       <div className="flex min-h-0 flex-1 flex-col p-3" ref={panelReference}>
         <SidePanelContent contents={{ inspection, isJournalOpen }} onBack={back} onClose={close} />
       </div>

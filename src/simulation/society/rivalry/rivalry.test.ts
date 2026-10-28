@@ -22,13 +22,13 @@ const SPEAR: CarriedWeapon = { kind: "spear", material: "stone" };
 const BOW: CarriedWeapon = { kind: "bow", material: "stone" };
 const BARE_HANDS: CarriedWeapon = { kind: "none" };
 const SPRING_HARNESS = { day: MORNING, world: { dimensions: { cellSize: 10, cellsPerSide: 96 } } };
-const FEUD_STORY = /^feud: The .+ became enemies over/;
-const RAID_SENT_STORY = /^raid: The .+ sent \d warriors against the .+/;
-const RAID_OUTCOME_STORY = /^raid: The .+ (raided|drove off a raid by) the .+/;
-const PLUNDER_STORY = /^raid: The .+ raided the .+: carried off/;
-const SLAIN_STORY = /was slain by the/;
-const GIFTS_STORY = /^peace: The .+ brought gifts to the .+, and they made peace/;
-const TRUCE_STORY = /^peace: .+ agreed to a truce/;
+const FEUD_STORY = /^feud: The .+ became enemies over/u;
+const RAID_SENT_STORY = /^raid: The .+ sent \d warriors against the .+/u;
+const RAID_OUTCOME_STORY = /^raid: The .+ (?:raided|drove off a raid by) the .+/u;
+const PLUNDER_STORY = /^raid: The .+ raided the .+: carried off/u;
+const SLAIN_STORY = /was slain by the/u;
+const GIFTS_STORY = /^peace: The .+ brought gifts to the .+, and they made peace/u;
+const TRUCE_STORY = /^peace: .+ agreed to a truce/u;
 
 function neighbours(harness: SocietyHarness, distance: number): readonly [Tribe, Tribe] {
   const first = foundTribe(harness, { adults: 8, children: 2, x: -distance / 2, z: 0 });

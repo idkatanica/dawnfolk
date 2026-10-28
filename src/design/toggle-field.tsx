@@ -13,17 +13,17 @@ export function ToggleField({ description, isChecked, label, onChange }: ToggleF
 
   return (
     <div className="flex min-h-8 items-center justify-between gap-3 text-sm" title={description}>
-      <span className="font-medium text-ink" id={labelId}>
+      <span className="text-ink font-medium" id={labelId}>
         {label}
       </span>
 
       <Switch.Root
         aria-labelledby={labelId}
         checked={isChecked}
-        className="flex h-5.5 w-9 shrink-0 rounded-full bg-ink/14 p-0.5 outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-dawn focus-visible:ring-offset-1 data-checked:bg-dawn"
+        className="bg-ink/14 focus-visible:ring-dawn data-checked:bg-dawn flex h-5.5 w-9 shrink-0 rounded-full p-0.5 transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
         onCheckedChange={onChange}
       >
-        <Switch.Thumb className="size-4.5 rounded-full bg-white shadow-thumb transition-transform duration-150 ease-glide data-checked:translate-x-3.5" />
+        <Switch.Thumb className="shadow-thumb ease-glide size-4.5 rounded-full bg-white transition-transform duration-150 data-checked:translate-x-3.5" />
       </Switch.Root>
     </div>
   );

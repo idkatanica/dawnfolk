@@ -20,5 +20,5 @@ export function RelationNote({ relation }: { readonly relation: RelationView }) 
     return null;
   }
 
-  return <span className="truncate text-ink-muted text-xs">{note}</span>;
+  return <span className="text-ink-muted truncate text-xs">{note}</span>;
 }

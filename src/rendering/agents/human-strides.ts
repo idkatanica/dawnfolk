@@ -25,6 +25,14 @@ function measureReferenceStride(clip: PersonPose): number {
   });
 }
 
+function strideScale(appearance: PersonAppearance): number {
+  const { body, motion } = appearance;
+
+  const ageFactor = appearance.ageGroup === "elder" ? ELDER_STRIDE : 1;
+
+  return body.height * body.legLength * motion.stride * ageFactor;
+}
+
 export class HumanStrides {
   readonly #reference = new Map<PersonPose, number>();
 
@@ -49,14 +57,6 @@ export class HumanStrides {
       return 0;
     }
 
-    return speed / (reference * this.#strideScale(appearance));
-  }
-
-  #strideScale(appearance: PersonAppearance): number {
-    const { body, motion } = appearance;
-
-    const ageFactor = appearance.ageGroup === "elder" ? ELDER_STRIDE : 1;
-
-    return body.height * body.legLength * motion.stride * ageFactor;
+    return speed / (reference * strideScale(appearance));
   }
 }

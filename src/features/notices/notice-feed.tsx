@@ -17,7 +17,7 @@ function useDismissLater(noticeId: number): void {
 
 function NoticeIcon({ notice }: { readonly notice: WorldNotice }) {
   if (notice.category === "notice") {
-    return <Info aria-hidden="true" className="shrink-0 text-ink-soft" size={20} />;
+    return <Info aria-hidden="true" className="text-ink-soft shrink-0" size={20} />;
   }
 
   return <GameIcon name={CHRONICLE_ICONS[notice.category]} size={24} />;
@@ -27,7 +27,7 @@ function NoticeItem({ notice }: { readonly notice: WorldNotice }) {
   useDismissLater(notice.id);
 
   return (
-    <li className="pointer-events-auto flex max-w-full items-center gap-2.5 rounded-full border border-paper-edge bg-paper px-4 py-2 text-ink text-sm motion-safe:animate-notice-in sm:max-w-notice">
+    <li className="border-paper-edge bg-paper text-ink motion-safe:animate-notice-in sm:max-w-notice pointer-events-auto flex max-w-full items-center gap-2.5 rounded-full border px-4 py-2 text-sm">
       <NoticeIcon notice={notice} />
 
       <span className="leading-snug">{notice.text}</span>

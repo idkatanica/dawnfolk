@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, it as test } from "vitest";
 import { PLANT_SPECIES, PlantSpecies, type PlantSpeciesIndex, plantSpeciesDefinition } from "../../content/plants.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
@@ -75,7 +75,7 @@ function averageTriangles(species: PlantSpeciesIndex, level: PlantDetailLevel): 
 }
 
 describe.each(SPECIES)("plant species %i", (species) => {
-  it("builds clean variants at every level of detail", () => {
+  test("builds clean variants at every level of detail", () => {
     for (const level of PLANT_DETAIL_LEVELS) {
       const variants = buildPlantVariants(species, level);
 
@@ -87,7 +87,7 @@ describe.each(SPECIES)("plant species %i", (species) => {
     }
   });
 
-  it("stands on the ground at about its canonical height", () => {
+  test("stands on the ground at about its canonical height", () => {
     const height = canonicalHeight(species);
     const shortest = shortestVariantShare(species);
     const variants = buildPlantVariants(species, "high");
@@ -102,20 +102,20 @@ describe.each(SPECIES)("plant species %i", (species) => {
     expect(Math.max(...variants.map((mesh) => mesh.bounds.maximum[1]))).toBeGreaterThan(height * 0.62);
   });
 
-  it("spends fewer triangles further away", () => {
+  test("spends fewer triangles further away", () => {
     expect(averageTriangles(species, "medium")).toBeLessThanOrEqual(averageTriangles(species, "high"));
     expect(averageTriangles(species, "low")).toBeLessThan(averageTriangles(species, "medium"));
     expect(averageTriangles(species, "far")).toBeLessThanOrEqual(averageTriangles(species, "low"));
   });
 
-  it("gives the same model for the same variant", () => {
+  test("gives the same model for the same variant", () => {
     const [first] = buildPlantVariants(species, "medium");
     const [again] = buildPlantVariants(species, "medium");
 
     expect(again.positions).toEqual(first.positions);
   });
 
-  it("tells the simulation how far it reaches where people work on it", () => {
+  test("tells the simulation how far it reaches where people work on it", () => {
     const measured = workingRadius(species) / canonicalHeight(species);
 
     expect(Math.abs(plantSpeciesDefinition(species).radiusPerMeter - measured)).toBeLessThan(
@@ -123,7 +123,7 @@ describe.each(SPECIES)("plant species %i", (species) => {
     );
   });
 
-  it("closes every variant everywhere above the ground", () => {
+  test("closes every variant everywhere above the ground", () => {
     for (const level of PLANT_DETAIL_LEVELS) {
       for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
         expect(highestExposedOpenEdge(mesh), `${level} variant ${variant}`).toBeLessThan(GROUND_LEVEL);
@@ -131,7 +131,7 @@ describe.each(SPECIES)("plant species %i", (species) => {
     }
   });
 
-  it("keeps every part of every variant attached to the ground", () => {
+  test("keeps every part of every variant attached to the ground", () => {
     for (const level of PLANT_DETAIL_LEVELS) {
       for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
         const detached = loosePieces(mesh);
@@ -141,7 +141,7 @@ describe.each(SPECIES)("plant species %i", (species) => {
     }
   });
 
-  it("keeps every part attached while a storm bends it", () => {
+  test("keeps every part attached while a storm bends it", () => {
     for (const level of PLANT_DETAIL_LEVELS) {
       for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
         const bent = windBentMesh(mesh, STORM_PUSH);

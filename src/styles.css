@@ -70,17 +70,21 @@
 @utility scroll-fade {
   --fade-size: 1.5rem;
 
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    black min(var(--fade-size), var(--scroll-area-overflow-y-start, 0px)),
-    black calc(100% - min(var(--fade-size), var(--scroll-area-overflow-y-end, 0px))),
-    transparent 100%
-  );
+  @supports (mask-image: none) {
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      black min(var(--fade-size), var(--scroll-area-overflow-y-start, 0px)),
+      black calc(100% - min(var(--fade-size), var(--scroll-area-overflow-y-end, 0px))),
+      transparent 100%
+    );
+  }
 }
 
 @utility scrollbar-none {
-  scrollbar-width: none;
+  @supports (scrollbar-width: none) {
+    scrollbar-width: none;
+  }
 }
 
 :root {

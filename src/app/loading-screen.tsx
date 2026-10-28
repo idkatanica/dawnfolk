@@ -32,7 +32,7 @@ function LoadingMessage({ name, progress }: LoadingMessageProps) {
     <div className="flex flex-col items-center gap-3 text-center" role="status">
       <Logo />
 
-      <h2 className="wrap-break-word text-3xl text-ink">{name}</h2>
+      <h2 className="text-ink text-3xl wrap-break-word">{name}</h2>
 
       <p className="text-ink-soft text-sm">{stageLabel(progress)}…</p>
     </div>
@@ -47,7 +47,7 @@ interface FailureMessageProps {
 function FailureMessage({ message, title }: FailureMessageProps) {
   return (
     <div className="flex max-w-md flex-col items-center gap-3 text-center" role="alert">
-      <h2 className="text-3xl text-ink">{title}</h2>
+      <h2 className="text-ink text-3xl">{title}</h2>
 
       <p className="text-ink-soft text-sm">{message}</p>
     </div>
@@ -94,7 +94,7 @@ export function LoadingScreen() {
   }
 
   return (
-    <div className="absolute inset-0 grid place-items-center bg-canvas p-6">
+    <div className="bg-canvas absolute inset-0 grid place-items-center p-6">
       <StatusMessage status={status} />
     </div>
   );

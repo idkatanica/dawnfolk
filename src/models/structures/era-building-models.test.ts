@@ -1,5 +1,5 @@
 import { Vector3 } from "three";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, it as test } from "vitest";
 import { BUILDINGS } from "../../content/buildings.ts";
 import { MINED_DEPOSIT_KINDS } from "../../content/deposits.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
@@ -129,36 +129,34 @@ describe.each(MINED_DEPOSIT_KINDS)("%s mine", (ore) => {
   const high = buildMineModel(ore, "high");
   const low = buildMineModel(ore, "low");
 
-  it("builds clean, grounded geometry at both levels of detail", () => {
+  test("builds clean, grounded geometry at both levels of detail", () => {
     expect(soundnessProblems(high)).toEqual([]);
     expect(soundnessProblems(low)).toEqual([]);
     expect(triangleCount(low)).toBeLessThan(triangleCount(high));
     expect(orderProblems(high)).toEqual([]);
   });
 
-  it("paints the mine in the tribe colour", () => {
+  test("paints the mine in the tribe colour", () => {
     expect(high.channels.slot).toContain(MaterialSlot.Accent);
     expect(low.channels.slot).toContain(MaterialSlot.Accent);
   });
 
-  it("heaps its own ore and no other", () => {
-    for (const other of MINED_DEPOSIT_KINDS) {
-      if (other === ore) {
-        expect(high.channels.slot).toContain(ORE_SLOTS[other]);
-      } else {
-        expect(high.channels.slot).not.toContain(ORE_SLOTS[other]);
-      }
+  test("heaps its own ore and no other", () => {
+    expect(high.channels.slot).toContain(ORE_SLOTS[ore]);
+
+    for (const other of MINED_DEPOSIT_KINDS.filter((kind) => kind !== ore)) {
+      expect(high.channels.slot).not.toContain(ORE_SLOTS[other]);
     }
   });
 
-  it("fits inside the mine footprint", () => {
+  test("fits inside the mine footprint", () => {
     expect(widestReach(high)).toBeLessThanOrEqual(BUILDINGS.mine.footprint);
     expect(widestReach(low)).toBeLessThanOrEqual(BUILDINGS.mine.footprint);
   });
 });
 
 describe.each(ENCLOSURES)("%s pieces", (kind) => {
-  it.each(LEVELS)("butt their %s ends at half a segment either side", (level) => {
+  test.each(LEVELS)("butt their %s ends at half a segment either side", (level) => {
     for (const piece of enclosurePieces(kind, level)) {
       expect(piece.bounds.minimum[0]).toBeCloseTo(-ENCLOSURE_SEGMENT_LENGTH / 2, 1);
       expect(piece.bounds.maximum[0]).toBeCloseTo(ENCLOSURE_SEGMENT_LENGTH / 2, 1);
@@ -167,7 +165,7 @@ describe.each(ENCLOSURES)("%s pieces", (kind) => {
     }
   });
 
-  it.each(LEVELS)("stand clean and grounded at %s detail", (level) => {
+  test.each(LEVELS)("stand clean and grounded at %s detail", (level) => {
     for (const piece of enclosurePieces(kind, level)) {
       expect(soundnessProblems(piece)).toEqual([]);
       expect(orderProblems(piece)).toEqual([]);
@@ -175,7 +173,7 @@ describe.each(ENCLOSURES)("%s pieces", (kind) => {
     }
   });
 
-  it("keep fewer triangles far away", () => {
+  test("keep fewer triangles far away", () => {
     for (const piece of ["gate", "segment"] as const) {
       expect(triangleCount(buildEnclosurePiece(kind, piece, "low"))).toBeLessThan(
         triangleCount(buildEnclosurePiece(kind, piece, "high"))
@@ -183,7 +181,7 @@ describe.each(ENCLOSURES)("%s pieces", (kind) => {
     }
   });
 
-  it("leave a way through the gate but not through the wall", () => {
+  test("leave a way through the gate but not through the wall", () => {
     const gate = buildEnclosurePiece(kind, "gate", "high");
     const segment = buildEnclosurePiece(kind, "segment", "high");
 

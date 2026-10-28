@@ -32,19 +32,19 @@ function LandmarkDetail({ detail }: { readonly detail: string | null }) {
     return null;
   }
 
-  return <span className="font-medium text-xs tabular-nums opacity-90">{detail}</span>;
+  return <span className="text-xs font-medium tabular-nums opacity-90">{detail}</span>;
 }
 
 function LandmarkLabel({ landmark }: { readonly landmark: Landmark }) {
   return (
     <li
-      className={cn(LABEL_FRAME, "flex flex-col items-center text-shadow-black/55 text-shadow-md text-white")}
+      className={cn(LABEL_FRAME, "flex flex-col items-center text-white text-shadow-black/55 text-shadow-md")}
       data-label=""
       data-lift={landmark.lift}
       data-x={landmark.x}
       data-z={landmark.z}
     >
-      <span className={cn("font-semibold text-sm tracking-wide", { italic: landmark.kind === "lake" })}>
+      <span className={cn("text-sm font-semibold tracking-wide", { italic: landmark.kind === "lake" })}>
         {landmark.name}
       </span>
 
@@ -102,17 +102,17 @@ function TribeLabel({ isSelected, mood, tribe }: TribeLabelProps) {
       <button
         aria-current={isSelected}
         className={cn(
-          "pointer-events-auto flex items-center gap-2 rounded-full border border-paper-edge bg-paper py-1 pr-3 pl-1.5 text-xs outline-none transition-colors hover:bg-canvas focus-visible:ring-2 focus-visible:ring-dawn",
-          { "ring-2 ring-dawn": isSelected, "ring-2 ring-ember/80": mood === "raiding" && !isSelected }
+          "border-paper-edge bg-paper hover:bg-canvas focus-visible:ring-dawn pointer-events-auto flex items-center gap-2 rounded-full border py-1 pr-3 pl-1.5 text-xs transition-colors outline-none focus-visible:ring-2",
+          { "ring-dawn ring-2": isSelected, "ring-ember/80 ring-2": mood === "raiding" && !isSelected }
         )}
         onClick={showTribe}
         type="button"
       >
         <TribeDot color={tribe.color} />
 
-        <span className="font-semibold text-ink">{tribe.name}</span>
+        <span className="text-ink font-semibold">{tribe.name}</span>
 
-        <span className="font-semibold text-dawn-strong tabular-nums">{tribe.population}</span>
+        <span className="text-dawn-strong font-semibold tabular-nums">{tribe.population}</span>
 
         <FeudMark mood={mood} />
 

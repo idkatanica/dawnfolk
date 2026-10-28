@@ -14,7 +14,7 @@ export function GroupHeading({ action, description, title }: GroupHeadingProps) 
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 flex-col gap-0.5">
-        <h3 className="font-semibold text-ink text-sm">{title}</h3>
+        <h3 className="text-ink text-sm font-semibold">{title}</h3>
 
         <p className="text-ink-soft text-xs leading-relaxed">{description}</p>
       </div>

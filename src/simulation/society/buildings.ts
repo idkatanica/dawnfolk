@@ -90,6 +90,14 @@ export function isCampfireLit(building: Building | null): boolean {
   return building !== null && isLitCampfire(building);
 }
 
+export function setAlight(building: Building): void {
+  if (!isFlammable(building.kind)) {
+    return;
+  }
+
+  building.burningSeconds = Math.max(building.burningSeconds, BUILDINGS[building.kind].burnTime);
+}
+
 export class BuildingSystem {
   readonly #identifiers: IdentifierSource;
   readonly #world: WorldState;
@@ -224,14 +232,6 @@ export class BuildingSystem {
     return incidents;
   }
 
-  setAlight(building: Building): void {
-    if (!isFlammable(building.kind)) {
-      return;
-    }
-
-    building.burningSeconds = Math.max(building.burningSeconds, BUILDINGS[building.kind].burnTime);
-  }
-
   damageArea(x: number, z: number, radius: number, damage: number, ignites: boolean): void {
     for (const building of [...this.#buildings]) {
       const closeness = 1 - Math.hypot(building.x - x, building.z - z) / radius;
@@ -262,7 +262,7 @@ export class BuildingSystem {
     building.health -= damage;
 
     if (ignites) {
-      this.setAlight(building);
+      setAlight(building);
     }
 
     if (building.health <= 0) {
@@ -291,7 +291,7 @@ export class BuildingSystem {
       return;
     }
 
-    this.setAlight(building);
+    setAlight(building);
     this.#incidents.push({ building, kind: "caughtFire" });
   }
 

@@ -21,6 +21,7 @@ import {
   type Assailant,
   BeastInstincts,
   type InstinctsSnapshot,
+  isHurt,
   type Pack,
   type PeopleSense,
 } from "./beast-instincts.ts";
@@ -303,7 +304,7 @@ export class FaunaSystem {
     this.#instincts.flinch(animal);
     this.provoke(animal, assailant, rules);
 
-    if (this.#instincts.isHurt(animal) && !this.#instincts.isCharging(animal)) {
+    if (isHurt(animal) && !this.#instincts.isCharging(animal)) {
       this.#instincts.abandonHunt(animal.herdId, this.#packOf(animal), assailant);
       startleAnimal(animal, assailant.x, assailant.z, 1);
     }

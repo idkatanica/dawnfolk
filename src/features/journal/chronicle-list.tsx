@@ -12,7 +12,7 @@ function ChronicleItem({ entry }: { readonly entry: ChronicleEntry }) {
   return (
     <li>
       <button
-        className="flex w-full items-start gap-3 rounded-xl px-2.5 py-2 text-left outline-none transition-colors hover:bg-paper-hover focus-visible:ring-2 focus-visible:ring-dawn"
+        className="hover:bg-paper-hover focus-visible:ring-dawn flex w-full items-start gap-3 rounded-xl px-2.5 py-2 text-left transition-colors outline-none focus-visible:ring-2"
         onClick={showPlace}
         type="button"
       >
@@ -34,7 +34,7 @@ export function ChronicleList() {
   const latest = chronicle.slice(-SHOWN_ENTRIES).toReversed();
 
   if (latest.length === 0) {
-    return <p className="p-3 text-ink-muted text-sm">Nothing has happened yet. The story begins at dawn.</p>;
+    return <p className="text-ink-muted p-3 text-sm">Nothing has happened yet. The story begins at dawn.</p>;
   }
 
   return (

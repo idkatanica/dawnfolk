@@ -129,6 +129,22 @@ function campfireHeat(building: BuildingView): number {
   return Math.min(1, building.fuel * 1.4);
 }
 
+function nearestBurningCells(mirror: WorldMirror, camera: PerspectiveCamera): BurningCell[] {
+  const { burningCells, burningIntensity } = mirror.frame;
+  const { grid } = mirror;
+  const { position } = camera;
+
+  const cells: BurningCell[] = [];
+
+  for (const [index, cell] of burningCells.entries()) {
+    const distance = distanceSquared(position.x, position.z, grid.cellCenterX(cell), grid.cellCenterZ(cell));
+
+    cells.push({ cell, distance, intensity: burningIntensity[index] / BYTE });
+  }
+
+  return cells.toSorted((first, second) => first.distance - second.distance).slice(0, FLAME_CELL_LIMIT);
+}
+
 export class FireView {
   readonly group = new Group();
   readonly smoke = new SmokeLook();
@@ -185,7 +201,7 @@ export class FireView {
   }
 
   #rebuild(mirror: WorldMirror, camera: PerspectiveCamera): void {
-    const cells = this.#nearestBurningCells(mirror, camera);
+    const cells = nearestBurningCells(mirror, camera);
 
     const intensities = new Map(cells.map((burning) => [burning.cell, burning.intensity]));
 
@@ -211,22 +227,6 @@ export class FireView {
     this.#flames.commit();
     this.#puffs.commit();
     this.#sparks.commit();
-  }
-
-  #nearestBurningCells(mirror: WorldMirror, camera: PerspectiveCamera): BurningCell[] {
-    const { burningCells, burningIntensity } = mirror.frame;
-    const { grid } = mirror;
-    const { position } = camera;
-
-    const cells: BurningCell[] = [];
-
-    for (const [index, cell] of burningCells.entries()) {
-      const distance = distanceSquared(position.x, position.z, grid.cellCenterX(cell), grid.cellCenterZ(cell));
-
-      cells.push({ cell, distance, intensity: burningIntensity[index] / BYTE });
-    }
-
-    return cells.toSorted((first, second) => first.distance - second.distance).slice(0, FLAME_CELL_LIMIT);
   }
 
   #addGroundFlames(mirror: WorldMirror, burning: BurningCell): void {

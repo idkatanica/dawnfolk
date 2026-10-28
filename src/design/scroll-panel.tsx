@@ -17,7 +17,7 @@ export function ScrollPanel({ children, className }: ScrollPanelProps) {
       </ScrollArea.Viewport>
 
       <ScrollArea.Scrollbar className="-mr-2 w-1.5 rounded-full py-1 opacity-0 transition-opacity data-hovering:opacity-100 data-scrolling:opacity-100">
-        <ScrollArea.Thumb className="w-full rounded-full bg-ink/25" />
+        <ScrollArea.Thumb className="bg-ink/25 w-full rounded-full" />
       </ScrollArea.Scrollbar>
     </ScrollArea.Root>
   );

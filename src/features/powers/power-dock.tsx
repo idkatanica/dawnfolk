@@ -49,7 +49,7 @@ function PowerTile({ powerId }: { readonly powerId: PowerId }) {
       <Toolbar.Button
         aria-label={power.name}
         aria-pressed={isSelected}
-        className={cn(TILE_CLASS, { [`${CHOSEN_TILE_CLASS} ring-2 ring-dawn`]: isSelected })}
+        className={cn(TILE_CLASS, { [`${CHOSEN_TILE_CLASS} ring-dawn ring-2`]: isSelected })}
         onClick={toggle}
       >
         <GameIcon name={POWER_ICONS[powerId]} size={34} />
@@ -126,8 +126,8 @@ function KindTab({
   return (
     <Toolbar.Button
       aria-pressed={isChosen}
-      className={cn(SEGMENT, "pointer-coarse:h-10 text-sm max-lg:aspect-square max-lg:px-0 lg:px-2.5", {
-        "bg-white text-ink shadow-segment": isChosen,
+      className={cn(SEGMENT, "text-sm max-lg:aspect-square max-lg:px-0 lg:px-2.5 pointer-coarse:h-10", {
+        "text-ink shadow-segment bg-white": isChosen,
       })}
       onClick={choose}
     >
@@ -187,12 +187,12 @@ export function PowerDock({ className }: { readonly className?: string | undefin
     <Island className={className}>
       <Toolbar.Root
         aria-label="Powers"
-        className="scrollbar-none flex snap-x snap-mandatory scroll-px-1.5 items-center gap-0.5 overflow-x-auto overscroll-x-contain p-1.5"
+        className="flex snap-x snap-mandatory scroll-px-1.5 scrollbar-none items-center gap-0.5 overflow-x-auto overscroll-x-contain p-1.5"
         ref={rowReference}
       >
         <SelectTile />
 
-        <Toolbar.Separator className="mx-1 h-7 w-px shrink-0 bg-ink/15" />
+        <Toolbar.Separator className="bg-ink/15 mx-1 h-7 w-px shrink-0" />
 
         <KindTabs chosenKind={kind} onKindChange={setKind} />
 

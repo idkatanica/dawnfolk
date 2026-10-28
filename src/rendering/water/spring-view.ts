@@ -150,6 +150,20 @@ function addCave(builder: MeshBuilder, spring: Spring, mirror: WorldMirror, mode
   builder.addMesh(cave, { transform: placement });
 }
 
+export function areSpringsShapedBy(region: CellRegion | null, mirror: WorldMirror): boolean {
+  if (region === null) {
+    return false;
+  }
+
+  const { grid } = mirror;
+
+  return mirror.water.springs.some(
+    (spring) =>
+      spring.kind === "cave" &&
+      regionsOverlap(region, grid.circleBounds(spring.x, spring.z, groundReach(spring) + grid.cellSize))
+  );
+}
+
 export class SpringView {
   readonly mesh: Mesh;
   readonly #models = new ModelCache();
@@ -159,20 +173,6 @@ export class SpringView {
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     this.mesh.frustumCulled = false;
-  }
-
-  isShapedBy(region: CellRegion | null, mirror: WorldMirror): boolean {
-    if (region === null) {
-      return false;
-    }
-
-    const { grid } = mirror;
-
-    return mirror.water.springs.some(
-      (spring) =>
-        spring.kind === "cave" &&
-        regionsOverlap(region, grid.circleBounds(spring.x, spring.z, groundReach(spring) + grid.cellSize))
-    );
   }
 
   rebuild(mirror: WorldMirror): void {

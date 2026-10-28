@@ -21,7 +21,7 @@ function MigrationMark({ tribe }: { readonly tribe: TribeSummary }) {
   }
 
   return (
-    <span className="flex items-center gap-1 text-ink-muted text-xs">
+    <span className="text-ink-muted flex items-center gap-1 text-xs">
       <GameIcon name="migration" size={18} />
       On the move
     </span>
@@ -49,7 +49,7 @@ function highlights(tribe: TribeSummary): StockHighlight[] {
 
 function StockLine({ tribe }: { readonly tribe: TribeSummary }) {
   return (
-    <span className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-ink-muted text-xs">
+    <span className="text-ink-muted flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs">
       {highlights(tribe).map((highlight) => (
         <span className="flex items-center gap-1 tabular-nums" key={highlight.name} title={highlight.name}>
           <GameIcon name={highlight.icon} size={18} />
@@ -69,16 +69,16 @@ function TribeCard({ tribe }: { readonly tribe: TribeSummary }) {
   return (
     <li>
       <button
-        className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left outline-none transition-colors hover:bg-paper-hover focus-visible:ring-2 focus-visible:ring-dawn"
+        className="hover:bg-paper-hover focus-visible:ring-dawn flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-colors outline-none focus-visible:ring-2"
         onClick={showTribe}
         type="button"
       >
         <span aria-hidden="true" className="size-9 shrink-0 rounded-xl" style={{ backgroundColor: tribe.color }} />
 
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate font-semibold text-ink text-sm">{tribe.name}</span>
+          <span className="text-ink truncate text-sm font-semibold">{tribe.name}</span>
 
-          <span className="truncate text-ink-muted text-xs">{tribe.eraName}</span>
+          <span className="text-ink-muted truncate text-xs">{tribe.eraName}</span>
 
           <StockLine tribe={tribe} />
 
@@ -88,7 +88,7 @@ function TribeCard({ tribe }: { readonly tribe: TribeSummary }) {
         </span>
 
         <span className="flex flex-col items-end gap-0.5">
-          <span className="font-semibold text-ink text-lg tabular-nums leading-none">{tribe.population}</span>
+          <span className="text-ink text-lg leading-none font-semibold tabular-nums">{tribe.population}</span>
 
           <span className="text-ink-muted text-xs">people</span>
         </span>
@@ -101,7 +101,7 @@ export function TribeList() {
   const tribes = useWorldStore((state) => state.snapshot?.tribes);
 
   if (tribes === undefined || tribes.length === 0) {
-    return <p className="p-3 text-ink-muted text-sm">No tribes live on the island. Bring one with the Tribe power.</p>;
+    return <p className="text-ink-muted p-3 text-sm">No tribes live on the island. Bring one with the Tribe power.</p>;
   }
 
   return (

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { openIsland } from "./launch.ts";
 
-const PEAK_HEIGHT = /^\d+ m$/;
+const PEAK_HEIGHT = /^\d+ m$/u;
 
 test("the island rises with its tribes, runs time and shows the settings of a power", async ({ page }, testInfo) => {
   await openIsland(page);

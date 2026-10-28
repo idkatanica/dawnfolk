@@ -58,14 +58,14 @@ function PowerSettingsContent({ powerId }: { readonly powerId: PowerId }) {
   return (
     <section aria-label={`${power.name} settings`} className="@container flex min-h-0 flex-1 flex-col gap-3 p-3">
       <header className="flex items-center gap-2.5">
-        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-ink/6">
+        <span className="bg-ink/6 grid size-9 shrink-0 place-items-center rounded-xl">
           <GameIcon name={POWER_ICONS[powerId]} size={28} />
         </span>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <h2 className="truncate font-semibold text-ink text-sm leading-tight">{power.name}</h2>
+          <h2 className="text-ink truncate text-sm leading-tight font-semibold">{power.name}</h2>
 
-          <p className="truncate text-ink-muted text-xs" title={power.description}>
+          <p className="text-ink-muted truncate text-xs" title={power.description}>
             {USAGE_HINTS[power.usage]}
           </p>
         </div>

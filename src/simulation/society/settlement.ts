@@ -417,6 +417,14 @@ function chooseSettlers(members: readonly Person[]): Person[] {
   return settlers;
 }
 
+function moveToTribe(person: Person, from: Tribe, to: Tribe): void {
+  dropJob(from, person);
+  from.memberCount -= 1;
+  to.memberCount += 1;
+  person.tribeId = to.id;
+  person.homeId = null;
+}
+
 export function considerSplit(tribe: Tribe, members: readonly Person[], context: SocietyContext): void {
   if (!canSplit(tribe, members, context)) {
     return;
@@ -444,7 +452,7 @@ export function considerSplit(tribe: Tribe, members: readonly Person[], context:
   shareWithOffshoot(tribe, offshoot, context);
 
   for (const person of settlers) {
-    context.people.moveToTribe(person, tribe, offshoot);
+    moveToTribe(person, tribe, offshoot);
   }
 
   context.chronicle.record({

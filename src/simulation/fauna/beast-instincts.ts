@@ -180,6 +180,78 @@ function refill<Value>(target: Map<number, Value>, source: ReadonlyMap<number, V
   }
 }
 
+export function isHurt(animal: Animal): boolean {
+  return animal.health < ANIMALS[animal.kind].health * HURT_SHARE;
+}
+
+function prowl(pack: Pack, mood: PackMood, members: readonly Animal[], tick: FaunaTick): void {
+  const [leader] = members;
+
+  const isTame = tick.rules.nature.beastBoldness <= 0;
+
+  if (leader === undefined || mood.hunt !== null || mood.hunger < PROWL_HUNGER || isTame) {
+    return;
+  }
+
+  const scent = tick.threats.people.nearest(leader.mover.x, leader.mover.z, PROWL_RADIUS);
+
+  if (scent === null) {
+    return;
+  }
+
+  const awayX = leader.mover.x - scent.x;
+  const awayZ = leader.mover.z - scent.z;
+  const distance = Math.max(1, Math.hypot(awayX, awayZ));
+
+  pack.goalX = scent.x + (awayX / distance) * PROWL_STAND_OFF;
+  pack.goalZ = scent.z + (awayZ / distance) * PROWL_STAND_OFF;
+}
+
+function herdBull(wounded: Animal, herdMates: readonly Animal[]): Animal | null {
+  let bull: Animal | null = null;
+
+  for (const mate of herdMates) {
+    const isAdult = mate.isAlive && mate.youth <= ADULT_YOUTH && mate !== wounded;
+    const isNear = Math.hypot(mate.mover.x - wounded.mover.x, mate.mover.z - wounded.mover.z) < HERD_GUARD_RADIUS;
+
+    if (isAdult && isNear && (bull === null || mate.health > bull.health)) {
+      bull = mate;
+    }
+  }
+
+  return bull;
+}
+
+function holdStill(animal: Animal, pose: Animal["pose"]): void {
+  animal.pose = pose;
+  animal.speed = 0;
+  stopMoving(animal.mover);
+}
+
+function followHunt(mood: PackMood, hunt: PackHunt, members: readonly Animal[], tick: FaunaTick): void {
+  hunt.seconds += tick.seconds;
+
+  const prey = tick.threats.people.locate(hunt.preyId);
+
+  if (prey === null) {
+    mood.hunt = null;
+    mood.hunger = hunt.hasDrawnBlood ? 0 : mood.hunger;
+    mood.restDays = hunt.hasDrawnBlood ? REST_AFTER_FEAST_DAYS : REST_AFTER_FAILURE_DAYS;
+
+    return;
+  }
+
+  const isBroken = members.length < hunt.startingSize || members.some((member) => isHurt(member));
+
+  const isGuarded = prey.isSheltered || prey.companions >= GROUP_COMPANIONS;
+
+  if (isGuarded || isBroken || hunt.seconds > LONGEST_HUNT_SECONDS) {
+    mood.hunt = null;
+    mood.restDays = REST_AFTER_FAILURE_DAYS;
+    scatter(members, prey);
+  }
+}
+
 export class BeastInstincts {
   readonly #chaseRandom: RandomSource;
   readonly #charges = new Map<number, Charge>();
@@ -280,7 +352,7 @@ export class BeastInstincts {
 
   act(animal: Animal, packHunt: PackHunt | null, tick: FaunaTick): void {
     if (this.#flinches.has(animal.id)) {
-      this.#holdStill(animal, "flinch");
+      holdStill(animal, "flinch");
 
       return;
     }
@@ -317,7 +389,7 @@ export class BeastInstincts {
       return;
     }
 
-    const bull = this.#herdBull(animal, herdMates);
+    const bull = herdBull(animal, herdMates);
 
     if (bull !== null && this.#random.chance(BULL_CHARGE_CHANCE * boldness)) {
       this.#startCharge(bull, assailant.id, "trample");
@@ -326,10 +398,6 @@ export class BeastInstincts {
 
   flinch(animal: Animal): void {
     this.#flinches.set(animal.id, FLINCH_SECONDS);
-  }
-
-  isHurt(animal: Animal): boolean {
-    return animal.health < ANIMALS[animal.kind].health * HURT_SHARE;
   }
 
   forget(animal: Animal): void {
@@ -361,7 +429,7 @@ export class BeastInstincts {
     mood.restDays -= tick.days;
 
     if (mood.hunt !== null) {
-      this.#followHunt(mood, mood.hunt, members, tick);
+      followHunt(mood, mood.hunt, members, tick);
 
       return;
     }
@@ -385,7 +453,7 @@ export class BeastInstincts {
       return;
     }
 
-    this.#prowl(pack, mood, members, tick);
+    prowl(pack, mood, members, tick);
   }
 
   #trackPrey(pack: Pack, mood: PackMood, members: readonly Animal[], tick: FaunaTick): boolean {
@@ -447,7 +515,7 @@ export class BeastInstincts {
     const prey = this.#prey.find(chase.preyId);
 
     if (prey === null || !prey.isAlive) {
-      this.#holdStill(animal, "walk");
+      holdStill(animal, "walk");
 
       return;
     }
@@ -469,7 +537,7 @@ export class BeastInstincts {
     }
 
     strike.cooldownSeconds = between(this.#chaseRandom, POUNCE_SECONDS);
-    this.#holdStill(animal, "attack");
+    holdStill(animal, "attack");
     faceTowards(animal.mover, x, z);
 
     if (this.#chaseRandom.chance(POUNCE_CHANCE)) {
@@ -488,33 +556,10 @@ export class BeastInstincts {
     return mood.chase;
   }
 
-  #prowl(pack: Pack, mood: PackMood, members: readonly Animal[], tick: FaunaTick): void {
-    const [leader] = members;
-
-    const isTame = tick.rules.nature.beastBoldness <= 0;
-
-    if (leader === undefined || mood.hunt !== null || mood.hunger < PROWL_HUNGER || isTame) {
-      return;
-    }
-
-    const scent = tick.threats.people.nearest(leader.mover.x, leader.mover.z, PROWL_RADIUS);
-
-    if (scent === null) {
-      return;
-    }
-
-    const awayX = leader.mover.x - scent.x;
-    const awayZ = leader.mover.z - scent.z;
-    const distance = Math.max(1, Math.hypot(awayX, awayZ));
-
-    pack.goalX = scent.x + (awayX / distance) * PROWL_STAND_OFF;
-    pack.goalZ = scent.z + (awayZ / distance) * PROWL_STAND_OFF;
-  }
-
   #considerHunt(mood: PackMood, members: readonly Animal[], tick: FaunaTick): void {
     const [leader] = members;
 
-    if (leader === undefined || members.some((member) => this.isHurt(member))) {
+    if (leader === undefined || members.some((member) => isHurt(member))) {
       return;
     }
 
@@ -533,30 +578,6 @@ export class BeastInstincts {
     mood.hunt = { hasDrawnBlood: false, preyId: quarry.id, seconds: 0, startingSize: members.length };
   }
 
-  #followHunt(mood: PackMood, hunt: PackHunt, members: readonly Animal[], tick: FaunaTick): void {
-    hunt.seconds += tick.seconds;
-
-    const prey = tick.threats.people.locate(hunt.preyId);
-
-    if (prey === null) {
-      mood.hunt = null;
-      mood.hunger = hunt.hasDrawnBlood ? 0 : mood.hunger;
-      mood.restDays = hunt.hasDrawnBlood ? REST_AFTER_FEAST_DAYS : REST_AFTER_FAILURE_DAYS;
-
-      return;
-    }
-
-    const isBroken = members.length < hunt.startingSize || members.some((member) => this.isHurt(member));
-
-    const isGuarded = prey.isSheltered || prey.companions >= GROUP_COMPANIONS;
-
-    if (isGuarded || isBroken || hunt.seconds > LONGEST_HUNT_SECONDS) {
-      mood.hunt = null;
-      mood.restDays = REST_AFTER_FAILURE_DAYS;
-      scatter(members, prey);
-    }
-  }
-
   #hunt(animal: Animal, hunt: PackHunt, tick: FaunaTick): void {
     const prey = tick.threats.people.locate(hunt.preyId);
 
@@ -573,7 +594,7 @@ export class BeastInstincts {
       return;
     }
 
-    this.#holdStill(animal, "attack");
+    holdStill(animal, "attack");
     faceTowards(animal.mover, prey.x, prey.z);
     strike.cooldownSeconds -= tick.seconds;
 
@@ -626,7 +647,7 @@ export class BeastInstincts {
     }
 
     charge.hasStruck = true;
-    this.#holdStill(animal, "attack");
+    holdStill(animal, "attack");
     faceTowards(animal.mover, target.x, target.z);
     tick.threats.people.wound(target.id, {
       attacker: animal,
@@ -649,21 +670,6 @@ export class BeastInstincts {
     this.#charges.set(animal.id, { blow, hasStruck: false, seconds: 0, targetId });
   }
 
-  #herdBull(wounded: Animal, herdMates: readonly Animal[]): Animal | null {
-    let bull: Animal | null = null;
-
-    for (const mate of herdMates) {
-      const isAdult = mate.isAlive && mate.youth <= ADULT_YOUTH && mate !== wounded;
-      const isNear = Math.hypot(mate.mover.x - wounded.mover.x, mate.mover.z - wounded.mover.z) < HERD_GUARD_RADIUS;
-
-      if (isAdult && isNear && (bull === null || mate.health > bull.health)) {
-        bull = mate;
-      }
-    }
-
-    return bull;
-  }
-
   #runAt(animal: Animal, target: Waypoint, strike: Strike, speed: number, tick: FaunaTick): void {
     strike.retargetSeconds -= tick.seconds;
 
@@ -675,12 +681,6 @@ export class BeastInstincts {
     animal.pose = "charge";
     animal.speed = speed;
     moveAlong(animal.mover, tick.seconds, speed, this.#world, this.#navigation);
-  }
-
-  #holdStill(animal: Animal, pose: Animal["pose"]): void {
-    animal.pose = pose;
-    animal.speed = 0;
-    stopMoving(animal.mover);
   }
 
   #strikeOf(animal: Animal, random: RandomSource = this.#random): Strike {

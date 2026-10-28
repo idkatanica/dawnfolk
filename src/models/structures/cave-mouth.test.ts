@@ -1,5 +1,5 @@
 import { Vector3 } from "three";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it as test } from "vitest";
 import { MaterialSlot } from "../materials.ts";
 import { vertexCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
@@ -15,25 +15,25 @@ const INSIDE = new Vector3(0, 1.5, -0.5);
 describe.each([0.11, 0.48, 0.93])("cave mouth %s", (seed) => {
   const cave = meshCaveMouth({ bury: BURY, look: LOOK, rise: 9, seed, width: WIDTH });
 
-  it("builds clean geometry", () => {
+  test("builds clean geometry", () => {
     expect(meshProblems(cave)).toEqual([]);
   });
 
-  it("opens toward the river and leaves room for the water to come out", () => {
+  test("opens toward the river and leaves room for the water to come out", () => {
     expect(outermostHit(cave, INSIDE, new Vector3(0, 0, 1))).toBeNull();
   });
 
-  it("closes the mouth with rock above and on both sides", () => {
+  test("closes the mouth with rock above and on both sides", () => {
     for (const direction of [new Vector3(0, 1, 0), new Vector3(1, 0, 0), new Vector3(-1, 0, 0)]) {
       expect(outermostHit(cave, INSIDE, direction)).not.toBeNull();
     }
   });
 
-  it("is one solid outcrop without loose stones", () => {
+  test("is one solid outcrop without loose stones", () => {
     expect(meshPieces(cave)).toHaveLength(1);
   });
 
-  it("darkens the inside so the mouth reads as depth without going black", () => {
+  test("darkens the inside so the mouth reads as depth without going black", () => {
     const shades: number[] = [];
 
     for (let vertex = 0; vertex < vertexCount(cave); vertex += 1) {
@@ -49,13 +49,13 @@ describe.each([0.11, 0.48, 0.93])("cave mouth %s", (seed) => {
     expect(Math.min(...shades)).toBeGreaterThan(0.1);
   });
 
-  it("dips its sill under the water and buries its edges as deep as the ground falls", () => {
+  test("dips its sill under the water and buries its edges as deep as the ground falls", () => {
     expect(outermostHit(cave, new Vector3(WIDTH / 2 - 0.6, 0, -1), new Vector3(1, 0, 0))).not.toBeNull();
     expect(outermostHit(cave, new Vector3(-WIDTH / 2 + 0.6, 0, -1), new Vector3(-1, 0, 0))).not.toBeNull();
     expect(cave.bounds.minimum[1]).toBeLessThanOrEqual(-BURY + 0.01);
   });
 
-  it("rises above the mouth to meet the slope behind it", () => {
+  test("rises above the mouth to meet the slope behind it", () => {
     expect(cave.bounds.maximum[1]).toBeGreaterThan(8);
     expect(cave.bounds.minimum[1]).toBeLessThan(0);
   });

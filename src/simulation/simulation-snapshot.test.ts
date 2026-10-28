@@ -98,10 +98,8 @@ describe("world snapshots", () => {
     expect(copy.society.tribes().length).toBeGreaterThan(0);
     expect(copy.calendar.day).toBeGreaterThan(original.calendar.day);
 
-    for (const tribe of copy.society.tribes()) {
-      if (tribeIds.includes(tribe.id)) {
-        expect(tribe.technologies.has("fire")).toBe(true);
-      }
+    for (const tribe of copy.society.tribes().filter((survivor) => tribeIds.includes(survivor.id))) {
+      expect(tribe.technologies.has("fire")).toBe(true);
     }
   });
 

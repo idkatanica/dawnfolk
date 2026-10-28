@@ -140,7 +140,7 @@ function BackRow({ onBack, onClose }: { readonly onBack: () => void; readonly on
     <div className="flex items-center justify-between">
       <TextButton
         aria-label="Back to the journal"
-        className="-ml-1 h-8 pointer-coarse:h-10 gap-1 pr-3 pl-1.5"
+        className="-ml-1 h-8 gap-1 pr-3 pl-1.5 pointer-coarse:h-10"
         onClick={onBack}
         tone="quiet"
       >
@@ -165,20 +165,20 @@ export function InspectorCard({ inspection, onBack, onClose }: InspectorCardProp
       {onBack === undefined ? null : <BackRow onBack={onBack} onClose={onClose} />}
 
       <header className="flex items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-paper-hover">
+        <span className="bg-paper-hover grid size-10 shrink-0 place-items-center rounded-xl">
           <GameIcon name={KIND_ICONS[inspection.kind]} size={30} />
         </span>
 
         <div className="min-w-0 flex-1">
           <h2
-            className="truncate font-semibold text-ink text-lg leading-tight outline-none"
+            className="text-ink truncate text-lg leading-tight font-semibold outline-none"
             data-panel-heading=""
             tabIndex={-1}
           >
             {titleOf(inspection)}
           </h2>
 
-          <p className="truncate text-ink-muted text-xs">{subtitleOf(inspection)}</p>
+          <p className="text-ink-muted truncate text-xs">{subtitleOf(inspection)}</p>
         </div>
 
         <FollowButton inspection={inspection} />

@@ -35,6 +35,12 @@ function isCrowded(tick: PersonTick): boolean {
 
 const MELEE_POSES: Readonly<Record<"none" | "spear", PersonPose>> = { none: "brawl", spear: "thrust" };
 
+function faceFoe(tick: PersonTick, foe: Foe): void {
+  const target = foeMover(foe);
+
+  faceTowards(tick.person.mover, target.x, target.z);
+}
+
 export class Engagement {
   readonly weapon: CarriedWeapon;
   #cooldownSeconds: number;
@@ -84,7 +90,7 @@ export class Engagement {
     const isGuarding = tick.context.rivalry.ledger.isGuarding(person.id);
 
     standStill(person, isGuarding || kind === "bow" ? "block" : MELEE_POSES[kind]);
-    this.#face(tick, foe);
+    faceFoe(tick, foe);
     this.#cooldownSeconds -= tick.seconds;
 
     if (this.#cooldownSeconds > 0 || isGuarding) {
@@ -119,7 +125,7 @@ export class Engagement {
     }
 
     standStill(person, "shoot");
-    this.#face(tick, foe);
+    faceFoe(tick, foe);
     this.#cooldownSeconds -= tick.seconds;
 
     if (this.#cooldownSeconds > 0) {
@@ -198,12 +204,6 @@ export class Engagement {
     }
 
     walk(tick, walkSpeed(person) * 1.3);
-  }
-
-  #face(tick: PersonTick, foe: Foe): void {
-    const target = foeMover(foe);
-
-    faceTowards(tick.person.mover, target.x, target.z);
   }
 
   #nextCooldown(tick: PersonTick): number {

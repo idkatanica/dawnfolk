@@ -74,7 +74,7 @@ function withoutInvalid(parameters: Record<string, string>, issues: readonly Par
 
 const WORLD_PARAMETER = "world";
 
-const worldIdSchema = z.string().regex(/^[\w-]{1,64}$/);
+const worldIdSchema = z.string().regex(/^[\w-]{1,64}$/u);
 
 export function createWorldId(): string {
   return crypto.randomUUID();
