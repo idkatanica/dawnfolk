@@ -5,9 +5,10 @@ import type { LaunchOptions } from "./launch-options.ts";
 
 interface GameViewProps {
   readonly launch: LaunchOptions;
+  readonly worldId: string;
 }
 
-export function GameView({ launch }: GameViewProps) {
+export function GameView({ launch, worldId }: GameViewProps) {
   const containerReference = useRef<HTMLDivElement>(null);
   const setStatus = useEngineStore((state) => state.setStatus);
 
@@ -18,10 +19,10 @@ export function GameView({ launch }: GameViewProps) {
       return;
     }
 
-    const launcher = new EngineLauncher(container, launch, setStatus);
+    const launcher = new EngineLauncher(container, launch, worldId, setStatus);
 
     return () => launcher.cancel();
-  }, [launch, setStatus]);
+  }, [launch, setStatus, worldId]);
 
   return <div className="absolute inset-0" ref={containerReference} />;
 }

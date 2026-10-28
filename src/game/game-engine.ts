@@ -4,6 +4,8 @@ import { createRenderer } from "../rendering/create-renderer.ts";
 import { type QualityLevel, RENDER_QUALITY } from "../rendering/render-quality.ts";
 import { WorldRenderer } from "../rendering/world-renderer.ts";
 import { clamp } from "../shared/math.ts";
+import type { ChronicleEntry } from "../simulation/chronicle.ts";
+import type { SavedWorldState } from "../simulation/saved-world.ts";
 import { type CameraState, GodCamera } from "./camera/god-camera.ts";
 import type { EngineHandle } from "./engine-handle.ts";
 import { FramePacer } from "./frame-pacer.ts";
@@ -17,12 +19,16 @@ import type { Landmark } from "./landmarks.ts";
 import { type SimulationConnection, WorkerSimulationConnection } from "./simulation-connection.ts";
 import { type PowerSelection, PowerTool } from "./tools/power-tool.ts";
 
+export type WorldSource =
+  | { readonly kind: "new"; readonly request: WorldRequest }
+  | { readonly journal: readonly ChronicleEntry[]; readonly kind: "saved"; readonly state: SavedWorldState };
+
 interface EngineOptions {
   readonly camera: Partial<CameraState>;
   readonly canvas: HTMLCanvasElement;
   readonly onProgress: (progress: GenerationProgress) => void;
   readonly quality: QualityLevel;
-  readonly request: WorldRequest;
+  readonly world: WorldSource;
 }
 
 interface EngineParts {
@@ -43,14 +49,26 @@ const FOLLOW_DISTANCE = 45;
 const VIEW_FOCUS_STEP = 50;
 const ACTIVITY_EVENTS = ["keydown", "pointerdown", "pointermove", "wheel"] as const;
 
+function openSession(
+  connection: SimulationConnection,
+  world: WorldSource,
+  onProgress: (progress: GenerationProgress) => void
+): Promise<GameSession> {
+  if (world.kind === "saved") {
+    return GameSession.load(connection, world.state, { journal: world.journal, onProgress });
+  }
+
+  return GameSession.create(connection, world.request, { onProgress });
+}
+
 async function createSessionOrRelease(
   renderer: WebGPURenderer,
   connection: SimulationConnection,
-  request: WorldRequest,
+  world: WorldSource,
   onProgress: (progress: GenerationProgress) => void
 ): Promise<GameSession> {
   try {
-    return await GameSession.create(connection, request, { onProgress });
+    return await openSession(connection, world, onProgress);
   } catch (error) {
     renderer.dispose();
     connection.dispose();
@@ -139,7 +157,7 @@ export class GameEngine implements EngineHandle {
     const session = await createSessionOrRelease(
       renderer,
       new WorkerSimulationConnection(),
-      options.request,
+      options.world,
       options.onProgress
     );
 

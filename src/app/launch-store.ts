@@ -1,38 +1,84 @@
 import { create } from "zustand";
-import { choosesWorld, type LaunchOptions, readLaunchOptions } from "./launch-options.ts";
+import type { IslandShapeKind } from "../world/island-shape.ts";
+import {
+  choosesWorld,
+  createWorldId,
+  type LaunchOptions,
+  readLaunchOptions,
+  readWorldId,
+  withWorldId,
+} from "./launch-options.ts";
 
 export type LaunchChanges = Partial<Pick<LaunchOptions, "name" | "quality" | "seed" | "shape">>;
 
+export interface WorldChoice {
+  readonly name: string;
+  readonly seed: number;
+  readonly shape: IslandShapeKind;
+}
+
 interface LaunchStore {
+  readonly chooseWorld: () => void;
+  readonly continueWorld: (worldId: string, choice: WorldChoice) => void;
+  readonly createWorld: (choice: WorldChoice) => void;
   readonly isChoosingWorld: boolean;
   readonly launch: LaunchOptions;
   readonly relaunch: (changes: LaunchChanges) => void;
+  readonly worldId: string;
 }
 
-function rememberInAddress(launch: LaunchOptions): void {
-  const parameters = new URLSearchParams({
-    name: launch.name,
-    quality: launch.quality,
-    seed: String(launch.seed),
-    shape: launch.shape,
-  });
-
+function replaceAddress(search: string): void {
   try {
-    window.history.replaceState(null, "", `?${parameters.toString()}`);
+    window.history.replaceState(null, "", search);
   } catch (error) {
     console.warn("The address could not be updated", error);
   }
 }
 
-export const useLaunchStore = create<LaunchStore>()((set) => ({
-  isChoosingWorld: !choosesWorld(window.location.search),
-  launch: readLaunchOptions(window.location.search),
-  relaunch: (changes) =>
-    set((state) => {
-      const launch: LaunchOptions = { ...state.launch, ...changes, camera: {}, hours: null, isPaused: false };
+function rememberInAddress(launch: LaunchOptions, worldId: string): void {
+  const parameters = new URLSearchParams({
+    name: launch.name,
+    quality: launch.quality,
+    seed: String(launch.seed),
+    shape: launch.shape,
+    world: worldId,
+  });
 
-      rememberInAddress(launch);
+  replaceAddress(`?${parameters.toString()}`);
+}
 
-      return { isChoosingWorld: false, launch };
-    }),
-}));
+export function rememberWorldInAddress(worldId: string): void {
+  if (readWorldId(window.location.search) === worldId) {
+    return;
+  }
+
+  replaceAddress(withWorldId(window.location.search, worldId));
+}
+
+function initialWorldId(): string {
+  const worldId = readWorldId(window.location.search);
+
+  return worldId === null ? createWorldId() : worldId;
+}
+
+export const useLaunchStore = create<LaunchStore>()((set, get) => {
+  function launchWorld(worldId: string, changes: LaunchChanges): void {
+    const launch: LaunchOptions = { ...get().launch, ...changes, camera: {}, hours: null, isPaused: false };
+
+    rememberInAddress(launch, worldId);
+    set({ isChoosingWorld: false, launch, worldId });
+  }
+
+  return {
+    chooseWorld: () => {
+      replaceAddress(window.location.pathname);
+      set({ isChoosingWorld: true });
+    },
+    continueWorld: (worldId, choice) => launchWorld(worldId, choice),
+    createWorld: (choice) => launchWorld(createWorldId(), choice),
+    isChoosingWorld: !choosesWorld(window.location.search),
+    launch: readLaunchOptions(window.location.search),
+    relaunch: (changes) => launchWorld(get().worldId, changes),
+    worldId: initialWorldId(),
+  };
+});

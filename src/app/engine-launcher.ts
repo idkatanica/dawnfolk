@@ -1,5 +1,6 @@
+import { readSavedWorld } from "../features/saves/save-database.ts";
 import type { EngineHandle } from "../game/engine-handle.ts";
-import type { GameEngine } from "../game/game-engine.ts";
+import type { GameEngine, WorldSource } from "../game/game-engine.ts";
 import type { GameSession } from "../game/game-session.ts";
 import { DEFAULT_GENERATION_OPTIONS, type GenerationProgress } from "../generation/generation-options.ts";
 import { toError } from "../shared/errors.ts";
@@ -29,6 +30,19 @@ export function reportStop(session: GameSession, onStatus: EngineStatusListener)
   });
 }
 
+async function worldSourceFor(launch: LaunchOptions, worldId: string): Promise<WorldSource> {
+  const saved = await readSavedWorld(worldId);
+
+  if (saved === null) {
+    return {
+      kind: "new",
+      request: { options: { ...DEFAULT_GENERATION_OPTIONS, shape: launch.shape }, seed: launch.seed },
+    };
+  }
+
+  return { journal: saved.journal, kind: "saved", state: saved.state };
+}
+
 function createCanvas(container: HTMLElement): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
 
@@ -46,11 +60,11 @@ export class EngineLauncher {
   #engine: GameEngine | null = null;
   #state: "cancelled" | "running" | "starting" = "starting";
 
-  constructor(container: HTMLElement, launch: LaunchOptions, onStatus: EngineStatusListener) {
+  constructor(container: HTMLElement, launch: LaunchOptions, worldId: string, onStatus: EngineStatusListener) {
     this.#canvas = createCanvas(container);
     this.#onStatus = onStatus;
     this.#onStatus({ kind: "loading", progress: null });
-    queueMicrotask(() => this.#startUnlessCancelled(launch));
+    queueMicrotask(() => this.#startUnlessCancelled(launch, worldId));
   }
 
   cancel(): void {
@@ -64,23 +78,23 @@ export class EngineLauncher {
     this.#canvas.remove();
   }
 
-  #startUnlessCancelled(launch: LaunchOptions): void {
+  #startUnlessCancelled(launch: LaunchOptions, worldId: string): void {
     if (this.#state === "cancelled") {
       return;
     }
 
-    this.#start(launch).catch((error: unknown) => this.#fail(error));
+    this.#start(launch, worldId).catch((error: unknown) => this.#fail(error));
   }
 
-  async #start(launch: LaunchOptions): Promise<void> {
-    const [engineModule] = await Promise.all([loadGameEngine(), loadHud()]);
+  async #start(launch: LaunchOptions, worldId: string): Promise<void> {
+    const [engineModule, world] = await Promise.all([loadGameEngine(), worldSourceFor(launch, worldId), loadHud()]);
 
     const engine = await engineModule.GameEngine.start({
       camera: launch.camera,
       canvas: this.#canvas,
       onProgress: (progress) => this.#progress(progress),
       quality: launch.quality,
-      request: { options: { ...DEFAULT_GENERATION_OPTIONS, shape: launch.shape }, seed: launch.seed },
+      world,
     });
 
     if (this.#state === "cancelled") {

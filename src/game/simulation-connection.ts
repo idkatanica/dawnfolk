@@ -1,13 +1,17 @@
-import { proxy, type Remote, wrap } from "comlink";
+import { proxy, type Remote, transfer, wrap } from "comlink";
 import type { GenerationProgress, WorldRequest } from "../generation/generation-options.ts";
+import { buffersWithin } from "../shared/buffers.ts";
 import type { SimulationCommand } from "../simulation/commands.ts";
 import type { InitialWorld, SimulationFrame } from "../simulation/frame.ts";
+import type { SavedWorldState } from "../simulation/saved-world.ts";
 import type { SimulationWorkerApi } from "../workers/simulation-worker-api.ts";
 
 export interface SimulationConnection {
   advance: (realSeconds: number) => Promise<SimulationFrame>;
   createWorld: (request: WorldRequest, onProgress: (progress: GenerationProgress) => void) => Promise<InitialWorld>;
   dispose: () => void;
+  loadWorld: (saved: SavedWorldState, onProgress: (progress: GenerationProgress) => void) => Promise<InitialWorld>;
+  saveWorld: () => Promise<SavedWorldState | null>;
   send: (command: SimulationCommand) => void;
 }
 
@@ -58,6 +62,18 @@ export class WorkerSimulationConnection implements SimulationConnection {
     return Promise.race([this.#remote.createWorld(request, proxy(onProgress)), this.#failure]);
   }
 
+  loadWorld(saved: SavedWorldState, onProgress: (progress: GenerationProgress) => void): Promise<InitialWorld> {
+    this.#commands.splice(0);
+
+    const sent = transfer(saved, buffersWithin(saved));
+
+    return Promise.race([this.#remote.loadWorld(sent, proxy(onProgress)), this.#failure]);
+  }
+
+  saveWorld(): Promise<SavedWorldState | null> {
+    return Promise.race([this.#remote.saveWorld(), this.#failure]);
+  }
+
   dispose(): void {
     this.#worker.terminate();
   }
@@ -83,6 +99,16 @@ export class LocalSimulationConnection implements SimulationConnection {
     this.#commands.splice(0);
 
     return settle(() => this.#api.createWorld(request, onProgress));
+  }
+
+  loadWorld(saved: SavedWorldState, onProgress: (progress: GenerationProgress) => void): Promise<InitialWorld> {
+    this.#commands.splice(0);
+
+    return settle(() => this.#api.loadWorld(saved, onProgress));
+  }
+
+  saveWorld(): Promise<SavedWorldState | null> {
+    return settle(() => this.#api.saveWorld());
   }
 
   dispose(): void {

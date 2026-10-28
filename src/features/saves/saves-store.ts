@@ -1,0 +1,100 @@
+import { create } from "zustand";
+import type { GameSession } from "../../game/game-session.ts";
+import { deleteSavedWorld, listSavedWorlds, type SavedWorldListing } from "./save-database.ts";
+import { type SavedWorldIdentity, type SaveOutcome, WorldSaver } from "./world-saver.ts";
+
+const AUTOSAVE_MILLISECONDS = 60_000;
+
+interface SavesStore {
+  readonly hasFailed: boolean;
+  readonly isListed: boolean;
+  readonly isSaving: boolean;
+  readonly lastSavedAt: number | null;
+  readonly refresh: () => Promise<void>;
+  readonly remove: (id: string) => Promise<void>;
+  readonly saveNow: () => Promise<SaveOutcome>;
+  readonly saver: WorldSaver | null;
+  readonly worlds: readonly SavedWorldListing[];
+}
+
+export const useSavesStore = create<SavesStore>()((set, get) => ({
+  hasFailed: false,
+  isListed: false,
+  isSaving: false,
+  lastSavedAt: null,
+  refresh: async () => {
+    const worlds = await listSavedWorlds();
+
+    set({ isListed: true, worlds });
+  },
+  remove: async (id) => {
+    await deleteSavedWorld(id);
+    await get().refresh();
+  },
+  saveNow: async () => {
+    const { saver } = get();
+
+    if (saver === null) {
+      return "unchanged";
+    }
+
+    const outcome = await saver.saveSoon();
+
+    set({ hasFailed: outcome === "failed" });
+
+    return outcome;
+  },
+  saver: null,
+  worlds: [],
+}));
+
+export function saveBeforeLeaving(leave: () => void): void {
+  const { saver } = useSavesStore.getState();
+
+  if (saver === null) {
+    leave();
+
+    return;
+  }
+
+  useSavesStore.getState().saveNow().finally(leave);
+}
+
+function reportOutcome(outcome: SaveOutcome): void {
+  if (outcome === "failed") {
+    useSavesStore.setState({ hasFailed: true });
+  }
+}
+
+export function connectAutosave(session: GameSession, identity: SavedWorldIdentity): () => void {
+  const saver = new WorldSaver(session, identity, {
+    onSaved: (savedAt) => useSavesStore.setState({ hasFailed: false, lastSavedAt: savedAt }),
+    onSaving: (isSaving) => useSavesStore.setState({ isSaving }),
+  });
+
+  function autosave(): void {
+    saver.save().then(reportOutcome, () => undefined);
+  }
+
+  function saveWhenHidden(): void {
+    if (document.visibilityState === "hidden") {
+      saver.saveSoon().then(reportOutcome, () => undefined);
+    }
+  }
+
+  const interval = window.setInterval(autosave, AUTOSAVE_MILLISECONDS);
+
+  document.addEventListener("visibilitychange", saveWhenHidden);
+  window.addEventListener("pagehide", autosave);
+  useSavesStore.setState({ hasFailed: false, isSaving: false, lastSavedAt: null, saver });
+
+  return () => {
+    window.clearInterval(interval);
+    document.removeEventListener("visibilitychange", saveWhenHidden);
+    window.removeEventListener("pagehide", autosave);
+
+    if (useSavesStore.getState().saver === saver) {
+      useSavesStore.setState({ isSaving: false, saver: null });
+    }
+  };
+}
