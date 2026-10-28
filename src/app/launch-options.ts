@@ -7,22 +7,6 @@ import { QUALITY_LEVELS, type QualityLevel } from "../rendering/render-quality.t
 import { ISLAND_SHAPES, type IslandShapeKind } from "../world/island-shape.ts";
 import { storedQuality } from "./preferences.ts";
 
-export interface LaunchOptions {
-  readonly camera: Partial<CameraState>;
-  readonly hours: number | null;
-  readonly isPaused: boolean;
-  readonly name: string;
-  readonly quality: QualityLevel;
-  readonly seed: number;
-  readonly shape: IslandShapeKind;
-}
-
-type LaunchParameters = z.output<typeof launchSchema>;
-
-interface ParameterIssue {
-  readonly path: readonly PropertyKey[];
-}
-
 const WORLD_PARAMETER = "world";
 
 const cameraSchema = z
@@ -42,6 +26,22 @@ const launchSchema = z.object({
 });
 
 const worldIdSchema = z.string().regex(/^[\w-]{1,64}$/u);
+
+export interface LaunchOptions {
+  readonly camera: Partial<CameraState>;
+  readonly hours: number | null;
+  readonly isPaused: boolean;
+  readonly name: string;
+  readonly quality: QualityLevel;
+  readonly seed: number;
+  readonly shape: IslandShapeKind;
+}
+
+type LaunchParameters = z.output<typeof launchSchema>;
+
+interface ParameterIssue {
+  readonly path: readonly PropertyKey[];
+}
 
 function defaultQuality(): QualityLevel {
   const stored = storedQuality();

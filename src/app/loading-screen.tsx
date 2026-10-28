@@ -16,6 +16,17 @@ const STAGE_LABELS: Readonly<Record<GenerationStage, string>> = {
   water: "Filling rivers and lakes",
 };
 
+interface LoadingSceneProps {
+  readonly name: string;
+  readonly progress: GenerationProgress | null;
+  readonly seed: number;
+}
+
+interface FailureMessageProps {
+  readonly message: string;
+  readonly title: string;
+}
+
 function stageLabel(progress: GenerationProgress | null): string {
   if (progress === null) {
     return "Waking the world";
@@ -26,12 +37,6 @@ function stageLabel(progress: GenerationProgress | null): string {
 
 function startAgain(): void {
   useLaunchStore.getState().relaunch({});
-}
-
-interface LoadingSceneProps {
-  readonly name: string;
-  readonly progress: GenerationProgress | null;
-  readonly seed: number;
 }
 
 function LoadingScene({ name, progress, seed }: LoadingSceneProps) {
@@ -56,11 +61,6 @@ function LoadingScene({ name, progress, seed }: LoadingSceneProps) {
       </div>
     </div>
   );
-}
-
-interface FailureMessageProps {
-  readonly message: string;
-  readonly title: string;
 }
 
 function FailureMessage({ message, title }: FailureMessageProps) {

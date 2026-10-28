@@ -4,21 +4,9 @@ import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { Pause } from "lucide-react";
 import { useSendCommand } from "../../app/use-engine.ts";
 import { cn } from "../../design/cn.ts";
-import { SEGMENT, SEGMENT_TRACK } from "../../design/styles.ts";
+import { SEGMENT, SEGMENT_CHOSEN, SEGMENT_TRACK } from "../../design/styles.ts";
 import { SIMULATION_SPEEDS } from "../../simulation/tick.ts";
 import { useWorldStore } from "../world/world-store.ts";
-
-function SpeedOption({ speed }: { readonly speed: number }) {
-  return (
-    <Toggle
-      aria-label={`Speed ${speed} times`}
-      className={cn(SEGMENT, "min-w-8 px-1.5 font-semibold tabular-nums lg:min-w-9 lg:px-2")}
-      value={String(speed)}
-    >
-      {speed}×
-    </Toggle>
-  );
-}
 
 function useTimeControls() {
   const send = useSendCommand();
@@ -46,6 +34,18 @@ function useTimeControls() {
   return { handlePauseToggle, handleSpeedChange, isPaused, speed };
 }
 
+function SpeedOption({ speed }: { readonly speed: number }) {
+  return (
+    <Toggle
+      aria-label={`Speed ${speed} times`}
+      className={cn(SEGMENT, "min-w-8 px-1.5 font-semibold tabular-nums lg:min-w-9 lg:px-2")}
+      value={String(speed)}
+    >
+      {speed}×
+    </Toggle>
+  );
+}
+
 export function TimeControls() {
   const { handlePauseToggle, handleSpeedChange, isPaused, speed } = useTimeControls();
 
@@ -55,7 +55,7 @@ export function TimeControls() {
     <div className={cn(SEGMENT_TRACK, "items-center p-1")}>
       <Button
         aria-label={isPaused ? "Resume" : "Pause"}
-        className={cn(SEGMENT, "w-8 px-0", { "text-ink shadow-segment bg-white": isPaused })}
+        className={cn(SEGMENT, "w-8 px-0", { [SEGMENT_CHOSEN]: isPaused })}
         onClick={handlePauseToggle}
       >
         <Pause aria-hidden="true" fill="currentColor" size={14} />

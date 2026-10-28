@@ -6,7 +6,7 @@ import { cn } from "../../design/cn.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
 import { Island } from "../../design/island.tsx";
-import { FOCUS_RING, SEGMENT, SEGMENT_TRACK } from "../../design/styles.ts";
+import { FOCUS_RING, SEGMENT, SEGMENT_CHOSEN, SEGMENT_TRACK } from "../../design/styles.ts";
 import { WithTooltip } from "../../design/tooltip.tsx";
 import { POWER_ICONS } from "./power-icons.tsx";
 import { usePowerStore } from "./power-store.ts";
@@ -23,20 +23,20 @@ const KIND_ICONS: Readonly<Record<PowerCategory, GameIconName>> = {
   life: POWER_ICONS.tribe,
 };
 
+interface KindChoice {
+  readonly chosenKind: PowerCategory;
+  readonly onKindChange: (kind: PowerCategory) => void;
+}
+
+interface KindTabProps extends KindChoice {
+  readonly kind: PowerCategory;
+  readonly name: string;
+}
+
 function initialKind(): PowerCategory {
   const { selectedPowerId } = usePowerStore.getState();
 
   return selectedPowerId === null ? "elements" : POWERS[selectedPowerId].category;
-}
-
-function TileHint({ description, name }: { readonly description: string; readonly name: string }) {
-  return (
-    <span className="flex flex-col gap-0.5">
-      <span className="font-semibold">{name}</span>
-
-      <span className="text-white/75">{description}</span>
-    </span>
-  );
 }
 
 function usePowerSelection(powerId: PowerId) {
@@ -48,6 +48,64 @@ function usePowerSelection(powerId: PowerId) {
   }
 
   return { handleToggle, isSelected };
+}
+
+function useClearPower() {
+  const isSelecting = usePowerStore((state) => state.selectedPowerId === null);
+  const selectPower = usePowerStore((state) => state.selectPower);
+
+  function handleClear(): void {
+    selectPower(null);
+  }
+
+  return { handleClear, isSelecting };
+}
+
+function useKindTab({ chosenKind, kind, onKindChange }: KindChoice & { readonly kind: PowerCategory }) {
+  function handleChoose(): void {
+    onKindChange(kind);
+  }
+
+  return { handleChoose, isChosen: kind === chosenKind };
+}
+
+function useWheelScrollsSideways(rowReference: RefObject<HTMLDivElement | null>): void {
+  useEffect(() => {
+    const row = rowReference.current;
+
+    if (row === null) {
+      return;
+    }
+
+    const scroller = row;
+
+    function handleWheel(event: WheelEvent): void {
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+        return;
+      }
+
+      if (scroller.scrollWidth <= scroller.clientWidth) {
+        return;
+      }
+
+      event.preventDefault();
+      scroller.scrollLeft += event.deltaY;
+    }
+
+    row.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => row.removeEventListener("wheel", handleWheel);
+  }, [rowReference]);
+}
+
+function TileHint({ description, name }: { readonly description: string; readonly name: string }) {
+  return (
+    <span className="flex flex-col gap-0.5">
+      <span className="font-semibold">{name}</span>
+
+      <span className="text-white/75">{description}</span>
+    </span>
+  );
 }
 
 function PowerTile({ powerId }: { readonly powerId: PowerId }) {
@@ -69,17 +127,6 @@ function PowerTile({ powerId }: { readonly powerId: PowerId }) {
   );
 }
 
-function useClearPower() {
-  const isSelecting = usePowerStore((state) => state.selectedPowerId === null);
-  const selectPower = usePowerStore((state) => state.selectPower);
-
-  function handleClear(): void {
-    selectPower(null);
-  }
-
-  return { handleClear, isSelecting };
-}
-
 function SelectTile() {
   const { handleClear, isSelecting } = useClearPower();
 
@@ -97,24 +144,6 @@ function SelectTile() {
   );
 }
 
-interface KindChoice {
-  readonly chosenKind: PowerCategory;
-  readonly onKindChange: (kind: PowerCategory) => void;
-}
-
-function useKindTab({ chosenKind, kind, onKindChange }: KindChoice & { readonly kind: PowerCategory }) {
-  function handleChoose(): void {
-    onKindChange(kind);
-  }
-
-  return { handleChoose, isChosen: kind === chosenKind };
-}
-
-interface KindTabProps extends KindChoice {
-  readonly kind: PowerCategory;
-  readonly name: string;
-}
-
 function KindTab({ chosenKind, kind, name, onKindChange }: KindTabProps) {
   const { handleChoose, isChosen } = useKindTab({ chosenKind, kind, onKindChange });
 
@@ -122,7 +151,7 @@ function KindTab({ chosenKind, kind, name, onKindChange }: KindTabProps) {
     <Toolbar.Button
       aria-pressed={isChosen}
       className={cn(SEGMENT, "text-sm max-lg:aspect-square max-lg:px-0 lg:px-2.5 pointer-coarse:h-10", {
-        "text-ink shadow-segment bg-white": isChosen,
+        [SEGMENT_CHOSEN]: isChosen,
       })}
       onClick={handleChoose}
     >
@@ -141,35 +170,6 @@ function KindTabs({ chosenKind, onKindChange }: KindChoice) {
       ))}
     </Toolbar.Group>
   );
-}
-
-function useWheelScrollsSideways(rowReference: RefObject<HTMLDivElement | null>): void {
-  useEffect(() => {
-    const row = rowReference.current;
-
-    if (row === null) {
-      return;
-    }
-
-    const scroller = row;
-
-    function scrollSideways(event: WheelEvent): void {
-      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
-        return;
-      }
-
-      if (scroller.scrollWidth <= scroller.clientWidth) {
-        return;
-      }
-
-      event.preventDefault();
-      scroller.scrollLeft += event.deltaY;
-    }
-
-    row.addEventListener("wheel", scrollSideways, { passive: false });
-
-    return () => row.removeEventListener("wheel", scrollSideways);
-  }, [rowReference]);
 }
 
 export function PowerDock({ className }: { readonly className?: string | undefined }) {

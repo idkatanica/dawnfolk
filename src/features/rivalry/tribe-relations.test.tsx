@@ -23,22 +23,22 @@ describe("tribe relations", () => {
 
     const screen = await render(<TribeRelations tribeId={1} />);
 
-    const neighbours = screen.getByRole("region", { name: "Neighbours" });
+    const neighbors = screen.getByRole("region", { name: "Neighbors" });
 
-    await expect.element(neighbours.getByText("Raided by the Wolf Clan · On the march")).toBeVisible();
+    await expect.element(neighbors.getByText("Raided by the Wolf Clan · On the march")).toBeVisible();
     expect(
-      neighbours
+      neighbors
         .getByRole("listitem")
         .elements()
         .map((item) => item.textContent)
     ).toEqual(["Wolf ClanFeud for 1 dHostile", "Elk ClanKinFriendly"]);
   });
 
-  it("leaves a tribe without neighbours out", async () => {
+  it("leaves a tribe without neighbors out", async () => {
     showWorld({ rivalry: { raids: [], relations: [] } });
 
     const screen = await render(<TribeRelations tribeId={1} />);
 
-    await expect.element(screen.getByRole("region", { name: "Neighbours" })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("region", { name: "Neighbors" })).not.toBeInTheDocument();
   });
 });

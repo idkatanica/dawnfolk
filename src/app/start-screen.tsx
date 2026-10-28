@@ -12,14 +12,50 @@ import { loadGameEngine, loadHud } from "./engine-launcher.ts";
 import { useLaunchStore } from "./launch-store.ts";
 import { StartBackdrop } from "./start-backdrop.tsx";
 
-type CardView = "home" | "new" | "worlds";
-
 const BIG_BUTTON_CLASS = "h-12 pointer-coarse:h-12 text-base";
+
+type CardView = "home" | "new" | "worlds";
 
 interface SubviewProps {
   readonly children: ReactNode;
   readonly onBack: (() => void) | null;
   readonly title: string;
+}
+
+function useTitleCard() {
+  const worlds = useSavesStore((state) => state.worlds);
+  const continueWorld = useLaunchStore((state) => state.continueWorld);
+  const [view, setView] = useState<CardView>("home");
+
+  const latest = worlds.find((world) => world.isLoadable);
+
+  function handleBack(): void {
+    setView("home");
+  }
+
+  function handleNewWorld(): void {
+    setView("new");
+  }
+
+  function handleAllWorlds(): void {
+    setView("worlds");
+  }
+
+  function handleContinue(): void {
+    if (latest !== undefined) {
+      continueWorld(latest.id, latest);
+    }
+  }
+
+  return {
+    handleAllWorlds,
+    handleBack,
+    handleContinue,
+    handleNewWorld,
+    hasWorlds: worlds.length > 0,
+    latest,
+    view,
+  };
 }
 
 function Subview({ children, onBack, title }: SubviewProps) {
@@ -62,42 +98,6 @@ function NewWorldForm() {
       </TextButton>
     </form>
   );
-}
-
-function useTitleCard() {
-  const worlds = useSavesStore((state) => state.worlds);
-  const continueWorld = useLaunchStore((state) => state.continueWorld);
-  const [view, setView] = useState<CardView>("home");
-
-  const latest = worlds.find((world) => world.isLoadable);
-
-  function handleBack(): void {
-    setView("home");
-  }
-
-  function handleNewWorld(): void {
-    setView("new");
-  }
-
-  function handleAllWorlds(): void {
-    setView("worlds");
-  }
-
-  function handleContinue(): void {
-    if (latest !== undefined) {
-      continueWorld(latest.id, latest);
-    }
-  }
-
-  return {
-    handleAllWorlds,
-    handleBack,
-    handleContinue,
-    handleNewWorld,
-    hasWorlds: worlds.length > 0,
-    latest,
-    view,
-  };
 }
 
 function TitleCard() {

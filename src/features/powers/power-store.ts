@@ -10,6 +10,10 @@ import {
   readPowerParameters,
 } from "../../content/powers.ts";
 
+const STORAGE_KEY = "dawnfolk.powers";
+
+const storedSchema = z.object({ parameters: z.record(z.string(), z.unknown()).default({}) });
+
 type StoredParameters = Readonly<Partial<Record<PowerId, ParameterValueMap>>>;
 
 export interface PowerStore {
@@ -20,9 +24,30 @@ export interface PowerStore {
   readonly setParameter: (powerId: PowerId, key: string, value: ParameterValue) => void;
 }
 
-const STORAGE_KEY = "dawnfolk.powers";
+export const usePowerStore = create<PowerStore>()(
+  persist(
+    (set) => ({
+      parameters: {},
+      resetParameters: (powerId) =>
+        set((state) => ({ parameters: { ...state.parameters, [powerId]: defaultPowerParameters(powerId) } })),
+      selectedPowerId: null,
+      selectPower: (powerId) => set({ selectedPowerId: powerId }),
+      setParameter: (powerId, key, value) =>
+        set((state) => {
+          const current = parametersOf(state.parameters, powerId);
 
-const storedSchema = z.object({ parameters: z.record(z.string(), z.unknown()).default({}) });
+          return {
+            parameters: { ...state.parameters, [powerId]: readPowerParameters(powerId, { ...current, [key]: value }) },
+          };
+        }),
+    }),
+    {
+      merge: mergeStored,
+      name: STORAGE_KEY,
+      partialize: (state) => ({ parameters: state.parameters }),
+    }
+  )
+);
 
 export function readStoredParameters(value: unknown): StoredParameters {
   const result = storedSchema.safeParse(value);
@@ -61,28 +86,3 @@ export function parametersOf(parameters: StoredParameters, powerId: PowerId): Pa
 
   return stored;
 }
-
-export const usePowerStore = create<PowerStore>()(
-  persist(
-    (set) => ({
-      parameters: {},
-      resetParameters: (powerId) =>
-        set((state) => ({ parameters: { ...state.parameters, [powerId]: defaultPowerParameters(powerId) } })),
-      selectedPowerId: null,
-      selectPower: (powerId) => set({ selectedPowerId: powerId }),
-      setParameter: (powerId, key, value) =>
-        set((state) => {
-          const current = parametersOf(state.parameters, powerId);
-
-          return {
-            parameters: { ...state.parameters, [powerId]: readPowerParameters(powerId, { ...current, [key]: value }) },
-          };
-        }),
-    }),
-    {
-      merge: mergeStored,
-      name: STORAGE_KEY,
-      partialize: (state) => ({ parameters: state.parameters }),
-    }
-  )
-);

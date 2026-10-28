@@ -271,7 +271,7 @@ describe("tribe details", () => {
 });
 
 describe("tribe details in a running game", () => {
-  it("lists the neighbours of the tribe", async () => {
+  it("lists the neighbors of the tribe", async () => {
     showWorld({
       rivalry: {
         raids: [],
@@ -282,8 +282,8 @@ describe("tribe details in a running game", () => {
 
     const screen = await render(<TribeDetails tribe={{ kind: "tribe", summary: createTribe({ id: 1 }) }} />);
 
-    const neighbours = screen.getByRole("region", { name: "Neighbours" });
+    const neighbors = screen.getByRole("region", { name: "Neighbors" });
 
-    await expect.element(neighbours.getByText("Wolf Clan", { exact: true })).toBeVisible();
+    await expect.element(neighbors.getByText("Wolf Clan", { exact: true })).toBeVisible();
   });
 });

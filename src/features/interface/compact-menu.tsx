@@ -14,6 +14,19 @@ interface MenuEntryProps {
   readonly onClick: () => void;
 }
 
+function useCompactMenu() {
+  const { openJournal } = useSidePanel();
+  const isMapOpen = useInterfaceStore((state) => state.isMapOpen);
+  const openSettings = useInterfaceStore((state) => state.openSettings);
+  const toggleMap = useInterfaceStore((state) => state.toggleMap);
+
+  function handleJournal(): void {
+    openJournal("tribes");
+  }
+
+  return { handleJournal, isMapOpen, openSettings, toggleMap };
+}
+
 function MenuEntry({ children, icon, onClick }: MenuEntryProps) {
   return (
     <Menu.Item
@@ -41,19 +54,6 @@ function FullscreenEntry() {
       {isFullscreen ? "Leave full screen" : "Full screen"}
     </MenuEntry>
   );
-}
-
-function useCompactMenu() {
-  const { openJournal } = useSidePanel();
-  const isMapOpen = useInterfaceStore((state) => state.isMapOpen);
-  const openSettings = useInterfaceStore((state) => state.openSettings);
-  const toggleMap = useInterfaceStore((state) => state.toggleMap);
-
-  function handleJournal(): void {
-    openJournal("tribes");
-  }
-
-  return { handleJournal, isMapOpen, openSettings, toggleMap };
 }
 
 export function CompactMenu() {

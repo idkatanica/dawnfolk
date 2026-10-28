@@ -14,11 +14,17 @@ import { TribeDot } from "../tribes/tribe-dot.tsx";
 import { useWorldStore, type WorldSnapshot } from "../world/world-store.ts";
 import { useLabelLayout } from "./use-label-layout.ts";
 
-type TribeMood = "calm" | "feuding" | "raiding";
-
 const TRIBE_LIFT = 18;
 const LABEL_FRAME =
   "invisible absolute top-0 left-0 opacity-0 transition-[opacity,visibility] duration-200 will-change-transform data-shown:visible data-shown:opacity-100";
+
+type TribeMood = "calm" | "feuding" | "raiding";
+
+interface TribeLabelProps {
+  readonly isSelected: boolean;
+  readonly mood: TribeMood;
+  readonly tribe: TribeSummary;
+}
 
 function selectedTribeIdOf(state: { readonly snapshot: WorldSnapshot | null }): number | null {
   const inspection = state.snapshot?.inspection;
@@ -40,6 +46,18 @@ function moodOf(rivalry: RivalryView | undefined, tribeId: number): TribeMood {
   }
 
   return isFeuding(rivalry, tribeId) ? "feuding" : "calm";
+}
+
+function useLandmarks(engine: EngineHandle): readonly Landmark[] {
+  function subscribe(onChange: () => void): () => void {
+    return engine.session.subscribe(onChange);
+  }
+
+  function landmarksNow(): readonly Landmark[] {
+    return engine.landmarks;
+  }
+
+  return useSyncExternalStore(subscribe, landmarksNow);
 }
 
 function LandmarkDetail({ detail }: { readonly detail: string | null }) {
@@ -80,12 +98,6 @@ function FeudMark({ mood }: { readonly mood: TribeMood }) {
       <GameIcon label={label} name="raid" size={18} />
     </span>
   );
-}
-
-interface TribeLabelProps {
-  readonly isSelected: boolean;
-  readonly mood: TribeMood;
-  readonly tribe: TribeSummary;
 }
 
 function TribeLabel({ isSelected, mood, tribe }: TribeLabelProps) {
@@ -148,18 +160,6 @@ function TribeLabels() {
       ))}
     </ul>
   );
-}
-
-function useLandmarks(engine: EngineHandle): readonly Landmark[] {
-  function subscribe(onChange: () => void): () => void {
-    return engine.session.subscribe(onChange);
-  }
-
-  function landmarksNow(): readonly Landmark[] {
-    return engine.landmarks;
-  }
-
-  return useSyncExternalStore(subscribe, landmarksNow);
 }
 
 function LabelLayer({ engine }: { readonly engine: EngineHandle }) {

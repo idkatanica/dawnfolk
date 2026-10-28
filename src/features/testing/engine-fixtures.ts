@@ -14,6 +14,8 @@ import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
 import { createSimulationWorkerApi } from "../../workers/simulation-worker-api.ts";
 
+const TEST_CAMERA: CameraState = { distance: 300, pitch: 0.6, targetX: 0, targetZ: 0, yaw: 0.8 };
+
 interface TestEngine {
   readonly clearSelection: Mock<() => void>;
   readonly engine: EngineHandle;
@@ -31,8 +33,6 @@ interface TestEngineOptions {
   readonly cameraDistance?: number;
   readonly landmarks?: readonly Landmark[];
 }
-
-const TEST_CAMERA: CameraState = { distance: 300, pitch: 0.6, targetX: 0, targetZ: 0, yaw: 0.8 };
 
 function createTestSession(): Promise<GameSession> {
   const simulation = new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 } }));

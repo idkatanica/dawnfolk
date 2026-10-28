@@ -3,18 +3,18 @@ import type { ReactElement, ReactNode } from "react";
 import { cn } from "./cn.ts";
 import { POPUP_MOTION } from "./styles.ts";
 
-type TooltipSide = "bottom" | "left" | "right" | "top";
-
 const OPEN_DELAY = 450;
 
-export function TooltipProvider({ children }: { readonly children: ReactNode }) {
-  return <Tooltip.Provider delay={OPEN_DELAY}>{children}</Tooltip.Provider>;
-}
+type TooltipSide = "bottom" | "left" | "right" | "top";
 
 interface WithTooltipProps {
   readonly children: ReactElement;
   readonly content: ReactNode;
   readonly side?: TooltipSide | undefined;
+}
+
+export function TooltipProvider({ children }: { readonly children: ReactNode }) {
+  return <Tooltip.Provider delay={OPEN_DELAY}>{children}</Tooltip.Provider>;
 }
 
 export function WithTooltip({ children, content, side = "top" }: WithTooltipProps) {

@@ -8,13 +8,13 @@ import { CHRONICLE_ICONS } from "./chronicle-icons.ts";
 const SHOWN_ENTRIES = 120;
 
 function ChronicleItem({ entry }: { readonly entry: ChronicleEntry }) {
-  const showPlace = useShowSpot(entry.x, entry.z);
+  const showSpot = useShowSpot(entry.x, entry.z);
 
   return (
     <RowButton
       className="items-start rounded-xl py-2"
       leading={<GameIcon name={CHRONICLE_ICONS[entry.category]} />}
-      onClick={showPlace}
+      onClick={showSpot}
     >
       <span className="text-ink text-sm leading-snug">{entry.text}</span>
 

@@ -14,6 +14,19 @@ type RuleValues = Readonly<Record<string, Readonly<Record<string, unknown>>>>;
 
 type RuleChange = (groupKey: string, fieldKey: string, value: ParameterValue) => void;
 
+interface RuleControlProps {
+  readonly field: ParameterField;
+  readonly group: ParameterGroupField;
+  readonly onChange: RuleChange;
+  readonly rules: WorldRules;
+}
+
+interface RuleGroupProps {
+  readonly group: ParameterGroupField;
+  readonly onChange: RuleChange;
+  readonly rules: WorldRules;
+}
+
 function ruleValue(rules: RuleValues, groupKey: string, fieldKey: string): ParameterValue | undefined {
   const value = rules[groupKey]?.[fieldKey];
 
@@ -55,23 +68,10 @@ function useRuleChange(groupKey: string, onChange: RuleChange) {
   return (key: string, value: ParameterValue) => onChange(groupKey, key, value);
 }
 
-interface RuleControlProps {
-  readonly field: ParameterField;
-  readonly group: ParameterGroupField;
-  readonly onChange: RuleChange;
-  readonly rules: WorldRules;
-}
-
 function RuleControl({ field, group, onChange, rules }: RuleControlProps) {
   const handleChange = useRuleChange(group.key, onChange);
 
   return <ParameterControl field={field} onChange={handleChange} value={ruleValue(rules, group.key, field.key)} />;
-}
-
-interface RuleGroupProps {
-  readonly group: ParameterGroupField;
-  readonly onChange: RuleChange;
-  readonly rules: WorldRules;
 }
 
 function RuleGroup({ group, onChange, rules }: RuleGroupProps) {

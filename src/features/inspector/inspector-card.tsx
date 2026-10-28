@@ -23,6 +23,12 @@ const PERSON_NOUNS: Readonly<Record<AgeGroup, { readonly female: string; readonl
   elder: { female: "Elder woman", male: "Elder man" },
 };
 
+interface InspectorCardProps {
+  readonly inspection: Inspection;
+  readonly onBack?: (() => void) | undefined;
+  readonly onClose: () => void;
+}
+
 function personNoun(person: PersonInspection): string {
   const nouns = PERSON_NOUNS[ageGroupOf(person.age)];
 
@@ -61,23 +67,6 @@ function isFollowable(inspection: Inspection): boolean {
   return inspection.kind === "person" || inspection.kind === "animal";
 }
 
-function InspectionDetails({ inspection }: { readonly inspection: Inspection }) {
-  switch (inspection.kind) {
-    case "animal":
-      return <AnimalDetails animal={inspection} />;
-    case "building":
-      return <BuildingDetails building={inspection} />;
-    case "cell":
-      return <CellDetails cell={inspection} />;
-    case "person":
-      return <PersonDetails person={inspection} />;
-    case "tribe":
-      return <TribeDetails tribe={inspection} />;
-    default:
-      return inspection satisfies never;
-  }
-}
-
 function useFollowing() {
   const engine = useEngine();
 
@@ -112,6 +101,23 @@ function useFollowing() {
   }
 
   return { handleFollow, isFollowing };
+}
+
+function InspectionDetails({ inspection }: { readonly inspection: Inspection }) {
+  switch (inspection.kind) {
+    case "animal":
+      return <AnimalDetails animal={inspection} />;
+    case "building":
+      return <BuildingDetails building={inspection} />;
+    case "cell":
+      return <CellDetails cell={inspection} />;
+    case "person":
+      return <PersonDetails person={inspection} />;
+    case "tribe":
+      return <TribeDetails tribe={inspection} />;
+    default:
+      return inspection satisfies never;
+  }
 }
 
 function FollowButton({ inspection }: { readonly inspection: Inspection }) {
@@ -151,12 +157,6 @@ function BackRow({ onBack, onClose }: { readonly onBack: () => void; readonly on
       <CloseButton onClose={onClose} />
     </div>
   );
-}
-
-interface InspectorCardProps {
-  readonly inspection: Inspection;
-  readonly onBack?: (() => void) | undefined;
-  readonly onClose: () => void;
 }
 
 export function InspectorCard({ inspection, onBack, onClose }: InspectorCardProps) {

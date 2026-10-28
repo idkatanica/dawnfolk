@@ -2,18 +2,18 @@ import { type RefObject, useEffect } from "react";
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import type { LabelPlacement } from "../../game/label-projector.ts";
 
-interface PlacedLabel {
-  readonly isPriority: boolean;
-  readonly label: HTMLElement;
-  readonly placement: LabelPlacement;
-}
-
 const LABEL_SELECTOR = "[data-label]";
 const LABEL_ATTRIBUTES = ["data-label", "data-lift", "data-priority", "data-x", "data-z"];
 const TOP_CLEARANCE = 76;
 const FAR_DISTANCE = 2600;
 const CROWDED_WIDTH = 150;
 const CROWDED_HEIGHT = 40;
+
+interface PlacedLabel {
+  readonly isPriority: boolean;
+  readonly label: HTMLElement;
+  readonly placement: LabelPlacement;
+}
 
 function isCrowding(first: LabelPlacement, second: LabelPlacement): boolean {
   return Math.abs(first.left - second.left) < CROWDED_WIDTH && Math.abs(first.top - second.top) < CROWDED_HEIGHT;

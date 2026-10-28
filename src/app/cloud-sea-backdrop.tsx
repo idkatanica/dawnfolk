@@ -4,10 +4,10 @@ import { paintCloudSea } from "../rendering/atmosphere/cloud-sea-image.ts";
 const CLOUD_PIXELS = 240;
 
 export function CloudSeaBackdrop({ seed }: { readonly seed: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasReference = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = canvasReference.current;
 
     if (canvas === null) {
       return;
@@ -27,5 +27,5 @@ export function CloudSeaBackdrop({ seed }: { readonly seed: number }) {
     context.putImageData(paintCloudSea(width, height, seed), 0, 0);
   }, [seed]);
 
-  return <canvas className="absolute inset-0 size-full" ref={canvasRef} />;
+  return <canvas className="absolute inset-0 size-full" ref={canvasReference} />;
 }

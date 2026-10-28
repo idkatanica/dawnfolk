@@ -18,6 +18,19 @@ function isJournalTab(value: unknown): value is JournalTab {
   return TABS.some((tab) => tab.value === value);
 }
 
+function useJournalTab() {
+  const journalTab = useInterfaceStore((state) => state.journalTab);
+  const setJournalTab = useInterfaceStore((state) => state.setJournalTab);
+
+  function handleTabChange(value: unknown): void {
+    if (isJournalTab(value)) {
+      setJournalTab(value);
+    }
+  }
+
+  return { handleTabChange, journalTab };
+}
+
 function JournalTabButton({ label, value }: { readonly label: string; readonly value: JournalTab }) {
   return (
     <Tabs.Tab
@@ -38,19 +51,6 @@ function ScrollingPanel({ children, value }: { readonly children: ReactNode; rea
       <ScrollPanel>{children}</ScrollPanel>
     </Tabs.Panel>
   );
-}
-
-function useJournalTab() {
-  const journalTab = useInterfaceStore((state) => state.journalTab);
-  const setJournalTab = useInterfaceStore((state) => state.setJournalTab);
-
-  function handleTabChange(value: unknown): void {
-    if (isJournalTab(value)) {
-      setJournalTab(value);
-    }
-  }
-
-  return { handleTabChange, journalTab };
 }
 
 export function JournalPanel() {

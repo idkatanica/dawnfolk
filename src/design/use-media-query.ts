@@ -1,11 +1,11 @@
 import { useSyncExternalStore } from "react";
 
-type Subscribe = (onChange: () => void) => () => void;
-
 export const COMPACT_QUERY = "(max-width: 767px), (max-height: 599px)";
 export const TOUCH_QUERY = "(pointer: coarse)";
-const CALM_QUERY = "(prefers-reduced-motion: reduce)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 const PORTRAIT_QUERY = "(orientation: portrait)";
+
+type Subscribe = (onChange: () => void) => () => void;
 
 const subscribers = new Map<string, Subscribe>();
 
@@ -41,8 +41,8 @@ export function useIsCompact(): boolean {
   return useMediaQuery(COMPACT_QUERY);
 }
 
-export function usePrefersCalm(): boolean {
-  return useMediaQuery(CALM_QUERY);
+export function useShouldReduceMotion(): boolean {
+  return useMediaQuery(REDUCED_MOTION_QUERY);
 }
 
 export function useIsPortrait(): boolean {

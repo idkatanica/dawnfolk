@@ -14,7 +14,7 @@ describe("class names", () => {
     expect(cn("px-2 py-1", "px-4")).toBe("py-1 px-4");
   });
 
-  it("treats the design system colours as colours", () => {
+  it("treats the design system colors as colors", () => {
     expect(cn("text-ink-soft text-sm", "text-dawn")).toBe("text-sm text-dawn");
   });
 

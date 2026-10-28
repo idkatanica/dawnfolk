@@ -10,6 +10,11 @@ interface RowButtonProps {
   readonly trailing?: ReactNode;
 }
 
+interface RowCountProps {
+  readonly count: number;
+  readonly unit: string;
+}
+
 export function RowButton({ children, className, leading, onClick, trailing }: RowButtonProps) {
   return (
     <li>
@@ -30,11 +35,6 @@ export function RowButton({ children, className, leading, onClick, trailing }: R
       </button>
     </li>
   );
-}
-
-interface RowCountProps {
-  readonly count: number;
-  readonly unit: string;
 }
 
 export function RowCount({ count, unit }: RowCountProps) {

@@ -10,7 +10,7 @@ describe("world names", () => {
     expect(worldNameFor(7)).toBe(worldNameFor(7));
   });
 
-  it("gives neighbouring seeds different single-word names", () => {
+  it("gives neighboring seeds different single-word names", () => {
     const names = new Set(Array.from({ length: 50 }, (_, seed) => worldNameFor(seed + 1)));
 
     expect(names.size).toBe(50);
