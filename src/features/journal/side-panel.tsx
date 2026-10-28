@@ -11,11 +11,7 @@ import { type SidePanelView, useSidePanel } from "./use-side-panel.ts";
 const HEADING_SELECTOR = "section:not([hidden]) [data-panel-heading]";
 
 function focusHeading(panel: HTMLElement): void {
-  const heading = panel.querySelector<HTMLElement>(HEADING_SELECTOR);
-
-  if (heading !== null) {
-    heading.focus();
-  }
+  panel.querySelector<HTMLElement>(HEADING_SELECTOR)?.focus();
 }
 
 function focusedElementIn(panel: HTMLElement): HTMLElement | null {

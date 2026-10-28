@@ -1,5 +1,5 @@
 import { type MonumentPiece, PIECE_FORMS, type PieceForm } from "../../content/monuments.ts";
-import { PlantSpecies, type PlantSpeciesIndex } from "../../content/plants.ts";
+import { PlantSpecies } from "../../content/plants.ts";
 import { FULL_TURN, lerp } from "../../shared/math.ts";
 import { createRandom, type RandomSource } from "../../shared/random.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
@@ -509,18 +509,15 @@ function addPier(context: MonumentContext, shape: Shape, x: number, blocks: numb
   }
 }
 
-function addVoussoir(context: MonumentContext, shape: Shape, index: number): void {
-  const angle = (HALF_TURN * (index + 0.5)) / VOUSSOIRS;
+function onArch(angle: number): TransformOptions {
+  return {
+    position: [Math.cos(angle) * SPAN, SPRING + Math.sin(angle) * SPAN, 0],
+    rotation: [0, 0, angle + QUARTER_TURN],
+  };
+}
 
-  addStone(
-    context,
-    shape,
-    {
-      position: [Math.cos(angle) * SPAN, SPRING + Math.sin(angle) * SPAN, 0],
-      rotation: [0, 0, angle + QUARTER_TURN],
-    },
-    WORKED_STONE
-  );
+function addVoussoir(context: MonumentContext, shape: Shape, index: number): void {
+  addStone(context, shape, onArch((HALF_TURN * (index + 0.5)) / VOUSSOIRS), WORKED_STONE);
 }
 
 function farArch(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Arch>): void {
@@ -558,15 +555,7 @@ function farArch(context: MonumentContext, form: PieceForm<typeof PlantSpecies.A
   );
 
   for (const angle of [HALF_TURN / 6, HALF_TURN / 2, (HALF_TURN * 5) / 6]) {
-    addStone(
-      context,
-      box(1.9, 0.62, 0.94),
-      {
-        position: [Math.cos(angle) * SPAN, SPRING + Math.sin(angle) * SPAN, 0],
-        rotation: [0, 0, angle + QUARTER_TURN],
-      },
-      WORKED_STONE
-    );
+    addStone(context, box(1.9, 0.62, 0.94), onArch(angle), WORKED_STONE);
   }
 }
 
@@ -718,12 +707,6 @@ function buildPiece(species: MonumentPiece, context: MonumentContext, variant: n
     default:
       throw new RangeError(`No monument piece ${String(species)}`);
   }
-}
-
-const MONUMENT_SPECIES: ReadonlySet<number> = new Set(Object.keys(MONUMENT_HEIGHTS).map(Number));
-
-export function isMonumentModel(species: PlantSpeciesIndex): species is MonumentPiece {
-  return MONUMENT_SPECIES.has(species);
 }
 
 export function meshMonument(species: MonumentPiece, seed: number, variant: number, level: PlantDetailLevel): MeshData {

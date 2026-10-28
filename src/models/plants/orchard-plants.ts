@@ -634,11 +634,10 @@ function stemPoints(stem: readonly TubePoint[], level: PlantDetailLevel): TubePo
 
 function bushStems(structure: BushStructure, level: PlantDetailLevel): MeshData {
   const builder = new MeshBuilder();
+  const style = stemStyle(structure);
 
   for (const stem of structure.stems) {
-    builder.add(tube(stemPoints(stem, level), { radialSegments: STEM_SIDES }), {
-      style: stemStyle(structure),
-    });
+    builder.add(tube(stemPoints(stem, level), { radialSegments: STEM_SIDES }), { style });
   }
 
   return builder.build();
