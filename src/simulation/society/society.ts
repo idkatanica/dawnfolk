@@ -2,7 +2,7 @@ import { personName, tribeIdentity } from "../../content/names.ts";
 import type { TechnologyId } from "../../content/technologies.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { isHopping, isLeaping } from "../agents/hops.ts";
-import { isStranded, moveAlong, stopMoving } from "../agents/movement.ts";
+import { isStranded, moveAlong, savedMover, stopMoving } from "../agents/movement.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import { nearestWalkableSpot } from "../agents/walkable-ground.ts";
 import type { Chronicle } from "../chronicle.ts";
@@ -18,7 +18,7 @@ import { findCampSite } from "./settlement.ts";
 import type { DeathAccount, PersonTick, SocietyContext } from "./society-context.ts";
 import { createTribe, type Tribe } from "./tribe.ts";
 import { updateTribe } from "./tribe-life.ts";
-import { TroddenGround } from "./trodden-ground.ts";
+import { TroddenGround, type TroddenGroundSnapshot } from "./trodden-ground.ts";
 
 const HOP_PACE = 1.5;
 const CORPSE_SECONDS = 40;
@@ -40,6 +40,13 @@ const DEATH_MESSAGES: Readonly<Record<DeathCause, string>> = {
   lightning: "was struck by lightning",
   mammoth: "was trampled by a mammoth",
 };
+
+export interface SocietySnapshot {
+  people: Person[];
+  tribeNumber: number;
+  tribes: Tribe[];
+  trodden: TroddenGroundSnapshot;
+}
 
 interface SocietyDependencies {
   buildings: BuildingSystem;
@@ -66,6 +73,33 @@ export class SocietySystem {
 
   constructor(dependencies: SocietyDependencies) {
     this.#dependencies = dependencies;
+  }
+
+  snapshot(): SocietySnapshot {
+    return {
+      people: this.#people.map(savedPerson),
+      tribeNumber: this.#tribeNumber,
+      tribes: this.#tribes.map((tribe) => structuredClone({ ...tribe, claimedPlants: new Set<number>() })),
+      trodden: this.#trodden.snapshot(),
+    };
+  }
+
+  restore(snapshot: SocietySnapshot): void {
+    this.#people = snapshot.people;
+    this.#tribes = snapshot.tribes;
+    this.#tribeNumber = snapshot.tribeNumber;
+    this.#peopleById.clear();
+    this.#tribesById.clear();
+
+    for (const person of this.#people) {
+      this.#peopleById.set(person.id, person);
+    }
+
+    for (const tribe of this.#tribes) {
+      this.#tribesById.set(tribe.id, tribe);
+    }
+
+    this.#trodden.restore(snapshot.trodden);
   }
 
   get people(): readonly Person[] {
@@ -418,6 +452,17 @@ export class SocietySystem {
 
     this.#people = remaining;
   }
+}
+
+function savedPerson(person: Person): Person {
+  const saved: Person = structuredClone({ ...person, job: null, mover: savedMover(person.mover, false) });
+
+  if (saved.isAlive && saved.mover.hop === null) {
+    saved.pose = "idle";
+    saved.speed = 0;
+  }
+
+  return saved;
 }
 
 function deathAccountOf(person: Person, tribe: Tribe, cause: DeathCause, account: DeathAccount | null): DeathAccount {

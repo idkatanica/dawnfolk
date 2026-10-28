@@ -72,8 +72,32 @@ function withoutInvalid(parameters: Record<string, string>, issues: readonly Par
   return Object.fromEntries(Object.entries(parameters).filter(([name]) => !invalidNames.has(name)));
 }
 
+const WORLD_PARAMETER = "world";
+
+const worldIdSchema = z.string().regex(/^[\w-]{1,64}$/);
+
+export function createWorldId(): string {
+  return crypto.randomUUID();
+}
+
+export function readWorldId(search: string): string | null {
+  const result = worldIdSchema.safeParse(new URLSearchParams(search).get(WORLD_PARAMETER));
+
+  return result.success ? result.data : null;
+}
+
+export function withWorldId(search: string, worldId: string): string {
+  const parameters = new URLSearchParams(search);
+
+  parameters.set(WORLD_PARAMETER, worldId);
+
+  return `?${parameters.toString()}`;
+}
+
 export function choosesWorld(search: string): boolean {
-  return new URLSearchParams(search).has("seed");
+  const parameters = new URLSearchParams(search);
+
+  return parameters.has("seed") || readWorldId(search) !== null;
 }
 
 export function readLaunchOptions(search: string): LaunchOptions {

@@ -2,7 +2,7 @@ const STAGGER_SECONDS = 0.45;
 const GUARD_SECONDS = 0.5;
 const MEMORY_SECONDS = 12;
 
-interface FighterRecord {
+export interface FighterRecord {
   assailantId: number;
   guardSeconds: number;
   memorySeconds: number;
@@ -11,6 +11,18 @@ interface FighterRecord {
 
 export class CombatLedger {
   readonly #records = new Map<number, FighterRecord>();
+
+  snapshot(): Map<number, FighterRecord> {
+    return structuredClone(this.#records);
+  }
+
+  restore(records: ReadonlyMap<number, FighterRecord>): void {
+    this.#records.clear();
+
+    for (const [id, record] of records) {
+      this.#records.set(id, { ...record });
+    }
+  }
 
   stagger(id: number, assailantId: number): void {
     const record = this.#recordOf(id);

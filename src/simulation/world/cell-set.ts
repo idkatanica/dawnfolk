@@ -52,4 +52,17 @@ export class CellSet {
   values(): Int32Array {
     return this.#cells.subarray(0, this.#size);
   }
+
+  snapshot(): Int32Array {
+    return this.values().slice();
+  }
+
+  restore(cells: Int32Array): void {
+    this.#isMember.fill(0);
+    this.#size = 0;
+
+    for (const cell of cells) {
+      this.add(cell);
+    }
+  }
 }

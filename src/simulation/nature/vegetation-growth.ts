@@ -7,8 +7,8 @@ import { plantHeight } from "../../generation/vegetation.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { NO_BUILDING, type WorldState } from "../world/world-state.ts";
-import { Nursery } from "./nursery.ts";
-import { Succession, TREE_GROWING_DAYS } from "./succession.ts";
+import { Nursery, type NurserySnapshot } from "./nursery.ts";
+import { Succession, type SuccessionSnapshot, TREE_GROWING_DAYS } from "./succession.ts";
 
 export const SNAG_LIFETIME_DAYS = 4;
 
@@ -49,6 +49,13 @@ function berryChange(season: number, days: number, rules: WorldRules): number {
   return growth * rules.nature.berryGrowth * days;
 }
 
+export interface VegetationGrowthSnapshot {
+  berryDays: number;
+  nursery: NurserySnapshot;
+  succession: SuccessionSnapshot;
+  visitBudget: number;
+}
+
 export class VegetationGrowthSystem {
   readonly #nursery: Nursery;
   readonly #succession: Succession;
@@ -60,6 +67,22 @@ export class VegetationGrowthSystem {
     this.#world = world;
     this.#nursery = new Nursery(world);
     this.#succession = new Succession(world, this.#nursery);
+  }
+
+  snapshot(): VegetationGrowthSnapshot {
+    return {
+      berryDays: this.#berryDays,
+      nursery: this.#nursery.snapshot(),
+      succession: this.#succession.snapshot(),
+      visitBudget: this.#visitBudget,
+    };
+  }
+
+  restore(snapshot: VegetationGrowthSnapshot): void {
+    this.#berryDays = snapshot.berryDays;
+    this.#visitBudget = snapshot.visitBudget;
+    this.#nursery.restore(snapshot.nursery);
+    this.#succession.restore(snapshot.succession);
   }
 
   update(days: number, conditions: GrowthConditions, rules: WorldRules, random: RandomSource): void {

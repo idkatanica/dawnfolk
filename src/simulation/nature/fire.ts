@@ -41,6 +41,11 @@ interface FireTick {
   seconds: number;
 }
 
+export interface FireSnapshot {
+  burning: Int32Array;
+  heated: Int32Array;
+}
+
 export class FireSystem {
   readonly #burning: CellSet;
   readonly #heated: CellSet;
@@ -56,6 +61,15 @@ export class FireSystem {
     this.#burning = new CellSet(world.grid.cellCount);
     this.#heated = new CellSet(world.grid.cellCount);
     this.#windFactors.fill(1);
+  }
+
+  snapshot(): FireSnapshot {
+    return { burning: this.#burning.snapshot(), heated: this.#heated.snapshot() };
+  }
+
+  restore(snapshot: FireSnapshot): void {
+    this.#burning.restore(snapshot.burning);
+    this.#heated.restore(snapshot.heated);
   }
 
   get burningCount(): number {

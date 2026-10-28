@@ -4,37 +4,37 @@ import { DEFAULT_WORLD_RULES, readWorldRules, type WorldRules } from "../content
 import type { GenerationOptions, GenerationProgress } from "../generation/generation-options.ts";
 import { type GeneratedWorld, generateWorld } from "../generation/world-generator.ts";
 import { clamp } from "../shared/math.ts";
-import { createRandom, type RandomSource } from "../shared/random.ts";
+import { createRandom, type RandomSource, type RandomState } from "../shared/random.ts";
 import { mirroredWater } from "../world/water.ts";
 import { keepApart } from "./agents/crowding.ts";
-import { HazardMap } from "./agents/hazards.ts";
+import { type DangerZone, HazardMap } from "./agents/hazards.ts";
 import type { Mover } from "./agents/movement.ts";
 import { NavigationGrid, type Waypoint } from "./agents/navigation.ts";
-import { Chronicle } from "./chronicle.ts";
+import { Chronicle, type ChronicleSnapshot } from "./chronicle.ts";
 import { type CommandOf, readCommand, type Selection, type SimulationCommandType } from "./commands.ts";
 import { EffectLog } from "./effects.ts";
-import { FaunaSystem, type FaunaThreats } from "./fauna/fauna.ts";
+import { type FaunaSnapshot, FaunaSystem, type FaunaThreats } from "./fauna/fauna.ts";
 import type { InitialWorld, SimulationFrame, WaterUpdate } from "./frame.ts";
 import { FrameBuilder } from "./frame-builder.ts";
 import { IdentifierSource } from "./identifiers.ts";
-import { Calendar } from "./nature/calendar.ts";
+import { Calendar, type CalendarSnapshot } from "./nature/calendar.ts";
 import { type Ember, EmberSystem } from "./nature/embers.ts";
 import { describeEnvironment, type Environment } from "./nature/environment.ts";
-import { FireSystem } from "./nature/fire.ts";
+import { type FireSnapshot, FireSystem } from "./nature/fire.ts";
 import { SurfaceSystem } from "./nature/surface.ts";
-import { VegetationGrowthSystem } from "./nature/vegetation-growth.ts";
-import { WeatherSystem } from "./nature/weather.ts";
+import { type VegetationGrowthSnapshot, VegetationGrowthSystem } from "./nature/vegetation-growth.ts";
+import { type WeatherState, WeatherSystem } from "./nature/weather.ts";
 import { naturalStrikeSite, strikeLightning } from "./powers/catastrophes.ts";
 import { type PowerOutcome, type PowerServices, type PowerTarget, percent } from "./powers/power-handler.ts";
 import { applyPower, parsePowerParameters } from "./powers/power-registry.ts";
-import { type BuildingIncidentKind, BuildingSystem } from "./society/buildings.ts";
-import { RivalrySystem } from "./society/rivalry/rivalry-system.ts";
-import { SocietySystem } from "./society/society.ts";
+import { type BuildingIncidentKind, BuildingSystem, type BuildingsSnapshot } from "./society/buildings.ts";
+import { type RivalrySnapshot, RivalrySystem } from "./society/rivalry/rivalry-system.ts";
+import { type SocietySnapshot, SocietySystem } from "./society/society.ts";
 import type { Tribe } from "./society/tribe.ts";
 import { TICK_SECONDS } from "./tick.ts";
 import { drowningText, drownMonuments } from "./world/monument-damage.ts";
-import { WaterRecomputation } from "./world/water-recomputation.ts";
-import { WorldState } from "./world/world-state.ts";
+import { WaterRecomputation, type WaterRecomputationSnapshot } from "./world/water-recomputation.ts";
+import { type WorldSnapshot, WorldState } from "./world/world-state.ts";
 
 const MAXIMUM_REAL_SECONDS = 0.25;
 const MAXIMUM_TICKS_PER_ADVANCE = 40;
@@ -55,6 +55,31 @@ const STARTING_SPOTS: readonly Waypoint[] = [
 const HUNTER_NOTICE_DISTANCE = 18;
 const GLOWING_EMBER_INTENSITY = 0.35;
 const COOLING_EMBER_HEAT = 0.22;
+
+export interface SimulationSnapshot {
+  buildings: BuildingsSnapshot;
+  calendar: CalendarSnapshot;
+  chronicle: ChronicleSnapshot;
+  embers: Ember[];
+  fauna: FaunaSnapshot;
+  fire: FireSnapshot;
+  hazards: DangerZone[];
+  identifiers: number;
+  isPaused: boolean;
+  random: RandomState;
+  rivalry: RivalrySnapshot;
+  rules: WorldRules;
+  society: SocietySnapshot;
+  speed: number;
+  surfaceRow: number;
+  tick: number;
+  tickBacklog: number;
+  vegetationGrowth: VegetationGrowthSnapshot;
+  viewFocus: Waypoint;
+  waterRecomputation: WaterRecomputationSnapshot;
+  weather: WeatherState;
+  world: WorldSnapshot;
+}
 
 interface BrushStroke {
   apply: (target: PowerTarget) => PowerOutcome;
@@ -237,6 +262,69 @@ export class Simulation {
     this.fauna.populate(Math.round(HERDS_PER_SQUARE_KILOMETER * squareKilometers), this.random);
     this.fauna.populateSmallGame(Math.round(SMALL_GAME_GROUPS_PER_SQUARE_KILOMETER * squareKilometers));
     this.chronicle.takeEntries();
+  }
+
+  snapshot(): SimulationSnapshot | null {
+    if (this.isBusy) {
+      return null;
+    }
+
+    return {
+      buildings: this.buildings.snapshot(),
+      calendar: this.calendar.snapshot(),
+      chronicle: this.chronicle.snapshot(),
+      embers: this.embers.snapshot(),
+      fauna: this.fauna.snapshot(),
+      fire: this.fire.snapshot(),
+      hazards: this.hazards.snapshot(),
+      identifiers: this.identifiers.upcoming,
+      isPaused: this.#isPaused,
+      random: this.random.state(),
+      rivalry: this.rivalry.snapshot(),
+      rules: structuredClone(this.rules),
+      society: this.society.snapshot(),
+      speed: this.#speed,
+      surfaceRow: this.surface.nextRow,
+      tick: this.#tick,
+      tickBacklog: this.#tickBacklog,
+      vegetationGrowth: this.#vegetationGrowth.snapshot(),
+      viewFocus: { ...this.#viewFocus },
+      waterRecomputation: this.waterRecomputation.snapshot(),
+      weather: this.weather.snapshot(),
+      world: this.world.snapshot(),
+    };
+  }
+
+  restore(snapshot: SimulationSnapshot): void {
+    this.world.restore(snapshot.world);
+    this.waterRecomputation.restore(snapshot.waterRecomputation);
+    this.navigation.rebuild();
+    this.calendar.restore(snapshot.calendar);
+    this.weather.restore(snapshot.weather);
+    this.chronicle.restore(snapshot.chronicle);
+    this.identifiers.restore(snapshot.identifiers);
+    this.random.restore(snapshot.random);
+    this.fire.restore(snapshot.fire);
+    this.embers.restore(snapshot.embers);
+    this.hazards.restore(snapshot.hazards);
+    this.surface.restore(snapshot.surfaceRow);
+    this.#vegetationGrowth.restore(snapshot.vegetationGrowth);
+    this.buildings.restore(snapshot.buildings);
+    this.society.restore(snapshot.society);
+    this.fauna.restore(snapshot.fauna);
+    this.rivalry.restore(snapshot.rivalry);
+    this.setRules(readWorldRules(snapshot.rules));
+    this.services.environment = describeEnvironment(this.calendar, this.weather);
+    this.#isPaused = snapshot.isPaused;
+    this.#speed = snapshot.speed;
+    this.#tick = snapshot.tick;
+    this.#tickBacklog = snapshot.tickBacklog;
+    this.#viewFocus = { ...snapshot.viewFocus };
+    this.#tasks = [];
+    this.#stroke = null;
+    this.#notices = [];
+    this.#waterUpdate = null;
+    this.effects.takeEffects();
   }
 
   execute(command: unknown): void {

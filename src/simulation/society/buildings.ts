@@ -77,6 +77,11 @@ export interface BuildingTick {
   weather: BuildingWeather;
 }
 
+export interface BuildingsSnapshot {
+  buildings: Building[];
+  losses: BuildingLoss[];
+}
+
 export function isComplete(building: Building): boolean {
   return building.progress >= 1;
 }
@@ -100,6 +105,27 @@ export class BuildingSystem {
 
   get all(): readonly Building[] {
     return this.#buildings;
+  }
+
+  snapshot(): BuildingsSnapshot {
+    return structuredClone({ buildings: this.#buildings, losses: this.#losses });
+  }
+
+  restore(snapshot: BuildingsSnapshot): void {
+    this.#buildings.length = 0;
+    this.#buildingsById.clear();
+    this.#incidents = [];
+    this.#losses = snapshot.losses;
+
+    for (const building of snapshot.buildings) {
+      this.#buildings.push(building);
+      this.#buildingsById.set(building.id, building);
+      this.#world.obstacles.placeBuilding(building.id, {
+        radius: BUILDINGS[building.kind].footprint,
+        x: building.x,
+        z: building.z,
+      });
+    }
   }
 
   add(placement: BuildingPlacement, random: RandomSource): Building {

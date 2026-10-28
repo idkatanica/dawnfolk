@@ -4,6 +4,7 @@ import type { ChronicleEntry } from "../simulation/chronicle.ts";
 import type { SimulationCommand } from "../simulation/commands.ts";
 import type { SimulationEffect } from "../simulation/effects.ts";
 import type { SimulationFrame } from "../simulation/frame.ts";
+import type { SavedWorldState } from "../simulation/saved-world.ts";
 import { TICK_SECONDS } from "../simulation/tick.ts";
 import type { SimulationConnection } from "./simulation-connection.ts";
 import { WorldMirror } from "./world-mirror.ts";
@@ -11,6 +12,7 @@ import { WorldMirror } from "./world-mirror.ts";
 export const CHRONICLE_HISTORY_LIMIT = 300;
 
 const LONGEST_QUIET_SECONDS = 1;
+const VIEW_COMMANDS: ReadonlySet<SimulationCommand["type"]> = new Set(["setSelection", "setViewFocus"]);
 
 export type SessionStatus = { kind: "closed" } | { error: Error; kind: "failed" } | { kind: "running" };
 
@@ -22,6 +24,10 @@ interface SessionOptions {
   onProgress?: (progress: GenerationProgress) => void;
 }
 
+interface LoadOptions extends SessionOptions {
+  journal?: readonly ChronicleEntry[];
+}
+
 export class GameSession {
   readonly mirror: WorldMirror;
   readonly #chronicle: ChronicleEntry[] = [];
@@ -29,14 +35,16 @@ export class GameSession {
   readonly #effects: SimulationEffect[] = [];
   readonly #frameListeners = new Set<FrameListener>();
   readonly #statusListeners = new Set<StatusListener>();
+  #changes = 0;
   #commandsSinceRequest = 0;
   #pendingSeconds = 0;
   #request: Promise<void> | null = null;
   #status: SessionStatus = { kind: "running" };
 
-  constructor(connection: SimulationConnection, mirror: WorldMirror) {
+  constructor(connection: SimulationConnection, mirror: WorldMirror, journal: readonly ChronicleEntry[] = []) {
     this.#connection = connection;
     this.mirror = mirror;
+    this.#chronicle.push(...journal);
     this.#remember(mirror.frame);
   }
 
@@ -50,6 +58,22 @@ export class GameSession {
     const initial = await connection.createWorld(request, onProgress);
 
     return new GameSession(connection, new WorldMirror(initial, performance.now()));
+  }
+
+  static async load(
+    connection: SimulationConnection,
+    saved: SavedWorldState,
+    options: LoadOptions = {}
+  ): Promise<GameSession> {
+    const { journal = [], onProgress = () => undefined } = options;
+
+    const initial = await connection.loadWorld(saved, onProgress);
+
+    return new GameSession(connection, new WorldMirror(initial, performance.now()), journal);
+  }
+
+  get changes(): number {
+    return this.#changes;
   }
 
   get chronicle(): readonly ChronicleEntry[] {
@@ -71,9 +95,21 @@ export class GameSession {
 
     this.#connection.send(command);
 
+    if (!VIEW_COMMANDS.has(command.type)) {
+      this.#changes += 1;
+    }
+
     if (command.type !== "setViewFocus") {
       this.#commandsSinceRequest += 1;
     }
+  }
+
+  saveWorld(): Promise<SavedWorldState | null> {
+    if (this.#status.kind !== "running") {
+      return Promise.resolve(null);
+    }
+
+    return this.#connection.saveWorld();
   }
 
   update(realSeconds: number): void {
@@ -165,6 +201,10 @@ export class GameSession {
   #receive(frame: SimulationFrame): void {
     if (this.#status.kind !== "running") {
       return;
+    }
+
+    if (frame.tick !== this.mirror.frame.tick) {
+      this.#changes += 1;
     }
 
     this.mirror.apply(frame, performance.now());

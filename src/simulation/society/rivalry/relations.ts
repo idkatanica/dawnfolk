@@ -114,6 +114,18 @@ export class RelationBook {
     return [...this.#relations.values()];
   }
 
+  snapshot(): Map<string, Relation> {
+    return structuredClone(this.#relations);
+  }
+
+  restore(relations: ReadonlyMap<string, Relation>): void {
+    this.#relations.clear();
+
+    for (const [key, relation] of relations) {
+      this.#relations.set(key, relation);
+    }
+  }
+
   find(firstId: number, secondId: number): Relation | null {
     const relation = this.#relations.get(pairKey(firstId, secondId));
 

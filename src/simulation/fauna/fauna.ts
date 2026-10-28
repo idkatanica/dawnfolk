@@ -1,7 +1,7 @@
 import { ADULT_YOUTH, ANIMAL_KINDS, ANIMALS, type AnimalKind, animalsAt } from "../../content/animals.ts";
 import type { WorldRules } from "../../content/world-rules.ts";
 import { clamp, distanceSquared, FULL_TURN } from "../../shared/math.ts";
-import { createRandom, type RandomSource } from "../../shared/random.ts";
+import { createRandom, type RandomSource, type RandomState } from "../../shared/random.ts";
 import type { AnimalPose } from "../../world/agent-poses.ts";
 import { isHopping } from "../agents/hops.ts";
 import {
@@ -10,13 +10,20 @@ import {
   isStranded,
   type Mover,
   moveAlong,
+  savedMover,
   setDestination,
   stopMoving,
 } from "../agents/movement.ts";
 import { aroundPoint, type NavigationGrid, type Waypoint } from "../agents/navigation.ts";
 import type { IdentifierSource } from "../identifiers.ts";
 import type { WorldState } from "../world/world-state.ts";
-import { type Assailant, BeastInstincts, type Pack, type PeopleSense } from "./beast-instincts.ts";
+import {
+  type Assailant,
+  BeastInstincts,
+  type InstinctsSnapshot,
+  type Pack,
+  type PeopleSense,
+} from "./beast-instincts.ts";
 import { CALM_FEAR, startleAnimal } from "./fear.ts";
 
 const HERD_SPREAD = 30;
@@ -78,6 +85,13 @@ interface Herd extends Pack {
   retargetSeconds: number;
 }
 
+export interface FaunaSnapshot {
+  animals: Animal[];
+  herds: Herd[];
+  instincts: InstinctsSnapshot;
+  smallGameRandom: RandomState;
+}
+
 export interface FaunaThreats {
   dangerNear: (x: number, z: number, radius: number) => Waypoint | null;
   hunterNear: (x: number, z: number, radius: number) => Waypoint | null;
@@ -122,6 +136,34 @@ export class FaunaSystem {
       random: createRandom(world.seed * 31 + 7),
       world,
     });
+  }
+
+  snapshot(): FaunaSnapshot {
+    return {
+      animals: this.#animals.map((animal) => structuredClone({ ...animal, mover: savedMover(animal.mover, true) })),
+      herds: structuredClone(this.#herds),
+      instincts: this.#instincts.snapshot(),
+      smallGameRandom: this.#smallGameRandom.state(),
+    };
+  }
+
+  restore(snapshot: FaunaSnapshot): void {
+    this.#animals = snapshot.animals;
+    this.#herds = snapshot.herds;
+    this.#predators = [];
+    this.#animalsById.clear();
+    this.#herdsById.clear();
+
+    for (const animal of this.#animals) {
+      this.#animalsById.set(animal.id, animal);
+    }
+
+    for (const herd of this.#herds) {
+      this.#herdsById.set(herd.id, herd);
+    }
+
+    this.#smallGameRandom.restore(snapshot.smallGameRandom);
+    this.#instincts.restore(snapshot.instincts);
   }
 
   get animals(): readonly Animal[] {

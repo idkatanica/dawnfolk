@@ -1,22 +1,45 @@
 import { transfer } from "comlink";
 import type { GenerationProgress, WorldRequest } from "../generation/generation-options.ts";
+import { buffersWithin } from "../shared/buffers.ts";
 import type { InitialWorld, SimulationFrame } from "../simulation/frame.ts";
+import {
+  SAVE_VERSION,
+  type SavedWorldState,
+  savedWorldStateSchema,
+  summarizeWorld,
+} from "../simulation/saved-world.ts";
 import { Simulation } from "../simulation/simulation.ts";
 import { VEGETATION_CHANNELS, type VegetationChannels } from "../world/vegetation-store.ts";
 
 export interface SimulationWorkerApi {
   advance: (realSeconds: number, commands: readonly unknown[]) => SimulationFrame;
   createWorld: (request: WorldRequest, onProgress: (progress: GenerationProgress) => void) => InitialWorld;
+  loadWorld: (saved: unknown, onProgress: (progress: GenerationProgress) => void) => InitialWorld;
+  saveWorld: () => SavedWorldState | null;
 }
 
 type SimulationFactory = (request: WorldRequest, onProgress: (progress: GenerationProgress) => void) => Simulation;
 
+function generateIsland(request: WorldRequest, onProgress: (progress: GenerationProgress) => void): Simulation {
+  return Simulation.generate(request.seed, request.options, onProgress);
+}
+
 function generateSimulation(request: WorldRequest, onProgress: (progress: GenerationProgress) => void): Simulation {
-  const simulation = Simulation.generate(request.seed, request.options, onProgress);
+  const simulation = generateIsland(request, onProgress);
 
   simulation.populate();
 
   return simulation;
+}
+
+function readSavedWorld(saved: unknown): SavedWorldState {
+  const result = savedWorldStateSchema.safeParse(saved);
+
+  if (!result.success) {
+    throw new Error("This saved world cannot be loaded");
+  }
+
+  return result.data;
 }
 
 function channelBuffers(vegetation: VegetationChannels): ArrayBufferLike[] {
@@ -72,9 +95,20 @@ function initialWorldTransferables(world: InitialWorld): ArrayBuffer[] {
 }
 
 export function createSimulationWorkerApi(
-  createSimulation: SimulationFactory = generateSimulation
+  createSimulation: SimulationFactory = generateSimulation,
+  generateUnsettled: SimulationFactory = generateIsland
 ): SimulationWorkerApi {
   let simulation: Simulation | null = null;
+  let request: WorldRequest | null = null;
+
+  function sendWorld(created: Simulation, createdFrom: WorldRequest): InitialWorld {
+    simulation = created;
+    request = createdFrom;
+
+    const world = created.initialWorld();
+
+    return transfer(world, initialWorldTransferables(world));
+  }
 
   return {
     advance: (realSeconds, commands) => {
@@ -90,12 +124,35 @@ export function createSimulationWorkerApi(
 
       return transfer(frame, frameTransferables(frame));
     },
-    createWorld: (request, onProgress) => {
-      simulation = createSimulation(request, onProgress);
+    createWorld: (worldRequest, onProgress) => sendWorld(createSimulation(worldRequest, onProgress), worldRequest),
+    loadWorld: (saved, onProgress) => {
+      const { request: savedRequest, simulation: snapshot } = readSavedWorld(saved);
 
-      const world = simulation.initialWorld();
+      const loaded = generateUnsettled(savedRequest, onProgress);
 
-      return transfer(world, initialWorldTransferables(world));
+      loaded.restore(snapshot);
+
+      return sendWorld(loaded, savedRequest);
+    },
+    saveWorld: () => {
+      if (simulation === null || request === null) {
+        return null;
+      }
+
+      const snapshot = simulation.snapshot();
+
+      if (snapshot === null) {
+        return null;
+      }
+
+      const saved: SavedWorldState = {
+        request,
+        simulation: snapshot,
+        summary: summarizeWorld(simulation),
+        version: SAVE_VERSION,
+      };
+
+      return transfer(saved, buffersWithin(snapshot));
     },
   };
 }

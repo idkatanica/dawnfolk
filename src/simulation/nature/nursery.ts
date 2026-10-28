@@ -7,6 +7,11 @@ export const SEEDLING_SHARE = 0.2;
 const GROWTH_STEP_DAYS = 0.1;
 const VISIBLE_GROWTH = 0.03;
 
+export interface NurserySnapshot {
+  pendingDays: number;
+  seedlings: Seedling[];
+}
+
 interface Seedling {
   readonly bornDay: number;
   readonly growingDays: number;
@@ -23,6 +28,15 @@ export class Nursery {
 
   constructor(world: WorldState) {
     this.#world = world;
+  }
+
+  snapshot(): NurserySnapshot {
+    return { pendingDays: this.#pendingDays, seedlings: this.#seedlings.map((seedling) => ({ ...seedling })) };
+  }
+
+  restore(snapshot: NurserySnapshot): void {
+    this.#pendingDays = snapshot.pendingDays;
+    this.#seedlings = snapshot.seedlings.map((seedling) => ({ ...seedling }));
   }
 
   plant(placement: PlantPlacement, growingDays: number): void {

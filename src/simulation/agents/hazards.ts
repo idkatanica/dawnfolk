@@ -7,7 +7,7 @@ const VISIBLE_FIRE = 0.08;
 const FIRE_NEAR_CAMP = 0.2;
 const CAMP_WATCH_DIRECTIONS = 24;
 
-interface DangerZone {
+export interface DangerZone {
   radius: number;
   remainingSeconds: number;
   x: number;
@@ -22,6 +22,14 @@ export class HazardMap {
   constructor(world: WorldState, fire: FireSystem) {
     this.#world = world;
     this.#fire = fire;
+  }
+
+  snapshot(): DangerZone[] {
+    return this.#zones.map((zone) => ({ ...zone }));
+  }
+
+  restore(zones: readonly DangerZone[]): void {
+    this.#zones = zones.map((zone) => ({ ...zone }));
   }
 
   addZone(zone: DangerZone): void {

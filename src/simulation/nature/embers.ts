@@ -40,6 +40,15 @@ export class EmberSystem {
     this.#world = world;
   }
 
+  snapshot(): Ember[] {
+    return this.#embers.map((ember) => ({ ...ember }));
+  }
+
+  restore(embers: readonly Ember[]): void {
+    this.#embers.length = 0;
+    this.#embers.push(...embers.map((ember) => ({ ...ember })));
+  }
+
   get flying(): readonly Ember[] {
     return this.#embers;
   }

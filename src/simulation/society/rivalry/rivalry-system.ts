@@ -1,5 +1,5 @@
 import { clamp } from "../../../shared/math.ts";
-import { createRandom, type RandomSource } from "../../../shared/random.ts";
+import { createRandom, type RandomSource, type RandomState } from "../../../shared/random.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
 import type { Chronicle } from "../../chronicle.ts";
 import type { EffectLog } from "../../effects.ts";
@@ -15,7 +15,7 @@ import { litCampfireOf } from "../tribe-places.ts";
 import { armForHunt, type CarriedWeapon, carriedWeapon } from "../weapons.ts";
 import { ArrowFlights } from "./arrows.ts";
 import { BeastEncounters } from "./beast-encounters.ts";
-import { CombatLedger } from "./combat-ledger.ts";
+import { CombatLedger, type FighterRecord } from "./combat-ledger.ts";
 import { EnvoyJob, MournJob } from "./defense-jobs.ts";
 import type { Foe } from "./foes.ts";
 import { totalGoods, unpack } from "./provisions.ts";
@@ -131,6 +131,19 @@ export interface RaidView {
   readonly raiders: number;
 }
 
+export interface RivalrySnapshot {
+  claims: Map<number, Claim>;
+  ledger: Map<number, FighterRecord>;
+  mourningUntil: Map<number, number>;
+  nextRaidId: number;
+  raids: Raid[];
+  random: RandomState;
+  relations: Map<string, Relation>;
+  restingUntil: Map<number, number>;
+  surveyDays: number;
+  surveySeconds: number;
+}
+
 export interface RivalryView {
   readonly raids: readonly RaidView[];
   readonly relations: readonly RelationView[];
@@ -166,6 +179,34 @@ export class RivalrySystem implements Battleground {
     this.#chronicle = dependencies.chronicle;
     this.#arrows = new ArrowFlights(dependencies.effects);
     this.random = createRandom(dependencies.seed * 13 + 101);
+  }
+
+  snapshot(): RivalrySnapshot {
+    return {
+      claims: structuredClone(this.#claims),
+      ledger: this.ledger.snapshot(),
+      mourningUntil: new Map(this.#mourningUntil),
+      nextRaidId: this.#nextRaidId,
+      raids: structuredClone(this.#raids),
+      random: this.random.state(),
+      relations: this.relations.snapshot(),
+      restingUntil: new Map(this.#restingUntil),
+      surveyDays: this.#surveyDays,
+      surveySeconds: this.#surveySeconds,
+    };
+  }
+
+  restore(snapshot: RivalrySnapshot): void {
+    this.#claims = snapshot.claims;
+    this.ledger.restore(snapshot.ledger);
+    copyDates(this.#mourningUntil, snapshot.mourningUntil);
+    this.#nextRaidId = snapshot.nextRaidId;
+    this.#raids = snapshot.raids;
+    this.random.restore(snapshot.random);
+    this.relations.restore(snapshot.relations);
+    copyDates(this.#restingUntil, snapshot.restingUntil);
+    this.#surveyDays = snapshot.surveyDays;
+    this.#surveySeconds = snapshot.surveySeconds;
   }
 
   get raids(): readonly Raid[] {
@@ -885,6 +926,14 @@ export class RivalrySystem implements Battleground {
     }
 
     return day;
+  }
+}
+
+function copyDates(target: Map<number, number>, source: ReadonlyMap<number, number>): void {
+  target.clear();
+
+  for (const [tribeId, day] of source) {
+    target.set(tribeId, day);
   }
 }
 

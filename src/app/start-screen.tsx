@@ -5,14 +5,15 @@ import { Logo } from "../design/logo.tsx";
 import { useWorldDraft } from "../features/new-world/use-world-draft.ts";
 import { NameField, SeedField, ShapeChoice } from "../features/new-world/world-fields.tsx";
 import { ProjectLinks } from "../features/project/project-links.tsx";
+import { SavedWorldList } from "../features/saves/saved-world-list.tsx";
 import { loadGameEngine, loadHud } from "./engine-launcher.ts";
 import { useLaunchStore } from "./launch-store.ts";
 
 export function StartScreen() {
   const launch = useLaunchStore((state) => state.launch);
-  const relaunch = useLaunchStore((state) => state.relaunch);
+  const createWorld = useLaunchStore((state) => state.createWorld);
 
-  const draft = useWorldDraft(launch, relaunch);
+  const draft = useWorldDraft(launch, createWorld);
 
   useEffect(() => {
     Promise.all([loadGameEngine(), loadHud()]).catch((error: unknown) =>
@@ -32,6 +33,8 @@ export function StartScreen() {
             <p className="text-ink-soft text-sm">Guide the first tribes of a floating island.</p>
           </div>
         </header>
+
+        <SavedWorldList />
 
         <form
           aria-label="New world"

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { type LaunchChanges, useLaunchStore } from "../../app/launch-store.ts";
+import { type LaunchChanges, useLaunchStore, type WorldChoice } from "../../app/launch-store.ts";
 import { storeQuality } from "../../app/preferences.ts";
 import { TextButton } from "../../design/buttons.tsx";
 import { ChoiceField } from "../../design/choice-field.tsx";
@@ -8,6 +8,8 @@ import { isQualityLevel, QUALITY_LEVELS, type QualityLevel } from "../../renderi
 import { useInterfaceStore } from "../interface/interface-store.ts";
 import { useWorldDraft } from "../new-world/use-world-draft.ts";
 import { NameField, SeedField, ShapeChoice } from "../new-world/world-fields.tsx";
+import { SavesGroup } from "../saves/saves-group.tsx";
+import { saveBeforeLeaving } from "../saves/saves-store.ts";
 import { GROUP_CLASS, GroupHeading, SettingsGroup } from "./settings-group.tsx";
 
 const QUALITY_LABELS: Readonly<Record<QualityLevel, string>> = { high: "High", low: "Light", medium: "Balanced" };
@@ -20,7 +22,17 @@ function useRelaunch() {
 
   return (changes: LaunchChanges) => {
     setSettingsOpen(false);
-    relaunch(changes);
+    saveBeforeLeaving(() => relaunch(changes));
+  };
+}
+
+function useCreateWorld() {
+  const createWorld = useLaunchStore((state) => state.createWorld);
+  const setSettingsOpen = useInterfaceStore((state) => state.setSettingsOpen);
+
+  return (choice: WorldChoice) => {
+    setSettingsOpen(false);
+    saveBeforeLeaving(() => createWorld(choice));
   };
 }
 
@@ -56,7 +68,7 @@ function QualityChoice() {
           Apply
         </TextButton>
       }
-      description="The island is rebuilt from its seed to switch the quality."
+      description="The island is saved and reopened to switch the quality."
       title="Graphics"
     >
       <ChoiceField
@@ -84,11 +96,14 @@ function MapLabelsChoice() {
 function NewWorld() {
   const launch = useLaunchStore((state) => state.launch);
 
-  const draft = useWorldDraft(launch, useRelaunch());
+  const draft = useWorldDraft(launch, useCreateWorld());
 
   return (
     <form aria-label="New world" className={GROUP_CLASS} onSubmit={draft.create}>
-      <GroupHeading description="Every seed grows a different island. The current one is lost." title="New world" />
+      <GroupHeading
+        description="Every seed grows a different island. The current one stays in your worlds."
+        title="New world"
+      />
 
       <NameField onChange={draft.changeName} onRoll={draft.rollName} value={draft.nameText} />
 
@@ -113,6 +128,8 @@ function NewWorld() {
 export function GraphicsSection() {
   return (
     <>
+      <SavesGroup />
+
       <QualityChoice />
 
       <MapLabelsChoice />

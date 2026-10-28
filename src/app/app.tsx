@@ -11,6 +11,7 @@ const ReadyHud = lazy(() => loadHud().then((module) => ({ default: module.ReadyH
 
 function GameScreen() {
   const launch = useLaunchStore((state) => state.launch);
+  const worldId = useLaunchStore((state) => state.worldId);
   const isReady = useEngineStore((state) => state.status.kind === "ready");
 
   useEffect(() => {
@@ -19,7 +20,7 @@ function GameScreen() {
 
   return (
     <>
-      <GameView launch={launch} />
+      <GameView launch={launch} worldId={worldId} />
 
       {isReady ? (
         <Suspense fallback={null}>

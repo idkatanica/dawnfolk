@@ -45,3 +45,40 @@ describe("creating the world", () => {
     }
   });
 });
+
+describe("saving the world", () => {
+  function createApi() {
+    return createSimulationWorkerApi(
+      () => new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 } })),
+      () => new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 } }))
+    );
+  }
+
+  it("saves nothing before a world exists", () => {
+    expect(createApi().saveWorld()).toBeNull();
+  });
+
+  it("continues a saved world where it left off", () => {
+    const api = createApi();
+
+    api.createWorld(DEFAULT_WORLD_REQUEST, () => undefined);
+    api.advance(0.25, [{ parameters: {}, powerId: "tribe", type: "usePower", x: 0, z: 0 }]);
+
+    const saved = api.saveWorld();
+
+    if (saved === null) {
+      throw new Error("The world was busy");
+    }
+
+    expect(saved.summary.population).toBeGreaterThan(0);
+
+    const loaded = createApi().loadWorld(saved, () => undefined);
+
+    expect(loaded.frame.tick).toBe(saved.simulation.tick);
+    expect(loaded.frame.tribes).toHaveLength(saved.summary.tribeCount);
+  });
+
+  it("refuses a damaged save", () => {
+    expect(() => createApi().loadWorld({ version: 1 }, () => undefined)).toThrow("cannot be loaded");
+  });
+});
