@@ -3,8 +3,7 @@ import { describe, expect, it as test } from "vitest";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
-import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
-import { loosePieces } from "../testing/mesh-connectivity.ts";
+import { orderProblems, soundnessProblems } from "../testing/structure-checks.ts";
 import { buildEnclosurePiece, ENCLOSURE_SEGMENT_LENGTH, type EnclosureKind } from "./enclosures.ts";
 import type { StructureLevel } from "./structure-parts.ts";
 
@@ -12,35 +11,8 @@ const END_TOLERANCE = 0.02;
 const LEVELS: readonly StructureLevel[] = ["high", "low"];
 const ENCLOSURES: readonly EnclosureKind[] = ["palisade", "stoneWall"];
 
-function soundnessProblems(mesh: MeshData): string[] {
-  const detached = loosePieces(mesh).map((piece) => `detached ${piece}`);
-  const openEdge = highestOpenEdge(mesh) < 0.05 ? [] : [`open edge at ${highestOpenEdge(mesh).toFixed(2)}`];
-
-  return [...meshProblems(mesh), ...detached, ...openEdge];
-}
-
 function enclosurePieces(kind: EnclosureKind, level: StructureLevel): MeshData[] {
   return [buildEnclosurePiece(kind, "gate", level), buildEnclosurePiece(kind, "segment", level)];
-}
-
-function orderProblems(mesh: MeshData): string[] {
-  const orders = [...mesh.channels.buildOrder];
-
-  const problems: string[] = [];
-
-  if (Math.min(...orders) >= 0.3) {
-    problems.push("nothing is built first from the ground");
-  }
-
-  if (Math.max(...orders) <= 0.85) {
-    problems.push("nothing is left for the end of the build");
-  }
-
-  if (!orders.every((order) => order >= 0 && order <= 1)) {
-    problems.push("a build order is outside 0..1");
-  }
-
-  return problems;
 }
 
 describe.each(ENCLOSURES)("%s pieces", (kind) => {

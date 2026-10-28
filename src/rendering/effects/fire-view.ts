@@ -34,7 +34,7 @@ const SPARKS_PER_CELL = 2;
 const SPARKING = 0.35;
 const SPARK_RISE = 26;
 const CAMPFIRE_SPARK_RISE = 9;
-const SMOULDERING = 0.3;
+const SMOLDERING = 0.3;
 const CROWN_FIRE = 0.45;
 const CROWN_FLAME_FIRE = 0.1;
 const CROWN_SPARK_RISE = 34;
@@ -228,7 +228,7 @@ export class FireView {
   }
 
   #addGroundFlames(mirror: WorldMirror, burning: BurningCell): void {
-    if (burning.intensity < SMOULDERING) {
+    if (burning.intensity < SMOLDERING) {
       return;
     }
 

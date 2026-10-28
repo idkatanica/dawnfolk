@@ -42,7 +42,7 @@ export class MeteorFall implements ActiveEffect {
   #age = 0;
   #sparkCount = 0;
   #sparkDebt = 0;
-  #travelled = 0;
+  #traveled = 0;
 
   constructor(context: EffectContext, effect: MeteorEffect) {
     this.#context = context;
@@ -104,12 +104,12 @@ export class MeteorFall implements ActiveEffect {
   #leaveTrail(): void {
     const spacing = this.#size * TRAIL_SPACING;
 
-    this.#travelled += this.#previous.distanceTo(this.#head);
+    this.#traveled += this.#previous.distanceTo(this.#head);
 
-    while (this.#travelled >= spacing) {
-      this.#travelled -= spacing;
+    while (this.#traveled >= spacing) {
+      this.#traveled -= spacing;
 
-      const behind = this.#head.clone().addScaledVector(this.#direction, -this.#travelled);
+      const behind = this.#head.clone().addScaledVector(this.#direction, -this.#traveled);
 
       this.#puffs.push({ age: this.#age, index: this.#puffs.length, position: behind });
     }

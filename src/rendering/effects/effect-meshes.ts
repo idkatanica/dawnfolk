@@ -75,20 +75,6 @@ function buildRibbonGeometry(strands: readonly (readonly RibbonPoint[])[]): Buff
   return geometry;
 }
 
-class PerObjectValues {
-  readonly #values = new WeakMap<Object3D, number>();
-
-  set(object: Object3D, value: number): void {
-    this.#values.set(object, value);
-  }
-
-  read(object: Object3D | null): number {
-    const value = object === null ? undefined : this.#values.get(object);
-
-    return value === undefined ? 1 : value;
-  }
-}
-
 function createRibbonMaterial(brightnesses: PerObjectValues): MeshBasicNodeMaterial {
   const material = new MeshBasicNodeMaterial({ blending: AdditiveBlending, depthWrite: false, transparent: true });
   const brightness = uniform(1).onObjectUpdate(({ object }) => brightnesses.read(object));
@@ -132,6 +118,20 @@ function createMeteorMaterial(): MeshBasicNodeMaterial {
   material.colorNode = mix(vec3(0.2, 0.12, 0.08), vec3(2.6, 1.05, 0.25), glow.mul(0.85).add(0.15));
 
   return material;
+}
+
+class PerObjectValues {
+  readonly #values = new WeakMap<Object3D, number>();
+
+  set(object: Object3D, value: number): void {
+    this.#values.set(object, value);
+  }
+
+  read(object: Object3D | null): number {
+    const value = object === null ? undefined : this.#values.get(object);
+
+    return value === undefined ? 1 : value;
+  }
 }
 
 export class EffectMeshes {

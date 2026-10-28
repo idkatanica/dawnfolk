@@ -61,7 +61,7 @@ const RIPE_TINTS: Readonly<Record<CropKind, Tint>> = {
   wheat: [0.78, 0.64, 0.3],
 };
 
-export interface FieldGround {
+interface FieldGround {
   readonly color: Node<"vec3">;
   readonly normal: Node<"vec3">;
 }

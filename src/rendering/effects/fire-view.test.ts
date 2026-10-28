@@ -110,7 +110,7 @@ describe("fire view", () => {
     expect(fire.puffCount).toBe(0);
   });
 
-  it("leaves smouldering ground without flames", () => {
+  it("leaves smoldering ground without flames", () => {
     const { camera, fire, mirror } = createScene();
 
     setBurning(mirror, new Map([[cellWithoutPlants(mirror), 0.1]]));
@@ -147,7 +147,7 @@ describe("fire view", () => {
     expect(fire.flameCount).toBeGreaterThan(2);
   });
 
-  it("keeps tree crowns calm under a smouldering fire", () => {
+  it("keeps tree crowns calm under a smoldering fire", () => {
     const { camera, fire, mirror } = createScene();
 
     const cell = cellWithLivingTree(mirror);
@@ -185,13 +185,13 @@ describe("fire view", () => {
     setBurning(mirror, new Map([[cell, 0.25]]));
     fire.update(mirror, camera, 0);
 
-    const smouldering = fire.flameCount;
+    const smoldering = fire.flameCount;
 
     setScorch(mirror, cell, 1);
     setBurning(mirror, new Map([[cell, 0.25]]));
     fire.update(mirror, camera, 0);
 
-    expect(smouldering).toBeGreaterThan(0);
+    expect(smoldering).toBeGreaterThan(0);
     expect(fire.flameCount).toBe(0);
   });
 

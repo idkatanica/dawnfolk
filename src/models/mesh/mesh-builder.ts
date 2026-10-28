@@ -84,9 +84,7 @@ export class MeshBuilder {
 
     for (let index = 0; index < shapeVertexCount(shape); index += 1) {
       const vertex = readShapeVertex(shape, index);
-
       const local = new Vector3(vertex.x, vertex.y, vertex.z);
-
       const position = local.clone().applyMatrix4(transform);
       const normal = new Vector3(vertex.normalX, vertex.normalY, vertex.normalZ).applyMatrix3(normalMatrix).normalize();
 
@@ -108,9 +106,7 @@ export class MeshBuilder {
 
     for (let index = 0; index < vertexCount(mesh); index += 1) {
       const offset = index * 3;
-
       const local = new Vector3(mesh.positions[offset], mesh.positions[offset + 1], mesh.positions[offset + 2]);
-
       const position = local.clone().applyMatrix4(transform);
       const normal = new Vector3(mesh.normals[offset], mesh.normals[offset + 1], mesh.normals[offset + 2])
         .applyMatrix3(normalMatrix)

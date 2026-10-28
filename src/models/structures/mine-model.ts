@@ -20,12 +20,6 @@ import {
 
 export const MINE_SCALE = 1.5;
 
-const ORE_SLOTS: Readonly<Record<MineOre, MaterialSlotIndex>> = {
-  copper: MaterialSlot.CopperOre,
-  iron: MaterialSlot.IronOre,
-  tin: MaterialSlot.TinOre,
-};
-
 const MOUND_CENTER = -1.5;
 const MOUND_RADIUS = 2.15;
 const PORTAL_HALF_WIDTH = 0.72;
@@ -36,9 +30,16 @@ const RAIL_START = 0.55;
 const RAIL_END = 2.05;
 const CART_Z = 1.5;
 const WHEEL_RADIUS = 0.17;
-const ORE_RICHNESS: Readonly<Record<MineOre, number>> = { copper: 0.13, iron: 0.15, tin: 0.12 };
 
 export type MineOre = MinedDepositKind;
+
+const ORE_SLOTS: Readonly<Record<MineOre, MaterialSlotIndex>> = {
+  copper: MaterialSlot.CopperOre,
+  iron: MaterialSlot.IronOre,
+  tin: MaterialSlot.TinOre,
+};
+
+const ORE_RICHNESS: Readonly<Record<MineOre, number>> = { copper: 0.13, iron: 0.15, tin: 0.12 };
 
 function oreLook(ore: MineOre, richness: number): OreLook {
   return { ore: ORE_SLOTS[ore], richness, rock: MaterialSlot.Stone };

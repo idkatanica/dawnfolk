@@ -2,10 +2,11 @@ import { Vector3 } from "three";
 import { describe, expect, it, it as test } from "vitest";
 import { BUILDINGS } from "../../content/buildings.ts";
 import { MaterialSlot } from "../materials.ts";
-import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
+import { triangleCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { loosePieces, TOUCHING } from "../testing/mesh-connectivity.ts";
+import { widestReach } from "../testing/structure-checks.ts";
 import { buildBuildingModel, buildingScale, SINGLE_MODEL_KINDS, type SingleModelKind } from "./building-models.ts";
 import { GLOW_PART } from "./structure-parts.ts";
 
@@ -23,16 +24,6 @@ const WORKING_BUILDINGS: readonly SingleModelKind[] = [
 ];
 
 const GLOWING_BUILDINGS: readonly SingleModelKind[] = ["forge", "kiln", "smelter"];
-
-function widestReach(mesh: MeshData): number {
-  let reach = 0;
-
-  for (let vertex = 0; vertex < vertexCount(mesh); vertex += 1) {
-    reach = Math.max(reach, Math.hypot(mesh.positions[vertex * 3], mesh.positions[vertex * 3 + 2]));
-  }
-
-  return reach;
-}
 
 describe.each(SINGLE_MODEL_KINDS)("%s model", (kind) => {
   const high = buildBuildingModel(kind, "high");
@@ -68,7 +59,7 @@ describe.each(SINGLE_MODEL_KINDS)("%s model", (kind) => {
 });
 
 describe("building details", () => {
-  it("paints every dwelling and the totem in the tribe colour", () => {
+  it("paints every dwelling and the totem in the tribe color", () => {
     for (const kind of ["hut", "storehouse", "tent", "totem"] as const) {
       expect(buildBuildingModel(kind, "high").channels.slot).toContain(MaterialSlot.Accent);
     }
@@ -98,7 +89,7 @@ describe("era buildings", () => {
     }
   });
 
-  it.each(WORKING_BUILDINGS)("paints the %s in the tribe colour", (kind) => {
+  it.each(WORKING_BUILDINGS)("paints the %s in the tribe color", (kind) => {
     for (const level of LEVELS) {
       expect(buildBuildingModel(kind, level).channels.slot).toContain(MaterialSlot.Accent);
     }
@@ -125,7 +116,7 @@ describe("era buildings", () => {
     expect(longhouse.channels.slot[longhouse.indices[hit.triangle * 3]]).toBe(MaterialSlot.Ash);
   });
 
-  it.each(LEVELS)("paints the %s stone house door in the tribe colour", (level) => {
+  it.each(LEVELS)("paints the %s stone house door in the tribe color", (level) => {
     const house = buildBuildingModel("stoneHouse", level);
 
     const hit = outermostHit(house, new Vector3(0, 1, 0), new Vector3(0, 0, 1));

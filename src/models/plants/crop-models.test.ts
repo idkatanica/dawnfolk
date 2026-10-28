@@ -41,7 +41,7 @@ describe.each(CROP_KINDS)("%s clump", (kind) => {
     expect(mesh.bounds.maximum[1]).toBeLessThan(CROP_HEIGHTS[kind] * 1.2);
   });
 
-  test("keeps ears, flowers, pods or roots in their own part and colour", () => {
+  test("keeps ears, flowers, pods or roots in their own part and color", () => {
     for (const level of CROP_DETAIL_LEVELS) {
       const mesh = buildCropModel(kind, level);
       const heads = headsOf(mesh);

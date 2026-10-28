@@ -30,9 +30,7 @@ export function transformOf(options: TransformOptions): Matrix4 {
 
 export function segmentTransform(start: Triple, end: Triple): Matrix4 {
   const from = new Vector3(...start);
-
   const direction = new Vector3(...end).sub(from).normalize();
-
   const rotation = new Quaternion().setFromUnitVectors(UP, direction);
 
   return new Matrix4().compose(from, rotation, new Vector3(1, 1, 1));

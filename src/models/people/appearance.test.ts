@@ -34,7 +34,7 @@ describe("person appearance", () => {
     expect(child.body.headSize).toBeGreaterThan(adult.body.headSize);
   });
 
-  it("greys and stoops most elders", () => {
+  it("grays and stoops most elders", () => {
     const elders = seeds(60).map((seed) => appearanceFor({ age: 70, seed }));
     const adults = seeds(60).map((seed) => appearanceFor({ age: 30, seed }));
 

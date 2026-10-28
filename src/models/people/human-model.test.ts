@@ -7,7 +7,14 @@ import { type MeshData, mergeMeshes, triangleCount, VERTEX_CHANNELS } from "../m
 import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { meshProblems, openEdgeCount, thinnestPiece } from "../testing/mesh-checks.ts";
-import { loosePieces, type MeshPiece, meshPieces, piecesTouch, TOUCHING } from "../testing/mesh-connectivity.ts";
+import {
+  isTorso,
+  loosePieces,
+  type MeshPiece,
+  meshPieces,
+  piecesTouch,
+  TOUCHING,
+} from "../testing/mesh-connectivity.ts";
 import { posedMesh } from "../testing/moved-mesh.ts";
 import { type PersonAppearance, personAppearance } from "./appearance.ts";
 import { applyHumanClip } from "./human-clips.ts";
@@ -85,10 +92,6 @@ function holdsBodyPart(mesh: MeshData, body: readonly HumanPart[]): (piece: Mesh
 
 function carriedTo(clip: PersonPose): CarriedItem {
   return clip === "carry" ? "wood" : "nothing";
-}
-
-function isTorso(piece: MeshPiece): boolean {
-  return piece.vertices.includes(0);
 }
 
 describe("human model", () => {

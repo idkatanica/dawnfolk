@@ -61,6 +61,10 @@ export function vertexKey(mesh: MeshData, vertex: number): string {
     .join(",");
 }
 
+export function isTorso(piece: MeshPiece): boolean {
+  return piece.vertices.includes(0);
+}
+
 function joinSharedPositions(mesh: MeshData, sets: DisjointSets, count: number): void {
   const firstAtPosition = new Map<string, number>();
 

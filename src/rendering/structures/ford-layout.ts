@@ -84,7 +84,7 @@ export interface BarPoint {
   readonly z: number;
 }
 
-export interface FordLayout {
+interface FordLayout {
   readonly bar: readonly (readonly BarPoint[])[];
   readonly stones: readonly FordStone[];
 }

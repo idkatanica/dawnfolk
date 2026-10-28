@@ -1,18 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { isTreeSpecies } from "../../content/plants.ts";
-import { WorldMirror } from "../../game/world-mirror.ts";
-import { Simulation } from "../../simulation/simulation.ts";
-import { createVegetatedWorld, steepeningRamp, type TestWorldOptions } from "../../simulation/testing/test-world.ts";
+import type { WorldMirror } from "../../game/world-mirror.ts";
+import { steepeningRamp } from "../../simulation/testing/test-world.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
+import { createVegetatedMirror } from "../testing/vegetated-mirror.ts";
 import { UnderstoryField } from "./understory-field.ts";
-
-function createMirror(overrides: Partial<TestWorldOptions> = {}): WorldMirror {
-  const simulation = new Simulation(
-    createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 }, ...overrides })
-  );
-
-  return new WorldMirror(simulation.initialWorld(), 0);
-}
 
 function treeCells(mirror: WorldMirror): Set<number> {
   const cells = new Set<number>();
@@ -28,7 +20,7 @@ function treeCells(mirror: WorldMirror): Set<number> {
 
 describe("understory field", () => {
   it("thins the grass under tree crowns and leaves open ground full", () => {
-    const mirror = createMirror();
+    const mirror = createVegetatedMirror();
     const field = new UnderstoryField(mirror);
 
     const shaded = treeCells(mirror);
@@ -41,7 +33,7 @@ describe("understory field", () => {
   });
 
   it("lets the grass back once a tree is gone", () => {
-    const mirror = createMirror();
+    const mirror = createVegetatedMirror();
     const field = new UnderstoryField(mirror);
 
     const tree = Array.from({ length: mirror.vegetation.count }, (_, plant) => plant).find((plant) =>
@@ -66,7 +58,7 @@ describe("understory field", () => {
   });
 
   it("bares ground too steep for grass", () => {
-    const mirror = createMirror({ heightAt: steepeningRamp(1.4, 320) });
+    const mirror = createVegetatedMirror({ heightAt: steepeningRamp(1.4, 320) });
     const field = new UnderstoryField(mirror);
 
     const gentle = mirror.grid.cellAt(-300, 0);

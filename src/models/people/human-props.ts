@@ -1,7 +1,5 @@
 import { Vector3 } from "three";
 import { FULL_TURN } from "../../shared/math.ts";
-import { createVolumeNoise } from "../../shared/noise.ts";
-import { createRandom } from "../../shared/random.ts";
 import { segmentsAtLeast } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder } from "../mesh/mesh-builder.ts";
@@ -9,13 +7,13 @@ import type { Shape } from "../mesh/shape.ts";
 import { blob, box, cone, cylinder, type LoftSection, lathe, loft, sphere, torus, tube } from "../mesh/shapes.ts";
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
+import { STONE_NOISE } from "../stones.ts";
 import { forEachSide, headShape, headStroke } from "./human-anatomy.ts";
 import { type HumanDetail, trimSegments } from "./human-detail.ts";
 import { armStyle, FLEXIBLE_TORSO_STYLE } from "./human-rigging.ts";
 import { HumanBone } from "./human-skeleton.ts";
 import { addRod, CRADLE, inLeftHand, inRightHand, LEFT_FIST, onChest, RIGHT_FIST } from "./prop-placement.ts";
 
-const PROP_NOISE = createVolumeNoise(createRandom(4242));
 const SHOULDER_GRIP: Triple = [0.25, 1.46, 0.21];
 const FEATHER_LENGTH = 0.17;
 const FEATHER_TIP = 0.05;
@@ -28,7 +26,7 @@ function ring(detail: HumanDetail, radius: number, thickness: number, segments: 
 }
 
 function lump(detail: HumanDetail, offset: Triple, radius: number, roughness: number): Shape {
-  return blob({ detail: detail.propSubdivisions, noise: PROP_NOISE, offset, radius, roughness });
+  return blob({ detail: detail.propSubdivisions, noise: STONE_NOISE, offset, radius, roughness });
 }
 
 export function addHeadband(builder: MeshBuilder, detail: HumanDetail): void {

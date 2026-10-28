@@ -40,13 +40,6 @@ const NEAR_FADE_START = 6;
 const NEAR_FADE_END = 60;
 const SUN_SHARE = 0.55;
 
-export class SmokeLook {
-  readonly brightness = uniform(1);
-  readonly sunlight = uniform(1);
-  readonly sunDirection = uniform(new Vector3(0, 1, 0));
-  readonly wind = uniform(new Vector2(1, 0));
-}
-
 export function createSmokeMaterial(axes: CameraAxes, look: SmokeLook): MeshBasicNodeMaterial {
   const material = new MeshBasicNodeMaterial({ depthWrite: false, transparent: true });
   const { corner, look: puff, placement } = billboardNodes();
@@ -113,4 +106,11 @@ export function createSmokeMaterial(axes: CameraAxes, look: SmokeLook): MeshBasi
   material.opacityNode = softness.mul(softness).mul(billow).mul(fade).mul(nearFade).mul(thinning).mul(opacity);
 
   return material;
+}
+
+export class SmokeLook {
+  readonly brightness = uniform(1);
+  readonly sunlight = uniform(1);
+  readonly sunDirection = uniform(new Vector3(0, 1, 0));
+  readonly wind = uniform(new Vector2(1, 0));
 }

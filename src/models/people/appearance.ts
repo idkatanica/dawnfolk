@@ -179,9 +179,9 @@ function naturalHairColor(random: RandomSource, skinDarkness: number): number {
 }
 
 function hairColor(random: RandomSource, ageGroup: AgeGroup, skinDarkness: number): number {
-  const isGrey = random.chance(0.8);
+  const isGray = random.chance(0.8);
 
-  if (ageGroup === "elder" && isGrey) {
+  if (ageGroup === "elder" && isGray) {
     return random.pick(ELDER_HAIR);
   }
 
@@ -408,12 +408,12 @@ function withEraDetails(appearance: PersonAppearance, era: number, seed: number)
 export function personAppearance(input: AppearanceInput): PersonAppearance {
   const random = createRandom(Math.floor(input.seed * 2_147_483_647) + 1);
   const ageGroup = ageGroupOf(input.age);
-  const elderGrey = smoothstep(ELDER_AGE, ELDER_AGE + 15, input.age);
+  const elderGray = smoothstep(ELDER_AGE, ELDER_AGE + 15, input.age);
   const skinDarkness = skinTonePosition(random, input.tribe.id);
   const wearsCape = random.chance(0.3);
   const wearsCloak = random.chance(0.45);
   const skin = colorFromPalette(SKIN_TONES, skinDarkness);
-  const hair = mixColors(hairColor(random.derive(1), ageGroup, skinDarkness), ELDER_HAIR[1], elderGrey * 0.3);
+  const hair = mixColors(hairColor(random.derive(1), ageGroup, skinDarkness), ELDER_HAIR[1], elderGray * 0.3);
 
   const appearance: PersonAppearance = {
     accessories: accessories(random, ageGroup),

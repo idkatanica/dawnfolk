@@ -7,6 +7,16 @@ import { HumanBone, SIDES, type Side } from "./human-skeleton.ts";
 import { CHARGING, MARCHING, runningLegs, walkingLegs } from "./leg-cycles.ts";
 import { plantFeet } from "./planted-feet.ts";
 
+export const FIGHT_CLIPS: Readonly<Record<FightPose, HumanClip>> = {
+  block: { apply: block, timing: seconds(1.2), tool: null },
+  brawl: { apply: brawl, timing: seconds(0.9), tool: null },
+  charge: { apply: charge, timing: STRIDE_TIMING, tool: null },
+  fall: { apply: fall, timing: { cycleSeconds: 1.5, kind: "once" }, tool: null },
+  flinch: { apply: flinch, timing: { cycleSeconds: 0.5, kind: "once" }, tool: null },
+  march: { apply: march, timing: STRIDE_TIMING, tool: null },
+  thrust: { apply: thrust, timing: seconds(1.1), tool: null },
+};
+
 const WEAPON_SIDE: Side = -1;
 const GUARD_SIDE: Side = 1;
 
@@ -100,7 +110,7 @@ const SPEAR_LUNGE: Stance = {
   weaponArm: arm(4, -19, 104, -13, -89),
 };
 
-const SPEAR_LEVELLED: Stance = {
+const SPEAR_LEVELED: Stance = {
   bodyForward: 12,
   bodyTurn: 0,
   chestTurn: 10,
@@ -116,16 +126,6 @@ const PARRY: Stance = {
   guardArm: arm(58, 8, 89, -7),
   headTurn: -10,
   weaponArm: arm(95, 82, 114, -89, -37),
-};
-
-export const FIGHT_CLIPS: Readonly<Record<FightPose, HumanClip>> = {
-  block: { apply: block, timing: seconds(1.2), tool: null },
-  brawl: { apply: brawl, timing: seconds(0.9), tool: null },
-  charge: { apply: charge, timing: STRIDE_TIMING, tool: null },
-  fall: { apply: fall, timing: { cycleSeconds: 1.5, kind: "once" }, tool: null },
-  flinch: { apply: flinch, timing: { cycleSeconds: 0.5, kind: "once" }, tool: null },
-  march: { apply: march, timing: STRIDE_TIMING, tool: null },
-  thrust: { apply: thrust, timing: seconds(1.1), tool: null },
 };
 
 function arm(forward: number, outward: number, elbow: number, twist = 0, wrist = 0): ArmAngles {
@@ -203,7 +203,7 @@ function charge(pose: Pose, phase: number, context: HumanClipContext): void {
   const swing = cosineWave(phase);
 
   runningLegs(pose, phase, strideOf(context), CHARGING);
-  poseUpperBody(pose, SPEAR_LEVELLED);
+  poseUpperBody(pose, SPEAR_LEVELED);
   moveBody(pose, { turnLeft: -degrees(5) * swing });
   bendTrunk(pose, HumanBone.Spine, { forward: degrees(4), turnLeft: degrees(4) * swing });
   pose.height = 0.05 * Math.max(0, wave(phase * 2, -0.05));

@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { PlantSpecies } from "../../content/plants.ts";
-import { WorldMirror } from "../../game/world-mirror.ts";
-import { Simulation } from "../../simulation/simulation.ts";
-import { createVegetatedWorld, type TestWorldOptions } from "../../simulation/testing/test-world.ts";
+import type { WorldMirror } from "../../game/world-mirror.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
+import { createVegetatedMirror } from "../testing/vegetated-mirror.ts";
 import {
   BUCKET_COUNT,
   bucketGroups,
@@ -14,14 +13,6 @@ import {
 } from "./vegetation-chunks.ts";
 
 const SLOPE = 0.6;
-
-function createMirror(overrides: Partial<TestWorldOptions> = {}): WorldMirror {
-  const simulation = new Simulation(
-    createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 }, ...overrides })
-  );
-
-  return new WorldMirror(simulation.initialWorld(), 0);
-}
 
 function packedPlantCount(chunks: VegetationChunks): number {
   return chunks.chunks.reduce(
@@ -44,7 +35,7 @@ function alivePlantCount(mirror: WorldMirror): number {
 
 describe("vegetation chunks", () => {
   it("packs every standing plant once", () => {
-    const mirror = createMirror();
+    const mirror = createVegetatedMirror();
     const chunks = new VegetationChunks(mirror);
 
     chunks.repackDirty();
@@ -54,7 +45,7 @@ describe("vegetation chunks", () => {
   });
 
   it("keeps one bucket per species and variant", () => {
-    const chunks = new VegetationChunks(createMirror());
+    const chunks = new VegetationChunks(createVegetatedMirror());
 
     chunks.repackDirty();
 
@@ -64,7 +55,7 @@ describe("vegetation chunks", () => {
   });
 
   it("drops removed plants after a change", () => {
-    const mirror = createMirror();
+    const mirror = createVegetatedMirror();
     const chunks = new VegetationChunks(mirror);
 
     chunks.repackDirty();
@@ -76,7 +67,7 @@ describe("vegetation chunks", () => {
   });
 
   it("reports every bucket whose plants a repack changed", () => {
-    const mirror = createMirror();
+    const mirror = createVegetatedMirror();
     const chunks = new VegetationChunks(mirror);
 
     chunks.repackDirty();
@@ -105,7 +96,7 @@ describe("vegetation chunks", () => {
   });
 
   it("reports every bucket after a height change", () => {
-    const chunks = new VegetationChunks(createMirror());
+    const chunks = new VegetationChunks(createVegetatedMirror());
 
     chunks.repackDirty();
     chunks.heightsChanged({ firstColumn: 0, firstRow: 0, lastColumn: 0, lastRow: 0 });
@@ -116,7 +107,7 @@ describe("vegetation chunks", () => {
   });
 
   it("places plants on the ground", () => {
-    const mirror = createMirror();
+    const mirror = createVegetatedMirror();
     const chunks = new VegetationChunks(mirror);
 
     chunks.repackDirty();
@@ -134,7 +125,7 @@ describe("vegetation chunks", () => {
   });
 
   it("sinks plants on a slope until their downhill side touches the ground", () => {
-    const mirror = createMirror({ heightAt: (x) => 100 + x * SLOPE });
+    const mirror = createVegetatedMirror({ heightAt: (x) => 100 + x * SLOPE });
     const chunks = new VegetationChunks(mirror);
 
     chunks.repackDirty();

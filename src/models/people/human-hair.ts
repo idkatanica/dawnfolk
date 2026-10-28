@@ -316,7 +316,7 @@ function beardCoverage(vertex: ShapeVertex): number {
   return front * below * (1 - lip);
 }
 
-function beardShell(sections: readonly LoftSection[], detail: HumanDetail): Shape {
+function beardShell(detail: HumanDetail, sections: readonly LoftSection[]): Shape {
   return deformShape(loft(alongPath(sections, detail), detail.headSegments), (vertex) => {
     const { centerZ = 0 } = sectionAt(sections, vertex.y);
 
@@ -333,9 +333,9 @@ function beardShell(sections: readonly LoftSection[], detail: HumanDetail): Shap
 }
 
 export function addShortBeard(builder: MeshBuilder, detail: HumanDetail): void {
-  builder.add(beardShell(BEARD_SECTIONS, detail), { style: HAIR });
+  builder.add(beardShell(detail, BEARD_SECTIONS), { style: HAIR });
 }
 
 export function addFullBeard(builder: MeshBuilder, detail: HumanDetail): void {
-  builder.add(beardShell(FULL_BEARD_SECTIONS, detail), { style: HAIR });
+  builder.add(beardShell(detail, FULL_BEARD_SECTIONS), { style: HAIR });
 }

@@ -116,7 +116,7 @@ export function addDrawnBow(builder: MeshBuilder, detail: HumanDetail): void {
   });
 }
 
-function quiverEnd(end: Triple, detail: HumanDetail): Triple {
+function quiverEnd(detail: HumanDetail, end: Triple): Triple {
   const sink = detail.hasSmallParts ? 0 : FAR_QUIVER_SINK;
 
   return [end[0], end[1], end[2] + sink];
@@ -175,7 +175,7 @@ export function addQuiver(builder: MeshBuilder, detail: HumanDetail): void {
     ),
     {
       style: onChest(MaterialSlot.Hide),
-      transform: segmentTransform(quiverEnd(QUIVER_BOTTOM, detail), quiverEnd(QUIVER_TOP, detail)),
+      transform: segmentTransform(quiverEnd(detail, QUIVER_BOTTOM), quiverEnd(detail, QUIVER_TOP)),
     }
   );
 

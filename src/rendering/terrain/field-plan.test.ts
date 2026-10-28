@@ -1,23 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { Ground } from "../../content/grounds.ts";
-import { WorldMirror } from "../../game/world-mirror.ts";
-import { Simulation } from "../../simulation/simulation.ts";
-import { createVegetatedWorld, type TestWorldOptions } from "../../simulation/testing/test-world.ts";
+import type { WorldMirror } from "../../game/world-mirror.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
+import { createVegetatedMirror } from "../testing/vegetated-mirror.ts";
 import { FieldPlan, FurrowAxis } from "./field-plan.ts";
-
-type CellStep = readonly [column: number, row: number];
 
 const FIRST_COLUMN = 20;
 const FIRST_ROW = 24;
 
-function createMirror(overrides: Partial<TestWorldOptions> = {}): WorldMirror {
-  const simulation = new Simulation(
-    createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 }, ...overrides })
-  );
-
-  return new WorldMirror(simulation.initialWorld(), 0);
-}
+type CellStep = readonly [column: number, row: number];
 
 function cellsOf(mirror: WorldMirror, steps: readonly CellStep[]): number[] {
   return steps.map(([column, row]) => mirror.grid.index(FIRST_COLUMN + column, FIRST_ROW + row));
@@ -36,7 +27,7 @@ function plow(mirror: WorldMirror, plan: FieldPlan, cells: readonly number[], gr
 
 describe("field plan", () => {
   it("gives every cell of a field the same furrow direction", () => {
-    const mirror = createMirror();
+    const mirror = createVegetatedMirror();
     const plan = new FieldPlan(mirror);
 
     const field = cellsOf(mirror, [
@@ -58,7 +49,7 @@ describe("field plan", () => {
   });
 
   it("runs furrows along the longer side of a field on flat ground", () => {
-    const mirror = createMirror();
+    const mirror = createVegetatedMirror();
     const plan = new FieldPlan(mirror);
 
     const wide = cellsOf(mirror, [
@@ -79,7 +70,7 @@ describe("field plan", () => {
   });
 
   it("runs furrows across the slope of a hillside field", () => {
-    const mirror = createMirror({ heightAt: (x) => 100 + x * 0.2 });
+    const mirror = createVegetatedMirror({ heightAt: (x) => 100 + x * 0.2 });
     const plan = new FieldPlan(mirror);
 
     const field = cellsOf(mirror, [
@@ -94,7 +85,7 @@ describe("field plan", () => {
   });
 
   it("forgets cells that are no longer farmed", () => {
-    const mirror = createMirror();
+    const mirror = createVegetatedMirror();
     const plan = new FieldPlan(mirror);
 
     const field = cellsOf(mirror, [

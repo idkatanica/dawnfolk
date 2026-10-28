@@ -7,7 +7,14 @@ import { Pose } from "../rig/pose.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { measureStride } from "../rig/stride.ts";
 import { meshProblems, openEdgeCount, thinnestPiece } from "../testing/mesh-checks.ts";
-import { isInsidePiece, loosePieces, type MeshPiece, meshPieces, TOUCHING } from "../testing/mesh-connectivity.ts";
+import {
+  isInsidePiece,
+  isTorso,
+  loosePieces,
+  type MeshPiece,
+  meshPieces,
+  TOUCHING,
+} from "../testing/mesh-connectivity.ts";
 import { posedMesh } from "../testing/moved-mesh.ts";
 import { animalAppearance } from "./animal-appearance.ts";
 import { ANIMAL_SPECIES, animalBoneScales, buildAnimalParts, poseAnimal } from "./animal-models.ts";
@@ -18,10 +25,6 @@ const ADULT = { seed: 0.31, youth: 0 };
 const THINNEST = 0.001;
 const PHASES = [0, 0.25, 0.5, 0.75];
 const LEVELS = ["high", "low", "far"] as const;
-
-function isTorso(piece: MeshPiece): boolean {
-  return piece.vertices.includes(0);
-}
 
 function posedAnimal(kind: (typeof ANIMAL_KINDS)[number], clip: (typeof ANIMAL_POSES)[number], phase: number) {
   const species = ANIMAL_SPECIES[kind];

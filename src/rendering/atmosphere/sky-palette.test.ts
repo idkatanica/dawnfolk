@@ -31,7 +31,7 @@ describe("sky palette", () => {
     expect(red).toBeGreaterThan(blue);
   });
 
-  it("greys the sky under heavy clouds", () => {
+  it("grays the sky under heavy clouds", () => {
     const clear = skyPaletteAt(0.8, 0, 0);
     const overcast = skyPaletteAt(0.8, 1, 0);
 

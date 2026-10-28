@@ -134,7 +134,6 @@ export function displaceShape(shape: Shape, displacement: Displacement, normalSo
 
   for (let index = 0; index < shapeVertexCount(shape); index += 1) {
     const vertex = readShapeVertex(shape, index);
-
     const offset = displacement(vertex);
 
     positions[index * 3] += vertex.normalX * offset;

@@ -13,7 +13,7 @@ export const STONE_NOISE = createVolumeNoise(createRandom(4242));
 const LEAST_FACING = 0.05;
 const BUMP_FREQUENCY = 1.6;
 
-export interface FlatCut {
+interface FlatCut {
   readonly distance: number;
   readonly normal: Triple;
 }

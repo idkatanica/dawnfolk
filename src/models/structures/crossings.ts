@@ -145,7 +145,7 @@ function trunk(log: LogShape, level: CrossingDetailLevel): Shape {
   return tube(points, { radialSegments: TRUNK_SIDES[level] });
 }
 
-function addStubs(log: LogShape, level: CrossingDetailLevel, builder: MeshBuilder): void {
+function addStubs(builder: MeshBuilder, log: LogShape, level: CrossingDetailLevel): void {
   const { random } = log;
 
   for (let stub = 0; stub < STUBS[level]; stub += 1) {
@@ -174,7 +174,7 @@ function addStubs(log: LogShape, level: CrossingDetailLevel, builder: MeshBuilde
   }
 }
 
-function addSplinters(log: LogShape, level: CrossingDetailLevel, builder: MeshBuilder): void {
+function addSplinters(builder: MeshBuilder, log: LogShape, level: CrossingDetailLevel): void {
   const { random } = log;
 
   const end = trunkAxis(log, log.length);
@@ -194,7 +194,7 @@ function addSplinters(log: LogShape, level: CrossingDetailLevel, builder: MeshBu
   }
 }
 
-function addRootPlate(log: LogShape, level: CrossingDetailLevel, builder: MeshBuilder): void {
+function addRootPlate(builder: MeshBuilder, log: LogShape, level: CrossingDetailLevel): void {
   const { random } = log;
 
   const reach = FALLEN_LOG_ROOT_RADIUS * PLATE_REACH;
@@ -248,9 +248,9 @@ function fallenLog(variant: number, level: CrossingDetailLevel): MeshData {
   const builder = new MeshBuilder();
 
   builder.add(trunk(log, level), { style: { shade: woodShade, slot: woodSlot } });
-  addStubs(log, level, builder);
-  addSplinters(log, level, builder);
-  addRootPlate(log, level, builder);
+  addStubs(builder, log, level);
+  addSplinters(builder, log, level);
+  addRootPlate(builder, log, level);
 
   return builder.build();
 }

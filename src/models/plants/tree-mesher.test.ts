@@ -141,13 +141,11 @@ describe("tree mesher", () => {
 
   it.each(["high", "medium"] as const)("rounds off the top of a forking trunk at %s detail", (level) => {
     const mesh = meshTree({ ...FORKED, foliage: [] }, LOOK, level);
-    const trunkTop = TREE.branches[0].points.at(-1);
 
     const wood = Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex).filter(
       (vertex) => Math.hypot(mesh.positions[vertex * 3], mesh.positions[vertex * 3 + 2]) < 0.25
     );
 
-    expect(trunkTop).toBeDefined();
     expect(Math.max(...wood.map((vertex) => heightOf(mesh, vertex)))).toBeGreaterThan(7.15);
   });
 

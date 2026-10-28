@@ -49,10 +49,10 @@ function quantizedReach(reach: number): number {
 }
 
 export class Atmosphere {
-  readonly group = new Group();
-  readonly hemisphere: HemisphereLight;
   readonly sun: DirectionalLight;
   readonly #cloudSea: CloudSea;
+  readonly #group = new Group();
+  readonly #hemisphere: HemisphereLight;
   readonly #fogColor = uniform(new Color(0xcf_e2_f0));
   readonly #heightFog = new HeightFog();
   readonly #lightDirection = new Vector3(0, 1, 0);
@@ -72,10 +72,10 @@ export class Atmosphere {
     this.sun.shadow.bias = -SHADOW_DEPTH_BIAS / (SHADOW_DEPTH_SPAN * 2);
     this.sun.shadow.camera.layers.enable(SHADOW_ONLY_LAYER);
 
-    this.hemisphere = new HemisphereLight(0xb6_d2_ee, 0x7a_72_5a, 1.2);
+    this.#hemisphere = new HemisphereLight(0xb6_d2_ee, 0x7a_72_5a, 1.2);
 
-    this.group.add(this.#sky.mesh, this.#cloudSea.mesh, this.sun, this.sun.target, this.hemisphere);
-    scene.add(this.group);
+    this.#group.add(this.#sky.mesh, this.#cloudSea.mesh, this.sun, this.sun.target, this.#hemisphere);
+    scene.add(this.#group);
     scene.fogNode = fog(this.#fogColor, this.#heightFog.factor);
   }
 
@@ -99,7 +99,7 @@ export class Atmosphere {
     this.#paintSky(palette, sun, moon, state, overcast);
     this.#driftClouds(state, realSeconds);
     this.#light(palette, sun, moon, overcast, gloom);
-    this.hemisphere.intensity += state.flash * 4;
+    this.#hemisphere.intensity += state.flash * 4;
     this.#placeSun(focus, viewDistance);
     this.#applyFog(palette, state, sun.y);
     this.#sky.mesh.position.copy(eye);
@@ -155,9 +155,9 @@ export class Atmosphere {
       this.sun.intensity = lerp(3.2, 0.9, overcast) * (1 - gloom * 0.4) * smoothstep(-0.04, 0.12, sun.y);
     }
 
-    this.hemisphere.color.setHex(palette.ambientSky);
-    this.hemisphere.groundColor.setHex(palette.ambientGround);
-    this.hemisphere.intensity = lerp(0.95, 1.8, this.#daylight) * lerp(1, 1.25, overcast) * (1 - gloom * 0.3);
+    this.#hemisphere.color.setHex(palette.ambientSky);
+    this.#hemisphere.groundColor.setHex(palette.ambientGround);
+    this.#hemisphere.intensity = lerp(0.95, 1.8, this.#daylight) * lerp(1, 1.25, overcast) * (1 - gloom * 0.3);
   }
 
   #placeSun(focus: Vector3, viewDistance: number): void {

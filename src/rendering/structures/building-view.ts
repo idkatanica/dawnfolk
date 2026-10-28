@@ -372,7 +372,7 @@ function enclosureKindOf(kind: BuildingKind): EnclosureKind {
   return kind === "stoneWall" ? "stoneWall" : "palisade";
 }
 
-function ringOf(building: BuildingSnapshot, mirror: WorldMirror): PiecePlacement[] {
+function ringOf(mirror: WorldMirror, building: BuildingSnapshot): PiecePlacement[] {
   const kind = enclosureKindOf(building.kind);
   const length = ENCLOSURE_SEGMENT_LENGTH;
 
@@ -418,9 +418,9 @@ function glowOf(building: BuildingSnapshot): number {
   return clamp(building.fuel * 1.5, 0.35, 1);
 }
 
-function piecesOf(building: BuildingSnapshot, mirror: WorldMirror): PiecePlacement[] {
+function piecesOf(mirror: WorldMirror, building: BuildingSnapshot): PiecePlacement[] {
   if (isEnclosure(building.kind)) {
-    return ringOf(building, mirror);
+    return ringOf(mirror, building);
   }
 
   const key = building.kind === "mine" ? mineKey(oreOfVariant(building.variant)) : building.kind;
@@ -500,7 +500,7 @@ export class BuildingView {
     this.#pieces = [];
 
     for (const building of frame.buildings) {
-      for (const piece of piecesOf(building, mirror)) {
+      for (const piece of piecesOf(mirror, building)) {
         this.#addPiece(mirror, building, piece);
       }
     }

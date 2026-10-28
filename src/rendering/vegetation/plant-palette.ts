@@ -16,6 +16,42 @@ interface FoliageKey extends FoliageLook {
   readonly season: number;
 }
 
+const LEAFLESS: readonly FoliageKey[] = [{ color: BARE_BRANCHES, coverage: 0, season: 0 }];
+
+const STONEWORK: readonly FoliageKey[] = evergreen(0x6f_8a_3e, 0x6a_6a_48);
+
+const FOLIAGE_KEYS: Readonly<Record<PlantSpeciesIndex, readonly FoliageKey[]>> = {
+  [PlantSpecies.Acacia]: evergreen(0x76_93_42, 0x86_8c_4c),
+  [PlantSpecies.Alder]: deciduous(0x3e_6c_2c, 0x6e_6a_2e),
+  [PlantSpecies.AppleTree]: fruitTree(0xf2_d2_da, 0x52_88_34, 0xb8_9a_38),
+  [PlantSpecies.Arch]: STONEWORK,
+  [PlantSpecies.Birch]: deciduous(0x6f_a8_40, 0xe0_b0_36),
+  [PlantSpecies.Blueberry]: berryBush(0x4c_7a_44, 0xb4_30_28),
+  [PlantSpecies.Boulder]: STONEWORK,
+  [PlantSpecies.Bush]: deciduous(0x4f_86_34, 0xa8_52_2a),
+  [PlantSpecies.Cactus]: evergreen(0x4f_8a_4a, 0x4a_7c_46),
+  [PlantSpecies.Cairn]: STONEWORK,
+  [PlantSpecies.Currant]: berryBush(0x66_98_3e, 0xc4_a0_38),
+  [PlantSpecies.DeadTree]: LEAFLESS,
+  [PlantSpecies.DesertShrub]: evergreen(0x8c_9a_68, 0x80_88_5e),
+  [PlantSpecies.Dolmen]: STONEWORK,
+  [PlantSpecies.Idol]: STONEWORK,
+  [PlantSpecies.Maple]: deciduous(0x4e_8c_32, 0xc4_3e_24),
+  [PlantSpecies.Menhir]: STONEWORK,
+  [PlantSpecies.MossyRock]: STONEWORK,
+  [PlantSpecies.Oak]: deciduous(0x4a_7e_2e, 0xb0_6a_28),
+  [PlantSpecies.Palm]: evergreen(0x58_94_3a, 0x52_86_3a),
+  [PlantSpecies.PearTree]: fruitTree(0xf6_f3_ea, 0x4e_86_36, 0xc0_52_2c),
+  [PlantSpecies.Pillar]: STONEWORK,
+  [PlantSpecies.Pine]: evergreen(0x3c_6a_38, 0x33_58_3c),
+  [PlantSpecies.PlumTree]: fruitTree(0xf4_e2_e8, 0x55_80_3a, 0xa4_4c_38),
+  [PlantSpecies.Poplar]: deciduous(0x5a_92_38, 0xe2_c0_38),
+  [PlantSpecies.Raspberry]: berryBush(0x5c_8e_3a, 0xb0_8a_2e),
+  [PlantSpecies.Sandstone]: STONEWORK,
+  [PlantSpecies.Spruce]: evergreen(0x2c_56_38, 0x27_48_3a),
+  [PlantSpecies.Willow]: deciduous(0x82_a8_44, 0xbc_b0_46),
+};
+
 function deciduous(summer: number, autumn: number): readonly FoliageKey[] {
   return [
     { color: BUDS, coverage: 0.4, season: 0 },
@@ -67,42 +103,6 @@ function evergreen(summer: number, winter: number): readonly FoliageKey[] {
     { color: winter, coverage: 1, season: 3.2 },
   ];
 }
-
-const LEAFLESS: readonly FoliageKey[] = [{ color: BARE_BRANCHES, coverage: 0, season: 0 }];
-
-const STONEWORK: readonly FoliageKey[] = evergreen(0x6f_8a_3e, 0x6a_6a_48);
-
-const FOLIAGE_KEYS: Readonly<Record<PlantSpeciesIndex, readonly FoliageKey[]>> = {
-  [PlantSpecies.Acacia]: evergreen(0x76_93_42, 0x86_8c_4c),
-  [PlantSpecies.Alder]: deciduous(0x3e_6c_2c, 0x6e_6a_2e),
-  [PlantSpecies.AppleTree]: fruitTree(0xf2_d2_da, 0x52_88_34, 0xb8_9a_38),
-  [PlantSpecies.Arch]: STONEWORK,
-  [PlantSpecies.Birch]: deciduous(0x6f_a8_40, 0xe0_b0_36),
-  [PlantSpecies.Blueberry]: berryBush(0x4c_7a_44, 0xb4_30_28),
-  [PlantSpecies.Boulder]: STONEWORK,
-  [PlantSpecies.Bush]: deciduous(0x4f_86_34, 0xa8_52_2a),
-  [PlantSpecies.Cactus]: evergreen(0x4f_8a_4a, 0x4a_7c_46),
-  [PlantSpecies.Cairn]: STONEWORK,
-  [PlantSpecies.Currant]: berryBush(0x66_98_3e, 0xc4_a0_38),
-  [PlantSpecies.DeadTree]: LEAFLESS,
-  [PlantSpecies.DesertShrub]: evergreen(0x8c_9a_68, 0x80_88_5e),
-  [PlantSpecies.Dolmen]: STONEWORK,
-  [PlantSpecies.Idol]: STONEWORK,
-  [PlantSpecies.Maple]: deciduous(0x4e_8c_32, 0xc4_3e_24),
-  [PlantSpecies.Menhir]: STONEWORK,
-  [PlantSpecies.MossyRock]: STONEWORK,
-  [PlantSpecies.Oak]: deciduous(0x4a_7e_2e, 0xb0_6a_28),
-  [PlantSpecies.Palm]: evergreen(0x58_94_3a, 0x52_86_3a),
-  [PlantSpecies.PearTree]: fruitTree(0xf6_f3_ea, 0x4e_86_36, 0xc0_52_2c),
-  [PlantSpecies.Pillar]: STONEWORK,
-  [PlantSpecies.Pine]: evergreen(0x3c_6a_38, 0x33_58_3c),
-  [PlantSpecies.PlumTree]: fruitTree(0xf4_e2_e8, 0x55_80_3a, 0xa4_4c_38),
-  [PlantSpecies.Poplar]: deciduous(0x5a_92_38, 0xe2_c0_38),
-  [PlantSpecies.Raspberry]: berryBush(0x5c_8e_3a, 0xb0_8a_2e),
-  [PlantSpecies.Sandstone]: STONEWORK,
-  [PlantSpecies.Spruce]: evergreen(0x2c_56_38, 0x27_48_3a),
-  [PlantSpecies.Willow]: deciduous(0x82_a8_44, 0xbc_b0_46),
-};
 
 function wrapSeason(season: number): number {
   return ((season % SEASON_COUNT) + SEASON_COUNT) % SEASON_COUNT;
