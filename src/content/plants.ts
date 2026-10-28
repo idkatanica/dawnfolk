@@ -409,8 +409,8 @@ export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]
     { chancePerCell: 0.04, heightScale: 1, minimumTemperature: WARM, species: PlantSpecies.Palm },
   ],
   [Biome.Desert]: [
-    { chancePerCell: 0.03, heightScale: 1, species: PlantSpecies.Cactus },
-    { chancePerCell: 0.012, heightScale: 1, species: PlantSpecies.Boulder },
+    { chancePerCell: 0.015, heightScale: 1, species: PlantSpecies.Cactus },
+    { chancePerCell: 0.005, heightScale: 1, species: PlantSpecies.Boulder },
     { chancePerCell: 0.008, heightScale: 0.85, species: PlantSpecies.Acacia },
     { chancePerCell: 0.004, heightScale: 0.9, species: PlantSpecies.DeadTree },
     { chancePerCell: 0.003, heightScale: 0.9, minimumTemperature: WARM, species: PlantSpecies.Palm },
@@ -434,7 +434,7 @@ export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]
   ],
   [Biome.Mesa]: [
     { chancePerCell: 0.02, heightScale: 1.2, species: PlantSpecies.Boulder },
-    { chancePerCell: 0.04, heightScale: 1, species: PlantSpecies.DesertShrub },
+    { chancePerCell: 0.02, heightScale: 1, species: PlantSpecies.DesertShrub },
     { chancePerCell: 0.008, heightScale: 0.9, species: PlantSpecies.Cactus },
     { chancePerCell: 0.006, heightScale: 0.8, species: PlantSpecies.DeadTree },
   ],
@@ -484,8 +484,8 @@ export const ROCK_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> =
   ],
   [Biome.Beach]: [{ chancePerCell: 0.003, heightScale: 0.8, species: PlantSpecies.Slab }],
   [Biome.Desert]: [
-    { chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.Sandstone },
-    { chancePerCell: 0.004, heightScale: 0.8, species: PlantSpecies.Slab },
+    { chancePerCell: 0.005, heightScale: 1, species: PlantSpecies.Sandstone },
+    { chancePerCell: 0.002, heightScale: 0.8, species: PlantSpecies.Slab },
   ],
   [Biome.Forest]: [{ chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.MossyRock }],
   [Biome.Glacier]: [
@@ -498,7 +498,7 @@ export const ROCK_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> =
   ],
   [Biome.Mesa]: [
     { chancePerCell: 0.025, heightScale: 1, species: PlantSpecies.Sandstone },
-    { chancePerCell: 0.01, heightScale: 1, species: PlantSpecies.Scree },
+    { chancePerCell: 0.005, heightScale: 1, species: PlantSpecies.Scree },
   ],
   [Biome.Scrub]: [
     { chancePerCell: 0.006, heightScale: 1, species: PlantSpecies.Scree },
