@@ -24,6 +24,7 @@ import {
   type LevelDistances,
   NO_SELECTION,
   selectedAgentId,
+  slopeLean,
   standingHeight,
 } from "./agent-view-input.ts";
 import { HumanStrides } from "./human-strides.ts";
@@ -58,6 +59,8 @@ const BODY_CENTER = 0.9 * FIGURE_SCALE;
 const WEAPON_CHOICES: readonly (WeaponKind | null)[] = [null, ...WEAPON_KINDS];
 const GEAR_COLOR_INDEX = PERSON_LAYOUT.colorSlots.indexOf(MaterialSlot.Metal);
 const WADING_DEPTH = 1.1;
+const LEAN_REACH = 1;
+const LEAN_SHARE = 0.3;
 const MARKER_LIFT = 1;
 const WAR_PAINT = humanPartIndex("warPaint");
 
@@ -192,6 +195,7 @@ export class PeopleView {
     this.#animate(input, visual, people, offset);
     this.#palette.ensureRows(row + 1);
     this.#writePose(visual, CARRIED_ITEMS[carriedCode], row);
+    this.#palette.lean(row, slopeLean(input.mirror, x, z, visual.motion.heading, LEAN_REACH) * LEAN_SHARE);
     this.#palette.writeRoot(row, x, y, z, visual.motion.heading);
 
     for (const [index, color] of visual.colors.entries()) {

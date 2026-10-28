@@ -1,6 +1,6 @@
 import { texture } from "three/tsl";
 import { type Color, DataTexture, FloatType, NearestFilter, RGBAFormat, type TextureNode } from "three/webgpu";
-import { colorTexel, type PaletteLayout, paletteWidth, rootTexel } from "./palette-layout.ts";
+import { colorTexel, type PaletteLayout, paletteWidth, rootTexel, TEXELS_PER_BONE } from "./palette-layout.ts";
 
 const CHANNELS = 4;
 const INITIAL_ROWS = 32;
@@ -71,6 +71,28 @@ export class AgentPalette {
     this.#data[offset + 1] = y;
     this.#data[offset + 2] = z;
     this.#data[offset + 3] = heading;
+  }
+
+  lean(row: number, angle: number): void {
+    if (angle === 0) {
+      return;
+    }
+
+    const cosine = Math.cos(angle);
+    const sine = Math.sin(angle);
+
+    for (let bone = 0; bone < this.#layout.boneCount; bone += 1) {
+      const up = this.#texelOffset(row, bone * TEXELS_PER_BONE + 1);
+      const forward = up + CHANNELS;
+
+      for (let channel = 0; channel < CHANNELS; channel += 1) {
+        const upValue = this.#data[up + channel];
+        const forwardValue = this.#data[forward + channel];
+
+        this.#data[up + channel] = cosine * upValue + sine * forwardValue;
+        this.#data[forward + channel] = cosine * forwardValue - sine * upValue;
+      }
+    }
   }
 
   writeColor(row: number, index: number, color: Color): void {

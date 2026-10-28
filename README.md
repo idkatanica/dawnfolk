@@ -83,11 +83,8 @@ You need [Bun](https://bun.sh) 1.4 or later and a browser with WebGPU or WebGL 2
 git clone https://github.com/imsvidskiy/dawnfolk.git
 cd dawnfolk
 bun install
-bun run dev          # http://localhost:5173
+bun run dev  # http://localhost:5173
 ```
-
-Without parameters the game opens on a start screen that continues a saved world or names a new one and picks its shape. URL parameters skip
-it and make a scene reproducible: `?seed=7&shape=round|square&name=Ashvale&quality=low|medium|high&hours=21&paused=1&camera=x,z,distance,pitch,yaw`.
 
 [CONTRIBUTING.md](CONTRIBUTING.md) has the other scripts, the checks and the code style.
 

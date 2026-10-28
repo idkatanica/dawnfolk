@@ -28,6 +28,7 @@ import {
   type LevelDistances,
   NO_SELECTION,
   selectedAgentId,
+  slopeLean,
   standingHeight,
 } from "./agent-view-input.ts";
 import { ANIMAL_MARKERS } from "./marker-look.ts";
@@ -44,6 +45,7 @@ const LEVEL_DISTANCES: LevelDistances = { far: 650, high: 90, low: 160 };
 export const ANIMAL_BOUNDING_LIFT = 1.5;
 export const ANIMAL_BOUNDING_RADIUS = 4.6;
 const WADING_DEPTH = 1.2;
+const LEAN_REACH = 1.5;
 const SHORTEST_STRIDE = 0.5;
 const REFERENCE_SEED = 0.5;
 const YOUTH_STEPS = 8;
@@ -199,6 +201,7 @@ export class AnimalView {
     this.#animate(input, visual, kindView, offset);
     this.#palette.ensureRows(row + 1);
     this.#writePose(visual, kindView, row);
+    this.#palette.lean(row, slopeLean(input.mirror, x, z, visual.motion.heading, LEAN_REACH));
     this.#palette.writeRoot(row, x, y, z, visual.motion.heading);
 
     for (const [index, color] of visual.colors.entries()) {
