@@ -68,17 +68,17 @@ export class EngineLauncher {
   readonly #canvas: HTMLCanvasElement;
   readonly #onStatus: EngineStatusListener;
   #engine: GameEngine | null = null;
-  #state: "cancelled" | "running" | "starting" = "starting";
+  #state: "canceled" | "running" | "starting" = "starting";
 
   constructor(container: HTMLElement, launch: LaunchOptions, worldId: string, onStatus: EngineStatusListener) {
     this.#canvas = createCanvas(container);
     this.#onStatus = onStatus;
     this.#onStatus({ kind: "loading", progress: null });
-    queueMicrotask(() => this.#startUnlessCancelled(launch, worldId));
+    queueMicrotask(() => this.#startUnlessCanceled(launch, worldId));
   }
 
   cancel(): void {
-    this.#state = "cancelled";
+    this.#state = "canceled";
 
     if (this.#engine !== null) {
       this.#engine.dispose();
@@ -88,8 +88,8 @@ export class EngineLauncher {
     this.#canvas.remove();
   }
 
-  #startUnlessCancelled(launch: LaunchOptions, worldId: string): void {
-    if (this.#state === "cancelled") {
+  #startUnlessCanceled(launch: LaunchOptions, worldId: string): void {
+    if (this.#state === "canceled") {
       return;
     }
 
@@ -102,12 +102,12 @@ export class EngineLauncher {
     const engine = await engineModule.GameEngine.start({
       camera: launch.camera,
       canvas: this.#canvas,
-      onProgress: (progress) => this.#progress(progress),
+      onProgress: (progress) => this.#reportProgress(progress),
       quality: launch.quality,
       world,
     });
 
-    if (this.#state === "cancelled") {
+    if (this.#state === "canceled") {
       engine.dispose();
 
       return;
@@ -128,7 +128,7 @@ export class EngineLauncher {
     this.#onStatus({ engine, kind: "ready" });
   }
 
-  #progress(progress: GenerationProgress): void {
+  #reportProgress(progress: GenerationProgress): void {
     if (this.#state !== "starting") {
       return;
     }
@@ -139,7 +139,7 @@ export class EngineLauncher {
   #fail(error: unknown): void {
     console.error("Dawnfolk could not start", error);
 
-    if (this.#state === "cancelled") {
+    if (this.#state === "canceled") {
       return;
     }
 

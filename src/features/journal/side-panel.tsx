@@ -9,6 +9,33 @@ import { type SidePanelView, useSidePanel } from "./use-side-panel.ts";
 
 const HEADING_SELECTOR = "section:not([hidden]) [data-panel-heading]";
 
+export interface PanelContents {
+  readonly inspection: Inspection | null;
+  readonly isJournalOpen: boolean;
+}
+
+interface SidePanelContentProps {
+  readonly contents: PanelContents;
+  readonly onBack: () => void;
+  readonly onClose: () => void;
+}
+
+interface PanelFocusOptions {
+  readonly isOpeningManaged: boolean;
+  readonly panelReference: RefObject<HTMLElement | null>;
+  readonly view: SidePanelView;
+}
+
+interface FocusMemory {
+  listItem: HTMLElement | null;
+  opener: HTMLElement | null;
+}
+
+interface JournalSectionProps {
+  readonly isHidden: boolean;
+  readonly onClose: () => void;
+}
+
 function focusHeading(panel: HTMLElement): void {
   panel.querySelector<HTMLElement>(HEADING_SELECTOR)?.focus();
 }
@@ -37,17 +64,6 @@ function focusIfPresent(element: HTMLElement | null): boolean {
   element.focus();
 
   return document.activeElement === element;
-}
-
-interface PanelFocusOptions {
-  readonly isOpeningManaged: boolean;
-  readonly panelReference: RefObject<HTMLElement | null>;
-  readonly view: SidePanelView;
-}
-
-interface FocusMemory {
-  listItem: HTMLElement | null;
-  opener: HTMLElement | null;
 }
 
 function focusOnOpen(panel: HTMLElement, view: SidePanelView, memory: FocusMemory, isOpeningManaged: boolean): void {
@@ -120,7 +136,7 @@ function useCloseOnEscape(panelReference: RefObject<HTMLElement | null>, close: 
       return;
     }
 
-    function closeOnEscape(event: KeyboardEvent): void {
+    function handleKeyDown(event: KeyboardEvent): void {
       if (event.key !== "Escape") {
         return;
       }
@@ -129,15 +145,10 @@ function useCloseOnEscape(panelReference: RefObject<HTMLElement | null>, close: 
       close();
     }
 
-    panel.addEventListener("keydown", closeOnEscape);
+    panel.addEventListener("keydown", handleKeyDown);
 
-    return () => panel.removeEventListener("keydown", closeOnEscape);
+    return () => panel.removeEventListener("keydown", handleKeyDown);
   });
-}
-
-interface JournalSectionProps {
-  readonly isHidden: boolean;
-  readonly onClose: () => void;
 }
 
 function JournalSection({ isHidden, onClose }: JournalSectionProps) {
@@ -154,17 +165,6 @@ function JournalSection({ isHidden, onClose }: JournalSectionProps) {
       <JournalPanel />
     </section>
   );
-}
-
-export interface PanelContents {
-  readonly inspection: Inspection | null;
-  readonly isJournalOpen: boolean;
-}
-
-interface SidePanelContentProps {
-  readonly contents: PanelContents;
-  readonly onBack: () => void;
-  readonly onClose: () => void;
 }
 
 export function SidePanelContent({ contents, onBack, onClose }: SidePanelContentProps) {

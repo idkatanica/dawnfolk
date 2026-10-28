@@ -6,6 +6,22 @@ import type { Inspection } from "../../simulation/inspection.ts";
 import type { CalendarView } from "../../simulation/nature/calendar.ts";
 import type { RivalryView } from "../../simulation/society/rivalry/rivalry-system.ts";
 
+const REFRESH_MILLISECONDS = 125;
+const MAXIMUM_NOTICES = 4;
+const ANNOUNCED_CATEGORIES: ReadonlySet<ChronicleCategory> = new Set([
+  "arrival",
+  "beast",
+  "discovery",
+  "era",
+  "feud",
+  "peace",
+  "raid",
+  "split",
+  "warning",
+]);
+
+let nextNoticeId = 1;
+
 export interface WorldSnapshot {
   readonly calendar: CalendarView;
   readonly inspection: Inspection | null;
@@ -35,20 +51,6 @@ interface WorldStore {
   readonly snapshot: WorldSnapshot | null;
 }
 
-const REFRESH_MILLISECONDS = 125;
-const MAXIMUM_NOTICES = 4;
-const ANNOUNCED_CATEGORIES: ReadonlySet<ChronicleCategory> = new Set([
-  "arrival",
-  "beast",
-  "discovery",
-  "era",
-  "feud",
-  "peace",
-  "raid",
-  "split",
-  "warning",
-]);
-
 export const useWorldStore = create<WorldStore>()(() => ({
   chronicle: [],
   notices: [],
@@ -75,8 +77,6 @@ function snapshotOf(frame: SimulationFrame, previous: WorldSnapshot | null): Wor
     weather: frame.weather,
   };
 }
-
-let nextNoticeId = 1;
 
 function createNotice(category: WorldNotice["category"], text: string): WorldNotice {
   const notice = { category, id: nextNoticeId, text };

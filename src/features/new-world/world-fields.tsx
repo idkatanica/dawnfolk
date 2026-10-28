@@ -21,6 +21,11 @@ interface RolledFieldProps {
   readonly value: string;
 }
 
+interface ShapeChoiceProps {
+  readonly onChange: (value: string) => void;
+  readonly value: IslandShapeKind;
+}
+
 export function NameField({ onChange, onRoll, value }: RolledFieldProps) {
   return (
     <div className="flex items-center gap-2">
@@ -59,11 +64,6 @@ export function SeedField({ className, onChange, onRoll, value }: RolledFieldPro
       <IconButton icon={<Dices aria-hidden="true" size={18} />} label="Random seed" onClick={onRoll} />
     </div>
   );
-}
-
-interface ShapeChoiceProps {
-  readonly onChange: (value: string) => void;
-  readonly value: IslandShapeKind;
 }
 
 export function ShapeChoice({ onChange, value }: ShapeChoiceProps) {

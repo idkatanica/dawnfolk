@@ -22,7 +22,7 @@ const SPREAD_FIELD: ParameterField = {
   key: "spreadSpeed",
   metadata: {
     defaultValue: 1,
-    description: "How quickly flames heat their neighbours.",
+    description: "How quickly flames heat their neighbors.",
     kind: "range",
     label: "Spread speed",
     maximum: 3,

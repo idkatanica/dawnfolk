@@ -6,7 +6,7 @@ import { startTestEngine } from "../testing/engine-fixtures.ts";
 import { createRelation, createTribe, showWorld } from "../testing/world-fixtures.ts";
 import { WorldLabels } from "./world-labels.tsx";
 
-const PEAK: Landmark = { detail: "1460 m", id: "peak", kind: "peak", lift: 30, name: "Greycrown", x: 40, z: -20 };
+const PEAK: Landmark = { detail: "1460 m", id: "peak", kind: "peak", lift: 30, name: "Graycrown", x: 40, z: -20 };
 const LAKE: Landmark = { detail: null, id: "lake-3", kind: "lake", lift: 4, name: "Mirror Lake", x: -300, z: 90 };
 const RING: Landmark = {
   detail: "Stone circle",
@@ -170,7 +170,7 @@ describe("world labels", () => {
 
     const places = screen.getByRole("list", { name: "Places" });
 
-    await expect.element(places.getByText("Greycrown", { exact: true })).toBeVisible();
+    await expect.element(places.getByText("Graycrown", { exact: true })).toBeVisible();
     await expect.element(places.getByText("1460 m", { exact: true })).toBeVisible();
     await expect.element(places.getByText("Mirror Lake", { exact: true })).toBeVisible();
     expect(placeLabel).toHaveBeenCalledWith(40, -20, 30);
@@ -217,7 +217,7 @@ describe("world labels", () => {
     const screen = await render(<WorldLabels />);
 
     renderFrame();
-    await expect.element(screen.getByText("Greycrown", { exact: true })).toBeVisible();
+    await expect.element(screen.getByText("Graycrown", { exact: true })).toBeVisible();
     placeLabel.mockClear();
     renderFrame();
 
@@ -238,7 +238,7 @@ describe("world labels", () => {
     const screen = await render(<WorldLabels />);
 
     renderFrame();
-    await expect.element(screen.getByText("Greycrown", { exact: true })).toBeVisible();
+    await expect.element(screen.getByText("Graycrown", { exact: true })).toBeVisible();
     placeLabel.mockClear();
     engine.session.mirror.landVersion += 1;
     renderFrame();

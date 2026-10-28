@@ -6,6 +6,15 @@ import { useSidePanel } from "../journal/use-side-panel.ts";
 import { useInterfaceStore } from "./interface-store.ts";
 import { useFullscreen } from "./use-fullscreen.ts";
 
+function useMenuActions() {
+  const { isJournalOpen, toggleJournal } = useSidePanel();
+  const isMapOpen = useInterfaceStore((state) => state.isMapOpen);
+  const toggleMap = useInterfaceStore((state) => state.toggleMap);
+  const openSettings = useInterfaceStore((state) => state.openSettings);
+
+  return { isJournalOpen, isMapOpen, openSettings, toggleJournal, toggleMap };
+}
+
 function FullscreenButton() {
   const { canGoFullscreen, isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -21,15 +30,6 @@ function FullscreenButton() {
       <IconButton icon={<Icon aria-hidden="true" size={18} />} label={label} onClick={toggleFullscreen} />
     </WithTooltip>
   );
-}
-
-function useMenuActions() {
-  const { isJournalOpen, toggleJournal } = useSidePanel();
-  const isMapOpen = useInterfaceStore((state) => state.isMapOpen);
-  const toggleMap = useInterfaceStore((state) => state.toggleMap);
-  const openSettings = useInterfaceStore((state) => state.openSettings);
-
-  return { isJournalOpen, isMapOpen, openSettings, toggleJournal, toggleMap };
 }
 
 export function MenuButtons({ className }: { readonly className?: string | undefined }) {

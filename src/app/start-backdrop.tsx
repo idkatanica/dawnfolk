@@ -1,4 +1,4 @@
-import { useIsPortrait, usePrefersCalm } from "../design/use-media-query.ts";
+import { useIsPortrait, useShouldReduceMotion } from "../design/use-media-query.ts";
 import tallVideo from "./start-backdrop/tall.mp4";
 import tallPoster from "./start-backdrop/tall.webp";
 import tallCompactVideo from "./start-backdrop/tall-av1.mp4";
@@ -34,14 +34,14 @@ const WIDE: Backdrop = {
 };
 
 export function StartBackdrop() {
-  const prefersCalm = usePrefersCalm();
+  const shouldReduceMotion = useShouldReduceMotion();
   const isPortrait = useIsPortrait();
 
   const backdrop = isPortrait ? TALL : WIDE;
 
   return (
     <div aria-hidden="true" className="bg-canvas fixed inset-0">
-      {prefersCalm ? (
+      {shouldReduceMotion ? (
         <img alt="" className={BACKDROP_CLASS} height={backdrop.height} src={backdrop.poster} width={backdrop.width} />
       ) : (
         <video autoPlay className={BACKDROP_CLASS} key={backdrop.video} loop muted playsInline poster={backdrop.poster}>

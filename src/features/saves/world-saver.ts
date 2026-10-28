@@ -2,6 +2,9 @@ import type { GameSession } from "../../game/game-session.ts";
 import { SAVE_VERSION } from "../../simulation/saved-world.ts";
 import { writeSavedWorld } from "./save-database.ts";
 
+const BUSY_RETRIES = 6;
+const BUSY_RETRY_MILLISECONDS = 500;
+
 export type SaveOutcome = "busy" | "failed" | "saved" | "unchanged";
 
 export interface SavedWorldIdentity {
@@ -13,9 +16,6 @@ interface SaverListener {
   readonly onSaved: (savedAt: number) => void;
   readonly onSaving: (isSaving: boolean) => void;
 }
-
-const BUSY_RETRIES = 6;
-const BUSY_RETRY_MILLISECONDS = 500;
 
 function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {

@@ -6,13 +6,13 @@ import { useWorldStore } from "../world/world-store.ts";
 import { RelationNote, StanceBadge } from "./rivalry-parts.tsx";
 import { byStance, isRelationOf, otherTribeOf, RAID_PHASE_LABELS, raidOf } from "./stance-looks.ts";
 
-interface NeighbourProps {
+interface NeighborProps {
   readonly relation: RelationView;
   readonly tribeId: number;
   readonly tribes: readonly TribeSummary[];
 }
 
-function Neighbour({ relation, tribeId, tribes }: NeighbourProps) {
+function Neighbor({ relation, tribeId, tribes }: NeighborProps) {
   const other = tribes.find((tribe) => tribe.id === otherTribeOf(relation, tribeId));
 
   if (other === undefined) {
@@ -68,14 +68,14 @@ export function TribeRelations({ tribeId }: { readonly tribeId: number }) {
   }
 
   return (
-    <section aria-label="Neighbours" className="flex flex-col gap-1">
-      <h3 className="text-ink-soft text-xs font-semibold tracking-wide uppercase">Neighbours</h3>
+    <section aria-label="Neighbors" className="flex flex-col gap-1">
+      <h3 className="text-ink-soft text-xs font-semibold tracking-wide uppercase">Neighbors</h3>
 
       <RaidLine tribeId={tribeId} tribes={tribes} />
 
       <ul className="divide-line divide-y">
         {own.map((relation) => (
-          <Neighbour
+          <Neighbor
             key={`${relation.firstId}-${relation.secondId}`}
             relation={relation}
             tribeId={tribeId}

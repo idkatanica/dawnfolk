@@ -15,11 +15,6 @@ import type { WeatherView } from "../../simulation/frame.ts";
 import { useWorldStore } from "../world/world-store.ts";
 import { FIELD_GRID, SettingsGroup } from "./settings-group.tsx";
 
-interface WindSetting {
-  readonly direction: number;
-  readonly speed: number;
-}
-
 const AUTOMATIC = "automatic";
 
 const WEATHER_OPTIONS = [
@@ -28,6 +23,11 @@ const WEATHER_OPTIONS = [
 ];
 
 const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"] as const;
+
+interface WindSetting {
+  readonly direction: number;
+  readonly speed: number;
+}
 
 function compassName(degrees: number): string {
   const index = Math.round((((degrees % 360) + 360) % 360) / 45) % COMPASS.length;

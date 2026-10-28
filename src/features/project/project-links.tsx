@@ -19,13 +19,14 @@ function GitHubMark() {
 
 interface ExternalLinkProps {
   readonly children: ReactNode;
+  readonly className?: string | undefined;
   readonly href: string;
   readonly label: string;
 }
 
-function ExternalLink({ children, href, label }: ExternalLinkProps) {
+function ExternalLink({ children, className, href, label }: ExternalLinkProps) {
   return (
-    <a aria-label={label} className={LINK_CLASS} href={href} rel="noopener" target="_blank">
+    <a aria-label={label} className={cn(LINK_CLASS, className)} href={href} rel="noopener" target="_blank">
       {children}
     </a>
   );
@@ -63,16 +64,14 @@ export function ProjectLinks({ className, hasPrivacy = true }: ProjectLinksProps
         <StarCount />
       </ExternalLink>
 
-      <a
-        aria-label="Sponsor Dawnfolk"
-        className={cn(LINK_CLASS, "bg-dawn/15 text-dawn-strong hover:bg-dawn/25 hover:text-dawn-strong")}
+      <ExternalLink
+        className="bg-dawn/15 text-dawn-strong hover:bg-dawn/25 hover:text-dawn-strong"
         href={SPONSOR_ADDRESS}
-        rel="noopener"
-        target="_blank"
+        label="Sponsor Dawnfolk"
       >
         <Heart aria-hidden="true" className="fill-dawn/25" size={16} />
         Sponsor
-      </a>
+      </ExternalLink>
 
       {hasPrivacy ? (
         <a className={LINK_CLASS} href="/privacy/">

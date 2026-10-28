@@ -11,6 +11,11 @@ import { useNow } from "./use-now.ts";
 
 const CLOCK_MILLISECONDS = 30_000;
 
+interface SavedWorldRowProps {
+  readonly now: number;
+  readonly world: SavedWorldListing;
+}
+
 function worldDetails(world: SavedWorldListing): string {
   if (!world.isLoadable || world.summary === null) {
     return "Saved by another version of Dawnfolk";
@@ -41,11 +46,6 @@ function useSavedWorldRow(world: SavedWorldListing) {
   }
 
   return { handleConfirmDelete, handleDelete, handleKeep, handleOpen, isConfirming };
-}
-
-interface SavedWorldRowProps {
-  readonly now: number;
-  readonly world: SavedWorldListing;
 }
 
 function SavedWorldRow({ now, world }: SavedWorldRowProps) {

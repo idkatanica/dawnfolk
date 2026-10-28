@@ -27,6 +27,28 @@ interface LaunchStore {
   readonly worldId: string;
 }
 
+export const useLaunchStore = create<LaunchStore>()((set, get) => {
+  function launchWorld(worldId: string, changes: LaunchChanges): void {
+    const launch: LaunchOptions = { ...get().launch, ...changes, camera: {}, hours: null, isPaused: false };
+
+    rememberInAddress(launch, worldId);
+    set({ isChoosingWorld: false, launch, worldId });
+  }
+
+  return {
+    chooseWorld: () => {
+      replaceAddress(window.location.pathname);
+      set({ isChoosingWorld: true });
+    },
+    continueWorld: launchWorld,
+    createWorld: (choice) => launchWorld(createWorldId(), choice),
+    isChoosingWorld: !choosesWorld(window.location.search),
+    launch: readLaunchOptions(window.location.search),
+    relaunch: (changes) => launchWorld(get().worldId, changes),
+    worldId: initialWorldId(),
+  };
+});
+
 function replaceAddress(search: string): void {
   try {
     window.history.replaceState(null, "", search);
@@ -60,25 +82,3 @@ function initialWorldId(): string {
 
   return worldId === null ? createWorldId() : worldId;
 }
-
-export const useLaunchStore = create<LaunchStore>()((set, get) => {
-  function launchWorld(worldId: string, changes: LaunchChanges): void {
-    const launch: LaunchOptions = { ...get().launch, ...changes, camera: {}, hours: null, isPaused: false };
-
-    rememberInAddress(launch, worldId);
-    set({ isChoosingWorld: false, launch, worldId });
-  }
-
-  return {
-    chooseWorld: () => {
-      replaceAddress(window.location.pathname);
-      set({ isChoosingWorld: true });
-    },
-    continueWorld: launchWorld,
-    createWorld: (choice) => launchWorld(createWorldId(), choice),
-    isChoosingWorld: !choosesWorld(window.location.search),
-    launch: readLaunchOptions(window.location.search),
-    relaunch: (changes) => launchWorld(get().worldId, changes),
-    worldId: initialWorldId(),
-  };
-});

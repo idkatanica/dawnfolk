@@ -15,32 +15,6 @@ const DATABASE_VERSION = 1;
 const WORLDS = "worlds";
 const STATES = "states";
 
-export interface SavedWorldRecord {
-  readonly id: string;
-  readonly name: string;
-  readonly savedAt: number;
-  readonly seed: number;
-  readonly shape: IslandShapeKind;
-  readonly summary: WorldSummary;
-  readonly version: number;
-}
-
-export interface SavedWorldListing {
-  readonly id: string;
-  readonly isLoadable: boolean;
-  readonly name: string;
-  readonly savedAt: number;
-  readonly seed: number;
-  readonly shape: IslandShapeKind;
-  readonly summary: WorldSummary | null;
-}
-
-export interface StoredWorld {
-  readonly journal: readonly ChronicleEntry[];
-  readonly record: SavedWorldRecord;
-  readonly state: SavedWorldState;
-}
-
 const listingSchema = z.object({
   id: z.string(),
   name: z.string().catch("Unnamed world"),
@@ -78,6 +52,32 @@ const storedStateSchema = z.object({
   journal: z.custom<ChronicleEntry[]>((value) => journalSchema.safeParse(value).success).catch([]),
   state: savedWorldStateSchema,
 });
+
+export interface SavedWorldRecord {
+  readonly id: string;
+  readonly name: string;
+  readonly savedAt: number;
+  readonly seed: number;
+  readonly shape: IslandShapeKind;
+  readonly summary: WorldSummary;
+  readonly version: number;
+}
+
+export interface SavedWorldListing {
+  readonly id: string;
+  readonly isLoadable: boolean;
+  readonly name: string;
+  readonly savedAt: number;
+  readonly seed: number;
+  readonly shape: IslandShapeKind;
+  readonly summary: WorldSummary | null;
+}
+
+interface StoredWorld {
+  readonly journal: readonly ChronicleEntry[];
+  readonly record: SavedWorldRecord;
+  readonly state: SavedWorldState;
+}
 
 let opening: Promise<IDBDatabase> | null = null;
 
