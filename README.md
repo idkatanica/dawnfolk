@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset=".github/logo-dark.svg">
-    <img src=".github/logo.svg" alt="" width="96" height="96">
-  </picture>
+  <img src=".github/logo.svg" alt="" width="96" height="96">
 </p>
 
 <h1 align="center">Dawnfolk</h1>
@@ -67,6 +64,8 @@ Age to the Iron Age on a procedurally generated island rendered with WebGPU.
   skeletal clips.
 - **A readable map.** Named peaks, lakes and ruins, tribe banners that fly you to their camp, and far markers on the
   island and the minimap.
+- **Saves.** Worlds save in the browser as you play and when you leave; continue the last one or pick from the
+  list.
 - **A calm HUD.** Solid panels that read over any terrain, glass only for the power dock and the minimap, painted
   icons for game things, and a compact layout for phones.
 
@@ -87,7 +86,7 @@ bun install
 bun run dev          # http://localhost:5173
 ```
 
-Without parameters the game opens on a start screen that names the world and picks its shape. URL parameters skip
+Without parameters the game opens on a start screen that continues a saved world or names a new one and picks its shape. URL parameters skip
 it and make a scene reproducible: `?seed=7&shape=round|square&name=Ashvale&quality=low|medium|high&hours=21&paused=1&camera=x,z,distance,pitch,yaw`.
 
 [CONTRIBUTING.md](CONTRIBUTING.md) has the other scripts, the checks and the code style.
@@ -114,7 +113,7 @@ src/
                weather, bloom
   design/      design system: paper and glass islands, game icons, buttons, fields, meters, tooltips, formatting
   features/    UI features with their stores: time, powers, inspector, journal, tribes and rivalry, minimap,
-               map labels, notices, settings, new world
+               map labels, notices, settings, new world, saves, project links, privacy page
   app/         app shell, start screen, engine launch, HUD layouts
 ```
 
