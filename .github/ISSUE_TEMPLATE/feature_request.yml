@@ -1,38 +1,17 @@
 name: Feature request
-description: Propose a power, a world rule, a tribe behaviour or an interface change
+description: An idea for a power, a tribe behaviour or the interface
+labels: [enhancement]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Describe the problem before the solution.
   - type: textarea
-    id: problem
+    id: idea
     attributes:
-      label: Problem
-      description: What are you trying to do in the game, and what stops you today?
-      placeholder: I want to see where a tribe is heading when it migrates.
+      label: Idea
+      description: What you'd like to see in the game.
+      placeholder: Show where a tribe is heading when it migrates.
     validations:
       required: true
   - type: textarea
-    id: proposal
+    id: why
     attributes:
-      label: Proposal
-      description: How the game could solve it.
-    validations:
-      required: true
-  - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternatives
-      description: Workarounds you tried or other designs you considered.
-  - type: dropdown
-    id: area
-    attributes:
-      label: Area
-      multiple: true
-      options:
-        - World generation
-        - Simulation
-        - Powers
-        - Rendering
-        - Interface
+      label: Why
+      description: What it would let you do, or what bothers you today.
