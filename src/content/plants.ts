@@ -357,6 +357,8 @@ export interface PlantingRule {
   species: PlantSpeciesIndex;
 }
 
+export const TREE_SPACING = 5;
+
 const WARM = 12;
 
 export const PLANTING_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> = {
