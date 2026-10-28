@@ -46,9 +46,7 @@ export function scaleColor(color: number, factor: number): number {
 
 export function colorFromPalette(palette: readonly number[], position: number): number {
   const scaled = saturate(position) * (palette.length - 1);
-
   const lower = Math.floor(scaled);
-
   const upper = Math.min(palette.length - 1, lower + 1);
 
   return mixColors(palette[lower], palette[upper], scaled - lower);

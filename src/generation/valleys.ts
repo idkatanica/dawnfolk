@@ -57,7 +57,6 @@ function cellsBelowLakes({ lakeIds, network }: DrainageBasins): Float32Array {
 
   for (let position = network.order.length - 1; position >= 0; position -= 1) {
     const cell = network.order[position];
-
     const receiver = network.receivers[cell];
 
     if (lakeIds[cell] !== NO_CELL) {
@@ -89,7 +88,6 @@ function stampValley(carving: ValleyCarving, cell: number, floor: number, shape:
       }
 
       const neighbor = grid.index(column + columnOffset, row + rowOffset);
-
       const ground = original[neighbor];
       const floorHere = floor + FLOOR_RISE * distance;
 

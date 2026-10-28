@@ -29,7 +29,7 @@ export function plantHeight(species: number, random: RandomSource, heightScale: 
   return random.between(shortest, tallest) * heightScale;
 }
 
-function blendedBiome(grid: WorldGrid, terrain: TerrainData, cell: number, seed: number): number {
+function blendedBiome(terrain: TerrainData, grid: WorldGrid, cell: number, seed: number): number {
   const column = grid.columnOf(cell);
   const row = grid.rowOf(cell);
   const reach = BIOME_BLEND_CELLS * 2 + 1;
@@ -50,12 +50,12 @@ function blendedBiome(grid: WorldGrid, terrain: TerrainData, cell: number, seed:
   return terrain.biome[neighbor];
 }
 
-function plantableBiome(grid: WorldGrid, terrain: TerrainData, cell: number, seed: number): BiomeIndex | null {
+function plantableBiome(terrain: TerrainData, grid: WorldGrid, cell: number, seed: number): BiomeIndex | null {
   if (touchesWaterCell(terrain, grid, cell) || !isOnIsland(terrain.coastDistance, cell)) {
     return null;
   }
 
-  const biome = blendedBiome(grid, terrain, cell, seed);
+  const biome = blendedBiome(terrain, grid, cell, seed);
 
   return isBiomeIndex(biome) ? biome : null;
 }
@@ -109,7 +109,7 @@ export function plantInitialVegetation(
   }
 
   for (let cell = 0; cell < grid.cellCount; cell += 1) {
-    const biome = plantableBiome(grid, terrain, cell, seed);
+    const biome = plantableBiome(terrain, grid, cell, seed);
 
     if (biome === null) {
       continue;
@@ -150,7 +150,7 @@ function plantWildBerries(
       continue;
     }
 
-    const biome = plantableBiome(grid, terrain, cell, seed);
+    const biome = plantableBiome(terrain, grid, cell, seed);
 
     if (biome === null) {
       continue;

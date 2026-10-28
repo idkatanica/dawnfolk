@@ -15,7 +15,6 @@ interface WildTerrain extends FootingTerrain {
 }
 
 const WALKABLE_SLOPE = 1.15;
-
 const STAND_SALT = 19.19;
 
 function gradientX(heights: Float32Array, grid: WorldGrid, column: number, row: number): number {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MinHeap } from "./min-heap.ts";
 
-describe("MinHeap", () => {
+describe("min heap", () => {
   it("pops items from the lowest priority up", () => {
     const heap = new MinHeap(2);
     const priorities = [5, 1, 9, 3, 7, 2, 8];

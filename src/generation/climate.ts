@@ -9,6 +9,23 @@ import type { WorldGrid } from "../world/world-grid.ts";
 import { islandPointAt } from "./relief.ts";
 import { findPools, findSmallAreas, isWetland, measureWetness } from "./wetlands.ts";
 
+const MAXIMUM_WATER_DISTANCE = 64;
+const GLACIER_TEMPERATURE = -2.4;
+const ICE_CLIFF_SLOPE = 1.2;
+const BARE_ROCK_SLOPE = 0.9;
+const COLD_ROCK_SLOPE = 0.55;
+const COLD_ROCK_TEMPERATURE = 3.2;
+const ESCARPMENT_SLOPE = 0.62;
+const TREE_LINE_TEMPERATURE = 1.6;
+const ALPINE_SLOPE = 0.42;
+const SHORE_TEMPERATURE = 3;
+const WIDE_RIVER_STRENGTH = 130;
+const BROAD_RIVER_STRENGTH = 85;
+const RIVER_BANK_RISE = 1.4;
+const RIVER_BANK_RISE_PER_CELL = 0.9;
+const STEEPEST_RIVER_BANK = 0.36;
+const BOG_TEMPERATURE = 3;
+
 interface ClimateInputs {
   coastDistance: Float32Array;
   desert: Float64Array;
@@ -41,22 +58,15 @@ interface CellClimate {
   temperature: number;
 }
 
-const MAXIMUM_WATER_DISTANCE = 64;
-const GLACIER_TEMPERATURE = -2.4;
-const ICE_CLIFF_SLOPE = 1.2;
-const BARE_ROCK_SLOPE = 0.9;
-const COLD_ROCK_SLOPE = 0.55;
-const COLD_ROCK_TEMPERATURE = 3.2;
-const ESCARPMENT_SLOPE = 0.62;
-const TREE_LINE_TEMPERATURE = 1.6;
-const ALPINE_SLOPE = 0.42;
-const SHORE_TEMPERATURE = 3;
-const WIDE_RIVER_STRENGTH = 130;
-const BROAD_RIVER_STRENGTH = 85;
-const RIVER_BANK_RISE = 1.4;
-const RIVER_BANK_RISE_PER_CELL = 0.9;
-const STEEPEST_RIVER_BANK = 0.36;
-const BOG_TEMPERATURE = 3;
+interface Slopes {
+  north: Float32Array;
+  slope: Float32Array;
+}
+
+interface DrainedLand {
+  biome: Uint8Array;
+  ground: Uint8Array;
+}
 
 const BIOME_GROUND: Readonly<Record<BiomeIndex, GroundIndex>> = {
   [Biome.Alpine]: Ground.Rock,
@@ -176,7 +186,6 @@ function distanceToWater(grid: WorldGrid, waterSurface: Float32Array, heights: F
 
   while (head < tail) {
     const cell = queue[head];
-
     const next = distances[cell] + 1;
 
     head += 1;
@@ -219,11 +228,6 @@ function orthogonalNeighbors(grid: WorldGrid, cell: number): number[] {
   }
 
   return neighbors;
-}
-
-interface Slopes {
-  north: Float32Array;
-  slope: Float32Array;
 }
 
 function northFacing(gradientZ: number, slope: number): number {
@@ -271,7 +275,6 @@ function markRiverBank(inputs: ClimateInputs, slopes: Float32Array, banks: Uint8
       }
 
       const cell = grid.index(column + columnOffset, row + rowOffset);
-
       const rise = heights[cell] - waterSurface[source];
       const isLowAndGentle = rise <= RIVER_BANK_RISE + RIVER_BANK_RISE_PER_CELL * distance;
 
@@ -412,11 +415,6 @@ export function buildClimate(inputs: ClimateInputs): ClimateResult {
   shapeSwamps(inputs, result, wetness, { biome: drained, ground: drainedGround });
 
   return result;
-}
-
-interface DrainedLand {
-  biome: Uint8Array;
-  ground: Uint8Array;
 }
 
 function shapeSwamps(inputs: ClimateInputs, result: ClimateResult, wetness: Float32Array, drained: DrainedLand): void {

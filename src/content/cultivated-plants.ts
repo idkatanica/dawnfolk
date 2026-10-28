@@ -91,10 +91,6 @@ export const GARDEN_BERRY_SPECIES: readonly PlantSpeciesIndex[] = [
   CultivatedSpecies.Blueberry,
 ];
 
-export function isFruitTreeSpecies(species: number): boolean {
-  return FRUIT_TREE_SPECIES.some((fruitTree) => fruitTree === species);
-}
-
 export const WILD_BERRY_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> = {
   [Biome.Alpine]: [{ chancePerCell: 0.012, heightScale: 0.8, species: CultivatedSpecies.Blueberry }],
   [Biome.Beach]: [],
@@ -123,3 +119,7 @@ export const WILD_BERRY_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule
   [Biome.Tundra]: [{ chancePerCell: 0.04, heightScale: 0.85, species: CultivatedSpecies.Blueberry }],
   [Biome.Water]: [],
 };
+
+export function isFruitTreeSpecies(species: number): boolean {
+  return FRUIT_TREE_SPECIES.some((fruitTree) => fruitTree === species);
+}

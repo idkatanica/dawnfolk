@@ -15,6 +15,7 @@ export type WeatherKind = (typeof WEATHER_KINDS)[number];
 export const MINIMUM_TEMPERATURE_OFFSET = -30;
 export const MAXIMUM_TEMPERATURE_OFFSET = 30;
 export const MAXIMUM_WIND_SPEED = 90;
+export const SNOWFALL_TEMPERATURE = 0.5;
 
 interface WeatherDefinition {
   cloudCover: number;
@@ -119,8 +120,6 @@ export const WEATHER: Readonly<Record<WeatherKind, WeatherDefinition>> = {
     windFactor: 2,
   },
 };
-
-export const SNOWFALL_TEMPERATURE = 0.5;
 
 export function isSnowfallWeather(kind: WeatherKind): boolean {
   return kind === "snow" || kind === "blizzard";

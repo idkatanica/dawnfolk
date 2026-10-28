@@ -155,6 +155,13 @@ interface Axis {
   readonly limits: BankLimits;
 }
 
+interface Wading {
+  readonly deepest: number;
+  readonly highest: number;
+  readonly lowest: number;
+  readonly span: number;
+}
+
 class CrossingPlanner {
   readonly placed: Crossing[];
   readonly survey: CrossingSurvey;
@@ -192,7 +199,6 @@ class CrossingPlanner {
       }
 
       const last = Math.min(cursor + WINDOW, usableEnd, nextAnchor - SPACING_ALONG);
-
       const best = this.#bestIn(course, {
         connects: () => true,
         from: cursor,
@@ -251,7 +257,6 @@ class CrossingPlanner {
 
     for (const crossing of this.placed) {
       const middle = { x: (crossing.startX + crossing.endX) / 2, z: (crossing.startZ + crossing.endZ) / 2 };
-
       const nearest = nearestAlong(course, middle);
 
       if (nearest.distance < ON_RIVER) {
@@ -500,7 +505,6 @@ function wideningAlong(survey: CrossingSurvey, course: RiverCourse): number {
 
   for (let along = 0; along <= course.length; along += WIDENING_STEP) {
     const point = pointAlong(course, along);
-
     const cell = grid.cellAt(point.x, point.z);
 
     if (cell >= 0 && isRiverWater(survey, cell) && !isBrookCell(terrain, cell)) {
@@ -620,7 +624,6 @@ function nearestAlong(course: RiverCourse, point: Point): { along: number; dista
     const lengthSquared = Math.max(1e-6, segmentX * segmentX + segmentZ * segmentZ);
 
     const amount = clamp(((point.x - start.x) * segmentX + (point.z - start.z) * segmentZ) / lengthSquared, 0, 1);
-
     const distance = Math.hypot(start.x + segmentX * amount - point.x, start.z + segmentZ * amount - point.z);
 
     if (distance < best.distance) {
@@ -681,7 +684,6 @@ function surveyBank(survey: CrossingSurvey, axis: Axis, side: number, edge: numb
   for (let distance = edge; distance <= edge + LANDING + APPROACH; distance += MARCH_STEP) {
     const x = center.x + directionX * distance;
     const z = center.z + directionZ * distance;
-
     const cell = grid.cellAt(x, z);
 
     if (cell < 0 || isWaterCell(terrain, cell) || isBlocked(cell) || grid.isOnEdge(cell)) {
@@ -791,7 +793,6 @@ function fitsFord(site: Site): boolean {
 
 function chooseKind(site: Site): CrossingKind | null {
   const isNarrow = waterSpanOf(site) <= LOG_PREFERRED_WATER || site.deepest > LOG_DEEP_FORD;
-
   const isFordable = fitsFord(site);
 
   if (fitsLog(site) && (isNarrow || !isFordable)) {
@@ -857,13 +858,6 @@ function siteScore(survey: CrossingSurvey, site: Site, kind: CrossingKind): numb
   return flatness + home + fit + jitter;
 }
 
-interface Wading {
-  readonly deepest: number;
-  readonly highest: number;
-  readonly lowest: number;
-  readonly span: number;
-}
-
 function wadingAlong(survey: CrossingSurvey, crossing: Crossing): Wading | null {
   const { grid, isBlocked, terrain } = survey;
 
@@ -875,7 +869,6 @@ function wadingAlong(survey: CrossingSurvey, crossing: Crossing): Wading | null 
 
   for (let along = 0; along <= crossingLength(crossing); along += MARCH_STEP) {
     const point = pointOnCrossing(crossing, along, 0);
-
     const cell = grid.cellAt(point.x, point.z);
 
     if (cell < 0 || !isOnIsland(terrain.coastDistance, cell) || isBlocked(cell)) {
@@ -913,9 +906,7 @@ function logClearsWater(survey: CrossingSurvey, log: LogBridge): boolean {
 
   for (let along = 0; along <= crossingLength(log); along += MARCH_STEP) {
     const point = pointOnCrossing(log, along, 0);
-
     const cell = grid.cellAt(point.x, point.z);
-
     const bottom = logDeckAt(log, along) - 2 * logRadiusAt(log, along);
 
     if (isWaterCell(terrain, cell) && bottom < terrain.waterSurface[cell] + LOG_CLEARANCE) {

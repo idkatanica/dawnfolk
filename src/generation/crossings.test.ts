@@ -4,8 +4,7 @@ import { type Crossing, crossingLength, crossingPointOf, isOnCrossing } from "..
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import { isWaterCell } from "../world/terrain-sampling.ts";
 import { createTerrainData } from "../world/testing/terrain-fixtures.ts";
-import type { River } from "../world/water.ts";
-import { NO_WATER } from "../world/water.ts";
+import { NO_WATER, type River } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
 import { planCrossings, refreshCrossings } from "./crossings.ts";
 import { DEFAULT_GENERATION_OPTIONS } from "./generation-options.ts";
@@ -195,8 +194,9 @@ describe.each(["round", "square"] as const)("crossings on a %s island", (shape) 
     const { crossings, dimensions, terrain } = worldOf(shape);
     const grid = new WorldGrid(dimensions);
 
-    const wetPointsOf = (crossing: Crossing) =>
-      samplesAlong(crossing).filter((point) => isWaterCell(terrain, grid.cellAt(point.x, point.z)));
+    function wetPointsOf(crossing: Crossing): { x: number; z: number }[] {
+      return samplesAlong(crossing).filter((point) => isWaterCell(terrain, grid.cellAt(point.x, point.z)));
+    }
 
     for (const log of crossings.filter((crossing) => crossing.kind === "log")) {
       const alongs = wetPointsOf(log).map((point) => crossingPointOf(log, point.x, point.z).along);

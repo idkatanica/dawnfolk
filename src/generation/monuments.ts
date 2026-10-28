@@ -50,6 +50,30 @@ interface MonumentPlan {
   readonly pieces: readonly PlantPlacement[];
 }
 
+interface Site {
+  readonly angle: number;
+  readonly x: number;
+  readonly z: number;
+}
+
+interface PlacedPiece {
+  readonly placement: PlantPlacement;
+  readonly reach: number;
+}
+
+interface Planner {
+  readonly grid: WorldGrid;
+  readonly placed: Monument[];
+  readonly terrain: TerrainData;
+}
+
+interface Choice {
+  readonly cells: readonly number[];
+  readonly pieces: readonly PlacedPiece[];
+  readonly score: number;
+  readonly site: Site;
+}
+
 function layPiece<Piece extends MonumentPiece>(
   random: RandomSource,
   species: Piece,
@@ -272,17 +296,6 @@ const LAYOUTS: Readonly<Record<MonumentKind, (random: RandomSource) => Layout>> 
   stoneCircle,
 };
 
-interface Site {
-  readonly angle: number;
-  readonly x: number;
-  readonly z: number;
-}
-
-interface PlacedPiece {
-  readonly placement: PlantPlacement;
-  readonly reach: number;
-}
-
 function placePieces(layout: Layout, site: Site): PlacedPiece[] {
   const cosine = Math.cos(site.angle);
   const sine = Math.sin(site.angle);
@@ -325,12 +338,6 @@ function siteReach(site: Site, pieces: readonly PlacedPiece[]): number {
     (widest, { placement, reach }) => Math.max(widest, Math.hypot(placement.x - site.x, placement.z - site.z) + reach),
     0
   );
-}
-
-interface Planner {
-  readonly grid: WorldGrid;
-  readonly placed: Monument[];
-  readonly terrain: TerrainData;
 }
 
 function isDry(planner: Planner, site: Site, reach: number): boolean {
@@ -392,13 +399,6 @@ function isSpaced(planner: Planner, site: Site): boolean {
   return planner.placed.every((other) => Math.hypot(other.x - site.x, other.z - site.z) > SPACING);
 }
 
-interface Choice {
-  readonly cells: readonly number[];
-  readonly pieces: readonly PlacedPiece[];
-  readonly score: number;
-  readonly site: Site;
-}
-
 function judge(planner: Planner, kind: MonumentKind, layout: Layout, site: Site): Choice | null {
   const { grid, terrain } = planner;
 
@@ -430,7 +430,6 @@ function bestSite(planner: Planner, kind: MonumentKind, layout: Layout, random: 
 
   for (let candidate = 0; candidate < CANDIDATES; candidate += 1) {
     const site: Site = { angle: random.next() * FULL_TURN, x: random.signed() * limit, z: random.signed() * limit };
-
     const choice = judge(planner, kind, layout, site);
 
     if (choice !== null && (best === null || choice.score > best.score)) {
@@ -466,7 +465,6 @@ export function planMonuments(grid: WorldGrid, terrain: TerrainData, seed: numbe
 
     const layout = LAYOUTS[kind](random);
     const firstName = random.integer(0, names.length);
-
     const choice = bestSite(planner, kind, layout, random);
 
     if (choice === null) {
