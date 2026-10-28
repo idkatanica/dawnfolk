@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { GameIcon } from "../../design/game-icon.tsx";
+import { RowButton, RowCount } from "../../design/row-button.tsx";
 import type { TribeSummary } from "../../simulation/frame.ts";
 import type { RaidView, RelationView } from "../../simulation/society/rivalry/rivalry-system.ts";
 import { useShowSpot } from "../inspector/use-focus-camera.ts";
@@ -43,29 +44,18 @@ function RaidRow({ entry }: { readonly entry: TribePair<RaidView> }) {
   const showCamp = useShowSpot(defender.campX, defender.campZ);
 
   return (
-    <li>
-      <button
-        className="bg-ember-soft hover:bg-ember/20 focus-visible:ring-dawn flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-colors outline-none focus-visible:ring-2"
-        onClick={showCamp}
-        type="button"
-      >
-        <GameIcon name="raid" size={24} />
+    <RowButton
+      className="bg-ember-soft hover:bg-ember/20"
+      leading={<GameIcon name="raid" />}
+      onClick={showCamp}
+      trailing={<RowCount count={raid.raiders} unit="warriors" />}
+    >
+      <span className="text-ink truncate text-sm font-semibold">
+        {attacker.name} <ArrowRight aria-hidden="true" className="text-ink-soft inline" size={13} /> {defender.name}
+      </span>
 
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-ink truncate text-sm font-semibold">
-            {attacker.name} <ArrowRight aria-hidden="true" className="text-ink-soft inline" size={13} /> {defender.name}
-          </span>
-
-          <span className="text-ink-soft truncate text-xs">{RAID_PHASE_LABELS[raid.phase]}</span>
-        </span>
-
-        <span className="flex flex-col items-end gap-0.5">
-          <span className="text-ink text-lg leading-none font-semibold tabular-nums">{raid.raiders}</span>
-
-          <span className="text-ink-muted text-xs">warriors</span>
-        </span>
-      </button>
-    </li>
+      <span className="text-ink-soft truncate text-xs">{RAID_PHASE_LABELS[raid.phase]}</span>
+    </RowButton>
   );
 }
 
@@ -75,27 +65,21 @@ function RelationRow({ entry }: { readonly entry: TribePair<RelationView> }) {
   const showBorder = useShowSpot((first.campX + second.campX) / 2, (first.campZ + second.campZ) / 2);
 
   return (
-    <li>
-      <button
-        className="hover:bg-paper-hover focus-visible:ring-dawn flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-colors outline-none focus-visible:ring-2"
-        onClick={showBorder}
-        type="button"
-      >
+    <RowButton
+      leading={
         <span className="flex shrink-0 gap-0.5">
           <TribeDot color={first.color} />
 
           <TribeDot color={second.color} />
         </span>
+      }
+      onClick={showBorder}
+      trailing={<StanceBadge stance={relation.stance} />}
+    >
+      <span className="text-ink truncate text-sm font-semibold">{`${first.name} · ${second.name}`}</span>
 
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-ink truncate text-sm font-semibold">{`${first.name} · ${second.name}`}</span>
-
-          <RelationNote relation={relation} />
-        </span>
-
-        <StanceBadge stance={relation.stance} />
-      </button>
-    </li>
+      <RelationNote relation={relation} />
+    </RowButton>
   );
 }
 

@@ -1,6 +1,8 @@
 import { Tabs } from "@base-ui/react/tabs";
 import type { ReactNode } from "react";
+import { cn } from "../../design/cn.ts";
 import { ScrollPanel } from "../../design/scroll-panel.tsx";
+import { FOCUS_RING } from "../../design/styles.ts";
 import { type JournalTab, useInterfaceStore } from "../interface/interface-store.ts";
 import { RelationList } from "../rivalry/relation-list.tsx";
 import { ChronicleList } from "./chronicle-list.tsx";
@@ -19,7 +21,10 @@ function isJournalTab(value: unknown): value is JournalTab {
 function JournalTabButton({ label, value }: { readonly label: string; readonly value: JournalTab }) {
   return (
     <Tabs.Tab
-      className="text-ink-soft hover:text-ink focus-visible:ring-dawn data-active:text-ink h-8 flex-1 rounded-full px-3 text-sm font-semibold transition-colors outline-none focus-visible:ring-2 data-active:bg-white pointer-coarse:h-10"
+      className={cn(
+        FOCUS_RING,
+        "text-ink-soft hover:text-ink data-active:text-ink h-8 flex-1 rounded-full px-3 text-sm font-semibold transition-colors data-active:bg-white pointer-coarse:h-10"
+      )}
       value={value}
     >
       {label}

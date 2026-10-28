@@ -12,9 +12,8 @@ const SEASON_STEP = 0.05;
 const OVERLAY_INTERVAL_MILLISECONDS = 100;
 const FIRE_COLOR = "rgb(230 82 40)";
 const VIEW_FILL = "rgb(255 255 255 / 0.32)";
-const VIEW_OUTLINE = "rgb(255 255 255 / 0.9)";
+const OUTLINE = "rgb(255 255 255 / 0.9)";
 const FOOTPRINT_REACH_IN_WORLDS = 2;
-const MARK_OUTLINE = "rgb(255 255 255 / 0.9)";
 const TRIANGLE_HALF_WIDTH = Math.sqrt(3) / 2;
 
 const MARK_RADII: Readonly<Record<MarkerShapeCode, number>> = {
@@ -191,7 +190,7 @@ export class MinimapPainter {
     const scale = size / MAP_PIXELS;
 
     context.lineWidth = scale;
-    context.strokeStyle = MARK_OUTLINE;
+    context.strokeStyle = OUTLINE;
 
     for (const mark of [...herdMarks(frame), ...personMarks(frame)]) {
       const [x, y] = this.#toMap(mark.x, mark.z, size);
@@ -236,7 +235,7 @@ export class MinimapPainter {
     context.fillStyle = VIEW_FILL;
     context.fill();
     context.lineWidth = 1.5 * (size / MAP_PIXELS);
-    context.strokeStyle = VIEW_OUTLINE;
+    context.strokeStyle = OUTLINE;
     context.stroke();
   }
 }

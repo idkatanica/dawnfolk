@@ -7,7 +7,7 @@ import { useLaunchStore } from "../../app/launch-store.ts";
 import { IconButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
 import { Island } from "../../design/island.tsx";
-import { SEGMENT, SEGMENT_TRACK } from "../../design/segmented.ts";
+import { SEGMENT, SEGMENT_TRACK } from "../../design/styles.ts";
 import { type SettingsTab, useInterfaceStore } from "../interface/interface-store.ts";
 import { ProjectLinks } from "../project/project-links.tsx";
 import { GraphicsSection } from "./graphics-section.tsx";

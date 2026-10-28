@@ -1,10 +1,13 @@
 import { Heart, Star } from "lucide-react";
 import { type ReactNode, useEffect } from "react";
 import { cn } from "../../design/cn.ts";
+import { FOCUS_RING } from "../../design/styles.ts";
 import { formatStars, REPOSITORY_ADDRESS, requestStars, SPONSOR_ADDRESS, useStarStore } from "./github-stars.ts";
 
-const LINK_CLASS =
-  "inline-flex h-9 pointer-coarse:h-10 items-center gap-2 rounded-full px-3 font-medium text-ink-soft text-sm outline-none transition-colors duration-150 hover:bg-paper-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn";
+const LINK_CLASS = cn(
+  FOCUS_RING,
+  "text-ink-soft hover:bg-paper-hover hover:text-ink inline-flex h-9 items-center gap-2 rounded-full px-3 text-sm font-medium transition-colors duration-150 pointer-coarse:h-10"
+);
 
 function GitHubMark() {
   return (

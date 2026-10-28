@@ -2,6 +2,8 @@ import { Menu } from "@base-ui/react/menu";
 import { BookOpen, Map as MapIcon, Maximize2, Menu as MenuIcon, Minimize2, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import { IconButton } from "../../design/buttons.tsx";
+import { cn } from "../../design/cn.ts";
+import { PAPER_SURFACE } from "../../design/styles.ts";
 import { useSidePanel } from "../journal/use-side-panel.ts";
 import { useInterfaceStore } from "./interface-store.ts";
 import { useFullscreen } from "./use-fullscreen.ts";
@@ -65,7 +67,12 @@ export function CompactMenu() {
 
       <Menu.Portal>
         <Menu.Positioner align="end" className="z-50" sideOffset={10}>
-          <Menu.Popup className="rounded-island border-paper-edge bg-paper min-w-52 origin-(--transform-origin) border p-1.5 transition-[scale,opacity] duration-150 outline-none data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
+          <Menu.Popup
+            className={cn(
+              PAPER_SURFACE,
+              "rounded-island min-w-52 origin-(--transform-origin) p-1.5 transition-[scale,opacity] duration-150 outline-none data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0"
+            )}
+          >
             <MenuEntry icon={<BookOpen aria-hidden="true" size={17} />} onClick={showJournal}>
               Tribes and chronicle
             </MenuEntry>

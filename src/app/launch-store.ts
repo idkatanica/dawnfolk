@@ -9,7 +9,7 @@ import {
   withWorldId,
 } from "./launch-options.ts";
 
-export type LaunchChanges = Partial<Pick<LaunchOptions, "name" | "quality" | "seed" | "shape">>;
+type LaunchChanges = Partial<Pick<LaunchOptions, "name" | "quality" | "seed" | "shape">>;
 
 export interface WorldChoice {
   readonly name: string;

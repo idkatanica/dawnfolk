@@ -2,10 +2,10 @@ import { LayoutGrid } from "lucide-react";
 import { useEffect } from "react";
 import { useLaunchStore } from "../../app/launch-store.ts";
 import { TextButton } from "../../design/buttons.tsx";
-import { useInterfaceStore } from "../interface/interface-store.ts";
 import { SettingsGroup } from "../settings/settings-group.tsx";
 import { formatSavedAt } from "./saved-time.ts";
-import { saveBeforeLeaving, useSavesStore } from "./saves-store.ts";
+import { useSavesStore } from "./saves-store.ts";
+import { useLeaveWorld } from "./use-leave-world.ts";
 import { useNow } from "./use-now.ts";
 
 const CLOCK_MILLISECONDS = 15_000;
@@ -49,7 +49,7 @@ function useSavesGroup() {
   const saveNow = useSavesStore((state) => state.saveNow);
   const refresh = useSavesStore((state) => state.refresh);
   const chooseWorld = useLaunchStore((state) => state.chooseWorld);
-  const setSettingsOpen = useInterfaceStore((state) => state.setSettingsOpen);
+  const leaveWorld = useLeaveWorld();
 
   useEffect(() => {
     refresh().catch(() => undefined);
@@ -60,8 +60,7 @@ function useSavesGroup() {
   }
 
   function showAllWorlds(): void {
-    setSettingsOpen(false);
-    saveBeforeLeaving(chooseWorld);
+    leaveWorld(chooseWorld);
   }
 
   return { isSaving, save, showAllWorlds };
@@ -74,7 +73,7 @@ export function SavesGroup() {
   return (
     <SettingsGroup description={description} title="Saves">
       <div className="grid grid-cols-2 gap-2">
-        <TextButton className="border-paper-edge border" onClick={showAllWorlds} tone="quiet">
+        <TextButton onClick={showAllWorlds} tone="outline">
           <LayoutGrid aria-hidden="true" size={16} />
           All worlds
         </TextButton>

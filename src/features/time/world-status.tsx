@@ -1,5 +1,4 @@
 import type { WeatherKind } from "../../content/weather.ts";
-import { cn } from "../../design/cn.ts";
 import { formatClock } from "../../design/format.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
@@ -103,7 +102,7 @@ function PopulationReading() {
   );
 }
 
-export function CompactClock({ className }: { readonly className?: string | undefined }) {
+export function CompactClock() {
   const calendar = useWorldStore((state) => state.snapshot?.calendar);
 
   if (calendar === undefined) {
@@ -111,8 +110,8 @@ export function CompactClock({ className }: { readonly className?: string | unde
   }
 
   return (
-    <div className={cn("@container flex min-w-0 items-center gap-2", className)}>
-      <GameIcon className="@max-[6.5rem]:hidden" name={daylightIcon(calendar.hours)} size={24} />
+    <div className="@container flex min-w-0 flex-1 items-center gap-2">
+      <GameIcon className="@max-[6.5rem]:hidden" name={daylightIcon(calendar.hours)} />
 
       <div className="flex min-w-0 flex-col leading-none">
         <span className="text-ink text-sm font-semibold tabular-nums">{formatClock(calendar.hours)}</span>

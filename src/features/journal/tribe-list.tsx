@@ -1,6 +1,7 @@
 import { FOOD_KINDS, RESOURCES, type ResourceKind } from "../../content/resources.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
+import { RowButton, RowCount } from "../../design/row-button.tsx";
 import type { TribeSummary } from "../../simulation/frame.ts";
 import { useShowTribe } from "../inspector/use-focus-camera.ts";
 import { GoalNeed } from "../tribes/goal-need.tsx";
@@ -67,33 +68,23 @@ function TribeCard({ tribe }: { readonly tribe: TribeSummary }) {
   const showTribe = useShowTribe(tribe);
 
   return (
-    <li>
-      <button
-        className="hover:bg-paper-hover focus-visible:ring-dawn flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-colors outline-none focus-visible:ring-2"
-        onClick={showTribe}
-        type="button"
-      >
+    <RowButton
+      leading={
         <span aria-hidden="true" className="size-9 shrink-0 rounded-xl" style={{ backgroundColor: tribe.color }} />
+      }
+      onClick={showTribe}
+      trailing={<RowCount count={tribe.population} unit="people" />}
+    >
+      <span className="text-ink truncate text-sm font-semibold">{tribe.name}</span>
 
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-ink truncate text-sm font-semibold">{tribe.name}</span>
+      <span className="text-ink-muted truncate text-xs">{tribe.eraName}</span>
 
-          <span className="text-ink-muted truncate text-xs">{tribe.eraName}</span>
+      <StockLine tribe={tribe} />
 
-          <StockLine tribe={tribe} />
+      <GoalNeed goal={tribe.goal} />
 
-          <GoalNeed goal={tribe.goal} />
-
-          <MigrationMark tribe={tribe} />
-        </span>
-
-        <span className="flex flex-col items-end gap-0.5">
-          <span className="text-ink text-lg leading-none font-semibold tabular-nums">{tribe.population}</span>
-
-          <span className="text-ink-muted text-xs">people</span>
-        </span>
-      </button>
-    </li>
+      <MigrationMark tribe={tribe} />
+    </RowButton>
   );
 }
 

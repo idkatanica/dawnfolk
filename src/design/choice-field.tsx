@@ -4,7 +4,7 @@ import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { Check, ChevronsUpDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "./cn.ts";
-import { SEGMENT, SEGMENT_TRACK } from "./segmented.ts";
+import { FIELD_SURFACE, PAPER_SURFACE, SEGMENT, SEGMENT_TRACK } from "./styles.ts";
 
 export interface ChoiceOption {
   readonly icon?: ReactNode;
@@ -84,7 +84,10 @@ function ListChoice({ label, onChange, options, value }: ChoiceFieldProps) {
     <Select.Root items={options} onValueChange={handleChange} value={value}>
       <Select.Trigger
         aria-label={label}
-        className="text-ink ring-ink/8 focus-visible:ring-dawn flex h-9 w-full items-center justify-between gap-3 rounded-full bg-white/60 px-4 text-sm ring-1 transition-colors outline-none ring-inset hover:bg-white/80 focus-visible:ring-2 pointer-coarse:h-10"
+        className={cn(
+          FIELD_SURFACE,
+          "text-ink focus-visible:ring-dawn flex h-9 w-full items-center justify-between gap-3 transition-colors outline-none hover:bg-white/80 focus-visible:ring-2 pointer-coarse:h-10"
+        )}
       >
         <Select.Value />
 
@@ -95,7 +98,12 @@ function ListChoice({ label, onChange, options, value }: ChoiceFieldProps) {
 
       <Select.Portal>
         <Select.Positioner alignItemWithTrigger={false} className="z-50 outline-none select-none" sideOffset={6}>
-          <Select.Popup className="border-paper-edge bg-paper w-(--anchor-width) origin-(--transform-origin) rounded-2xl border p-1 transition-[scale,opacity] duration-100 outline-none data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
+          <Select.Popup
+            className={cn(
+              PAPER_SURFACE,
+              "w-(--anchor-width) origin-(--transform-origin) rounded-2xl p-1 transition-[scale,opacity] duration-100 outline-none data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0"
+            )}
+          >
             <Select.List className="max-h-[min(var(--available-height),24rem)] overflow-y-auto">
               {options.map((option) => (
                 <ListOption key={option.value} option={option} />

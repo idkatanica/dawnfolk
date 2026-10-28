@@ -28,7 +28,7 @@ function WideHud() {
         <div className="grid min-h-0 grid-rows-[auto_minmax(12rem,1fr)_minmax(0,auto)] justify-items-end gap-3">
           <PanelBar />
 
-          <SidePanel className="max-h-full self-start" />
+          <SidePanel />
 
           <PowerSettings className="max-h-full w-72 self-center" />
         </div>

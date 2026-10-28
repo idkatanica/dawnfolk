@@ -2,6 +2,7 @@ import { useRef, useSyncExternalStore } from "react";
 import { useEngine } from "../../app/use-engine.ts";
 import { cn } from "../../design/cn.ts";
 import { GameIcon } from "../../design/game-icon.tsx";
+import { FOCUS_RING, PAPER_SURFACE } from "../../design/styles.ts";
 import type { EngineHandle } from "../../game/engine-handle.ts";
 import type { Landmark } from "../../game/landmarks.ts";
 import type { TribeSummary } from "../../simulation/frame.ts";
@@ -102,7 +103,9 @@ function TribeLabel({ isSelected, mood, tribe }: TribeLabelProps) {
       <button
         aria-current={isSelected}
         className={cn(
-          "border-paper-edge bg-paper hover:bg-canvas focus-visible:ring-dawn pointer-events-auto flex items-center gap-2 rounded-full border py-1 pr-3 pl-1.5 text-xs transition-colors outline-none focus-visible:ring-2",
+          PAPER_SURFACE,
+          FOCUS_RING,
+          "hover:bg-canvas pointer-events-auto flex items-center gap-2 rounded-full py-1 pr-3 pl-1.5 text-xs transition-colors",
           { "ring-dawn ring-2": isSelected, "ring-ember/80 ring-2": mood === "raiding" && !isSelected }
         )}
         onClick={showTribe}

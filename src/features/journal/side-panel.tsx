@@ -1,7 +1,6 @@
 import { X } from "lucide-react";
 import { type RefObject, useEffect, useRef } from "react";
 import { IconButton } from "../../design/buttons.tsx";
-import { cn } from "../../design/cn.ts";
 import { Island } from "../../design/island.tsx";
 import type { Inspection } from "../../simulation/inspection.ts";
 import { InspectorCard } from "../inspector/inspector-card.tsx";
@@ -182,7 +181,7 @@ export function SidePanelContent({ contents, onBack, onClose }: SidePanelContent
   );
 }
 
-export function SidePanel({ className }: { readonly className?: string | undefined }) {
+export function SidePanel() {
   const { back, close, inspection, isJournalOpen, view } = useSidePanel();
   const panelReference = useRef<HTMLDivElement>(null);
 
@@ -194,7 +193,7 @@ export function SidePanel({ className }: { readonly className?: string | undefin
   }
 
   return (
-    <Island className={cn("w-journal flex flex-col", className)}>
+    <Island className="w-journal flex max-h-full flex-col self-start">
       <div className="flex min-h-0 flex-1 flex-col p-3" ref={panelReference}>
         <SidePanelContent contents={{ inspection, isJournalOpen }} onBack={back} onClose={close} />
       </div>
