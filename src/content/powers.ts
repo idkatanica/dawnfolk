@@ -271,7 +271,7 @@ export const POWERS = {
         unit: "meters",
       }),
       fallTime: rangeParameter({
-        defaultValue: 2,
+        defaultValue: 1,
         description: "Seconds between the click and the impact.",
         label: "Fall time",
         maximum: 6,

@@ -433,9 +433,9 @@ export class Simulation {
   advance(realSeconds: number): SimulationFrame {
     const seconds = clamp(realSeconds, 0, MAXIMUM_REAL_SECONDS);
 
+    this.#recomputeWaterWhenSettled(seconds);
     this.#applyStroke(seconds);
     this.#runTasks(seconds);
-    this.#recomputeWaterWhenSettled(seconds);
     this.#tickBacklog += this.#gameSeconds(seconds);
 
     let ticks = 0;
