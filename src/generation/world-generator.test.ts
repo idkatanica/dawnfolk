@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, it as test } from "vitest";
 import { Biome } from "../content/biomes.ts";
 import { Ground, isPoolGround } from "../content/grounds.ts";
-import { isTreeSpecies, plantSpeciesDefinition } from "../content/plants.ts";
+import { isTreeSpecies, plantSpeciesDefinition, TREE_SPACING } from "../content/plants.ts";
 import { isOnIsland } from "../world/coast.ts";
 import { admitsWildPlant, slopeAt } from "../world/footing.ts";
 import { ISLAND_SHAPES, type IslandShapeKind } from "../world/island-shape.ts";
@@ -125,6 +125,46 @@ function misplacedPlants(generated: GeneratedWorld): string[] {
   }
 
   return misplaced;
+}
+
+function closestTreeGap(generated: GeneratedWorld): number {
+  const { vegetation } = generated;
+
+  const grid = new WorldGrid(generated.dimensions);
+  const treesByCell = new Map<number, number[]>();
+  let closest = Number.POSITIVE_INFINITY;
+
+  for (let plant = 0; plant < vegetation.count; plant += 1) {
+    if (!isTreeSpecies(vegetation.species[plant])) {
+      continue;
+    }
+
+    const x = vegetation.x[plant];
+    const z = vegetation.z[plant];
+    const column = grid.columnAt(x);
+    const row = grid.rowAt(z);
+
+    for (let nearRow = row - 1; nearRow <= row + 1; nearRow += 1) {
+      for (let nearColumn = column - 1; nearColumn <= column + 1; nearColumn += 1) {
+        const near = grid.contains(nearColumn, nearRow) ? treesByCell.get(grid.index(nearColumn, nearRow)) : undefined;
+
+        for (const other of near === undefined ? [] : near) {
+          closest = Math.min(closest, Math.hypot(vegetation.x[other] - x, vegetation.z[other] - z));
+        }
+      }
+    }
+
+    const cell = grid.index(column, row);
+    const trees = treesByCell.get(cell);
+
+    if (trees === undefined) {
+      treesByCell.set(cell, [plant]);
+    } else {
+      trees.push(plant);
+    }
+  }
+
+  return closest;
 }
 
 interface SwampSurvey {
@@ -944,6 +984,11 @@ describe("full-size island rim", () => {
   it("keeps every plant of the full island off water and off ground too steep for it", () => {
     expect(misplacedPlants(fullSize)).toEqual([]);
     expect(misplacedPlants(fullSquare)).toEqual([]);
+  });
+
+  it("keeps the trees of the full island apart", () => {
+    expect(closestTreeGap(fullSize)).toBeGreaterThanOrEqual(TREE_SPACING);
+    expect(closestTreeGap(fullSquare)).toBeGreaterThanOrEqual(TREE_SPACING);
   });
 
   it("grows several swamps with pools on low, flat, wet ground on both shapes", () => {

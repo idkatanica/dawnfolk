@@ -12,7 +12,6 @@ import {
   addStone,
   type ChiselOptions,
   chiseledStone,
-  type FlatCut,
   groundShade,
   STONE_NOISE,
   type StoneContext,
@@ -20,37 +19,23 @@ import {
 } from "../stones.ts";
 import type { PlantDetailLevel } from "./tree-mesher.ts";
 
-type RockSpecies =
-  | typeof PlantSpecies.Boulder
-  | typeof PlantSpecies.FrostedRock
-  | typeof PlantSpecies.MossyRock
-  | typeof PlantSpecies.Sandstone
-  | typeof PlantSpecies.Scree
-  | typeof PlantSpecies.Slab;
+type RockSpecies = typeof PlantSpecies.Boulder | typeof PlantSpecies.MossyRock | typeof PlantSpecies.Sandstone;
 
 export const ROCK_HEIGHTS = {
   [PlantSpecies.Boulder]: 1.7,
-  [PlantSpecies.FrostedRock]: 1.6,
   [PlantSpecies.MossyRock]: 1.5,
   [PlantSpecies.Sandstone]: 2.6,
-  [PlantSpecies.Scree]: 0.8,
-  [PlantSpecies.Slab]: 0.8,
 } as const satisfies Readonly<Record<RockSpecies, number>>;
 
 export const ROCK_VARIANT_COUNTS = {
   [PlantSpecies.Boulder]: 4,
-  [PlantSpecies.FrostedRock]: 3,
   [PlantSpecies.MossyRock]: 3,
   [PlantSpecies.Sandstone]: 3,
-  [PlantSpecies.Scree]: 3,
-  [PlantSpecies.Slab]: 3,
 } as const satisfies Readonly<Record<RockSpecies, number>>;
 
 const BOULDER_NOISE = createVolumeNoise(createRandom(8080));
 const STONE_DETAIL: Readonly<Record<PlantDetailLevel, number>> = { far: 0, high: 1, low: 0, medium: 1 };
-const SPLIT_DETAIL: Readonly<Record<PlantDetailLevel, number>> = { far: 0, high: 1, low: 1, medium: 1 };
 const STRATA_SEGMENTS: Readonly<Record<PlantDetailLevel, number>> = { far: 4, high: 14, low: 6, medium: 9 };
-const SHOWN_SCREE_STONES: Readonly<Record<PlantDetailLevel, number>> = { far: 2, high: 9, low: 4, medium: 9 };
 const UP: Triple = [0, 1, 0];
 const DOWN: Triple = [0, -1, 0];
 
@@ -61,16 +46,6 @@ interface RockContext extends StoneContext {
 
 function chisel(context: RockContext, options: ChiselOptions): Shape {
   return chiseledStone(context.random, options, STONE_DETAIL[context.level]);
-}
-
-function sharedChisel(context: RockContext, options: ChiselOptions, splits: readonly FlatCut[]): Shape[] {
-  const { flats = [] } = options;
-
-  const seed = context.random.integer(1, 1_000_000);
-
-  return splits.map((split) =>
-    chiseledStone(createRandom(seed), { ...options, flats: [...flats, split] }, SPLIT_DETAIL[context.level])
-  );
 }
 
 function roundStone(context: RockContext, radius: number, roughness: number): Shape {
@@ -119,123 +94,6 @@ function boulder(context: RockContext): void {
         scale: [1, squash, random.between(0.85, 1.15)],
       },
       { lichen: 0.12, moss: 0.25 }
-    );
-  }
-}
-
-const SLAB_CUT: ChiselOptions = {
-  cuts: 5,
-  depth: 0.4,
-  flats: [
-    { distance: 0.3, normal: UP },
-    { distance: 0.3, normal: DOWN },
-  ],
-  radius: 1.45,
-  roughness: 0.05,
-};
-
-const SLAB_LOOK: StoneLook = { lichen: 0.3, moss: 0.12 };
-
-function slab(context: RockContext): void {
-  const { random, variant } = context;
-
-  if (variant === 1) {
-    const [left, right] = sharedChisel(context, SLAB_CUT, [
-      { distance: 0.04, normal: [1, 0, 0.15] },
-      { distance: 0.04, normal: [-1, 0, -0.15] },
-    ]);
-
-    addStone(
-      context,
-      left,
-      { position: [-0.12, 0.22, 0], rotation: [0.03, 0, 0.05], scale: [1.25, 1, 0.9] },
-      SLAB_LOOK
-    );
-    addStone(
-      context,
-      right,
-      { position: [0.14, 0.2, 0.05], rotation: [-0.04, 0.12, -0.07], scale: [1.25, 1, 0.9] },
-      SLAB_LOOK
-    );
-
-    return;
-  }
-
-  if (variant === 2) {
-    addStone(
-      context,
-      chisel(context, { ...SLAB_CUT, radius: 1.3 }),
-      { position: [-0.15, 0.3, 0], rotation: [0, 0, 0.24], scale: [1.2, 0.8, 0.85] },
-      SLAB_LOOK
-    );
-    addStone(
-      context,
-      chisel(context, { cuts: 5, depth: 0.4, radius: 0.5, roughness: 0.1 }),
-      { position: [0.95, 0.2, 0.05], scale: [1, 0.85, 1] },
-      { lichen: 0.1, moss: 0.1 }
-    );
-
-    return;
-  }
-
-  addStone(
-    context,
-    chisel(context, SLAB_CUT),
-    {
-      position: [0, 0.24, 0],
-      rotation: [random.signed() * 0.06, random.next() * FULL_TURN, random.signed() * 0.06],
-      scale: [1.25, 1, 0.9],
-    },
-    SLAB_LOOK
-  );
-}
-
-interface ScreeStone {
-  readonly radius: number;
-  readonly x: number;
-  readonly y: number;
-  readonly z: number;
-}
-
-function screeLayout(random: RandomSource, variant: number): ScreeStone[] {
-  const count = variant === 0 ? 9 : 7;
-  const radii = Array.from({ length: count }, () => random.between(0.22, 0.55)).sort((first, second) => second - first);
-
-  return radii.map((radius, index) => {
-    if (variant === 2) {
-      const along = (index / (count - 1) - 0.5) * 2.6;
-
-      return { radius, x: along, y: radius * 0.38, z: random.signed() * 0.35 };
-    }
-
-    if (variant === 1 && index >= count - 2) {
-      return { radius, x: random.signed() * 0.25, y: 0.3 + radius * 0.3, z: random.signed() * 0.25 };
-    }
-
-    const angle = random.next() * FULL_TURN;
-    const spread = variant === 1 ? 0.75 : 1.5;
-    const reach = Math.sqrt(random.next()) * spread;
-
-    return { radius, x: Math.cos(angle) * reach, y: radius * 0.38, z: Math.sin(angle) * reach * 0.6 };
-  });
-}
-
-function scree(context: RockContext): void {
-  const { level, random, variant } = context;
-
-  const stones = screeLayout(random, variant);
-  const shown = stones.slice(0, SHOWN_SCREE_STONES[level]);
-
-  for (const stone of shown) {
-    addStone(
-      context,
-      chiseledStone(random, { cuts: 7, depth: 0.5, radius: stone.radius, roughness: 0.12 }, 0),
-      {
-        position: [stone.x, stone.y, stone.z],
-        rotation: [random.signed() * 0.5, random.next() * FULL_TURN, random.signed() * 0.5],
-        scale: [1, 0.72, 0.9],
-      },
-      { lichen: 0.08, moss: 0.06 }
     );
   }
 }
@@ -408,58 +266,10 @@ function sandstone(context: RockContext): void {
   );
 }
 
-const FROST_CUT: ChiselOptions = { cuts: 8, depth: 0.5, radius: 1.1, roughness: 0.08 };
-const FROST_LOOK: StoneLook = { frost: 0.36, lichen: 0, moss: 0, slot: MaterialSlot.Basalt };
-
-function frostedRock(context: RockContext): void {
-  const { random, variant } = context;
-
-  if (variant === 2) {
-    addStone(
-      context,
-      chisel(context, {
-        ...FROST_CUT,
-        flats: [
-          { distance: 0.48, normal: UP },
-          { distance: 0.4, normal: DOWN },
-        ],
-        radius: 1.4,
-      }),
-      { position: [0, 0.45, 0], rotation: [0.05, random.next() * FULL_TURN, -0.04], scale: [1.2, 0.85, 1] },
-      FROST_LOOK
-    );
-
-    return;
-  }
-
-  addStone(
-    context,
-    chisel(context, FROST_CUT),
-    {
-      position: [0, 0.62, 0],
-      rotation: [random.signed() * 0.2, random.next() * FULL_TURN, random.signed() * 0.2],
-      scale: [1.1, 0.95, 0.9],
-    },
-    FROST_LOOK
-  );
-
-  if (variant === 1) {
-    addStone(
-      context,
-      chisel(context, { ...FROST_CUT, radius: 0.68 }),
-      { position: [1.15, 0.4, 0.3], rotation: [0.3, random.next() * FULL_TURN, 0.2], scale: [1, 0.85, 1] },
-      FROST_LOOK
-    );
-  }
-}
-
 const ROCK_MESHERS: Readonly<Record<RockSpecies, (context: RockContext) => void>> = {
   [PlantSpecies.Boulder]: boulder,
-  [PlantSpecies.FrostedRock]: frostedRock,
   [PlantSpecies.MossyRock]: mossyRock,
   [PlantSpecies.Sandstone]: sandstone,
-  [PlantSpecies.Scree]: scree,
-  [PlantSpecies.Slab]: slab,
 };
 
 const ROCK_SPECIES: ReadonlySet<number> = new Set(Object.keys(ROCK_MESHERS).map(Number));

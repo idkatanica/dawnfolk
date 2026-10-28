@@ -9,6 +9,7 @@ import {
   type PlantingRule,
   plantSpeciesDefinition,
   ROCK_RULES,
+  TREE_SPACING,
 } from "../content/plants.ts";
 import { FULL_TURN, hashToUnit } from "../shared/math.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
@@ -98,7 +99,11 @@ export function plantInitialVegetation(
   const rocks = createRandom(seed * 3 + 2);
 
   function plantWhereRoom(plant: PlantPlacement, cell: number): void {
-    if (reserved[cell] === 0 && hasRoomToGrow(terrain, grid, plant.x, plant.z, plant.species)) {
+    if (reserved[cell] !== 0 || !hasRoomToGrow(terrain, grid, plant.x, plant.z, plant.species)) {
+      return;
+    }
+
+    if (!(isTreeSpecies(plant.species) && store.hasTreeWithin(plant.x, plant.z, TREE_SPACING))) {
       store.add(plant);
     }
   }

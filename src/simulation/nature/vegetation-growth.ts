@@ -1,6 +1,6 @@
 import { Biome, isBiomeIndex } from "../../content/biomes.ts";
 import { groundDefinition } from "../../content/grounds.ts";
-import { regrowingSpecies } from "../../content/plants.ts";
+import { regrowingSpecies, TREE_SPACING } from "../../content/plants.ts";
 import { isGrowingSeason } from "../../content/seasons.ts";
 import type { WorldRules } from "../../content/world-rules.ts";
 import { plantHeight } from "../../generation/vegetation.ts";
@@ -148,18 +148,21 @@ export class VegetationGrowthSystem {
       return;
     }
 
-    this.#nursery.plant(
-      {
-        bornDay: day,
-        height: plantHeight(species, random, 1),
-        rotation: random.next() * FULL_TURN,
-        seed: random.next(),
-        species,
-        x: grid.cellCenterX(cell) + random.between(-0.35, 0.35) * grid.cellSize,
-        z: grid.cellCenterZ(cell) + random.between(-0.35, 0.35) * grid.cellSize,
-      },
-      TREE_GROWING_DAYS
-    );
+    const placement = {
+      bornDay: day,
+      height: plantHeight(species, random, 1),
+      rotation: random.next() * FULL_TURN,
+      seed: random.next(),
+      species,
+      x: grid.cellCenterX(cell) + random.between(-0.35, 0.35) * grid.cellSize,
+      z: grid.cellCenterZ(cell) + random.between(-0.35, 0.35) * grid.cellSize,
+    };
+
+    if (world.vegetation.hasTreeWithin(placement.x, placement.z, TREE_SPACING)) {
+      return;
+    }
+
+    this.#nursery.plant(placement, TREE_GROWING_DAYS);
   }
 
   #canSprout(cell: number, random: RandomSource): boolean {

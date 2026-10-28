@@ -69,6 +69,26 @@ describe("burnt plants", () => {
   });
 });
 
+describe("tree spacing", () => {
+  it("finds a living tree within reach across a cell border", () => {
+    const store = new VegetationStore(new WorldGrid({ cellSize: 10, cellsPerSide: 8 }), 16);
+
+    plantAt(store, PlantSpecies.Spruce, 9);
+
+    expect(store.hasTreeWithin(12, 3, 4)).toBe(true);
+    expect(store.hasTreeWithin(14, 3, 4)).toBe(false);
+  });
+
+  it("ignores rocks and dead trees", () => {
+    const store = new VegetationStore(new WorldGrid({ cellSize: 10, cellsPerSide: 8 }), 16);
+
+    plantAt(store, PlantSpecies.Boulder, 3);
+    store.burn(plantAt(store, PlantSpecies.Oak, 5), 1);
+
+    expect(store.hasTreeWithin(4, 3, 4)).toBe(false);
+  });
+});
+
 describe("wear", () => {
   it("starts again for a plant that takes a freed slot", () => {
     const store = new VegetationStore(new WorldGrid({ cellSize: 10, cellsPerSide: 8 }), 16);

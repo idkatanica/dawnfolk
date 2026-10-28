@@ -118,7 +118,7 @@ describe("spreading", () => {
 
     burnFor(scenario, 60);
 
-    expect(reachTowards(scenario.world, 1)).toBeGreaterThan(40);
+    expect(reachTowards(scenario.world, 1)).toBeGreaterThan(20);
     expect(reachTowards(scenario.world, 1)).toBeLessThan(200);
   });
 

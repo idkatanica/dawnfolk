@@ -366,6 +366,33 @@ export class VegetationStore implements VegetationChannels {
     }
   }
 
+  hasTreeWithin(x: number, z: number, reach: number): boolean {
+    const grid = this.#grid;
+    const column = grid.columnAt(x);
+    const row = grid.rowAt(z);
+    const span = Math.ceil(reach / grid.cellSize);
+
+    for (let nearRow = row - span; nearRow <= row + span; nearRow += 1) {
+      for (let nearColumn = column - span; nearColumn <= column + span; nearColumn += 1) {
+        if (!grid.contains(nearColumn, nearRow)) {
+          continue;
+        }
+
+        const cell = grid.index(nearColumn, nearRow);
+
+        for (let index = this.#firstInCell[cell]; index !== NO_PLANT; index = this.#nextInCell[index]) {
+          const isTree = this.state[index] === PlantState.Alive && isTreeSpecies(this.species[index]);
+
+          if (isTree && Math.hypot(this.x[index] - x, this.z[index] - z) < reach) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
   countTreesInCell(cellIndex: number): number {
     let trees = 0;
 

@@ -7,6 +7,7 @@ import {
   isTreeSpecies,
   PLANTING_RULES,
   plantSpeciesDefinition,
+  TREE_SPACING,
 } from "../../content/plants.ts";
 import { clearingAt, plantingChance } from "../../generation/vegetation.ts";
 import { FULL_TURN, hashToUnit, lerp } from "../../shared/math.ts";
@@ -122,12 +123,14 @@ export class Succession {
     }
 
     const isTreeTime = age >= TREE_DELAY_DAYS && scorch <= TREE_SCORCH;
+    const nextTree = climax.trees.at(cover.trees);
+    const hasRoomForTree = nextTree !== undefined && !hasCrowdingTree(world, nextTree);
 
-    if (cover.trees < climax.trees.length && isTreeTime && this.#random.chance(this.#seedingChance(cell, day))) {
-      this.#plantTree({ ...climax.trees[cover.trees], bornDay: day });
+    if (hasRoomForTree && isTreeTime && this.#random.chance(this.#seedingChance(cell, day))) {
+      this.#plantTree({ ...nextTree, bornDay: day });
     }
 
-    return cover.trees >= climax.trees.length && cover.shrubs >= climax.shrubs.length && scorch <= 0;
+    return !hasRoomForTree && cover.shrubs >= climax.shrubs.length && scorch <= 0;
   }
 
   #plantTree(placement: PlantPlacement): void {
@@ -174,6 +177,10 @@ export class Succession {
 
     return false;
   }
+}
+
+function hasCrowdingTree(world: WorldState, tree: PlantPlacement): boolean {
+  return world.vegetation.hasTreeWithin(tree.x, tree.z, TREE_SPACING);
 }
 
 function coverOf(world: WorldState, cell: number): Cover {
