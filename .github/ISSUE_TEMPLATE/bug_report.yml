@@ -1,6 +1,9 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-issue-forms.json
+
 name: Bug report
 description: Something in the game doesn't work as it should
 labels: [bug]
+
 body:
   - type: textarea
     id: what-happened
@@ -10,6 +13,7 @@ body:
       placeholder: A river broke into separate pools when I zoomed out.
     validations:
       required: true
+
   - type: textarea
     id: steps
     attributes:
@@ -18,6 +22,7 @@ body:
       placeholder: |
         1. Open https://playdawnfolk.com/?seed=7
         2. Zoom out far
+
   - type: input
     id: device
     attributes:
@@ -25,6 +30,7 @@ body:
       placeholder: Chrome on a MacBook Air M3
     validations:
       required: true
+
   - type: textarea
     id: screenshot
     attributes:
