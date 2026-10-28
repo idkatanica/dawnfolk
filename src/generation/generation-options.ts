@@ -3,7 +3,17 @@ import { DEFAULT_GRID_DIMENSIONS, type GridDimensions } from "../world/world-gri
 
 export type GenerationStage = "climate" | "erosion" | "relief" | "vegetation" | "water";
 
+export interface IslandSketch {
+  cellSize: number;
+  cellsPerSide: number;
+  coastDistance: Float32Array;
+  ground: Uint8Array | null;
+  height: Float32Array;
+  waterSurface: Float32Array | null;
+}
+
 export interface GenerationProgress {
+  island: IslandSketch | null;
   stage: GenerationStage;
 }
 

@@ -12,6 +12,7 @@ import {
 } from "../simulation/saved-world.ts";
 import { Simulation } from "../simulation/simulation.ts";
 import { VEGETATION_CHANNELS, type VegetationChannels } from "../world/vegetation-store.ts";
+import { withSmallSketches } from "./island-sketch.ts";
 
 export interface SimulationWorkerApi {
   advance: (realSeconds: number, commands: readonly unknown[]) => SimulationFrame;
@@ -125,11 +126,12 @@ export function createSimulationWorkerApi(
 
       return transfer(frame, uniqueArrayBuffers(frameBuffers(frame)));
     },
-    createWorld: (worldRequest, onProgress) => sendWorld(createSimulation(worldRequest, onProgress), worldRequest),
+    createWorld: (worldRequest, onProgress) =>
+      sendWorld(createSimulation(worldRequest, withSmallSketches(onProgress)), worldRequest),
     loadWorld: (saved, onProgress) => {
       const state = readSavedWorld(saved);
 
-      const loaded = generateUnsettled(state.request, onProgress);
+      const loaded = generateUnsettled(state.request, withSmallSketches(onProgress));
 
       restoreSavedWorld(loaded, state);
 

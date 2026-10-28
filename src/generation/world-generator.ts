@@ -21,7 +21,12 @@ import {
   relaxSlopes,
   smoothHeights,
 } from "./erosion.ts";
-import { DEFAULT_GENERATION_OPTIONS, type GenerationOptions, type GenerationProgress } from "./generation-options.ts";
+import {
+  DEFAULT_GENERATION_OPTIONS,
+  type GenerationOptions,
+  type GenerationProgress,
+  type IslandSketch,
+} from "./generation-options.ts";
 import { computeHydrology } from "./hydrology.ts";
 import { digRiverLakes, fillSinks } from "./lake-basins.ts";
 import { planMonuments } from "./monuments.ts";
@@ -143,14 +148,23 @@ export function generateWorld(
   const grid = new WorldGrid(options.dimensions);
   const size = grid.cellsPerSide;
 
-  onProgress({ stage: "relief" });
+  onProgress({ island: null, stage: "relief" });
 
   const { coastDistance, desert, dryness, heights, relief } = buildRelief(grid, seed, options.shape);
 
   const talus = talusSlopes(heights, dryness);
 
+  const sketch: IslandSketch = {
+    cellSize: grid.cellSize,
+    cellsPerSide: size,
+    coastDistance,
+    ground: null,
+    height: heights,
+    waterSurface: null,
+  };
+
   relaxSlopes(heights, size, grid.cellSize, talus, ROUGH_RELAXATION_ITERATIONS);
-  onProgress({ stage: "erosion" });
+  onProgress({ island: sketch, stage: "erosion" });
   erodeAcrossScales(
     heights,
     size,
@@ -170,11 +184,11 @@ export function generateWorld(
   limitSlopes(heights, size, grid.cellSize, STEEPEST_SLOPE);
   smoothHeights(heights, size);
   fillSinks(heights, grid, dryness, coastDistance);
-  onProgress({ stage: "water" });
+  onProgress({ island: sketch, stage: "water" });
 
   const hydrology = computeHydrology(heights, grid, dryness, coastDistance);
 
-  onProgress({ stage: "climate" });
+  onProgress({ island: { ...sketch, waterSurface: hydrology.waterSurface }, stage: "climate" });
 
   const climate = buildClimate({
     coastDistance,
@@ -201,7 +215,10 @@ export function generateWorld(
     woodland: new Float32Array(grid.cellCount).fill(1),
   };
 
-  onProgress({ stage: "vegetation" });
+  onProgress({
+    island: { ...sketch, ground: climate.ground, waterSurface: hydrology.waterSurface },
+    stage: "vegetation",
+  });
   openWoodland(terrain, grid, seed);
 
   const ruins = planMonuments(grid, terrain, seed);
