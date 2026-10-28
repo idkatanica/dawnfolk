@@ -6,6 +6,20 @@ import { playwright } from "@vitest/browser-playwright";
 import { configDefaults, defineConfig } from "vitest/config";
 import { createChromiumLaunchOptions } from "./tests/chromium.ts";
 
+interface BuiltAsset {
+  readonly names: readonly string[];
+}
+
+function assetFileName(asset: BuiltAsset): string {
+  const isVideo = asset.names.some((name) => name.endsWith(".mp4"));
+
+  if (isVideo) {
+    return "media/[name]-[hash][extname]";
+  }
+
+  return "assets/[name]-[hash][extname]";
+}
+
 export default defineConfig({
   base: "./",
   build: {
@@ -14,6 +28,9 @@ export default defineConfig({
       input: {
         main: fileURLToPath(new URL("index.html", import.meta.url)),
         privacy: fileURLToPath(new URL("privacy/index.html", import.meta.url)),
+      },
+      output: {
+        assetFileNames: assetFileName,
       },
     },
     target: "es2023",
