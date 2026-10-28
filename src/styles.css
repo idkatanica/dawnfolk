@@ -17,7 +17,7 @@
   --max-height-dialog: min(46rem, calc(100dvh - var(--dialog-inset-top) - var(--dialog-inset-bottom)));
   --max-height-sheet: min(72dvh, 40rem);
 
-  --color-sky: #dbe7f1;
+  --color-canvas: #f4f4f5;
 
   --color-ink: #18181b;
   --color-ink-soft: #52525b;
@@ -104,7 +104,7 @@ body {
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
   color: var(--color-ink);
-  background: var(--color-sky);
+  background: var(--color-canvas);
 }
 
 @layer components {
