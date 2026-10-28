@@ -176,7 +176,8 @@ class DropOctave {
 
     const center = vec3(place.x.add(wander.x), surface.add(height), place.y.add(wander.y));
 
-    const viewportMeters = distance(center, cameraPosition).mul(uniforms.viewportSpan);
+    const cameraDistance = distance(center, cameraPosition);
+    const viewportMeters = cameraDistance.mul(uniforms.viewportSpan);
     const natural = uniforms.size.mul(scale).mul(variety.mul(0.6).add(0.7));
     const streakAxis = normalize(vec3(uniforms.slant.x.negate(), 1, uniforms.slant.y.negate()));
     const isOnIsland = textures.outline.insideNode(landing);
@@ -197,7 +198,7 @@ class DropOctave {
       uniforms.reach.mul(RANGE_FADE_START),
       length(place.sub(uniforms.focus))
     );
-    const lensFade = smoothstep(uniforms.span.mul(0.015), uniforms.span.mul(0.05), distance(center, cameraPosition));
+    const lensFade = smoothstep(uniforms.span.mul(0.015), uniforms.span.mul(0.05), cameraDistance);
 
     const visibility = element.presence
       .mul(slabFade)
@@ -254,7 +255,6 @@ export class WeatherParticles {
   readonly #fine: DropOctave;
   readonly #halfSize: number;
   readonly #uniforms = new DropUniforms();
-  #fallen = 0;
 
   constructor(axes: CameraAxes, textures: TerrainTextures, grid: WorldGrid) {
     const sources = { axes, grid, textures, uniforms: this.#uniforms };
@@ -288,7 +288,6 @@ export class WeatherParticles {
 
     const blend = octave - finer;
 
-    this.#fallen = (this.#fallen + (look.fallSpeed * seconds) / COLUMN_HEIGHT) % CYCLES;
     this.#drift.x += (windX * seconds) / TILE_SIZE;
     this.#drift.y += (windZ * seconds) / TILE_SIZE;
     this.#fine.cover(finer, perTile * (4 ** -blend - blend / 4), area, this.#drift);
@@ -296,7 +295,7 @@ export class WeatherParticles {
 
     const uniforms = this.#uniforms;
 
-    uniforms.fallen.value = this.#fallen;
+    uniforms.fallen.value = (uniforms.fallen.value + (look.fallSpeed * seconds) / COLUMN_HEIGHT) % CYCLES;
     uniforms.driftShare.value.set(fractionalPart(this.#drift.x), fractionalPart(this.#drift.y));
     uniforms.focus.value.set(view.focus.x, view.focus.z);
     uniforms.span.value = span;

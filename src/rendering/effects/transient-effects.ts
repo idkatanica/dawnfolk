@@ -46,6 +46,8 @@ const RING_COLOR = 0xff_f0_d8;
 const SPLASH_SECONDS = 0.55;
 const SPLASH_DROPS = 9;
 const SPLASH_COLOR: readonly [number, number, number] = [0.86, 0.93, 0.97];
+const WATER_DUST: readonly [number, number, number] = [0.85, 0.9, 0.95];
+const LAND_DUST: readonly [number, number, number] = [0.3, 0.27, 0.24];
 
 const BLESSING_COLORS: Readonly<Record<BlessingEffect["style"], readonly [number, number, number]>> = {
   abundance: [1, 0.78, 0.3],
@@ -137,11 +139,13 @@ export class LightningStrike implements ActiveEffect {
 }
 
 function addPuffs(sinks: SpriteSinks, center: Vector3, spread: number, age: number, color: readonly number[]): void {
+  const fade = (1 - smoothstep(0.2, 1, age / EXPLOSION_SECONDS)) * 0.8;
+  const look = [color[0], color[1], color[2], fade];
+
   for (let puff = 0; puff < DUST_PUFFS; puff += 1) {
     const angle = hashToUnit(puff, 1) * FULL_TURN;
     const reach = (0.3 + hashToUnit(puff, 2) * 0.9) * spread * (0.4 + age * 0.9);
     const rise = (6 + hashToUnit(puff, 3) * 24) * Math.sqrt(age);
-    const fade = (1 - smoothstep(0.2, 1, age / EXPLOSION_SECONDS)) * 0.8;
 
     sinks.dust.add(
       [
@@ -150,7 +154,7 @@ function addPuffs(sinks: SpriteSinks, center: Vector3, spread: number, age: numb
         center.z + Math.sin(angle) * reach,
         spread * 0.35 + age * 9,
       ],
-      [color[0], color[1], color[2], fade]
+      look
     );
   }
 }
@@ -196,7 +200,7 @@ export class Explosion implements ActiveEffect {
       1 - smoothstep(0.2, 1, this.#age)
     );
 
-    addPuffs(sinks, this.#center, radius, this.#age, this.#effect.isInWater ? [0.85, 0.9, 0.95] : [0.3, 0.27, 0.24]);
+    addPuffs(sinks, this.#center, radius, this.#age, this.#effect.isInWater ? WATER_DUST : LAND_DUST);
 
     return this.#age < EXPLOSION_SECONDS;
   }
@@ -257,6 +261,7 @@ export class Earthquake implements ActiveEffect {
     this.#context.shake(strength * 2.5, this.#effect.x, this.#effect.z);
 
     const fade = smoothstep(0, 0.4, this.#age) * (1 - smoothstep(1.5, EARTHQUAKE_SECONDS, this.#age)) * 0.45;
+    const look = [0.55, 0.47, 0.38, fade];
 
     for (let puff = 0; puff < DUST_PUFFS; puff += 1) {
       const angle = hashToUnit(puff, 7) * FULL_TURN;
@@ -265,10 +270,7 @@ export class Earthquake implements ActiveEffect {
       const x = this.#effect.x + Math.cos(angle) * reach;
       const z = this.#effect.z + Math.sin(angle) * reach;
 
-      sinks.dust.add(
-        [x, this.#context.heightAt(x, z) + 2 + this.#age * 3, z, 9 + this.#age * 5],
-        [0.55, 0.47, 0.38, fade]
-      );
+      sinks.dust.add([x, this.#context.heightAt(x, z) + 2 + this.#age * 3, z, 9 + this.#age * 5], look);
     }
 
     return this.#age < EARTHQUAKE_SECONDS;
@@ -328,16 +330,14 @@ export class Splash implements ActiveEffect {
 
     const age = this.#age / SPLASH_SECONDS;
     const fade = (1 - smoothstep(0.35, 1, age)) * 0.85;
+    const look = [SPLASH_COLOR[0], SPLASH_COLOR[1], SPLASH_COLOR[2], fade];
 
     for (let drop = 0; drop < SPLASH_DROPS; drop += 1) {
       const angle = hashToUnit(drop, 7, x + z) * FULL_TURN;
       const reach = (0.2 + hashToUnit(drop, 8, x - z) * 0.5) * age;
       const rise = (0.35 + hashToUnit(drop, 9, x) * 0.45) * 4 * age * (1 - age);
 
-      sinks.dust.add(
-        [x + Math.cos(angle) * reach, level + rise, z + Math.sin(angle) * reach, 0.16 + age * 0.22],
-        [SPLASH_COLOR[0], SPLASH_COLOR[1], SPLASH_COLOR[2], fade]
-      );
+      sinks.dust.add([x + Math.cos(angle) * reach, level + rise, z + Math.sin(angle) * reach, 0.16 + age * 0.22], look);
     }
 
     return this.#age < SPLASH_SECONDS;

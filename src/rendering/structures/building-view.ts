@@ -380,8 +380,8 @@ function ringOf(building: BuildingSnapshot, mirror: WorldMirror): PiecePlacement
   const length = ENCLOSURE_SEGMENT_LENGTH;
 
   const count = Math.max(SMALLEST_RING, Math.round((FULL_TURN * building.extent) / length));
-  const radius = length / (2 * Math.tan(Math.PI / count));
   const halfStep = Math.PI / count;
+  const radius = length / (2 * Math.tan(halfStep));
 
   const pieces: PiecePlacement[] = [];
 

@@ -77,14 +77,16 @@ function facetsWhere(faceted: Shape, keep: (triangle: number) => boolean): Shape
 
 export function addStreakedRock(context: StructureContext, shape: Shape, look: OreLook, style: VertexStyle): void {
   const faceted = facetShape(shape);
+  const streaks = Array.from({ length: faceted.indices.length / 3 }, (_, triangle) =>
+    isStreak(centroidAt(faceted, triangle), look.richness)
+  );
 
-  function streaks(triangle: number): boolean {
-    return isStreak(centroidAt(faceted, triangle), look.richness);
-  }
-
-  context.builder.add(facetsWhere(faceted, streaks), { style: { ...style, slot: look.ore } });
   context.builder.add(
-    facetsWhere(faceted, (triangle) => !streaks(triangle)),
+    facetsWhere(faceted, (triangle) => streaks[triangle]),
+    { style: { ...style, slot: look.ore } }
+  );
+  context.builder.add(
+    facetsWhere(faceted, (triangle) => !streaks[triangle]),
     { style: { ...style, slot: look.rock } }
   );
 }

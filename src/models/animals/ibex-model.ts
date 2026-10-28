@@ -155,10 +155,13 @@ function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
   builder.add(shape, { seam: HEAD_SEAM, style: { ...head, slot: MaterialSlot.Coat } });
   addFace(builder, shape, detail);
 
+  const ear = sphere(1, segmentsUpTo(detail, 6), 4);
+  const earStyle = { ...head, slot: MaterialSlot.Coat };
+
   for (const side of LEG_SIDES) {
-    builder.add(sphere(1, segmentsUpTo(detail, 6), 4), {
+    builder.add(ear, {
       seam: EAR_SEAM,
-      style: { ...head, slot: MaterialSlot.Coat },
+      style: earStyle,
       transform: combine(
         sideMirror(side),
         transformOf({ position: [0.045, 1.3, 0.56], rotation: [0.2, 0, -1.25] }),
@@ -227,10 +230,13 @@ function hornPath(length: number): TubePoint[] {
 
 function addHorns(builder: MeshBuilder, detail: AnimalDetail, length: number): void {
   const style = { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Horn };
-  const radialSegments = segmentsAtLeast(detail, 5, detail.segments - 3);
+  const horn = tube(hornPath(length), {
+    hasEndCap: false,
+    radialSegments: segmentsAtLeast(detail, 5, detail.segments - 3),
+  });
 
   for (const side of LEG_SIDES) {
-    builder.add(tube(hornPath(length), { hasEndCap: false, radialSegments }), {
+    builder.add(horn, {
       style,
       transform: sideMirror(side),
     });

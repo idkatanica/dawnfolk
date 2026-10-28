@@ -212,11 +212,11 @@ function branchSeam(points: readonly TubePoint[], level: PlantDetailLevel): { se
   return { seam: clamp(root.radius * 1.5, 0.05, 0.45) };
 }
 
-function addBranches(builder: MeshBuilder, structure: TreeStructure, look: TreeLook, level: PlantDetailLevel): void {
-  const maximumDepth = { far: 0, high: 2, low: 0, medium: 1 }[level];
+const MAXIMUM_BRANCH_DEPTHS: Readonly<Record<PlantDetailLevel, number>> = { far: 0, high: 2, low: 0, medium: 1 };
 
+function addBranches(builder: MeshBuilder, structure: TreeStructure, look: TreeLook, level: PlantDetailLevel): void {
   for (const branch of structure.branches) {
-    if (branch.depth > maximumDepth) {
+    if (branch.depth > MAXIMUM_BRANCH_DEPTHS[level]) {
       continue;
     }
 
@@ -394,12 +394,18 @@ function weepingShape(foliage: FoliageBlob, drape: number, level: PlantDetailLev
   });
 }
 
-function weepingStyle(structure: TreeStructure, look: TreeLook, foliage: FoliageBlob, drape: number): VertexStyle {
+function weepingStyle(
+  structure: TreeStructure,
+  look: TreeLook,
+  foliage: FoliageBlob,
+  drape: number,
+  crown: Vector3
+): VertexStyle {
   const fallHeight = foliage.center[1] - foliage.radius * foliage.squash * DRAPE_FALL;
   const fallSway = plantSway(fallHeight, structure.height);
 
   return {
-    ...foliageStyle(structure, look, foliage.tint, crownCenter(structure)),
+    ...foliageStyle(structure, look, foliage.tint, crown),
     sway: (point) => {
       const { y } = point.position;
 
@@ -417,14 +423,15 @@ function addBlob(
   structure: TreeStructure,
   look: TreeLook,
   foliage: FoliageBlob,
-  level: PlantDetailLevel
+  level: PlantDetailLevel,
+  crown: Vector3
 ): void {
   const [x, y, z] = foliage.center;
   const { drape = 0 } = foliage;
 
   if (drape > 0 && !isDistantLevel(level)) {
     builder.add(weepingShape(foliage, drape, level), {
-      style: weepingStyle(structure, look, foliage, drape),
+      style: weepingStyle(structure, look, foliage, drape, crown),
       transform: transformOf({ position: foliage.center }),
     });
 
@@ -443,7 +450,7 @@ function addBlob(
       : icosphere(foliage.radius, 0);
 
   builder.add(shape, {
-    style: foliageStyle(structure, look, foliage.tint, crownCenter(structure)),
+    style: foliageStyle(structure, look, foliage.tint, crown),
     transform: transformOf({ position: foliage.center, scale: [1, foliage.squash, 1] }),
   });
 }
@@ -453,7 +460,8 @@ function addFrond(
   structure: TreeStructure,
   look: TreeLook,
   frond: FoliageFrond,
-  level: PlantDetailLevel
+  level: PlantDetailLevel,
+  crown: Vector3
 ): void {
   const [root] = frond.points;
 
@@ -462,7 +470,7 @@ function addFrond(
 
   builder.add(ribbon(points), {
     style: {
-      ...foliageStyle(structure, look, frond.tint, crownCenter(structure)),
+      ...foliageStyle(structure, look, frond.tint, crown),
       sway: (point) => lerp(rootSway, 1, point.along),
     },
   });
@@ -648,34 +656,35 @@ function addLowCrown(builder: MeshBuilder, structure: TreeStructure, look: TreeL
   }
 
   const envelope = crownEnvelope(structure);
+  const foliageMiddle = crownCenter(structure);
   const root = stemRoot(structure);
 
   if (root === null) {
-    addBlob(builder, structure, look, groundedEnvelope(envelope), "low");
+    addBlob(builder, structure, look, groundedEnvelope(envelope), "low", foliageMiddle);
 
     return;
   }
 
-  if (needsCrownStem(structure, root, level)) {
+  if (needsCrownStem(structure, root, envelope, level)) {
     addCrownStem(builder, structure, look, root, envelope, level);
   }
 
-  addBlob(builder, structure, look, envelope, "low");
+  addBlob(builder, structure, look, envelope, "low", foliageMiddle);
 }
 
-function needsCrownStem(structure: TreeStructure, root: TubePoint, level: PlantDetailLevel): boolean {
-  if (trunkReachesCrown(structure, root)) {
+function needsCrownStem(
+  structure: TreeStructure,
+  root: TubePoint,
+  envelope: FoliageBlob,
+  level: PlantDetailLevel
+): boolean {
+  const hasTrunk = structure.branches.some((branch) => branch.depth === 0);
+
+  if (hasTrunk && envelope.center[1] > root.y) {
     return false;
   }
 
-  return level !== "far" || !structure.branches.some((branch) => branch.depth === 0);
-}
-
-function trunkReachesCrown(structure: TreeStructure, root: TubePoint): boolean {
-  const crown = lowCrownCenter(structure);
-  const hasTrunk = structure.branches.some((branch) => branch.depth === 0);
-
-  return hasTrunk && crown !== null && crown.y > root.y;
+  return level !== "far" || !hasTrunk;
 }
 
 function groundedEnvelope(envelope: FoliageBlob): FoliageBlob {
@@ -739,9 +748,10 @@ function addFoliage(builder: MeshBuilder, structure: TreeStructure, look: TreeLo
 
   const blobs = structure.foliage.filter((foliage) => foliage.kind === "blob");
   const visibleBlobs = mergedBlobs(blobs, BLOB_LIMITS[level]);
+  const crown = crownCenter(structure);
 
   for (const foliage of visibleBlobs) {
-    addBlob(builder, structure, look, foliage, level);
+    addBlob(builder, structure, look, foliage, level, crown);
   }
 
   for (const foliage of structure.foliage) {
@@ -750,7 +760,7 @@ function addFoliage(builder: MeshBuilder, structure: TreeStructure, look: TreeLo
     }
 
     if (foliage.kind === "frond") {
-      addFrond(builder, structure, look, foliage, level);
+      addFrond(builder, structure, look, foliage, level, crown);
     }
   }
 }

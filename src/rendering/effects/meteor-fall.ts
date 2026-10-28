@@ -32,6 +32,7 @@ export class MeteorFall implements ActiveEffect {
   readonly #effect: MeteorEffect;
   readonly #from: Vector3;
   readonly #head = new Vector3();
+  readonly #previous = new Vector3();
   readonly #puffs: TrailPuff[] = [];
   readonly #rock: Mesh;
   readonly #sheath: Mesh;
@@ -80,10 +81,9 @@ export class MeteorFall implements ActiveEffect {
     const entry = smoothstep(0, 0.2, time);
     const size = this.#size;
 
-    const previous = this.#head.clone();
-
+    this.#previous.copy(this.#head);
     this.#head.lerpVectors(this.#from, this.#to, progress);
-    this.#leaveTrail(previous);
+    this.#leaveTrail();
     this.#shedSparks(seconds);
 
     this.#rock.position.copy(this.#head);
@@ -101,10 +101,10 @@ export class MeteorFall implements ActiveEffect {
     this.#context.light(this.#head, 0xff_8a_3a, 3 + 9 * time);
   }
 
-  #leaveTrail(previous: Vector3): void {
+  #leaveTrail(): void {
     const spacing = this.#size * TRAIL_SPACING;
 
-    this.#travelled += previous.distanceTo(this.#head);
+    this.#travelled += this.#previous.distanceTo(this.#head);
 
     while (this.#travelled >= spacing) {
       this.#travelled -= spacing;

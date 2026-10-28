@@ -19,6 +19,12 @@ type Corners = readonly [Vector3, Vector3, Vector3];
 
 const PARALLEL_LIMIT = 1e-12;
 
+const firstEdge = new Vector3();
+const secondEdge = new Vector3();
+const fromFirst = new Vector3();
+const perpendicular = new Vector3();
+const across = new Vector3();
+
 function everyTriangle(): boolean {
   return true;
 }
@@ -32,12 +38,12 @@ function readCorners(surface: Surface, triangle: number, corners: Corners): void
 function crossingDistance(origin: Vector3, direction: Vector3, corners: Corners): number | null {
   const [first, second, third] = corners;
 
-  const firstEdge = second.clone().sub(first);
-  const secondEdge = third.clone().sub(first);
-  const fromFirst = origin.clone().sub(first);
+  firstEdge.subVectors(second, first);
+  secondEdge.subVectors(third, first);
+  fromFirst.subVectors(origin, first);
 
-  const perpendicular = direction.clone().cross(secondEdge);
-  const across = fromFirst.clone().cross(firstEdge);
+  perpendicular.crossVectors(direction, secondEdge);
+  across.crossVectors(fromFirst, firstEdge);
 
   const determinant = firstEdge.dot(perpendicular);
 

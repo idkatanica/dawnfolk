@@ -134,18 +134,15 @@ export class Atmosphere {
   }
 
   #light(palette: SkyPalette, sun: Direction, moon: Direction, overcast: number, gloom: number): void {
-    const isMoonlit = sun.y < -0.04;
-    const strength = lerp(3.2, 0.9, overcast) * (1 - gloom * 0.4);
-
     this.sun.color.setHex(palette.sunlight);
 
-    if (isMoonlit) {
+    if (sun.y < -0.04) {
       this.#lightDirection.set(moon.x, Math.max(moon.y, 0.2), moon.z).normalize();
       this.sun.intensity =
         0.7 * smoothstep(-0.05, 0.3, moon.y) * smoothstep(-0.04, -0.14, sun.y) * (1 - overcast * 0.6);
     } else {
       this.#lightDirection.set(sun.x, Math.max(sun.y, 0.04), sun.z).normalize();
-      this.sun.intensity = strength * smoothstep(-0.04, 0.12, sun.y);
+      this.sun.intensity = lerp(3.2, 0.9, overcast) * (1 - gloom * 0.4) * smoothstep(-0.04, 0.12, sun.y);
     }
 
     this.hemisphere.color.setHex(palette.ambientSky);
@@ -155,9 +152,10 @@ export class Atmosphere {
 
   #placeSun(focus: Vector3, viewDistance: number): void {
     const reach = quantizedReach(clamp(viewDistance * 0.9, 120, 2600));
+    const texelSize = (reach * 2) / this.sun.shadow.mapSize.x;
     const shadow = this.sun.shadow.camera;
 
-    const anchor = this.#shadowAnchor(focus, reach);
+    const anchor = this.#shadowAnchor(focus, texelSize);
 
     this.sun.position.copy(anchor).addScaledVector(this.#lightDirection, CELESTIAL_DISTANCE);
     this.sun.target.position.copy(anchor);
@@ -168,14 +166,10 @@ export class Atmosphere {
     shadow.near = CELESTIAL_DISTANCE - SHADOW_DEPTH_SPAN;
     shadow.far = CELESTIAL_DISTANCE + SHADOW_DEPTH_SPAN;
     shadow.updateProjectionMatrix();
-    this.sun.shadow.normalBias = Math.max(
-      LEAST_NORMAL_BIAS,
-      ((reach * 2) / this.sun.shadow.mapSize.x) * TEXELS_OF_NORMAL_BIAS
-    );
+    this.sun.shadow.normalBias = Math.max(LEAST_NORMAL_BIAS, texelSize * TEXELS_OF_NORMAL_BIAS);
   }
 
-  #shadowAnchor(focus: Vector3, reach: number): Vector3 {
-    const texelSize = (reach * 2) / this.sun.shadow.mapSize.x;
+  #shadowAnchor(focus: Vector3, texelSize: number): Vector3 {
     const right = this.#shadowRight.crossVectors(WORLD_UP, this.#lightDirection).normalize();
 
     const up = this.#shadowUp.crossVectors(this.#lightDirection, right);

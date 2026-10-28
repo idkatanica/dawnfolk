@@ -465,10 +465,10 @@ function totemRadius(head: number): number {
   return 0.3 - head * 0.02;
 }
 
-function headSections(bottom: number, height: number, radius: number): LoftSection[] {
+function headSections(bottom: number, radius: number): LoftSection[] {
   return [
-    { radiusX: radius * 1.05, radiusZ: radius * 1.12, y: bottom + height * 0.3 },
-    { centerZ: radius * 0.12, radiusX: radius * 1.02, radiusZ: radius * 1.18, y: bottom + height * 0.62 },
+    { radiusX: radius * 1.05, radiusZ: radius * 1.12, y: bottom + TOTEM_HEAD_HEIGHT * 0.3 },
+    { centerZ: radius * 0.12, radiusX: radius * 1.02, radiusZ: radius * 1.18, y: bottom + TOTEM_HEAD_HEIGHT * 0.62 },
   ];
 }
 
@@ -495,7 +495,7 @@ function totemLog(segments: number): Shape {
       sections.push(waist(head));
     }
 
-    sections.push(...headSections(bottom, TOTEM_HEAD_HEIGHT, totemRadius(head)));
+    sections.push(...headSections(bottom, totemRadius(head)));
   }
 
   sections.push(
@@ -572,7 +572,7 @@ function totem(context: StructureContext): void {
       slot: (point) => {
         const head = headOf(point.position.y);
 
-        return totemSlot(point, TOTEM_BASE + head * TOTEM_HEAD_HEIGHT, TOTEM_HEAD_HEIGHT);
+        return totemSlot(point, TOTEM_BASE + head * TOTEM_HEAD_HEIGHT);
       },
     },
   });
@@ -599,8 +599,8 @@ function totem(context: StructureContext): void {
   }
 }
 
-function totemSlot(point: SurfacePoint, bottom: number, height: number): MaterialSlotIndex {
-  const relative = (point.position.y - bottom) / height;
+function totemSlot(point: SurfacePoint, bottom: number): MaterialSlotIndex {
+  const relative = (point.position.y - bottom) / TOTEM_HEAD_HEIGHT;
 
   const isBand = relative > 0.08 && relative < 0.2;
   const isEye = relative > 0.58 && relative < 0.74 && point.normal.z > 0.6 && Math.abs(point.position.x) > 0.05;

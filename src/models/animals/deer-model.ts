@@ -157,10 +157,13 @@ function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
   builder.add(shape, { seam: HEAD_SEAM, style: { ...head, slot: MaterialSlot.Coat } });
   addFace(builder, shape, detail);
 
+  const ear = sphere(1, segmentsUpTo(detail, 6), 4);
+  const earStyle = { ...head, slot: MaterialSlot.Coat };
+
   for (const side of LEG_SIDES) {
-    builder.add(sphere(1, segmentsUpTo(detail, 6), 4), {
+    builder.add(ear, {
       seam: EAR_SEAM,
-      style: { ...head, slot: MaterialSlot.Coat },
+      style: earStyle,
       transform: combine(
         sideMirror(side),
         transformOf({ position: [0.042, 1.7, 0.78], rotation: [-0.5, 0.2, -0.9] }),
@@ -257,17 +260,16 @@ function antlerTine(beam: readonly TubePoint[], tine: AntlerTine, scale: number)
 function addAntlers(builder: MeshBuilder, detail: AnimalDetail, scale: number): void {
   const style = { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Antler };
   const beam = antlerBeam(scale);
+  const beamShape = tube(beam, { radialSegments: segmentsAtLeast(detail, 4, detail.segments - 3) });
+  const tines = ANTLER_TINES.map((tine) => tube(antlerTine(beam, tine, scale), { radialSegments: 4 }));
 
   for (const side of LEG_SIDES) {
     const mirror = sideMirror(side);
 
-    builder.add(tube(beam, { radialSegments: segmentsAtLeast(detail, 4, detail.segments - 3) }), {
-      style,
-      transform: mirror,
-    });
+    builder.add(beamShape, { style, transform: mirror });
 
-    for (const tine of ANTLER_TINES) {
-      builder.add(tube(antlerTine(beam, tine, scale), { radialSegments: 4 }), { style, transform: mirror });
+    for (const tine of tines) {
+      builder.add(tine, { style, transform: mirror });
     }
   }
 }
@@ -291,6 +293,7 @@ export function addFawnSpots(builder: MeshBuilder, detail: AnimalDetail): void {
 
   const style = { ...bodyStyle(DEER_FRAME, 0.14), slot: MaterialSlot.CoatLight };
   const body = lengthwiseLoft(curveBodySections(BODY, detail.curveSteps), detail.segments + 2);
+  const spot = sphere(0.022, 5, 3);
 
   for (let index = 0; index < SPOT_COUNT; index += 1) {
     const side = index % 2 === 0 ? 1 : -1;
@@ -309,6 +312,6 @@ export function addFawnSpots(builder: MeshBuilder, detail: AnimalDetail): void {
       continue;
     }
 
-    builder.add(sphere(0.022, 5, 3), { style, transform: combine(surfaceTransform(hit), SPOT_FLATNESS) });
+    builder.add(spot, { style, transform: combine(surfaceTransform(hit), SPOT_FLATNESS) });
   }
 }

@@ -146,11 +146,12 @@ export function createWaterMaterial(
       return textureLoad(textures.water, clampedCell(vertex, offsetX, offsetZ)).x;
     }
 
-    const own = levelAt(0, 0);
+    const ownCell = clampedCell(vertex, 0, 0);
+    const own = textureLoad(textures.water, ownCell).x;
     const besideLevel = max(max(levelAt(1, 0), levelAt(-1, 0)), max(levelAt(0, 1), levelAt(0, -1)));
     const diagonalLevel = max(max(levelAt(1, 1), levelAt(-1, -1)), max(levelAt(1, -1), levelAt(-1, 1)));
-    const ground = textureLoad(textures.height, clampedCell(vertex, 0, 0)).x;
-    const reach = textureLoad(textures.shore, clampedCell(vertex, 0, 0)).w;
+    const ground = textureLoad(textures.height, ownCell).x;
+    const reach = textureLoad(textures.shore, ownCell).w;
 
     const neighborLevel = max(besideLevel, diagonalLevel);
     const isOwnWater = own.greaterThan(PRESENT_LEVEL);
@@ -209,7 +210,11 @@ export function createWaterMaterial(
   const flowSpeed = length(flow);
 
   const normal = normalize(
-    mix(surfaceNormal(flow, look).add(rainDimples(viewDistance, look.rainfall)), vec3(0, 1, 0), ice.mul(0.85))
+    mix(
+      surfaceNormal(flow, flowSpeed, viewDistance, look).add(rainDimples(viewDistance, look.rainfall)),
+      vec3(0, 1, 0),
+      ice.mul(0.85)
+    )
   );
 
   material.maskNode =
@@ -264,13 +269,17 @@ export function createWaterMaterial(
   return material;
 }
 
-function surfaceNormal(flow: Node<"vec2">, look: WaterLook): Node<"vec3"> {
-  const slope = length(flow);
+function surfaceNormal(
+  flow: Node<"vec2">,
+  slope: Node<"float">,
+  viewDistance: Node<"float">,
+  look: WaterLook
+): Node<"vec3"> {
   const speed = clamp(slope.mul(55), 0, FASTEST_FLOW);
   const direction = select(slope.greaterThan(0.0001), normalize(flow), vec2(0, 0));
 
   const cycle = time.mul(0.22);
-  const calming = smoothstep(1800, 150, distance(positionWorld, cameraPosition)).mul(0.85).add(0.15);
+  const calming = smoothstep(1800, 150, viewDistance).mul(0.85).add(0.15);
   const rapids = smoothstep(RAPIDS_START, STEEP_RUN, slope);
 
   const phase = fract(cycle);

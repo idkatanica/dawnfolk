@@ -27,34 +27,30 @@ const LONGHOUSE_DOOR_HALF_WIDTH = 0.56;
 const LONGHOUSE_DOOR_TOP = 2.25;
 const TIMBER_SPACING = 2.1;
 
-function gable(
-  context: StructureContext,
-  x: number,
-  base: number,
-  apex: number,
-  halfWidth: number,
-  order: number
-): void {
+function gable(context: StructureContext, x: number): void {
+  const base = LONGHOUSE_WALL_TOP - 0.1;
+  const halfWidth = LONGHOUSE_HALF_WIDTH - 0.05;
+
   context.builder.add(
     prism(
       [
         [-halfWidth, base],
         [halfWidth, base],
-        [0, apex],
+        [0, LONGHOUSE_RIDGE - 0.15],
       ],
       0.22
     ),
     {
-      style: { buildOrder: order, shade: 0.9, slot: MaterialSlot.Wood },
+      style: { buildOrder: 0.5, shade: 0.9, slot: MaterialSlot.Wood },
       transform: transformOf({ position: [x, 0, 0], rotation: [0, Math.PI / 2, 0] }),
     }
   );
 }
 
-function crossedTimbers(context: StructureContext, x: number, ridge: number, order: number): void {
+function crossedTimbers(context: StructureContext, x: number): void {
   for (const side of [-1, 1]) {
-    addLog(context, [x, ridge - 1.3, side * 1.1], [x, ridge + 0.75, -side * 0.55], 0.075, {
-      buildOrder: order,
+    addLog(context, [x, LONGHOUSE_RIDGE - 1.3, side * 1.1], [x, LONGHOUSE_RIDGE + 0.75, -side * 0.55], 0.075, {
+      buildOrder: 0.95,
       slot: MaterialSlot.Wood,
     });
   }
@@ -158,15 +154,8 @@ function longhouseRoof(context: StructureContext): void {
   });
 
   for (const side of [-1, 1]) {
-    gable(
-      context,
-      side * (LONGHOUSE_HALF_LENGTH - 0.05),
-      LONGHOUSE_WALL_TOP - 0.1,
-      LONGHOUSE_RIDGE - 0.15,
-      LONGHOUSE_HALF_WIDTH - 0.05,
-      0.5
-    );
-    crossedTimbers(context, side * (LONGHOUSE_ROOF_HALF_LENGTH - 0.1), LONGHOUSE_RIDGE, 0.95);
+    gable(context, side * (LONGHOUSE_HALF_LENGTH - 0.05));
+    crossedTimbers(context, side * (LONGHOUSE_ROOF_HALF_LENGTH - 0.1));
   }
 
   addBlock(context, [1, 0.4, 1], [1.6, LONGHOUSE_RIDGE + 0.05, 0], {

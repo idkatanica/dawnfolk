@@ -18,6 +18,7 @@ export class PartBatches {
   readonly group = new Group();
   readonly #all: readonly InstanceBatch[];
   readonly #batches: readonly BatchRow[];
+  readonly #row = [0];
   readonly #shadowBatches: readonly (BatchRow | null)[];
 
   constructor(levels: readonly PartLevel[], material: Material) {
@@ -35,8 +36,9 @@ export class PartBatches {
   }
 
   add(level: number, part: number, row: number): void {
-    this.#batches[level][part]?.add([row]);
-    this.#shadowBatches[level]?.[part]?.add([row]);
+    this.#row[0] = row;
+    this.#batches[level][part]?.add(this.#row);
+    this.#shadowBatches[level]?.[part]?.add(this.#row);
   }
 
   commit(): void {

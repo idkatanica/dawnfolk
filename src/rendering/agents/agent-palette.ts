@@ -19,6 +19,8 @@ function createTexture(data: Float32Array, width: number, rows: number): DataTex
 export class AgentPalette {
   readonly node: TextureNode;
   readonly #layout: PaletteLayout;
+  readonly #rootTexel: number;
+  readonly #rowFloats: number;
   readonly #width: number;
   #data: Float32Array;
   #rows: number;
@@ -28,6 +30,8 @@ export class AgentPalette {
   constructor(layout: PaletteLayout) {
     this.#layout = layout;
     this.#width = paletteWidth(layout);
+    this.#rowFloats = this.#width * CHANNELS;
+    this.#rootTexel = rootTexel(layout);
     this.#rows = INITIAL_ROWS;
     this.#data = new Float32Array(this.#rowFloats * this.#rows);
     this.#texture = createTexture(this.#data, this.#width, this.#rows);
@@ -65,7 +69,7 @@ export class AgentPalette {
   }
 
   writeRoot(row: number, x: number, y: number, z: number, heading: number): void {
-    const offset = this.#texelOffset(row, rootTexel(this.#layout));
+    const offset = this.#texelOffset(row, this.#rootTexel);
 
     this.#data[offset] = x;
     this.#data[offset + 1] = y;
@@ -117,9 +121,5 @@ export class AgentPalette {
 
   #texelOffset(row: number, texel: number): number {
     return row * this.#rowFloats + texel * CHANNELS;
-  }
-
-  get #rowFloats(): number {
-    return this.#width * CHANNELS;
   }
 }

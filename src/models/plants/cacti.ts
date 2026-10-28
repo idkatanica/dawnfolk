@@ -89,10 +89,12 @@ function addColumn(builder: MeshBuilder, column: Column, detail: CactusDetail): 
 }
 
 function addFlowerCrown(builder: MeshBuilder, center: Vector3, ringRadius: number, count: number, size: number): void {
+  const flowerShape = sphere(size, 6, 4);
+
   for (let flower = 0; flower < count; flower += 1) {
     const angle = (flower / count) * FULL_TURN;
 
-    builder.add(sphere(size, 6, 4), {
+    builder.add(flowerShape, {
       style: { shade: 1, slot: MaterialSlot.Blossom },
       transform: transformOf({
         position: [center.x + Math.cos(angle) * ringRadius, center.y, center.z + Math.sin(angle) * ringRadius],
@@ -156,6 +158,7 @@ function saguaro(builder: MeshBuilder, random: RandomSource, detail: CactusDetai
 
 function organPipe(builder: MeshBuilder, random: RandomSource, detail: CactusDetail): void {
   const stems = random.integer(5, 9);
+  const stemDetail = { ...detail, segments: Math.max(5, detail.segments - 3) };
 
   for (let stem = 0; stem < stems; stem += 1) {
     const angle = (stem / stems) * FULL_TURN + random.signed() * 0.3;
@@ -171,7 +174,7 @@ function organPipe(builder: MeshBuilder, random: RandomSource, detail: CactusDet
     };
 
     if (stem < detail.maximumStems) {
-      addColumn(builder, column, { ...detail, segments: Math.max(5, detail.segments - 3) });
+      addColumn(builder, column, stemDetail);
     }
   }
 }
@@ -285,9 +288,10 @@ function pricklyPear(builder: MeshBuilder, random: RandomSource, detail: CactusD
   }
 
   const segments = Math.max(5, detail.segments - 4);
+  const padShape = sphere(1, segments, Math.max(4, Math.floor(segments * 0.6)));
 
   for (const pad of pads.slice(0, detail.maximumStems * 2)) {
-    builder.add(sphere(1, segments, Math.max(4, Math.floor(segments * 0.6))), {
+    builder.add(padShape, {
       seam: PAD_SEAM,
       style: { shade: stemShade(1.6) },
       transform: padTransform(pad),

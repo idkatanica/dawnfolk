@@ -100,7 +100,7 @@ function isBottom(index: number, outline: readonly OutlinePoint[]): boolean {
   return index === 0 || index === outline.length - 1;
 }
 
-function faceRing(opening: Opening, ring: FaceRing, spread: Point, random: RandomSource): Point[] {
+function faceRing(opening: Opening, ring: FaceRing, spread: Omit<Point, "z">, random: RandomSource): Point[] {
   return opening.outline.map((point, index) => {
     function wobble(scale: number): number {
       return random.signed() * ring.jitter * scale;
@@ -193,7 +193,7 @@ function outcropShape(opening: Opening, options: CaveMouthOptions, random: Rando
   const writer = new ShapeWriter();
 
   const crown = clamp(options.rise - opening.height, LOWEST_CROWN, HIGHEST_CROWN);
-  const spread = { x: opening.width * SHOULDER_SHARE, y: crown, z: 0 };
+  const spread = { x: opening.width * SHOULDER_SHARE, y: crown };
   const lowest = Math.max(options.bury, SILL_DEPTH + 1);
 
   const face = FACE_RINGS.map((ring, index) =>

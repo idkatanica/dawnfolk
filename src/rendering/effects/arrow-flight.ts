@@ -36,6 +36,7 @@ export class ArrowParts {
 export class ArrowFlight implements ActiveEffect {
   readonly isOnGameClock = true;
   readonly meshes: readonly Mesh[];
+  readonly #arc: number;
   readonly #effect: ArrowEffect;
   readonly #from: Vector3;
   readonly #position = new Vector3();
@@ -47,6 +48,7 @@ export class ArrowFlight implements ActiveEffect {
     this.#effect = effect;
     this.#from = new Vector3(effect.fromX, context.heightAt(effect.fromX, effect.fromZ) + RELEASE_HEIGHT, effect.fromZ);
     this.#to = new Vector3(effect.toX, context.heightAt(effect.toX, effect.toZ) + TARGET_HEIGHT, effect.toZ);
+    this.#arc = this.#from.distanceTo(this.#to) * ARC_PER_METER;
 
     const shaft = new Mesh(parts.shaft, parts.shaftMaterial);
     const head = new Mesh(parts.head, parts.headMaterial);
@@ -70,16 +72,15 @@ export class ArrowFlight implements ActiveEffect {
   #fly(progress: number): void {
     const [shaft] = this.meshes;
 
-    const arc = this.#from.distanceTo(this.#to) * ARC_PER_METER;
-
     this.#pointAt(progress, this.#position);
     this.#pointAt(Math.min(1, progress + 0.02), this.#toward);
 
     if (progress >= 1) {
       this.#toward
-        .copy(this.#to)
-        .addScaledVector(this.#to.clone().sub(this.#from).normalize(), 1)
-        .setY(this.#to.y - arc);
+        .subVectors(this.#to, this.#from)
+        .normalize()
+        .add(this.#to)
+        .setY(this.#to.y - this.#arc);
     }
 
     shaft.position.copy(this.#position);
@@ -87,9 +88,7 @@ export class ArrowFlight implements ActiveEffect {
   }
 
   #pointAt(progress: number, target: Vector3): void {
-    const arc = this.#from.distanceTo(this.#to) * ARC_PER_METER;
-
     target.copy(this.#from).lerp(this.#to, progress);
-    target.y += Math.sin(progress * Math.PI) * arc;
+    target.y += Math.sin(progress * Math.PI) * this.#arc;
   }
 }

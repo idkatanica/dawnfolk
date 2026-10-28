@@ -154,9 +154,11 @@ export class GodCamera {
     const slant = Math.max(0.35, Math.sin(this.#current.pitch) * 0.6 + 0.4);
 
     const scale = metersPerPixel / slant;
+    const cosine = Math.cos(yaw);
+    const sine = Math.sin(yaw);
 
-    this.#goal.targetX += (-screenDeltaX * Math.cos(yaw) - screenDeltaY * Math.sin(yaw)) * scale;
-    this.#goal.targetZ += (screenDeltaX * Math.sin(yaw) - screenDeltaY * Math.cos(yaw)) * scale;
+    this.#goal.targetX += (-screenDeltaX * cosine - screenDeltaY * sine) * scale;
+    this.#goal.targetZ += (screenDeltaX * sine - screenDeltaY * cosine) * scale;
     this.#clampGoal();
   }
 
@@ -165,8 +167,11 @@ export class GodCamera {
 
     const { yaw } = this.#current;
 
-    this.#goal.targetX += -Math.sin(yaw) * forward + Math.cos(yaw) * right;
-    this.#goal.targetZ += -Math.cos(yaw) * forward - Math.sin(yaw) * right;
+    const cosine = Math.cos(yaw);
+    const sine = Math.sin(yaw);
+
+    this.#goal.targetX += -sine * forward + cosine * right;
+    this.#goal.targetZ += -cosine * forward - sine * right;
     this.#clampGoal();
   }
 

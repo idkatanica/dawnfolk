@@ -104,10 +104,10 @@ function padShape(): { parts: number[]; positions: number[] } {
 function flowerShape(): { parts: number[]; positions: number[] } {
   const positions: number[] = [];
   const parts: number[] = [];
+  const side = FULL_TURN / PETALS / 2.4;
 
   for (let petal = 0; petal < PETALS; petal += 1) {
     const angle = (petal / PETALS) * FULL_TURN;
-    const side = FULL_TURN / PETALS / 2.4;
 
     positions.push(
       0,
@@ -299,8 +299,8 @@ function createLilyMaterial(textures: TerrainTextures, grid: WorldGrid, uniforms
 
 export class LilyPads {
   readonly #bloom = uniform(0);
-  readonly #flowers: Mesh;
-  readonly #pads: Mesh;
+  readonly #flowers: Mesh<InstancedBufferGeometry, MeshStandardNodeMaterial>;
+  readonly #pads: Mesh<InstancedBufferGeometry, MeshStandardNodeMaterial>;
   readonly #presence = uniform(0);
 
   constructor(mirror: WorldMirror, textures: TerrainTextures) {
@@ -340,10 +340,7 @@ export class LilyPads {
   dispose(): void {
     for (const mesh of [this.#pads, this.#flowers]) {
       mesh.geometry.dispose();
-
-      if (mesh.material instanceof MeshStandardNodeMaterial) {
-        mesh.material.dispose();
-      }
+      mesh.material.dispose();
     }
   }
 }

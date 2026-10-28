@@ -185,12 +185,12 @@ export function transformShape(shape: Shape, matrix: Matrix4): Shape {
 
   for (let offset = 0; offset < positions.length; offset += 3) {
     point.set(shape.positions[offset], shape.positions[offset + 1], shape.positions[offset + 2]).applyMatrix4(matrix);
-    positions.set([point.x, point.y, point.z], offset);
+    point.toArray(positions, offset);
     point
       .set(shape.normals[offset], shape.normals[offset + 1], shape.normals[offset + 2])
       .applyMatrix3(normalMatrix)
       .normalize();
-    normals.set([point.x, point.y, point.z], offset);
+    point.toArray(normals, offset);
   }
 
   if (matrix.determinant() >= 0) {

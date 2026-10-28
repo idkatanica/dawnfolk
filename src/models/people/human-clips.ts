@@ -28,12 +28,12 @@ const LEAP_LIFT = 0.24;
 const KNEELING_SIDE: Side = -1;
 const STEADY_SIDE: Side = 1;
 
-function strideScale(context: HumanClipContext): number {
+function strideScale(context: HumanClipContext, stride: number): number {
   if (context.ageGroup === "elder") {
-    return context.motion.stride * 0.78;
+    return stride * 0.78;
   }
 
-  return context.motion.stride;
+  return stride;
 }
 
 function stoop(pose: Pose, context: HumanClipContext): void {
@@ -113,7 +113,7 @@ function carryingArms(pose: Pose, phase: number, context: HumanClipContext): voi
 }
 
 function walk(pose: Pose, phase: number, context: HumanClipContext): void {
-  walkingLegs(pose, phase, strideScale(context), WALKING);
+  walkingLegs(pose, phase, strideScale(context, context.motion.stride), WALKING);
   walkingTrunk(pose, phase);
   walkingArm(pose, phase, 1, context.motion.armSwing);
   walkingArm(pose, phase, -1, context.motion.armSwing);
@@ -121,14 +121,14 @@ function walk(pose: Pose, phase: number, context: HumanClipContext): void {
 }
 
 function carry(pose: Pose, phase: number, context: HumanClipContext): void {
-  walkingLegs(pose, phase, strideScale(context) * 0.9, WALKING);
+  walkingLegs(pose, phase, strideScale(context, context.motion.stride) * 0.9, WALKING);
   walkingTrunk(pose, phase);
   carryingArms(pose, phase, context);
   stoop(pose, context);
 }
 
-function run(pose: Pose, phase: number, context: HumanClipContext): void {
-  runningLegs(pose, phase, strideScale(context), RUNNING);
+function running(pose: Pose, phase: number, context: HumanClipContext, stride: number): void {
+  runningLegs(pose, phase, stride, RUNNING);
 
   for (const side of SIDES) {
     const armSwing = -side * cosineWave(phase) * context.motion.armSwing;
@@ -144,8 +144,12 @@ function run(pose: Pose, phase: number, context: HumanClipContext): void {
   pose.height = 0.05 * Math.max(0, wave(phase * 2, -0.05));
 }
 
+function run(pose: Pose, phase: number, context: HumanClipContext): void {
+  running(pose, phase, context, strideScale(context, context.motion.stride));
+}
+
 function leap(pose: Pose, phase: number, context: HumanClipContext): void {
-  run(pose, phase, { ...context, motion: { ...context.motion, stride: context.motion.stride * LEAP_STRIDE } });
+  running(pose, phase, context, strideScale(context, context.motion.stride * LEAP_STRIDE));
 
   for (const side of SIDES) {
     swingArm(pose, side, { forward: degrees(30), outward: degrees(24) });
@@ -191,7 +195,7 @@ function gather(pose: Pose, phase: number, context: HumanClipContext): void {
     bendAnkle(pose, side, degrees(14));
   }
 
-  plantFeet(pose, 1);
+  plantFeet(pose);
 
   swingArm(pose, -1, { forward: degrees(72) + degrees(18) * reach, outward: degrees(6) });
   bendElbow(pose, -1, degrees(26) - degrees(16) * reach);
@@ -245,7 +249,7 @@ function chop(pose: Pose, phase: number): void {
   swingLeg(pose, -1, { forward: -degrees(10) - bend * 0.4, outward: degrees(9) });
   bendKnee(pose, -1, degrees(10));
 
-  plantFeet(pose, 1);
+  plantFeet(pose);
 }
 
 function dig(pose: Pose, phase: number): void {
@@ -272,7 +276,7 @@ function dig(pose: Pose, phase: number): void {
   swingLeg(pose, -1, { forward: degrees(8), outward: degrees(7) });
   bendKnee(pose, -1, degrees(26));
 
-  plantFeet(pose, 1);
+  plantFeet(pose);
 }
 
 function fish(pose: Pose, phase: number): void {
@@ -296,7 +300,7 @@ function fish(pose: Pose, phase: number): void {
     bendKnee(pose, side, degrees(24));
   }
 
-  plantFeet(pose, 1);
+  plantFeet(pose);
 }
 
 function build(pose: Pose, phase: number): void {
@@ -344,7 +348,7 @@ function throwSpear(pose: Pose, phase: number): void {
   swingLeg(pose, -1, { forward: -degrees(16), outward: degrees(6) });
   bendKnee(pose, -1, degrees(22));
 
-  plantFeet(pose, 1);
+  plantFeet(pose);
 }
 
 const MINE_SHOULDER: readonly Keyframe[] = [
@@ -401,7 +405,7 @@ function mine(pose: Pose, phase: number): void {
   swingLeg(pose, -1, { forward: -degrees(14) + bend * 0.5, outward: degrees(9) });
   bendKnee(pose, -1, degrees(12) + bend * 0.5);
 
-  plantFeet(pose, 1);
+  plantFeet(pose);
 }
 
 const DRAW_FORWARD: readonly Keyframe[] = [
@@ -453,7 +457,7 @@ function shoot(pose: Pose, phase: number): void {
     bendKnee(pose, side, degrees(9));
   }
 
-  plantFeet(pose, 1);
+  plantFeet(pose);
 }
 
 function sitting(pose: Pose): void {

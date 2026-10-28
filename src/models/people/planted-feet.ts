@@ -11,6 +11,8 @@ const SOLVER_STEPS = 16;
 const DEEPEST_KNEE = degrees(150);
 const STEEPEST_BALL_OF_FOOT = degrees(40);
 const WIDEST_STEP_BACK = degrees(30);
+const FRONT_SIDE: Side = 1;
+const BACK_SIDE = otherSide(FRONT_SIDE);
 
 const pitch = new Quaternion();
 const roll = new Quaternion();
@@ -155,19 +157,17 @@ function reachDown(pose: Pose, side: Side, target: number, tilt: number): void {
   bendLeg(pose, side, (straighter + deeper) / 2, tilt);
 }
 
-export function plantFeet(pose: Pose, front: Side): void {
-  const back = otherSide(front);
+export function plantFeet(pose: Pose): void {
+  limitStepBack(pose, BACK_SIDE);
 
-  limitStepBack(pose, back);
+  const backTilt = footTilt(pose, BACK_SIDE);
 
-  const backTilt = footTilt(pose, back);
+  bendLeg(pose, BACK_SIDE, angleOf(pose, sideBones(BACK_SIDE).shin, RotationAxis.Pitch), backTilt);
+  reachDown(pose, FRONT_SIDE, lowestContact(pose, BACK_SIDE), 0);
 
-  bendLeg(pose, back, angleOf(pose, sideBones(back).shin, RotationAxis.Pitch), backTilt);
-  reachDown(pose, front, lowestContact(pose, back), 0);
+  const frontLowest = lowestContact(pose, FRONT_SIDE);
 
-  const frontLowest = lowestContact(pose, front);
-
-  if (frontLowest > lowestContact(pose, back)) {
-    reachDown(pose, back, frontLowest, backTilt);
+  if (frontLowest > lowestContact(pose, BACK_SIDE)) {
+    reachDown(pose, BACK_SIDE, frontLowest, backTilt);
   }
 }

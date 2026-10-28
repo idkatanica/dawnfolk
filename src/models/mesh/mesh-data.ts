@@ -73,7 +73,7 @@ function emptyChannels(count: number): Record<VertexChannel, Float32Array> {
     buildOrder: new Float32Array(count),
     flutter: new Float32Array(count),
     part: new Float32Array(count),
-    shade: new Float32Array(count).fill(DEFAULT_VERTEX_VALUES.shade),
+    shade: new Float32Array(count),
     slot: new Float32Array(count),
     sway: new Float32Array(count),
   };

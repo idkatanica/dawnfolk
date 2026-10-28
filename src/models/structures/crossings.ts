@@ -94,17 +94,18 @@ interface LogShape {
   readonly random: RandomSource;
 }
 
+function taperedRadius(log: LogShape, along: number): number {
+  return lerp(FALLEN_LOG_ROOT_RADIUS, FALLEN_LOG_ROOT_RADIUS * LOG_TAPER, along / log.length);
+}
+
 function trunkRadius(log: LogShape, along: number): number {
-  const taper = lerp(FALLEN_LOG_ROOT_RADIUS, FALLEN_LOG_ROOT_RADIUS * LOG_TAPER, along / log.length);
   const flare = FALLEN_LOG_ROOT_RADIUS * FLARE * (1 - smoothstep(0, FLARE_REACH, along));
 
-  return taper + flare;
+  return taperedRadius(log, along) + flare;
 }
 
 function trunkAxis(log: LogShape, along: number): Vector3 {
-  const centerHeight = lerp(FALLEN_LOG_ROOT_RADIUS, FALLEN_LOG_ROOT_RADIUS * LOG_TAPER, along / log.length);
-
-  return new Vector3(along, centerHeight, Math.sin((along / log.length) * HALF_TURN) * log.bend);
+  return new Vector3(along, taperedRadius(log, along), Math.sin((along / log.length) * HALF_TURN) * log.bend);
 }
 
 function woodSlot(point: SurfacePoint): MaterialSlotIndex {

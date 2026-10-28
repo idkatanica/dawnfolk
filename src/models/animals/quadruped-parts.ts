@@ -29,11 +29,16 @@ interface LegOptions {
 export function addLegs(builder: MeshBuilder, options: LegOptions): void {
   const { blend, detail, frame, paths, seam, segments, slot } = options;
 
+  const legs: Readonly<Record<LegEnd, Shape>> = {
+    front: tube(alongPath(paths.front, detail), { radialSegments: segments }),
+    hind: tube(alongPath(paths.hind, detail), { radialSegments: segments }),
+  };
+
   for (const side of LEG_SIDES) {
     for (const end of LEG_ENDS) {
       const style: VertexStyle = { ...legStyle(frame, end, side, blend), slot };
 
-      builder.add(tube(alongPath(paths[end], detail), { radialSegments: segments }), {
+      builder.add(legs[end], {
         seam,
         style,
         transform: sideMirror(side),
@@ -62,9 +67,12 @@ export function addEyes(builder: MeshBuilder, head: Shape, options: EyeOptions):
     return;
   }
 
+  const eye = sphere(radius, 6, 4);
+  const style = { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Eye };
+
   for (const side of LEG_SIDES) {
-    builder.add(sphere(radius, 6, 4), {
-      style: { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Eye },
+    builder.add(eye, {
+      style,
       transform: combine(sideMirror(side), surfaceTransform(hit, radius * sink)),
     });
   }

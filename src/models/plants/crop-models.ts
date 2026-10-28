@@ -121,12 +121,13 @@ function addLeafOnStalk(context: ClumpContext, from: Triple, leaf: LeafPlacement
 
 function wheat(context: ClumpContext): void {
   const stalks = context.level === "high" ? 5 : 3;
+  const ear = spindle(0.02, 0.13, context.level === "high" ? 4 : 3);
 
   for (let stalk = 0; stalk < stalks; stalk += 1) {
     const top = stalkTop(stalk, context.height, 0.06);
 
     addStalk(context, straightStalk(stalkBase(top), top, 0.008), MaterialSlot.Leaf);
-    context.builder.add(spindle(0.02, 0.13, context.level === "high" ? 4 : 3), {
+    context.builder.add(ear, {
       style: plantStyle(context, MaterialSlot.Grain, CROP_HEAD_PART),
       transform: transformOf({ position: [top[0], top[1] - 0.025, top[2]] }),
     });
@@ -135,6 +136,8 @@ function wheat(context: ClumpContext): void {
 
 function barley(context: ClumpContext): void {
   const stalks = context.level === "high" ? 5 : 3;
+  const ear = spindle(0.018, 0.13, context.level === "high" ? 4 : 3);
+  const awn = cylinder({ height: 0.12, radialSegments: 3, radiusBottom: 0.012, radiusTop: 0 });
 
   for (let stalk = 0; stalk < stalks; stalk += 1) {
     const top = stalkTop(stalk, context.height, 0.05);
@@ -156,13 +159,13 @@ function barley(context: ClumpContext): void {
     const awnEnd: Triple = [earEnd[0] + outward.x * 0.03, earEnd[1] - 0.12, earEnd[2] + outward.z * 0.03];
     const head = plantStyle(context, MaterialSlot.Grain, CROP_HEAD_PART);
 
-    context.builder.add(spindle(0.018, 0.13, context.level === "high" ? 4 : 3), {
+    context.builder.add(ear, {
       style: head,
       transform: segmentTransform(nod, earEnd),
     });
 
     if (context.level === "high") {
-      context.builder.add(cylinder({ height: 0.12, radialSegments: 3, radiusBottom: 0.012, radiusTop: 0 }), {
+      context.builder.add(awn, {
         style: head,
         transform: segmentTransform(earEnd, awnEnd),
       });
@@ -172,12 +175,13 @@ function barley(context: ClumpContext): void {
 
 function flax(context: ClumpContext): void {
   const stems = context.level === "high" ? 6 : 3;
+  const flower = bud(0.03, 0.012, 5);
 
   for (let stem = 0; stem < stems; stem += 1) {
     const top = stalkTop(stem, context.height, 0.08);
 
     addStalk(context, straightStalk(stalkBase(top), top, 0.005), MaterialSlot.Leaf);
-    context.builder.add(bud(0.03, 0.012, 5), {
+    context.builder.add(flower, {
       style: plantStyle(context, MaterialSlot.Flax, CROP_HEAD_PART),
       transform: transformOf({ position: top }),
     });
@@ -199,6 +203,7 @@ function frondPoints(index: number, count: number, height: number): TubePoint[] 
 function carrots(context: ClumpContext): void {
   const fronds = context.level === "high" ? 6 : 3;
   const leaf = plantStyle(context, MaterialSlot.Leaf, 0);
+  const leaflet = bud(0.045, 0.012, 4);
 
   for (let frond = 0; frond < fronds; frond += 1) {
     const points = frondPoints(frond, fronds, context.height);
@@ -210,7 +215,7 @@ function carrots(context: ClumpContext): void {
     }
 
     for (const point of points.slice(1)) {
-      context.builder.add(bud(0.045, 0.012, 4), {
+      context.builder.add(leaflet, {
         style: leaf,
         transform: transformOf({ position: [point.x, point.y, point.z], rotation: [0, frond, 0.4] }),
       });
@@ -239,11 +244,10 @@ function turnips(context: ClumpContext): void {
 
   for (let leaf = 0; leaf < leaves; leaf += 1) {
     const angle = (leaf / leaves) * FULL_TURN + scatter(leaf, 11) * 0.4;
-    const reach = 0.1;
 
     addLeafOnStalk(context, crown, {
       angle,
-      position: [Math.cos(angle) * reach, 0.1 + scatter(leaf, 12) * 0.12, Math.sin(angle) * reach],
+      position: [Math.cos(angle) * 0.1, 0.1 + scatter(leaf, 12) * 0.12, Math.sin(angle) * 0.1],
       radius: 0.055,
       stretch: [2.2, 1, 1],
       thickness: 0.014,
@@ -281,6 +285,7 @@ function beans(context: ClumpContext): void {
   }
 
   const podCount = isHigh ? 4 : 2;
+  const podShape = spindle(0.013, 0.12, 3);
 
   for (let pod = 0; pod < podCount; pod += 1) {
     const angle = pod * GOLDEN_ANGLE + 1.2;
@@ -288,7 +293,7 @@ function beans(context: ClumpContext): void {
     const start: Triple = [Math.cos(angle) * 0.008, height, Math.sin(angle) * 0.008];
     const end: Triple = [Math.cos(angle) * 0.05, height - 0.11, Math.sin(angle) * 0.05];
 
-    context.builder.add(spindle(0.013, 0.12, 3), { style: pods, transform: segmentTransform(start, end) });
+    context.builder.add(podShape, { style: pods, transform: segmentTransform(start, end) });
   }
 }
 

@@ -178,7 +178,7 @@ function thrust(pose: Pose, phase: number): void {
   poseUpperBody(pose, spearStance(reach));
   bendTrunk(pose, HumanBone.Spine, { forward: degrees(6) * lunge });
 
-  plantFeet(pose, GUARD_SIDE);
+  plantFeet(pose);
 }
 
 const LEFT_PUNCH: readonly Keyframe[] = [
@@ -212,7 +212,7 @@ function brawl(pose: Pose, phase: number): void {
   punchingArm(pose, GUARD_SIDE, left);
   punchingArm(pose, WEAPON_SIDE, right);
 
-  plantFeet(pose, GUARD_SIDE);
+  plantFeet(pose);
 }
 
 function block(pose: Pose, phase: number): void {
@@ -222,7 +222,7 @@ function block(pose: Pose, phase: number): void {
   poseUpperBody(pose, PARRY);
   bendTrunk(pose, HumanBone.Spine, { forward: -degrees(5) - degrees(2) * brace });
 
-  plantFeet(pose, GUARD_SIDE);
+  plantFeet(pose);
 }
 
 const FLINCH_JOLT: readonly Keyframe[] = [
@@ -246,7 +246,7 @@ function flinch(pose: Pose, phase: number): void {
     bendElbow(pose, side, degrees(30) + degrees(40) * jolt);
   }
 
-  plantFeet(pose, GUARD_SIDE);
+  plantFeet(pose);
 }
 
 const FALL_DROP: readonly Keyframe[] = [
