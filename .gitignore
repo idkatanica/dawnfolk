@@ -4,3 +4,4 @@ test-results
 .vitest
 .DS_Store
 .wrangler
+.claude/worktrees
