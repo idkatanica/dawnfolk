@@ -1,5 +1,15 @@
 import type { RandomSource } from "./random.ts";
 
+const SQUARE_ROOT_OF_THREE = Math.sqrt(3);
+const SKEW = 0.5 * (SQUARE_ROOT_OF_THREE - 1);
+const UNSKEW = (3 - SQUARE_ROOT_OF_THREE) / 6;
+const OUTPUT_SCALE = 70;
+const TABLE_SIZE = 256;
+const LACUNARITY = 2.03;
+const RIDGE_WEIGHTING = 1.6;
+const GRADIENTS_X = Float64Array.of(1, -1, 1, -1, 1, -1, 1, -1, 0, 0, 0, 0);
+const GRADIENTS_Z = Float64Array.of(1, 1, -1, -1, 0, 0, 0, 0, 1, -1, 1, -1);
+
 export interface NoiseGradient {
   gradientX: number;
   gradientZ: number;
@@ -13,16 +23,6 @@ export interface ErodedRidgedOptions {
   readonly rounding: number;
   readonly slopeScale: number;
 }
-
-const SQUARE_ROOT_OF_THREE = Math.sqrt(3);
-const SKEW = 0.5 * (SQUARE_ROOT_OF_THREE - 1);
-const UNSKEW = (3 - SQUARE_ROOT_OF_THREE) / 6;
-const OUTPUT_SCALE = 70;
-const TABLE_SIZE = 256;
-const LACUNARITY = 2.03;
-const RIDGE_WEIGHTING = 1.6;
-const GRADIENTS_X = Float64Array.of(1, -1, 1, -1, 1, -1, 1, -1, 0, 0, 0, 0);
-const GRADIENTS_Z = Float64Array.of(1, 1, -1, -1, 0, 0, 0, 0, 1, -1, 1, -1);
 
 function shuffledTable(random: RandomSource): Uint8Array {
   const table = new Uint8Array(TABLE_SIZE * 2);

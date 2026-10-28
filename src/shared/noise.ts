@@ -1,6 +1,11 @@
 import { createNoise2D, createNoise3D, type NoiseFunction2D, type NoiseFunction3D } from "simplex-noise";
 import type { RandomSource } from "./random.ts";
 
+const RIDGE_ROUNDING = 0.012;
+const FRACTAL_LACUNARITY = 2.03;
+const RIDGED_LACUNARITY = 2.05;
+const RIDGE_WEIGHTING = 1.6;
+
 interface FractalOptions {
   gain?: number;
   octaves: number;
@@ -11,10 +16,10 @@ export interface NoiseSampler {
   ridged: (x: number, z: number, options: FractalOptions) => number;
 }
 
-const RIDGE_ROUNDING = 0.012;
-const FRACTAL_LACUNARITY = 2.03;
-const RIDGED_LACUNARITY = 2.05;
-const RIDGE_WEIGHTING = 1.6;
+export interface VolumeNoise {
+  fractal: (x: number, y: number, z: number, options: FractalOptions) => number;
+  sample: (x: number, y: number, z: number) => number;
+}
 
 class SimplexSampler implements NoiseSampler {
   readonly #noise: NoiseFunction2D;
@@ -63,15 +68,6 @@ class SimplexSampler implements NoiseSampler {
   }
 }
 
-export function createNoiseSampler(random: RandomSource): NoiseSampler {
-  return new SimplexSampler(createNoise2D(() => random.next()));
-}
-
-export interface VolumeNoise {
-  fractal: (x: number, y: number, z: number, options: FractalOptions) => number;
-  sample: (x: number, y: number, z: number) => number;
-}
-
 class SimplexVolume implements VolumeNoise {
   readonly #noise: NoiseFunction3D;
 
@@ -98,6 +94,10 @@ class SimplexVolume implements VolumeNoise {
 
     return sum / normalization;
   }
+}
+
+export function createNoiseSampler(random: RandomSource): NoiseSampler {
+  return new SimplexSampler(createNoise2D(() => random.next()));
 }
 
 export function createVolumeNoise(random: RandomSource): VolumeNoise {

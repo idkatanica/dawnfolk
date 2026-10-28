@@ -1,13 +1,20 @@
 import type { CellRegion } from "./change-tracking.ts";
 
+export const ORTHOGONAL_STEPS: readonly (readonly [number, number])[] = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+
+const SQUARE_METERS_PER_SQUARE_KILOMETER = 1_000_000;
+
 export interface GridDimensions {
   cellSize: number;
   cellsPerSide: number;
 }
 
 export const DEFAULT_GRID_DIMENSIONS: GridDimensions = { cellSize: 10, cellsPerSide: 640 };
-
-const SQUARE_METERS_PER_SQUARE_KILOMETER = 1_000_000;
 
 interface NeighborOffset {
   column: number;
@@ -24,13 +31,6 @@ export const NEIGHBOR_OFFSETS: readonly NeighborOffset[] = [
   { column: 1, distance: Math.SQRT2, row: -1 },
   { column: -1, distance: Math.SQRT2, row: 1 },
   { column: -1, distance: Math.SQRT2, row: -1 },
-];
-
-export const ORTHOGONAL_STEPS: readonly (readonly [number, number])[] = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
 ];
 
 export class WorldGrid {
@@ -185,7 +185,7 @@ export class WorldGrid {
     fromZ: number,
     toX: number,
     toZ: number,
-    stopsAtSegmentEnd: boolean,
+    shouldStopAtSegmentEnd: boolean,
     visit: (cell: number, enter: number, leave: number) => boolean
   ): boolean {
     const deltaX = toX - fromX;
@@ -215,7 +215,7 @@ export class WorldGrid {
         return true;
       }
 
-      if (stopsAtSegmentEnd && left >= 1) {
+      if (shouldStopAtSegmentEnd && left >= 1) {
         return true;
       }
 

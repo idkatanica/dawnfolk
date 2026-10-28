@@ -2,9 +2,9 @@ import type { TechnologyId } from "./technologies.ts";
 
 const ERA_IDS = ["wanderers", "stoneAge", "neolithic", "copperAge", "bronzeAge", "ironAge"] as const;
 
-export type EraId = (typeof ERA_IDS)[number];
+type EraId = (typeof ERA_IDS)[number];
 
-export interface EraDefinition {
+interface EraDefinition {
   id: EraId;
   index: number;
   name: string;

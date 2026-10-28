@@ -4,17 +4,17 @@ import { createRandom } from "../shared/random.ts";
 
 export const ISLAND_SHAPES = ["round", "square"] as const;
 
+const MEAN_REACH = 0.915;
+const SHORTEST_REACH = 0.74;
+const LONGEST_REACH = 0.972;
+const COVE_DEPTH = 0.022;
+
 export type IslandShapeKind = (typeof ISLAND_SHAPES)[number];
 
 export interface IslandShape {
   readonly coastDistanceAt: (x: number, z: number) => number;
   readonly kind: IslandShapeKind;
 }
-
-const MEAN_REACH = 0.915;
-const SHORTEST_REACH = 0.74;
-const LONGEST_REACH = 0.972;
-const COVE_DEPTH = 0.022;
 
 const SQUARE_SHAPE: IslandShape = {
   coastDistanceAt: (x, z) => 1 - Math.max(Math.abs(x), Math.abs(z)),

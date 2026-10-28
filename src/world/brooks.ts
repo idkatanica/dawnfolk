@@ -6,9 +6,6 @@ export const HOP_WIDTH = 4;
 export const HOP_REACH = 22;
 export const NOT_CLEAR = -1;
 
-const NOT_WET = -1;
-const HOP_SPAN_CELLS = 3.2;
-
 export const BROOK_STRENGTH = Math.floor(riverCodeOfWidth(HOP_WIDTH));
 
 export const Passage = {
@@ -17,9 +14,13 @@ export const Passage = {
   Ground: 1,
 } as const;
 
+const NOT_WET = -1;
+const HOP_SPAN_CELLS = 3.2;
+const HOP_OFFSETS = hopOffsets();
+
 export type Passage = (typeof Passage)[keyof typeof Passage];
 
-export interface BrookTerrain extends SampledTerrain {
+interface BrookTerrain extends SampledTerrain {
   readonly riverStrength: Uint8Array;
 }
 
@@ -47,8 +48,6 @@ function hopOffsets(): CellOffset[] {
 
   return offsets;
 }
-
-const HOP_OFFSETS = hopOffsets();
 
 export function isBrookCell(terrain: BrookTerrain, cell: number): boolean {
   const strength = terrain.riverStrength[cell];

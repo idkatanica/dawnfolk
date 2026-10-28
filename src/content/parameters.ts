@@ -52,6 +52,17 @@ interface ParameterGroupMetadata {
   label: string;
 }
 
+export interface ParameterField {
+  key: string;
+  metadata: ParameterMetadata;
+}
+
+export interface ParameterGroupField {
+  fields: readonly ParameterField[];
+  key: string;
+  metadata: ParameterGroupMetadata;
+}
+
 declare module "zod" {
   interface GlobalMeta {
     parameter?: ParameterMetadata;
@@ -88,17 +99,6 @@ export function choiceParameter<const Value extends string>(specification: Choic
 
 export function groupMetadata(label: string, description: string): z.GlobalMeta {
   return { parameterGroup: { description, label } };
-}
-
-export interface ParameterField {
-  key: string;
-  metadata: ParameterMetadata;
-}
-
-export interface ParameterGroupField {
-  fields: readonly ParameterField[];
-  key: string;
-  metadata: ParameterGroupMetadata;
 }
 
 export function describeParameters(schema: z.ZodObject): ParameterField[] {

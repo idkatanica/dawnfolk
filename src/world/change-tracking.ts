@@ -3,6 +3,22 @@ export interface RowRun {
   rowCount: number;
 }
 
+export interface CellRegion {
+  firstColumn: number;
+  firstRow: number;
+  lastColumn: number;
+  lastRow: number;
+}
+
+export function regionsOverlap(first: CellRegion, second: CellRegion): boolean {
+  return (
+    first.firstColumn <= second.lastColumn &&
+    second.firstColumn <= first.lastColumn &&
+    first.firstRow <= second.lastRow &&
+    second.firstRow <= first.lastRow
+  );
+}
+
 export class RowChangeTracker {
   readonly #isRowChanged: Uint8Array;
 
@@ -55,22 +71,6 @@ export class RowChangeTracker {
 
     return runs;
   }
-}
-
-export interface CellRegion {
-  firstColumn: number;
-  firstRow: number;
-  lastColumn: number;
-  lastRow: number;
-}
-
-export function regionsOverlap(first: CellRegion, second: CellRegion): boolean {
-  return (
-    first.firstColumn <= second.lastColumn &&
-    second.firstColumn <= first.lastColumn &&
-    first.firstRow <= second.lastRow &&
-    second.firstRow <= first.lastRow
-  );
 }
 
 export class RegionChangeTracker {

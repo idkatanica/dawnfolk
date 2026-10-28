@@ -9,16 +9,6 @@ export const PlantState = {
   Removed: 2,
 } as const;
 
-export interface PlantPlacement {
-  bornDay: number;
-  height: number;
-  rotation: number;
-  seed: number;
-  species: number;
-  x: number;
-  z: number;
-}
-
 export const VEGETATION_CHANNELS = [
   "bornDay",
   "fruit",
@@ -30,6 +20,22 @@ export const VEGETATION_CHANNELS = [
   "x",
   "z",
 ] as const;
+
+export const NO_PLANT = -1;
+
+const FRUIT_LEVELS = 4;
+const BURNT_QUEUE_COMPACTION = 1024;
+const INITIAL_BERRY_BUSH_CAPACITY = 1024;
+
+export interface PlantPlacement {
+  bornDay: number;
+  height: number;
+  rotation: number;
+  seed: number;
+  species: number;
+  x: number;
+  z: number;
+}
 
 export type VegetationChannel = (typeof VEGETATION_CHANNELS)[number];
 
@@ -44,20 +50,6 @@ export interface VegetationBuffers extends VegetationChannels {
 
 export interface VegetationPatch extends VegetationBuffers {
   indices: Int32Array;
-}
-
-export function createVegetationChannels(size: number): VegetationChannels {
-  return {
-    bornDay: new Float32Array(size),
-    fruit: new Float32Array(size),
-    height: new Float32Array(size),
-    rotation: new Float32Array(size),
-    seed: new Float32Array(size),
-    species: new Uint8Array(size),
-    state: new Uint8Array(size),
-    x: new Float32Array(size),
-    z: new Float32Array(size),
-  };
 }
 
 export interface VegetationSnapshot extends VegetationBuffers {
@@ -76,10 +68,19 @@ interface BurntPlant {
   index: number;
 }
 
-export const NO_PLANT = -1;
-const FRUIT_LEVELS = 4;
-const BURNT_QUEUE_COMPACTION = 1024;
-const INITIAL_BERRY_BUSH_CAPACITY = 1024;
+export function createVegetationChannels(size: number): VegetationChannels {
+  return {
+    bornDay: new Float32Array(size),
+    fruit: new Float32Array(size),
+    height: new Float32Array(size),
+    rotation: new Float32Array(size),
+    seed: new Float32Array(size),
+    species: new Uint8Array(size),
+    state: new Uint8Array(size),
+    x: new Float32Array(size),
+    z: new Float32Array(size),
+  };
+}
 
 export class VegetationStore implements VegetationChannels {
   readonly #burntDay: Float32Array;

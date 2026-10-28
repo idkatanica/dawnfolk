@@ -307,52 +307,6 @@ export const PLANT_SPECIES: readonly PlantSpeciesDefinition[] = [
   },
 ];
 
-export function plantSpeciesDefinition(index: number): PlantSpeciesDefinition {
-  const definition = PLANT_SPECIES[index];
-
-  if (definition === undefined) {
-    throw new RangeError(`Unknown plant species ${index}`);
-  }
-
-  return definition;
-}
-
-export function isLivingTreeSpecies(index: number): boolean {
-  const { form } = plantSpeciesDefinition(index);
-
-  return form === "broadleaf" || form === "conifer";
-}
-
-export function isTreeSpecies(index: number): boolean {
-  return isLivingTreeSpecies(index) || plantSpeciesDefinition(index).form === "deadwood";
-}
-
-export function isShrubSpecies(index: number): boolean {
-  const { form } = plantSpeciesDefinition(index);
-
-  return form === "shrub" || form === "succulent";
-}
-
-export function isRockSpecies(index: number): boolean {
-  return plantSpeciesDefinition(index).form === "stone";
-}
-
-export function isMonumentSpecies(index: number): boolean {
-  return plantSpeciesDefinition(index).form === "monument";
-}
-
-export function woodlandShare(index: number, woodland: number): number {
-  if (isTreeSpecies(index)) {
-    return woodland;
-  }
-
-  if (isShrubSpecies(index)) {
-    return lerp(UNDERGROWTH_IN_CLEARINGS, 1, woodland);
-  }
-
-  return 1;
-}
-
 export interface PlantingRule {
   chancePerCell: number;
   heightScale: number;
@@ -455,6 +409,52 @@ export const ROCK_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule[]>> =
   [Biome.Tundra]: [],
   [Biome.Water]: [],
 };
+
+export function plantSpeciesDefinition(index: number): PlantSpeciesDefinition {
+  const definition = PLANT_SPECIES[index];
+
+  if (definition === undefined) {
+    throw new RangeError(`Unknown plant species ${index}`);
+  }
+
+  return definition;
+}
+
+export function isLivingTreeSpecies(index: number): boolean {
+  const { form } = plantSpeciesDefinition(index);
+
+  return form === "broadleaf" || form === "conifer";
+}
+
+export function isTreeSpecies(index: number): boolean {
+  return isLivingTreeSpecies(index) || plantSpeciesDefinition(index).form === "deadwood";
+}
+
+export function isShrubSpecies(index: number): boolean {
+  const { form } = plantSpeciesDefinition(index);
+
+  return form === "shrub" || form === "succulent";
+}
+
+export function isRockSpecies(index: number): boolean {
+  return plantSpeciesDefinition(index).form === "stone";
+}
+
+export function isMonumentSpecies(index: number): boolean {
+  return plantSpeciesDefinition(index).form === "monument";
+}
+
+export function woodlandShare(index: number, woodland: number): number {
+  if (isTreeSpecies(index)) {
+    return woodland;
+  }
+
+  if (isShrubSpecies(index)) {
+    return lerp(UNDERGROWTH_IN_CLEARINGS, 1, woodland);
+  }
+
+  return 1;
+}
 
 export function canGrowAt(rule: PlantingRule, temperature: number): boolean {
   return rule.minimumTemperature === undefined || temperature > rule.minimumTemperature;

@@ -60,7 +60,7 @@ describe("thermal relaxation", () => {
 });
 
 describe("slope limit", () => {
-  it("keeps every neighbour drop under the limit and never raises the land", () => {
+  it("keeps every neighbor drop under the limit and never raises the land", () => {
     const size = 40;
     const random = createRandom(4);
     const original = Float32Array.from({ length: size * size }, () => random.between(0, 400));

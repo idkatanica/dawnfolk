@@ -16,13 +16,9 @@ export const Biome = {
 
 export const WOODED_BIOMES: ReadonlySet<number> = new Set([Biome.Forest, Biome.Taiga]);
 
-export type BiomeIndex = (typeof Biome)[keyof typeof Biome];
-
 const BIOME_INDICES: ReadonlySet<number> = new Set(Object.values(Biome));
 
-export function isBiomeIndex(value: number): value is BiomeIndex {
-  return BIOME_INDICES.has(value);
-}
+export type BiomeIndex = (typeof Biome)[keyof typeof Biome];
 
 interface BiomeDefinition {
   index: BiomeIndex;
@@ -44,6 +40,10 @@ export const BIOMES: readonly BiomeDefinition[] = [
   { index: Biome.Beach, name: "Shore" },
   { index: Biome.Mesa, name: "Mesas" },
 ];
+
+export function isBiomeIndex(value: number): value is BiomeIndex {
+  return BIOME_INDICES.has(value);
+}
 
 export function biomeDefinition(index: number): BiomeDefinition {
   const definition = BIOMES[index];

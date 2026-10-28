@@ -7,7 +7,7 @@ describe("grounds", () => {
     expect(GROUNDS).toHaveLength(Object.keys(Ground).length);
   });
 
-  it("blends ground colours at the end of a season", () => {
+  it("blends ground colors at the end of a season", () => {
     const midSummer = seasonalGroundColor(Ground.Meadow, 1.2);
     const lateSummer = seasonalGroundColor(Ground.Meadow, 1.95);
 

@@ -26,6 +26,22 @@ const RIVER_BANK_RISE_PER_CELL = 0.9;
 const STEEPEST_RIVER_BANK = 0.36;
 const BOG_TEMPERATURE = 3;
 
+const BIOME_GROUND: Readonly<Record<BiomeIndex, GroundIndex>> = {
+  [Biome.Alpine]: Ground.Rock,
+  [Biome.Beach]: Ground.Sand,
+  [Biome.Desert]: Ground.Sand,
+  [Biome.Forest]: Ground.Forest,
+  [Biome.Glacier]: Ground.Snow,
+  [Biome.Meadow]: Ground.Meadow,
+  [Biome.Mesa]: Ground.RedRock,
+  [Biome.Scrub]: Ground.Scrub,
+  [Biome.Steppe]: Ground.Steppe,
+  [Biome.Swamp]: Ground.Swamp,
+  [Biome.Taiga]: Ground.Forest,
+  [Biome.Tundra]: Ground.Tundra,
+  [Biome.Water]: Ground.Sand,
+};
+
 interface ClimateInputs {
   coastDistance: Float32Array;
   desert: Float64Array;
@@ -67,22 +83,6 @@ interface DrainedLand {
   biome: Uint8Array;
   ground: Uint8Array;
 }
-
-const BIOME_GROUND: Readonly<Record<BiomeIndex, GroundIndex>> = {
-  [Biome.Alpine]: Ground.Rock,
-  [Biome.Beach]: Ground.Sand,
-  [Biome.Desert]: Ground.Sand,
-  [Biome.Forest]: Ground.Forest,
-  [Biome.Glacier]: Ground.Snow,
-  [Biome.Meadow]: Ground.Meadow,
-  [Biome.Mesa]: Ground.RedRock,
-  [Biome.Scrub]: Ground.Scrub,
-  [Biome.Steppe]: Ground.Steppe,
-  [Biome.Swamp]: Ground.Swamp,
-  [Biome.Taiga]: Ground.Forest,
-  [Biome.Tundra]: Ground.Tundra,
-  [Biome.Water]: Ground.Sand,
-};
 
 function baseTemperature(height: number, southness: number, desert: number): number {
   return 9.6 - (6.5 * (height - 200)) / 1000 + 5 * southness + 3.5 * desert;

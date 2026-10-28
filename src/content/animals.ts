@@ -6,11 +6,15 @@ export type AnimalKind = (typeof ANIMAL_KINDS)[number];
 
 export const ADULT_YOUTH = 0.3;
 
+const VOWELS: ReadonlySet<string> = new Set(["a", "e", "i", "o", "u"]);
+
 interface Breeding {
   litterSize: readonly [number, number];
   perDay: number;
   season: readonly [number, number];
 }
+
+const SPRING_CALVING: Breeding = { litterSize: [1, 1], perDay: 0.6, season: [0.2, 1.2] };
 
 interface AnimalDefinition {
   abundance: number;
@@ -34,8 +38,6 @@ interface AnimalDefinition {
   seeksHighGround: boolean;
   walkSpeed: number;
 }
-
-const SPRING_CALVING: Breeding = { litterSize: [1, 1], perDay: 0.6, season: [0.2, 1.2] };
 
 export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
   deer: {
@@ -149,8 +151,6 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     walkSpeed: 3.6,
   },
 };
-
-const VOWELS: ReadonlySet<string> = new Set(["a", "e", "i", "o", "u"]);
 
 export function animalWithArticle(kind: AnimalKind): string {
   const name = ANIMALS[kind].name.toLowerCase();

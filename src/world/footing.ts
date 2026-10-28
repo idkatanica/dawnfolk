@@ -5,6 +5,9 @@ import { hasRoomFromCoast, isOnIsland } from "./coast.ts";
 import { isWaterCell, type SampledTerrain, touchesWaterCell } from "./terrain-sampling.ts";
 import type { WorldGrid } from "./world-grid.ts";
 
+const WALKABLE_SLOPE = 1.15;
+const STAND_SALT = 19.19;
+
 export interface FootingTerrain extends SampledTerrain {
   readonly coastDistance: Float32Array;
   readonly ground: Uint8Array;
@@ -13,9 +16,6 @@ export interface FootingTerrain extends SampledTerrain {
 interface WildTerrain extends FootingTerrain {
   readonly woodland: Float32Array;
 }
-
-const WALKABLE_SLOPE = 1.15;
-const STAND_SALT = 19.19;
 
 function gradientX(heights: Float32Array, grid: WorldGrid, column: number, row: number): number {
   const last = grid.cellsPerSide - 1;

@@ -1,15 +1,15 @@
 import { clamp, FULL_TURN } from "./math.ts";
 
+const LATITUDE = (42 * Math.PI) / 180;
+const AXIAL_TILT = (23.4 * Math.PI) / 180;
+const RADIANS_PER_HOUR = (15 * Math.PI) / 180;
+const MOON_ORBIT_TILT = 0.9;
+
 export interface Direction {
   x: number;
   y: number;
   z: number;
 }
-
-const LATITUDE = (42 * Math.PI) / 180;
-const AXIAL_TILT = (23.4 * Math.PI) / 180;
-const RADIANS_PER_HOUR = (15 * Math.PI) / 180;
-const MOON_ORBIT_TILT = 0.9;
 
 export function sunDeclination(season: number): number {
   return AXIAL_TILT * Math.sin((FULL_TURN * season) / 4);

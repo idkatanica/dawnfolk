@@ -5,13 +5,9 @@ export type PowerCategory = "elements" | "land" | "life";
 
 type PowerUsage = "brush" | "point";
 
-interface PowerDefinition {
-  category: PowerCategory;
-  description: string;
-  name: string;
-  parameters: z.ZodObject;
-  usage: PowerUsage;
-}
+export type ParameterValue = boolean | number | string;
+
+export type ParameterValueMap = Readonly<Record<string, ParameterValue>>;
 
 interface PowerCategoryDefinition {
   id: PowerCategory;
@@ -24,28 +20,12 @@ export const POWER_CATEGORIES: readonly PowerCategoryDefinition[] = [
   { id: "life", name: "Life" },
 ];
 
-function brushRadius(defaultValue: number, maximum: number) {
-  return rangeParameter({
-    defaultValue,
-    description: "How far the power reaches from the cursor.",
-    label: "Radius",
-    maximum,
-    minimum: 5,
-    step: 1,
-    unit: "meters",
-  });
-}
-
-function strength(defaultValue: number, description: string) {
-  return rangeParameter({
-    defaultValue,
-    description,
-    label: "Strength",
-    maximum: 100,
-    minimum: 5,
-    step: 5,
-    unit: "percent",
-  });
+interface PowerDefinition {
+  category: PowerCategory;
+  description: string;
+  name: string;
+  parameters: z.ZodObject;
+  usage: PowerUsage;
 }
 
 export const POWERS = {
@@ -412,6 +392,30 @@ export const POWER_ORDER: readonly PowerId[] = [
   "healing",
 ];
 
+function brushRadius(defaultValue: number, maximum: number) {
+  return rangeParameter({
+    defaultValue,
+    description: "How far the power reaches from the cursor.",
+    label: "Radius",
+    maximum,
+    minimum: 5,
+    step: 1,
+    unit: "meters",
+  });
+}
+
+function strength(defaultValue: number, description: string) {
+  return rangeParameter({
+    defaultValue,
+    description,
+    label: "Strength",
+    maximum: 100,
+    minimum: 5,
+    step: 5,
+    unit: "percent",
+  });
+}
+
 export function isPowerId(value: string): value is PowerId {
   return Object.hasOwn(POWERS, value);
 }
@@ -419,10 +423,6 @@ export function isPowerId(value: string): value is PowerId {
 export function powersInCategory(category: PowerCategory): readonly PowerId[] {
   return POWER_ORDER.filter((powerId) => POWERS[powerId].category === category);
 }
-
-export type ParameterValue = boolean | number | string;
-
-export type ParameterValueMap = Readonly<Record<string, ParameterValue>>;
 
 export function defaultPowerParameters(powerId: PowerId): ParameterValueMap {
   return POWERS[powerId].parameters.parse({});

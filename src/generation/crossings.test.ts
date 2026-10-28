@@ -50,18 +50,18 @@ function positionsAlong(river: River, crossings: readonly Crossing[]): number[] 
   for (const crossing of crossings) {
     const middle = middleOf(crossing);
 
-    let travelled = 0;
+    let traveled = 0;
     let nearest = { along: 0, distance: Number.POSITIVE_INFINITY };
 
     for (const [index, point] of river.points.entries()) {
       if (index > 0) {
-        travelled += Math.hypot(point.x - river.points[index - 1].x, point.z - river.points[index - 1].z);
+        traveled += Math.hypot(point.x - river.points[index - 1].x, point.z - river.points[index - 1].z);
       }
 
       const distance = Math.hypot(point.x - middle.x, point.z - middle.z);
 
       if (distance < nearest.distance) {
-        nearest = { along: travelled, distance };
+        nearest = { along: traveled, distance };
       }
     }
 
@@ -127,7 +127,7 @@ describe.each(["round", "square"] as const)("crossings on a %s island", (shape) 
     expect(crossings.some((crossing) => isBrookCell(terrain, cellOf(middleOf(crossing))))).toBe(false);
   });
 
-  test("space them five to eight hundred metres apart along a river", () => {
+  test("space them five to eight hundred meters apart along a river", () => {
     const { crossings, water } = worldOf(shape);
 
     const gaps = water.rivers.flatMap((river) => {

@@ -22,7 +22,7 @@ describe("eras", () => {
       "Iron Age",
     ]);
     expect(keys.map((technology) => order.indexOf(technology))).toEqual(
-      [...keys.map((technology) => order.indexOf(technology))].sort((first, second) => first - second)
+      keys.map((technology) => order.indexOf(technology)).sort((first, second) => first - second)
     );
   });
 });

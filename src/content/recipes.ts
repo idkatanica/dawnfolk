@@ -8,7 +8,7 @@ export type RecipeId = (typeof RECIPE_IDS)[number];
 
 export type ResourceAmounts = Readonly<Partial<Record<ResourceKind, number>>>;
 
-export interface RecipeDefinition {
+interface RecipeDefinition {
   inputs: ResourceAmounts;
   isHeadedWithMetal: boolean;
   label: string;

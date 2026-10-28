@@ -27,7 +27,7 @@ type BuildingCost = Readonly<Partial<Record<MaterialKind, number>>>;
 
 export type BuildingRole = "craft" | "dwelling" | "enclosure" | "fire" | "mine" | "shrine" | "store";
 
-export interface BuildingDefinition {
+interface BuildingDefinition {
   burnTime: number;
   capacity: number;
   cost: BuildingCost;

@@ -14,7 +14,7 @@ const LOWEST_RIM = 1.5;
 const RIM_CELLS = 1;
 const OUTLET_SECTOR = 0.7;
 
-export interface PondTargets {
+interface PondTargets {
   readonly grid: WorldGrid;
   readonly heights: Float32Array;
   readonly riverStrength: Uint8Array;
@@ -36,7 +36,7 @@ function highestCuttableRise(reach: number): number {
   return DEEPEST_SHORE_CUT - Math.min(DEEPEST_POND, reach * POND_SHORE_SLOPE);
 }
 
-export function pondFits(pond: Spring, grid: WorldGrid, heights: Float32Array): boolean {
+export function pondFits(grid: WorldGrid, heights: Float32Array, pond: Spring): boolean {
   const shoreReach = grid.cellSize * SHORE_CELLS;
 
   for (const cell of grid.cellsInRadius(pond.x, pond.z, pond.radius * OUTLINE_MARGIN + shoreReach)) {
@@ -59,11 +59,11 @@ export function pondFits(pond: Spring, grid: WorldGrid, heights: Float32Array): 
   return true;
 }
 
-function isRiverWater(cell: number, targets: PondTargets): boolean {
+function isRiverWater(targets: PondTargets, cell: number): boolean {
   return targets.riverStrength[cell] > 0 && hasWater(targets.waterSurface[cell], targets.heights[cell]);
 }
 
-function fillPondCell(cell: number, reach: number, pond: Spring, targets: PondTargets): void {
+function fillPondCell(targets: PondTargets, pond: Spring, cell: number, reach: number): void {
   const { heights, riverStrength, uncarvedHeights, waterSurface } = targets;
 
   const bed = pond.level - Math.min(DEEPEST_POND, reach * POND_SHORE_SLOPE);
@@ -78,10 +78,10 @@ function fillPondCell(cell: number, reach: number, pond: Spring, targets: PondTa
   riverStrength[cell] = 0;
 }
 
-function shapeShore(cell: number, reach: number, pond: Spring, targets: PondTargets): void {
+function shapeShore(targets: PondTargets, pond: Spring, cell: number, reach: number): void {
   const { heights, uncarvedHeights } = targets;
 
-  if (isRiverWater(cell, targets)) {
+  if (isRiverWater(targets, cell)) {
     return;
   }
 
@@ -97,7 +97,7 @@ export function pondShoreReach(pond: Spring): number {
   return pond.radius * OUTLINE_MARGIN + STRAND_WIDTH + BEACH_WIDTH;
 }
 
-export function carvePond(pond: Spring, targets: PondTargets): void {
+export function carvePond(targets: PondTargets, pond: Spring): void {
   const { grid } = targets;
 
   const wetReach = grid.cellSize * WET_REACH;
@@ -109,11 +109,11 @@ export function carvePond(pond: Spring, targets: PondTargets): void {
     const reach = Math.max(pondEdgeReach(pond, x, z), wetReach - Math.hypot(x - pond.x, z - pond.z));
 
     if (reach > 0) {
-      fillPondCell(cell, reach, pond, targets);
+      fillPondCell(targets, pond, cell, reach);
 
       continue;
     }
 
-    shapeShore(cell, reach, pond, targets);
+    shapeShore(targets, pond, cell, reach);
   }
 }
