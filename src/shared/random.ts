@@ -1,5 +1,7 @@
 import { uniformFloat64 } from "pure-rand/distribution/uniformFloat64";
-import { xoroshiro128plus } from "pure-rand/generator/xoroshiro128plus";
+import { xoroshiro128plus, xoroshiro128plusFromState } from "pure-rand/generator/xoroshiro128plus";
+
+export type RandomState = readonly number[];
 
 export interface RandomSource {
   between: (minimum: number, maximum: number) => number;
@@ -8,13 +10,15 @@ export interface RandomSource {
   integer: (minimum: number, maximumExclusive: number) => number;
   next: () => number;
   pick: <Item>(items: readonly Item[]) => Item;
+  restore: (state: RandomState) => void;
   signed: () => number;
+  state: () => RandomState;
 }
 
 type Generator = ReturnType<typeof xoroshiro128plus>;
 
 class SeededRandom implements RandomSource {
-  readonly #generator: Generator;
+  #generator: Generator;
 
   constructor(generator: Generator) {
     this.#generator = generator;
@@ -48,6 +52,14 @@ class SeededRandom implements RandomSource {
     }
 
     return item;
+  }
+
+  state(): RandomState {
+    return [...this.#generator.getState()];
+  }
+
+  restore(state: RandomState): void {
+    this.#generator = xoroshiro128plusFromState(state);
   }
 
   derive(label: number): RandomSource {

@@ -10,6 +10,18 @@ describe("seeded random", () => {
     expect([first.next(), first.next(), first.next()]).toEqual([second.next(), second.next(), second.next()]);
   });
 
+  it("continues the same sequence after restoring its state", () => {
+    const original = createRandom(42);
+
+    original.next();
+
+    const restored = createRandom(1);
+
+    restored.restore(original.state());
+
+    expect([restored.next(), restored.next()]).toEqual([original.next(), original.next()]);
+  });
+
   it("stays inside requested ranges", () => {
     const random = createRandom(7);
 

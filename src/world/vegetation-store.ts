@@ -60,6 +60,17 @@ export function createVegetationChannels(size: number): VegetationChannels {
   };
 }
 
+export interface VegetationSnapshot extends VegetationBuffers {
+  aliveCount: number;
+  burntDay: Float32Array;
+  burntQueueDays: Float64Array;
+  burntQueuePlants: Int32Array;
+  cell: Int32Array;
+  freeSlots: Int32Array;
+  nextInCell: Int32Array;
+  wear: Uint8Array;
+}
+
 interface BurntPlant {
   day: number;
   index: number;
@@ -403,6 +414,99 @@ export class VegetationStore implements VegetationChannels {
     }
 
     return buffers;
+  }
+
+  snapshot(): VegetationSnapshot {
+    const count = this.#count;
+
+    const queue = this.#burntQueue.slice(this.#burntQueueStart);
+
+    return {
+      ...this.exportBuffers(),
+      aliveCount: this.#aliveCount,
+      burntDay: this.#burntDay.slice(0, count),
+      burntQueueDays: Float64Array.from(queue, (burnt) => burnt.day),
+      burntQueuePlants: Int32Array.from(queue, (burnt) => burnt.index),
+      cell: this.cell.slice(0, count),
+      freeSlots: Int32Array.from(this.#freeSlots),
+      nextInCell: this.#nextInCell.slice(0, count),
+      wear: this.wear.slice(0, count),
+    };
+  }
+
+  restore(snapshot: VegetationSnapshot): void {
+    const { count } = snapshot;
+
+    if (count > this.#capacity) {
+      throw new RangeError("The saved vegetation does not fit this island");
+    }
+
+    for (const channel of VEGETATION_CHANNELS) {
+      this[channel].fill(0);
+      this[channel].set(snapshot[channel].subarray(0, count));
+    }
+
+    this.state.fill(PlantState.Removed, count);
+    this.#burntDay.fill(0);
+    this.#burntDay.set(snapshot.burntDay);
+    this.wear.fill(0);
+    this.wear.set(snapshot.wear);
+    this.cell.fill(NO_PLANT);
+    this.cell.set(snapshot.cell);
+    this.#nextInCell.fill(NO_PLANT);
+    this.#nextInCell.set(snapshot.nextInCell);
+    this.#count = count;
+    this.#relinkCells();
+    this.#aliveCount = snapshot.aliveCount;
+    this.#freeSlots.length = 0;
+
+    for (const slot of snapshot.freeSlots) {
+      this.#freeSlots.push(slot);
+    }
+
+    this.#burntQueue.length = 0;
+    this.#burntQueueStart = 0;
+
+    for (const [position, index] of snapshot.burntQueuePlants.entries()) {
+      this.#burntQueue.push({ day: snapshot.burntQueueDays[position], index });
+    }
+
+    this.#rebuildBerryBushes();
+    this.#changed.clear();
+  }
+
+  #relinkCells(): void {
+    const isFollower = new Uint8Array(this.#count);
+
+    for (let index = 0; index < this.#count; index += 1) {
+      const next = this.#nextInCell[index];
+
+      if (next >= 0 && next < this.#count) {
+        isFollower[next] = 1;
+      }
+    }
+
+    this.#firstInCell.fill(NO_PLANT);
+
+    for (let index = 0; index < this.#count; index += 1) {
+      const cellIndex = this.cell[index];
+
+      if (cellIndex >= 0 && cellIndex < this.#firstInCell.length && isFollower[index] === 0) {
+        this.#firstInCell[cellIndex] = index;
+      }
+    }
+  }
+
+  #rebuildBerryBushes(): void {
+    this.#berryBushCount = 0;
+    this.#fullBerryBushCount = 0;
+    this.#emptyBerryBushCount = 0;
+
+    for (let index = 0; index < this.#count; index += 1) {
+      if (this.state[index] === PlantState.Alive) {
+        this.#trackBerryBush(index);
+      }
+    }
   }
 
   #allocate(): number {

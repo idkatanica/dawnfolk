@@ -105,6 +105,14 @@ export class SurfaceSystem {
     this.#scorchBits = bitsOf(world.fields.scorch);
   }
 
+  get nextRow(): number {
+    return this.#nextRow;
+  }
+
+  restore(nextRow: number): void {
+    this.#nextRow = nextRow;
+  }
+
   update(seconds: number, days: number, conditions: SurfaceConditions, rules: WorldRules): void {
     const { cellsPerSide } = this.#world.grid;
 

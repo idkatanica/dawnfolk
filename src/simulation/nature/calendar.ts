@@ -20,6 +20,11 @@ interface CalendarState {
   isTimeFrozen: boolean;
 }
 
+export interface CalendarSnapshot extends CalendarState {
+  anchorDate: number;
+  anchorDay: number;
+}
+
 export interface CalendarView extends CalendarState {
   dayOfSeason: number;
   hours: number;
@@ -108,6 +113,26 @@ export class Calendar {
   #setDate(date: number): void {
     this.#anchorDate = date;
     this.#anchorDay = this.day;
+  }
+
+  snapshot(): CalendarSnapshot {
+    return {
+      anchorDate: this.#anchorDate,
+      anchorDay: this.#anchorDay,
+      day: this.day,
+      daySeconds: this.daySeconds,
+      daysPerSeason: this.daysPerSeason,
+      isTimeFrozen: this.isTimeFrozen,
+    };
+  }
+
+  restore(snapshot: CalendarSnapshot): void {
+    this.day = snapshot.day;
+    this.daySeconds = snapshot.daySeconds;
+    this.daysPerSeason = snapshot.daysPerSeason;
+    this.isTimeFrozen = snapshot.isTimeFrozen;
+    this.#anchorDate = snapshot.anchorDate;
+    this.#anchorDay = snapshot.anchorDay;
   }
 
   diurnalTemperatureOffset(): number {

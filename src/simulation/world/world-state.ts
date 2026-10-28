@@ -1,6 +1,7 @@
 import { groundDefinition, isPoolGround } from "../../content/grounds.ts";
 import type { GeneratedWorld } from "../../generation/world-generator.ts";
 import { clamp } from "../../shared/math.ts";
+import { applySparse, type SparseValues, sparseDifference } from "../../shared/sparse-values.ts";
 import { isBrookCell } from "../../world/brooks.ts";
 import { type CellRegion, RegionChangeTracker, RowChangeTracker } from "../../world/change-tracking.ts";
 import { hasRoomFromCoast, isOnIsland } from "../../world/coast.ts";
@@ -17,7 +18,12 @@ import {
   sampleSurface,
   touchesWaterCell,
 } from "../../world/terrain-sampling.ts";
-import { NO_PLANT, type PlantPlacement, type VegetationStore } from "../../world/vegetation-store.ts";
+import {
+  NO_PLANT,
+  type PlantPlacement,
+  type VegetationSnapshot,
+  type VegetationStore,
+} from "../../world/vegetation-store.ts";
 import { NO_WATER, type Spring, type WaterFeatures } from "../../world/water.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
 import { CellSet } from "./cell-set.ts";
@@ -37,6 +43,9 @@ const TERRAIN_LAPSE_RATE = 6.5 / 1000;
 const LOWEST_EDIT_BELOW_ORIGINAL = 60;
 const TRODDEN_LEVELS = 32;
 
+const SPARSE_FIELDS = ["crop", "fire", "heat", "scorch", "trodden"] as const;
+const DENSE_FIELDS = ["snow", "wetness"] as const;
+
 export interface SurfaceFields {
   crop: Float32Array;
   fire: Float32Array;
@@ -48,17 +57,70 @@ export interface SurfaceFields {
   wetness: Float32Array;
 }
 
-function createSurfaceFields(cellCount: number, ground: Uint8Array): SurfaceFields {
-  const fuel = new Float32Array(cellCount);
+type SparseField = (typeof SPARSE_FIELDS)[number];
 
-  for (let cell = 0; cell < cellCount; cell += 1) {
-    fuel[cell] = groundDefinition(ground[cell]).fuel;
+type DenseField = (typeof DENSE_FIELDS)[number];
+
+export type SavedFields = Record<DenseField, Float32Array> & Record<SparseField | "fuel", SparseValues>;
+
+export const SAVED_TERRAIN_LAYERS = [
+  "baseTemperature",
+  "carving",
+  "ground",
+  "height",
+  "riverStrength",
+  "waterSurface",
+] as const;
+
+type SavedTerrainLayer = (typeof SAVED_TERRAIN_LAYERS)[number];
+
+type GeneratedTerrain = Pick<TerrainData, SavedTerrainLayer>;
+
+export interface WorldSnapshot {
+  canopyFuel: SparseValues;
+  cropCodes: SparseValues;
+  crossings: readonly Crossing[];
+  disturbedDay: SparseValues;
+  fields: SavedFields;
+  heightVersion: number;
+  initialCanopyFuel: SparseValues;
+  monumentConditions: MonumentCondition[];
+  occupancy: SparseValues;
+  recovering: Int32Array;
+  terrain: Record<SavedTerrainLayer, SparseValues>;
+  vegetation: VegetationSnapshot;
+  water: WaterFeatures;
+  waterVersion: number;
+}
+
+function copyTerrain(terrain: TerrainData): GeneratedTerrain {
+  return {
+    baseTemperature: terrain.baseTemperature.slice(),
+    carving: terrain.carving.slice(),
+    ground: terrain.ground.slice(),
+    height: terrain.height.slice(),
+    riverStrength: terrain.riverStrength.slice(),
+    waterSurface: terrain.waterSurface.slice(),
+  };
+}
+
+function groundFuel(ground: Uint8Array): Float32Array {
+  return Float32Array.from(ground, (kind) => groundDefinition(kind).fuel);
+}
+
+function restoreDense(target: Float32Array, saved: Float32Array): void {
+  if (saved.length !== target.length) {
+    throw new RangeError("The saved world does not fit this island");
   }
 
+  target.set(saved);
+}
+
+function createSurfaceFields(cellCount: number, ground: Uint8Array): SurfaceFields {
   return {
     crop: new Float32Array(cellCount),
     fire: new Float32Array(cellCount),
-    fuel,
+    fuel: groundFuel(ground),
     heat: new Float32Array(cellCount),
     scorch: new Float32Array(cellCount),
     snow: new Float32Array(cellCount),
@@ -96,6 +158,7 @@ export class WorldState {
   water: WaterFeatures;
   waterVersion = 0;
   #crossingIndex: CrossingIndex;
+  readonly #generatedTerrain: GeneratedTerrain;
   #hasSuddenHeightEdit = false;
 
   constructor(generated: GeneratedWorld) {
@@ -103,6 +166,7 @@ export class WorldState {
     this.seed = generated.seed;
     this.shape = generated.shape;
     this.terrain = generated.terrain;
+    this.#generatedTerrain = copyTerrain(generated.terrain);
     this.vegetation = generated.vegetation;
     this.water = generated.water;
     this.monuments = generated.monuments;
@@ -135,6 +199,98 @@ export class WorldState {
 
     this.#reserveSprings(this.water.springs);
     this.#markCrossingGround();
+  }
+
+  snapshot(): WorldSnapshot {
+    const { cellCount } = this.grid;
+
+    const empty = new Float32Array(cellCount);
+    const generated = this.#generatedTerrain;
+
+    return {
+      canopyFuel: sparseDifference(this.canopyFuel, this.#vegetationCanopy()),
+      cropCodes: sparseDifference(this.cropCodes, new Uint8Array(cellCount)),
+      crossings: structuredClone(this.crossings),
+      disturbedDay: sparseDifference(this.disturbedDay, empty),
+      fields: {
+        crop: sparseDifference(this.fields.crop, empty),
+        fire: sparseDifference(this.fields.fire, empty),
+        fuel: sparseDifference(this.fields.fuel, groundFuel(this.terrain.ground)),
+        heat: sparseDifference(this.fields.heat, empty),
+        scorch: sparseDifference(this.fields.scorch, empty),
+        snow: this.fields.snow.slice(),
+        trodden: sparseDifference(this.fields.trodden, empty),
+        wetness: this.fields.wetness.slice(),
+      },
+      heightVersion: this.heightVersion,
+      initialCanopyFuel: sparseDifference(this.initialCanopyFuel, this.canopyFuel),
+      monumentConditions: this.monumentConditions.map((condition) => ({ ...condition })),
+      occupancy: sparseDifference(this.occupancy, new Int32Array(cellCount).fill(NO_BUILDING)),
+      recovering: this.recovering.snapshot(),
+      terrain: {
+        baseTemperature: sparseDifference(this.terrain.baseTemperature, generated.baseTemperature),
+        carving: sparseDifference(this.terrain.carving, generated.carving),
+        ground: sparseDifference(this.terrain.ground, generated.ground),
+        height: sparseDifference(this.terrain.height, generated.height),
+        riverStrength: sparseDifference(this.terrain.riverStrength, generated.riverStrength),
+        waterSurface: sparseDifference(this.terrain.waterSurface, generated.waterSurface),
+      },
+      vegetation: this.vegetation.snapshot(),
+      water: structuredClone(this.water),
+      waterVersion: this.waterVersion,
+    };
+  }
+
+  restore(snapshot: WorldSnapshot): void {
+    for (const layer of SAVED_TERRAIN_LAYERS) {
+      applySparse(this.terrain[layer], snapshot.terrain[layer]);
+    }
+
+    this.vegetation.restore(snapshot.vegetation);
+    this.fields.fuel.set(groundFuel(this.terrain.ground));
+    applySparse(this.fields.fuel, snapshot.fields.fuel);
+
+    for (const field of SPARSE_FIELDS) {
+      this.fields[field].fill(0);
+      applySparse(this.fields[field], snapshot.fields[field]);
+    }
+
+    for (const field of DENSE_FIELDS) {
+      restoreDense(this.fields[field], snapshot.fields[field]);
+    }
+
+    this.canopyFuel.set(this.#vegetationCanopy());
+    applySparse(this.canopyFuel, snapshot.canopyFuel);
+    this.initialCanopyFuel.set(this.canopyFuel);
+    applySparse(this.initialCanopyFuel, snapshot.initialCanopyFuel);
+    this.disturbedDay.fill(0);
+    applySparse(this.disturbedDay, snapshot.disturbedDay);
+    this.cropCodes.fill(0);
+    applySparse(this.cropCodes, snapshot.cropCodes);
+    this.occupancy.fill(NO_BUILDING);
+    applySparse(this.occupancy, snapshot.occupancy);
+    this.recovering.restore(snapshot.recovering);
+
+    for (const [position, condition] of this.monumentConditions.entries()) {
+      Object.assign(condition, snapshot.monumentConditions[position]);
+    }
+
+    this.water = snapshot.water;
+    this.crossings = snapshot.crossings;
+    this.#crossingIndex = new CrossingIndex(this.grid, this.crossings, CROSSING_TOLERANCE);
+    this.heightVersion = snapshot.heightVersion;
+    this.waterVersion = snapshot.waterVersion;
+    this.#hasSuddenHeightEdit = false;
+  }
+
+  #vegetationCanopy(): Float32Array {
+    const canopy = new Float32Array(this.grid.cellCount);
+
+    for (let cell = 0; cell < canopy.length; cell += 1) {
+      canopy[cell] = this.vegetation.canopyFuelInCell(cell);
+    }
+
+    return canopy;
   }
 
   heightAt(x: number, z: number): number {

@@ -31,10 +31,26 @@ export interface ChronicleEntry extends ChronicleRecord {
   id: number;
 }
 
+export interface ChronicleSnapshot {
+  day: number;
+  entries: ChronicleEntry[];
+  nextId: number;
+}
+
 export class Chronicle {
   #entries: ChronicleEntry[] = [];
   #nextId = 1;
   day = 0;
+
+  snapshot(): ChronicleSnapshot {
+    return { day: this.day, entries: structuredClone(this.#entries), nextId: this.#nextId };
+  }
+
+  restore(snapshot: ChronicleSnapshot): void {
+    this.day = snapshot.day;
+    this.#entries = snapshot.entries;
+    this.#nextId = snapshot.nextId;
+  }
 
   record(record: ChronicleRecord): void {
     this.#entries.push({ ...record, day: this.day, id: this.#nextId });

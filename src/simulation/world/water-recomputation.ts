@@ -1,5 +1,6 @@
 import { refreshCrossings } from "../../generation/crossings.ts";
 import { computeHydrology, RESHAPED_LAND_HYDROLOGY } from "../../generation/hydrology.ts";
+import { applySparse, type SparseValues, sparseDifference } from "../../shared/sparse-values.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { hasWater, type Lake, NO_WATER } from "../../world/water.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
@@ -26,6 +27,11 @@ interface Filling {
   secondsSinceStep: number;
 }
 
+export interface WaterRecomputationSnapshot {
+  observedHeightVersion: number;
+  settledHeights: SparseValues;
+}
+
 export type WaterChange = "features" | "levels" | "none" | "settled";
 
 function easeOut(amount: number): number {
@@ -47,6 +53,27 @@ export class WaterRecomputation {
 
   get isPending(): boolean {
     return this.#quietSeconds !== null || this.#filling !== null;
+  }
+
+  snapshot(): WaterRecomputationSnapshot {
+    if (this.isPending) {
+      throw new Error("The water is still settling");
+    }
+
+    return {
+      observedHeightVersion: this.#observedHeightVersion,
+      settledHeights: sparseDifference(this.#settledHeights, this.#uncarvedHeights()),
+    };
+  }
+
+  restore(snapshot: WaterRecomputationSnapshot): void {
+    const settledHeights = this.#uncarvedHeights();
+
+    applySparse(settledHeights, snapshot.settledHeights);
+    this.#settledHeights = settledHeights;
+    this.#observedHeightVersion = snapshot.observedHeightVersion;
+    this.#quietSeconds = null;
+    this.#filling = null;
   }
 
   update(realSeconds: number): WaterChange {

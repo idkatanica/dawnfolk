@@ -26,9 +26,28 @@ interface Patch {
 
 type Wear = Map<number, number>;
 
+export interface TroddenGroundSnapshot {
+  cells: Int32Array;
+  elapsedDays: number;
+}
+
 export class TroddenGround {
   readonly #cells = new Set<number>();
   #elapsedDays = 0;
+
+  snapshot(): TroddenGroundSnapshot {
+    return { cells: Int32Array.from(this.#cells), elapsedDays: this.#elapsedDays };
+  }
+
+  restore(snapshot: TroddenGroundSnapshot): void {
+    this.#cells.clear();
+
+    for (const cell of snapshot.cells) {
+      this.#cells.add(cell);
+    }
+
+    this.#elapsedDays = snapshot.elapsedDays;
+  }
 
   update(days: number, context: SocietyContext, tribes: readonly Tribe[]): void {
     this.#elapsedDays += days;

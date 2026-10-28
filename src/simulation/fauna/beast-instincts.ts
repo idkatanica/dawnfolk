@@ -1,7 +1,7 @@
 import { ADULT_YOUTH, ANIMALS } from "../../content/animals.ts";
 import { isWinter } from "../../content/seasons.ts";
 import { clamp } from "../../shared/math.ts";
-import type { RandomSource } from "../../shared/random.ts";
+import type { RandomSource, RandomState } from "../../shared/random.ts";
 import { faceTowards, moveAlong, setDestination, stopMoving } from "../agents/movement.ts";
 import type { NavigationGrid, Waypoint } from "../agents/navigation.ts";
 import type { WorldState } from "../world/world-state.ts";
@@ -66,6 +66,15 @@ interface InstinctSources {
   readonly prey: PreySense;
   readonly random: RandomSource;
   readonly world: WorldState;
+}
+
+export interface InstinctsSnapshot {
+  charges: Map<number, Charge>;
+  chaseRandom: RandomState;
+  flinches: Map<number, number>;
+  moods: Map<number, PackMood>;
+  random: RandomState;
+  strikes: Map<number, Strike>;
 }
 
 interface PreyChase {
@@ -163,6 +172,14 @@ function packBoldness(hunger: number, packSize: number, tick: FaunaTick): number
   return tick.rules.nature.beastBoldness * nightFactor(tick.hours) * winter * hunger * strength;
 }
 
+function refill<Value>(target: Map<number, Value>, source: ReadonlyMap<number, Value>): void {
+  target.clear();
+
+  for (const [key, value] of source) {
+    target.set(key, value);
+  }
+}
+
 export class BeastInstincts {
   readonly #chaseRandom: RandomSource;
   readonly #charges = new Map<number, Charge>();
@@ -180,6 +197,26 @@ export class BeastInstincts {
     this.#random = sources.random;
     this.#chaseRandom = sources.chaseRandom;
     this.#prey = sources.prey;
+  }
+
+  snapshot(): InstinctsSnapshot {
+    return {
+      charges: structuredClone(this.#charges),
+      chaseRandom: this.#chaseRandom.state(),
+      flinches: new Map(this.#flinches),
+      moods: structuredClone(this.#moods),
+      random: this.#random.state(),
+      strikes: structuredClone(this.#strikes),
+    };
+  }
+
+  restore(snapshot: InstinctsSnapshot): void {
+    this.#chaseRandom.restore(snapshot.chaseRandom);
+    this.#random.restore(snapshot.random);
+    refill(this.#charges, snapshot.charges);
+    refill(this.#flinches, snapshot.flinches);
+    refill(this.#moods, snapshot.moods);
+    refill(this.#strikes, snapshot.strikes);
   }
 
   huntOf(packId: number): PackHunt | null {

@@ -10,7 +10,7 @@ import {
 } from "../../content/plants.ts";
 import { clearingAt, plantingChance } from "../../generation/vegetation.ts";
 import { FULL_TURN, hashToUnit, lerp } from "../../shared/math.ts";
-import { createRandom, type RandomSource } from "../../shared/random.ts";
+import { createRandom, type RandomSource, type RandomState } from "../../shared/random.ts";
 import { NO_PLANT, type PlantPlacement } from "../../world/vegetation-store.ts";
 import { NO_BUILDING, type WorldState } from "../world/world-state.ts";
 import type { Nursery } from "./nursery.ts";
@@ -44,6 +44,11 @@ interface Cover {
 
 const BARE_CLIMAX: Climax = { shrubs: [], trees: [] };
 
+export interface SuccessionSnapshot {
+  random: RandomState;
+  visitBudget: number;
+}
+
 export class Succession {
   readonly #nursery: Nursery;
   readonly #random: RandomSource;
@@ -54,6 +59,15 @@ export class Succession {
     this.#world = world;
     this.#nursery = nursery;
     this.#random = createRandom(world.seed * 19 + 11);
+  }
+
+  snapshot(): SuccessionSnapshot {
+    return { random: this.#random.state(), visitBudget: this.#visitBudget };
+  }
+
+  restore(snapshot: SuccessionSnapshot): void {
+    this.#random.restore(snapshot.random);
+    this.#visitBudget = snapshot.visitBudget;
   }
 
   update(days: number, day: number, pace: number): void {

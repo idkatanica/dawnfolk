@@ -8,7 +8,7 @@ const EASING_PER_SECOND = 0.12;
 const SETTLED_DIFFERENCE = 0.002;
 const STORM_LIGHTNING_THRESHOLD = 0.5;
 
-interface WeatherState {
+export interface WeatherState {
   cloudCover: number;
   fog: number;
   gust: number;
@@ -77,6 +77,14 @@ export class WeatherSystem {
     windDirection: 225,
     windSpeed: 14,
   };
+
+  snapshot(): WeatherState {
+    return { ...this.state };
+  }
+
+  restore(snapshot: WeatherState): void {
+    this.state = { ...snapshot };
+  }
 
   get name(): string {
     return WEATHER[this.state.kind].name;

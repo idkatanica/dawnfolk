@@ -73,6 +73,28 @@ export function createMover(x: number, z: number, heading: number, radius = PERS
   };
 }
 
+export function savedMover(mover: Mover, keepsRoute: boolean): Mover {
+  const saved: Mover = structuredClone({ ...mover, nearbyObstacles: [] });
+
+  forgetObstacles(saved);
+
+  if (keepsRoute) {
+    return saved;
+  }
+
+  saved.arrivalDistance = FINAL_ARRIVAL_DISTANCE;
+  saved.goalX = saved.x;
+  saved.goalZ = saved.z;
+  saved.path = [];
+  saved.pathIndex = 0;
+  saved.stuckSeconds = 0;
+  saved.velocityX = 0;
+  saved.velocityZ = 0;
+  forgetReplans(saved);
+
+  return saved;
+}
+
 interface RouteOptions {
   readonly arrivalDistance?: number;
   readonly mayPlanRoute?: boolean;
