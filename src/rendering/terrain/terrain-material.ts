@@ -136,23 +136,49 @@ function terrainPosition(textures: TerrainTextures, grid: WorldGrid, plinth: num
 
   const origin = attribute("origin", "vec2");
   const localCell = attribute("cell", "vec2");
+  const isCenter = attribute("quadCenter", "float").greaterThan(0.5);
+  const step = attribute("patchStep", "float");
   const skirt = attribute("skirt", "float");
   const skirtAxis = attribute("skirtAxis", "float");
 
-  function heightAt(column: number, row: number, base: Node<"vec2">) {
-    const cell = ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(lastCell, lastCell)));
+  function heightAt(cell: Node<"vec2">, column: number, row: number): Node<"float"> {
+    return textureLoad(textures.height, ivec2(clamp(cell.add(vec2(column, row)), vec2(0, 0), vec2(lastCell, lastCell))))
+      .x;
+  }
 
-    return textureLoad(textures.height, cell).x;
+  function slopeAt(cell: Node<"vec2">): Node<"vec3"> {
+    const slopeX = heightAt(cell, -1, 0).sub(heightAt(cell, 1, 0));
+    const slopeZ = heightAt(cell, 0, -1).sub(heightAt(cell, 0, 1));
+
+    return normalize(vec3(slopeX, cellSize.mul(2), slopeZ));
+  }
+
+  function cornerOf(cell: Node<"vec2">, column: number, row: number): Node<"vec2"> {
+    return clamp(cell.add(vec2(column, row).mul(step)), vec2(0, 0), vec2(lastCell, lastCell));
   }
 
   return Fn(() => {
     const cell = clamp(origin.add(localCell), vec2(0, 0), vec2(lastCell, lastCell)).toVar();
+    const height = heightAt(cell, 0, 0).toVar();
+    const normal = slopeAt(cell).toVar();
 
-    const height = heightAt(0, 0, cell);
-    const slopeX = heightAt(-1, 0, cell).sub(heightAt(1, 0, cell));
-    const slopeZ = heightAt(0, -1, cell).sub(heightAt(0, 1, cell));
+    If(isCenter, () => {
+      const corners = [cornerOf(cell, 0, 0), cornerOf(cell, 1, 0), cornerOf(cell, 0, 1), cornerOf(cell, 1, 1)];
 
-    normalLocal.assign(normalize(vec3(slopeX, cellSize.mul(2), slopeZ)));
+      const [first, right, below, diagonal] = corners;
+
+      height.assign(
+        heightAt(first, 0, 0)
+          .add(heightAt(right, 0, 0))
+          .add(heightAt(below, 0, 0))
+          .add(heightAt(diagonal, 0, 0))
+          .mul(0.25)
+      );
+      normal.assign(slopeAt(first).add(slopeAt(right)).add(slopeAt(below)).add(slopeAt(diagonal)));
+      cell.assign(first.add(diagonal).mul(0.5));
+    });
+
+    normalLocal.assign(normalize(normal));
 
     const border = origin.add(localCell);
 

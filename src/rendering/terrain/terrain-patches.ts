@@ -13,6 +13,7 @@ export type PatchEdges = "open" | "skirted";
 interface GridVertexWriter {
   readonly axes: number[];
   readonly cells: number[];
+  readonly centers: number[];
   readonly skirts: number[];
 }
 
@@ -21,8 +22,16 @@ type BorderPoint = readonly [column: number, row: number, axis: number];
 const COLUMN_AXIS = 0;
 const ROW_AXIS = 1;
 
-function vertexIndex(writer: GridVertexWriter, column: number, row: number, skirt: number, axis: number): number {
+function vertexIndex(
+  writer: GridVertexWriter,
+  column: number,
+  row: number,
+  skirt: number,
+  axis: number,
+  center = 0
+): number {
   writer.cells.push(column, row);
+  writer.centers.push(center);
   writer.skirts.push(skirt);
   writer.axes.push(axis);
 
@@ -81,7 +90,7 @@ function addSkirts(writer: GridVertexWriter, indices: number[], cells: number, s
 }
 
 export function createPatchGeometry(cells: number, step: PatchStep, edges: PatchEdges): BufferGeometry {
-  const writer: GridVertexWriter = { axes: [], cells: [], skirts: [] };
+  const writer: GridVertexWriter = { axes: [], cells: [], centers: [], skirts: [] };
   const indices: number[] = [];
   const steps = cells / step;
 
@@ -101,8 +110,9 @@ export function createPatchGeometry(cells: number, step: PatchStep, edges: Patch
       const below = first + side;
 
       const diagonal = below + 1;
+      const center = vertexIndex(writer, column * step, row * step, 0, COLUMN_AXIS, 1);
 
-      indices.push(first, below, right, right, below, diagonal);
+      indices.push(first, center, right, first, below, center, below, diagonal, center, right, center, diagonal);
     }
   }
 
@@ -113,6 +123,7 @@ export function createPatchGeometry(cells: number, step: PatchStep, edges: Patch
   const geometry = new BufferGeometry();
 
   geometry.setAttribute("cell", new Float32BufferAttribute(writer.cells, 2));
+  geometry.setAttribute("quadCenter", new Float32BufferAttribute(writer.centers, 1));
   geometry.setAttribute("skirt", new Float32BufferAttribute(writer.skirts, 1));
   geometry.setAttribute("skirtAxis", new Float32BufferAttribute(writer.axes, 1));
   geometry.setAttribute("patchStep", new Float32BufferAttribute(new Float32Array(writer.skirts.length).fill(step), 1));
