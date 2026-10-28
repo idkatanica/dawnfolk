@@ -1,14 +1,38 @@
 import { Vector3 } from "three";
 import { describe, expect, it, it as test } from "vitest";
+import { BUILDINGS } from "../../content/buildings.ts";
 import { MaterialSlot } from "../materials.ts";
-import { triangleCount } from "../mesh/mesh-data.ts";
+import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { loosePieces, TOUCHING } from "../testing/mesh-connectivity.ts";
-import { buildBuildingModel, buildingScale, SINGLE_MODEL_KINDS } from "./building-models.ts";
+import { buildBuildingModel, buildingScale, SINGLE_MODEL_KINDS, type SingleModelKind } from "./building-models.ts";
 import { GLOW_PART } from "./structure-parts.ts";
 
 const FLOAT_SLACK = 1e-4;
+const LEVELS = ["high", "low"] as const;
+
+const WORKING_BUILDINGS: readonly SingleModelKind[] = [
+  "forge",
+  "granary",
+  "kiln",
+  "longhouse",
+  "smelter",
+  "stoneHouse",
+  "workshop",
+];
+
+const GLOWING_BUILDINGS: readonly SingleModelKind[] = ["forge", "kiln", "smelter"];
+
+function widestReach(mesh: MeshData): number {
+  let reach = 0;
+
+  for (let vertex = 0; vertex < vertexCount(mesh); vertex += 1) {
+    reach = Math.max(reach, Math.hypot(mesh.positions[vertex * 3], mesh.positions[vertex * 3 + 2]));
+  }
+
+  return reach;
+}
 
 describe.each(SINGLE_MODEL_KINDS)("%s model", (kind) => {
   const high = buildBuildingModel(kind, "high");
@@ -64,5 +88,58 @@ describe("building details", () => {
     }
 
     expect(tent.channels.slot[tent.indices[hit.triangle * 3]]).toBe(MaterialSlot.Ash);
+  });
+});
+
+describe("era buildings", () => {
+  it.each(SINGLE_MODEL_KINDS)("fits the %s inside its footprint", (kind) => {
+    for (const level of LEVELS) {
+      expect(widestReach(buildBuildingModel(kind, level))).toBeLessThanOrEqual(BUILDINGS[kind].footprint);
+    }
+  });
+
+  it.each(WORKING_BUILDINGS)("paints the %s in the tribe colour", (kind) => {
+    for (const level of LEVELS) {
+      expect(buildBuildingModel(kind, level).channels.slot).toContain(MaterialSlot.Accent);
+    }
+  });
+
+  it.each(GLOWING_BUILDINGS)("lights the fire of the %s", (kind) => {
+    for (const level of LEVELS) {
+      const mesh = buildBuildingModel(kind, level);
+
+      expect(mesh.channels.part).toContain(GLOW_PART);
+      expect(mesh.channels.slot).toContain(MaterialSlot.Ember);
+    }
+  });
+
+  it.each(LEVELS)("opens the %s longhouse door toward the front", (level) => {
+    const longhouse = buildBuildingModel("longhouse", level);
+
+    const hit = outermostHit(longhouse, new Vector3(0, 1.2, 0), new Vector3(0, 0, 1));
+
+    if (hit === null) {
+      throw new Error("A ray from the middle of the longhouse should leave through its front");
+    }
+
+    expect(longhouse.channels.slot[longhouse.indices[hit.triangle * 3]]).toBe(MaterialSlot.Ash);
+  });
+
+  it.each(LEVELS)("paints the %s stone house door in the tribe colour", (level) => {
+    const house = buildBuildingModel("stoneHouse", level);
+
+    const hit = outermostHit(house, new Vector3(0, 1, 0), new Vector3(0, 0, 1));
+
+    if (hit === null) {
+      throw new Error("A ray from the middle of the house should leave through its front");
+    }
+
+    expect(house.channels.slot[house.indices[hit.triangle * 3]]).toBe(MaterialSlot.Accent);
+  });
+
+  it("builds houses tall enough for grown people to walk in", () => {
+    for (const kind of ["longhouse", "stoneHouse"] as const) {
+      expect(buildBuildingModel(kind, "high").bounds.maximum[1]).toBeGreaterThan(4);
+    }
   });
 });

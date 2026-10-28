@@ -36,14 +36,15 @@ import type { PaletteLayout } from "./palette-layout.ts";
 import { PartBatches } from "./part-batches.ts";
 import { createSkinnedMaterial } from "./skinned-material.ts";
 
+export const ANIMAL_BOUNDING_LIFT = 1.5;
+export const ANIMAL_BOUNDING_RADIUS = 4.6;
+
 const ANIMAL_LAYOUT: PaletteLayout = {
   boneCount: MAMMOTH_BONE_COUNT,
   colorSlots: [MaterialSlot.Coat, MaterialSlot.CoatLight],
 };
 
 const LEVEL_DISTANCES: LevelDistances = { far: 650, high: 90, low: 160 };
-export const ANIMAL_BOUNDING_LIFT = 1.5;
-export const ANIMAL_BOUNDING_RADIUS = 4.6;
 const WADING_DEPTH = 1.2;
 const LEAN_REACH = 1.5;
 const SHORTEST_STRIDE = 0.5;
@@ -222,7 +223,6 @@ export class AnimalView {
     this.#bounds.center.set(x, y + ANIMAL_BOUNDING_LIFT, z);
 
     const distance = input.camera.position.distanceTo(this.#bounds.center);
-
     const level = detailLevel(distance, LEVEL_DISTANCES, input.detail);
 
     this.#mark(input, offset, this.#markerAnchor.set(x, y + MARKER_LIFT, z));
@@ -232,7 +232,6 @@ export class AnimalView {
     }
 
     const visual = this.#visualFor(animals, offset);
-
     const kindView = this.#kinds[visual.kind];
 
     animateAnimal(input, visual, kindView, offset);
@@ -261,7 +260,6 @@ export class AnimalView {
 
     const style = ANIMAL_MARKERS[ANIMAL_KINDS[animals[offset + AnimalField.Kind]]];
     const isSelected = animals[offset + AnimalField.Id] === this.#selectedId;
-
     const handover = farthestFigure(LEVEL_DISTANCES, input.detail);
 
     input.markers.add(anchor, style, handover, isSelected, animals[offset + AnimalField.HerdId]);
@@ -308,7 +306,6 @@ export class AnimalView {
 
     const kind = ANIMAL_KINDS[animals[offset + AnimalField.Kind]];
     const seed = animals[offset + AnimalField.AppearanceSeed];
-
     const appearance = animalAppearance({ kind, seed, youth });
 
     const visual: AnimalVisual = {

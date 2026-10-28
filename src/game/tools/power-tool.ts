@@ -3,6 +3,10 @@ import { type ParameterValueMap, POWERS, type PowerId } from "../../content/powe
 import type { SimulationCommand } from "../../simulation/commands.ts";
 import type { ToolGestures } from "../input/pointer-controls.ts";
 
+const MARKER_RADIUS = 12;
+const RADIUS_PARAMETERS = ["radius", "craterRadius"] as const;
+const SCATTER_PARAMETER = "scatter";
+
 export interface PowerSelection {
   readonly parameters: ParameterValueMap;
   readonly powerId: PowerId;
@@ -16,10 +20,6 @@ interface BrushCursor {
 type CommandSink = (command: SimulationCommand) => void;
 
 type StrokeState = "idle" | "stroking";
-
-const MARKER_RADIUS = 12;
-const RADIUS_PARAMETERS = ["radius", "craterRadius"] as const;
-const SCATTER_PARAMETER = "scatter";
 
 function numberParameter(parameters: ParameterValueMap, name: string): number | null {
   const value = parameters[name];

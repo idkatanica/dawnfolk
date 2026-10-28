@@ -1,21 +1,6 @@
 import { type PerspectiveCamera, Vector3 } from "three/webgpu";
 import { clamp, wrapAngle } from "../../shared/math.ts";
 
-export interface CameraState {
-  readonly distance: number;
-  readonly pitch: number;
-  readonly targetX: number;
-  readonly targetZ: number;
-  readonly yaw: number;
-}
-
-export interface GroundPoint {
-  readonly x: number;
-  readonly z: number;
-}
-
-type HeightProbe = (x: number, z: number) => number;
-
 const MAXIMUM_DISTANCE_IN_HALF_SIZES = 3.5;
 const MAXIMUM_PITCH = 1.48;
 const MINIMUM_DISTANCE = 4;
@@ -30,13 +15,17 @@ const SCREEN_CORNERS = [
   [-1, 1],
 ] as const;
 
-function groundPointAlong(origin: Vector3, direction: Vector3, level: number, reach: number): GroundPoint {
-  const horizontal = Math.max(1e-6, Math.hypot(direction.x, direction.z));
+export interface CameraState {
+  readonly distance: number;
+  readonly pitch: number;
+  readonly targetX: number;
+  readonly targetZ: number;
+  readonly yaw: number;
+}
 
-  const travel = direction.y < 0 ? (level - origin.y) / direction.y : Number.POSITIVE_INFINITY;
-  const distance = travel > 0 ? Math.min(reach, travel * horizontal) : reach;
-
-  return { x: origin.x + (direction.x / horizontal) * distance, z: origin.z + (direction.z / horizontal) * distance };
+export interface GroundPoint {
+  readonly x: number;
+  readonly z: number;
 }
 
 interface MutableCameraState {
@@ -45,6 +34,17 @@ interface MutableCameraState {
   targetX: number;
   targetZ: number;
   yaw: number;
+}
+
+type HeightProbe = (x: number, z: number) => number;
+
+function groundPointAlong(origin: Vector3, direction: Vector3, level: number, reach: number): GroundPoint {
+  const horizontal = Math.max(1e-6, Math.hypot(direction.x, direction.z));
+
+  const travel = direction.y < 0 ? (level - origin.y) / direction.y : Number.POSITIVE_INFINITY;
+  const distance = travel > 0 ? Math.min(reach, travel * horizontal) : reach;
+
+  return { x: origin.x + (direction.x / horizontal) * distance, z: origin.z + (direction.z / horizontal) * distance };
 }
 
 export class GodCamera {

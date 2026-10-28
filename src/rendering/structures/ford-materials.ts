@@ -27,14 +27,14 @@ import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { fordBedColorNode } from "../water/ford-field.ts";
 import type { BarPoint } from "./ford-layout.ts";
 
-const FOAM_LIFT = 0.03;
-const FOAM_REACH = 1.7;
-const FOAM_FAR = 220;
-
 export const FOAM_FIELDS = [
   { name: "foamPlacement", size: 4 },
   { name: "foamShape", size: 4 },
 ] as const;
+
+const FOAM_LIFT = 0.03;
+const FOAM_REACH = 1.7;
+const FOAM_FAR = 220;
 
 export function createFoamMaterial(): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ depthWrite: false, transparent: true });
@@ -75,6 +75,7 @@ export function createFoamMaterial(): MeshStandardNodeMaterial {
 
     return amount;
   })();
+
   const fade = smoothstep(FOAM_FAR, FOAM_FAR * 0.5, distance(positionWorld, cameraPosition));
 
   material.colorNode = vec3(0.9, 0.94, 0.95);
@@ -102,7 +103,7 @@ export function createBarMaterial(textures: TerrainTextures, mirror: WorldMirror
   return material;
 }
 
-export function fordBarGeometry(bars: readonly (readonly (readonly BarPoint[])[])[]): BufferGeometry {
+export function createBarGeometry(bars: readonly (readonly (readonly BarPoint[])[])[]): BufferGeometry {
   const positions: number[] = [];
   const grounding: number[] = [];
   const waterLevels: number[] = [];

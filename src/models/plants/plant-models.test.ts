@@ -19,9 +19,9 @@ import { FOLIAGE_FLUTTER, type PlantDetailLevel, plantSway } from "./tree-mesher
 const RADIUS_TOLERANCE = 0.2;
 const STORM_PUSH = 2;
 const GROUND_LEVEL = 0.05;
-
 const SPECIES: readonly PlantSpeciesIndex[] = PLANT_SPECIES.map((definition) => definition.index);
 const FOLIAGE_SLOTS: ReadonlySet<number> = new Set([MaterialSlot.Leaf, MaterialSlot.Needle]);
+
 const TREES = [
   PlantSpecies.Acacia,
   PlantSpecies.Birch,
@@ -33,7 +33,9 @@ const TREES = [
   PlantSpecies.Spruce,
   PlantSpecies.Willow,
 ];
+
 const MIXED_FORMS: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DeadTree]);
+
 const LYING_FORMS: ReadonlySet<PlantSpeciesIndex> = new Set(
   PLANT_SPECIES.filter((definition) => definition.form === "monument").map((definition) => definition.index)
 );

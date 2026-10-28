@@ -14,6 +14,11 @@ import {
   toVector,
 } from "./tree-structure.ts";
 
+export const BLOB_TINT = 0.12;
+
+const ROOT_DEPTH = 0.3;
+const ROOT_FLARE = 1.35;
+
 export interface Growth {
   readonly branches: Branch[];
   readonly foliage: Foliage[];
@@ -22,8 +27,8 @@ export interface Growth {
 }
 
 export interface TrunkOptions {
-  readonly forks: boolean;
   readonly height: number;
+  readonly isForked: boolean;
   readonly lean: number;
   readonly radiusBottom: number;
   readonly radiusTop: number;
@@ -41,10 +46,6 @@ export interface LimbOptions {
   readonly tilt: number;
   readonly wobble: number;
 }
-
-const ROOT_DEPTH = 0.3;
-const ROOT_FLARE = 1.35;
-export const BLOB_TINT = 0.12;
 
 export function createGrowth(seed: number): Growth {
   const random = createRandom(seed);
@@ -83,7 +84,7 @@ export function addTrunk(growth: Growth, options: TrunkOptions, start = new Vect
 
   const flared = points.map((point, index) => (index === 0 ? { ...point, radius: point.radius * ROOT_FLARE } : point));
 
-  growth.branches.push({ depth: 0, forks: options.forks, points: rooted(flared) });
+  growth.branches.push({ depth: 0, isForked: options.isForked, points: rooted(flared) });
 
   return flared;
 }

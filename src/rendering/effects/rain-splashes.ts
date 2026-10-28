@@ -95,7 +95,6 @@ function createSplashGeometry(): InstancedBufferGeometry {
 function ripple(shape: Node<"vec2">, age: Node<"float">): Node<"float"> {
   const rim = length(shape);
   const leading = mix(float(0.12), float(1), sqrt(age));
-
   const width = max(fwidth(rim).mul(1.3), 0.05);
   const trailing = leading.sub(RIPPLE_GAP);
 
@@ -116,7 +115,6 @@ function crown(shape: Node<"vec2">, age: Node<"float">): Node<"float"> {
 
   for (let droplet = 0; droplet < CROWN_DROPLETS; droplet += 1) {
     const angle = (droplet - (CROWN_DROPLETS - 1) / 2) * CROWN_FAN;
-
     const center = vec2(
       flight.mul(0.75).add(0.2).mul(Math.sin(angle)),
       flight.mul(1.9).sub(flight.mul(flight).mul(1.5)).mul(Math.cos(angle)).add(0.06)
@@ -147,14 +145,11 @@ export class RainSplashes {
     const last = grid.cellsPerSide - 1;
 
     const element = latticeElement(this.#cover, uint(SALT_SPLASH));
-
     const { age, spread } = cycleOf(element, this.#clock, CYCLE_SALTS);
-
     const spot = element.tile.add(spread).mul(TILE_SIZE);
 
     const cell = ivec2(clamp(floor(spot.add(grid.halfSize).div(grid.cellSize)), vec2(0, 0), vec2(last, last)));
     const ground = sampleHeightNode(textures.height, grid, spot);
-
     const water = textureLoad(textures.water, cell).x;
     const snow = textureLoad(textures.surface, cell).r;
 
@@ -180,7 +175,6 @@ export class RainSplashes {
 
     const extent = select(visibility.greaterThan(FAINTEST_SPLASH), float(1), float(0));
     const anchor = vec3(spot.x, level.add(lift), spot.y);
-
     const flat = vec3(corner.x, 0, corner.y).mul(rippleSize);
     const standing = axes.right
       .mul(corner.x)
@@ -213,7 +207,6 @@ export class RainSplashes {
   update(strength: number, brightness: number, view: SplashView): void {
     const nearness = 1 - saturate((view.viewDistance - CLOSEST_VIEW) / (FARTHEST_VIEW - CLOSEST_VIEW));
     const span = clampNumber(view.viewDistance * SPAN_PER_DISTANCE, NEAREST_SPAN, FARTHEST_SPAN);
-
     const crowding = Math.min(MOST_PER_TILE, (SPLASHES_IN_VIEW * TILE_SIZE * TILE_SIZE) / (span * span));
     const area = { centerX: view.focusX, centerZ: view.focusZ, halfSize: this.#halfSize, radius: span / 2 };
 

@@ -1,10 +1,11 @@
 import { BufferGeometry, Float32BufferAttribute, Uint32BufferAttribute } from "three/webgpu";
 
 export const PATCH_CELLS = 64;
-
 export const PATCH_STEPS = [1, 2, 4, 8] as const;
-
 export const PATCH_LEVEL_DISTANCES: readonly number[] = [650, 1400, 2700];
+
+const COLUMN_AXIS = 0;
+const ROW_AXIS = 1;
 
 export type PatchStep = (typeof PATCH_STEPS)[number];
 
@@ -19,10 +20,7 @@ interface GridVertexWriter {
 
 type BorderPoint = readonly [column: number, row: number, axis: number];
 
-const COLUMN_AXIS = 0;
-const ROW_AXIS = 1;
-
-function vertexIndex(
+function addVertex(
   writer: GridVertexWriter,
   column: number,
   row: number,
@@ -81,8 +79,8 @@ function addSkirts(writer: GridVertexWriter, indices: number[], cells: number, s
 
     const top = (startRow / step) * side + startColumn / step;
     const nextTop = (endRow / step) * side + endColumn / step;
-    const bottom = vertexIndex(writer, startColumn, startRow, step, axis);
-    const nextBottom = vertexIndex(writer, endColumn, endRow, step, axis);
+    const bottom = addVertex(writer, startColumn, startRow, step, axis);
+    const nextBottom = addVertex(writer, endColumn, endRow, step, axis);
 
     indices.push(top, bottom, nextTop, nextTop, bottom, nextBottom);
     indices.push(top, nextTop, bottom, nextTop, nextBottom, bottom);
@@ -93,24 +91,21 @@ export function createPatchGeometry(cells: number, step: PatchStep, edges: Patch
   const writer: GridVertexWriter = { axes: [], cells: [], centers: [], skirts: [] };
   const indices: number[] = [];
   const steps = cells / step;
-
   const side = steps + 1;
 
   for (let row = 0; row <= steps; row += 1) {
     for (let column = 0; column <= steps; column += 1) {
-      vertexIndex(writer, column * step, row * step, 0, COLUMN_AXIS);
+      addVertex(writer, column * step, row * step, 0, COLUMN_AXIS);
     }
   }
 
   for (let row = 0; row < steps; row += 1) {
     for (let column = 0; column < steps; column += 1) {
       const first = row * side + column;
-
       const right = first + 1;
       const below = first + side;
-
       const diagonal = below + 1;
-      const center = vertexIndex(writer, column * step, row * step, 0, COLUMN_AXIS, 1);
+      const center = addVertex(writer, column * step, row * step, 0, COLUMN_AXIS, 1);
 
       indices.push(first, center, right, first, below, center, below, diagonal, center, right, center, diagonal);
     }

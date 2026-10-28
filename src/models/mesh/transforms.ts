@@ -1,5 +1,9 @@
 import { Euler, Matrix4, Quaternion, Vector3 } from "three";
 
+export const MIRROR_X = new Matrix4().makeScale(-1, 1, 1);
+
+const UP = new Vector3(0, 1, 0);
+
 export type Triple = readonly [number, number, number];
 
 export interface TransformOptions {
@@ -7,8 +11,6 @@ export interface TransformOptions {
   readonly rotation?: Triple;
   readonly scale?: number | Triple;
 }
-
-const UP = new Vector3(0, 1, 0);
 
 function scaleVector(scale: number | Triple): Vector3 {
   if (typeof scale === "number") {
@@ -43,8 +45,6 @@ export function segmentLength(start: Triple, end: Triple): number {
 export function combine(...transforms: readonly Matrix4[]): Matrix4 {
   return transforms.reduce((combined, transform) => combined.multiply(transform), new Matrix4());
 }
-
-export const MIRROR_X = new Matrix4().makeScale(-1, 1, 1);
 
 export function sideMirror(side: -1 | 1): Matrix4 {
   if (side === 1) {

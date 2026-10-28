@@ -99,10 +99,6 @@ interface FieldEdge {
   readonly to: readonly [number, number];
 }
 
-function hasEdge(edges: readonly FieldEdge[], column: number, row: number): boolean {
-  return edges.some((side) => side.column === column && side.row === row);
-}
-
 interface PlantRows {
   readonly axis: number;
   readonly column: number;
@@ -110,6 +106,10 @@ interface PlantRows {
   readonly growth: number;
   readonly kind: CropKind;
   readonly row: number;
+}
+
+function hasEdge(edges: readonly FieldEdge[], column: number, row: number): boolean {
+  return edges.some((edge) => edge.column === column && edge.row === row);
 }
 
 function createCropMaterial(weather: PlantWeather): MeshStandardNodeMaterial {
@@ -342,7 +342,7 @@ export class CropField {
     const edges = this.#edges(column, row);
     const axis = this.#plan.axisAt(cell);
     const growth = this.#groundAt(column, row, GroundChannel.Crop);
-    const layout = `${code}:${axis}:${edges.map((side) => `${side.column},${side.row}`).join(";")}`;
+    const layout = `${code}:${axis}:${edges.map((edge) => `${edge.column},${edge.row}`).join(";")}`;
 
     const existing = this.#cells.get(cell);
 
@@ -394,7 +394,7 @@ export class CropField {
       { column: column + 1, from: [east, north], row, to: [east, south] },
     ];
 
-    return candidates.filter((side) => !this.#isFarm(side.column, side.row));
+    return candidates.filter((edge) => !this.#isFarm(edge.column, edge.row));
   }
 
   #buildCell(
@@ -475,8 +475,8 @@ export class CropField {
     return data;
   }
 
-  #fenceInstances(sides: readonly FieldEdge[]): Float32Array {
-    return new Float32Array(sides.flatMap((side) => this.#segment(...side.from, ...side.to)));
+  #fenceInstances(edges: readonly FieldEdge[]): Float32Array {
+    return new Float32Array(edges.flatMap((edge) => this.#segment(...edge.from, ...edge.to)));
   }
 
   #segment(fromX: number, fromZ: number, toX: number, toZ: number): number[] {

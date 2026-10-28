@@ -63,7 +63,7 @@ import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { assignSphereLevels, HIDDEN_LEVEL } from "../view-input.ts";
 import { sampleWaterSurface } from "../water/water-surface.ts";
 import { type BarPoint, type FordStone, layFord } from "./ford-layout.ts";
-import { createBarMaterial, createFoamMaterial, FOAM_FIELDS, fordBarGeometry } from "./ford-materials.ts";
+import { createBarGeometry, createBarMaterial, createFoamMaterial, FOAM_FIELDS } from "./ford-materials.ts";
 
 const LEVEL_DISTANCES: readonly number[] = [150, 650, 3600];
 const SHADOW_LEVEL_COUNT = 2;
@@ -92,6 +92,11 @@ interface PlacedPiece {
   readonly batch: number;
   readonly data: readonly number[];
   readonly isFine: boolean;
+}
+
+interface FordFlow {
+  readonly angle: number;
+  readonly strength: number;
 }
 
 interface PlacedCrossing {
@@ -137,11 +142,9 @@ function createCrossingMaterial(textures: TerrainTextures, mirror: WorldMirror):
   const wetness = smoothstep(-0.08, 0.2, belowWater);
   const murk = smoothstep(0, MURK_DEPTH, belowWater).mul(MURKIEST);
   const snowOnTop = snow.mul(smoothstep(0.3, 0.8, normalWorld.y)).mul(float(1).sub(wetness));
-
   const drowned = mix(float(1), float(DROWNED_SHADE), smoothstep(0.05, 0.7, belowWater));
 
   const wet = mix(mix(base, base.mul(WET_STONE), wetness).mul(drowned), RIVERBED, murk);
-
   const waterline = smoothstep(0.1, 0.02, abs(positionWorld.y.sub(look.x))).mul(0.5);
 
   material.colorNode = mix(mix(wet, WATERLINE_FOAM, waterline), SNOW, snowOnTop);
@@ -150,7 +153,7 @@ function createCrossingMaterial(textures: TerrainTextures, mirror: WorldMirror):
   return material;
 }
 
-function flowAngleOf(ford: Ford, mirror: WorldMirror): { angle: number; strength: number } {
+function fordFlowOf(ford: Ford, mirror: WorldMirror): FordFlow {
   const middle = crossingLength(ford) / 2;
   const upstream = pointOnCrossing(ford, middle, -FLOW_PROBE);
   const downstream = pointOnCrossing(ford, middle, FLOW_PROBE);
@@ -165,7 +168,6 @@ function flowAngleOf(ford: Ford, mirror: WorldMirror): { angle: number; strength
 
 function logPiece(bridge: LogBridge): PlacedPiece {
   const log = fallenLog(bridge);
-
   const horizontal = Math.hypot(log.tipX - log.rootX, log.tipZ - log.rootZ);
   const rise = log.tipBottom - log.rootBottom;
   const variant = fallenLogVariant(horizontal, bridge.seed);
@@ -188,6 +190,49 @@ function logPiece(bridge: LogBridge): PlacedPiece {
       0,
     ],
     isFine: false,
+  };
+}
+
+function stonePiece(stone: FordStone): PlacedPiece {
+  const width = (stone.radius * 2) / STONE_WIDTH;
+  const isPebble = stone.kind === "pebble";
+
+  return {
+    batch: isPebble ? PEBBLE_BATCH + stone.variant : stone.variant,
+    data: [
+      stone.x,
+      stone.bottom,
+      stone.z,
+      stone.rotation,
+      width,
+      (stone.top - stone.bottom) / STEPPING_STONE_HEIGHT,
+      width,
+      0,
+      stone.waterLevel,
+      0.86 + 0.28 * fractionalPart(stone.rotation * 7.3),
+      stone.isGrounded ? 1 : 0,
+      0,
+    ],
+    isFine: isPebble,
+  };
+}
+
+function foamPiece(stone: FordStone, flow: FordFlow): PlacedPiece {
+  const above = smoothstepNumber(-FOAM_ABOVE, 0.05, stone.top - stone.waterLevel);
+
+  return {
+    batch: FOAM_BATCH,
+    data: [
+      stone.x,
+      stone.waterLevel,
+      stone.z,
+      flow.angle,
+      stone.radius,
+      stone.radius * FOAM_WAKE * flow.strength,
+      fractionalPart(stone.rotation * 3.1) * 40,
+      0.35 + 0.65 * above,
+    ],
+    isFine: true,
   };
 }
 
@@ -236,7 +281,7 @@ export class CrossingView {
     this.#isDirty = true;
 
     this.#bar.geometry.dispose();
-    this.#bar.geometry = fordBarGeometry(this.#placed.map((placed) => placed.bar).filter((bar) => bar.length > 1));
+    this.#bar.geometry = createBarGeometry(this.#placed.map((placed) => placed.bar).filter((bar) => bar.length > 1));
   }
 
   update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
@@ -303,7 +348,6 @@ export class CrossingView {
 
     const middleX = (crossing.startX + crossing.endX) / 2;
     const middleZ = (crossing.startZ + crossing.endZ) / 2;
-
     const bounds = new Sphere(
       new Vector3(middleX, this.#mirror.heightAt(middleX, middleZ), middleZ),
       crossingLength(crossing) / 2 + 4
@@ -315,7 +359,7 @@ export class CrossingView {
   #fordOf(ford: Ford): { bar: readonly (readonly BarPoint[])[]; pieces: PlacedPiece[] } {
     const mirror = this.#mirror;
     const textures = this.#textures;
-    const flow = flowAngleOf(ford, mirror);
+    const flow = fordFlowOf(ford, mirror);
 
     const { bar, stones } = layFord(ford, {
       heightAt: (x, z) => mirror.heightAt(x, z),
@@ -327,51 +371,8 @@ export class CrossingView {
     const foam = stones
       .filter((stone) => (stone.kind === "step" || stone.kind === "boulder") && stone.waterLevel !== NO_WATER)
       .filter((stone) => stone.top > stone.waterLevel - FOAM_ABOVE)
-      .map((stone) => foamOf(stone, flow));
+      .map((stone) => foamPiece(stone, flow));
 
     return { bar, pieces: [...stones.map(stonePiece), ...foam] };
   }
-}
-
-function stonePiece(stone: FordStone): PlacedPiece {
-  const width = (stone.radius * 2) / STONE_WIDTH;
-  const isPebble = stone.kind === "pebble";
-
-  return {
-    batch: isPebble ? PEBBLE_BATCH + stone.variant : stone.variant,
-    data: [
-      stone.x,
-      stone.bottom,
-      stone.z,
-      stone.rotation,
-      width,
-      (stone.top - stone.bottom) / STEPPING_STONE_HEIGHT,
-      width,
-      0,
-      stone.waterLevel,
-      0.86 + 0.28 * fractionalPart(stone.rotation * 7.3),
-      stone.isGrounded ? 1 : 0,
-      0,
-    ],
-    isFine: isPebble,
-  };
-}
-
-function foamOf(stone: FordStone, flow: { angle: number; strength: number }): PlacedPiece {
-  const above = smoothstepNumber(-FOAM_ABOVE, 0.05, stone.top - stone.waterLevel);
-
-  return {
-    batch: FOAM_BATCH,
-    data: [
-      stone.x,
-      stone.waterLevel,
-      stone.z,
-      flow.angle,
-      stone.radius,
-      stone.radius * FOAM_WAKE * flow.strength,
-      fractionalPart(stone.rotation * 3.1) * 40,
-      0.35 + 0.65 * above,
-    ],
-    isFine: true,
-  };
 }

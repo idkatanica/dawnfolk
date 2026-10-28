@@ -5,6 +5,13 @@ import type { Monument } from "../world/monuments.ts";
 import type { Lake } from "../world/water.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 
+const LANDMARK_STREAM = 31;
+const NAMED_LAKES = 3;
+const SMALLEST_NAMED_LAKE = 60;
+const PEAK_LIFT = 30;
+const LAKE_LIFT = 4;
+const MONUMENT_LIFT = 9;
+
 type LandmarkKind = "lake" | "monument" | "peak";
 
 export interface Landmark {
@@ -24,13 +31,6 @@ export interface LandmarkSource {
   readonly monuments: readonly Monument[];
   readonly seed: number;
 }
-
-const LANDMARK_STREAM = 31;
-const NAMED_LAKES = 3;
-const SMALLEST_NAMED_LAKE = 60;
-const PEAK_LIFT = 30;
-const LAKE_LIFT = 4;
-const MONUMENT_LIFT = 9;
 
 function highestCell(heights: Float32Array): number {
   let highest = 0;

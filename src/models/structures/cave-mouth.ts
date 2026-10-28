@@ -6,6 +6,22 @@ import type { MeshData } from "../mesh/mesh-data.ts";
 import { facetShape, type Shape } from "../mesh/shape.ts";
 import { groundShade, weatheredSlot } from "../stones.ts";
 
+const HEIGHT_SHARE = [0.66, 0.78] as const;
+const ARCH_SEGMENTS = 9;
+const LEG_SEGMENTS = 2;
+const SILL_DEPTH = 0.6;
+const SHOULDER_SHARE = 0.85;
+const LOWEST_CROWN = 2.4;
+const HIGHEST_CROWN = 9;
+const INSIDE_DEPTH_SHARE = 0.55;
+const INSIDE_NARROWING = 0.18;
+const INSIDE_RINGS = 3;
+const BACK_WALL_SINK = 0.8;
+const BURIED_Z = -12.5;
+const BRIGHTEST_INSIDE = 0.6;
+const DARKEST_INSIDE = 0.16;
+const LIP_Z = 0.35;
+
 export interface CaveLook {
   readonly base: MaterialSlotIndex;
   readonly frost: number;
@@ -47,22 +63,6 @@ interface FaceRing {
   readonly z: number;
 }
 
-const HEIGHT_SHARE = [0.66, 0.78] as const;
-const ARCH_SEGMENTS = 9;
-const LEG_SEGMENTS = 2;
-const SILL_DEPTH = 0.6;
-const SHOULDER_SHARE = 0.85;
-const LOWEST_CROWN = 2.4;
-const HIGHEST_CROWN = 9;
-const INSIDE_DEPTH_SHARE = 0.55;
-const INSIDE_NARROWING = 0.18;
-const INSIDE_RINGS = 3;
-const BACK_WALL_SINK = 0.8;
-const BURIED_Z = -12.5;
-const BRIGHTEST_INSIDE = 0.6;
-const DARKEST_INSIDE = 0.16;
-
-const LIP_Z = 0.35;
 const FACE_RINGS: readonly Omit<FaceRing, "drop">[] = [
   { jitter: 0.1, offset: 0, z: LIP_Z },
   { jitter: 0.3, offset: 0.14, z: 0.55 },
@@ -130,52 +130,52 @@ class ShapeWriter {
   readonly #indices: number[] = [];
   readonly #positions: number[] = [];
 
-  point(point: Point): number {
+  addPoint(point: Point): number {
     this.#positions.push(point.x, point.y, point.z);
 
     return this.#positions.length / 3 - 1;
   }
 
-  ring(points: readonly Point[]): number[] {
-    return points.map((point) => this.point(point));
+  addRing(points: readonly Point[]): number[] {
+    return points.map((point) => this.addPoint(point));
   }
 
-  triangle(first: number, second: number, third: number): void {
+  addTriangle(first: number, second: number, third: number): void {
     this.#indices.push(first, second, third);
   }
 
-  band(inner: readonly number[], outer: readonly number[], facesOut: boolean): void {
+  addBand(inner: readonly number[], outer: readonly number[], facesOut: boolean): void {
     for (let index = 0; index < inner.length - 1; index += 1) {
       const corners = [inner[index], inner[index + 1], outer[index + 1], outer[index]];
 
       if (facesOut) {
-        this.triangle(corners[0], corners[1], corners[2]);
-        this.triangle(corners[0], corners[2], corners[3]);
+        this.addTriangle(corners[0], corners[1], corners[2]);
+        this.addTriangle(corners[0], corners[2], corners[3]);
 
         continue;
       }
 
-      this.triangle(corners[0], corners[2], corners[1]);
-      this.triangle(corners[0], corners[3], corners[2]);
+      this.addTriangle(corners[0], corners[2], corners[1]);
+      this.addTriangle(corners[0], corners[3], corners[2]);
     }
   }
 
-  fan(center: number, ring: readonly number[], facesFront: boolean): void {
+  addFan(center: number, ring: readonly number[], facesFront: boolean): void {
     for (let index = 0; index < ring.length; index += 1) {
       const current = ring[index];
       const next = ring[(index + 1) % ring.length];
 
       if (facesFront) {
-        this.triangle(center, next, current);
+        this.addTriangle(center, next, current);
 
         continue;
       }
 
-      this.triangle(center, current, next);
+      this.addTriangle(center, current, next);
     }
   }
 
-  shape(): Shape {
+  build(): Shape {
     const positions = Float32Array.from(this.#positions);
     const count = positions.length / 3;
 
@@ -197,7 +197,7 @@ function outcropShape(opening: Opening, options: CaveMouthOptions, random: Rando
   const lowest = Math.max(options.bury, SILL_DEPTH + 1);
 
   const face = FACE_RINGS.map((ring, index) =>
-    writer.ring(
+    writer.addRing(
       faceRing(
         opening,
         { ...ring, drop: lerp(0, lowest - SILL_DEPTH, index / (FACE_RINGS.length - 1)) },
@@ -210,30 +210,30 @@ function outcropShape(opening: Opening, options: CaveMouthOptions, random: Rando
   let [outermost] = face;
 
   for (const ring of face.slice(1)) {
-    writer.band(outermost, ring, true);
+    writer.addBand(outermost, ring, true);
     outermost = ring;
   }
 
   let [innermost] = face;
 
   for (let step = 1; step <= INSIDE_RINGS; step += 1) {
-    const ring = writer.ring(insideRing(opening, step, random));
+    const ring = writer.addRing(insideRing(opening, step, random));
 
-    writer.band(innermost, ring, false);
+    writer.addBand(innermost, ring, false);
     innermost = ring;
   }
 
-  const backWall = writer.point({
+  const backWall = writer.addPoint({
     x: random.signed() * 0.3,
     y: (opening.height - SILL_DEPTH) * 0.4,
     z: LIP_Z - opening.depth - BACK_WALL_SINK,
   });
-  const buried = writer.point({ x: 0, y: -lowest, z: BURIED_Z });
+  const buried = writer.addPoint({ x: 0, y: -lowest, z: BURIED_Z });
 
-  writer.fan(backWall, innermost, true);
-  writer.fan(buried, outermost, false);
+  writer.addFan(backWall, innermost, true);
+  writer.addFan(buried, outermost, false);
 
-  return writer.shape();
+  return writer.build();
 }
 
 function caveShade(opening: Opening): (point: SurfacePoint) => number {

@@ -13,6 +13,25 @@ const TORSO_CHAIN = createChain(
   ]
 );
 
+export const TORSO_STYLE: VertexStyle = chainStyle(TORSO_CHAIN);
+
+export const FLEXIBLE_TORSO_STYLE: VertexStyle = {
+  boneA: (point) => torsoBlend(point).boneA,
+  boneB: (point) => torsoBlend(point).boneB,
+  boneWeight: (point) => torsoBlend(point).weight,
+};
+
+const SKIRT_BACK_FOLLOW = 0.4;
+const SKIRT_SPLIT_START = 0.01;
+const SKIRT_SPLIT_END = 0.09;
+const ARM_CHAINS = { left: armChain(1), right: armChain(-1) };
+const LEG_CHAINS = { left: legChain(1), right: legChain(-1) };
+
+interface TorsoInfluence {
+  readonly bone: number;
+  readonly weight: number;
+}
+
 function armChain(side: Side): WeightChain {
   const bones = sideBones(side);
 
@@ -39,9 +58,6 @@ function legChain(side: Side): WeightChain {
   );
 }
 
-const ARM_CHAINS = { left: armChain(1), right: armChain(-1) };
-const LEG_CHAINS = { left: legChain(1), right: legChain(-1) };
-
 export function armStyle(side: Side): VertexStyle {
   return chainStyle(side === 1 ? ARM_CHAINS.left : ARM_CHAINS.right);
 }
@@ -50,15 +66,8 @@ export function legStyle(side: Side): VertexStyle {
   return chainStyle(side === 1 ? LEG_CHAINS.left : LEG_CHAINS.right);
 }
 
-export const TORSO_STYLE: VertexStyle = chainStyle(TORSO_CHAIN);
-
 function sideOf(point: SurfacePoint): Side {
   return point.position.x >= 0 ? 1 : -1;
-}
-
-interface TorsoInfluence {
-  readonly bone: number;
-  readonly weight: number;
 }
 
 function limbInfluence(point: SurfacePoint): TorsoInfluence {
@@ -88,16 +97,6 @@ function torsoBlend(point: SurfacePoint): BoneBlend {
 
   return { boneA: chain.boneA, boneB: influence.bone, weight: influence.weight };
 }
-
-export const FLEXIBLE_TORSO_STYLE: VertexStyle = {
-  boneA: (point) => torsoBlend(point).boneA,
-  boneB: (point) => torsoBlend(point).boneB,
-  boneWeight: (point) => torsoBlend(point).weight,
-};
-
-const SKIRT_BACK_FOLLOW = 0.4;
-const SKIRT_SPLIT_START = 0.01;
-const SKIRT_SPLIT_END = 0.09;
 
 export function skirtStyle(followsLegs: number, hipLine: number, hemLine: number): VertexStyle {
   return {

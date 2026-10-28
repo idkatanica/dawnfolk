@@ -22,14 +22,86 @@ import {
 } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
-import { longhouse, stoneHouse } from "./era-dwellings.ts";
-import { forge, granary, kiln, smelter, workshop } from "./era-workplaces.ts";
-import { GLOW_PART, rising, type StructureContext, type StructureLevel, scaledMesh } from "./structure-parts.ts";
+import { addLonghouse, addStoneHouse } from "./era-dwellings.ts";
+import { addForge, addGranary, addKiln, addSmelter, addWorkshop } from "./era-workplaces.ts";
+import {
+  detail,
+  GLOW_PART,
+  isDetailed,
+  rising,
+  type StructureContext,
+  type StructureLevel,
+  scaledMesh,
+} from "./structure-parts.ts";
+
+export const SINGLE_MODEL_KINDS: readonly SingleModelKind[] = BUILDING_KINDS.filter(hasSingleModel);
 
 const STRUCTURE_NOISE = createVolumeNoise(createRandom(3131));
+const TENT_HEIGHT = 2.9;
+const TENT_BASE_RADIUS = 1.62;
+const TENT_TOP_RADIUS = 0.04;
+const TENT_POLE_LIFT = 0.02;
+const TENT_POLE_OVERHANG = 0.6;
+const TENT_DOOR_ANGLE = Math.PI / 2;
+const TENT_DOOR_HALF_ANGLE = 0.27;
+const TENT_DOOR_HEIGHT = 1.1;
+const TENT_DOOR_LIFT = 0.005;
+const TENT_DOOR_THICKNESS = 0.03;
+const HUT_RADIUS = 2.4;
+const HUT_SILL = 0.5;
+const HUT_DOOR_TOP = 1.5;
+const HUT_DOOR_HALF_WIDTH = 0.47;
+const HUT_POST_RADIUS = 0.06;
+const HUT_POST_SINK = 0.035;
+const STORE_WALL_TOP = 2.25;
+const STORE_HALF_WIDTH = 1.1;
+const STORE_HALF_DEPTH = 0.9;
+const GABLE_RISE = 0.74;
+const RIDGE_HEIGHT = 3.11;
+const GABLE_INSET = 0.004;
+const TOTEM_HEADS = 3;
+const TOTEM_HEAD_HEIGHT = 1.05;
+const TOTEM_BASE = 0.15;
+const TOTEM_NOSE_LENGTH = 0.26;
+const TOTEM_NOSE_DEPTH = 0.04;
+const TOTEM_NOSE_TILT = 0.25;
+const TOTEM_WAIST = 0.94;
+const TOTEM_TOP = TOTEM_BASE + TOTEM_HEADS * TOTEM_HEAD_HEIGHT;
+
+const BUILDING_SCALES: Readonly<Partial<Record<SingleModelKind, number>>> = {
+  campfire: 1.15,
+  hut: 1.4,
+  storehouse: 1.25,
+  tent: 1.55,
+  totem: 1.2,
+};
+
+const BUILDERS: Readonly<Record<SingleModelKind, (context: StructureContext) => void>> = {
+  campfire: addCampfire,
+  forge: addForge,
+  granary: addGranary,
+  hut: addHut,
+  kiln: addKiln,
+  longhouse: addLonghouse,
+  smelter: addSmelter,
+  stoneHouse: addStoneHouse,
+  storehouse: addStorehouse,
+  tent: addTent,
+  totem: addTotem,
+  workshop: addWorkshop,
+};
+
+export type SingleModelKind = Exclude<BuildingKind, "mine" | "palisade" | "stoneWall">;
+
+interface Flag {
+  readonly bottom: number;
+  readonly height: number;
+  readonly turn: number;
+  readonly width: number;
+}
 
 function addLog(context: StructureContext, start: Triple, end: Triple, radius: number, order: number): void {
-  const sides = context.level === "high" ? 6 : 4;
+  const sides = detail(context, 6, 4);
 
   context.builder.add(
     cylinder({
@@ -43,13 +115,6 @@ function addLog(context: StructureContext, start: Triple, end: Triple, radius: n
       transform: segmentTransform(start, end),
     }
   );
-}
-
-interface Flag {
-  readonly bottom: number;
-  readonly height: number;
-  readonly turn: number;
-  readonly width: number;
 }
 
 function addFlag(context: StructureContext, pole: Triple, flag: Flag): void {
@@ -71,7 +136,7 @@ function addStone(context: StructureContext, position: Triple, radius: number, o
 
   context.builder.add(
     blob({
-      detail: context.level === "high" ? 1 : 0,
+      detail: detail(context, 1, 0),
       noise: STRUCTURE_NOISE,
       offset: [x * 3.1, y * 2.3, z * 2.7],
       radius,
@@ -84,10 +149,10 @@ function addStone(context: StructureContext, position: Triple, radius: number, o
   );
 }
 
-function campfire(context: StructureContext): void {
-  const { builder, level, random } = context;
+function addCampfire(context: StructureContext): void {
+  const { builder, random } = context;
 
-  const stones = level === "high" ? 10 : 6;
+  const stones = detail(context, 10, 6);
 
   for (let stone = 0; stone < stones; stone += 1) {
     const angle = (stone / stones) * FULL_TURN + random.signed() * 0.15;
@@ -124,17 +189,6 @@ function campfire(context: StructureContext): void {
     transform: transformOf({ position: [0, 0.1, 0], scale: [1, 0.5, 1] }),
   });
 }
-
-const TENT_HEIGHT = 2.9;
-const TENT_BASE_RADIUS = 1.62;
-const TENT_TOP_RADIUS = 0.04;
-const TENT_POLE_LIFT = 0.02;
-const TENT_POLE_OVERHANG = 0.6;
-const TENT_DOOR_ANGLE = Math.PI / 2;
-const TENT_DOOR_HALF_ANGLE = 0.27;
-const TENT_DOOR_HEIGHT = 1.1;
-const TENT_DOOR_LIFT = 0.005;
-const TENT_DOOR_THICKNESS = 0.03;
 
 function tentRadius(height: number): number {
   return lerp(TENT_BASE_RADIUS, TENT_TOP_RADIUS, height / TENT_HEIGHT);
@@ -179,11 +233,20 @@ function addTentDoor(context: StructureContext, sides: number): void {
   );
 }
 
-function tent(context: StructureContext): void {
-  const { builder, level } = context;
+function tentSlot(point: SurfacePoint): MaterialSlotIndex {
+  const { x, y, z } = point.position;
 
-  const poles = level === "high" ? 7 : 4;
-  const rings = level === "high" ? 12 : 5;
+  const isBand = y > 0.6 && y < 0.85;
+  const isMark = y > 1.2 && y < 1.5 && fractionalPart(Math.atan2(z, x) / (Math.PI / 3)) < 0.3;
+
+  return isBand || isMark ? MaterialSlot.Accent : MaterialSlot.Hide;
+}
+
+function addTent(context: StructureContext): void {
+  const { builder } = context;
+
+  const poles = detail(context, 7, 4);
+  const rings = detail(context, 12, 5);
 
   const spacing = FULL_TURN / poles;
   const sides = poles * 2;
@@ -214,22 +277,6 @@ function tent(context: StructureContext): void {
   addTentDoor(context, sides);
 }
 
-function tentSlot(point: SurfacePoint): MaterialSlotIndex {
-  const { x, y, z } = point.position;
-
-  const isBand = y > 0.6 && y < 0.85;
-  const isMark = y > 1.2 && y < 1.5 && fractionalPart(Math.atan2(z, x) / (Math.PI / 3)) < 0.3;
-
-  return isBand || isMark ? MaterialSlot.Accent : MaterialSlot.Hide;
-}
-
-const HUT_RADIUS = 2.4;
-const HUT_SILL = 0.5;
-const HUT_DOOR_TOP = 1.5;
-const HUT_DOOR_HALF_WIDTH = 0.47;
-const HUT_POST_RADIUS = 0.06;
-const HUT_POST_SINK = 0.035;
-
 function wallRadiusAt(height: number): number {
   return HUT_RADIUS - 0.04 * saturate((height - 0.55) / 1.2);
 }
@@ -251,7 +298,7 @@ function addHutDoor(context: StructureContext): void {
 
   context.builder.add(
     panel({
-      angularSegments: context.level === "high" ? 4 : 2,
+      angularSegments: detail(context, 4, 2),
       endAngle: Math.PI / 2 + halfAngle,
       sections: [section(HUT_SILL), section(HUT_DOOR_TOP)],
       startAngle: Math.PI / 2 - halfAngle,
@@ -294,10 +341,10 @@ function thatchRing(radius: number, bottom: number, top: number, segments: numbe
   ];
 }
 
-function hut(context: StructureContext): void {
-  const { builder, level } = context;
+function addHut(context: StructureContext): void {
+  const { builder } = context;
 
-  const segments = level === "high" ? 18 : 8;
+  const segments = detail(context, 18, 8);
 
   builder.add(
     loft(
@@ -330,7 +377,7 @@ function hut(context: StructureContext): void {
     }
   );
 
-  const tiers = level === "high" ? 3 : 1;
+  const tiers = detail(context, 3, 1);
 
   for (let tier = 0; tier < tiers; tier += 1) {
     const bottom = 1.55 + tier * 0.55;
@@ -350,13 +397,6 @@ function hut(context: StructureContext): void {
   addLog(context, [0, 3.4, 0], [0, 4.2, 0], 0.03, 0.98);
 }
 
-const STORE_WALL_TOP = 2.25;
-const STORE_HALF_WIDTH = 1.1;
-const STORE_HALF_DEPTH = 0.9;
-const GABLE_RISE = 0.74;
-const RIDGE_HEIGHT = 3.11;
-const GABLE_INSET = 0.004;
-
 function gableShape(): Shape {
   const depth = STORE_HALF_DEPTH - GABLE_INSET;
   const end = { centerY: STORE_WALL_TOP, halfHeight: GABLE_RISE, halfWidth: STORE_HALF_WIDTH - GABLE_INSET };
@@ -374,7 +414,7 @@ function gableShape(): Shape {
   );
 }
 
-function storehouse(context: StructureContext): void {
+function addStorehouse(context: StructureContext): void {
   const { builder } = context;
 
   for (const [x, z] of [
@@ -441,7 +481,7 @@ function storehouse(context: StructureContext): void {
           { radius: 0.18, y: height },
           { radius: 0, y: height * 0.9 },
         ],
-        context.level === "high" ? 10 : 6
+        detail(context, 10, 6)
       ),
       { style: { buildOrder: 0.9, slot: MaterialSlot.Daub }, transform: transformOf({ position: [x, 0, z] }) }
     );
@@ -450,16 +490,6 @@ function storehouse(context: StructureContext): void {
   addFlag(context, [0, 0, 1.2], { bottom: 3.55, height: 0.4, turn: 0, width: 0.6 });
   addLog(context, [0, 3, 1.2], [0, 4, 1.2], 0.025, 0.99);
 }
-
-const TOTEM_HEADS = 3;
-const TOTEM_HEAD_HEIGHT = 1.05;
-const TOTEM_BASE = 0.15;
-const TOTEM_NOSE_LENGTH = 0.26;
-const TOTEM_NOSE_DEPTH = 0.04;
-const TOTEM_NOSE_TILT = 0.25;
-const TOTEM_WAIST = 0.94;
-
-const TOTEM_TOP = TOTEM_BASE + TOTEM_HEADS * TOTEM_HEAD_HEIGHT;
 
 function totemRadius(head: number): number {
   return 0.3 - head * 0.02;
@@ -544,7 +574,6 @@ function addTotemNose(context: StructureContext, head: Shape, bottom: number, or
   const axis = new Vector3(0, -Math.sin(TOTEM_NOSE_TILT), Math.cos(TOTEM_NOSE_TILT));
 
   const base = hit.point.clone().addScaledVector(axis, -TOTEM_NOSE_DEPTH);
-
   const tip = base.clone().add(axis);
 
   context.builder.add(cone(0.08, TOTEM_NOSE_LENGTH + TOTEM_NOSE_DEPTH, 5), {
@@ -553,10 +582,19 @@ function addTotemNose(context: StructureContext, head: Shape, bottom: number, or
   });
 }
 
-function totem(context: StructureContext): void {
-  const { builder, level } = context;
+function totemSlot(point: SurfacePoint, bottom: number): MaterialSlotIndex {
+  const relative = (point.position.y - bottom) / TOTEM_HEAD_HEIGHT;
 
-  const segments = level === "high" ? 12 : 6;
+  const isBand = relative > 0.08 && relative < 0.2;
+  const isEye = relative > 0.58 && relative < 0.74 && point.normal.z > 0.6 && Math.abs(point.position.x) > 0.05;
+
+  return isBand || isEye ? MaterialSlot.Accent : MaterialSlot.Wood;
+}
+
+function addTotem(context: StructureContext): void {
+  const { builder } = context;
+
+  const segments = detail(context, 12, 6);
 
   for (let stone = 0; stone < 5; stone += 1) {
     const angle = (stone / 5) * FULL_TURN;
@@ -581,7 +619,7 @@ function totem(context: StructureContext): void {
     const bottom = TOTEM_BASE + head * TOTEM_HEAD_HEIGHT;
     const order = headOrder(head);
 
-    if (level === "high") {
+    if (isDetailed(context)) {
       addTotemEyes(context, log, bottom, order + 0.05);
     }
 
@@ -599,45 +637,9 @@ function totem(context: StructureContext): void {
   }
 }
 
-function totemSlot(point: SurfacePoint, bottom: number): MaterialSlotIndex {
-  const relative = (point.position.y - bottom) / TOTEM_HEAD_HEIGHT;
-
-  const isBand = relative > 0.08 && relative < 0.2;
-  const isEye = relative > 0.58 && relative < 0.74 && point.normal.z > 0.6 && Math.abs(point.position.x) > 0.05;
-
-  return isBand || isEye ? MaterialSlot.Accent : MaterialSlot.Wood;
-}
-
-export type SingleModelKind = Exclude<BuildingKind, "mine" | "palisade" | "stoneWall">;
-
 function hasSingleModel(kind: BuildingKind): kind is SingleModelKind {
   return kind !== "mine" && kind !== "palisade" && kind !== "stoneWall";
 }
-
-export const SINGLE_MODEL_KINDS: readonly SingleModelKind[] = BUILDING_KINDS.filter(hasSingleModel);
-
-const BUILDERS: Readonly<Record<SingleModelKind, (context: StructureContext) => void>> = {
-  campfire,
-  forge,
-  granary,
-  hut,
-  kiln,
-  longhouse,
-  smelter,
-  stoneHouse,
-  storehouse,
-  tent,
-  totem,
-  workshop,
-};
-
-const BUILDING_SCALES: Readonly<Partial<Record<SingleModelKind, number>>> = {
-  campfire: 1.15,
-  hut: 1.4,
-  storehouse: 1.25,
-  tent: 1.55,
-  totem: 1.2,
-};
 
 export function buildingScale(kind: SingleModelKind): number {
   const scale = BUILDING_SCALES[kind];

@@ -91,7 +91,45 @@ export const HUMAN_PARTS = [
   "warPaint",
 ] as const;
 
+const ARMED_POSES: ReadonlySet<PersonPose> = new Set([
+  "block",
+  "brawl",
+  "charge",
+  "fall",
+  "flinch",
+  "idle",
+  "leap",
+  "march",
+  "run",
+  "thrust",
+  "walk",
+]);
+
 export type HumanPart = (typeof HUMAN_PARTS)[number];
+
+const HAIR_PARTS: Readonly<Record<HairStyle, HumanPart | null>> = {
+  bald: null,
+  braids: "hairBraids",
+  bun: "hairBun",
+  fringe: "hairFringe",
+  long: "hairLong",
+  ponytail: "hairPonytail",
+  short: "hairShort",
+  wild: "hairWild",
+};
+
+const CARRIED_PARTS: Readonly<Record<CarriedItem, HumanPart | null>> = {
+  berries: "carriedBerries",
+  clay: "carriedClay",
+  crops: "carriedCrops",
+  fish: "carriedFish",
+  fruit: "carriedFruit",
+  meat: "carriedMeat",
+  nothing: null,
+  ore: "carriedOre",
+  stone: "carriedStone",
+  wood: "carriedWood",
+};
 
 type PartBuilder = (builder: MeshBuilder, detail: HumanDetail) => void;
 
@@ -158,44 +196,6 @@ export function buildHumanParts(detail: HumanDetail): MeshData[] {
     return builder.build();
   });
 }
-
-const HAIR_PARTS: Readonly<Record<HairStyle, HumanPart | null>> = {
-  bald: null,
-  braids: "hairBraids",
-  bun: "hairBun",
-  fringe: "hairFringe",
-  long: "hairLong",
-  ponytail: "hairPonytail",
-  short: "hairShort",
-  wild: "hairWild",
-};
-
-const CARRIED_PARTS: Readonly<Record<CarriedItem, HumanPart | null>> = {
-  berries: "carriedBerries",
-  clay: "carriedClay",
-  crops: "carriedCrops",
-  fish: "carriedFish",
-  fruit: "carriedFruit",
-  meat: "carriedMeat",
-  nothing: null,
-  ore: "carriedOre",
-  stone: "carriedStone",
-  wood: "carriedWood",
-};
-
-const ARMED_POSES: ReadonlySet<PersonPose> = new Set([
-  "block",
-  "brawl",
-  "charge",
-  "fall",
-  "flinch",
-  "idle",
-  "leap",
-  "march",
-  "run",
-  "thrust",
-  "walk",
-]);
 
 function bodyPart(appearance: PersonAppearance): HumanPart {
   if (appearance.ageGroup === "child") {

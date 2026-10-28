@@ -130,7 +130,6 @@ export class FieldPlan {
 
     for (let column = 0; column < grid.cellsPerSide; column += 1) {
       const cell = grid.index(column, row);
-
       const isFarm = ground[cell * GROUND_CHANNELS + GroundChannel.Ground] === Ground.Farm;
 
       if (isFarm === this.#farms.has(cell)) {
@@ -235,10 +234,9 @@ export function fieldSharesNode(
   const cellCoordinate = point.add(grid.halfSize).div(grid.cellSize).sub(0.5);
 
   const base = floor(cellCoordinate);
-
   const fraction = cellCoordinate.sub(base);
 
-  function axisAt(column: number, row: number) {
+  function axisAt(column: number, row: number): Node<"float"> {
     const cell = ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(last, last)));
 
     return textureLoad(plan, cell).x.mul(BYTE);
@@ -253,7 +251,6 @@ export function fieldSharesNode(
 
   const shares = edgeWidths.map((edgeWidth) => {
     const width = max(blur, edgeWidth / grid.cellSize);
-
     const across = smoothstep(width.oneMinus().mul(0.5), width.add(1).mul(0.5), fraction);
 
     const near = mix(northWest.min(1), northEast.min(1), across.x);

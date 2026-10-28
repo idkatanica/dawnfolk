@@ -15,6 +15,15 @@ import {
 } from "./quadruped-motion.ts";
 import { LEG_ENDS, LEG_SIDES, type LegEnd, QuadrupedBone } from "./quadruped-skeleton.ts";
 
+const HOP_PHASES: LegPhases = {
+  front: { left: 0.5, right: 0.58 },
+  hind: { left: 0, right: 0.03 },
+};
+
+const WALKING_HOP = 0.45;
+const HOP_HEIGHT = 0.1;
+const GRAZING_STANCE: Readonly<Record<LegEnd, number>> = { front: degrees(4), hind: -degrees(3) };
+
 type RunKind = "amble" | "gallop" | "hop";
 
 export interface GaitStyle {
@@ -41,15 +50,13 @@ export interface AnimalClip {
   readonly timing: ClipTiming;
 }
 
-const HOP_PHASES: LegPhases = {
-  front: { left: 0.5, right: 0.58 },
-  hind: { left: 0, right: 0.03 },
+export const QUADRUPED_CLIPS: Readonly<Record<AnimalPose, AnimalClip>> = {
+  dead: { apply: lieDead, timing: seconds(10) },
+  graze: { apply: graze, timing: seconds(9) },
+  run: { apply: run, timing: STRIDE_TIMING },
+  walk: { apply: walk, timing: STRIDE_TIMING },
+  ...QUADRUPED_FIGHT_CLIPS,
 };
-
-const WALKING_HOP = 0.45;
-const HOP_HEIGHT = 0.1;
-
-const GRAZING_STANCE: Readonly<Record<LegEnd, number>> = { front: degrees(4), hind: -degrees(3) };
 
 function swishTail(pose: Pose, phase: number, amount: number): void {
   bendBone(pose, QuadrupedBone.Tail, degrees(10), amount * wave(phase * 2));
@@ -152,7 +159,7 @@ function graze(pose: Pose, phase: number, context: AnimalClipContext): void {
   swishTail(pose, phase * 2, gait.tailSwish);
 }
 
-function dead(pose: Pose, _phase: number, context: AnimalClipContext): void {
+function lieDead(pose: Pose, _phase: number, context: AnimalClipContext): void {
   pose.grounding = "body";
   bendBone(pose, QuadrupedBone.Pelvis, 0, degrees(88));
   bendBone(pose, QuadrupedBone.Neck, degrees(30), degrees(10));
@@ -164,14 +171,6 @@ function dead(pose: Pose, _phase: number, context: AnimalClipContext): void {
     }
   }
 }
-
-export const QUADRUPED_CLIPS: Readonly<Record<AnimalPose, AnimalClip>> = {
-  dead: { apply: dead, timing: seconds(10) },
-  graze: { apply: graze, timing: seconds(9) },
-  run: { apply: run, timing: STRIDE_TIMING },
-  walk: { apply: walk, timing: STRIDE_TIMING },
-  ...QUADRUPED_FIGHT_CLIPS,
-};
 
 export function leapPerStride(gait: GaitStyle, clip: AnimalPose): number {
   if (gait.runKind !== "hop") {

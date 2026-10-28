@@ -1,5 +1,9 @@
 import { fractionalPart, wrapAngle } from "../../shared/math.ts";
 
+export const BLEND_SECONDS = 0.3;
+export const TURN_RATE = 6;
+export const ONCE_END = 0.999;
+
 interface MotionStep {
   readonly clip: number;
   readonly gameSeconds: number;
@@ -9,9 +13,13 @@ interface MotionStep {
   readonly realSeconds: number;
 }
 
-export const BLEND_SECONDS = 0.3;
-export const TURN_RATE = 6;
-export const ONCE_END = 0.999;
+function advancedPhase(phase: number, amount: number, isOnce: boolean): number {
+  if (isOnce) {
+    return Math.min(ONCE_END, phase + amount);
+  }
+
+  return fractionalPart(phase + amount);
+}
 
 export class AgentMotion {
   blend = 1;
@@ -71,12 +79,4 @@ export class AgentMotion {
 
     this.heading = wrapAngle(this.heading + Math.sign(difference) * largestTurn);
   }
-}
-
-function advancedPhase(phase: number, amount: number, isOnce: boolean): number {
-  if (isOnce) {
-    return Math.min(ONCE_END, phase + amount);
-  }
-
-  return fractionalPart(phase + amount);
 }

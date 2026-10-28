@@ -4,6 +4,10 @@ import { footingOn } from "../../world/crossings.ts";
 import { HIDDEN_LEVEL, type ViewInput } from "../view-input.ts";
 import type { AgentMarkers } from "./agent-markers.ts";
 
+export const NO_SELECTION = -1;
+
+const ANKLE_DEPTH = 0.18;
+
 export interface AgentViewInput extends ViewInput {
   readonly gameSeconds: number;
   readonly markers: AgentMarkers;
@@ -16,9 +20,6 @@ export interface LevelDistances {
   readonly high: number;
   readonly low: number;
 }
-
-const ANKLE_DEPTH = 0.18;
-export const NO_SELECTION = -1;
 
 export function detailLevel(distance: number, limits: LevelDistances, detail: number): number {
   if (distance < limits.high * detail) {

@@ -34,27 +34,7 @@ const DRY_BIOMES: ReadonlySet<number> = new Set([Biome.Desert, Biome.Mesa]);
 const WOODED_BIOMES: ReadonlySet<number> = new Set([Biome.Forest, Biome.Swamp, Biome.Taiga]);
 const SHORE_BIOMES: ReadonlySet<number> = new Set([Biome.Beach, Biome.Water]);
 
-class ModelCache {
-  #kept = new Map<string, MeshData>();
-  #used = new Map<string, MeshData>();
-
-  model(key: string, build: () => MeshData): MeshData {
-    const known = this.#used.get(key);
-    const kept = known === undefined ? this.#kept.get(key) : known;
-    const model = kept === undefined ? build() : kept;
-
-    this.#used.set(key, model);
-
-    return model;
-  }
-
-  keepUsed(): void {
-    this.#kept = this.#used;
-    this.#used = new Map();
-  }
-}
-
-function landBiomeNear(mirror: WorldMirror, spring: Spring): number {
+function landBiomeNear(spring: Spring, mirror: WorldMirror): number {
   for (const reach of LAND_REACHES) {
     for (let sample = 0; sample < LAND_SAMPLES; sample += 1) {
       const angle = (sample / LAND_SAMPLES) * FULL_TURN;
@@ -136,7 +116,7 @@ function groundReach(spring: Spring): number {
 }
 
 function addCave(builder: MeshBuilder, spring: Spring, mirror: WorldMirror, models: ModelCache): void {
-  const biome = landBiomeNear(mirror, spring);
+  const biome = landBiomeNear(spring, mirror);
   const rise = Math.round(riseBehind(spring, mirror) * 2) / 2;
   const sinking = spring.level - lowestGroundUnder(spring, mirror) + BURY_MARGIN;
   const bury = Math.round(clamp(sinking, SHALLOWEST_BURY, DEEPEST_BURY) * 2) / 2;
@@ -162,6 +142,26 @@ export function areSpringsShapedBy(region: CellRegion | null, mirror: WorldMirro
       spring.kind === "cave" &&
       regionsOverlap(region, grid.circleBounds(spring.x, spring.z, groundReach(spring) + grid.cellSize))
   );
+}
+
+class ModelCache {
+  #kept = new Map<string, MeshData>();
+  #used = new Map<string, MeshData>();
+
+  model(key: string, build: () => MeshData): MeshData {
+    const known = this.#used.get(key);
+    const kept = known === undefined ? this.#kept.get(key) : known;
+    const model = kept === undefined ? build() : kept;
+
+    this.#used.set(key, model);
+
+    return model;
+  }
+
+  keepUsed(): void {
+    this.#kept = this.#used;
+    this.#used = new Map();
+  }
 }
 
 export class SpringView {

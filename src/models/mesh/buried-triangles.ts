@@ -1,6 +1,5 @@
 import { boundsOf, type MeshData, type VertexChannel, vertexCount } from "./mesh-data.ts";
-
-type Triple = readonly [number, number, number];
+import type { Triple } from "./transforms.ts";
 
 const RAY_DIRECTIONS: readonly Triple[] = [
   [0.5773, 0.6123, 0.5401],
@@ -8,13 +7,17 @@ const RAY_DIRECTIONS: readonly Triple[] = [
 ];
 
 const PARALLEL_LIMIT = 1e-14;
-
 const CORNERS = 3;
-
+const TRIANGLE_STRIDE = 12;
 const CLOSED_SOLIDS = new WeakMap<MeshData, boolean>();
 const PACKED_SOLIDS = new WeakMap<MeshData, readonly Float64Array[]>();
 
-const TRIANGLE_STRIDE = 12;
+interface BuriedTest {
+  readonly buried: readonly Uint8Array[];
+  readonly margin: number;
+  readonly mesh: MeshData;
+  readonly solids: readonly MeshData[];
+}
 
 function packedCrossing(positions: Float32Array, corners: readonly number[], direction: Triple): number[] {
   const [first, second, third] = corners;
@@ -156,13 +159,6 @@ function buriedVertices(mesh: MeshData, solid: MeshData, margin: number): Uint8A
   return Uint8Array.from({ length: vertexCount(mesh) }, (_, vertex) =>
     isDeepInside(solid, [liftedVertex(mesh, vertex, 0), liftedVertex(mesh, vertex, margin)]) ? 1 : 0
   );
-}
-
-interface BuriedTest {
-  readonly buried: readonly Uint8Array[];
-  readonly margin: number;
-  readonly mesh: MeshData;
-  readonly solids: readonly MeshData[];
 }
 
 function isBuried(test: BuriedTest, triangle: number): boolean {

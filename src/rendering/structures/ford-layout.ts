@@ -8,6 +8,58 @@ import {
 } from "../../world/crossings.ts";
 import { NO_WATER } from "../../world/water.ts";
 
+export const LARGEST_STEP_GAP = 0.5;
+export const STONE_SINK = 0.3;
+export const BAR_SHALLOWEST = 0.28;
+const BAR_DEEPEST = 0.5;
+const BAR_FOOT = 3.8;
+const BAR_ACROSS: readonly number[] = [-BAR_FOOT, -2.7, -1.9, -1.3, -0.6, 0, 0.6, 1.3, 1.9, 2.7, BAR_FOOT];
+
+const SCAN_STEP = 0.25;
+const BEYOND_ENDS = 4;
+const BANK_OVERLAP = 0.5;
+const NEAR_BANK = 4;
+const BANK_RADIUS = 0.9;
+const MIDSTREAM_RADIUS = 0.45;
+const RADIUS_SPREAD = 0.5;
+const SMALLEST_GAP = 0.18;
+const ACROSS_JITTER = 0.12;
+const MEANDER = 0.22;
+const LIFT_JITTER = 0.08;
+const COMPANION_CHANCE = 0.3;
+const COMPANION_SIZE = 0.55;
+const COMPANION_SINKING = 0.07;
+const SHORTEST_STEP = 0.14;
+const SLAB_RISE = 0.05;
+const SLAB_RISE_SPREAD = 0.07;
+const SLAB_WIDENING = 1.15;
+const BAR_NARROWEST = 0.9;
+const BAR_WIDEST = 1.8;
+const BAR_SIDE_DROP = 2.6;
+const BAR_BURIAL = 0.3;
+const BAR_ROW_STEP = 0.5;
+const BAR_OVERHANG = 1;
+const SIDE_CHANCE = 0.6;
+const SIDE_NEAREST = 1.1;
+const SIDE_SPREAD = 1.1;
+const SIDE_SMALLEST = 0.24;
+const SIDE_LARGEST = 0.55;
+const SIDE_RISE = 0.1;
+const SIDE_DROWNING = 0.14;
+const SIDE_SHORTEST = 0.12;
+const PEBBLE_STEP = 0.4;
+const PEBBLES_PER_STEP = 3;
+const PEBBLE_REACH = 1.8;
+const PEBBLE_SPREAD = 1.7;
+const PEBBLE_DEEPEST = 0.45;
+const PEBBLE_SMALLEST = 0.07;
+const PEBBLE_LARGEST = 0.18;
+const PEBBLE_RISE = 0.04;
+const PEBBLE_SINK = 0.05;
+const STONE_SALT = 41.7;
+const SIDE_SALT = 57.3;
+const PEBBLE_SALT = 23.9;
+
 type FordStoneKind = "boulder" | "pebble" | "slab" | "step";
 
 export interface FordStone {
@@ -61,58 +113,6 @@ interface LineStep {
   readonly radius: number;
 }
 
-export const LARGEST_STEP_GAP = 0.5;
-export const STONE_SINK = 0.3;
-export const BAR_SHALLOWEST = 0.28;
-const BAR_DEEPEST = 0.5;
-const BAR_FOOT = 3.8;
-const BAR_ACROSS: readonly number[] = [-BAR_FOOT, -2.7, -1.9, -1.3, -0.6, 0, 0.6, 1.3, 1.9, 2.7, BAR_FOOT];
-
-const SCAN_STEP = 0.25;
-const BEYOND_ENDS = 4;
-const BANK_OVERLAP = 0.5;
-const NEAR_BANK = 4;
-const BANK_RADIUS = 0.9;
-const MIDSTREAM_RADIUS = 0.45;
-const RADIUS_SPREAD = 0.5;
-const SMALLEST_GAP = 0.18;
-const ACROSS_JITTER = 0.12;
-const MEANDER = 0.22;
-const LIFT_JITTER = 0.08;
-const COMPANION_CHANCE = 0.3;
-const COMPANION_SIZE = 0.55;
-const COMPANION_SINKING = 0.07;
-const SHORTEST_STEP = 0.14;
-const SLAB_RISE = 0.05;
-const SLAB_RISE_SPREAD = 0.07;
-const SLAB_WIDENING = 1.15;
-const BAR_NARROWEST = 0.9;
-const BAR_WIDEST = 1.8;
-const BAR_SIDE_DROP = 2.6;
-const BAR_BURIAL = 0.3;
-const BAR_ROW_STEP = 0.5;
-const BAR_OVERHANG = 1;
-const SIDE_CHANCE = 0.6;
-const SIDE_NEAREST = 1.1;
-const SIDE_SPREAD = 1.1;
-const SIDE_SMALLEST = 0.24;
-const SIDE_LARGEST = 0.55;
-const SIDE_RISE = 0.1;
-const SIDE_DROWNING = 0.14;
-const SIDE_SHORTEST = 0.12;
-const PEBBLE_STEP = 0.4;
-const PEBBLES_PER_STEP = 3;
-const PEBBLE_REACH = 1.8;
-const PEBBLE_SPREAD = 1.7;
-const PEBBLE_DEEPEST = 0.45;
-const PEBBLE_SMALLEST = 0.07;
-const PEBBLE_LARGEST = 0.18;
-const PEBBLE_RISE = 0.04;
-const PEBBLE_SINK = 0.05;
-const STONE_SALT = 41.7;
-const SIDE_SALT = 57.3;
-const PEBBLE_SALT = 23.9;
-
 function fordHash(ford: Ford, salt: number, index: number, channel: number): number {
   return hashToUnit(ford.seed * 1000 + index, channel, salt);
 }
@@ -141,7 +141,6 @@ export function visibleWaterSpan(ford: Ford, surroundings: FordSurroundings): Wa
 
 function stepRadius(span: WaterSpan, along: number, spread: number): number {
   const fromBank = Math.max(0, Math.min(along - span.start, span.end - along));
-
   const size = lerp(BANK_RADIUS, MIDSTREAM_RADIUS, smoothstep(0, NEAR_BANK, fromBank));
 
   return size * (1 - RADIUS_SPREAD / 2 + RADIUS_SPREAD * spread);
@@ -291,7 +290,6 @@ function placeSideStone(ford: Ford, surroundings: FordSurroundings, span: WaterS
   const bed = bedAt(ford, surroundings, along, across);
   const waterLevel = surroundings.waterLevelAt(point.x, point.z);
   const nearBank = 1 - smoothstep(0, NEAR_BANK, Math.min(along - span.start, span.end - along));
-
   const top = waterLevel + lerp(-SIDE_DROWNING, SIDE_RISE, hash(index, 5));
 
   if (waterLevel === NO_WATER || top - bed.height < SIDE_SHORTEST) {
@@ -358,7 +356,6 @@ function barRow(ford: Ford, surroundings: FordSurroundings, along: number, isEnd
   return BAR_ACROSS.map((across, column) => {
     const point = pointOnCrossing(ford, along, across);
     const bed = bedAt(ford, surroundings, along, across);
-
     const isBuried = isEnd || column === 0 || column === last || bed.height === bed.ground;
 
     return {

@@ -1,9 +1,9 @@
 import type { BodySection, LoftSection, TubePoint } from "./shapes.ts";
 
-type Vector = readonly number[];
-
 const CENTRIPETAL = 0.5;
 const SHORTEST_KNOT = 1e-6;
+
+type Vector = readonly number[];
 
 function knotStep(from: Vector, to: Vector): number {
   const distance = Math.hypot(...from.map((value, index) => to[index] - value));

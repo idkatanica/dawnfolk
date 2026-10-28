@@ -4,13 +4,11 @@ import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
 import { sampleHeight } from "../../world/terrain-sampling.ts";
 import { buildIslandBaseGeometry, islandPlinthHeight } from "./island-base-geometry.ts";
-import { type CoastPoint, type GroundArea, IslandOutline, type OutlineSide } from "./island-outline.ts";
+import { type CoastPoint, IslandOutline } from "./island-outline.ts";
 
 const CELLS_PER_SIDE = 32;
 const COAST_TOLERANCE = 1.5;
 const NUDGE = 0.01;
-const AREA_SIZE = 160;
-const SAMPLE_STEP = 2;
 const round = new WorldMirror(
   Simulation.generate(
     5,
@@ -71,24 +69,6 @@ function squareMirror(): WorldMirror {
   return new WorldMirror(new Simulation(world).initialWorld(), 0);
 }
 
-function isInside(outline: IslandOutline, x: number, z: number): boolean {
-  const [coastX, coastZ] = outline.atCoast(x, z);
-
-  return Math.hypot(x, z) < Math.hypot(coastX, coastZ);
-}
-
-function sampledSides(outline: IslandOutline, area: GroundArea): Set<boolean> {
-  const sides = new Set<boolean>();
-
-  for (let z = area.minimumZ; z <= area.maximumZ; z += SAMPLE_STEP) {
-    for (let x = area.minimumX; x <= area.maximumX; x += SAMPLE_STEP) {
-      sides.add(isInside(outline, x, z));
-    }
-  }
-
-  return sides;
-}
-
 describe("island base geometry", () => {
   it("tops the square cliff at every edge cell exactly once", () => {
     const mirror = squareMirror();
@@ -139,32 +119,5 @@ describe("island base geometry", () => {
     for (const [start, end] of segments) {
       expect(latticeLines(round, end, start)).toEqual(latticeLines(round, start, end));
     }
-  });
-});
-
-describe("island outline", () => {
-  it("tells areas wholly inside or outside the coast from those it crosses", () => {
-    const outline = new IslandOutline(round);
-
-    const { halfSize } = round.grid;
-    const found = new Set<OutlineSide>();
-    const misplaced: string[] = [];
-
-    for (let minimumZ = -halfSize; minimumZ < halfSize; minimumZ += AREA_SIZE) {
-      for (let minimumX = -halfSize; minimumX < halfSize; minimumX += AREA_SIZE) {
-        const area = { maximumX: minimumX + AREA_SIZE, maximumZ: minimumZ + AREA_SIZE, minimumX, minimumZ };
-
-        const side = outline.sideOf(area, 0);
-
-        found.add(side);
-
-        if (side !== "across" && sampledSides(outline, area).has(side === "outside")) {
-          misplaced.push(`${side} at ${minimumX}, ${minimumZ}`);
-        }
-      }
-    }
-
-    expect(misplaced).toEqual([]);
-    expect(found).toEqual(new Set(["across", "inside", "outside"]));
   });
 });

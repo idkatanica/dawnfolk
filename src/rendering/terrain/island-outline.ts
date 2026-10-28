@@ -61,6 +61,10 @@ function coastRadius(mirror: WorldMirror, outwardX: number, outwardZ: number): n
   return inside;
 }
 
+function coastAngle(index: number): number {
+  return (index / COAST_SAMPLES) * FULL_TURN;
+}
+
 function measureCoastRadii(mirror: WorldMirror): Float32Array {
   const radii = new Float32Array(COAST_SAMPLES);
 
@@ -83,10 +87,6 @@ function radiusTexture(radii: Float32Array): DataTexture {
   texture.needsUpdate = true;
 
   return texture;
-}
-
-function coastAngle(index: number): number {
-  return (index / COAST_SAMPLES) * FULL_TURN;
 }
 
 function radiusAt(radii: Float32Array, angle: number): number {
@@ -140,7 +140,6 @@ function sideOfPart(radii: Float32Array, area: GroundArea, margin: number): Outl
   );
 
   const [firstAngle, lastAngle] = nearest === 0 ? [0, FULL_TURN] : anglesAcross(area);
-
   const [lowest, highest] = radiiBetween(radii, firstAngle, lastAngle);
 
   if (farthest < lowest - margin) {
@@ -207,7 +206,6 @@ function traceCoast(grid: WorldGrid, radii: Float32Array): CoastPoint[] {
   const angles = [...latticeCrossings(grid, radii), ...Array.from(radii, (_, index) => coastAngle(index))].sort(
     (first, second) => first - second
   );
-
   const distinct = angles.filter((angle, index) => index === 0 || angle - angles[index - 1] > SAME_ANGLE);
 
   return distinct.map((angle) => ({ angle, radius: radiusAt(radii, angle) }));

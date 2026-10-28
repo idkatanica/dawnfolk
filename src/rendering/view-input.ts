@@ -1,14 +1,14 @@
 import type { Frustum, PerspectiveCamera, Sphere } from "three/webgpu";
 import type { WorldMirror } from "../game/world-mirror.ts";
 
+export const HIDDEN_LEVEL = -1;
+
 export interface ViewInput {
   readonly camera: PerspectiveCamera;
   readonly detail: number;
   readonly frustum: Frustum;
   readonly mirror: WorldMirror;
 }
-
-export const HIDDEN_LEVEL = -1;
 
 export function assignSphereLevels(
   items: Iterable<{ readonly bounds: Sphere; level: number }>,

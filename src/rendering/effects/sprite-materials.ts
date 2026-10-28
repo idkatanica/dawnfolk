@@ -11,7 +11,6 @@ export function createGlowMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
   const shape = varying(corner, "glowCorner");
 
   const radius = distanceFromBillboardCenter(shape).mul(2);
-
   const halo = smoothstep(1, 0, radius);
 
   material.colorNode = look.xyz.mul(halo.mul(halo).mul(2.2).add(halo.mul(0.6)));

@@ -15,8 +15,6 @@ import { addEyes, addLegs, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, legStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
 import { LEG_SIDES, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
-const EARS_BONE = 18;
-
 export const HARE_FRAME: QuadrupedFrame = {
   bodyContacts: [
     { bone: QuadrupedBone.Chest, position: [0, 0.11, 0.08] },
@@ -60,6 +58,8 @@ export const HARE_GAIT: GaitStyle = {
   tailSwish: degrees(4),
   walkSwing: degrees(24),
 };
+
+const EARS_BONE = 18;
 
 const BODY: readonly BodySection[] = [
   { centerY: 0.21, halfHeight: 0, halfWidth: 0, z: -0.295 },
@@ -140,7 +140,6 @@ const TAIL: readonly TubePoint[] = [
 const EAR_TIP_HEIGHT = 0.5;
 const BELLY_HEIGHT = 0.13;
 const MUZZLE_DEPTH = 0.25;
-
 const BODY_SEAM = 0.03;
 const NECK_SEAM = 0.025;
 const HEAD_SEAM = 0.02;
@@ -148,7 +147,6 @@ const LEG_SEAM = 0.02;
 const PAW_SEAM = 0.012;
 const EAR_SEAM = 0.008;
 const TAIL_SEAM = 0.015;
-
 const BLEND = 0.02;
 
 function coatSlot(point: SurfacePoint): number {
@@ -257,7 +255,7 @@ export function addHareBody(builder: MeshBuilder, detail: AnimalDetail): void {
   });
 }
 
-export function hareEarMotion(pose: Pose, clip: AnimalPose, phase: number): void {
+export function moveHareEars(pose: Pose, clip: AnimalPose, phase: number): void {
   if (clip === "run" || clip === "charge") {
     pose.rotate(EARS_BONE, -degrees(55), 0, 0);
 

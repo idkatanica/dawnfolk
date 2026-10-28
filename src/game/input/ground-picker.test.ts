@@ -3,7 +3,7 @@ import { CENTER, cameraLookingAt, VIEWPORT } from "../testing/view-fixtures.ts";
 import { GroundPicker } from "./ground-picker.ts";
 
 describe("ground picker", () => {
-  it("finds the point under the screen centre on flat ground", () => {
+  it("finds the point under the screen center on flat ground", () => {
     const picker = new GroundPicker(cameraLookingAt(100, -50), () => 0, 2000);
 
     const hit = picker.pick(CENTER, VIEWPORT);

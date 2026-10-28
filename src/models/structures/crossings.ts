@@ -11,8 +11,6 @@ import { cone, icosphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
 import { chiseledStone, groundShade, weatheredSlot } from "../stones.ts";
 
-export type CrossingDetailLevel = "high" | "low" | "medium";
-
 export const CROSSING_DETAIL_LEVELS: readonly CrossingDetailLevel[] = ["high", "medium", "low"];
 export const STEPPING_STONE_HEIGHT = 1;
 export const STONE_WIDTH = 1.05;
@@ -22,12 +20,14 @@ export const FALLEN_LOG_ROOT_RADIUS = 0.4;
 
 const WOOD_NOISE = createVolumeNoise(createRandom(7310));
 const SUBDIVISIONS: Readonly<Record<CrossingDetailLevel, number>> = { high: 2, low: 0, medium: 1 };
+
 const STONE_SHAPES: readonly (readonly [number, number])[] = [
   [1.12, 0.86],
   [0.96, 1],
   [1.22, 0.8],
   [0.9, 0.94],
 ];
+
 const WORN_TOP = 0.82;
 const TRUNK_SEGMENTS: Readonly<Record<CrossingDetailLevel, number>> = { high: 28, low: 6, medium: 14 };
 const TRUNK_SIDES: Readonly<Record<CrossingDetailLevel, number>> = { high: 12, low: 5, medium: 8 };
@@ -42,6 +42,14 @@ const PLATE_REACH = 3.4;
 const PLATE_THICKNESS = 0.7;
 const BARK_NEAR_ROOT = 3;
 const HALF_TURN = Math.PI;
+
+export type CrossingDetailLevel = "high" | "low" | "medium";
+
+interface LogShape {
+  readonly bend: number;
+  readonly length: number;
+  readonly random: RandomSource;
+}
 
 function stoneSlot(seed: number): (point: SurfacePoint) => MaterialSlotIndex {
   const weathered = weatheredSlot({ base: MaterialSlot.Stone, frost: 0, lichen: 0.26, moss: 0, seed });
@@ -86,12 +94,6 @@ function steppingStone(variant: number, level: CrossingDetailLevel): MeshData {
 
 export function buildSteppingStones(level: CrossingDetailLevel): MeshData[] {
   return Array.from({ length: STEPPING_STONE_VARIANTS }, (_, variant) => steppingStone(variant, level));
-}
-
-interface LogShape {
-  readonly bend: number;
-  readonly length: number;
-  readonly random: RandomSource;
 }
 
 function taperedRadius(log: LogShape, along: number): number {
@@ -143,7 +145,7 @@ function trunk(log: LogShape, level: CrossingDetailLevel): Shape {
   return tube(points, { radialSegments: TRUNK_SIDES[level] });
 }
 
-function stubs(log: LogShape, level: CrossingDetailLevel, builder: MeshBuilder): void {
+function addStubs(log: LogShape, level: CrossingDetailLevel, builder: MeshBuilder): void {
   const { random } = log;
 
   for (let stub = 0; stub < STUBS[level]; stub += 1) {
@@ -172,7 +174,7 @@ function stubs(log: LogShape, level: CrossingDetailLevel, builder: MeshBuilder):
   }
 }
 
-function splinters(log: LogShape, level: CrossingDetailLevel, builder: MeshBuilder): void {
+function addSplinters(log: LogShape, level: CrossingDetailLevel, builder: MeshBuilder): void {
   const { random } = log;
 
   const end = trunkAxis(log, log.length);
@@ -192,7 +194,7 @@ function splinters(log: LogShape, level: CrossingDetailLevel, builder: MeshBuild
   }
 }
 
-function rootPlate(log: LogShape, level: CrossingDetailLevel, builder: MeshBuilder): void {
+function addRootPlate(log: LogShape, level: CrossingDetailLevel, builder: MeshBuilder): void {
   const { random } = log;
 
   const reach = FALLEN_LOG_ROOT_RADIUS * PLATE_REACH;
@@ -246,9 +248,9 @@ function fallenLog(variant: number, level: CrossingDetailLevel): MeshData {
   const builder = new MeshBuilder();
 
   builder.add(trunk(log, level), { style: { shade: woodShade, slot: woodSlot } });
-  stubs(log, level, builder);
-  splinters(log, level, builder);
-  rootPlate(log, level, builder);
+  addStubs(log, level, builder);
+  addSplinters(log, level, builder);
+  addRootPlate(log, level, builder);
 
   return builder.build();
 }

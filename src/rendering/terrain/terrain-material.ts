@@ -35,7 +35,7 @@ import { unitNoise } from "../node-helpers.ts";
 import { fordBedColorNode } from "../water/ford-field.ts";
 import { POOL_BANK, poolReachNode } from "./bog-pools.ts";
 import { fieldGroundNode } from "./field-ground.ts";
-import { FIREWEED, fireweedOn } from "./fireweed.ts";
+import { FIREWEED, fireweedNode } from "./fireweed.ts";
 import type { GroundWarp } from "./ground-warp.ts";
 import { sampleCellsNode } from "./height-sampling.ts";
 import { PATCH_CELLS } from "./terrain-patches.ts";
@@ -69,9 +69,17 @@ interface Marsh {
   readonly soak: Node<"float">;
 }
 
+interface TerrainMaterialOptions {
+  readonly cutsAtCoast: boolean;
+  readonly glow: FireGlow;
+  readonly grid: WorldGrid;
+  readonly plinth: number;
+  readonly textures: TerrainTextures;
+  readonly warp: GroundWarp;
+}
+
 function marshAt(textures: TerrainTextures, grid: WorldGrid, wobble: Node<"float">): Marsh {
   const wetland = texture(textures.wetland, positionWorld.xz.add(grid.halfSize).div(grid.worldSize));
-
   const bank = float(1).sub(wobble).mul(POOL_WOBBLE).add(POOL_BANK);
 
   return {
@@ -80,7 +88,7 @@ function marshAt(textures: TerrainTextures, grid: WorldGrid, wobble: Node<"float
   };
 }
 
-function boggy(ground: Node<"vec3">, marsh: Marsh, mottle: Node<"float">): Node<"vec3"> {
+function marshGround(ground: Node<"vec3">, marsh: Marsh, mottle: Node<"float">): Node<"vec3"> {
   const mud = ground.mul(mix(float(1), float(MARSH_MUD), marsh.soak.mul(smoothstep(-0.4, 0.4, mottle))));
   const rim = mud.mul(mix(float(1), float(POOL_RIM), smoothstep(0, 0.4, marsh.pool)));
   const water = mix(POOL_WATER, POOL_SCUM, smoothstep(0.35, 0.85, mottle).mul(0.6));
@@ -97,18 +105,6 @@ function poolGlint(textures: TerrainTextures, pool: Node<"float">): Node<"vec3">
   return textures.skyColor.mul(fresnel).mul(textures.daylight.mul(0.5).add(0.03)).mul(pool);
 }
 
-function emberGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"float">): Node<"vec3"> {
-  return Fn(() => {
-    const glow = vec3(0).toVar();
-
-    If(fire.greaterThan(EMBER_THRESHOLD), () => {
-      glow.assign(burningGlow(fire, point, grain));
-    });
-
-    return glow;
-  })();
-}
-
 function burningGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"float">): Node<"vec3"> {
   const flicker = unitNoise(point.mul(0.35).add(vec2(time.mul(1.3), time.mul(-0.9))))
     .mul(0.4)
@@ -119,6 +115,18 @@ function burningGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"floa
   const blaze = fire.mul(fire).mul(embers.mul(0.8).add(0.2));
 
   return EMBER_DEEP.mul(smoulder).add(EMBER_BRIGHT.mul(blaze));
+}
+
+function emberGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"float">): Node<"vec3"> {
+  return Fn(() => {
+    const glow = vec3(0).toVar();
+
+    If(fire.greaterThan(EMBER_THRESHOLD), () => {
+      glow.assign(burningGlow(fire, point, grain));
+    });
+
+    return glow;
+  })();
 }
 
 function edgeSide(coordinate: Node<"float">, lastCell: number): Node<"float"> {
@@ -163,9 +171,12 @@ function terrainPosition(textures: TerrainTextures, grid: WorldGrid, plinth: num
     const normal = slopeAt(cell).toVar();
 
     If(isCenter, () => {
-      const corners = [cornerOf(cell, 0, 0), cornerOf(cell, 1, 0), cornerOf(cell, 0, 1), cornerOf(cell, 1, 1)];
-
-      const [first, right, below, diagonal] = corners;
+      const [first, right, below, diagonal] = [
+        cornerOf(cell, 0, 0),
+        cornerOf(cell, 1, 0),
+        cornerOf(cell, 0, 1),
+        cornerOf(cell, 1, 1),
+      ];
 
       height.assign(
         heightAt(first, 0, 0)
@@ -181,9 +192,7 @@ function terrainPosition(textures: TerrainTextures, grid: WorldGrid, plinth: num
     normalLocal.assign(normalize(normal));
 
     const border = origin.add(localCell);
-
     const hangs = skirt.greaterThan(0).and(mix(border.x, border.y, skirtAxis).mod(PATCH_CELLS).equal(0));
-
     const drop = select(hangs, skirt.mul(SKIRT_DROP_PER_STEP), float(0));
     const outward = vec2(edgeSide(cell.x, lastCell), edgeSide(cell.y, lastCell));
     const inset = outward.mul(select(hangs, float(EDGE_SKIRT_INSET), float(0)));
@@ -204,9 +213,7 @@ function warpedMapCoordinates(warp: GroundWarp, grid: WorldGrid): Node<"vec2"> {
 
 function underwaterDepth(textures: TerrainTextures, grid: WorldGrid): Node<"float"> {
   const last = grid.cellsPerSide - 1;
-
   const cell = clamp(positionWorld.xz.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
-
   const reach = textureLoad(textures.shore, ivec2(cell)).w;
 
   return Fn(() => {
@@ -233,15 +240,6 @@ function fordGround(ground: Node<"vec3">, marks: Node<"vec2">, rock: Node<"float
 
     return color;
   })();
-}
-
-interface TerrainMaterialOptions {
-  readonly cutsAtCoast: boolean;
-  readonly glow: FireGlow;
-  readonly grid: WorldGrid;
-  readonly plinth: number;
-  readonly textures: TerrainTextures;
-  readonly warp: GroundWarp;
 }
 
 export function createTerrainMaterial({
@@ -290,40 +288,30 @@ export function createTerrainMaterial({
     .mul(faceShade);
 
   const rockStart = mix(float(0.24), float(0.16), snowCover);
-
   const rockBand = mix(float(0.07), float(0.14), snowCover);
   const edgeGrain = fine.mul(float(0.025).mul(float(1).sub(snowCover)));
-
   const rock = smoothstep(rockStart, rockStart.add(rockBand), steepness.add(broad.mul(0.07)).add(edgeGrain));
-
   const ground = mix(mottled, rockColor, rock);
 
   const marsh = marshAt(textures, grid, patches.mul(0.35).add(fine.mul(0.15)).add(0.5));
   const openPool = marsh.pool.mul(float(1).sub(snowCover));
-
-  const marshy = boggy(ground, marsh, patches.mul(0.6).add(fine.mul(0.4)));
+  const marshy = marshGround(ground, marsh, patches.mul(0.6).add(fine.mul(0.4)));
 
   const fordMarks = textures.fords.marksNode(positionWorld.xz);
   const forded = fordGround(marshy, fordMarks, rock);
 
   const snowy = mix(forded, vec3(0.9, 0.93, 0.97), snowCover.mul(float(1).sub(rock.mul(0.6))));
   const wetness = max(surface.g, smoothstep(0, 0.6, depth));
-
   const damp = snowy.mul(float(1).sub(wetness.mul(0.32)));
-
   const shallowDepth = mix(depth, min(depth, FORD_BED_DEPTH), fordMarks.x);
-
   const underwater = mix(damp, damp.mul(vec3(0.5, 0.68, 0.7)), smoothstep(0.1, 3, shallowDepth));
 
   const ash = mix(CHARCOAL, ASH, smoothstep(0.5, 0.85, patches.mul(0.35).add(fine.mul(0.15)).add(0.5)));
-
   const scorched = mix(underwater, ash, surface.b.mul(0.95));
-
   const petals = smoothstep(0.55, 0.85, fine.mul(0.65).add(patches.mul(0.35)).add(0.5));
-  const flowering = mix(scorched, FIREWEED, fireweedOn(surface.b, textures.bloom).mul(petals).mul(0.42));
+  const flowering = mix(scorched, FIREWEED, fireweedNode(surface.b, textures.bloom).mul(petals).mul(0.42));
 
   const fireLight = fireLightAt(glow, grid, positionWorld.xz);
-
   const roughness = mix(mix(float(0.95), float(MARSH_ROUGHNESS), marsh.soak), float(0.5), wetness);
 
   material.colorNode = flowering;

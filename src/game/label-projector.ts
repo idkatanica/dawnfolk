@@ -3,6 +3,11 @@ import { lerp } from "../shared/math.ts";
 import type { HeightField, ViewportSize } from "./input/ground-picker.ts";
 import { normalizedToPixels, projectToNormalized } from "./input/screen-projection.ts";
 
+const SCREEN_MARGIN = 1.15;
+const OCCLUSION_SAMPLES = 32;
+const OCCLUSION_REACH = 0.95;
+const OCCLUSION_TOLERANCE = 3;
+
 export interface LabelPlacement {
   readonly left: number;
   readonly top: number;
@@ -12,11 +17,6 @@ interface LabelGround {
   readonly heightAt: HeightField;
   readonly surfaceAt: HeightField;
 }
-
-const SCREEN_MARGIN = 1.15;
-const OCCLUSION_SAMPLES = 32;
-const OCCLUSION_REACH = 0.95;
-const OCCLUSION_TOLERANCE = 3;
 
 function isOnScreen(projected: Vector3): boolean {
   return Math.abs(projected.x) <= SCREEN_MARGIN && Math.abs(projected.y) <= SCREEN_MARGIN;

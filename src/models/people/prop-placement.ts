@@ -10,6 +10,12 @@ export const RIGHT_FIST: Triple = [-0.217, 0.832, 0.018];
 export const LEFT_FIST: Triple = [0.217, 0.832, 0.018];
 export const CRADLE: Triple = [0, 1.29, 0.28];
 
+export interface Rod {
+  readonly end: Triple;
+  readonly radius: number;
+  readonly start: Triple;
+}
+
 function holdStyle(bone: number, slot: MaterialSlotIndex): VertexStyle {
   return { ...rigidStyle(bone), slot };
 }
@@ -24,12 +30,6 @@ export function inLeftHand(slot: MaterialSlotIndex): VertexStyle {
 
 export function onChest(slot: MaterialSlotIndex): VertexStyle {
   return holdStyle(HumanBone.Chest, slot);
-}
-
-export interface Rod {
-  readonly end: Triple;
-  readonly radius: number;
-  readonly start: Triple;
 }
 
 export function addRod(builder: MeshBuilder, detail: HumanDetail, rod: Rod, style: VertexStyle): void {

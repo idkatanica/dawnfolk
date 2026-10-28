@@ -13,7 +13,7 @@ export function bloomFor(season: number): number {
   return smoothstepNumber(0.35, 0.75, season) * (1 - smoothstepNumber(2, 2.5, season));
 }
 
-export function fireweedOn(scorch: Node<"float">, bloom: Node<"float">): Node<"float"> {
+export function fireweedNode(scorch: Node<"float">, bloom: Node<"float">): Node<"float"> {
   return smoothstep(LAST_ASH, FIRST_TRACE, scorch)
     .mul(float(1).sub(smoothstep(FADING_ASH, FRESH_ASH, scorch)))
     .mul(bloom);

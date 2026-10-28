@@ -48,18 +48,6 @@ const CYCLE_SALTS = { across: 0x9b_05_68_8c, along: 0x1f_83_d9_ab, cycle: 0x51_0
 
 export type Precipitation = "rain" | "snow";
 
-export function precipitationOf(kind: WeatherKind, temperature: number): Precipitation {
-  if (fallsAsSnow(kind, temperature)) {
-    return "snow";
-  }
-
-  return "rain";
-}
-
-export function precipitationStrength(precipitation: number): number {
-  return saturate((precipitation - LIGHTEST_PRECIPITATION) / (1 - LIGHTEST_PRECIPITATION));
-}
-
 interface PrecipitationLook {
   readonly color: number;
   readonly fallSpeed: number;
@@ -71,6 +59,28 @@ interface PrecipitationLook {
   readonly thickest: number;
   readonly thinnest: number;
   readonly windShare: number;
+}
+
+interface PrecipitationView {
+  readonly camera: PerspectiveCamera;
+  readonly focus: Vector3;
+  readonly realSeconds: number;
+  readonly viewDistance: number;
+}
+
+interface Precipitating {
+  readonly brightness: number;
+  readonly form: Precipitation;
+  readonly precipitation: number;
+  readonly windX: number;
+  readonly windZ: number;
+}
+
+interface DropSources {
+  readonly axes: CameraAxes;
+  readonly grid: WorldGrid;
+  readonly textures: TerrainTextures;
+  readonly uniforms: DropUniforms;
 }
 
 const LOOKS: Readonly<Record<Precipitation, PrecipitationLook>> = {
@@ -100,19 +110,16 @@ const LOOKS: Readonly<Record<Precipitation, PrecipitationLook>> = {
   },
 };
 
-interface WeatherView {
-  readonly camera: PerspectiveCamera;
-  readonly focus: Vector3;
-  readonly realSeconds: number;
-  readonly viewDistance: number;
+export function precipitationOf(kind: WeatherKind, temperature: number): Precipitation {
+  if (fallsAsSnow(kind, temperature)) {
+    return "snow";
+  }
+
+  return "rain";
 }
 
-interface Precipitating {
-  readonly brightness: number;
-  readonly form: Precipitation;
-  readonly precipitation: number;
-  readonly windX: number;
-  readonly windZ: number;
+export function precipitationStrength(precipitation: number): number {
+  return saturate((precipitation - LIGHTEST_PRECIPITATION) / (1 - LIGHTEST_PRECIPITATION));
 }
 
 class DropUniforms {
@@ -134,13 +141,6 @@ class DropUniforms {
   readonly viewportSpan = uniform(1);
 }
 
-interface DropSources {
-  readonly axes: CameraAxes;
-  readonly grid: WorldGrid;
-  readonly textures: TerrainTextures;
-  readonly uniforms: DropUniforms;
-}
-
 class DropOctave {
   readonly mesh: Mesh;
   readonly #cover = new LatticeCover();
@@ -156,7 +156,6 @@ class DropOctave {
     const scale = this.#scale;
 
     const element = latticeElement(this.#cover, uint(this.#level).mul(SALT_OCTAVE));
-
     const { age: fall, phase, spread } = cycleOf(element, uniforms.fallen, CYCLE_SALTS);
     const variety = unitHash(element.seed, SALT_VARIETY);
     const tileSize = scale.mul(TILE_SIZE);
@@ -167,13 +166,10 @@ class DropOctave {
 
     const place = element.tile.add(spread).add(uniforms.driftShare).mul(tileSize);
     const wander = swirl.mul(uniforms.sway).mul(scale);
-
     const landing = place.add(uniforms.slant.mul(height));
 
     const cell = ivec2(clamp(floor(landing.add(grid.halfSize).div(grid.cellSize)), vec2(0, 0), vec2(last, last)));
-
     const surface = max(sampleHeightNode(textures.height, grid, landing), textureLoad(textures.water, cell).x);
-
     const center = vec3(place.x.add(wander.x), surface.add(height), place.y.add(wander.y));
 
     const cameraDistance = distance(center, cameraPosition);
@@ -189,7 +185,6 @@ class DropOctave {
     );
     const width = clamp(natural, viewportMeters.mul(uniforms.thinnest), viewportMeters.mul(uniforms.thickest));
     const axis = normalize(mix(streakAxis, axes.up, uniforms.isSnow));
-
     const side = normalize(axes.right.sub(axis.mul(dot(axes.right, axis))));
 
     const slabFade = smoothstep(0, 0.12, fall);
@@ -265,7 +260,7 @@ export class WeatherParticles {
     this.group.add(this.#fine.mesh, this.#coarse.mesh);
   }
 
-  update(weather: Precipitating, view: WeatherView): void {
+  update(weather: Precipitating, view: PrecipitationView): void {
     const strength = precipitationStrength(weather.precipitation);
 
     if (strength <= 0) {
@@ -285,7 +280,6 @@ export class WeatherParticles {
     const finer = Math.floor(octave);
     const perTile = DROPS_PER_TILE * strength * Math.max(1, (NATURAL_SPAN / span) ** 2);
     const area = { centerX: view.focus.x, centerZ: view.focus.z, halfSize: this.#halfSize, radius: span / 2 };
-
     const blend = octave - finer;
 
     this.#drift.x += (windX * seconds) / TILE_SIZE;

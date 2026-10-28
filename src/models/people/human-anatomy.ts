@@ -27,6 +27,18 @@ export const HEAD_SECTIONS: readonly LoftSection[] = [
   { centerZ: -0.01, radiusX: 0, radiusZ: 0, y: HEAD_CROWN },
 ];
 
+export const HEAD_AXIS_Z = -0.01;
+
+export const FOOT_SECTIONS: readonly LoftSection[] = [
+  { centerZ: -0.035, radiusX: 0, radiusZ: 0, y: -0.064 },
+  { centerZ: -0.037, radiusX: 0.028, radiusZ: 0.031, y: -0.054 },
+  { centerZ: -0.045, radiusX: 0.035, radiusZ: 0.043, y: -0.02 },
+  { centerZ: -0.034, radiusX: 0.041, radiusZ: 0.034, y: 0.04 },
+  { centerZ: -0.026, radiusX: 0.045, radiusZ: 0.026, y: 0.1 },
+  { centerZ: -0.021, radiusX: 0.042, radiusZ: 0.02, y: 0.148 },
+  { centerZ: -0.019, radiusX: 0, radiusZ: 0, y: 0.172 },
+];
+
 const MALE_TORSO: readonly LoftSection[] = [
   { radiusX: 0, radiusZ: 0, y: 0.84 },
   { radiusX: 0.06, radiusZ: 0.05, y: 0.85 },
@@ -118,15 +130,13 @@ const NECK: readonly TubePoint[] = [
 const SKIN_SEAM = 0.035;
 const FACE_SEAM = 0.012;
 const HAND_SEAM = 0.02;
+const SHOULDER_RADIUS = 0.058;
+const SKIN = { slot: MaterialSlot.Skin };
 
-export const FOOT_SECTIONS: readonly LoftSection[] = [
-  { centerZ: -0.035, radiusX: 0, radiusZ: 0, y: -0.064 },
-  { centerZ: -0.037, radiusX: 0.028, radiusZ: 0.031, y: -0.054 },
-  { centerZ: -0.045, radiusX: 0.035, radiusZ: 0.043, y: -0.02 },
-  { centerZ: -0.034, radiusX: 0.041, radiusZ: 0.034, y: 0.04 },
-  { centerZ: -0.026, radiusX: 0.045, radiusZ: 0.026, y: 0.1 },
-  { centerZ: -0.021, radiusX: 0.042, radiusZ: 0.02, y: 0.148 },
-  { centerZ: -0.019, radiusX: 0, radiusZ: 0, y: 0.172 },
+const BROW: readonly Triple[] = [
+  [0.018, 1.653, 0.1],
+  [0.035, 1.658, 0.1],
+  [0.052, 1.652, 0.1],
 ];
 
 export function footTransform(side: Side): Matrix4 {
@@ -139,8 +149,6 @@ export function footTransform(side: Side): Matrix4 {
   return combine(MIRROR_X, placement);
 }
 
-const SKIN = { slot: MaterialSlot.Skin };
-
 export function forEachSide(add: (side: Side, mirror: Matrix4) => void): void {
   for (const side of SIDES) {
     add(side, sideMirror(side));
@@ -150,8 +158,6 @@ export function forEachSide(add: (side: Side, mirror: Matrix4) => void): void {
 export function headShape(detail: HumanDetail): Shape {
   return loft(alongSections(HEAD_SECTIONS, detail), detail.headSegments);
 }
-
-export const HEAD_AXIS_Z = -0.01;
 
 function onHead(head: Shape, point: Triple, lift: number): Vector3 {
   const [x, y, z] = point;
@@ -173,13 +179,7 @@ export function headStroke(head: Shape, points: readonly Triple[], radius: numbe
   });
 }
 
-const BROW: readonly Triple[] = [
-  [0.018, 1.653, 0.1],
-  [0.035, 1.658, 0.1],
-  [0.052, 1.652, 0.1],
-];
-
-function addFace(builder: MeshBuilder, head: Shape, detail: HumanDetail): void {
+function addFace(builder: MeshBuilder, detail: HumanDetail, head: Shape): void {
   if (!detail.hasSmallParts) {
     return;
   }
@@ -233,10 +233,10 @@ function addHead(builder: MeshBuilder, detail: HumanDetail): void {
     seam: SKIN_SEAM,
     style: { ...TORSO_STYLE, ...SKIN },
   });
-  addFace(builder, head, detail);
+  addFace(builder, detail, head);
 }
 
-function handShape(builder: MeshBuilder, style: VertexStyle, mirror: Matrix4, detail: HumanDetail): void {
+function addHand(builder: MeshBuilder, detail: HumanDetail, style: VertexStyle, mirror: Matrix4): void {
   builder.add(sphere(1, detail.limbSegments, segmentsAtLeast(detail, 5, 4)), {
     seam: HAND_SEAM,
     style,
@@ -246,8 +246,6 @@ function handShape(builder: MeshBuilder, style: VertexStyle, mirror: Matrix4, de
     ),
   });
 }
-
-const SHOULDER_RADIUS = 0.058;
 
 function addArms(builder: MeshBuilder, detail: HumanDetail): void {
   forEachSide((side, mirror) => {
@@ -266,7 +264,7 @@ function addArms(builder: MeshBuilder, detail: HumanDetail): void {
       style: { ...rigidStyle(sideBones(side).upperArm), ...SKIN },
       transform: combine(mirror, transformOf({ position: HumanJoint.Shoulder })),
     });
-    handShape(builder, style, mirror, detail);
+    addHand(builder, detail, style, mirror);
   });
 }
 
@@ -287,7 +285,7 @@ function addLegs(builder: MeshBuilder, detail: HumanDetail): void {
   });
 }
 
-function addBody(builder: MeshBuilder, torso: readonly LoftSection[], detail: HumanDetail): void {
+function addBody(builder: MeshBuilder, detail: HumanDetail, torso: readonly LoftSection[]): void {
   builder.add(loft(alongSections(torso, detail), detail.torsoSegments), {
     seam: SKIN_SEAM,
     style: { ...FLEXIBLE_TORSO_STYLE, ...SKIN },
@@ -298,13 +296,13 @@ function addBody(builder: MeshBuilder, torso: readonly LoftSection[], detail: Hu
 }
 
 export function addMaleBody(builder: MeshBuilder, detail: HumanDetail): void {
-  addBody(builder, MALE_TORSO, detail);
+  addBody(builder, detail, MALE_TORSO);
 }
 
 export function addFemaleBody(builder: MeshBuilder, detail: HumanDetail): void {
-  addBody(builder, FEMALE_TORSO, detail);
+  addBody(builder, detail, FEMALE_TORSO);
 }
 
 export function addChildBody(builder: MeshBuilder, detail: HumanDetail): void {
-  addBody(builder, CHILD_TORSO, detail);
+  addBody(builder, detail, CHILD_TORSO);
 }

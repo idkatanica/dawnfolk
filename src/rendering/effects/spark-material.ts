@@ -17,12 +17,10 @@ export function createSparkMaterial(axes: CameraAxes, look: SmokeLook): MeshBasi
   const heat = spark.y;
 
   const life = fract(time.mul(SPARK_RATE).add(seed.mul(7.3)));
-
   const lift = life.mul(placement.w);
   const swirl = vec2(sin(time.mul(2.3).add(seed.mul(40))), cos(time.mul(1.9).add(seed.mul(23)))).mul(life.mul(SWIRL));
 
   const drift = look.wind.mul(lift.mul(0.8)).add(swirl);
-
   const center = placement.xyz.add(vec3(drift.x, lift, drift.y));
 
   material.positionNode = facingBillboard(axes, center, corner, float(SPARK_SIZE).mul(float(1).sub(life.mul(0.5))));

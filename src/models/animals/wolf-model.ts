@@ -107,8 +107,26 @@ const PAW_SEAM = 0.04;
 const TAIL_SEAM = 0.05;
 const EAR_SEAM = 0.02;
 const RUFF_SEAM = 0.08;
-
 const BLEND = 0.05;
+
+const TAIL: readonly TubePoint[] = [
+  { radius: 0.06, x: 0, y: 0.84, z: -0.58 },
+  { radius: 0.055, x: 0, y: 0.82, z: -0.68 },
+  { radius: 0.07, x: 0, y: 0.74, z: -0.77 },
+  { radius: 0.075, x: 0, y: 0.6, z: -0.83 },
+  { radius: 0.055, x: 0, y: 0.47, z: -0.86 },
+  { radius: 0, x: 0, y: 0.38, z: -0.86 },
+];
+
+const RUFF: readonly TubePoint[] = [
+  { radius: 0.11, x: 0, y: 0.79, z: 0.32 },
+  { radius: 0.19, x: 0, y: 0.84, z: 0.39 },
+  { radius: 0.2, x: 0, y: 0.91, z: 0.47 },
+  { radius: 0.16, x: 0, y: 0.98, z: 0.55 },
+  { radius: 0.1, x: 0, y: 1.02, z: 0.6 },
+];
+
+const RUFF_NOISE = createVolumeNoise(createRandom(5353));
 
 function coatSlot(point: SurfacePoint): number {
   const { y, z } = point.position;
@@ -210,15 +228,6 @@ function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
   }
 }
 
-const TAIL: readonly TubePoint[] = [
-  { radius: 0.06, x: 0, y: 0.84, z: -0.58 },
-  { radius: 0.055, x: 0, y: 0.82, z: -0.68 },
-  { radius: 0.07, x: 0, y: 0.74, z: -0.77 },
-  { radius: 0.075, x: 0, y: 0.6, z: -0.83 },
-  { radius: 0.055, x: 0, y: 0.47, z: -0.86 },
-  { radius: 0, x: 0, y: 0.38, z: -0.86 },
-];
-
 export function addWolfBody(builder: MeshBuilder, detail: AnimalDetail): void {
   const legSegments = segmentsAtLeast(detail, 5, detail.segments - 2);
 
@@ -246,16 +255,6 @@ export function addWolfBody(builder: MeshBuilder, detail: AnimalDetail): void {
     },
   });
 }
-
-const RUFF: readonly TubePoint[] = [
-  { radius: 0.11, x: 0, y: 0.79, z: 0.32 },
-  { radius: 0.19, x: 0, y: 0.84, z: 0.39 },
-  { radius: 0.2, x: 0, y: 0.91, z: 0.47 },
-  { radius: 0.16, x: 0, y: 0.98, z: 0.55 },
-  { radius: 0.1, x: 0, y: 1.02, z: 0.6 },
-];
-
-const RUFF_NOISE = createVolumeNoise(createRandom(5353));
 
 function ruffShape(detail: AnimalDetail): Shape {
   const sleeve = transformShape(

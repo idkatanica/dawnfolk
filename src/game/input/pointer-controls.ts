@@ -2,6 +2,14 @@ import type { Vector3 } from "three/webgpu";
 import type { GodCamera } from "../camera/god-camera.ts";
 import type { GroundPicker, ScreenPoint } from "./ground-picker.ts";
 
+const MOUSE_PRIMARY = 0;
+const TOUCH_HOLD_MILLISECONDS = 140;
+const TAP_TOLERANCE = 6;
+const ORBIT_YAW_PER_PIXEL = 0.005;
+const ORBIT_PITCH_PER_PIXEL = 0.004;
+const WHEEL_ZOOM_RATE = 0.0015;
+const WHEEL_LINE_PIXELS = 16;
+
 export interface ToolGestures {
   readonly begin: (point: Vector3) => void;
   readonly end: () => void;
@@ -35,15 +43,7 @@ type Gesture =
   | { readonly kind: "pan"; travel: number }
   | { readonly kind: "tool" }
   | { readonly kind: "waiting"; readonly point: Vector3 }
-  | { distance: number; readonly kind: "pinch"; angle: number; middleX: number; middleY: number };
-
-const MOUSE_PRIMARY = 0;
-const TOUCH_HOLD_MILLISECONDS = 140;
-const TAP_TOLERANCE = 6;
-const ORBIT_YAW_PER_PIXEL = 0.005;
-const ORBIT_PITCH_PER_PIXEL = 0.004;
-const WHEEL_ZOOM_RATE = 0.0015;
-const WHEEL_LINE_PIXELS = 16;
+  | { angle: number; distance: number; readonly kind: "pinch"; middleX: number; middleY: number };
 
 function wheelPixels(event: WheelEvent, pageHeight: number): number {
   if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
@@ -73,13 +73,13 @@ function measurePinch(pointers: ReadonlyMap<number, TrackedPointer>): PinchMeasu
 }
 
 export class PointerControls {
+  readonly #abort = new AbortController();
   readonly #camera: GodCamera;
   readonly #canvas: HTMLCanvasElement;
   readonly #picker: GroundPicker;
   readonly #pointers = new Map<number, TrackedPointer>();
   readonly #tap: TapHandler;
   readonly #tool: ToolGestures;
-  readonly #abort = new AbortController();
   #gesture: Gesture = { kind: "idle" };
   #holdTimer: number | null = null;
 

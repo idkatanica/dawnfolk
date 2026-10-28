@@ -6,7 +6,7 @@ import { WorldRenderer } from "../rendering/world-renderer.ts";
 import { clamp } from "../shared/math.ts";
 import type { ChronicleEntry } from "../simulation/chronicle.ts";
 import type { SavedWorldState } from "../simulation/saved-world.ts";
-import { type CameraState, GodCamera } from "./camera/god-camera.ts";
+import { type CameraState, GodCamera, type GroundPoint } from "./camera/god-camera.ts";
 import type { EngineHandle } from "./engine-handle.ts";
 import { FramePacer } from "./frame-pacer.ts";
 import { GameSession } from "./game-session.ts";
@@ -19,6 +19,17 @@ import type { Landmark } from "./landmarks.ts";
 import { ResolutionGovernor } from "./resolution-governor.ts";
 import { type SimulationConnection, WorkerSimulationConnection } from "./simulation-connection.ts";
 import { type PowerSelection, PowerTool } from "./tools/power-tool.ts";
+
+const LONGEST_FRAME_SECONDS = 0.1;
+const MILLISECONDS_PER_SECOND = 1000;
+const FIELD_OF_VIEW = 45;
+const NEAR_PLANE = 0.5;
+const FAR_PLANE = 40_000;
+const CURSOR_COLOR = 0xff_ff_ff;
+const PRESSED_CURSOR_COLOR = 0xff_d8_8a;
+const FOLLOW_DISTANCE = 45;
+const VIEW_FOCUS_STEP = 50;
+const ACTIVITY_EVENTS = ["keydown", "pointerdown", "pointermove", "wheel"] as const;
 
 export type WorldSource =
   | { readonly kind: "new"; readonly request: WorldRequest }
@@ -38,17 +49,6 @@ interface EngineParts {
   readonly renderer: WebGPURenderer;
   readonly session: GameSession;
 }
-
-const LONGEST_FRAME_SECONDS = 0.1;
-const MILLISECONDS_PER_SECOND = 1000;
-const FIELD_OF_VIEW = 45;
-const NEAR_PLANE = 0.5;
-const FAR_PLANE = 40_000;
-const CURSOR_COLOR = 0xff_ff_ff;
-const PRESSED_CURSOR_COLOR = 0xff_d8_8a;
-const FOLLOW_DISTANCE = 45;
-const VIEW_FOCUS_STEP = 50;
-const ACTIVITY_EVENTS = ["keydown", "pointerdown", "pointermove", "wheel"] as const;
 
 function openSession(
   connection: SimulationConnection,
@@ -82,9 +82,9 @@ export class GameEngine implements EngineHandle {
   readonly camera: GodCamera;
   readonly powers: PowerTool;
   readonly session: GameSession;
-  readonly #canvas: HTMLCanvasElement;
   readonly #activity = new AbortController();
   readonly #cameraPlacement = new Matrix4();
+  readonly #canvas: HTMLCanvasElement;
   readonly #entityPicker: EntityPicker;
   readonly #keyboard: KeyboardControls;
   readonly #labels: LabelProjector;
@@ -263,6 +263,15 @@ export class GameEngine implements EngineHandle {
     this.#reportViewFocus();
   }
 
+  #noticeCameraMotion(time: number): void {
+    const placement = this.camera.camera.matrixWorld;
+
+    if (!placement.equals(this.#cameraPlacement)) {
+      this.#cameraPlacement.copy(placement);
+      this.#pacer.markActivity(time);
+    }
+  }
+
   #reportViewFocus(): void {
     const { target } = this.camera;
 
@@ -275,16 +284,7 @@ export class GameEngine implements EngineHandle {
     this.session.send({ type: "setViewFocus", x: target.x, z: target.z });
   }
 
-  #noticeCameraMotion(time: number): void {
-    const placement = this.camera.camera.matrixWorld;
-
-    if (!placement.equals(this.#cameraPlacement)) {
-      this.#cameraPlacement.copy(placement);
-      this.#pacer.markActivity(time);
-    }
-  }
-
-  #selectedPosition(): { x: number; z: number } | null {
+  #selectedPosition(): GroundPoint | null {
     const { inspection } = this.session.frame;
 
     if (inspection === null || inspection.kind === "tribe" || inspection.kind === "cell") {

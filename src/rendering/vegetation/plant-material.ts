@@ -38,40 +38,6 @@ const STRONGEST_GUST = 2;
 const METERS_PER_SECOND_PER_GUST = 7;
 const SLOWEST_GUST_FRONT = 1.5;
 const GUST_FRONT_SPEEDUP = 2;
-
-export class PlantWeather {
-  readonly gust = uniform(0.5);
-  readonly gustTravel = uniform(0);
-  readonly wind = uniform(new Vector2(1, 0));
-
-  blow(directionX: number, directionZ: number, metersPerSecond: number, realSeconds: number): void {
-    const frontSpeed = Math.max(metersPerSecond, SLOWEST_GUST_FRONT) * GUST_FRONT_SPEEDUP;
-
-    this.gust.value = clampNumber(metersPerSecond / METERS_PER_SECOND_PER_GUST, CALM_GUST, STRONGEST_GUST);
-    this.gustTravel.value += frontSpeed * realSeconds;
-    this.wind.value.set(directionX, directionZ);
-  }
-}
-
-export function gustAt(weather: PlantWeather, point: Node<"vec2">): Node<"float"> {
-  const front = dot(point, weather.wind).sub(weather.gustTravel);
-  const across = dot(point, vec2(weather.wind.y.negate(), weather.wind.x));
-
-  const rolling = sin(front.mul(0.045).add(sin(across.mul(0.013)).mul(2.2)))
-    .mul(0.5)
-    .add(0.5);
-  const ripple = sin(front.mul(0.19).add(across.mul(0.05)))
-    .mul(0.5)
-    .add(0.5);
-
-  return rolling.mul(0.7).add(ripple.mul(0.3));
-}
-
-export class SpeciesLook {
-  readonly foliageColor = uniform(new Color(0x4e_8c_32));
-  readonly foliageCoverage = uniform(1);
-}
-
 const CHARCOAL = vec3(0.035, 0.03, 0.028);
 const SNOW = vec3(0.86, 0.9, 0.95);
 const CROWN_FIRE_LIGHT = 0.45;
@@ -95,6 +61,20 @@ interface PlantMaterialOptions {
   readonly look: SpeciesLook;
   readonly textures: TerrainTextures;
   readonly weather: PlantWeather;
+}
+
+export function gustAt(weather: PlantWeather, point: Node<"vec2">): Node<"float"> {
+  const front = dot(point, weather.wind).sub(weather.gustTravel);
+  const across = dot(point, vec2(weather.wind.y.negate(), weather.wind.x));
+
+  const rolling = sin(front.mul(0.045).add(sin(across.mul(0.013)).mul(2.2)))
+    .mul(0.5)
+    .add(0.5);
+  const ripple = sin(front.mul(0.19).add(across.mul(0.05)))
+    .mul(0.5)
+    .add(0.5);
+
+  return rolling.mul(0.7).add(ripple.mul(0.3));
 }
 
 function slotWeight(slot: Node<"float">, value: number): Node<"float"> {
@@ -216,23 +196,37 @@ export function createPlantMaterial({
   const charring = burn.charring.add(fallen.mul(surface.b).mul(FALLEN_CHARRING));
 
   const slotColors = slotColorTable();
-
   const variation = tint.mul(0.3).add(0.85);
   const baseColor = mix(slotColors.element(int(slot.add(0.5))), look.foliageColor.rgb, foliage);
-
   const shaded = baseColor.mul(shade).mul(variation);
 
   const vertexColor = varying(charredColor(shaded, charring, CHARCOAL), "plantColor");
   const snowOnTop = snow.mul(smoothstep(0.25, 0.75, normalWorld.y));
-
   const fireLight = varying(fireLightAt(glow, grid, placement.xz), "plantFireLight");
-
-  material.colorNode = mix(vertexColor, SNOW, snowOnTop);
-
   const burning = burnGlow({ embers, flames, phase: placement.x.mul(0.37).fract().mul(6), smoulder });
 
+  material.colorNode = mix(vertexColor, SNOW, snowOnTop);
   material.emissiveNode = vertexColor.mul(fireLight).mul(CROWN_FIRE_LIGHT).add(burning);
   material.roughnessNode = float(0.88);
 
   return material;
+}
+
+export class PlantWeather {
+  readonly gust = uniform(0.5);
+  readonly gustTravel = uniform(0);
+  readonly wind = uniform(new Vector2(1, 0));
+
+  blow(directionX: number, directionZ: number, metersPerSecond: number, realSeconds: number): void {
+    const frontSpeed = Math.max(metersPerSecond, SLOWEST_GUST_FRONT) * GUST_FRONT_SPEEDUP;
+
+    this.gust.value = clampNumber(metersPerSecond / METERS_PER_SECOND_PER_GUST, CALM_GUST, STRONGEST_GUST);
+    this.gustTravel.value += frontSpeed * realSeconds;
+    this.wind.value.set(directionX, directionZ);
+  }
+}
+
+export class SpeciesLook {
+  readonly foliageColor = uniform(new Color(0x4e_8c_32));
+  readonly foliageCoverage = uniform(1);
 }

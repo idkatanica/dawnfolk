@@ -1,9 +1,9 @@
 import type { BodyShape } from "./appearance.ts";
 import { HUMAN_BONE_COUNT, HumanBone, SIDES, sideBones } from "./human-skeleton.ts";
 
-const STYLIZED_HEAD = 1.1;
-
 export const FIGURE_SCALE = 1.18;
+
+const STYLIZED_HEAD = 1.1;
 
 function setScale(scales: Float32Array, bone: number, x: number, y: number, z: number): void {
   scales[bone * 3] = x * FIGURE_SCALE;

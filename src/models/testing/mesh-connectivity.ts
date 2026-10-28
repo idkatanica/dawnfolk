@@ -1,48 +1,47 @@
 import type { MeshData } from "../mesh/mesh-data.ts";
+import type { Triple } from "../mesh/transforms.ts";
 
-type Point = readonly [number, number, number];
+export const TOUCHING = 0.01;
 
-type Corners = readonly [Point, Point, Point];
+const POSITION_GRID = 1e4;
+const RAY_DIRECTION: Triple = [0.577_31, 0.577_43, 0.577_37];
+const RAY_EPSILON = 1e-9;
+const GROUND_HEIGHT = 0;
+
+type Corners = readonly [Triple, Triple, Triple];
 
 export interface MeshPiece {
-  readonly maximum: Point;
-  readonly minimum: Point;
+  readonly maximum: Triple;
+  readonly minimum: Triple;
   readonly triangles: readonly number[];
   readonly vertices: readonly number[];
 }
 
 type PieceAnchor = (piece: MeshPiece) => boolean;
 
-export const TOUCHING = 0.01;
-
-const POSITION_GRID = 1e4;
-const RAY_DIRECTION: Point = [0.577_31, 0.577_43, 0.577_37];
-const RAY_EPSILON = 1e-9;
-const GROUND_HEIGHT = 0;
-
-function pointOf(mesh: MeshData, vertex: number): Point {
+function pointOf(mesh: MeshData, vertex: number): Triple {
   const offset = vertex * 3;
 
   return [mesh.positions[offset], mesh.positions[offset + 1], mesh.positions[offset + 2]];
 }
 
-function subtract(first: Point, second: Point): Point {
+function subtract(first: Triple, second: Triple): Triple {
   return [first[0] - second[0], first[1] - second[1], first[2] - second[2]];
 }
 
-function add(first: Point, second: Point): Point {
+function add(first: Triple, second: Triple): Triple {
   return [first[0] + second[0], first[1] + second[1], first[2] + second[2]];
 }
 
-function scale(point: Point, factor: number): Point {
+function scale(point: Triple, factor: number): Triple {
   return [point[0] * factor, point[1] * factor, point[2] * factor];
 }
 
-function dot(first: Point, second: Point): number {
+function dot(first: Triple, second: Triple): number {
   return first[0] * second[0] + first[1] * second[1] + first[2] * second[2];
 }
 
-function cross(first: Point, second: Point): Point {
+function cross(first: Triple, second: Triple): Triple {
   return [
     first[1] * second[2] - first[2] * second[1],
     first[2] * second[0] - first[0] * second[2],
@@ -50,46 +49,10 @@ function cross(first: Point, second: Point): Point {
   ];
 }
 
-function distanceSquared(first: Point, second: Point): number {
+function distanceSquared(first: Triple, second: Triple): number {
   const difference = subtract(first, second);
 
   return dot(difference, difference);
-}
-
-class DisjointSets {
-  readonly #parents: Int32Array;
-
-  constructor(size: number) {
-    this.#parents = Int32Array.from({ length: size }, (_, index) => index);
-  }
-
-  find(element: number): number {
-    let root = element;
-
-    while (this.#parents[root] !== root) {
-      root = this.#parents[root];
-    }
-
-    let current = element;
-
-    while (this.#parents[current] !== root) {
-      const next = this.#parents[current];
-
-      this.#parents[current] = root;
-      current = next;
-    }
-
-    return root;
-  }
-
-  join(first: number, second: number): void {
-    const firstRoot = this.find(first);
-    const secondRoot = this.find(second);
-
-    if (firstRoot !== secondRoot) {
-      this.#parents[secondRoot] = firstRoot;
-    }
-  }
 }
 
 export function vertexKey(mesh: MeshData, vertex: number): string {
@@ -201,7 +164,7 @@ function triangleCorners(mesh: MeshData, triangle: number): Corners {
   ];
 }
 
-function closestPointOnTriangle(point: Point, corners: Corners): Point {
+function closestPointOnTriangle(point: Triple, corners: Corners): Triple {
   const [first, second, third] = corners;
 
   const firstEdge = subtract(second, first);
@@ -252,7 +215,7 @@ function closestPointOnTriangle(point: Point, corners: Corners): Point {
   return add(first, add(scale(firstEdge, secondArea * total), scale(secondEdge, thirdArea * total)));
 }
 
-function rayCrossesTriangle(origin: Point, corners: Corners): boolean {
+function rayCrossesTriangle(origin: Triple, corners: Corners): boolean {
   const [first, second, third] = corners;
 
   const firstEdge = subtract(second, first);
@@ -278,13 +241,13 @@ function rayCrossesTriangle(origin: Point, corners: Corners): boolean {
   return dot(secondEdge, across) / determinant > RAY_EPSILON;
 }
 
-export function isInsidePiece(mesh: MeshData, piece: MeshPiece, point: Point): boolean {
+export function isInsidePiece(mesh: MeshData, piece: MeshPiece, point: Triple): boolean {
   const crossings = piece.triangles.filter((triangle) => rayCrossesTriangle(point, triangleCorners(mesh, triangle)));
 
   return crossings.length % 2 === 1;
 }
 
-function isNearPiece(mesh: MeshData, piece: MeshPiece, point: Point, tolerance: number): boolean {
+function isNearPiece(mesh: MeshData, piece: MeshPiece, point: Triple, tolerance: number): boolean {
   const limit = tolerance * tolerance;
 
   return piece.triangles.some((triangle) => {
@@ -294,7 +257,7 @@ function isNearPiece(mesh: MeshData, piece: MeshPiece, point: Point, tolerance: 
   });
 }
 
-function isWithinBounds(point: Point, piece: MeshPiece, margin: number): boolean {
+function isWithinBounds(piece: MeshPiece, point: Triple, margin: number): boolean {
   for (let axis = 0; axis < 3; axis += 1) {
     if (point[axis] < piece.minimum[axis] - margin || point[axis] > piece.maximum[axis] + margin) {
       return false;
@@ -314,7 +277,7 @@ function boundsOverlap(first: MeshPiece, second: MeshPiece, margin: number): boo
   return true;
 }
 
-function samplePoints(mesh: MeshData, piece: MeshPiece): Point[] {
+function samplePoints(mesh: MeshData, piece: MeshPiece): Triple[] {
   const corners = piece.vertices.map((vertex) => pointOf(mesh, vertex));
   const centers = piece.triangles.map((triangle) => {
     const [first, second, third] = triangleCorners(mesh, triangle);
@@ -327,7 +290,7 @@ function samplePoints(mesh: MeshData, piece: MeshPiece): Point[] {
 
 function reaches(mesh: MeshData, from: MeshPiece, to: MeshPiece, tolerance: number): boolean {
   return samplePoints(mesh, from).some((point) => {
-    if (!isWithinBounds(point, to, tolerance)) {
+    if (!isWithinBounds(to, point, tolerance)) {
       return false;
     }
 
@@ -403,4 +366,40 @@ export function loosePieces(
   isAnchor: PieceAnchor = restsOnGround(tolerance)
 ): string[] {
   return detachedPieces(mesh, tolerance, isAnchor).map((piece) => describePiece(mesh, piece));
+}
+
+class DisjointSets {
+  readonly #parents: Int32Array;
+
+  constructor(size: number) {
+    this.#parents = Int32Array.from({ length: size }, (_, index) => index);
+  }
+
+  find(element: number): number {
+    let root = element;
+
+    while (this.#parents[root] !== root) {
+      root = this.#parents[root];
+    }
+
+    let current = element;
+
+    while (this.#parents[current] !== root) {
+      const next = this.#parents[current];
+
+      this.#parents[current] = root;
+      current = next;
+    }
+
+    return root;
+  }
+
+  join(first: number, second: number): void {
+    const firstRoot = this.find(first);
+    const secondRoot = this.find(second);
+
+    if (firstRoot !== secondRoot) {
+      this.#parents[secondRoot] = firstRoot;
+    }
+  }
 }

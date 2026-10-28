@@ -101,8 +101,22 @@ const LEG_SEAM = 0.08;
 const TAIL_SEAM = 0.03;
 const EAR_SEAM = 0.02;
 const BEARD_SEAM = 0.03;
-
 const BLEND = 0.06;
+const EAR = transformOf({ position: [0, 0.055, 0], scale: [0.03, 0.068, 0.012] });
+
+const TAIL: readonly TubePoint[] = [
+  { radius: 0.042, x: 0, y: 0.91, z: -0.57 },
+  { radius: 0.038, x: 0, y: 0.94, z: -0.66 },
+  { radius: 0.026, x: 0, y: 0.98, z: -0.71 },
+  { radius: 0, x: 0, y: 1.01, z: -0.73 },
+];
+
+const BEARD: readonly TubePoint[] = [
+  { radius: 0.028, x: 0, y: 1.165, z: 0.78 },
+  { radius: 0.032, x: 0, y: 1.11, z: 0.795 },
+  { radius: 0.024, x: 0, y: 1.05, z: 0.805 },
+  { radius: 0, x: 0, y: 0.99, z: 0.8 },
+];
 
 function coatSlot(point: SurfacePoint): number {
   const { y, z } = point.position;
@@ -133,8 +147,6 @@ function headShape(detail: AnimalDetail): Shape {
 
   return transformShape(muzzle, transformOf({ scale: [0.8, 1, 1] }));
 }
-
-const EAR = transformOf({ position: [0, 0.055, 0], scale: [0.03, 0.068, 0.012] });
 
 function addFace(builder: MeshBuilder, shape: Shape, detail: AnimalDetail): void {
   if (!detail.hasSmallParts) {
@@ -170,13 +182,6 @@ function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
     });
   }
 }
-
-const TAIL: readonly TubePoint[] = [
-  { radius: 0.042, x: 0, y: 0.91, z: -0.57 },
-  { radius: 0.038, x: 0, y: 0.94, z: -0.66 },
-  { radius: 0.026, x: 0, y: 0.98, z: -0.71 },
-  { radius: 0, x: 0, y: 1.01, z: -0.73 },
-];
 
 export function addIbexBody(builder: MeshBuilder, detail: AnimalDetail): void {
   const { segments } = detail;
@@ -246,13 +251,6 @@ function addHorns(builder: MeshBuilder, detail: AnimalDetail, length: number): v
 export function addShortHorns(builder: MeshBuilder, detail: AnimalDetail): void {
   addHorns(builder, detail, 0.45);
 }
-
-const BEARD: readonly TubePoint[] = [
-  { radius: 0.028, x: 0, y: 1.165, z: 0.78 },
-  { radius: 0.032, x: 0, y: 1.11, z: 0.795 },
-  { radius: 0.024, x: 0, y: 1.05, z: 0.805 },
-  { radius: 0, x: 0, y: 0.99, z: 0.8 },
-];
 
 export function addLongHorns(builder: MeshBuilder, detail: AnimalDetail): void {
   addHorns(builder, detail, 1.15);

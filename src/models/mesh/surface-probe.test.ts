@@ -1,11 +1,12 @@
 import { Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { MeshBuilder } from "./mesh-builder.ts";
+import type { MeshData } from "./mesh-data.ts";
 import { box, sphere } from "./shapes.ts";
 import { outermostHit, surfaceTransform } from "./surface-probe.ts";
 import { transformOf } from "./transforms.ts";
 
-function twoBoxes() {
+function twoBoxes(): MeshData {
   const builder = new MeshBuilder();
 
   builder.add(box(2, 2, 2));

@@ -16,8 +16,12 @@ import { HumanBone } from "./human-skeleton.ts";
 import { addRod, CRADLE, inLeftHand, inRightHand, LEFT_FIST, onChest, RIGHT_FIST } from "./prop-placement.ts";
 
 const PROP_NOISE = createVolumeNoise(createRandom(4242));
-
 const SHOULDER_GRIP: Triple = [0.25, 1.46, 0.21];
+const FEATHER_LENGTH = 0.17;
+const FEATHER_TIP = 0.05;
+const NECKLACE_RADIUS = 0.088;
+const NECKLACE_CORD = transformOf({ position: [0, 1.425, 0.005], rotation: [-0.35, 0, 0], scale: [1, 1, 0.9] });
+const TOOTH_ANGLES = [-0.3, 0, 0.3];
 
 function ring(detail: HumanDetail, radius: number, thickness: number, segments: number): Shape {
   return torus(radius, thickness, trimSegments(detail, segments), trimSegments(detail, 4));
@@ -33,9 +37,6 @@ export function addHeadband(builder: MeshBuilder, detail: HumanDetail): void {
     transform: transformOf({ position: [0, 1.684, -0.008], rotation: [0.1, 0, 0], scale: [1.02, 1, 1.13] }),
   });
 }
-
-const FEATHER_LENGTH = 0.17;
-const FEATHER_TIP = 0.05;
 
 function featherVane(detail: HumanDetail): Shape {
   const sections: LoftSection[] = [
@@ -72,10 +73,6 @@ export function addFeather(builder: MeshBuilder, detail: HumanDetail): void {
     { style: { ...style, slot: MaterialSlot.Bone }, transform: quill }
   );
 }
-
-const NECKLACE_RADIUS = 0.088;
-const NECKLACE_CORD = transformOf({ position: [0, 1.425, 0.005], rotation: [-0.35, 0, 0], scale: [1, 1, 0.9] });
-const TOOTH_ANGLES = [-0.3, 0, 0.3];
 
 export function addNecklace(builder: MeshBuilder, detail: HumanDetail): void {
   const style = onChest(MaterialSlot.Bone);

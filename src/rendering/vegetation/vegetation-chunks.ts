@@ -11,6 +11,11 @@ export const CHUNK_CELLS = 16;
 export const FLOATS_PER_PLANT = 8;
 export const PLANT_SINKING = 0.15;
 
+const NO_CHUNK = -1;
+const NO_BUCKET = -1;
+const EMPTY_BUCKET = new Float32Array(0);
+const corner = new Vector3();
+
 interface PlantBucket {
   readonly species: PlantSpeciesIndex;
   readonly variant: number;
@@ -19,17 +24,11 @@ interface PlantBucket {
 export const PLANT_BUCKETS: readonly PlantBucket[] = PLANT_SPECIES.flatMap((definition) =>
   Array.from({ length: plantVariantCount(definition.index) }, (_, variant) => ({ species: definition.index, variant }))
 );
-
 export const BUCKET_COUNT = PLANT_BUCKETS.length;
 
 const FIRST_BUCKETS: readonly number[] = PLANT_SPECIES.map((definition) =>
   PLANT_BUCKETS.findIndex((bucket) => bucket.species === definition.index)
 );
-
-const NO_CHUNK = -1;
-const NO_BUCKET = -1;
-const EMPTY_BUCKET = new Float32Array(0);
-const corner = new Vector3();
 
 export interface VegetationChunk {
   readonly bounds: Box3;

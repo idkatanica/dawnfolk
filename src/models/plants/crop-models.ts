@@ -10,10 +10,7 @@ import { segmentTransform, type Triple, transformOf } from "../mesh/transforms.t
 import { plantSway } from "./tree-mesher.ts";
 import { GOLDEN_ANGLE } from "./tree-structure.ts";
 
-export type CropDetailLevel = "high" | "low";
-
 export const CROP_DETAIL_LEVELS: readonly CropDetailLevel[] = ["high", "low"];
-
 export const CROP_HEAD_PART = 1;
 
 export const CROP_HEIGHTS: Readonly<Record<CropKind, number>> = {
@@ -32,6 +29,17 @@ const FENCE_POST_SINK = 0.25;
 const FENCE_POST_TOP = 0.95;
 const FENCE_RAIL_RADIUS = 0.035;
 const FENCE_RAIL_HEIGHTS: readonly number[] = [0.42, 0.8];
+
+const CLUMP_BUILDERS: Readonly<Record<CropKind, ClumpBuilder>> = {
+  barley: addBarley,
+  beans: addBeans,
+  carrots: addCarrots,
+  flax: addFlax,
+  turnips: addTurnips,
+  wheat: addWheat,
+};
+
+export type CropDetailLevel = "high" | "low";
 
 interface LeafPlacement {
   readonly angle: number;
@@ -119,7 +127,7 @@ function addLeafOnStalk(context: ClumpContext, from: Triple, leaf: LeafPlacement
   });
 }
 
-function wheat(context: ClumpContext): void {
+function addWheat(context: ClumpContext): void {
   const stalks = context.level === "high" ? 5 : 3;
   const ear = spindle(0.02, 0.13, context.level === "high" ? 4 : 3);
 
@@ -134,7 +142,7 @@ function wheat(context: ClumpContext): void {
   }
 }
 
-function barley(context: ClumpContext): void {
+function addBarley(context: ClumpContext): void {
   const stalks = context.level === "high" ? 5 : 3;
   const ear = spindle(0.018, 0.13, context.level === "high" ? 4 : 3);
   const awn = cylinder({ height: 0.12, radialSegments: 3, radiusBottom: 0.012, radiusTop: 0 });
@@ -173,7 +181,7 @@ function barley(context: ClumpContext): void {
   }
 }
 
-function flax(context: ClumpContext): void {
+function addFlax(context: ClumpContext): void {
   const stems = context.level === "high" ? 6 : 3;
   const flower = bud(0.03, 0.012, 5);
 
@@ -200,7 +208,7 @@ function frondPoints(index: number, count: number, height: number): TubePoint[] 
   ];
 }
 
-function carrots(context: ClumpContext): void {
+function addCarrots(context: ClumpContext): void {
   const fronds = context.level === "high" ? 6 : 3;
   const leaf = plantStyle(context, MaterialSlot.Leaf, 0);
   const leaflet = bud(0.045, 0.012, 4);
@@ -236,7 +244,7 @@ function carrots(context: ClumpContext): void {
   );
 }
 
-function turnips(context: ClumpContext): void {
+function addTurnips(context: ClumpContext): void {
   const leaves = context.level === "high" ? 5 : 3;
   const crown: Triple = [0, 0.08, 0];
 
@@ -261,7 +269,7 @@ function turnips(context: ClumpContext): void {
   });
 }
 
-function beans(context: ClumpContext): void {
+function addBeans(context: ClumpContext): void {
   const isHigh = context.level === "high";
   const stem: Triple = [0, context.height * 0.92, 0];
   const pods = plantStyle(context, MaterialSlot.Lichen, CROP_HEAD_PART);
@@ -296,15 +304,6 @@ function beans(context: ClumpContext): void {
     context.builder.add(podShape, { style: pods, transform: segmentTransform(start, end) });
   }
 }
-
-const CLUMP_BUILDERS: Readonly<Record<CropKind, ClumpBuilder>> = {
-  barley,
-  beans,
-  carrots,
-  flax,
-  turnips,
-  wheat,
-};
 
 export function buildCropModel(kind: CropKind, level: CropDetailLevel): MeshData {
   const builder = new MeshBuilder();

@@ -3,7 +3,7 @@ import { fogShapeFor } from "./height-fog.ts";
 
 const CLEAR_NOON = { mist: 0, precipitation: 0, snowfall: 0, sunHeight: 0.9 };
 
-describe("fogShapeFor", () => {
+describe("fog shape", () => {
   it("keeps a clear noon almost transparent", () => {
     const shape = fogShapeFor(CLEAR_NOON);
 

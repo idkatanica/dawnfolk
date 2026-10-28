@@ -1,5 +1,10 @@
 import type { GodCamera } from "../camera/god-camera.ts";
 
+const MOVE_SPEED_PER_DISTANCE = 0.9;
+const TURN_SPEED = 1.6;
+const PITCH_SPEED = 0.9;
+const ZOOM_SPEED = 1.8;
+
 type CameraAction =
   | "back"
   | "forward"
@@ -30,11 +35,6 @@ const KEY_ACTIONS: ReadonlyMap<string, CameraAction> = new Map([
   ["NumpadAdd", "zoomIn"],
   ["NumpadSubtract", "zoomOut"],
 ]);
-
-const MOVE_SPEED_PER_DISTANCE = 0.9;
-const TURN_SPEED = 1.6;
-const PITCH_SPEED = 0.9;
-const ZOOM_SPEED = 1.8;
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {

@@ -258,7 +258,6 @@ export class AgentMarkers {
     }
 
     const pixels = markerExtent(style, presence, isSelected) * growth + MARKER_HALO_PIXELS * 2;
-
     const size = pixels * ahead * this.#pixelScale;
 
     this.#reach.set(position, size * Math.SQRT1_2);

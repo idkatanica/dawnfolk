@@ -59,7 +59,6 @@ export class LatticeCover {
 
     const driftColumns = Math.floor(drift.x);
     const driftRows = Math.floor(drift.y);
-
     const firstColumn = Math.floor(west / tileSize - (drift.x - driftColumns));
     const firstRow = Math.floor(north / tileSize - (drift.y - driftRows));
     const columns = Math.floor(east / tileSize - (drift.x - driftColumns)) - firstColumn + 1;
@@ -77,12 +76,9 @@ export class LatticeCover {
 
 export function latticeElement(cover: LatticeCover, salt: Node<"uint">): LatticeElement {
   const index = float(instanceIndex);
-
   const tileIndex = floor(index.add(0.5).div(cover.slots));
-
   const slot = index.sub(tileIndex.mul(cover.slots));
   const row = floor(tileIndex.add(0.5).div(cover.columns));
-
   const cell = vec2(tileIndex.sub(row.mul(cover.columns)), row);
 
   const identityColumn = uint(cover.identity.x.add(cell.x)).bitAnd(IDENTITY_MASK);
@@ -101,11 +97,9 @@ export function latticeElement(cover: LatticeCover, salt: Node<"uint">): Lattice
 export function cycleOf(element: LatticeElement, clock: Node<"float">, salts: CycleSalts) {
   const phase = unitHash(element.seed, salts.phase);
   const progress = clock.add(phase);
-
   const cycle = floor(progress);
 
   const wrapped = uint(cycle).bitAnd(CYCLES - 1);
-
   const cycleSeed = scramble(element.seed.add(wrapped.mul(salts.cycle)));
 
   return {

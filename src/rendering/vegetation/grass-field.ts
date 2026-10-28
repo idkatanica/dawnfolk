@@ -41,7 +41,7 @@ import type { WorldGrid } from "../../world/world-grid.ts";
 import { unitNoise } from "../node-helpers.ts";
 import { POOL_BANK, poolReachNode } from "../terrain/bog-pools.ts";
 import { fieldClearingNode } from "../terrain/field-ground.ts";
-import { FIREWEED, fireweedOn } from "../terrain/fireweed.ts";
+import { FIREWEED, fireweedNode } from "../terrain/fireweed.ts";
 import { renderedHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { gustAt, type PlantWeather } from "./plant-material.ts";
@@ -166,11 +166,11 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
     .mul(LATTICE_ROW)
     .add(uint(lattice.y.add(LATTICE_OFFSET)));
 
-  function random(salt: number) {
+  function random(salt: number): Node<"float"> {
     return hash(key.bitXor(salt));
   }
 
-  function bladeRandom(salt: number) {
+  function bladeRandom(salt: number): Node<"float"> {
     return hash(key.bitXor(SALT_BLADE).add(uint(blade.mul(SALTS_PER_BLADE).add(salt))));
   }
 
@@ -186,12 +186,11 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   const wetland = texture(textures.wetland, rootUv).level(float(0));
   const footprint = floor(root.add(grid.halfSize).div(grid.cellSize).sub(0.5));
 
-  function waterAt(column: number, row: number) {
+  function waterAt(column: number, row: number): Node<"float"> {
     return textureLoad(textures.water, ivec2(clamp(footprint.add(vec2(column, row)), vec2(0, 0), vec2(last, last)))).x;
   }
 
   const nearestWater = max(max(waterAt(0, 0), waterAt(1, 0)), max(waterAt(0, 1), waterAt(1, 1)));
-
   const isDry = nearestWater.lessThan(height.add(DRY_MARGIN));
   const isOnIsland = textures.outline.insideNode(root);
   const fordMarks = textures.fords.marksNode(root);
@@ -199,7 +198,6 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
 
   const reed = smoothstep(0.45, 0.8, wetland.r);
   const poolFree = float(1).sub(smoothstep(POOL_BANK * 0.5, POOL_BANK, poolReachNode(textures, grid, root)));
-
   const clump = unitNoise(root.mul(REED_CLUMP_SCALE));
 
   const cover = max(ground.a, reed.mul(mix(float(0.3), float(1), clump)))
@@ -219,7 +217,6 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
     mix(float(0.65), float(1), ground.a)
   );
   const reedHeight = mix(float(SHORTEST_REED), float(TALLEST_REED), bladeRandom(3));
-
   const bladeHeight = mix(grassHeight, reedHeight, reed).mul(growth);
   const bladeWidth = mix(float(NARROWEST_BLADE), float(WIDEST_BLADE), bladeRandom(5))
     .mul(mix(float(1), float(REED_NARROWING), reed))
@@ -256,7 +253,7 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
     curve.mul(bladeRandom(23).mul(0.7))
   );
   const leafColor = mix(grassLeaf, reedLeaf, reed);
-  const isFlowering = bladeRandom(19).lessThan(fireweedOn(surface.b, textures.bloom).mul(0.7));
+  const isFlowering = bladeRandom(19).lessThan(fireweedNode(surface.b, textures.bloom).mul(0.7));
   const bladeColor = mix(leafColor, FIREWEED, select(isFlowering, smoothstep(0.55, 0.85, along), float(0)));
 
   material.colorNode = varying(mix(ground.rgb, bladeColor, growth), "grassColor");

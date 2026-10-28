@@ -44,7 +44,7 @@ export function poolReachNode(textures: TerrainTextures, grid: WorldGrid, point:
       const cell = clamp(floor(cellCoordinate), vec2(0, 0), vec2(last, last));
       const local = cellCoordinate.sub(cell).sub(0.5);
 
-      function isPoolAt(column: number, row: number) {
+      function isPoolAt(column: number, row: number): Node<"bool"> {
         const neighbor = clamp(cell.add(vec2(column, row)), vec2(0, 0), vec2(last, last));
 
         return textureLoad(textures.wetland, ivec2(neighbor)).g.greaterThan(POOL_FLAG);

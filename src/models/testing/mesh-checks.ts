@@ -30,6 +30,12 @@ interface IndexedGeometry {
   readonly positions: Float32Array;
 }
 
+interface EdgeUse {
+  count: number;
+  height: number;
+  middle: Vector3;
+}
+
 function geometryProblems(geometry: IndexedGeometry, count: number): string[] {
   const problems: string[] = [];
 
@@ -92,12 +98,6 @@ export function meshProblems(mesh: MeshData): string[] {
   return problems;
 }
 
-interface EdgeUse {
-  count: number;
-  height: number;
-  middle: Vector3;
-}
-
 function edgeUses(mesh: MeshData): Map<string, EdgeUse> {
   const uses = new Map<string, EdgeUse>();
 
@@ -117,7 +117,6 @@ function edgeUses(mesh: MeshData): Map<string, EdgeUse> {
       const height = Math.max(mesh.positions[first * 3 + 1], mesh.positions[second * 3 + 1]);
 
       const use = uses.get(edge);
-
       const middle = new Vector3()
         .fromArray(mesh.positions, first * 3)
         .add(new Vector3().fromArray(mesh.positions, second * 3))

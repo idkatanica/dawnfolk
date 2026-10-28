@@ -3,6 +3,22 @@ import { colorFromPalette, mixColors, scaleColor } from "../../shared/color.ts";
 import { clamp, hashToUnit, lerp, smoothstep } from "../../shared/math.ts";
 import { createRandom, type RandomSource } from "../../shared/random.ts";
 
+const CHILD_GROWTH_YEARS = 12;
+
+const SKIN_TONES: readonly number[] = [
+  0xf1_cf_b5, 0xe3_b5_94, 0xd3_9f_7c, 0xc0_88_65, 0xa8_71_4f, 0x8d_5a_3d, 0x6e_43_2c, 0x57_33_22,
+];
+const HAIR_COLORS: readonly number[] = [0x1c_17_14, 0x2e_21_19, 0x4a_33_22, 0x6a_3f_24, 0x7f_3b_20, 0x9a_7a_4a];
+const ELDER_HAIR: readonly number[] = [0x8f_8a_84, 0xb3_ae_a6, 0xd8_d4_cc];
+const HIDE_TONES: readonly number[] = [0x7a_55_36, 0x8e_64_40, 0xa5_77_4f, 0xb4_8a_5a];
+const LINEN_TONES: readonly number[] = [0xdc_d3_bc, 0xcf_c5_a8, 0xe6_df_ce, 0xc2_b8_9e];
+const DYES: readonly number[] = [0xa8_46_3a, 0x4a_6a_9a, 0xc8_a8_4a, 0x5e_7a_48];
+const ERA_SALT = 7919;
+const NEOLITHIC = 2;
+const COPPER_AGE = 3;
+const BRONZE_AGE = 4;
+const IRON_AGE = 5;
+
 export type HairStyle = "bald" | "braids" | "bun" | "fringe" | "long" | "ponytail" | "short" | "wild";
 
 type BeardStyle = "full" | "none" | "short";
@@ -63,31 +79,22 @@ export interface AppearanceInput {
   readonly tribe: TribeLook;
 }
 
-const CHILD_GROWTH_YEARS = 12;
-
-const SKIN_TONES: readonly number[] = [
-  0xf1_cf_b5, 0xe3_b5_94, 0xd3_9f_7c, 0xc0_88_65, 0xa8_71_4f, 0x8d_5a_3d, 0x6e_43_2c, 0x57_33_22,
-];
-
-const HAIR_COLORS: readonly number[] = [0x1c_17_14, 0x2e_21_19, 0x4a_33_22, 0x6a_3f_24, 0x7f_3b_20, 0x9a_7a_4a];
-
-const ELDER_HAIR: readonly number[] = [0x8f_8a_84, 0xb3_ae_a6, 0xd8_d4_cc];
-
-const HIDE_TONES: readonly number[] = [0x7a_55_36, 0x8e_64_40, 0xa5_77_4f, 0xb4_8a_5a];
-
-const LINEN_TONES: readonly number[] = [0xdc_d3_bc, 0xcf_c5_a8, 0xe6_df_ce, 0xc2_b8_9e];
-
-const DYES: readonly number[] = [0xa8_46_3a, 0x4a_6a_9a, 0xc8_a8_4a, 0x5e_7a_48];
-
-const ERA_SALT = 7919;
-const NEOLITHIC = 2;
-const COPPER_AGE = 3;
-const BRONZE_AGE = 4;
-const IRON_AGE = 5;
-
 interface WeightedChoice<Value> {
   readonly value: Value;
   readonly weight: number;
+}
+
+interface EraRolls {
+  readonly boots: number;
+  readonly brooch: number;
+  readonly buckle: number;
+  readonly cape: number;
+  readonly dye: number;
+  readonly dyeChoice: number;
+  readonly helmet: number;
+  readonly linen: number;
+  readonly linenTone: number;
+  readonly torc: number;
 }
 
 function choose<Value>(random: RandomSource, choices: readonly WeightedChoice<Value>[]): Value {
@@ -313,19 +320,6 @@ function clothingColors(random: RandomSource, tribe: TribeLook): Pick<Appearance
   const hide = scaleColor(colorFromPalette(HIDE_TONES, random.next()), random.between(0.9, 1.08));
 
   return { fur, hide };
-}
-
-interface EraRolls {
-  readonly boots: number;
-  readonly brooch: number;
-  readonly buckle: number;
-  readonly cape: number;
-  readonly dye: number;
-  readonly dyeChoice: number;
-  readonly helmet: number;
-  readonly linen: number;
-  readonly linenTone: number;
-  readonly torc: number;
 }
 
 function eraRolls(seed: number): EraRolls {

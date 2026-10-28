@@ -11,60 +11,6 @@ import { FLEXIBLE_TORSO_STYLE, legStyle, skirtStyle } from "./human-rigging.ts";
 
 const WAIST_LINE = 0.95;
 
-function jaggedEdge(shape: Shape, isEdge: (vertex: ShapeVertex) => boolean, teeth: number, depth: number): Shape {
-  return deformShape(shape, (vertex) => {
-    if (!isEdge(vertex)) {
-      return [0, 0, 0];
-    }
-
-    return [0, -depth * triangleWave(vertex.around * teeth), 0];
-  });
-}
-
-function jaggedHem(shape: Shape, belowY: number, teeth: number, depth: number): Shape {
-  return jaggedEdge(shape, (vertex) => vertex.y <= belowY, teeth, depth);
-}
-
-function jaggedTop(shape: Shape, aboveY: number, teeth: number, depth: number): Shape {
-  return jaggedEdge(shape, (vertex) => vertex.y >= aboveY, teeth, depth);
-}
-
-function pick(
-  point: SurfacePoint,
-  upper: VertexStyle,
-  lower: VertexStyle,
-  channel: "boneA" | "boneB" | "boneWeight"
-): number {
-  const style = point.position.y >= WAIST_LINE ? upper : lower;
-
-  return resolveChannel(style[channel], 0, point);
-}
-
-function garmentStyle(followsLegs: number, hemLine = 0.55): VertexStyle {
-  const lower = skirtStyle(followsLegs, 0.92, hemLine);
-
-  return {
-    boneA: (point) => pick(point, FLEXIBLE_TORSO_STYLE, lower, "boneA"),
-    boneB: (point) => pick(point, FLEXIBLE_TORSO_STYLE, lower, "boneB"),
-    boneWeight: (point) => pick(point, FLEXIBLE_TORSO_STYLE, lower, "boneWeight"),
-  };
-}
-
-interface Belt {
-  readonly depthRatio: number;
-  readonly radius: number;
-  readonly y: number;
-}
-
-function addBelt(builder: MeshBuilder, detail: HumanDetail, belt: Belt): void {
-  const { depthRatio, radius, y } = belt;
-
-  builder.add(torus(radius, 0.012, trimSegments(detail, 14), trimSegments(detail, 4)), {
-    style: { ...FLEXIBLE_TORSO_STYLE, slot: MaterialSlot.Accent },
-    transform: transformOf({ position: [0, y, -0.004], scale: [1, 1, depthRatio] }),
-  });
-}
-
 const TUNIC: readonly LoftSection[] = [
   { radiusX: 0, radiusZ: 0, y: 0.75 },
   { radiusX: 0.13, radiusZ: 0.09, y: 0.72 },
@@ -84,13 +30,6 @@ const TUNIC: readonly LoftSection[] = [
   { centerZ: -0.01, radiusX: 0, radiusZ: 0, y: 1.468 },
 ];
 
-export function addTunic(builder: MeshBuilder, detail: HumanDetail): void {
-  const shape = jaggedHem(loft(alongPath(TUNIC, detail), detail.torsoSegments), 0.73, 14, 0.035);
-
-  builder.add(shape, { style: { ...garmentStyle(0.55), slot: MaterialSlot.Fur } });
-  addBelt(builder, detail, { depthRatio: 0.75, radius: 0.176, y: 1.02 });
-}
-
 const DRESS: readonly LoftSection[] = [
   { radiusX: 0, radiusZ: 0, y: 0.56 },
   { radiusX: 0.17, radiusZ: 0.14, y: 0.53 },
@@ -107,6 +46,110 @@ const DRESS: readonly LoftSection[] = [
   { radiusX: 0.15, radiusZ: 0.1, y: 1.37 },
   { radiusX: 0, radiusZ: 0, y: 1.38 },
 ];
+
+const LOINCLOTH: readonly LoftSection[] = [
+  { radiusX: 0, radiusZ: 0, y: 0.83 },
+  { radiusX: 0.12, radiusZ: 0.09, y: 0.8 },
+  { centerZ: -0.004, radiusX: 0.19, radiusZ: 0.142, y: 0.78 },
+  { centerZ: -0.006, radiusX: 0.19, radiusZ: 0.144, y: 0.86 },
+  { centerZ: -0.01, radiusX: 0.188, radiusZ: 0.138, y: 0.94 },
+  { centerZ: -0.006, radiusX: 0.165, radiusZ: 0.115, y: 1 },
+  { radiusX: 0.12, radiusZ: 0.08, y: 1.02 },
+  { radiusX: 0, radiusZ: 0, y: 1.03 },
+];
+
+const WRAP_SKIRT: readonly LoftSection[] = [
+  { radiusX: 0, radiusZ: 0, y: 0.66 },
+  { radiusX: 0.13, radiusZ: 0.1, y: 0.63 },
+  { centerZ: -0.004, radiusX: 0.2, radiusZ: 0.15, y: 0.61 },
+  { centerZ: -0.004, radiusX: 0.204, radiusZ: 0.156, y: 0.75 },
+  { centerZ: -0.008, radiusX: 0.2, radiusZ: 0.15, y: 0.9 },
+  { centerZ: -0.008, radiusX: 0.17, radiusZ: 0.118, y: 0.98 },
+  { radiusX: 0.165, radiusZ: 0.112, y: 1.03 },
+  { radiusX: 0.12, radiusZ: 0.08, y: 1.045 },
+  { radiusX: 0, radiusZ: 0, y: 1.05 },
+];
+
+const CAPE: readonly LoftSection[] = [
+  { centerZ: -0.02, radiusX: 0, radiusZ: 0, y: 1.3 },
+  { centerZ: -0.022, radiusX: 0.14, radiusZ: 0.1, y: 1.27 },
+  { centerZ: -0.026, radiusX: 0.236, radiusZ: 0.152, y: 1.25 },
+  { centerZ: -0.02, radiusX: 0.236, radiusZ: 0.148, y: 1.32 },
+  { centerZ: -0.016, radiusX: 0.226, radiusZ: 0.136, y: 1.39 },
+  { centerZ: -0.014, radiusX: 0.168, radiusZ: 0.108, y: 1.44 },
+  { centerZ: -0.01, radiusX: 0.09, radiusZ: 0.074, y: 1.47 },
+  { centerZ: -0.01, radiusX: 0, radiusZ: 0, y: 1.483 },
+];
+
+const CLOAK: readonly LoftSection[] = [
+  { centerZ: -0.04, radiusX: 0.27, radiusZ: 0.22, y: 0.42 },
+  { centerZ: -0.04, radiusX: 0.25, radiusZ: 0.2, y: 0.7 },
+  { centerZ: -0.03, radiusX: 0.23, radiusZ: 0.17, y: 1 },
+  { centerZ: -0.02, radiusX: 0.23, radiusZ: 0.15, y: 1.3 },
+  { centerZ: -0.015, radiusX: 0.21, radiusZ: 0.13, y: 1.42 },
+  { centerZ: -0.01, radiusX: 0.12, radiusZ: 0.09, y: 1.47 },
+];
+
+interface Belt {
+  readonly depthRatio: number;
+  readonly radius: number;
+  readonly y: number;
+}
+
+function jaggedEdge(shape: Shape, isEdge: (vertex: ShapeVertex) => boolean, teeth: number, depth: number): Shape {
+  return deformShape(shape, (vertex) => {
+    if (!isEdge(vertex)) {
+      return [0, 0, 0];
+    }
+
+    return [0, -depth * triangleWave(vertex.around * teeth), 0];
+  });
+}
+
+function jaggedHem(shape: Shape, belowY: number, teeth: number, depth: number): Shape {
+  return jaggedEdge(shape, (vertex) => vertex.y <= belowY, teeth, depth);
+}
+
+function jaggedTop(shape: Shape, aboveY: number, teeth: number, depth: number): Shape {
+  return jaggedEdge(shape, (vertex) => vertex.y >= aboveY, teeth, depth);
+}
+
+function garmentChannel(
+  point: SurfacePoint,
+  upper: VertexStyle,
+  lower: VertexStyle,
+  channel: "boneA" | "boneB" | "boneWeight"
+): number {
+  const style = point.position.y >= WAIST_LINE ? upper : lower;
+
+  return resolveChannel(style[channel], 0, point);
+}
+
+function garmentStyle(followsLegs: number, hemLine = 0.55): VertexStyle {
+  const lower = skirtStyle(followsLegs, 0.92, hemLine);
+
+  return {
+    boneA: (point) => garmentChannel(point, FLEXIBLE_TORSO_STYLE, lower, "boneA"),
+    boneB: (point) => garmentChannel(point, FLEXIBLE_TORSO_STYLE, lower, "boneB"),
+    boneWeight: (point) => garmentChannel(point, FLEXIBLE_TORSO_STYLE, lower, "boneWeight"),
+  };
+}
+
+function addBelt(builder: MeshBuilder, detail: HumanDetail, belt: Belt): void {
+  const { depthRatio, radius, y } = belt;
+
+  builder.add(torus(radius, 0.012, trimSegments(detail, 14), trimSegments(detail, 4)), {
+    style: { ...FLEXIBLE_TORSO_STYLE, slot: MaterialSlot.Accent },
+    transform: transformOf({ position: [0, y, -0.004], scale: [1, 1, depthRatio] }),
+  });
+}
+
+export function addTunic(builder: MeshBuilder, detail: HumanDetail): void {
+  const shape = jaggedHem(loft(alongPath(TUNIC, detail), detail.torsoSegments), 0.73, 14, 0.035);
+
+  builder.add(shape, { style: { ...garmentStyle(0.55), slot: MaterialSlot.Fur } });
+  addBelt(builder, detail, { depthRatio: 0.75, radius: 0.176, y: 1.02 });
+}
 
 export function addDress(builder: MeshBuilder, detail: HumanDetail): void {
   const shape = jaggedHem(loft(alongPath(DRESS, detail), detail.torsoSegments), 0.535, 22, 0.03);
@@ -130,35 +173,12 @@ export function addDress(builder: MeshBuilder, detail: HumanDetail): void {
   });
 }
 
-const LOINCLOTH: readonly LoftSection[] = [
-  { radiusX: 0, radiusZ: 0, y: 0.83 },
-  { radiusX: 0.12, radiusZ: 0.09, y: 0.8 },
-  { centerZ: -0.004, radiusX: 0.19, radiusZ: 0.142, y: 0.78 },
-  { centerZ: -0.006, radiusX: 0.19, radiusZ: 0.144, y: 0.86 },
-  { centerZ: -0.01, radiusX: 0.188, radiusZ: 0.138, y: 0.94 },
-  { centerZ: -0.006, radiusX: 0.165, radiusZ: 0.115, y: 1 },
-  { radiusX: 0.12, radiusZ: 0.08, y: 1.02 },
-  { radiusX: 0, radiusZ: 0, y: 1.03 },
-];
-
 export function addLoincloth(builder: MeshBuilder, detail: HumanDetail): void {
   const shape = jaggedHem(loft(alongPath(LOINCLOTH, detail), detail.torsoSegments), 0.81, 8, 0.06);
 
   builder.add(shape, { style: { ...garmentStyle(0.5, 0.75), slot: MaterialSlot.Hide } });
   addBelt(builder, detail, { depthRatio: 0.72, radius: 0.171, y: 0.995 });
 }
-
-const WRAP_SKIRT: readonly LoftSection[] = [
-  { radiusX: 0, radiusZ: 0, y: 0.66 },
-  { radiusX: 0.13, radiusZ: 0.1, y: 0.63 },
-  { centerZ: -0.004, radiusX: 0.2, radiusZ: 0.15, y: 0.61 },
-  { centerZ: -0.004, radiusX: 0.204, radiusZ: 0.156, y: 0.75 },
-  { centerZ: -0.008, radiusX: 0.2, radiusZ: 0.15, y: 0.9 },
-  { centerZ: -0.008, radiusX: 0.17, radiusZ: 0.118, y: 0.98 },
-  { radiusX: 0.165, radiusZ: 0.112, y: 1.03 },
-  { radiusX: 0.12, radiusZ: 0.08, y: 1.045 },
-  { radiusX: 0, radiusZ: 0, y: 1.05 },
-];
 
 export function addWrap(builder: MeshBuilder, detail: HumanDetail): void {
   const shape = jaggedHem(loft(alongPath(WRAP_SKIRT, detail), detail.torsoSegments), 0.64, 6, 0.07);
@@ -170,31 +190,11 @@ export function addWrap(builder: MeshBuilder, detail: HumanDetail): void {
   });
 }
 
-const CAPE: readonly LoftSection[] = [
-  { centerZ: -0.02, radiusX: 0, radiusZ: 0, y: 1.3 },
-  { centerZ: -0.022, radiusX: 0.14, radiusZ: 0.1, y: 1.27 },
-  { centerZ: -0.026, radiusX: 0.236, radiusZ: 0.152, y: 1.25 },
-  { centerZ: -0.02, radiusX: 0.236, radiusZ: 0.148, y: 1.32 },
-  { centerZ: -0.016, radiusX: 0.226, radiusZ: 0.136, y: 1.39 },
-  { centerZ: -0.014, radiusX: 0.168, radiusZ: 0.108, y: 1.44 },
-  { centerZ: -0.01, radiusX: 0.09, radiusZ: 0.074, y: 1.47 },
-  { centerZ: -0.01, radiusX: 0, radiusZ: 0, y: 1.483 },
-];
-
 export function addCape(builder: MeshBuilder, detail: HumanDetail): void {
   const shape = jaggedHem(loft(alongPath(CAPE, detail), detail.torsoSegments), 1.28, 12, 0.045);
 
   builder.add(shape, { style: { ...FLEXIBLE_TORSO_STYLE, slot: MaterialSlot.Fur } });
 }
-
-const CLOAK: readonly LoftSection[] = [
-  { centerZ: -0.04, radiusX: 0.27, radiusZ: 0.22, y: 0.42 },
-  { centerZ: -0.04, radiusX: 0.25, radiusZ: 0.2, y: 0.7 },
-  { centerZ: -0.03, radiusX: 0.23, radiusZ: 0.17, y: 1 },
-  { centerZ: -0.02, radiusX: 0.23, radiusZ: 0.15, y: 1.3 },
-  { centerZ: -0.015, radiusX: 0.21, radiusZ: 0.13, y: 1.42 },
-  { centerZ: -0.01, radiusX: 0.12, radiusZ: 0.09, y: 1.47 },
-];
 
 export function addCloak(builder: MeshBuilder, detail: HumanDetail): void {
   const shape = panel({

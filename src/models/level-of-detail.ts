@@ -10,6 +10,10 @@ export function segmentsAtLeast(detail: DetailSteps, least: number, segments: nu
   return Math.max(Math.min(least, detail.hasSmallParts ? 8 : 4), segments);
 }
 
+export function segmentsUpTo(detail: DetailSteps, segments: number): number {
+  return Math.min(segments, detail.hasSmallParts ? 8 : 4);
+}
+
 export function alongPath<Point>(points: readonly Point[], detail: DetailSteps): Point[] {
   const last = points.length - 1;
 
@@ -26,8 +30,4 @@ export function alongSections(sections: readonly LoftSection[], detail: DetailSt
 
 export function alongBody(sections: readonly BodySection[], detail: DetailSteps): BodySection[] {
   return curveBodySections(alongPath(sections, detail), detail.curveSteps);
-}
-
-export function segmentsUpTo(detail: DetailSteps, segments: number): number {
-  return Math.min(segments, detail.hasSmallParts ? 8 : 4);
 }

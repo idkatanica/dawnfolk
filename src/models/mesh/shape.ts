@@ -19,6 +19,10 @@ export interface ShapeVertex {
   readonly z: number;
 }
 
+type Deformation = (vertex: ShapeVertex) => readonly [number, number, number];
+
+type Displacement = (vertex: ShapeVertex) => number;
+
 export function shapeVertexCount(shape: Shape): number {
   return shape.positions.length / 3;
 }
@@ -111,8 +115,6 @@ export function facetShape(shape: Shape): Shape {
   return { along, around, indices, normals: computeSmoothNormals(positions, indices), positions };
 }
 
-type Deformation = (vertex: ShapeVertex) => readonly [number, number, number];
-
 export function deformShape(shape: Shape, deformation: Deformation): Shape {
   const positions = new Float32Array(shape.positions);
 
@@ -126,8 +128,6 @@ export function deformShape(shape: Shape, deformation: Deformation): Shape {
 
   return { ...shape, normals: computeSmoothNormals(positions, shape.indices), positions };
 }
-
-type Displacement = (vertex: ShapeVertex) => number;
 
 export function displaceShape(shape: Shape, displacement: Displacement, normalSoftness: number): Shape {
   const positions = new Float32Array(shape.positions);

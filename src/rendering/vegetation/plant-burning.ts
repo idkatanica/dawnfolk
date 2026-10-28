@@ -102,7 +102,6 @@ export function plantBurn({ alive, burnt, fallen, fire, foliage, height, scorch 
 
 export function charredColor(color: Node<"vec3">, charring: Node<"float">, charcoal: Node<"vec3">): Node<"vec3"> {
   const scorched = vec3(0.13, 0.075, 0.04);
-
   const browned = mix(color, scorched, smoothstep(0, 0.45, charring));
 
   return mix(browned, charcoal, smoothstep(0.35, 0.95, charring));

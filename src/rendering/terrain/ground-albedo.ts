@@ -44,6 +44,18 @@ import { lerp, saturate } from "../../shared/math.ts";
 const BYTE = 255;
 const COVER_REACH = 2;
 
+interface AlbedoSources {
+  readonly ground: DataTexture;
+  readonly lushness: DataTexture;
+  readonly palette: Vector4[];
+  readonly size: number;
+}
+
+interface CellLook {
+  readonly color: Node<"vec4">;
+  readonly isOpen: Node<"float">;
+}
+
 function cellTexture(
   data: Float32Array | Uint8Array,
   size: number,
@@ -81,18 +93,6 @@ function linearFromSrgb(color: Node<"vec3">): Node<"vec3"> {
   return mix(curve, color.mul(0.077_399_380_8), step(color, vec3(0.040_45)));
 }
 
-interface AlbedoSources {
-  readonly ground: DataTexture;
-  readonly lushness: DataTexture;
-  readonly palette: Vector4[];
-  readonly size: number;
-}
-
-interface CellLook {
-  readonly color: Node<"vec4">;
-  readonly isOpen: Node<"float">;
-}
-
 function albedoNode({ ground, lushness, palette, size }: AlbedoSources): Node<"vec4"> {
   const cell = floor(screenCoordinate);
   const colors = uniformArray<"vec4">(palette, "vec4");
@@ -101,13 +101,11 @@ function albedoNode({ ground, lushness, palette, size }: AlbedoSources): Node<"v
 
   function lookAt(column: number, row: number): CellLook {
     const neighbor = ivec2(clamp(cell.add(vec2(column, row)), vec2(0, 0), vec2(last, last)));
-
     const cellGround = textureLoad(ground, neighbor);
     const cellLushness = textureLoad(lushness, neighbor);
 
     const groundIndex = int(cellGround.r.mul(BYTE).add(0.5));
     const trodden = cellGround.b;
-
     const seasonal = colors.element(groundIndex);
 
     const worn = mix(seasonal.rgb, earth.rgb, trodden);
@@ -133,7 +131,6 @@ function albedoNode({ ground, lushness, palette, size }: AlbedoSources): Node<"v
 
   const borrowed = select(weight.greaterThan(0), around.div(max(weight, 1)), own.color);
   const result = select(own.isOpen.greaterThan(0), own.color, borrowed);
-
   const levels = floor(result.mul(BYTE).add(0.5)).div(BYTE);
 
   return vec4(linearFromSrgb(levels.rgb), levels.a);

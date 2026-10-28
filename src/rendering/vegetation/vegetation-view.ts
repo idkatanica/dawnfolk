@@ -331,7 +331,6 @@ export class VegetationView {
       const others = this.chunks.chunks.filter(
         (_chunk, index) => this.#chunkLevels[index] === level && this.#chunkShadows[index] === 0
       );
-
       const chunks = [...casters, ...others];
 
       for (const batch of batches) {

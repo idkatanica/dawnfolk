@@ -46,18 +46,8 @@ import { WaterView } from "./water/water-view.ts";
 import { WaterfallView } from "./water/waterfall-view.ts";
 import { WorldChangeReader } from "./world-changes.ts";
 
-interface RenderView {
-  readonly camera: PerspectiveCamera;
-  readonly effects: readonly SimulationEffect[];
-  readonly focus: Vector3;
-  readonly now: number;
-  readonly realSeconds: number;
-  readonly viewDistance: number;
-}
-
 const CLOUD_SEA_DEPTH = 760;
 const WATER_DRIFT = 0.08;
-
 const SELECTION_COLOR = 0xff_f2_c8;
 const NIGHT_MARKER_BRIGHTNESS = 0.8;
 
@@ -67,6 +57,15 @@ const SELECTION_RADIUS: Readonly<Record<"animal" | "building" | "cell" | "person
   cell: 5,
   person: 1.3,
 };
+
+interface RenderView {
+  readonly camera: PerspectiveCamera;
+  readonly effects: readonly SimulationEffect[];
+  readonly focus: Vector3;
+  readonly now: number;
+  readonly realSeconds: number;
+  readonly viewDistance: number;
+}
 
 type ShakeListener = (amount: number, x: number, z: number) => void;
 
@@ -100,13 +99,13 @@ export class WorldRenderer {
   readonly #mirror: WorldMirror;
   readonly #output: RenderOutput;
   readonly #people: PeopleView;
+  readonly #plinth: number;
   readonly #quality: RenderQuality;
   readonly #renderer: WebGPURenderer;
   readonly #selectionRing: GroundRing;
   readonly #splashes: RainSplashes;
   readonly #springs = new SpringView();
   readonly #terrain: TerrainView;
-  readonly #plinth: number;
   readonly #textures: TerrainTextures;
   readonly #tribes = new TribeLooks();
   readonly #understory: UnderstoryField;
@@ -242,7 +241,6 @@ export class WorldRenderer {
     const windZ = frame.weather.windZ * metersPerSecond;
     const form = this.#precipitationAt(view.focus);
     const strength = precipitationStrength(frame.weather.precipitation);
-
     const rainfall = form === "rain" ? strength : 0;
 
     this.#atmosphere.update(
@@ -403,7 +401,6 @@ export class WorldRenderer {
     const { frame, grid, terrain } = this.#mirror;
 
     const cell = grid.cellAt(focus.x, focus.z);
-
     const ground = cell < 0 ? 0 : terrain.baseTemperature[cell];
 
     return precipitationOf(frame.weather.kind, ground + frame.weather.airTemperatureOffset);

@@ -38,6 +38,12 @@ import { POOL_BANK, poolReachNode } from "../terrain/bog-pools.ts";
 import { coarseGroundOffsetNode, sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 
+const LilyPart = {
+  Heart: 2,
+  Pad: 0,
+  Petal: 1,
+} as const;
+
 const PAD_SEGMENTS = 10;
 const NOTCH_ANGLE = 0.5;
 const PETALS = 6;
@@ -74,18 +80,22 @@ const WHITE_PETAL = vec3(0.92, 0.92, 0.86);
 const PINK_PETAL = vec3(0.92, 0.55, 0.68);
 const FLOWER_HEART = vec3(0.95, 0.75, 0.2);
 
-const LilyPart = {
-  Heart: 2,
-  Pad: 0,
-  Petal: 1,
-} as const;
-
 interface LilyPlacements {
   readonly flowers: number[];
   readonly pads: number[];
 }
 
-function padShape(): { parts: number[]; positions: number[] } {
+interface LilyShape {
+  readonly parts: number[];
+  readonly positions: number[];
+}
+
+interface LilyUniforms {
+  readonly bloom: Node<"float">;
+  readonly presence: Node<"float">;
+}
+
+function padShape(): LilyShape {
   const positions: number[] = [];
   const parts: number[] = [];
   const sweep = FULL_TURN - NOTCH_ANGLE;
@@ -101,7 +111,7 @@ function padShape(): { parts: number[]; positions: number[] } {
   return { parts, positions };
 }
 
-function flowerShape(): { parts: number[]; positions: number[] } {
+function flowerShape(): LilyShape {
   const positions: number[] = [];
   const parts: number[] = [];
   const side = FULL_TURN / PETALS / 2.4;
@@ -142,7 +152,7 @@ function flowerShape(): { parts: number[]; positions: number[] } {
   return { parts, positions };
 }
 
-function createGeometry(shape: { parts: number[]; positions: number[] }, lilies: number[]): InstancedBufferGeometry {
+function createGeometry(shape: LilyShape, lilies: number[]): InstancedBufferGeometry {
   const geometry = new InstancedBufferGeometry();
   const normals = shape.positions.map((_value, index) => (index % 3 === 1 ? 1 : 0));
 
@@ -242,12 +252,12 @@ function lilyBloomFor(season: number): number {
   return smoothstepNumber(0.35, 0.7, season) * (1 - smoothstepNumber(2, 2.35, season));
 }
 
-interface LilyUniforms {
-  readonly bloom: Node<"float">;
-  readonly presence: Node<"float">;
-}
-
-function createLilyMaterial(textures: TerrainTextures, grid: WorldGrid, uniforms: LilyUniforms, isFlower: boolean) {
+function createLilyMaterial(
+  textures: TerrainTextures,
+  grid: WorldGrid,
+  uniforms: LilyUniforms,
+  isFlower: boolean
+): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ side: DoubleSide });
   const last = grid.cellsPerSide - 1;
 

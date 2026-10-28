@@ -11,6 +11,8 @@ import { isRockModel, meshRock, ROCK_HEIGHTS, ROCK_VARIANT_COUNTS } from "./rock
 import { isDistantLevel, meshTree, type PlantDetailLevel, type TreeLook } from "./tree-mesher.ts";
 import { DESERT_SHRUB_FORM_COUNT, TREE_GENERATORS, TREE_HEIGHTS } from "./tree-species.ts";
 
+export const PLANT_DETAIL_LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low", "far"];
+
 const VARIANT_COUNTS: Readonly<Record<PlantSpeciesIndex, number>> = {
   ...ROCK_VARIANT_COUNTS,
   ...ORCHARD_VARIANT_COUNTS,
@@ -87,12 +89,8 @@ const CROWNS_WITHOUT_BURIED_FOLIAGE: ReadonlySet<PlantSpeciesIndex> = new Set([
 ]);
 
 const FORM_PER_VARIANT: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DesertShrub]);
-
-export const PLANT_DETAIL_LEVELS: readonly PlantDetailLevel[] = ["high", "medium", "low", "far"];
-
 const FOOTPRINT_HEIGHT = 0.3;
 const BURIED_MARGIN = 0.01;
-
 const BROADLEAF: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Leaf, hasBarkMarks: false };
 const CONIFER: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSlot.Needle, hasBarkMarks: false };
 const BIRCH: TreeLook = { bark: MaterialSlot.BirchBark, foliage: MaterialSlot.Leaf, hasBarkMarks: true };

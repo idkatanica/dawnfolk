@@ -26,17 +26,8 @@ import { HUMAN_BONE_COUNT, HUMAN_SKELETON, HumanBone } from "./human-skeleton.ts
 const highParts = buildHumanParts(HUMAN_DETAILS.high);
 const lowParts = buildHumanParts(HUMAN_DETAILS.low);
 const farParts = buildHumanParts(HUMAN_DETAILS.far);
-
 const TRIBE = { accent: 0x33_66_99, fur: 0x55_44_33, id: 2 };
 const BODIES = ["bodyChild", "bodyFemale", "bodyMale"] as const satisfies readonly HumanPart[];
-
-function isWorn(part: HumanPart): boolean {
-  return !(part.startsWith("body") || part.startsWith("carried"));
-}
-
-function wornWith(part: HumanPart): HumanPart[] {
-  return part === "feather" ? ["headband", part] : [part];
-}
 
 const ARM_BONES: ReadonlySet<number> = new Set([
   HumanBone.ForearmLeft,
@@ -46,6 +37,23 @@ const ARM_BONES: ReadonlySet<number> = new Set([
   HumanBone.UpperArmLeft,
   HumanBone.UpperArmRight,
 ]);
+
+const TOOLS: ReadonlySet<HumanPart> = new Set(
+  PERSON_POSES.flatMap((clip) =>
+    CARRIED_ITEMS.flatMap((carried) =>
+      [null, ...WEAPON_KINDS].flatMap((weapon) => activityParts(clip, carried, weapon))
+    )
+  )
+);
+const GARMENTS = HUMAN_PARTS.filter((part) => isWorn(part) && !TOOLS.has(part));
+
+function isWorn(part: HumanPart): boolean {
+  return !(part.startsWith("body") || part.startsWith("carried"));
+}
+
+function wornWith(part: HumanPart): HumanPart[] {
+  return part === "feather" ? ["headband", part] : [part];
+}
 
 function isArm(mesh: MeshData, piece: MeshPiece): boolean {
   const bound = piece.vertices.filter(
@@ -177,15 +185,6 @@ describe("attached parts", () => {
     }
   });
 });
-
-const TOOLS: ReadonlySet<HumanPart> = new Set(
-  PERSON_POSES.flatMap((clip) =>
-    CARRIED_ITEMS.flatMap((carried) =>
-      [null, ...WEAPON_KINDS].flatMap((weapon) => activityParts(clip, carried, weapon))
-    )
-  )
-);
-const GARMENTS = HUMAN_PARTS.filter((part) => isWorn(part) && !TOOLS.has(part));
 
 describe("moving parts", () => {
   const people = (

@@ -1,5 +1,7 @@
 import type { DetailSteps } from "../level-of-detail.ts";
 
+const FEWEST_TRIM_SEGMENTS = 4;
+
 type HumanDetailLevel = "far" | "high" | "low";
 
 export interface HumanDetail extends DetailSteps {
@@ -43,8 +45,6 @@ export const HUMAN_DETAILS: Readonly<Record<HumanDetailLevel, HumanDetail>> = {
     trimShare: 0.6,
   },
 };
-
-const FEWEST_TRIM_SEGMENTS = 4;
 
 export function trimSegments(detail: HumanDetail, segments: number): number {
   return Math.max(FEWEST_TRIM_SEGMENTS, Math.round(segments * detail.trimShare));
