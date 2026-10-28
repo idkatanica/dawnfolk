@@ -828,8 +828,8 @@ describe("world generation", () => {
     expect(wooded.length).toBeGreaterThan(1000);
     expect(mean).toBeGreaterThan(0.5);
     expect(mean).toBeLessThan(0.85);
-    expect(densities.filter((density) => density < 0.05).length / densities.length).toBeGreaterThan(0.04);
-    expect(densities.filter((density) => density > 0.95).length / densities.length).toBeGreaterThan(0.2);
+    expect(densities.filter((density) => density < 0.05).length / densities.length).toBeGreaterThan(0.03);
+    expect(densities.filter((density) => density > 0.85).length / densities.length).toBeGreaterThan(0.2);
     expect(bankMean).toBeLessThan(mean * 0.7);
 
     for (const cell of wooded) {

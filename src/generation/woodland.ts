@@ -8,12 +8,13 @@ import { isWaterCell } from "../world/terrain-sampling.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 
 const GLADE_SPAN = 640;
-const GLADE_OPEN = -0.47;
-const GLADE_WOODED = -0.35;
+const GLADE_OPEN = -0.55;
+const GLADE_WOODED = -0.27;
 const STAND_SPAN = 170;
 const SPARSE_STAND = -0.3;
 const DENSE_STAND = 0.12;
-const SPARSEST_STAND = 0.55;
+const SPARSEST_STAND = 0.5;
+const DENSEST_STAND = 0.9;
 const BANK_SPAN = 420;
 const NARROWEST_BANK = 20;
 const WIDEST_BANK = 80;
@@ -69,7 +70,7 @@ function standDensity(noise: NoiseSampler, x: number, z: number, waterDistance: 
 
   const stand = lerp(
     SPARSEST_STAND,
-    1,
+    DENSEST_STAND,
     smoothstep(SPARSE_STAND, DENSE_STAND, noise.fractal(x / STAND_SPAN + 37.1, z / STAND_SPAN - 11.7, { octaves: 2 }))
   );
 
