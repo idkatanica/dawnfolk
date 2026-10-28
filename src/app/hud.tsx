@@ -1,4 +1,5 @@
 import { cn } from "../design/cn.ts";
+import { Island } from "../design/island.tsx";
 import { useIsCompact } from "../design/use-media-query.ts";
 import { CompactTopBar, PanelBar, StatusCard } from "../features/interface/top-bar.tsx";
 import { JournalSheet } from "../features/journal/journal-sheet.tsx";
@@ -8,6 +9,7 @@ import { MinimapIsland } from "../features/minimap/minimap-island.tsx";
 import { NoticeFeed } from "../features/notices/notice-feed.tsx";
 import { PowerDock } from "../features/powers/power-dock.tsx";
 import { PowerSettings } from "../features/powers/power-settings.tsx";
+import { ProjectLinks } from "../features/project/project-links.tsx";
 import { SettingsDialog } from "../features/settings/settings-dialog.tsx";
 import { useEngineBridges } from "./use-engine-bridges.ts";
 
@@ -33,7 +35,11 @@ function WideHud() {
       </div>
 
       <div className="flex items-end gap-3">
-        <div className="flex min-w-fit flex-1">
+        <div className="flex min-w-fit flex-1 flex-col items-start gap-3">
+          <Island className="px-1.5 py-1">
+            <ProjectLinks hasPrivacy={false} />
+          </Island>
+
           <MinimapIsland />
         </div>
 
