@@ -1,6 +1,7 @@
 import { isShrubSpecies, isTreeSpecies, PlantSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import { clamp, FULL_TURN, hashToUnit, lerp, smoothstep } from "../../shared/math.ts";
 import type { Waypoint } from "../agents/navigation.ts";
+import { setAlight } from "../society/buildings.ts";
 import { discover } from "../society/progress.ts";
 import { type Catastrophe, ruinText, type Shock, shakeMonuments } from "../world/monument-damage.ts";
 import { carveCrater, cellsInArea, shakeTerrain } from "../world/terrain-editing.ts";
@@ -64,7 +65,7 @@ export function strikeLightning(strike: Strike, services: PowerServices): void {
 
   for (const building of buildings.all) {
     if (Math.hypot(building.x - strike.x, building.z - strike.z) < STRIKE_BUILDING_RADIUS) {
-      buildings.setAlight(building);
+      setAlight(building);
     }
   }
 

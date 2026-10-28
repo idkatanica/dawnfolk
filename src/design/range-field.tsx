@@ -41,11 +41,11 @@ export function RangeField({
   return (
     <div className="flex flex-col gap-1" title={description}>
       <div className="flex items-baseline justify-between gap-3 text-sm">
-        <span className="font-medium text-ink" id={labelId}>
+        <span className="text-ink font-medium" id={labelId}>
           {label}
         </span>
 
-        <span className="shrink-0 text-ink-soft tabular-nums">{valueText}</span>
+        <span className="text-ink-soft shrink-0 tabular-nums">{valueText}</span>
       </div>
 
       <Slider.Root
@@ -56,13 +56,13 @@ export function RangeField({
         step={step}
         value={shown}
       >
-        <Slider.Control className="flex h-5 pointer-coarse:h-8 touch-none select-none items-center">
-          <Slider.Track className="h-1 w-full rounded-full bg-ink/10">
-            <Slider.Indicator className="rounded-full bg-dawn" />
+        <Slider.Control className="flex h-5 touch-none items-center select-none pointer-coarse:h-8">
+          <Slider.Track className="bg-ink/10 h-1 w-full rounded-full">
+            <Slider.Indicator className="bg-dawn rounded-full" />
 
             <Slider.Thumb
               aria-label={label}
-              className="pointer-coarse:size-5 size-3.5 rounded-full bg-white shadow-thumb transition-[scale,box-shadow] duration-100 has-focus-visible:ring-4 has-focus-visible:ring-dawn/35 data-dragging:scale-115"
+              className="shadow-thumb has-focus-visible:ring-dawn/35 size-3.5 rounded-full bg-white transition-[scale,box-shadow] duration-100 has-focus-visible:ring-4 data-dragging:scale-115 pointer-coarse:size-5"
             />
           </Slider.Track>
         </Slider.Control>

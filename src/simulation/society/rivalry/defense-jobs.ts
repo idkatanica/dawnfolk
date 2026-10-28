@@ -51,6 +51,16 @@ function nearestRaider(tick: PersonTick, raid: Raid, radius: number): Foe | null
   return nearestOf(tick, raiders, radius);
 }
 
+function foeOfDefender(tick: PersonTick, raid: Raid): Foe | null {
+  const attacker = assailantOf(tick, raid.attackerId);
+
+  if (attacker !== null) {
+    return personFoe(attacker);
+  }
+
+  return nearestRaider(tick, raid, DEFEND_ENGAGE_RADIUS);
+}
+
 export class DefendJob implements Job {
   readonly kind = "defend";
   readonly raidId: number;
@@ -71,7 +81,7 @@ export class DefendJob implements Job {
       return null;
     }
 
-    const foe = this.#foe(tick, raid);
+    const foe = foeOfDefender(tick, raid);
 
     if (foe !== null && tick.person.health < WOUNDED_HEALTH) {
       return new ShelterJob(tick, foeMover(foe));
@@ -91,16 +101,6 @@ export class DefendJob implements Job {
     this.#guard(tick, raid);
 
     return this;
-  }
-
-  #foe(tick: PersonTick, raid: Raid): Foe | null {
-    const attacker = assailantOf(tick, raid.attackerId);
-
-    if (attacker !== null) {
-      return personFoe(attacker);
-    }
-
-    return nearestRaider(tick, raid, DEFEND_ENGAGE_RADIUS);
   }
 
   #guard(tick: PersonTick, raid: Raid): void {

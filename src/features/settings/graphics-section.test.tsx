@@ -8,7 +8,7 @@ import { GraphicsSection } from "./graphics-section.tsx";
 
 const QUALITY_KEY = "dawnfolk.quality";
 const LABELS_KEY = "dawnfolk.labels";
-const WHOLE_NUMBER = /^\d+$/;
+const WHOLE_NUMBER = /^\d+$/u;
 
 const initialLaunch = useLaunchStore.getState();
 

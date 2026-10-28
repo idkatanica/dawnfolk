@@ -176,14 +176,6 @@ export class SocietySystem {
     this.#peopleById.set(person.id, person);
   }
 
-  moveToTribe(person: Person, from: Tribe, to: Tribe): void {
-    dropJob(from, person);
-    from.memberCount -= 1;
-    to.memberCount += 1;
-    person.tribeId = to.id;
-    person.homeId = null;
-  }
-
   spawnTribe(arrival: TribeArrival): Tribe | null {
     const { context } = arrival;
 

@@ -55,13 +55,13 @@ export function TimeControls() {
     <div className={cn(SEGMENT_TRACK, "items-center p-1")}>
       <Button
         aria-label={isPaused ? "Resume" : "Pause"}
-        className={cn(SEGMENT, "w-8 px-0", { "bg-white text-ink shadow-segment": isPaused })}
+        className={cn(SEGMENT, "w-8 px-0", { "text-ink shadow-segment bg-white": isPaused })}
         onClick={togglePause}
       >
         <Pause aria-hidden="true" fill="currentColor" size={14} />
       </Button>
 
-      <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-line" />
+      <span aria-hidden="true" className="bg-line mx-1 h-5 w-px shrink-0" />
 
       <ToggleGroup
         aria-label="Game speed"

@@ -65,7 +65,7 @@ function SegmentedChoice({ label, onChange, options, value }: ChoiceFieldProps) 
 function ListOption({ option }: { readonly option: ChoiceOption }) {
   return (
     <Select.Item
-      className="grid cursor-default grid-cols-[1rem_1fr] items-center gap-2 rounded-lg py-2 pr-4 pl-2.5 text-ink text-sm outline-none data-highlighted:bg-dawn-soft"
+      className="text-ink data-highlighted:bg-dawn-soft grid cursor-default grid-cols-[1rem_1fr] items-center gap-2 rounded-lg py-2 pr-4 pl-2.5 text-sm outline-none"
       value={option.value}
     >
       <Select.ItemIndicator className="col-start-1">
@@ -84,7 +84,7 @@ function ListChoice({ label, onChange, options, value }: ChoiceFieldProps) {
     <Select.Root items={options} onValueChange={handleChange} value={value}>
       <Select.Trigger
         aria-label={label}
-        className="flex h-9 pointer-coarse:h-10 w-full items-center justify-between gap-3 rounded-full bg-white/60 px-4 text-ink text-sm outline-none ring-1 ring-ink/8 ring-inset transition-colors hover:bg-white/80 focus-visible:ring-2 focus-visible:ring-dawn"
+        className="text-ink ring-ink/8 focus-visible:ring-dawn flex h-9 w-full items-center justify-between gap-3 rounded-full bg-white/60 px-4 text-sm ring-1 transition-colors outline-none ring-inset hover:bg-white/80 focus-visible:ring-2 pointer-coarse:h-10"
       >
         <Select.Value />
 
@@ -94,8 +94,8 @@ function ListChoice({ label, onChange, options, value }: ChoiceFieldProps) {
       </Select.Trigger>
 
       <Select.Portal>
-        <Select.Positioner alignItemWithTrigger={false} className="z-50 select-none outline-none" sideOffset={6}>
-          <Select.Popup className="w-(--anchor-width) origin-(--transform-origin) rounded-2xl border border-paper-edge bg-paper p-1 outline-none transition-[scale,opacity] duration-100 data-ending-style:scale-95 data-starting-style:scale-95 data-ending-style:opacity-0 data-starting-style:opacity-0">
+        <Select.Positioner alignItemWithTrigger={false} className="z-50 outline-none select-none" sideOffset={6}>
+          <Select.Popup className="border-paper-edge bg-paper w-(--anchor-width) origin-(--transform-origin) rounded-2xl border p-1 transition-[scale,opacity] duration-100 outline-none data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
             <Select.List className="max-h-[min(var(--available-height),24rem)] overflow-y-auto">
               {options.map((option) => (
                 <ListOption key={option.value} option={option} />
@@ -121,7 +121,7 @@ export function ChoiceField(props: ChoiceFieldProps) {
 
   return (
     <div className="flex flex-col gap-2" title={description}>
-      <span className="font-medium text-ink text-sm">{label}</span>
+      <span className="text-ink text-sm font-medium">{label}</span>
 
       <ChoiceControl {...props} />
     </div>

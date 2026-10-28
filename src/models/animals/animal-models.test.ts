@@ -1,5 +1,5 @@
 import { Vector3 } from "three";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, it as test } from "vitest";
 import { ANIMAL_KINDS } from "../../content/animals.ts";
 import { ANIMAL_POSES } from "../../world/agent-poses.ts";
 import { type MeshData, mergeMeshes } from "../mesh/mesh-data.ts";
@@ -43,7 +43,7 @@ function joint(poser: SkeletonPoser, bone: number): Vector3 {
 describe.each(ANIMAL_KINDS)("%s model", (kind) => {
   const species = ANIMAL_SPECIES[kind];
 
-  it("builds clean geometry bound to real bones", () => {
+  test("builds clean geometry bound to real bones", () => {
     for (const [index, mesh] of buildAnimalParts(kind, "high").entries()) {
       expect(meshProblems(mesh)).toEqual([]);
       expect(new Set(mesh.channels.part)).toEqual(new Set([index]));
@@ -52,7 +52,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     }
   });
 
-  it("stands every part on the body and the body on the ground", () => {
+  test("stands every part on the body and the body on the ground", () => {
     for (const level of LEVELS) {
       const [body, ...extras] = buildAnimalParts(kind, level);
 
@@ -66,7 +66,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     }
   });
 
-  it("leaves no holes in any part at any level of detail", () => {
+  test("leaves no holes in any part at any level of detail", () => {
     for (const level of LEVELS) {
       for (const [index, mesh] of buildAnimalParts(kind, level).entries()) {
         expect(openEdgeCount(mesh), `${level} ${species.parts[index].name}`).toBe(0);
@@ -74,7 +74,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     }
   });
 
-  it("keeps every part on the body through every clip at every level of detail", () => {
+  test("keeps every part on the body through every clip at every level of detail", () => {
     const scales = animalBoneScales(kind, animalAppearance({ kind, ...ADULT }));
     const poser = new SkeletonPoser(species.skeleton);
     const pose = new Pose(species.skeleton.bones.length);
@@ -97,7 +97,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     }
   });
 
-  it("builds every part from solid shapes, never paper-thin cards", () => {
+  test("builds every part from solid shapes, never paper-thin cards", () => {
     for (const level of LEVELS) {
       for (const [index, mesh] of buildAnimalParts(kind, level).entries()) {
         expect(thinnestPiece(mesh, meshPieces(mesh)), `${level} ${species.parts[index].name}`).toBeGreaterThan(
@@ -107,7 +107,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     }
   });
 
-  it("uses fewer triangles at every lower level of detail", () => {
+  test("uses fewer triangles at every lower level of detail", () => {
     function count(level: (typeof LEVELS)[number]): number {
       return buildAnimalParts(kind, level).reduce((sum, mesh) => sum + mesh.indices.length, 0);
     }
@@ -116,7 +116,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     expect(count("far")).toBeLessThan(count("low") * 0.6);
   });
 
-  it("keeps every pose finite", () => {
+  test("keeps every pose finite", () => {
     const pose = new Pose(species.skeleton.bones.length);
 
     for (const clip of ANIMAL_POSES) {
@@ -128,7 +128,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     }
   });
 
-  it("swaps the leading front hoof every half stride", () => {
+  test("swaps the leading front hoof every half stride", () => {
     const start = posedAnimal(kind, "walk", 0.25);
     const later = posedAnimal(kind, "walk", 0.75);
 
@@ -139,7 +139,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     expect(leftLeads(start)).not.toBe(leftLeads(later));
   });
 
-  it("lowers the head to graze and the body when dead", () => {
+  test("lowers the head to graze and the body when dead", () => {
     const standing = posedAnimal(kind, "walk", 0);
     const grazing = posedAnimal(kind, "graze", 0.1);
     const dead = posedAnimal(kind, "dead", 0);
@@ -148,7 +148,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     expect(joint(dead, QuadrupedBone.Chest).y).toBeLessThan(joint(standing, QuadrupedBone.Chest).y * 0.6);
   });
 
-  it("keeps antlers, tusks and horns out of the ground when lying dead", () => {
+  test("keeps antlers, tusks and horns out of the ground when lying dead", () => {
     const parts = buildAnimalParts(kind, "high");
 
     const lying = posedMesh(mergeMeshes(parts), posedAnimal(kind, "dead", 0));
@@ -156,7 +156,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     expect(lying.bounds.minimum[1]).toBeGreaterThan(-0.1);
   });
 
-  it("covers ground with every stride", () => {
+  test("covers ground with every stride", () => {
     const appearance = animalAppearance({ kind, ...ADULT });
 
     const stride = measureStride({

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { LONGEST_WORLD_NAME, readWorldName, worldNameFor } from "./world-names.ts";
 
-const ONE_WORD = /^[A-Z][a-z]+$/;
-const TRIPLED_LETTER = /(.)\1\1/;
+const ONE_WORD = /^[A-Z][a-z]+$/u;
+const TRIPLED_LETTER = /(?<letter>.)\k<letter>\k<letter>/u;
 
 describe("world names", () => {
   it("names every seed the same way each time", () => {

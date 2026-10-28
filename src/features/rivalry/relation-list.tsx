@@ -45,22 +45,22 @@ function RaidRow({ entry }: { readonly entry: TribePair<RaidView> }) {
   return (
     <li>
       <button
-        className="flex w-full items-center gap-3 rounded-2xl bg-ember-soft p-2.5 text-left outline-none transition-colors hover:bg-ember/20 focus-visible:ring-2 focus-visible:ring-dawn"
+        className="bg-ember-soft hover:bg-ember/20 focus-visible:ring-dawn flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-colors outline-none focus-visible:ring-2"
         onClick={showCamp}
         type="button"
       >
         <GameIcon name="raid" size={24} />
 
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate font-semibold text-ink text-sm">
-            {attacker.name} <ArrowRight aria-hidden="true" className="inline text-ink-soft" size={13} /> {defender.name}
+          <span className="text-ink truncate text-sm font-semibold">
+            {attacker.name} <ArrowRight aria-hidden="true" className="text-ink-soft inline" size={13} /> {defender.name}
           </span>
 
-          <span className="truncate text-ink-soft text-xs">{RAID_PHASE_LABELS[raid.phase]}</span>
+          <span className="text-ink-soft truncate text-xs">{RAID_PHASE_LABELS[raid.phase]}</span>
         </span>
 
         <span className="flex flex-col items-end gap-0.5">
-          <span className="font-semibold text-ink text-lg tabular-nums leading-none">{raid.raiders}</span>
+          <span className="text-ink text-lg leading-none font-semibold tabular-nums">{raid.raiders}</span>
 
           <span className="text-ink-muted text-xs">warriors</span>
         </span>
@@ -77,7 +77,7 @@ function RelationRow({ entry }: { readonly entry: TribePair<RelationView> }) {
   return (
     <li>
       <button
-        className="flex w-full items-center gap-3 rounded-2xl p-2.5 text-left outline-none transition-colors hover:bg-paper-hover focus-visible:ring-2 focus-visible:ring-dawn"
+        className="hover:bg-paper-hover focus-visible:ring-dawn flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-colors outline-none focus-visible:ring-2"
         onClick={showBorder}
         type="button"
       >
@@ -88,7 +88,7 @@ function RelationRow({ entry }: { readonly entry: TribePair<RelationView> }) {
         </span>
 
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate font-semibold text-ink text-sm">{`${first.name} · ${second.name}`}</span>
+          <span className="text-ink truncate text-sm font-semibold">{`${first.name} · ${second.name}`}</span>
 
           <RelationNote relation={relation} />
         </span>
@@ -106,7 +106,7 @@ function RaidSection({ entries }: { readonly entries: readonly TribePair<RaidVie
 
   return (
     <section aria-label="Raids under way" className="flex flex-col gap-1">
-      <h3 className="px-2.5 font-semibold text-ink-soft text-xs uppercase tracking-wide">Raids under way</h3>
+      <h3 className="text-ink-soft px-2.5 text-xs font-semibold tracking-wide uppercase">Raids under way</h3>
 
       <ul className="flex flex-col gap-1">
         {entries.map((entry) => (
@@ -122,7 +122,7 @@ export function RelationList() {
   const tribes = useWorldStore((state) => state.snapshot?.tribes);
 
   if (rivalry === undefined || tribes === undefined || rivalry.relations.length === 0) {
-    return <p className="p-3 text-ink-muted text-sm">{QUIET_ISLAND}</p>;
+    return <p className="text-ink-muted p-3 text-sm">{QUIET_ISLAND}</p>;
   }
 
   const relations = rivalry.relations.toSorted(byStance);

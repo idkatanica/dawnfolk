@@ -19,7 +19,7 @@ function isJournalTab(value: unknown): value is JournalTab {
 function JournalTabButton({ label, value }: { readonly label: string; readonly value: JournalTab }) {
   return (
     <Tabs.Tab
-      className="h-8 pointer-coarse:h-10 flex-1 rounded-full px-3 font-semibold text-ink-soft text-sm outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-dawn data-active:bg-white data-active:text-ink"
+      className="text-ink-soft hover:text-ink focus-visible:ring-dawn data-active:text-ink h-8 flex-1 rounded-full px-3 text-sm font-semibold transition-colors outline-none focus-visible:ring-2 data-active:bg-white pointer-coarse:h-10"
       value={value}
     >
       {label}
@@ -53,7 +53,7 @@ export function JournalPanel() {
 
   return (
     <Tabs.Root className="flex min-h-0 flex-1 flex-col gap-2" onValueChange={changeTab} value={journalTab}>
-      <Tabs.List aria-label="Journal" className="flex gap-1 rounded-full bg-ink/8 p-1">
+      <Tabs.List aria-label="Journal" className="bg-ink/8 flex gap-1 rounded-full p-1">
         {TABS.map((tab) => (
           <JournalTabButton key={tab.value} label={tab.label} value={tab.value} />
         ))}

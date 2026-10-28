@@ -1,6 +1,6 @@
 const HOME_HOST = "playdawnfolk.com";
 const MEDIA_PREFIX = "/media/";
-const RANGE_PATTERN = /^bytes=(\d+)-(\d*)$/;
+const RANGE_PATTERN = /^bytes=(?<start>\d+)-(?<end>\d*)$/u;
 
 interface WorkerEnvironment {
   readonly ASSETS: { readonly fetch: (request: Request) => Promise<Response> };
@@ -20,21 +20,36 @@ export function homeAddressOf(request: Request): string | null {
   return url.toString();
 }
 
+function requestedRange(rangeHeader: string | null): { end: string; start: string } | null {
+  const groups = rangeHeader === null ? undefined : RANGE_PATTERN.exec(rangeHeader)?.groups;
+
+  if (groups === undefined) {
+    return null;
+  }
+
+  const { end, start } = groups;
+
+  if (start === undefined || end === undefined) {
+    return null;
+  }
+
+  return { end, start };
+}
+
 async function serveRange(request: Request, assets: WorkerEnvironment["ASSETS"]): Promise<Response> {
   const response = await assets.fetch(request);
-  const rangeHeader = request.headers.get("Range");
-  const match = rangeHeader === null ? null : RANGE_PATTERN.exec(rangeHeader);
+  const range = requestedRange(request.headers.get("Range"));
   const headers = new Headers(response.headers);
 
   headers.set("Accept-Ranges", "bytes");
 
-  if (!response.ok || match === null) {
+  if (!response.ok || range === null) {
     return new Response(response.body, { headers, status: response.status });
   }
 
   const body = await response.arrayBuffer();
-  const start = Number(match[1]);
-  const end = match[2] === "" ? body.byteLength - 1 : Math.min(Number(match[2]), body.byteLength - 1);
+  const start = Number(range.start);
+  const end = range.end === "" ? body.byteLength - 1 : Math.min(Number(range.end), body.byteLength - 1);
 
   if (start > end) {
     return new Response(body, { headers });

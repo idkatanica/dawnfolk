@@ -74,7 +74,7 @@ export function SavesGroup() {
   return (
     <SettingsGroup description={description} title="Saves">
       <div className="grid grid-cols-2 gap-2">
-        <TextButton className="border border-paper-edge" onClick={showAllWorlds} tone="quiet">
+        <TextButton className="border-paper-edge border" onClick={showAllWorlds} tone="quiet">
           <LayoutGrid aria-hidden="true" size={16} />
           All worlds
         </TextButton>

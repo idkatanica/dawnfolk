@@ -93,6 +93,43 @@ function measureKindStrides(kind: AnimalKind): Map<AnimalPose, number> {
   return strides;
 }
 
+function cyclesPerSecond(
+  kindView: AnimalKindView,
+  clip: AnimalPose,
+  speed: number,
+  appearance: AnimalAppearance
+): number {
+  const { timing } = QUADRUPED_CLIPS[clip];
+
+  if (timing.kind !== "stride") {
+    return 1 / timing.cycleSeconds;
+  }
+
+  const stride = kindView.strides.get(clip);
+
+  if (stride === undefined) {
+    return 0;
+  }
+
+  return speed / (stride * appearance.size * appearance.legScale);
+}
+
+function animateAnimal(input: AgentViewInput, visual: AnimalVisual, kindView: AnimalKindView, offset: number): void {
+  const { animals } = input.mirror.frame;
+
+  const clipCode = animals[offset + AnimalField.Pose];
+  const speed = Math.hypot(animals[offset + AnimalField.VelocityX], animals[offset + AnimalField.VelocityZ]);
+
+  visual.motion.advance({
+    clip: clipCode,
+    gameSeconds: input.gameSeconds,
+    heading: animals[offset + AnimalField.Heading],
+    isOnce: QUADRUPED_CLIPS[ANIMAL_POSES[clipCode]].timing.kind === "once",
+    rate: cyclesPerSecond(kindView, ANIMAL_POSES[clipCode], speed, visual.appearance),
+    realSeconds: input.realSeconds,
+  });
+}
+
 export class AnimalView {
   readonly group = new Group();
   readonly #blendedPose = new Pose(MAMMOTH_BONE_COUNT);
@@ -198,7 +235,7 @@ export class AnimalView {
 
     const kindView = this.#kinds[visual.kind];
 
-    this.#animate(input, visual, kindView, offset);
+    animateAnimal(input, visual, kindView, offset);
     this.#palette.ensureRows(row + 1);
     this.#writePose(visual, kindView, row);
     this.#palette.lean(row, slopeLean(input.mirror, x, z, visual.motion.heading, LEAN_REACH));
@@ -228,38 +265,6 @@ export class AnimalView {
     const handover = farthestFigure(LEVEL_DISTANCES, input.detail);
 
     input.markers.add(anchor, style, handover, isSelected, animals[offset + AnimalField.HerdId]);
-  }
-
-  #animate(input: AgentViewInput, visual: AnimalVisual, kindView: AnimalKindView, offset: number): void {
-    const { animals } = input.mirror.frame;
-
-    const clipCode = animals[offset + AnimalField.Pose];
-    const speed = Math.hypot(animals[offset + AnimalField.VelocityX], animals[offset + AnimalField.VelocityZ]);
-
-    visual.motion.advance({
-      clip: clipCode,
-      gameSeconds: input.gameSeconds,
-      heading: animals[offset + AnimalField.Heading],
-      isOnce: QUADRUPED_CLIPS[ANIMAL_POSES[clipCode]].timing.kind === "once",
-      rate: this.#cyclesPerSecond(kindView, ANIMAL_POSES[clipCode], speed, visual.appearance),
-      realSeconds: input.realSeconds,
-    });
-  }
-
-  #cyclesPerSecond(kindView: AnimalKindView, clip: AnimalPose, speed: number, appearance: AnimalAppearance): number {
-    const { timing } = QUADRUPED_CLIPS[clip];
-
-    if (timing.kind !== "stride") {
-      return 1 / timing.cycleSeconds;
-    }
-
-    const stride = kindView.strides.get(clip);
-
-    if (stride === undefined) {
-      return 0;
-    }
-
-    return speed / (stride * appearance.size * appearance.legScale);
   }
 
   #writePose(visual: AnimalVisual, kindView: AnimalKindView, row: number): void {

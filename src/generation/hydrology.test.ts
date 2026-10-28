@@ -114,10 +114,12 @@ describe("river carving", () => {
       expect(profile[step]).toBeGreaterThanOrEqual(profile[step - 1]);
     }
 
-    for (let cell = 0; cell < grid.cellCount; cell += 1) {
-      if (Math.abs(grid.cellCenterX(cell)) > UNTOUCHED_DISTANCE) {
-        expect(carved[cell]).toBe(uncarved[cell]);
-      }
+    const untouched = Array.from({ length: grid.cellCount }, (_, cell) => cell).filter(
+      (cell) => Math.abs(grid.cellCenterX(cell)) > UNTOUCHED_DISTANCE
+    );
+
+    for (const cell of untouched) {
+      expect(carved[cell]).toBe(uncarved[cell]);
     }
   });
 

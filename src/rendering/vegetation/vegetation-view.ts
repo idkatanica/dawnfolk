@@ -91,6 +91,44 @@ function castsShadowAt(chunk: VegetationChunk, level: number, shadowFrustum: Fru
   return shadowFrustum.intersectsBox(chunk.bounds);
 }
 
+function chunkLevelOf(chunk: VegetationChunk, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
+  if (chunk.plants.size === 0 || !frustum.intersectsBox(chunk.bounds)) {
+    return HIDDEN_LEVEL;
+  }
+
+  const distance = chunk.bounds.distanceToPoint(camera.position);
+
+  return LEVEL_DISTANCES.findIndex((limit) => distance < limit * detail);
+}
+
+function fillPlants(plants: PlantBatch, chunks: readonly VegetationChunk[], casterCount: number): void {
+  const { batch, buckets, counts } = plants;
+
+  const sources: Float32Array[] = [];
+
+  let shadowedFloats = 0;
+
+  for (const [index, chunk] of chunks.entries()) {
+    for (const bucket of buckets) {
+      const source = chunk.buckets[bucket];
+
+      if (source.length === 0) {
+        continue;
+      }
+
+      sources.push(source);
+
+      if (index < casterCount) {
+        shadowedFloats += source.length;
+      }
+    }
+  }
+
+  batch.fill(sources);
+  counts.drawn = batch.count;
+  counts.shadowed = shadowedFloats / FLOATS_PER_PLANT;
+}
+
 export class VegetationView {
   readonly chunks: VegetationChunks;
   readonly group = new Group();
@@ -203,7 +241,7 @@ export class VegetationView {
     const shadowFrustum = shadowFrustumOf(sun);
 
     for (const [index, chunk] of this.chunks.chunks.entries()) {
-      const level = this.#levelOf(chunk, camera, frustum, detail);
+      const level = chunkLevelOf(chunk, camera, frustum, detail);
       const castsShadow = castsShadowAt(chunk, level, shadowFrustum) ? 1 : 0;
       const previous = this.#chunkLevels[index];
 
@@ -256,16 +294,6 @@ export class VegetationView {
     }
   }
 
-  #levelOf(chunk: VegetationChunk, camera: PerspectiveCamera, frustum: Frustum, detail: number): number {
-    if (chunk.plants.size === 0 || !frustum.intersectsBox(chunk.bounds)) {
-      return HIDDEN_LEVEL;
-    }
-
-    const distance = chunk.bounds.distanceToPoint(camera.position);
-
-    return LEVEL_DISTANCES.findIndex((limit) => distance < limit * detail);
-  }
-
   #refillDirtyLevels(): void {
     for (const [level, batches] of this.#batches.entries()) {
       const isWhole = this.#dirtyLevels.has(level);
@@ -286,7 +314,7 @@ export class VegetationView {
 
       for (const batch of batches) {
         if (isWhole || batch.buckets.some((bucket) => changed.has(bucket))) {
-          this.#fill(batch, chunks, casters.length);
+          fillPlants(batch, chunks, casters.length);
         }
       }
 
@@ -294,33 +322,5 @@ export class VegetationView {
     }
 
     this.#dirtyLevels.clear();
-  }
-
-  #fill(plants: PlantBatch, chunks: readonly VegetationChunk[], casterCount: number): void {
-    const { batch, buckets, counts } = plants;
-
-    const sources: Float32Array[] = [];
-
-    let shadowedFloats = 0;
-
-    for (const [index, chunk] of chunks.entries()) {
-      for (const bucket of buckets) {
-        const source = chunk.buckets[bucket];
-
-        if (source.length === 0) {
-          continue;
-        }
-
-        sources.push(source);
-
-        if (index < casterCount) {
-          shadowedFloats += source.length;
-        }
-      }
-    }
-
-    batch.fill(sources);
-    counts.drawn = batch.count;
-    counts.shadowed = shadowedFloats / FLOATS_PER_PLANT;
   }
 }

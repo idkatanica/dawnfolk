@@ -8,6 +8,6 @@ interface IslandProps {
 
 export function Island({ children, className }: IslandProps) {
   return (
-    <div className={cn("island rounded-island border border-paper-edge bg-paper text-ink", className)}>{children}</div>
+    <div className={cn("island rounded-island border-paper-edge bg-paper text-ink border", className)}>{children}</div>
   );
 }

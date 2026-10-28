@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, it as test } from "vitest";
 import { CROP_KINDS } from "../../content/crops.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
@@ -24,7 +24,7 @@ function headsOf(mesh: MeshData): number[] {
 }
 
 describe.each(CROP_KINDS)("%s clump", (kind) => {
-  it("builds clean geometry with every piece rooted at both levels of detail", () => {
+  test("builds clean geometry with every piece rooted at both levels of detail", () => {
     for (const level of CROP_DETAIL_LEVELS) {
       const mesh = buildCropModel(kind, level);
 
@@ -33,7 +33,7 @@ describe.each(CROP_KINDS)("%s clump", (kind) => {
     }
   });
 
-  it("grows to about its height from the ground", () => {
+  test("grows to about its height from the ground", () => {
     const mesh = buildCropModel(kind, "high");
 
     expect(mesh.bounds.minimum[1]).toBeGreaterThan(-0.06);
@@ -41,7 +41,7 @@ describe.each(CROP_KINDS)("%s clump", (kind) => {
     expect(mesh.bounds.maximum[1]).toBeLessThan(CROP_HEIGHTS[kind] * 1.2);
   });
 
-  it("keeps ears, flowers, pods or roots in their own part and colour", () => {
+  test("keeps ears, flowers, pods or roots in their own part and colour", () => {
     for (const level of CROP_DETAIL_LEVELS) {
       const mesh = buildCropModel(kind, level);
       const heads = headsOf(mesh);
@@ -51,7 +51,7 @@ describe.each(CROP_KINDS)("%s clump", (kind) => {
     }
   });
 
-  it("spends fewer triangles further away", () => {
+  test("spends fewer triangles further away", () => {
     expect(triangleCount(buildCropModel(kind, "low"))).toBeLessThan(triangleCount(buildCropModel(kind, "high")));
   });
 });

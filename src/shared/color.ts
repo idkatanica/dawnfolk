@@ -1,6 +1,6 @@
 import { lerp, saturate } from "./math.ts";
 
-const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+const HEX_COLOR = /^#[0-9a-f]{6}$/iu;
 const CHANNEL_MAXIMUM = 255;
 const RED_FACTOR = 65_536;
 const GREEN_FACTOR = 256;

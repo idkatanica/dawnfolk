@@ -1,3 +1,3 @@
 export function Divider() {
-  return <span aria-hidden="true" className="h-6 w-px shrink-0 bg-paper-edge" />;
+  return <span aria-hidden="true" className="bg-paper-edge h-6 w-px shrink-0" />;
 }

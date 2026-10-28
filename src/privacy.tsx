@@ -4,7 +4,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { PrivacyPage } from "./features/privacy/privacy-page.tsx";
 
-const container = document.getElementById("root");
+const container = document.querySelector("#root");
 
 if (container === null) {
   throw new Error("The page has no #root element to render into");

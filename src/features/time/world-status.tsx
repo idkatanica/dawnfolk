@@ -44,10 +44,10 @@ function DayRing({ hours }: { readonly hours: number }) {
   return (
     <span className="relative grid size-12 shrink-0 place-items-center">
       <svg aria-hidden="true" className="absolute inset-0 -rotate-90" viewBox="0 0 48 48">
-        <circle className="fill-none stroke-ink/8" cx="24" cy="24" r={RING_RADIUS} strokeWidth="3" />
+        <circle className="stroke-ink/8 fill-none" cx="24" cy="24" r={RING_RADIUS} strokeWidth="3" />
 
         <circle
-          className="fill-none stroke-dawn"
+          className="stroke-dawn fill-none"
           cx="24"
           cy="24"
           r={RING_RADIUS}
@@ -115,9 +115,9 @@ export function CompactClock({ className }: { readonly className?: string | unde
       <GameIcon className="@max-[6.5rem]:hidden" name={daylightIcon(calendar.hours)} size={24} />
 
       <div className="flex min-w-0 flex-col leading-none">
-        <span className="font-semibold text-ink text-sm tabular-nums">{formatClock(calendar.hours)}</span>
+        <span className="text-ink text-sm font-semibold tabular-nums">{formatClock(calendar.hours)}</span>
 
-        <span className="truncate text-2xs text-ink-muted">
+        <span className="text-2xs text-ink-muted truncate">
           <span className="@max-[5rem]:hidden">{calendar.seasonName} · </span>
           Day {calendar.dayOfSeason}
         </span>
@@ -139,7 +139,7 @@ export function WorldStatus() {
         <DayRing hours={calendar.hours} />
 
         <span className="flex flex-col gap-1 leading-none">
-          <span className="font-semibold text-2xl text-ink tabular-nums">{formatClock(calendar.hours)}</span>
+          <span className="text-ink text-2xl font-semibold tabular-nums">{formatClock(calendar.hours)}</span>
 
           <span className="text-ink-muted text-xs">
             {calendar.seasonName} · Day {calendar.dayOfSeason} · Year {calendar.year}

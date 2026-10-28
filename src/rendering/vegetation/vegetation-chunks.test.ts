@@ -96,10 +96,10 @@ describe("vegetation chunks", () => {
 
       expect(changedBuckets.length).toBeGreaterThan(0);
 
-      for (const [bucket, data] of buckets.entries()) {
-        if (!changedBuckets.includes(bucket)) {
-          expect([...data]).toEqual(before[index][bucket]);
-        }
+      const unchanged = [...buckets.entries()].filter(([bucket]) => !changedBuckets.includes(bucket));
+
+      for (const [bucket, data] of unchanged) {
+        expect([...data]).toEqual(before[index][bucket]);
       }
     }
   });

@@ -65,14 +65,16 @@ describe("water recomputation", () => {
       expect(world.water.rivers[spring.river]).toBeDefined();
     }
 
-    for (let cell = 0; cell < world.grid.cellCount; cell += 1) {
-      if (world.occupancy[cell] === SPRING_GROUND) {
-        expect(reserved.has(cell)).toBe(true);
-      }
+    const springGround = Array.from({ length: world.grid.cellCount }, (_, cell) => cell).filter(
+      (cell) => world.occupancy[cell] === SPRING_GROUND
+    );
 
-      if (reserved.has(cell)) {
-        expect(world.occupancy[cell]).not.toBe(NO_BUILDING);
-      }
+    for (const cell of springGround) {
+      expect(reserved.has(cell)).toBe(true);
+    }
+
+    for (const cell of reserved) {
+      expect(world.occupancy[cell]).not.toBe(NO_BUILDING);
     }
   });
 

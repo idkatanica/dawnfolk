@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it as test } from "vitest";
 import { MONUMENT_SLOPE, MONUMENTS } from "../content/monuments.ts";
 import { isMonumentSpecies, plantSpeciesDefinition } from "../content/plants.ts";
 import { canStandOn } from "../world/footing.ts";
@@ -32,7 +32,7 @@ beforeAll(() => {
 });
 
 describe.each(["round", "square"] as const)("monuments on a %s island", (shape) => {
-  it("raises a handful of them, of several kinds", () => {
+  test("raises a handful of them, of several kinds", () => {
     const { monuments } = worldOf(shape);
 
     expect(monuments.length).toBeGreaterThanOrEqual(4);
@@ -40,7 +40,7 @@ describe.each(["round", "square"] as const)("monuments on a %s island", (shape) 
     expect(new Set(monuments.map((monument) => monument.kind)).size).toBeGreaterThanOrEqual(4);
   });
 
-  it("sets them on dry, level ground away from water and the coast", () => {
+  test("sets them on dry, level ground away from water and the coast", () => {
     const { monuments, terrain } = worldOf(shape);
 
     const grid = new WorldGrid(TEST_DIMENSIONS);
@@ -59,7 +59,7 @@ describe.each(["round", "square"] as const)("monuments on a %s island", (shape) 
     }
   });
 
-  it("gives each a name of its kind, and no name twice", () => {
+  test("gives each a name of its kind, and no name twice", () => {
     const { monuments } = worldOf(shape);
 
     const names = monuments.map((monument) => monument.name);
@@ -71,7 +71,7 @@ describe.each(["round", "square"] as const)("monuments on a %s island", (shape) 
     }
   });
 
-  it("grows nothing on monument ground but the monument itself", () => {
+  test("grows nothing on monument ground but the monument itself", () => {
     const { monuments, vegetation } = worldOf(shape);
 
     const grid = new WorldGrid(TEST_DIMENSIONS);

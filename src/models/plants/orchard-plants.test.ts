@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, it as test } from "vitest";
 import { CultivatedSpecies } from "../../content/cultivated-plants.ts";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
@@ -33,7 +33,7 @@ function widthOf(mesh: MeshData): number {
 }
 
 describe.each(FRUIT_SLOTS)("orchard species %i", (species, slot) => {
-  it("builds clean geometry that stands on the ground at every level of detail", () => {
+  test("builds clean geometry that stands on the ground at every level of detail", () => {
     for (const level of PLANT_DETAIL_LEVELS) {
       for (const [variant, mesh] of buildPlantVariants(species, level).entries()) {
         const detached = loosePieces(mesh);
@@ -45,7 +45,7 @@ describe.each(FRUIT_SLOTS)("orchard species %i", (species, slot) => {
     }
   });
 
-  it("hangs its fruit as a separate part in its own colour, near and middle distance only", () => {
+  test("hangs its fruit as a separate part in its own colour, near and middle distance only", () => {
     for (const level of ["high", "medium"] as const) {
       for (const mesh of buildPlantVariants(species, level)) {
         const fruit = fruitOf(mesh);
@@ -60,7 +60,7 @@ describe.each(FRUIT_SLOTS)("orchard species %i", (species, slot) => {
     }
   });
 
-  it("moves the fruit with the leaves it grows on", () => {
+  test("moves the fruit with the leaves it grows on", () => {
     const [mesh] = buildPlantVariants(species, "high");
 
     for (const vertex of fruitOf(mesh)) {
@@ -71,7 +71,7 @@ describe.each(FRUIT_SLOTS)("orchard species %i", (species, slot) => {
     }
   });
 
-  it("dresses the crown in seasonal leaves", () => {
+  test("dresses the crown in seasonal leaves", () => {
     const [mesh] = buildPlantVariants(species, "high");
 
     const leaves = verticesOf(mesh, (vertex) => mesh.channels.slot[vertex] === MaterialSlot.Leaf);
@@ -80,7 +80,7 @@ describe.each(FRUIT_SLOTS)("orchard species %i", (species, slot) => {
     expect(leaves.every((vertex) => mesh.channels.flutter[vertex] === FOLIAGE_FLUTTER)).toBe(true);
   });
 
-  it("spends fewer triangles further away", () => {
+  test("spends fewer triangles further away", () => {
     const [high] = buildPlantVariants(species, "high");
     const [medium] = buildPlantVariants(species, "medium");
     const [low] = buildPlantVariants(species, "low");

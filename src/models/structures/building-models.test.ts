@@ -1,5 +1,5 @@
 import { Vector3 } from "three";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, it as test } from "vitest";
 import { MaterialSlot } from "../materials.ts";
 import { triangleCount } from "../mesh/mesh-data.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
@@ -14,13 +14,13 @@ describe.each(SINGLE_MODEL_KINDS)("%s model", (kind) => {
   const high = buildBuildingModel(kind, "high");
   const low = buildBuildingModel(kind, "low");
 
-  it("builds clean geometry at both levels of detail", () => {
+  test("builds clean geometry at both levels of detail", () => {
     expect(meshProblems(high)).toEqual([]);
     expect(meshProblems(low)).toEqual([]);
     expect(triangleCount(low)).toBeLessThan(triangleCount(high));
   });
 
-  it("keeps every part attached to the ground at both levels of detail", () => {
+  test("keeps every part attached to the ground at both levels of detail", () => {
     const touching = TOUCHING * buildingScale(kind) + FLOAT_SLACK;
 
     for (const mesh of [high, low]) {
@@ -28,12 +28,12 @@ describe.each(SINGLE_MODEL_KINDS)("%s model", (kind) => {
     }
   });
 
-  it("closes every surface above the ground at both levels of detail", () => {
+  test("closes every surface above the ground at both levels of detail", () => {
     expect(highestOpenEdge(high)).toBeLessThan(0.05);
     expect(highestOpenEdge(low)).toBeLessThan(0.05);
   });
 
-  it("rises in stages from the ground while it is built", () => {
+  test("rises in stages from the ground while it is built", () => {
     const orders = [...high.channels.buildOrder];
 
     expect(Math.min(...orders)).toBeLessThan(0.3);

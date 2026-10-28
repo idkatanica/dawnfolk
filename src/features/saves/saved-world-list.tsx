@@ -53,7 +53,7 @@ function SavedWorldRow({ now, world }: SavedWorldRowProps) {
   if (isConfirming) {
     return (
       <div className="flex min-h-14 items-center justify-between gap-3 px-3 py-2">
-        <p className="min-w-0 truncate text-ink text-sm">Delete {world.name}?</p>
+        <p className="text-ink min-w-0 truncate text-sm">Delete {world.name}?</p>
 
         <div className="flex shrink-0 items-center gap-1">
           <TextButton className="h-8 px-3" onClick={keep} tone="quiet">
@@ -61,7 +61,7 @@ function SavedWorldRow({ now, world }: SavedWorldRowProps) {
           </TextButton>
 
           <TextButton
-            className="h-8 bg-ember px-3 text-white hover:bg-ember/90 hover:text-white"
+            className="bg-ember hover:bg-ember/90 h-8 px-3 text-white hover:text-white"
             onClick={confirmDelete}
             tone="quiet"
           >
@@ -76,7 +76,7 @@ function SavedWorldRow({ now, world }: SavedWorldRowProps) {
     <div className="flex items-center gap-1 pr-1">
       <button
         className={cn(
-          "flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2 text-left outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-dawn",
+          "focus-visible:ring-dawn flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors duration-150 outline-none focus-visible:ring-2",
           "enabled:hover:bg-paper-hover disabled:cursor-not-allowed disabled:opacity-60"
         )}
         disabled={!world.isLoadable}
@@ -85,15 +85,15 @@ function SavedWorldRow({ now, world }: SavedWorldRowProps) {
       >
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex items-baseline justify-between gap-3">
-            <span className="truncate font-medium text-ink text-sm">{world.name}</span>
+            <span className="text-ink truncate text-sm font-medium">{world.name}</span>
 
-            <span className="shrink-0 text-ink-soft text-xs">{formatSavedAt(world.savedAt, now)}</span>
+            <span className="text-ink-soft shrink-0 text-xs">{formatSavedAt(world.savedAt, now)}</span>
           </span>
 
-          <span className="truncate text-ink-soft text-xs">{worldDetails(world)}</span>
+          <span className="text-ink-soft truncate text-xs">{worldDetails(world)}</span>
         </span>
 
-        {world.isLoadable ? <ChevronRight aria-hidden="true" className="shrink-0 text-ink-soft" size={16} /> : null}
+        {world.isLoadable ? <ChevronRight aria-hidden="true" className="text-ink-soft shrink-0" size={16} /> : null}
       </button>
 
       <IconButton

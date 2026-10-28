@@ -12,6 +12,26 @@ const TENDING_PER_VISIT = 0.5;
 const FENCED_YIELD = 1.25;
 const FIELD_SPREAD = 0.35;
 
+function harvest(tick: PersonTick, field: Field): Job {
+  const crop = CROPS[field.crop];
+
+  const amount = crop.yield * (field.isFenced ? FENCED_YIELD : 1);
+
+  field.growth = 0;
+  field.isSown = false;
+  tick.context.world.setCrop(field.cell, 0);
+  pickUp(tick.person, crop.produce, amount, "crops");
+  tick.context.chronicle.record({
+    category: "food",
+    text: `${tick.tribe.name} brought in the ${crop.name.toLowerCase()}`,
+    tribeId: tick.tribe.id,
+    x: tick.person.mover.x,
+    z: tick.person.mover.z,
+  });
+
+  return new DeliverJob(tick);
+}
+
 export class FarmJob implements Job {
   readonly kind = "farm";
   readonly #errand: Errand;
@@ -65,26 +85,6 @@ export class FarmJob implements Job {
       return null;
     }
 
-    return this.#harvest(tick, field);
-  }
-
-  #harvest(tick: PersonTick, field: Field): Job {
-    const crop = CROPS[field.crop];
-
-    const amount = crop.yield * (field.isFenced ? FENCED_YIELD : 1);
-
-    field.growth = 0;
-    field.isSown = false;
-    tick.context.world.setCrop(field.cell, 0);
-    pickUp(tick.person, crop.produce, amount, "crops");
-    tick.context.chronicle.record({
-      category: "food",
-      text: `${tick.tribe.name} brought in the ${crop.name.toLowerCase()}`,
-      tribeId: tick.tribe.id,
-      x: tick.person.mover.x,
-      z: tick.person.mover.z,
-    });
-
-    return new DeliverJob(tick);
+    return harvest(tick, field);
   }
 }

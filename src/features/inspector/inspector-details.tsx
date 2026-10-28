@@ -111,7 +111,7 @@ function FireWarning({ cell }: { readonly cell: CellInspection }) {
   }
 
   return (
-    <p className="flex items-center gap-1.5 font-medium text-ember text-sm">
+    <p className="text-ember flex items-center gap-1.5 text-sm font-medium">
       <GameIcon name="fire" size={22} />
       Burning
     </p>
@@ -195,7 +195,7 @@ function landFacts(summary: TribeInspection["summary"]) {
 function Section({ children, title }: { readonly children: ReactNode; readonly title: string }) {
   return (
     <section aria-label={title} className="flex flex-col gap-1.5">
-      <h3 className="font-semibold text-ink-soft text-xs">{title}</h3>
+      <h3 className="text-ink-soft text-xs font-semibold">{title}</h3>
 
       {children}
     </section>

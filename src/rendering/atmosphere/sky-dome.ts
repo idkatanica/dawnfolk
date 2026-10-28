@@ -45,6 +45,44 @@ function starHash(seed: Node<"vec3">, salt: number): Node<"float"> {
   return fract(sin(mixed.mod(6283.185)).mul(43_758.5453));
 }
 
+function starField(direction: Node<"vec3">) {
+  const absolute = abs(direction);
+
+  const isSideX = absolute.x.greaterThan(max(absolute.y, absolute.z));
+  const isTopY = absolute.y.greaterThan(absolute.z);
+
+  const faceCoordinates = select(
+    isSideX,
+    direction.yz.div(absolute.x),
+    select(isTopY, direction.xz.div(absolute.y), direction.xy.div(absolute.z))
+  );
+
+  const faceIndex = select(isSideX, float(1), select(isTopY, float(2), float(3)));
+  const scaled = faceCoordinates.mul(STAR_CELLS_PER_FACE).add(STAR_CELLS_PER_FACE * 2);
+
+  const cell = floor(scaled);
+
+  const seed = vec3(cell, faceIndex.mul(97.31));
+
+  const presence = starHash(seed, 0);
+  const offset = vec2(starHash(seed, 1), starHash(seed, 2)).sub(0.5).mul(0.6);
+  const brightness = starHash(seed, 3);
+
+  const distanceToStar = length(fract(scaled).sub(0.5).sub(offset));
+  const twinkle = sin(time.mul(brightness.mul(3).add(1.2)).add(brightness.mul(40)))
+    .mul(0.25)
+    .add(0.75);
+
+  const shape = smoothstep(0.24, 0.02, distanceToStar);
+
+  return vec3(0.85, 0.9, 1).mul(
+    shape
+      .mul(step(1 - STAR_SHARE, presence))
+      .mul(brightness.mul(1.6).add(0.3))
+      .mul(twinkle)
+  );
+}
+
 export class SkyDome {
   readonly abyssColor = uniform(new Color(0x7f_93_ad));
   readonly cloudCover = uniform(0.35);
@@ -86,7 +124,7 @@ export class SkyDome {
       const color = mix(abyss, sky, step(0, height)).toVar();
 
       If(height.greaterThanEqual(0).and(this.starVisibility.greaterThan(0)), () => {
-        color.addAssign(this.#stars(direction).mul(this.starVisibility));
+        color.addAssign(starField(direction).mul(this.starVisibility));
       });
 
       If(height.greaterThan(CLOUD_HORIZON), () => {
@@ -113,44 +151,6 @@ export class SkyDome {
     const glow = pow(alignment, 400).mul(0.25);
 
     return vec3(0.92, 0.94, 1).mul(disc.mul(1.6).add(glow)).mul(this.moonVisibility);
-  }
-
-  #stars(direction: Node<"vec3">) {
-    const absolute = abs(direction);
-
-    const isSideX = absolute.x.greaterThan(max(absolute.y, absolute.z));
-    const isTopY = absolute.y.greaterThan(absolute.z);
-
-    const faceCoordinates = select(
-      isSideX,
-      direction.yz.div(absolute.x),
-      select(isTopY, direction.xz.div(absolute.y), direction.xy.div(absolute.z))
-    );
-
-    const faceIndex = select(isSideX, float(1), select(isTopY, float(2), float(3)));
-    const scaled = faceCoordinates.mul(STAR_CELLS_PER_FACE).add(STAR_CELLS_PER_FACE * 2);
-
-    const cell = floor(scaled);
-
-    const seed = vec3(cell, faceIndex.mul(97.31));
-
-    const presence = starHash(seed, 0);
-    const offset = vec2(starHash(seed, 1), starHash(seed, 2)).sub(0.5).mul(0.6);
-    const brightness = starHash(seed, 3);
-
-    const distanceToStar = length(fract(scaled).sub(0.5).sub(offset));
-    const twinkle = sin(time.mul(brightness.mul(3).add(1.2)).add(brightness.mul(40)))
-      .mul(0.25)
-      .add(0.75);
-
-    const shape = smoothstep(0.24, 0.02, distanceToStar);
-
-    return vec3(0.85, 0.9, 1).mul(
-      shape
-        .mul(step(1 - STAR_SHARE, presence))
-        .mul(brightness.mul(1.6).add(0.3))
-        .mul(twinkle)
-    );
   }
 
   #clouds(direction: Node<"vec3">, background: Node<"vec3">) {

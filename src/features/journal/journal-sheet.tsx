@@ -45,9 +45,9 @@ export function JournalSheet() {
         <Drawer.Viewport className="pointer-events-none fixed inset-0 z-30 flex items-end">
           <Drawer.Popup
             aria-label={label}
-            className="pointer-events-auto flex max-h-sheet w-full flex-col gap-2 rounded-t-sheet border-paper-edge border-t bg-paper px-4 pt-2 pb-sheet outline-none transition-transform duration-450 ease-glide [transform:translateY(var(--drawer-swipe-movement-y))] data-ending-style:[transform:translateY(100%)] data-starting-style:[transform:translateY(100%)]"
+            className="max-h-sheet rounded-t-sheet border-paper-edge bg-paper pb-sheet ease-glide pointer-events-auto flex w-full [transform:translateY(var(--drawer-swipe-movement-y))] flex-col gap-2 border-t px-4 pt-2 transition-transform duration-450 outline-none data-ending-style:[transform:translateY(100%)] data-starting-style:[transform:translateY(100%)]"
           >
-            <div aria-hidden="true" className="h-1 w-10 shrink-0 self-center rounded-full bg-ink/20" />
+            <div aria-hidden="true" className="bg-ink/20 h-1 w-10 shrink-0 self-center rounded-full" />
 
             <Drawer.Content className="flex min-h-0 flex-1 flex-col" ref={panelReference}>
               <SidePanelContent contents={contents} onBack={back} onClose={close} />

@@ -14,9 +14,9 @@ const NIGHT = 0.9;
 const NOON = 0.5;
 const BOLD = worldRulesSchema.parse({ nature: { beastBoldness: 3 } });
 const SPEAR: CarriedWeapon = { kind: "spear", material: "stone" };
-const WOLF_ATTACK_STORY = /^beast: Wolves attacked .+ of the .+ Clan/;
-const TRAMPLE_STORY = /^beast: A mammoth trampled .+ of the .+ Clan/;
-const GORE_STORY = /^beast: A stag gored .+ to death/;
+const WOLF_ATTACK_STORY = /^beast: Wolves attacked .+ of the .+ Clan/u;
+const TRAMPLE_STORY = /^beast: A mammoth trampled .+ of the .+ Clan/u;
+const GORE_STORY = /^beast: A stag gored .+ to death/u;
 
 function beastHarness(day: number): SocietyHarness {
   return new SocietyHarness({

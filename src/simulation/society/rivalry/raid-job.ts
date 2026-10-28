@@ -1,7 +1,7 @@
 import { clamp } from "../../../shared/math.ts";
 import { faceTowards } from "../../agents/movement.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
-import type { Building } from "../buildings.ts";
+import { type Building, setAlight } from "../buildings.ts";
 import { headTo, type Job, standStill, walk } from "../jobs/job.ts";
 import { runSpeed, walkSpeed } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
@@ -49,13 +49,47 @@ function plunderSpot(tribe: Tribe, tick: PersonTick): Waypoint {
   return { x: storehouse.x, z: storehouse.z };
 }
 
-function setAblaze(building: Building, raid: Raid, tick: PersonTick): void {
+function setAblaze(building: Building, raid: Raid): void {
   if (building.burningSeconds > 0) {
     return;
   }
 
-  tick.context.buildings.setAlight(building);
+  setAlight(building);
   raid.burned.push(buildingName(building));
+}
+
+function marchPace(tick: PersonTick, raid: Raid): number {
+  const { person } = tick;
+
+  const ownDistance = Math.hypot(person.mover.x - raid.target.x, person.mover.z - raid.target.z);
+
+  let total = 0;
+  let count = 0;
+
+  for (const id of raid.warriorIds) {
+    const comrade = tick.context.people.findPerson(id);
+
+    if (comrade?.isAlive === true && comrade.job instanceof RaidJob) {
+      total += Math.hypot(comrade.mover.x - raid.target.x, comrade.mover.z - raid.target.z);
+      count += 1;
+    }
+  }
+
+  if (count === 0) {
+    return 1;
+  }
+
+  return clamp(1 + (ownDistance - total / count) / CATCH_UP_DISTANCE, SLOWEST_PACE, FASTEST_PACE);
+}
+
+function nearestFoe(tick: PersonTick, raid: Raid, radius: number): Foe | null {
+  const attacker = assailantOf(tick, raid.defenderId);
+
+  if (attacker !== null) {
+    return personFoe(attacker);
+  }
+
+  return nearestOf(tick, nearbyFighters(tick, raid.defenderId, radius), radius);
 }
 
 export class RaidJob implements Job {
@@ -143,7 +177,7 @@ export class RaidJob implements Job {
   }
 
   #march(tick: PersonTick, raid: Raid): void {
-    const foe = this.#nearestFoe(tick, raid, ENGAGE_RADIUS);
+    const foe = nearestFoe(tick, raid, ENGAGE_RADIUS);
 
     if (foe !== null) {
       this.#engagement.update(tick, foe);
@@ -157,32 +191,8 @@ export class RaidJob implements Job {
       headTo(tick.person, offsetFrom(raid.target, this.#offset, TARGET_SPREAD), tick.context);
     }
 
-    walk(tick, MARCH_SPEED * this.#pace(tick, raid));
+    walk(tick, MARCH_SPEED * marchPace(tick, raid));
     tick.person.pose = "march";
-  }
-
-  #pace(tick: PersonTick, raid: Raid): number {
-    const { person } = tick;
-
-    const ownDistance = Math.hypot(person.mover.x - raid.target.x, person.mover.z - raid.target.z);
-
-    let total = 0;
-    let count = 0;
-
-    for (const id of raid.warriorIds) {
-      const comrade = tick.context.people.findPerson(id);
-
-      if (comrade?.isAlive === true && comrade.job instanceof RaidJob) {
-        total += Math.hypot(comrade.mover.x - raid.target.x, comrade.mover.z - raid.target.z);
-        count += 1;
-      }
-    }
-
-    if (count === 0) {
-      return 1;
-    }
-
-    return clamp(1 + (ownDistance - total / count) / CATCH_UP_DISTANCE, SLOWEST_PACE, FASTEST_PACE);
   }
 
   #assault(tick: PersonTick, raid: Raid): void {
@@ -194,7 +204,7 @@ export class RaidJob implements Job {
       return;
     }
 
-    const foe = this.#nearestFoe(tick, raid, raid.aim === "revenge" ? SEEK_RADIUS : CORNERED_RADIUS);
+    const foe = nearestFoe(tick, raid, raid.aim === "revenge" ? SEEK_RADIUS : CORNERED_RADIUS);
 
     if (foe !== null) {
       this.#engagement.update(tick, foe);
@@ -216,7 +226,7 @@ export class RaidJob implements Job {
       raid.aim === "burn" && raid.burned.length === 0 ? burnableBuilding(tick.context.buildings.all, victims) : null;
 
     if (building !== null) {
-      this.#workAt(tick, raid, building, KINDLING_SECONDS, () => setAblaze(building, raid, tick));
+      this.#workAt(tick, raid, building, KINDLING_SECONDS, () => setAblaze(building, raid));
 
       return;
     }
@@ -291,15 +301,5 @@ export class RaidJob implements Job {
     unpack(tribe.stock, this.#loot);
 
     return null;
-  }
-
-  #nearestFoe(tick: PersonTick, raid: Raid, radius: number): Foe | null {
-    const attacker = assailantOf(tick, raid.defenderId);
-
-    if (attacker !== null) {
-      return personFoe(attacker);
-    }
-
-    return nearestOf(tick, nearbyFighters(tick, raid.defenderId, radius), radius);
   }
 }

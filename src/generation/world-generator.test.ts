@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, it as test } from "vitest";
 import { Biome } from "../content/biomes.ts";
 import { Ground, isPoolGround } from "../content/grounds.ts";
 import { isTreeSpecies, plantSpeciesDefinition } from "../content/plants.ts";
@@ -697,20 +697,24 @@ describe("world generation", () => {
       expect(isOnIsland(world.terrain.coastDistance, cell)).toBe(true);
     }
 
-    for (let cell = 0; cell < grid.cellCount; cell += 1) {
-      if (!isOnIsland(world.terrain.coastDistance, cell) && world.terrain.waterSurface[cell] !== NO_WATER) {
-        expect(distanceToWaterfall(world, grid, cell)).toBeLessThan(grid.cellSize * 2);
-      }
+    const fallingWater = Array.from({ length: grid.cellCount }, (_, cell) => cell).filter(
+      (cell) => !isOnIsland(world.terrain.coastDistance, cell) && world.terrain.waterSurface[cell] !== NO_WATER
+    );
+
+    for (const cell of fallingWater) {
+      expect(distanceToWaterfall(world, grid, cell)).toBeLessThan(grid.cellSize * 2);
     }
   });
 
   it("classifies water cells as water and plants nothing in them", () => {
     const grid = new WorldGrid(TEST_DIMENSIONS);
 
-    for (let cell = 0; cell < grid.cellCount; cell += 1) {
-      if (hasWater(world.terrain.waterSurface[cell], world.terrain.height[cell])) {
-        expect(world.terrain.biome[cell]).toBe(Biome.Water);
-      }
+    const waterCells = Array.from({ length: grid.cellCount }, (_, cell) => cell).filter((cell) =>
+      hasWater(world.terrain.waterSurface[cell], world.terrain.height[cell])
+    );
+
+    for (const cell of waterCells) {
+      expect(world.terrain.biome[cell]).toBe(Biome.Water);
     }
 
     for (let plant = 0; plant < world.vegetation.count; plant += 1) {
@@ -802,10 +806,12 @@ describe("world generation", () => {
     expect(banks.size).toBeGreaterThan(50);
     expect(sandy.length / banks.size).toBeGreaterThan(0.8);
 
-    for (let plant = 0; plant < vegetation.count; plant += 1) {
-      if (isTreeSpecies(vegetation.species[plant])) {
-        expect(terrain.ground[grid.cellAt(vegetation.x[plant], vegetation.z[plant])]).not.toBe(Ground.Sand);
-      }
+    const trees = Array.from({ length: vegetation.count }, (_, plant) => plant).filter((plant) =>
+      isTreeSpecies(vegetation.species[plant])
+    );
+
+    for (const tree of trees) {
+      expect(terrain.ground[grid.cellAt(vegetation.x[tree], vegetation.z[tree])]).not.toBe(Ground.Sand);
     }
   });
 
@@ -832,10 +838,8 @@ describe("world generation", () => {
     expect(densities.filter((density) => density > 0.85).length / densities.length).toBeGreaterThan(0.2);
     expect(bankMean).toBeLessThan(mean * 0.7);
 
-    for (const cell of wooded) {
-      if (terrain.woodland[cell] < 0.3) {
-        expect(terrain.ground[cell]).not.toBe(Ground.Forest);
-      }
+    for (const cell of wooded.filter((woodedCell) => terrain.woodland[woodedCell] < 0.3)) {
+      expect(terrain.ground[cell]).not.toBe(Ground.Forest);
     }
   });
 
@@ -860,7 +864,7 @@ describe("world generation", () => {
 });
 
 describe.each(ISLAND_SHAPES)("a %s world generated twice from one seed", (shape) => {
-  it("comes out the same in every stage", () => {
+  test("comes out the same in every stage", () => {
     const options = { dimensions: DETERMINISM_DIMENSIONS, erosionStrength: 1, shape };
 
     const first = generateWorld(7, options);
@@ -886,12 +890,14 @@ describe("full-size island rim", () => {
   it("meets the square cliff at a moderate height without steps that could open gaps", () => {
     const grid = new WorldGrid(fullSquare.dimensions);
 
+    const { height } = fullSquare.terrain;
+
     for (const side of edgeSides(grid)) {
-      const heights = side.map((cell) => fullSquare.terrain.height[cell]);
+      const heights = side.map((cell) => height[cell]);
 
       expect(Math.min(...heights)).toBeGreaterThan(120);
       expect(Math.max(...heights)).toBeLessThan(400);
-      expect(largestStepAlong(fullSquare.terrain.height, side)).toBeLessThan(15);
+      expect(largestStepAlong(height, side)).toBeLessThan(15);
     }
   });
 

@@ -14,7 +14,7 @@ export function BuildingList({ buildings }: { readonly buildings: readonly Build
 
         return (
           <li
-            className="flex h-7 items-center gap-1.5 rounded-full bg-ink/8 px-2.5 font-medium text-ink-soft text-xs"
+            className="bg-ink/8 text-ink-soft flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium"
             key={building.kind}
           >
             <GameIcon name={icon} size={20} />

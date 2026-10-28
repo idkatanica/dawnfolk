@@ -17,7 +17,7 @@ export function IconButton({ className, icon, isPressed, label, ...props }: Icon
       aria-label={label}
       aria-pressed={isPressed}
       className={cn(
-        "grid pointer-coarse:size-11 size-10 shrink-0 place-items-center rounded-full transition-colors duration-150",
+        "grid size-10 shrink-0 place-items-center rounded-full transition-colors duration-150 pointer-coarse:size-11",
         {
           "bg-dawn-soft text-dawn-strong": isPressed === true,
           "text-ink-soft hover:bg-paper-hover hover:text-ink active:bg-paper-press": isPressed !== true,
@@ -42,10 +42,10 @@ export function TextButton({ className, tone, ...props }: TextButtonProps) {
     <BaseButton
       {...props}
       className={cn(
-        "inline-flex h-9 pointer-coarse:h-10 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 font-medium text-sm transition-colors duration-150",
+        "inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full px-4 text-sm font-medium whitespace-nowrap transition-colors duration-150 pointer-coarse:h-10",
         "disabled:cursor-not-allowed disabled:opacity-50",
         {
-          "bg-dawn text-white hover:bg-dawn-strong": tone === "accent",
+          "bg-dawn hover:bg-dawn-strong text-white": tone === "accent",
           "text-ink-soft hover:bg-paper-hover hover:text-ink": tone === "quiet",
         },
         FOCUS_RING,

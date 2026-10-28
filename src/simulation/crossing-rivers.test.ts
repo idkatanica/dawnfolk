@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it as test } from "vitest";
 import { DEFAULT_GENERATION_OPTIONS } from "../generation/generation-options.ts";
 import { generateWorld } from "../generation/world-generator.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
@@ -83,7 +83,7 @@ function longestSpellInWater(simulation: Simulation, seconds: number): number {
 }
 
 describe.each(["round", "square"] as const)("a long day on a %s island", (shape) => {
-  it("keeps people and animals out of water and gets them out of a flood", { timeout: 180_000 }, () => {
+  test("keeps people and animals out of water and gets them out of a flood", { timeout: 180_000 }, () => {
     const simulation = populatedIsland(shape);
 
     expect(longestSpellInWater(simulation, RUN_SECONDS)).toBeLessThan(LONGEST_SPELL_IN_WATER);

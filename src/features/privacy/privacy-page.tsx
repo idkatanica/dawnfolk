@@ -21,7 +21,7 @@ export function PrivacyPage() {
         <a
           className={cn(
             ISLAND_CLASS,
-            "inline-flex h-11 items-center gap-2 self-start px-4 font-semibold text-ink text-sm outline-none transition-colors duration-150 hover:text-dawn-strong focus-visible:ring-2 focus-visible:ring-dawn"
+            "text-ink hover:text-dawn-strong focus-visible:ring-dawn inline-flex h-11 items-center gap-2 self-start px-4 text-sm font-semibold transition-colors duration-150 outline-none focus-visible:ring-2"
           )}
           href="/"
         >
@@ -30,7 +30,7 @@ export function PrivacyPage() {
         </a>
 
         <main className={ISLAND_CLASS}>
-          <article className="prose prose-zinc max-w-none p-6 prose-a:text-dawn-strong prose-headings:text-ink sm:p-12">
+          <article className="prose prose-zinc prose-a:text-dawn-strong prose-headings:text-ink max-w-none p-6 sm:p-12">
             <Markdown remarkPlugins={[remarkGfm]}>{privacyText}</Markdown>
           </article>
         </main>

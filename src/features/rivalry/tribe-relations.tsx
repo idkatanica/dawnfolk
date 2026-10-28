@@ -26,7 +26,7 @@ function Neighbour({
       <TribeDot color={other.color} size="small" />
 
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-medium text-ink text-sm">{other.name}</span>
+        <span className="text-ink truncate text-sm font-medium">{other.name}</span>
 
         <RelationNote relation={relation} />
       </span>
@@ -48,7 +48,7 @@ function RaidLine({ tribeId, tribes }: { readonly tribeId: number; readonly trib
   const otherName = other === undefined ? "their enemies" : `the ${other.name}`;
 
   return (
-    <p className="flex items-center gap-2 rounded-xl bg-ember-soft px-2.5 py-2 font-medium text-ember text-sm">
+    <p className="bg-ember-soft text-ember flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm font-medium">
       <GameIcon name="raid" size={22} />
       {isAttacker ? `Raiding ${otherName}` : `Raided by ${otherName}`} · {RAID_PHASE_LABELS[raid.phase]}
     </p>
@@ -71,11 +71,11 @@ export function TribeRelations({ tribeId }: { readonly tribeId: number }) {
 
   return (
     <section aria-label="Neighbours" className="flex flex-col gap-1">
-      <h3 className="font-semibold text-ink-soft text-xs uppercase tracking-wide">Neighbours</h3>
+      <h3 className="text-ink-soft text-xs font-semibold tracking-wide uppercase">Neighbours</h3>
 
       <RaidLine tribeId={tribeId} tribes={tribes} />
 
-      <ul className="divide-y divide-line">
+      <ul className="divide-line divide-y">
         {own.map((relation) => (
           <Neighbour
             key={`${relation.firstId}-${relation.secondId}`}

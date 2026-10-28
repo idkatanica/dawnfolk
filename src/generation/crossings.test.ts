@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, it as test } from "vitest";
 import { HOP_WIDTH, isBrookCell } from "../world/brooks.ts";
 import { type Crossing, crossingLength, crossingPointOf, isOnCrossing } from "../world/crossings.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
@@ -93,7 +93,7 @@ beforeAll(() => {
 }, 120_000);
 
 describe.each(["round", "square"] as const)("crossings on a %s island", (shape) => {
-  it("give most rivers that run too wide to hop for a long way a ford or a fallen log", () => {
+  test("give most rivers that run too wide to hop for a long way a ford or a fallen log", () => {
     const { crossings, water } = worldOf(shape);
 
     const longRivers = water.rivers.filter((river) => wideStretch(river) > LONG_WIDE_STRETCH);
@@ -105,7 +105,7 @@ describe.each(["round", "square"] as const)("crossings on a %s island", (shape) 
     expect(crossings.some((crossing) => crossing.kind === "log")).toBe(true);
   });
 
-  it("leave brooks to be hopped and treat only rivers no wider than a hop as brooks", () => {
+  test("leave brooks to be hopped and treat only rivers no wider than a hop as brooks", () => {
     const { crossings, dimensions, terrain, water } = worldOf(shape);
     const grid = new WorldGrid(dimensions);
 
@@ -128,7 +128,7 @@ describe.each(["round", "square"] as const)("crossings on a %s island", (shape) 
     expect(crossings.some((crossing) => isBrookCell(terrain, cellOf(middleOf(crossing))))).toBe(false);
   });
 
-  it("space them five to eight hundred metres apart along a river", () => {
+  test("space them five to eight hundred metres apart along a river", () => {
     const { crossings, water } = worldOf(shape);
 
     const gaps = water.rivers.flatMap((river) => {
@@ -144,7 +144,7 @@ describe.each(["round", "square"] as const)("crossings on a %s island", (shape) 
     expect(sorted[Math.floor(sorted.length / 2)]).toBeLessThan(WIDEST_GAP);
   });
 
-  it("span river water between two dry, gentle banks", () => {
+  test("span river water between two dry, gentle banks", () => {
     const { crossings, dimensions, terrain } = worldOf(shape);
     const grid = new WorldGrid(dimensions);
 
@@ -166,7 +166,7 @@ describe.each(["round", "square"] as const)("crossings on a %s island", (shape) 
     }
   });
 
-  it("keep away from waterfalls, lakes and the coast", () => {
+  test("keep away from waterfalls, lakes and the coast", () => {
     const { crossings, dimensions, terrain, water } = worldOf(shape);
     const grid = new WorldGrid(dimensions);
 
@@ -191,39 +191,40 @@ describe.each(["round", "square"] as const)("crossings on a %s island", (shape) 
     }
   });
 
-  it("lay fallen logs over narrow water and stepping stones over wider, shallow water", () => {
+  test("lay fallen logs over narrow water and stepping stones over wider, shallow water", () => {
     const { crossings, dimensions, terrain } = worldOf(shape);
     const grid = new WorldGrid(dimensions);
 
-    for (const crossing of crossings) {
-      const wetPoints = samplesAlong(crossing).filter((point) => isWaterCell(terrain, grid.cellAt(point.x, point.z)));
+    const wetPointsOf = (crossing: Crossing) =>
+      samplesAlong(crossing).filter((point) => isWaterCell(terrain, grid.cellAt(point.x, point.z)));
 
-      const alongs = wetPoints.map((point) => crossingPointOf(crossing, point.x, point.z).along);
+    for (const log of crossings.filter((crossing) => crossing.kind === "log")) {
+      const alongs = wetPointsOf(log).map((point) => crossingPointOf(log, point.x, point.z).along);
       const span = Math.max(...alongs) - Math.min(...alongs);
 
+      expect(span, `log ${log.id}`).toBeLessThan(23);
+    }
+
+    for (const ford of crossings.filter((crossing) => crossing.kind !== "log")) {
       const deepest = Math.max(
-        ...wetPoints.map((point) => {
+        ...wetPointsOf(ford).map((point) => {
           const cell = grid.cellAt(point.x, point.z);
 
           return terrain.waterSurface[cell] - terrain.height[cell];
         })
       );
 
-      if (crossing.kind === "log") {
-        expect(span, `log ${crossing.id}`).toBeLessThan(23);
-      } else {
-        expect(deepest, `ford ${crossing.id}`).toBeLessThan(4.05);
-      }
+      expect(deepest, `ford ${ford.id}`).toBeLessThan(4.05);
     }
   });
 
-  it("can be walked along from end to end", () => {
+  test("can be walked along from end to end", () => {
     for (const crossing of worldOf(shape).crossings) {
       expect(samplesAlong(crossing).every((point) => isOnCrossing(crossing, point.x, point.z))).toBe(true);
     }
   });
 
-  it("keep every crossing that still spans its river when the water is worked out again", { timeout: 60_000 }, () => {
+  test("keep every crossing that still spans its river when the water is worked out again", { timeout: 60_000 }, () => {
     const generated = worldOf(shape);
     const grid = new WorldGrid(generated.dimensions);
     const terrain = { ...generated.terrain, height: Float32Array.from(generated.terrain.height) };

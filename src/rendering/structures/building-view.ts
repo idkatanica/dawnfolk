@@ -375,6 +375,62 @@ function enclosureKindOf(kind: BuildingKind): EnclosureKind {
   return kind === "stoneWall" ? "stoneWall" : "palisade";
 }
 
+function ringOf(building: BuildingSnapshot, mirror: WorldMirror): PiecePlacement[] {
+  const kind = enclosureKindOf(building.kind);
+  const length = ENCLOSURE_SEGMENT_LENGTH;
+
+  const count = Math.max(SMALLEST_RING, Math.round((FULL_TURN * building.extent) / length));
+  const radius = length / (2 * Math.tan(Math.PI / count));
+  const halfStep = Math.PI / count;
+
+  const pieces: PiecePlacement[] = [];
+
+  for (let index = 0; index < count; index += 1) {
+    const angle = building.rotation + (index / count) * FULL_TURN;
+
+    const ends = [angle - halfStep, angle, angle + halfStep].map((end) => ({
+      x: building.x + Math.cos(end) * radius,
+      z: building.z + Math.sin(end) * radius,
+    }));
+
+    if (ends.some((end) => mirror.isWaterAt(end.x, end.z))) {
+      continue;
+    }
+
+    pieces.push({
+      key: enclosureKey(kind, index === 0 ? "gate" : "segment"),
+      progress: saturate(building.progress * count - index),
+      rotation: -angle - Math.PI / 2,
+      x: building.x + Math.cos(angle) * radius,
+      z: building.z + Math.sin(angle) * radius,
+    });
+  }
+
+  return pieces;
+}
+
+function glowOf(building: BuildingSnapshot): number {
+  if (GLOWING_KINDS.has(building.kind)) {
+    return building.progress >= 1 ? WORKPLACE_GLOW : 0;
+  }
+
+  if (!isLitCampfire(building)) {
+    return 0;
+  }
+
+  return clamp(building.fuel * 1.5, 0.35, 1);
+}
+
+function piecesOf(building: BuildingSnapshot, mirror: WorldMirror): PiecePlacement[] {
+  if (isEnclosure(building.kind)) {
+    return ringOf(building, mirror);
+  }
+
+  const key = building.kind === "mine" ? mineKey(oreOfVariant(building.variant)) : building.kind;
+
+  return [{ key, progress: building.progress, rotation: building.rotation, x: building.x, z: building.z }];
+}
+
 export class BuildingView {
   readonly group = new Group();
   readonly #all: readonly InstanceBatch[];
@@ -447,7 +503,7 @@ export class BuildingView {
     this.#pieces = [];
 
     for (const building of frame.buildings) {
-      for (const piece of this.#piecesOf(building, mirror)) {
+      for (const piece of piecesOf(building, mirror)) {
         this.#addPiece(mirror, building, piece);
       }
     }
@@ -473,50 +529,6 @@ export class BuildingView {
     });
   }
 
-  #piecesOf(building: BuildingSnapshot, mirror: WorldMirror): PiecePlacement[] {
-    if (isEnclosure(building.kind)) {
-      return this.#ringOf(building, mirror);
-    }
-
-    const key = building.kind === "mine" ? mineKey(oreOfVariant(building.variant)) : building.kind;
-
-    return [{ key, progress: building.progress, rotation: building.rotation, x: building.x, z: building.z }];
-  }
-
-  #ringOf(building: BuildingSnapshot, mirror: WorldMirror): PiecePlacement[] {
-    const kind = enclosureKindOf(building.kind);
-    const length = ENCLOSURE_SEGMENT_LENGTH;
-
-    const count = Math.max(SMALLEST_RING, Math.round((FULL_TURN * building.extent) / length));
-    const radius = length / (2 * Math.tan(Math.PI / count));
-    const halfStep = Math.PI / count;
-
-    const pieces: PiecePlacement[] = [];
-
-    for (let index = 0; index < count; index += 1) {
-      const angle = building.rotation + (index / count) * FULL_TURN;
-
-      const ends = [angle - halfStep, angle, angle + halfStep].map((end) => ({
-        x: building.x + Math.cos(end) * radius,
-        z: building.z + Math.sin(end) * radius,
-      }));
-
-      if (ends.some((end) => mirror.isWaterAt(end.x, end.z))) {
-        continue;
-      }
-
-      pieces.push({
-        key: enclosureKey(kind, index === 0 ? "gate" : "segment"),
-        progress: saturate(building.progress * count - index),
-        rotation: -angle - Math.PI / 2,
-        x: building.x + Math.cos(angle) * radius,
-        z: building.z + Math.sin(angle) * radius,
-      });
-    }
-
-    return pieces;
-  }
-
   #place(input: ViewInput, piece: PlacedPiece): void {
     const { building, seat } = piece;
 
@@ -536,7 +548,7 @@ export class BuildingView {
     piece.batches[level].add(
       [piece.x, y, piece.z, piece.rotation],
       [piece.progress, accent.r, accent.g, accent.b],
-      [saturate(1 - building.health), this.#glowOf(building), building.style, 0]
+      [saturate(1 - building.health), glowOf(building), building.style, 0]
     );
 
     if (piece.plinth !== null) {
@@ -556,17 +568,5 @@ export class BuildingView {
       [box.centerX, box.centerZ, box.width, box.length],
       [depth, saturate(1 - building.health), building.style, 0]
     );
-  }
-
-  #glowOf(building: BuildingSnapshot): number {
-    if (GLOWING_KINDS.has(building.kind)) {
-      return building.progress >= 1 ? WORKPLACE_GLOW : 0;
-    }
-
-    if (!isLitCampfire(building)) {
-      return 0;
-    }
-
-    return clamp(building.fuel * 1.5, 0.35, 1);
   }
 }

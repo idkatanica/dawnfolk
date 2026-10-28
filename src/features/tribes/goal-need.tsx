@@ -7,7 +7,7 @@ export function GoalNeed({ goal }: { readonly goal: GoalView | null }) {
   }
 
   return (
-    <span className="flex items-center gap-1 text-dawn-strong text-xs">
+    <span className="text-dawn-strong flex items-center gap-1 text-xs">
       <GameIcon name="workshop" size={18} />
       {`Needs ${goal.need}`}
     </span>

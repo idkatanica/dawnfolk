@@ -101,6 +101,15 @@ export class MirroredVegetation implements VegetationChannels {
   }
 }
 
+function applyRows(rows: readonly PackedRows[], target: Uint8Array, changes: RowChangeTracker): void {
+  for (const run of rows) {
+    const bytesPerRow = run.data.length / run.rowCount;
+
+    target.set(run.data, run.firstRow * bytesPerRow);
+    changes.markRows(run.firstRow, run.firstRow + run.rowCount - 1);
+  }
+}
+
 export class WorldMirror {
   readonly ground: Uint8Array;
   readonly groundChanges: RowChangeTracker;
@@ -156,8 +165,8 @@ export class WorldMirror {
   }
 
   apply(frame: SimulationFrame, receivedAt: number): void {
-    this.#applyRows(frame.surfaceRows, this.surface, this.surfaceChanges);
-    this.#applyRows(frame.groundRows, this.ground, this.groundChanges);
+    applyRows(frame.surfaceRows, this.surface, this.surfaceChanges);
+    applyRows(frame.groundRows, this.ground, this.groundChanges);
     this.#copyGroundIndices(frame.groundRows);
     this.#applyRegion(frame.heightPatch, this.terrain.height, this.heightChanges);
     this.#applyWater(frame);
@@ -228,15 +237,6 @@ export class WorldMirror {
       monuments: this.monuments,
       seed: this.seed,
     });
-  }
-
-  #applyRows(rows: readonly PackedRows[], target: Uint8Array, changes: RowChangeTracker): void {
-    for (const run of rows) {
-      const bytesPerRow = run.data.length / run.rowCount;
-
-      target.set(run.data, run.firstRow * bytesPerRow);
-      changes.markRows(run.firstRow, run.firstRow + run.rowCount - 1);
-    }
   }
 
   #copyGroundIndices(rows: readonly PackedRows[]): void {

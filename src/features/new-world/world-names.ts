@@ -73,7 +73,7 @@ export function worldNameFor(seed: number): string {
 }
 
 export function readWorldName(text: string): string | null {
-  const name = text.trim().replaceAll(/\s+/g, " ");
+  const name = text.trim().replaceAll(/\s+/gu, " ");
 
   if (name.length === 0 || name.length > LONGEST_WORLD_NAME) {
     return null;

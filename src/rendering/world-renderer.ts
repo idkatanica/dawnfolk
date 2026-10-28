@@ -41,7 +41,7 @@ import { GrassField } from "./vegetation/grass-field.ts";
 import { UnderstoryField } from "./vegetation/understory-field.ts";
 import { VegetationView } from "./vegetation/vegetation-view.ts";
 import { LilyPads } from "./water/lily-pads.ts";
-import { SpringView } from "./water/spring-view.ts";
+import { areSpringsShapedBy, SpringView } from "./water/spring-view.ts";
 import { WaterView } from "./water/water-view.ts";
 import { WaterfallView } from "./water/waterfall-view.ts";
 import { WorldChangeReader } from "./world-changes.ts";
@@ -228,7 +228,7 @@ export class WorldRenderer {
       this.#waterfalls.rebuild(this.#mirror.water.waterfalls, this.#textures, this.#plinth);
     }
 
-    if (changes.hasWaterChanged || this.#springs.isShapedBy(changes.heightRegion, this.#mirror)) {
+    if (changes.hasWaterChanged || areSpringsShapedBy(changes.heightRegion, this.#mirror)) {
       this.#springs.rebuild(this.#mirror);
     }
 

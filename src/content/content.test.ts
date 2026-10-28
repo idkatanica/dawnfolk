@@ -123,14 +123,16 @@ describe("powers", () => {
 
   it("gives every parameter a label and a sane range", () => {
     for (const powerId of POWER_ORDER) {
-      for (const field of describeParameters(POWERS[powerId].parameters)) {
-        expect(field.metadata.label.length).toBeGreaterThan(0);
+      const metadata = describeParameters(POWERS[powerId].parameters).map((field) => field.metadata);
 
-        if (field.metadata.kind === "range") {
-          expect(field.metadata.minimum).toBeLessThan(field.metadata.maximum);
-          expect(field.metadata.defaultValue).toBeGreaterThanOrEqual(field.metadata.minimum);
-          expect(field.metadata.defaultValue).toBeLessThanOrEqual(field.metadata.maximum);
-        }
+      for (const field of metadata) {
+        expect(field.label.length).toBeGreaterThan(0);
+      }
+
+      for (const range of metadata.filter((field) => field.kind === "range")) {
+        expect(range.minimum).toBeLessThan(range.maximum);
+        expect(range.defaultValue).toBeGreaterThanOrEqual(range.minimum);
+        expect(range.defaultValue).toBeLessThanOrEqual(range.maximum);
       }
     }
   });

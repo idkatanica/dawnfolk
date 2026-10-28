@@ -53,6 +53,21 @@ interface GatheredHerd {
   squares: number;
 }
 
+function joinHerd(herd: GatheredHerd, staged: StagedMarker, index: number): void {
+  const { anchor } = staged;
+
+  if (herd.members === 0) {
+    herd.center.set(0, 0, 0);
+    herd.extent = staged.style.extent;
+    herd.leader = index;
+    herd.squares = 0;
+  }
+
+  herd.center.add(anchor);
+  herd.members += 1;
+  herd.squares += anchor.x * anchor.x + anchor.z * anchor.z;
+}
+
 export class AgentMarkers {
   readonly brightness = uniform(1);
   readonly group = new Group();
@@ -149,7 +164,7 @@ export class AgentMarkers {
       const staged = this.#staged[index];
 
       if (staged.herd !== NO_HERD && !staged.isSelected) {
-        this.#join(this.#herdFor(staged.herd), staged, index);
+        joinHerd(this.#herdFor(staged.herd), staged, index);
       }
     }
 
@@ -175,21 +190,6 @@ export class AgentMarkers {
     this.#herds.set(id, herd);
 
     return herd;
-  }
-
-  #join(herd: GatheredHerd, staged: StagedMarker, index: number): void {
-    const { anchor } = staged;
-
-    if (herd.members === 0) {
-      herd.center.set(0, 0, 0);
-      herd.extent = staged.style.extent;
-      herd.leader = index;
-      herd.squares = 0;
-    }
-
-    herd.center.add(anchor);
-    herd.members += 1;
-    herd.squares += anchor.x * anchor.x + anchor.z * anchor.z;
   }
 
   #settle(herd: GatheredHerd): void {

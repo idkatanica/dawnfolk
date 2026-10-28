@@ -163,6 +163,34 @@ function flowAngleOf(ford: Ford, mirror: WorldMirror): { angle: number; strength
   return { angle: Math.atan2(directionX, directionZ), strength: Math.min(1, 0.35 + Math.abs(fall) * 4) };
 }
 
+function logPiece(bridge: LogBridge): PlacedPiece {
+  const log = fallenLog(bridge);
+
+  const horizontal = Math.hypot(log.tipX - log.rootX, log.tipZ - log.rootZ);
+  const rise = log.tipBottom - log.rootBottom;
+  const variant = fallenLogVariant(horizontal, bridge.seed);
+  const radius = log.rootRadius / FALLEN_LOG_ROOT_RADIUS;
+
+  return {
+    batch: STEPPING_STONE_VARIANTS + variant,
+    data: [
+      log.rootX,
+      log.rootBottom,
+      log.rootZ,
+      Math.atan2(-(log.tipZ - log.rootZ), log.tipX - log.rootX),
+      Math.hypot(horizontal, rise) / FALLEN_LOG_LENGTHS[variant % FALLEN_LOG_LENGTHS.length],
+      radius,
+      radius,
+      Math.atan2(rise, horizontal),
+      DRY_LEVEL,
+      0.92 + 0.16 * bridge.seed,
+      0,
+      0,
+    ],
+    isFine: false,
+  };
+}
+
 export class CrossingView {
   readonly group = new Group();
   readonly #batches: readonly (readonly InstanceBatch[])[];
@@ -263,7 +291,7 @@ export class CrossingView {
 
   #place(crossing: Crossing): PlacedCrossing {
     const { bar, pieces } =
-      crossing.kind === "ford" ? this.#fordOf(crossing) : { bar: [], pieces: [this.#logOf(crossing)] };
+      crossing.kind === "ford" ? this.#fordOf(crossing) : { bar: [], pieces: [logPiece(crossing)] };
 
     const middleX = (crossing.startX + crossing.endX) / 2;
     const middleZ = (crossing.startZ + crossing.endZ) / 2;
@@ -294,34 +322,6 @@ export class CrossingView {
       .map((stone) => foamOf(stone, flow));
 
     return { bar, pieces: [...stones.map(stonePiece), ...foam] };
-  }
-
-  #logOf(bridge: LogBridge): PlacedPiece {
-    const log = fallenLog(bridge);
-
-    const horizontal = Math.hypot(log.tipX - log.rootX, log.tipZ - log.rootZ);
-    const rise = log.tipBottom - log.rootBottom;
-    const variant = fallenLogVariant(horizontal, bridge.seed);
-    const radius = log.rootRadius / FALLEN_LOG_ROOT_RADIUS;
-
-    return {
-      batch: STEPPING_STONE_VARIANTS + variant,
-      data: [
-        log.rootX,
-        log.rootBottom,
-        log.rootZ,
-        Math.atan2(-(log.tipZ - log.rootZ), log.tipX - log.rootX),
-        Math.hypot(horizontal, rise) / FALLEN_LOG_LENGTHS[variant % FALLEN_LOG_LENGTHS.length],
-        radius,
-        radius,
-        Math.atan2(rise, horizontal),
-        DRY_LEVEL,
-        0.92 + 0.16 * bridge.seed,
-        0,
-        0,
-      ],
-      isFine: false,
-    };
   }
 }
 

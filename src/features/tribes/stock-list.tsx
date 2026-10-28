@@ -22,7 +22,7 @@ function StockGroup({ group, stock }: { readonly group: ResourceGroup; readonly 
 
   return (
     <section aria-label={GROUP_NAMES[group]} className="flex flex-col gap-1">
-      <h4 className="flex items-baseline justify-between text-2xs text-ink-muted uppercase tracking-wide">
+      <h4 className="text-2xs text-ink-muted flex items-baseline justify-between tracking-wide uppercase">
         <span>{GROUP_NAMES[group]}</span>
 
         <span className="tabular-nums">{Math.round(total)}</span>
@@ -33,12 +33,12 @@ function StockGroup({ group, stock }: { readonly group: ResourceGroup; readonly 
           const icon = RESOURCE_ICONS[kind];
 
           return (
-            <li className="flex min-w-0 items-center gap-1.5 text-ink-soft text-xs" key={kind}>
+            <li className="text-ink-soft flex min-w-0 items-center gap-1.5 text-xs" key={kind}>
               <GameIcon name={icon} size={22} />
 
               <span className="truncate">{RESOURCES[kind].name}</span>
 
-              <span className="ml-auto font-medium text-ink tabular-nums">{Math.round(stock[kind])}</span>
+              <span className="text-ink ml-auto font-medium tabular-nums">{Math.round(stock[kind])}</span>
             </li>
           );
         })}

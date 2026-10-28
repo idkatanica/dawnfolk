@@ -2,7 +2,7 @@
 
 name: Feature request
 description: An idea for a power, a tribe behaviour or the interface
-labels: [enhancement]
+labels: [ enhancement ]
 
 body:
   - type: textarea

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, it as test } from "vitest";
 import { MaterialSlot } from "../materials.ts";
 import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts";
 import { highestOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
@@ -53,7 +53,7 @@ function shareOfSlot(mesh: MeshData, slot: number, beyond = Number.NEGATIVE_INFI
 }
 
 describe.each(MODELS)("%s", (_name, build) => {
-  it("builds clean variants at every level of detail", () => {
+  test("builds clean variants at every level of detail", () => {
     for (const level of CROSSING_DETAIL_LEVELS) {
       for (const mesh of build(level)) {
         expect(meshProblems(mesh)).toEqual([]);
@@ -61,7 +61,7 @@ describe.each(MODELS)("%s", (_name, build) => {
     }
   });
 
-  it("closes every variant everywhere above the ground", () => {
+  test("closes every variant everywhere above the ground", () => {
     for (const level of CROSSING_DETAIL_LEVELS) {
       for (const [variant, mesh] of build(level).entries()) {
         expect(highestOpenEdge(mesh), `${level} variant ${variant}`).toBeLessThan(GROUND_LEVEL);
@@ -69,7 +69,7 @@ describe.each(MODELS)("%s", (_name, build) => {
     }
   });
 
-  it("keeps every part of every variant attached to the ground", () => {
+  test("keeps every part of every variant attached to the ground", () => {
     for (const level of CROSSING_DETAIL_LEVELS) {
       for (const [variant, mesh] of build(level).entries()) {
         const detached = loosePieces(mesh);
@@ -79,12 +79,12 @@ describe.each(MODELS)("%s", (_name, build) => {
     }
   });
 
-  it("spends fewer triangles further away", () => {
+  test("spends fewer triangles further away", () => {
     expect(averageTriangles(build("medium"))).toBeLessThan(averageTriangles(build("high")));
     expect(averageTriangles(build("low"))).toBeLessThan(averageTriangles(build("medium")));
   });
 
-  it("gives the same model for the same variant", () => {
+  test("gives the same model for the same variant", () => {
     const [first] = build("medium");
     const [again] = build("medium");
 
