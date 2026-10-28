@@ -61,9 +61,9 @@ type SparseField = (typeof SPARSE_FIELDS)[number];
 
 type DenseField = (typeof DENSE_FIELDS)[number];
 
-export type SavedFields = Record<DenseField, Float32Array> & Record<SparseField | "fuel", SparseValues>;
+type SavedFields = Record<DenseField, Float32Array> & Record<SparseField | "fuel", SparseValues>;
 
-export const SAVED_TERRAIN_LAYERS = [
+const SAVED_TERRAIN_LAYERS = [
   "baseTemperature",
   "carving",
   "ground",

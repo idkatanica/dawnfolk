@@ -1,13 +1,8 @@
 import { type ChangeEvent, type FormEvent, useState } from "react";
-import { type IslandShapeKind, isIslandShapeKind } from "../../world/island-shape.ts";
+import type { WorldChoice } from "../../app/launch-store.ts";
+import { isIslandShapeKind } from "../../world/island-shape.ts";
 import { randomSeed, readSeed } from "./seeds.ts";
 import { readWorldName, worldNameFor } from "./world-names.ts";
-
-interface WorldChoice {
-  readonly name: string;
-  readonly seed: number;
-  readonly shape: IslandShapeKind;
-}
 
 export function useWorldDraft(initial: WorldChoice, onCreate: (choice: WorldChoice) => void) {
   const [nameText, setNameText] = useState(initial.name);

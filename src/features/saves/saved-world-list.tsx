@@ -1,9 +1,8 @@
 import { ChevronRight, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLaunchStore } from "../../app/launch-store.ts";
 import { IconButton, TextButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
-import { Island } from "../../design/island.tsx";
 import type { SavedWorldListing } from "./save-database.ts";
 import { describeSummary, formatSavedAt } from "./saved-time.ts";
 import { useSavesStore } from "./saves-store.ts";
@@ -107,34 +106,17 @@ function SavedWorldRow({ now, world }: SavedWorldRowProps) {
   );
 }
 
-export function SavedWorldList() {
+export function SavedWorldRows() {
   const worlds = useSavesStore((state) => state.worlds);
-  const refresh = useSavesStore((state) => state.refresh);
   const now = useNow(CLOCK_MILLISECONDS);
 
-  useEffect(() => {
-    refresh().catch(() => undefined);
-  }, [refresh]);
-
-  if (worlds.length === 0) {
-    return null;
-  }
-
   return (
-    <section aria-labelledby="saved-worlds-title" className="w-full">
-      <Island className="flex flex-col gap-2 p-4">
-        <h2 className="px-2 pt-1 font-semibold text-ink text-xl" id="saved-worlds-title">
-          Your worlds
-        </h2>
-
-        <ul className="flex max-h-72 flex-col gap-0.5 overflow-y-auto">
-          {worlds.map((world) => (
-            <li key={world.id}>
-              <SavedWorldRow now={now} world={world} />
-            </li>
-          ))}
-        </ul>
-      </Island>
-    </section>
+    <ul aria-label="Your worlds" className="flex max-h-80 flex-col gap-0.5 overflow-y-auto">
+      {worlds.map((world) => (
+        <li key={world.id}>
+          <SavedWorldRow now={now} world={world} />
+        </li>
+      ))}
+    </ul>
   );
 }

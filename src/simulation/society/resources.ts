@@ -2,6 +2,7 @@ import { Ground } from "../../content/grounds.ts";
 import { distanceSquared, FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
+import { ORTHOGONAL_STEPS } from "../../world/world-grid.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import type { WorldState } from "../world/world-state.ts";
 
@@ -10,12 +11,6 @@ const QUARRY_SLOPE = 0.9;
 const CLIFF_SLOPE = 1.1;
 const FISHING_DEPTH = 0.6;
 const SHORE_ATTEMPTS = 40;
-const ORTHOGONAL_STEPS: readonly (readonly [number, number])[] = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-];
 
 interface PlantSearch {
   accepts: (plant: number) => boolean;

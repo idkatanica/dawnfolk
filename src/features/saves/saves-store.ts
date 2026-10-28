@@ -7,7 +7,6 @@ const AUTOSAVE_MILLISECONDS = 60_000;
 
 interface SavesStore {
   readonly hasFailed: boolean;
-  readonly isListed: boolean;
   readonly isSaving: boolean;
   readonly lastSavedAt: number | null;
   readonly refresh: () => Promise<void>;
@@ -19,13 +18,12 @@ interface SavesStore {
 
 export const useSavesStore = create<SavesStore>()((set, get) => ({
   hasFailed: false,
-  isListed: false,
   isSaving: false,
   lastSavedAt: null,
   refresh: async () => {
     const worlds = await listSavedWorlds();
 
-    set({ isListed: true, worlds });
+    set({ worlds });
   },
   remove: async (id) => {
     await deleteSavedWorld(id);

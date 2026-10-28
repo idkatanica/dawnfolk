@@ -46,7 +46,12 @@ function StarCount() {
   );
 }
 
-export function ProjectLinks({ className }: { readonly className?: string | undefined }) {
+interface ProjectLinksProps {
+  readonly className?: string | undefined;
+  readonly hasPrivacy?: boolean | undefined;
+}
+
+export function ProjectLinks({ className, hasPrivacy = true }: ProjectLinksProps) {
   useEffect(requestStars, []);
 
   return (
@@ -62,9 +67,11 @@ export function ProjectLinks({ className }: { readonly className?: string | unde
         Sponsor
       </ExternalLink>
 
-      <a className={LINK_CLASS} href="/privacy/">
-        Privacy
-      </a>
+      {hasPrivacy ? (
+        <a className={LINK_CLASS} href="/privacy/">
+          Privacy
+        </a>
+      ) : null}
     </nav>
   );
 }
