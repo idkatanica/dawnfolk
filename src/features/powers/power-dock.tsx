@@ -14,7 +14,7 @@ import { usePowerStore } from "./power-store.ts";
 const SELECT_HINT = "Tap people, animals, buildings or land to see their details.";
 
 const TILE_CLASS =
-  "grid size-10.5 shrink-0 snap-start place-items-center rounded-xl outline-none transition-[background-color,box-shadow,scale] duration-150 hover:bg-veil focus-visible:ring-2 focus-visible:ring-dawn active:scale-95 pointer-coarse:size-12";
+  "grid size-10.5 shrink-0 snap-start place-items-center rounded-xl outline-none transition-[background-color,box-shadow,scale] duration-150 hover:bg-paper-hover focus-visible:ring-2 focus-visible:ring-dawn active:scale-95 pointer-coarse:size-12";
 
 const CHOSEN_TILE_CLASS = "bg-white shadow-segment hover:bg-white";
 
@@ -184,7 +184,7 @@ export function PowerDock({ className }: { readonly className?: string | undefin
   useWheelScrollsSideways(rowReference);
 
   return (
-    <Island className={className} surface="glass">
+    <Island className={className}>
       <Toolbar.Root
         aria-label="Powers"
         className="scrollbar-none flex snap-x snap-mandatory scroll-px-1.5 items-center gap-0.5 overflow-x-auto overscroll-x-contain p-1.5"
