@@ -64,12 +64,21 @@ function lowestAround(world: WorldState, cells: readonly number[]): number {
   let lowest = Number.POSITIVE_INFINITY;
 
   for (const cell of cells) {
-    for (const offset of NEIGHBOR_OFFSETS) {
-      const column = grid.columnOf(cell) + offset.column;
-      const row = grid.rowOf(cell) + offset.row;
+    const cellColumn = grid.columnOf(cell);
+    const cellRow = grid.rowOf(cell);
 
-      if (grid.contains(column, row) && !inside.has(grid.index(column, row))) {
-        lowest = Math.min(lowest, world.terrain.height[grid.index(column, row)]);
+    for (const offset of NEIGHBOR_OFFSETS) {
+      const column = cellColumn + offset.column;
+      const row = cellRow + offset.row;
+
+      if (!grid.contains(column, row)) {
+        continue;
+      }
+
+      const neighbor = grid.index(column, row);
+
+      if (!inside.has(neighbor)) {
+        lowest = Math.min(lowest, world.terrain.height[neighbor]);
       }
     }
   }

@@ -176,9 +176,12 @@ function shoreSpotAt(world: WorldState, x: number, z: number): ShoreSpot | null 
     return null;
   }
 
+  const cellColumn = grid.columnOf(cell);
+  const cellRow = grid.rowOf(cell);
+
   for (const [columnStep, rowStep] of ORTHOGONAL_STEPS) {
-    const column = grid.columnOf(cell) + columnStep;
-    const row = grid.rowOf(cell) + rowStep;
+    const column = cellColumn + columnStep;
+    const row = cellRow + rowStep;
 
     if (isFishingWater(world, column, row)) {
       return {

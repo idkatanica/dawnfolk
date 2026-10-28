@@ -373,9 +373,12 @@ export class WaterRecomputation {
         this.#calmCell(cell);
         world.clearPlants(cell, true);
 
+        const cellColumn = grid.columnOf(cell);
+        const cellRow = grid.rowOf(cell);
+
         for (const offset of NEIGHBOR_OFFSETS) {
-          const column = grid.columnOf(cell) + offset.column;
-          const row = grid.rowOf(cell) + offset.row;
+          const column = cellColumn + offset.column;
+          const row = cellRow + offset.row;
 
           if (grid.contains(column, row)) {
             world.clearPlants(grid.index(column, row), false);

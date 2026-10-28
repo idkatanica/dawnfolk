@@ -402,9 +402,7 @@ export class WorldState {
       return null;
     }
 
-    const deposit = this.deposits[id];
-
-    return deposit.id === id ? deposit : null;
+    return this.deposits[id];
   }
 
   isBurning(cell: number): boolean {

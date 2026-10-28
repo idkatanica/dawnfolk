@@ -124,7 +124,8 @@ export class Succession {
 
     const isTreeTime = age >= TREE_DELAY_DAYS && scorch <= TREE_SCORCH;
     const nextTree = climax.trees.at(cover.trees);
-    const hasRoomForTree = nextTree !== undefined && !hasCrowdingTree(world, nextTree);
+    const hasRoomForTree =
+      nextTree !== undefined && !world.vegetation.hasTreeWithin(nextTree.x, nextTree.z, TREE_SPACING);
 
     if (hasRoomForTree && isTreeTime && this.#random.chance(this.#seedingChance(cell, day))) {
       this.#plantTree({ ...nextTree, bornDay: day });
@@ -177,10 +178,6 @@ export class Succession {
 
     return false;
   }
-}
-
-function hasCrowdingTree(world: WorldState, tree: PlantPlacement): boolean {
-  return world.vegetation.hasTreeWithin(tree.x, tree.z, TREE_SPACING);
 }
 
 function coverOf(world: WorldState, cell: number): Cover {
