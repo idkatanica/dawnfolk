@@ -19,6 +19,7 @@ describe("project links", () => {
     await expect
       .element(screen.getByRole("link", { name: "Sponsor Dawnfolk" }))
       .toHaveAttribute("href", "https://github.com/sponsors/imsvidskiy");
+    await expect.element(screen.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "/privacy/");
   });
 
   it("leaves the stars out when GitHub does not answer", async () => {

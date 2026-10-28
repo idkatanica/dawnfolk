@@ -4,6 +4,6 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/app.tsbuildinfo"
   },
-  "include": ["src/app", "src/design", "src/features", "src/main.tsx"],
+  "include": ["src/app", "src/design", "src/features", "src/main.tsx", "src/privacy.tsx"],
   "references": [{ "path": "./tsconfig.engine.json" }]
 }
