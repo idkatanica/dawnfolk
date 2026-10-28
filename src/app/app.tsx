@@ -20,6 +20,8 @@ function GameScreen() {
 
   return (
     <>
+      <h1 className="sr-only">Dawnfolk</h1>
+
       <GameView launch={launch} worldId={worldId} />
 
       {isReady ? (
@@ -38,11 +40,7 @@ export function App() {
 
   return (
     <TooltipProvider>
-      <main className="fixed inset-0 overflow-hidden">
-        <h1 className="sr-only">Dawnfolk</h1>
-
-        {isChoosingWorld ? <StartScreen /> : <GameScreen />}
-      </main>
+      <main className="fixed inset-0 overflow-hidden">{isChoosingWorld ? <StartScreen /> : <GameScreen />}</main>
     </TooltipProvider>
   );
 }

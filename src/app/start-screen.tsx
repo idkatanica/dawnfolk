@@ -155,7 +155,7 @@ export function StartScreen() {
     <div className="absolute inset-0 overflow-y-auto">
       <StartBackdrop />
 
-      <main className="relative flex min-h-full flex-col items-center justify-end gap-3 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:justify-center sm:p-8">
+      <div className="relative flex min-h-full flex-col items-center justify-end gap-3 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:justify-center sm:p-8">
         <Island className="flex w-full max-w-md flex-col gap-6 p-7">
           <header className="flex flex-col items-center gap-2 text-center">
             <Logo className="size-16" />
@@ -173,7 +173,7 @@ export function StartScreen() {
         <Island className="px-2 py-1.5">
           <ProjectLinks />
         </Island>
-      </main>
+      </div>
     </div>
   );
 }
