@@ -254,6 +254,7 @@ export function measureWetness(inputs: WetlandInputs): Float32Array {
   const lakes = reachFrom(grid, lakeSources(inputs));
   const rivers = reachFrom(grid, riverSources(inputs));
   const basins = basinDepths(inputs);
+  const slopes = Float64Array.from({ length: grid.cellCount }, (_, cell) => slopeAt(heights, grid, cell));
   const wetness = new Float32Array(grid.cellCount);
 
   for (let cell = 0; cell < grid.cellCount; cell += 1) {
@@ -263,7 +264,7 @@ export function measureWetness(inputs: WetlandInputs): Float32Array {
       continue;
     }
 
-    const slope = slopeAt(heights, grid, cell);
+    const slope = slopes[cell];
     const shore = Math.max(
       shoreWetness(lakes, height, cell, LAKE_RISE),
       shoreWetness(rivers, height, cell, RIVER_RISE)
@@ -287,7 +288,7 @@ export function measureWetness(inputs: WetlandInputs): Float32Array {
   const spread = boxBlur(boxBlur(wetness, grid, radius), grid, radius);
 
   for (let cell = 0; cell < grid.cellCount; cell += 1) {
-    if (slopeAt(heights, grid, cell) > STEEPEST_WETLAND) {
+    if (slopes[cell] > STEEPEST_WETLAND) {
       spread[cell] = 0;
     }
   }

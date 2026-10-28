@@ -280,8 +280,6 @@ class CrossingPlanner {
 
   #candidateAt(course: RiverCourse, along: number, turn: number, stretch: Stretch): Candidate | null {
     const center = pointAlong(course, along);
-    const behind = pointAlong(course, along - TANGENT_REACH);
-    const ahead = pointAlong(course, along + TANGENT_REACH);
 
     if (!(this.#isClearOfFalls(center) && this.#isSpaced(center, stretch.spacing))) {
       return null;
@@ -293,6 +291,8 @@ class CrossingPlanner {
       return null;
     }
 
+    const behind = pointAlong(course, along - TANGENT_REACH);
+    const ahead = pointAlong(course, along + TANGENT_REACH);
     const across = Math.atan2(ahead.x - behind.x, -(ahead.z - behind.z)) + turn;
 
     const site = measureSite(this.survey, {
@@ -437,8 +437,9 @@ class BankRegions {
     }
 
     const below = cell + grid.cellsPerSide;
+    const isBelowGround = this.#isGround[below] === 1;
 
-    if (this.#isGround[below] === 1) {
+    if (isBelowGround) {
       this.#union(cell, below);
     }
 
@@ -449,7 +450,7 @@ class BankRegions {
         continue;
       }
 
-      const isOpen = this.#isGround[cell + side] === 1 && this.#isGround[below] === 1;
+      const isOpen = this.#isGround[cell + side] === 1 && isBelowGround;
 
       if (isOpen && this.#isGround[below + side] === 1) {
         this.#union(cell, below + side);
@@ -791,11 +792,13 @@ function fitsFord(site: Site): boolean {
 function chooseKind(site: Site): CrossingKind | null {
   const isNarrow = waterSpanOf(site) <= LOG_PREFERRED_WATER || site.deepest > LOG_DEEP_FORD;
 
-  if (fitsLog(site) && (isNarrow || !fitsFord(site))) {
+  const isFordable = fitsFord(site);
+
+  if (fitsLog(site) && (isNarrow || !isFordable)) {
     return "log";
   }
 
-  return fitsFord(site) ? "ford" : null;
+  return isFordable ? "ford" : null;
 }
 
 function fitsKind(site: Site, kind: CrossingKind): boolean {

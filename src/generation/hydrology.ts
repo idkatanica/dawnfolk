@@ -461,10 +461,10 @@ function riverPointFor(
   const strength = riverStrengthFor(flow, threshold);
 
   return {
-    depth: clamp(0.8 + 0.42 * strength, 0.8, 3.2),
+    depth: Math.min(0.8 + 0.42 * strength, 3.2),
     flow,
     surface: channelGround(cell, heights, network) - 0.3,
-    width: riverWidthFor(flow, threshold),
+    width: riverWidthOfStrength(strength),
     x: grid.cellCenterX(cell),
     z: grid.cellCenterZ(cell),
   };
@@ -509,7 +509,7 @@ function buildRivers(chains: readonly RiverChain[], land: RiverLand): River[] {
       surfaces.set(cell, points[index].surface);
     }
 
-    const smoothed = smoothRiverPath(points, 2);
+    const smoothed = smoothRiverPath(points);
 
     if (reachesEdge) {
       runPastCoast(smoothed, land, claimedPastCoast);
@@ -536,15 +536,23 @@ function settleIntoMainRiver(points: RiverPoint[], mainSurface: number | undefin
 }
 
 function offIslandNeighbors(cell: number, grid: WorldGrid, coastDistance: Float32Array): NeighborCell[] {
+  const column = grid.columnOf(cell);
+  const row = grid.rowOf(cell);
   const neighbors: NeighborCell[] = [];
 
   for (const offset of NEIGHBOR_OFFSETS) {
-    const column = grid.columnOf(cell) + offset.column;
-    const row = grid.rowOf(cell) + offset.row;
+    const neighborColumn = column + offset.column;
+    const neighborRow = row + offset.row;
 
-    if (grid.contains(column, row) && !isOnIsland(coastDistance, grid.index(column, row))) {
+    if (!grid.contains(neighborColumn, neighborRow)) {
+      continue;
+    }
+
+    const neighbor = grid.index(neighborColumn, neighborRow);
+
+    if (!isOnIsland(coastDistance, neighbor)) {
       neighbors.push({
-        cell: grid.index(column, row),
+        cell: neighbor,
         outwardX: offset.column / offset.distance,
         outwardZ: offset.row / offset.distance,
       });

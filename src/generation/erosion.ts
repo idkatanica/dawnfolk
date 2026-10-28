@@ -248,8 +248,30 @@ function downsample(heights: Float32Array, size: number, factor: number): Float3
   return coarse;
 }
 
-function coarseCoordinate(fine: number, factor: number, coarseSize: number): number {
-  return clamp((fine - (factor - 1) / 2) / factor, 0, coarseSize - 1);
+interface CoarseSpan {
+  readonly after: Int32Array;
+  readonly amount: Float64Array;
+  readonly before: Int32Array;
+}
+
+function coarseSpans(size: number, factor: number, coarseSize: number): CoarseSpan {
+  const last = coarseSize - 1;
+  const spans: CoarseSpan = {
+    after: new Int32Array(size),
+    amount: new Float64Array(size),
+    before: new Int32Array(size),
+  };
+
+  for (let fine = 0; fine < size; fine += 1) {
+    const coarse = clamp((fine - (factor - 1) / 2) / factor, 0, last);
+    const before = Math.floor(coarse);
+
+    spans.before[fine] = before;
+    spans.after[fine] = Math.min(last, before + 1);
+    spans.amount[fine] = coarse - before;
+  }
+
+  return spans;
 }
 
 function addUpsampledChange(
@@ -260,24 +282,20 @@ function addUpsampledChange(
   reach: Float32Array
 ): void {
   const coarseSize = size / factor;
-  const last = coarseSize - 1;
+  const { after, amount, before } = coarseSpans(size, factor, coarseSize);
 
   for (let row = 0; row < size; row += 1) {
-    const coarseRow = coarseCoordinate(row, factor, coarseSize);
-
-    const top = Math.floor(coarseRow);
-    const bottom = Math.min(last, top + 1);
-    const downward = coarseRow - top;
+    const top = before[row] * coarseSize;
+    const bottom = after[row] * coarseSize;
+    const downward = amount[row];
 
     for (let column = 0; column < size; column += 1) {
-      const coarseColumn = coarseCoordinate(column, factor, coarseSize);
+      const left = before[column];
+      const right = after[column];
+      const rightward = amount[column];
 
-      const left = Math.floor(coarseColumn);
-      const right = Math.min(last, left + 1);
-      const rightward = coarseColumn - left;
-
-      const upper = lerp(change[top * coarseSize + left], change[top * coarseSize + right], rightward);
-      const lower = lerp(change[bottom * coarseSize + left], change[bottom * coarseSize + right], rightward);
+      const upper = lerp(change[top + left], change[top + right], rightward);
+      const lower = lerp(change[bottom + left], change[bottom + right], rightward);
 
       heights[row * size + column] += lerp(upper, lower, downward) * reach[row * size + column];
     }
