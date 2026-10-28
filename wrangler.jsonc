@@ -1,18 +1,18 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "dawnfolk",
-  "account_id": "1d1a3bd27899eba23e92aa6099285634",
-  "compatibility_date": "2026-10-18",
   "main": "./worker/index.ts",
-  "assets": {
-    "binding": "ASSETS",
-    "directory": "./dist",
-    "run_worker_first": ["/", "/media/*"]
-  },
+  "compatibility_date": "2026-10-18",
+  "account_id": "1d1a3bd27899eba23e92aa6099285634",
+  "workers_dev": true,
   "preview_urls": false,
   "routes": [
     { "custom_domain": true, "pattern": "playdawnfolk.com" },
     { "custom_domain": true, "pattern": "www.playdawnfolk.com" }
   ],
-  "workers_dev": true
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist",
+    "run_worker_first": ["/", "/media/*"]
+  }
 }

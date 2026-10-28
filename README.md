@@ -98,7 +98,7 @@ it and make a scene reproducible: `?seed=7&shape=round|square&name=Ashvale&quali
 src/
   shared/      math, seeded random, noise, astronomy
   content/     data registries: grounds, biomes, plants, animals, weather, technologies, buildings, powers,
-               world rules — powers and rules are zod schemas with UI metadata
+               world rules (powers and rules are zod schemas with UI metadata)
   world/       world grid and the data shared by the simulation and the renderer
   generation/  relief → erosion → hydrology → climate, wetlands and biomes → ruins and river crossings → vegetation →
                ore deposits
