@@ -25,41 +25,6 @@ interface Flight {
   readonly reach: number;
 }
 
-export class FleeJob implements Job {
-  readonly kind = "flee";
-
-  constructor(tick: PersonTick, danger: Waypoint) {
-    const { person } = tick;
-
-    const flight = safestFlight(tick.context.world, person.mover, danger);
-
-    const isCornered = flight.reach < CORNERED_RUN;
-    const reach = isCornered ? FLEE_DISTANCE : flight.reach;
-
-    const refuge = {
-      x: person.mover.x + Math.sin(flight.heading) * reach,
-      z: person.mover.z + Math.cos(flight.heading) * reach,
-    };
-
-    dropCarrying(person);
-    setDestination(person.mover, refuge, tick.context.navigation, { mayPlanRoute: isCornered });
-  }
-
-  update(tick: PersonTick): Job | null {
-    if (!walk(tick, runSpeed(tick.person))) {
-      return this;
-    }
-
-    const danger = tick.context.hazards.dangerNear(tick.person.mover.x, tick.person.mover.z, DANGER_AWARENESS);
-
-    if (danger !== null) {
-      return new FleeJob(tick, danger);
-    }
-
-    return null;
-  }
-}
-
 function safestFlight(world: WorldState, from: Waypoint, danger: Waypoint): Flight {
   const away = Math.atan2(from.x - danger.x, from.z - danger.z);
 
@@ -152,4 +117,39 @@ function cellScore(world: WorldState, cell: number): number {
   }
 
   return score;
+}
+
+export class FleeJob implements Job {
+  readonly kind = "flee";
+
+  constructor(tick: PersonTick, danger: Waypoint) {
+    const { person } = tick;
+
+    const flight = safestFlight(tick.context.world, person.mover, danger);
+
+    const isCornered = flight.reach < CORNERED_RUN;
+    const reach = isCornered ? FLEE_DISTANCE : flight.reach;
+
+    const refuge = {
+      x: person.mover.x + Math.sin(flight.heading) * reach,
+      z: person.mover.z + Math.cos(flight.heading) * reach,
+    };
+
+    dropCarrying(person);
+    setDestination(person.mover, refuge, tick.context.navigation, { mayPlanRoute: isCornered });
+  }
+
+  update(tick: PersonTick): Job | null {
+    if (!walk(tick, runSpeed(tick.person))) {
+      return this;
+    }
+
+    const danger = tick.context.hazards.dangerNear(tick.person.mover.x, tick.person.mover.z, DANGER_AWARENESS);
+
+    if (danger !== null) {
+      return new FleeJob(tick, danger);
+    }
+
+    return null;
+  }
 }

@@ -14,11 +14,6 @@ import type { SocietyContext } from "./society-context.ts";
 import { knows, type Plot, type PlotKind, type PlotSpot, type Tribe } from "./tribe.ts";
 import { campPoint } from "./tribe-places.ts";
 
-const LAYOUTS: Readonly<Record<PlotKind, PlotLayout>> = {
-  orchard: { columns: 3, matureDays: 10, rows: 2, saplingHeight: 1.4, spacing: 6.5 },
-  woodlot: { columns: 3, matureDays: 14, rows: 2, saplingHeight: 2.2, spacing: 5 },
-};
-
 const BERRY_MATURE_DAYS = 3;
 const BERRY_SAPLING_HEIGHT = 0.5;
 const PLOT_SLOPE = 0.35;
@@ -43,6 +38,11 @@ interface PlotLayout {
   saplingHeight: number;
   spacing: number;
 }
+
+const LAYOUTS: Readonly<Record<PlotKind, PlotLayout>> = {
+  orchard: { columns: 3, matureDays: 10, rows: 2, saplingHeight: 1.4, spacing: 6.5 },
+  woodlot: { columns: 3, matureDays: 14, rows: 2, saplingHeight: 2.2, spacing: 5 },
+};
 
 function plotWanted(tribe: Tribe): PlotKind | null {
   const kinds = tribe.plots.map((plot) => plot.kind);
@@ -327,7 +327,7 @@ export function updatePlots(tribe: Tribe, context: SocietyContext, days: number)
   }
 }
 
-export function ripestFruitTree(tribe: Tribe, world: WorldState, claimed: ReadonlySet<number>): number | null {
+export function ripestFruitTree(tribe: Tribe, world: WorldState): number | null {
   let ripest: number | null = null;
   let ripestFruit = 0.25;
 
@@ -336,7 +336,7 @@ export function ripestFruitTree(tribe: Tribe, world: WorldState, claimed: Readon
       const isPickable =
         isFruitTreeSpecies(spot.species) &&
         !isSpotEmpty(spot, world) &&
-        !claimed.has(spot.plant) &&
+        !tribe.claimedPlants.has(spot.plant) &&
         !world.isWater(world.vegetation.cell[spot.plant]);
 
       if (isPickable && world.vegetation.fruit[spot.plant] > ripestFruit) {

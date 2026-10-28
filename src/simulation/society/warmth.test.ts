@@ -94,7 +94,7 @@ describe("coming home before winter", () => {
     expect(decideJob(tick).kind).toBe("migrate");
   });
 
-  it("lets them work far away in the travelling season", () => {
+  it("lets them work far away in the traveling season", () => {
     const harness = wintryHarness(LATE_SPRING);
 
     const tribe = settle(harness, 3);

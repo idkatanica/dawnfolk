@@ -10,6 +10,7 @@ import type { WorldState } from "../world/world-state.ts";
 import type { PeopleSense } from "./beast-instincts.ts";
 import { type Animal, FaunaSystem, type FaunaThreats, type FaunaTick } from "./fauna.ts";
 
+const DIMENSIONS = { cellSize: 10, cellsPerSide: 96 };
 const NO_PEOPLE: PeopleSense = {
   findQuarry: () => null,
   locate: () => null,
@@ -22,7 +23,7 @@ const SPRING = 0.5;
 const WINTER = 3.5;
 const TAME = { ...DEFAULT_WORLD_RULES, nature: { ...DEFAULT_WORLD_RULES.nature, beastBoldness: 0 } };
 
-function createFauna(world: WorldState = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 96 } })) {
+function createFauna(world: WorldState = createTestWorld({ dimensions: DIMENSIONS })) {
   const navigation = new NavigationGrid(world);
 
   return { fauna: new FaunaSystem(world, navigation, new IdentifierSource()), navigation, world };
@@ -61,14 +62,14 @@ function slopedFauna() {
   return createFauna(
     createTestWorld({
       biome: Biome.Alpine,
-      dimensions: { cellSize: 10, cellsPerSide: 96 },
+      dimensions: DIMENSIONS,
       heightAt: (x) => 100 + x * 0.5,
     })
   );
 }
 
 function edgedFauna() {
-  const world = createTestWorld({ biome: Biome.Forest, dimensions: { cellSize: 10, cellsPerSide: 96 } });
+  const world = createTestWorld({ biome: Biome.Forest, dimensions: DIMENSIONS });
 
   for (let cell = 0; cell < world.grid.cellCount; cell += 1) {
     if (world.grid.cellCenterX(cell) < 0) {
@@ -94,14 +95,12 @@ describe("herds", () => {
   });
 
   it("spread over suitable land when the world is populated", () => {
-    const { fauna } = createFauna(
-      createTestWorld({ biome: Biome.Forest, dimensions: { cellSize: 10, cellsPerSide: 96 } })
-    );
+    const { fauna } = createFauna(createTestWorld({ biome: Biome.Forest, dimensions: DIMENSIONS }));
 
     const created = fauna.populate(4, createRandom(2));
 
     expect(created).toBe(4);
-    expect(fauna.herds.every((herd) => ANIMALS[herd.kind].favouriteBiomes.includes(Biome.Forest))).toBe(true);
+    expect(fauna.herds.every((herd) => ANIMALS[herd.kind].favoriteBiomes.includes(Biome.Forest))).toBe(true);
   });
 
   it("wander to new pastures over time", () => {
@@ -202,9 +201,7 @@ describe("animals", () => {
 
 describe("kinds of animals", () => {
   it("bring ibex to rocky heights when the world is populated", () => {
-    const { fauna } = createFauna(
-      createTestWorld({ biome: Biome.Alpine, dimensions: { cellSize: 10, cellsPerSide: 96 } })
-    );
+    const { fauna } = createFauna(createTestWorld({ biome: Biome.Alpine, dimensions: DIMENSIONS }));
 
     expect(fauna.populate(3, createRandom(2))).toBe(3);
     expect(fauna.herds.every((herd) => herd.kind === "ibex")).toBe(true);

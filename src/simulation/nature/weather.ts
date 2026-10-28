@@ -60,6 +60,24 @@ export function pickSeasonalWeather(season: number, random: RandomSource): Weath
   return "clear";
 }
 
+function easeTowards(current: number, target: number, amount: number): number {
+  const eased = lerp(current, target, amount);
+
+  if (Math.abs(target - eased) < SETTLED_DIFFERENCE) {
+    return target;
+  }
+
+  return eased;
+}
+
+function precipitationEasingFactor(current: number, target: number): number {
+  if (target > current) {
+    return 0.6;
+  }
+
+  return 1.2;
+}
+
 export class WeatherSystem {
   state: WeatherState = {
     cloudCover: 0.15,
@@ -196,22 +214,4 @@ export class WeatherSystem {
 
     return strikes;
   }
-}
-
-function easeTowards(current: number, target: number, amount: number): number {
-  const eased = lerp(current, target, amount);
-
-  if (Math.abs(target - eased) < SETTLED_DIFFERENCE) {
-    return target;
-  }
-
-  return eased;
-}
-
-function precipitationEasingFactor(current: number, target: number): number {
-  if (target > current) {
-    return 0.6;
-  }
-
-  return 1.2;
 }

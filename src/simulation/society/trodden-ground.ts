@@ -31,63 +31,6 @@ export interface TroddenGroundSnapshot {
   elapsedDays: number;
 }
 
-export class TroddenGround {
-  readonly #cells = new Set<number>();
-  #elapsedDays = 0;
-
-  snapshot(): TroddenGroundSnapshot {
-    return { cells: Int32Array.from(this.#cells), elapsedDays: this.#elapsedDays };
-  }
-
-  restore(snapshot: TroddenGroundSnapshot): void {
-    this.#cells.clear();
-
-    for (const cell of snapshot.cells) {
-      this.#cells.add(cell);
-    }
-
-    this.#elapsedDays = snapshot.elapsedDays;
-  }
-
-  update(days: number, context: SocietyContext, tribes: readonly Tribe[]): void {
-    this.#elapsedDays += days;
-
-    if (this.#elapsedDays < UPDATE_DAYS) {
-      return;
-    }
-
-    const elapsed = this.#elapsedDays;
-    const wear: Wear = new Map();
-
-    this.#elapsedDays = 0;
-
-    for (const tribe of tribes) {
-      treadCamp(wear, tribe, context);
-    }
-
-    this.#apply(context.world, wear, elapsed);
-  }
-
-  #apply(world: WorldState, wear: Wear, days: number): void {
-    const cells = new Set([...this.#cells, ...wear.keys()]);
-
-    for (const cell of cells) {
-      const target = wearOf(wear, cell);
-      const current = world.fields.trodden[cell];
-
-      const next = current < target ? target : Math.max(target, current - REGROWTH_PER_DAY * days);
-
-      world.setTrodden(cell, next);
-
-      if (next > 0) {
-        this.#cells.add(cell);
-      } else {
-        this.#cells.delete(cell);
-      }
-    }
-  }
-}
-
 function wearOf(wear: Wear, cell: number): number {
   const value = wear.get(cell);
 
@@ -155,4 +98,61 @@ function tread(wear: Wear, world: WorldState, cell: number, amount: number): voi
   }
 
   wear.set(cell, amount);
+}
+
+export class TroddenGround {
+  readonly #cells = new Set<number>();
+  #elapsedDays = 0;
+
+  snapshot(): TroddenGroundSnapshot {
+    return { cells: Int32Array.from(this.#cells), elapsedDays: this.#elapsedDays };
+  }
+
+  restore(snapshot: TroddenGroundSnapshot): void {
+    this.#cells.clear();
+
+    for (const cell of snapshot.cells) {
+      this.#cells.add(cell);
+    }
+
+    this.#elapsedDays = snapshot.elapsedDays;
+  }
+
+  update(days: number, context: SocietyContext, tribes: readonly Tribe[]): void {
+    this.#elapsedDays += days;
+
+    if (this.#elapsedDays < UPDATE_DAYS) {
+      return;
+    }
+
+    const elapsed = this.#elapsedDays;
+    const wear: Wear = new Map();
+
+    this.#elapsedDays = 0;
+
+    for (const tribe of tribes) {
+      treadCamp(wear, tribe, context);
+    }
+
+    this.#apply(context.world, wear, elapsed);
+  }
+
+  #apply(world: WorldState, wear: Wear, days: number): void {
+    const cells = new Set([...this.#cells, ...wear.keys()]);
+
+    for (const cell of cells) {
+      const target = wearOf(wear, cell);
+      const current = world.fields.trodden[cell];
+
+      const next = current < target ? target : Math.max(target, current - REGROWTH_PER_DAY * days);
+
+      world.setTrodden(cell, next);
+
+      if (next > 0) {
+        this.#cells.add(cell);
+      } else {
+        this.#cells.delete(cell);
+      }
+    }
+  }
 }

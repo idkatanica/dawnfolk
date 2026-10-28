@@ -21,7 +21,7 @@ export type Stance = "friendly" | "hostile" | "neutral" | "wary";
 
 export type Grudge = "blood" | "hunting" | "land" | "plunder" | "trespass";
 
-export interface RelationSide {
+interface RelationSide {
   deaths: number;
   grievance: number;
   readonly tribeId: number;

@@ -23,9 +23,6 @@ import { TICK_SECONDS } from "../tick.ts";
 import { WorldState } from "../world/world-state.ts";
 import { createVegetatedWorld, depositAround, type TestWorldOptions } from "./test-world.ts";
 
-const SEED = 3;
-const MINING_DIMENSIONS = { cellSize: 10, cellsPerSide: 96 };
-
 export const MORNING = 0.3;
 export const STRIP_HALF_WIDTH = 10;
 export const THROUGH_MINING: readonly TechnologyId[] = [
@@ -44,11 +41,107 @@ export const THROUGH_MINING: readonly TechnologyId[] = [
   "mining",
 ];
 
+const SEED = 3;
+const MINING_DIMENSIONS = { cellSize: 10, cellsPerSide: 96 };
+
 interface SocietyHarnessOptions {
   day: number;
   isFaunaAwake: boolean;
   rules: WorldRules;
   world: Partial<TestWorldOptions>;
+}
+
+export function settle(harness: SocietyHarness, people: number): Tribe {
+  const tribe = harness.spawnTribe(people);
+
+  if (tribe === null) {
+    throw new Error("Expected the tribe to settle");
+  }
+
+  return tribe;
+}
+
+export function tickFor(harness: SocietyHarness, person: Person, tribe: Tribe): PersonTick {
+  return { context: harness.context, person, seconds: TICK_SECONDS, tribe };
+}
+
+export function firstMemberTick(harness: SocietyHarness, tribe: Tribe): PersonTick {
+  const [person] = harness.society.membersOf(tribe);
+
+  return tickFor(harness, person, tribe);
+}
+
+export function runToCompletion(job: Job, tick: PersonTick, limitSeconds: number): boolean {
+  let current: Job | null = job;
+
+  for (let elapsed = 0; elapsed < limitSeconds; elapsed += tick.seconds) {
+    current = current.update(tick);
+
+    if (current === null) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function teach(tribe: Tribe, technologies: readonly TechnologyId[], eraIndex: number | null = null): Tribe {
+  for (const technology of technologies) {
+    tribe.technologies.add(technology);
+  }
+
+  if (eraIndex !== null) {
+    tribe.eraIndex = eraIndex;
+  }
+
+  return tribe;
+}
+
+export function completeStructure(tribe: Tribe, building: Building): Building {
+  building.progress = 1;
+  tribe.buildings.structureIds.push(building.id);
+
+  return building;
+}
+
+export function createMiningHarness(): SocietyHarness {
+  const grid = new WorldGrid(MINING_DIMENSIONS);
+
+  return new SocietyHarness({
+    day: MORNING,
+    world: { deposits: [depositAround(grid, "copper", 160, 40)], dimensions: MINING_DIMENSIONS },
+  });
+}
+
+export function moveToSeason(harness: SocietyHarness, season: number): void {
+  harness.calendar.setSeason(season);
+  harness.context.environment = describeEnvironment(harness.calendar, harness.weather);
+}
+
+export function createStripHarness(): SocietyHarness {
+  const harness = new SocietyHarness({ day: MORNING });
+
+  const { grid, terrain } = harness.world;
+
+  for (let cell = 0; cell < grid.cellCount; cell += 1) {
+    if (Math.abs(grid.cellCenterX(cell)) > STRIP_HALF_WIDTH) {
+      terrain.waterSurface[cell] = terrain.height[cell] + 2;
+    }
+  }
+
+  harness.navigation.rebuild();
+
+  return harness;
+}
+
+export function isOnDryLand(harness: SocietyHarness, person: Person): boolean {
+  return harness.world.isWalkableAt(person.mover.x, person.mover.z);
+}
+
+export function isOnDryFooting(harness: SocietyHarness, x: number, z: number): boolean {
+  const cell = harness.world.grid.cellAt(x, z);
+
+  return harness.world.isWalkable(cell) && !harness.world.touchesWater(cell);
 }
 
 export class SocietyHarness {
@@ -165,97 +258,4 @@ export class SocietyHarness {
   spawnTribe(people: number): Tribe | null {
     return this.society.spawnTribe({ context: this.context, people, technologies: [], x: 0, z: 0 });
   }
-}
-
-export function settle(harness: SocietyHarness, people: number): Tribe {
-  const tribe = harness.spawnTribe(people);
-
-  if (tribe === null) {
-    throw new Error("Expected the tribe to settle");
-  }
-
-  return tribe;
-}
-
-export function tickFor(harness: SocietyHarness, person: Person, tribe: Tribe): PersonTick {
-  return { context: harness.context, person, seconds: TICK_SECONDS, tribe };
-}
-
-export function firstMemberTick(harness: SocietyHarness, tribe: Tribe): PersonTick {
-  const [person] = harness.society.membersOf(tribe);
-
-  return tickFor(harness, person, tribe);
-}
-
-export function runToCompletion(job: Job, tick: PersonTick, limitSeconds: number): boolean {
-  let current: Job | null = job;
-
-  for (let elapsed = 0; elapsed < limitSeconds; elapsed += tick.seconds) {
-    current = current.update(tick);
-
-    if (current === null) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-export function teach(tribe: Tribe, technologies: readonly TechnologyId[], eraIndex: number | null = null): Tribe {
-  for (const technology of technologies) {
-    tribe.technologies.add(technology);
-  }
-
-  if (eraIndex !== null) {
-    tribe.eraIndex = eraIndex;
-  }
-
-  return tribe;
-}
-
-export function completeStructure(tribe: Tribe, building: Building): Building {
-  building.progress = 1;
-  tribe.buildings.structureIds.push(building.id);
-
-  return building;
-}
-
-export function createMiningHarness(): SocietyHarness {
-  const grid = new WorldGrid(MINING_DIMENSIONS);
-
-  return new SocietyHarness({
-    day: MORNING,
-    world: { deposits: [depositAround(grid, "copper", 160, 40)], dimensions: MINING_DIMENSIONS },
-  });
-}
-
-export function moveToSeason(harness: SocietyHarness, season: number): void {
-  harness.calendar.setSeason(season);
-  harness.context.environment = describeEnvironment(harness.calendar, harness.weather);
-}
-
-export function createStripHarness(): SocietyHarness {
-  const harness = new SocietyHarness({ day: MORNING });
-
-  const { grid, terrain } = harness.world;
-
-  for (let cell = 0; cell < grid.cellCount; cell += 1) {
-    if (Math.abs(grid.cellCenterX(cell)) > STRIP_HALF_WIDTH) {
-      terrain.waterSurface[cell] = terrain.height[cell] + 2;
-    }
-  }
-
-  harness.navigation.rebuild();
-
-  return harness;
-}
-
-export function standsOnDryLand(harness: SocietyHarness, person: Person): boolean {
-  return harness.world.isWalkableAt(person.mover.x, person.mover.z);
-}
-
-export function isOnDryFooting(harness: SocietyHarness, x: number, z: number): boolean {
-  const cell = harness.world.grid.cellAt(x, z);
-
-  return harness.world.isWalkable(cell) && !harness.world.touchesWater(cell);
 }

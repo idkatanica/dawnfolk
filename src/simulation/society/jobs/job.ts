@@ -90,7 +90,7 @@ export interface WorkTarget {
   readonly z: number;
 }
 
-type ErrandProgress = "abandoned" | "finished" | "travelling" | "working";
+type ErrandProgress = "abandoned" | "finished" | "traveling" | "working";
 
 type ErrandPhase = "abandoned" | "travel" | "work";
 
@@ -197,7 +197,7 @@ export class Errand {
     }
 
     if (this.#phase === "travel") {
-      return "travelling";
+      return "traveling";
     }
 
     if (this.#phase === "abandoned") {

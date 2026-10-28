@@ -20,7 +20,7 @@ const SPARED_HEALTH = 0.1;
 const BEAST_DAMAGE_SCALE = 3;
 const FIGHTING_JOBS: ReadonlySet<JobKind> = new Set(["defend", "fight", "raid"]);
 
-export type StrikeOutcome = "blocked" | "hit" | "killed" | "missed";
+type StrikeOutcome = "blocked" | "hit" | "killed" | "missed";
 
 export interface Battleground {
   readonly ledger: CombatLedger;

@@ -4,7 +4,7 @@ import type { Spring } from "../../world/water.ts";
 import { IdentifierSource } from "../identifiers.ts";
 import { createTestWorld, floodCells } from "../testing/test-world.ts";
 import type { WorldState } from "../world/world-state.ts";
-import { DEEPEST_LEVELLING, groundUnderFootprint, levelPad, planPad } from "./building-pads.ts";
+import { DEEPEST_LEVELING, groundUnderFootprint, levelPad, planPad } from "./building-pads.ts";
 import { BuildingSystem } from "./buildings.ts";
 
 const HUT_FOOTPRINT = 4.3;
@@ -37,7 +37,7 @@ describe("building pads", () => {
       throw new Error("Expected a pad on open ground");
     }
 
-    expect(pad.unevenness).toBeLessThan(DEEPEST_LEVELLING);
+    expect(pad.unevenness).toBeLessThan(DEEPEST_LEVELING);
     expect(spread(cornerHeights(world, 3, -2, HUT_FOOTPRINT))).toBeGreaterThan(0.5);
 
     const versionBefore = world.heightVersion;
@@ -68,11 +68,11 @@ describe("building pads", () => {
     for (const cell of changed) {
       expect(Math.abs(world.grid.cellCenterX(cell) - 3)).toBeLessThan(reach);
       expect(Math.abs(world.grid.cellCenterZ(cell) + 2)).toBeLessThan(reach);
-      expect(Math.abs(original[cell] - world.terrain.height[cell])).toBeLessThanOrEqual(DEEPEST_LEVELLING);
+      expect(Math.abs(original[cell] - world.terrain.height[cell])).toBeLessThanOrEqual(DEEPEST_LEVELING);
     }
   });
 
-  it("never cuts or fills more than the deepest levelling on a steep slope", () => {
+  it("never cuts or fills more than the deepest leveling on a steep slope", () => {
     const world = slopedWorld(0.4);
     const original = Float32Array.from(world.terrain.height);
 
@@ -82,12 +82,12 @@ describe("building pads", () => {
       throw new Error("Expected a pad on open ground");
     }
 
-    expect(pad.unevenness).toBeGreaterThan(DEEPEST_LEVELLING);
+    expect(pad.unevenness).toBeGreaterThan(DEEPEST_LEVELING);
 
     levelPad(world, pad);
 
     for (const [cell, height] of original.entries()) {
-      expect(Math.abs(height - world.terrain.height[cell])).toBeLessThanOrEqual(DEEPEST_LEVELLING + 0.001);
+      expect(Math.abs(height - world.terrain.height[cell])).toBeLessThanOrEqual(DEEPEST_LEVELING + 0.001);
     }
   });
 
@@ -139,7 +139,7 @@ describe("building pads", () => {
 
     levelPad(world, firstPad);
 
-    const levelled = cornerHeights(world, 0, 0, HUT_FOOTPRINT);
+    const leveled = cornerHeights(world, 0, 0, HUT_FOOTPRINT);
     const pad = planPad(world, buildings.all, { x: 12, z: 0 }, "hut");
 
     if (pad === null) {
@@ -148,6 +148,6 @@ describe("building pads", () => {
 
     levelPad(world, pad);
 
-    expect(cornerHeights(world, 0, 0, HUT_FOOTPRINT)).toEqual(levelled);
+    expect(cornerHeights(world, 0, 0, HUT_FOOTPRINT)).toEqual(leveled);
   });
 });

@@ -1,12 +1,13 @@
 import { describe, expect, it, it as test, vi } from "vitest";
 import type { TechnologyId } from "../content/technologies.ts";
-import { DEFAULT_GENERATION_OPTIONS, type GenerationOptions } from "../generation/generation-options.ts";
+import { DEFAULT_GENERATION_OPTIONS } from "../generation/generation-options.ts";
 import { generateWorld } from "../generation/world-generator.ts";
 import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../world/agent-buffers.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import { isHopping } from "./agents/hops.ts";
 import { setDestination } from "./agents/movement.ts";
 import { Simulation, type SimulationSnapshot } from "./simulation.ts";
+import { generateSimulation, snapshotOf } from "./testing/test-simulation.ts";
 import { createVegetatedWorld, floodCells, floodStrip } from "./testing/test-world.ts";
 import { TICK_SECONDS } from "./tick.ts";
 
@@ -21,11 +22,6 @@ const ADVANCED: readonly TechnologyId[] = [
   "pottery",
   "farming",
 ];
-const GENERATION_SEED = 11;
-const GENERATION_OPTIONS: GenerationOptions = {
-  ...DEFAULT_GENERATION_OPTIONS,
-  dimensions: { cellSize: 20, cellsPerSide: 128 },
-};
 const SETTLING_SECONDS = 12;
 const RUN_SECONDS = 600;
 const LONGEST_SPELL_IN_WATER = 5;
@@ -56,10 +52,6 @@ function advanceFor(simulation: Simulation, seconds: number): void {
   }
 }
 
-function generateSimulation(): Simulation {
-  return Simulation.generate(GENERATION_SEED, GENERATION_OPTIONS, () => undefined);
-}
-
 function settleLand(simulation: Simulation): void {
   for (let elapsed = 0; elapsed < SETTLING_SECONDS && simulation.isBusy; elapsed += 0.25) {
     simulation.advance(0.25);
@@ -84,16 +76,6 @@ function grownSimulation(): Simulation {
   simulation.runTicks(300);
 
   return simulation;
-}
-
-function snapshotOf(simulation: Simulation): SimulationSnapshot {
-  const snapshot = simulation.snapshot();
-
-  if (snapshot === null) {
-    throw new Error("The simulation was busy");
-  }
-
-  return snapshot;
 }
 
 function restored(snapshot: SimulationSnapshot): Simulation {

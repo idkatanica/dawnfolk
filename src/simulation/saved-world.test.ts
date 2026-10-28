@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_GENERATION_OPTIONS, type GenerationOptions } from "../generation/generation-options.ts";
 import { PlantState } from "../world/vegetation-store.ts";
 import {
   PLANT_SPECIES_NAMES,
@@ -9,29 +8,14 @@ import {
   savedWorldStateSchema,
   summarizeWorld,
 } from "./saved-world.ts";
-import { Simulation } from "./simulation.ts";
-
-const GENERATION_SEED = 11;
-const GENERATION_OPTIONS: GenerationOptions = {
-  ...DEFAULT_GENERATION_OPTIONS,
-  dimensions: { cellSize: 20, cellsPerSide: 128 },
-};
-
-function generateSimulation(): Simulation {
-  return Simulation.generate(GENERATION_SEED, GENERATION_OPTIONS, () => undefined);
-}
+import type { Simulation } from "./simulation.ts";
+import { GENERATION_OPTIONS, GENERATION_SEED, generateSimulation, snapshotOf } from "./testing/test-simulation.ts";
 
 function savedState(simulation: Simulation): SavedWorldState {
-  const snapshot = simulation.snapshot();
-
-  if (snapshot === null) {
-    throw new Error("The simulation was busy");
-  }
-
   return {
     plantSpecies: PLANT_SPECIES_NAMES,
     request: { options: GENERATION_OPTIONS, seed: GENERATION_SEED },
-    simulation: snapshot,
+    simulation: snapshotOf(simulation),
     summary: summarizeWorld(simulation),
     version: SAVE_VERSION,
   };

@@ -77,6 +77,63 @@ function surfaceStep(seconds: number, days: number, conditions: SurfaceCondition
   };
 }
 
+function updateWaterCell(cell: number, fields: SurfaceFields, terrain: TerrainData, step: SurfaceStep): boolean {
+  const { scorch, snow, wetness } = fields;
+
+  const temperature = terrain.baseTemperature[cell] + step.airTemperatureOffset;
+  const snowBefore = snow[cell];
+  const wetnessBefore = wetness[cell];
+  const scorchBefore = scorch[cell];
+
+  const snowAfter =
+    temperature < ICE_TEMPERATURE
+      ? Math.fround(Math.min(1, snowBefore + step.iceGrowth))
+      : Math.fround(Math.max(0, snowBefore - step.iceMelt * Math.max(1, temperature)));
+
+  snow[cell] = snowAfter;
+  wetness[cell] = 1;
+
+  if (scorchBefore > 0) {
+    scorch[cell] = Math.fround(Math.max(0, scorchBefore - step.scorchFading));
+  }
+
+  return snowAfter !== snowBefore || wetnessBefore !== 1 || scorch[cell] !== scorchBefore;
+}
+
+function recoverFromFire(cell: number, fields: SurfaceFields, terrain: TerrainData, step: SurfaceStep): boolean {
+  const { fire, fuel, scorch } = fields;
+
+  if (fire[cell] > 0) {
+    return false;
+  }
+
+  const groundFuel = GROUND_FUEL[terrain.ground[cell]];
+  const fuelBefore = fuel[cell];
+  const scorchBefore = scorch[cell];
+
+  if (fuelBefore >= groundFuel && scorchBefore <= 0) {
+    return false;
+  }
+
+  const isWarm = terrain.baseTemperature[cell] + step.airTemperatureOffset > WARM_GROUND_TEMPERATURE;
+
+  const growthRate = isWarm ? 1 : COLD_GROWTH;
+
+  if (fuelBefore < groundFuel) {
+    fuel[cell] = Math.min(groundFuel, fuelBefore + groundFuel * 0.35 * step.days * growthRate);
+  }
+
+  if (scorchBefore <= 0) {
+    return false;
+  }
+
+  const scorchAfter = Math.fround(Math.max(0, scorchBefore - step.scorchFading * growthRate));
+
+  scorch[cell] = scorchAfter;
+
+  return scorchAfter !== scorchBefore;
+}
+
 export class SurfaceSystem {
   readonly #coldestWaterTemperature: Float32Array;
   readonly #isKnownSettled: Uint8Array;
@@ -117,7 +174,6 @@ export class SurfaceSystem {
     const { cellsPerSide } = this.#world.grid;
 
     const firstRow = this.#nextRow;
-
     const lastRow = Math.min(cellsPerSide, firstRow + ROWS_PER_TICK) - 1;
     const rowsPerPass = cellsPerSide / ROWS_PER_TICK;
 
@@ -317,61 +373,4 @@ export class SurfaceSystem {
 
     return isChanged;
   }
-}
-
-function updateWaterCell(cell: number, fields: SurfaceFields, terrain: TerrainData, step: SurfaceStep): boolean {
-  const { scorch, snow, wetness } = fields;
-
-  const temperature = terrain.baseTemperature[cell] + step.airTemperatureOffset;
-  const snowBefore = snow[cell];
-  const wetnessBefore = wetness[cell];
-  const scorchBefore = scorch[cell];
-
-  const snowAfter =
-    temperature < ICE_TEMPERATURE
-      ? Math.fround(Math.min(1, snowBefore + step.iceGrowth))
-      : Math.fround(Math.max(0, snowBefore - step.iceMelt * Math.max(1, temperature)));
-
-  snow[cell] = snowAfter;
-  wetness[cell] = 1;
-
-  if (scorchBefore > 0) {
-    scorch[cell] = Math.fround(Math.max(0, scorchBefore - step.scorchFading));
-  }
-
-  return snowAfter !== snowBefore || wetnessBefore !== 1 || scorch[cell] !== scorchBefore;
-}
-
-function recoverFromFire(cell: number, fields: SurfaceFields, terrain: TerrainData, step: SurfaceStep): boolean {
-  const { fire, fuel, scorch } = fields;
-
-  if (fire[cell] > 0) {
-    return false;
-  }
-
-  const groundFuel = GROUND_FUEL[terrain.ground[cell]];
-  const fuelBefore = fuel[cell];
-  const scorchBefore = scorch[cell];
-
-  if (fuelBefore >= groundFuel && scorchBefore <= 0) {
-    return false;
-  }
-
-  const isWarm = terrain.baseTemperature[cell] + step.airTemperatureOffset > WARM_GROUND_TEMPERATURE;
-
-  const growthRate = isWarm ? 1 : COLD_GROWTH;
-
-  if (fuelBefore < groundFuel) {
-    fuel[cell] = Math.min(groundFuel, fuelBefore + groundFuel * 0.35 * step.days * growthRate);
-  }
-
-  if (scorchBefore <= 0) {
-    return false;
-  }
-
-  const scorchAfter = Math.fround(Math.max(0, scorchBefore - step.scorchFading * growthRate));
-
-  scorch[cell] = scorchAfter;
-
-  return scorchAfter !== scorchBefore;
 }

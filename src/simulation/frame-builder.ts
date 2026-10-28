@@ -73,8 +73,9 @@ export class FrameBuilder {
     world.waterLevelChanges.takeRegion();
     world.vegetation.discardChanges();
 
-    const [surface] = packSurfaceRows(world, allRows(world));
-    const [ground] = packGroundRows(world, allRows(world));
+    const rows = allRows(world);
+    const [surface] = packSurfaceRows(world, rows);
+    const [ground] = packGroundRows(world, rows);
 
     this.#sentSurface = surface.data.slice();
 

@@ -37,6 +37,12 @@ const KILLING_DEEDS: Readonly<Record<BeastBlow["kind"], Deed>> = {
 
 const ATTACK: Deed = { ending: "", verb: "attacked" };
 
+function isSteadfast(person: Person): boolean {
+  const kind = person.job?.kind;
+
+  return kind !== undefined && STEADFAST_JOBS.has(kind);
+}
+
 function isSheltered(person: Person, tribe: Tribe, context: SocietyContext): boolean {
   const { x, z } = person.mover;
 
@@ -213,9 +219,7 @@ export class BeastEncounters implements PeopleSense {
   }
 
   #fightBack(person: Person, tribe: Tribe, blow: BeastBlow): void {
-    const kind = person.job?.kind;
-
-    if (kind !== undefined && STEADFAST_JOBS.has(kind)) {
+    if (isSteadfast(person)) {
       return;
     }
 
@@ -237,10 +241,7 @@ export class BeastEncounters implements PeopleSense {
     const { x, z } = person.mover;
 
     for (const kin of this.#context.people.livingWithin(x, z, KIN_RALLY_RADIUS)) {
-      const kind = kin.job?.kind;
-      const isBusy = kind !== undefined && STEADFAST_JOBS.has(kind);
-
-      if (kin === person || kin.tribeId !== tribe.id || isBusy || !canFight(kin)) {
+      if (kin === person || kin.tribeId !== tribe.id || isSteadfast(kin) || !canFight(kin)) {
         continue;
       }
 

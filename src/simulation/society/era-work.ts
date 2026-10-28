@@ -16,64 +16,6 @@ import { knows } from "./tribe.ts";
 import { foodNeed, isWorthIt, type WorkOption } from "./work-needs.ts";
 import { chooseCraft } from "./workshops.ts";
 
-const ORE_TARGETS: Readonly<Record<DepositKind, number>> = { clay: 0, copper: 14, iron: 14, tin: 9 };
-const POTTERY_CLAY = 6;
-const MINERS_SHARE = 8;
-const CRAFT_WEIGHTS: Readonly<Record<RecipeId, number>> = {
-  arrows: 0.8,
-  bows: 0.8,
-  bronze: 2.4,
-  copper: 2.4,
-  iron: 2.4,
-  pottery: 2,
-  spears: 1,
-  tools: 2.6,
-};
-
-function clayWanted(tick: PersonTick, construction: ResourceAmounts): number {
-  const { tribe } = tick;
-
-  const forPottery = tribe.stock.pottery < 12 ? POTTERY_CLAY : 0;
-
-  return amountOf(construction, "clay") + forPottery;
-}
-
-function oreOnTheWay(tick: PersonTick, kind: DepositKind): number {
-  const { resource } = DEPOSITS[kind];
-
-  return tick.context.people
-    .membersOf(tick.tribe)
-    .reduce((total, person) => total + carriedAmount(person, resource) + (person.job?.kind === "mine" ? 1 : 0), 0);
-}
-
-function oreNeed(tick: PersonTick, kind: DepositKind): number {
-  const mine = mineFor(tick.tribe, tick.context, kind);
-
-  if (mine === null || mine.progress < 1) {
-    return 0;
-  }
-
-  const stocked = tick.tribe.stock[DEPOSITS[kind].resource] + oreOnTheWay(tick, kind) * MINERS_SHARE;
-
-  return Math.max(0, 1 - stocked / ORE_TARGETS[kind]);
-}
-
-function neediestOre(tick: PersonTick): DepositKind | null {
-  let neediest: DepositKind | null = null;
-  let neediestNeed = 0;
-
-  for (const kind of MINED_DEPOSIT_KINDS) {
-    const need = oreNeed(tick, kind);
-
-    if (need > neediestNeed) {
-      neediest = kind;
-      neediestNeed = need;
-    }
-  }
-
-  return neediest;
-}
-
 export const ERA_WORK_OPTIONS: readonly WorkOption[] = [
   {
     kind: "clay",
@@ -139,7 +81,7 @@ export const ERA_WORK_OPTIONS: readonly WorkOption[] = [
     kind: "pick",
     start: findFruit,
     weight: (tick) => {
-      if (ripestFruitTree(tick.tribe, tick.context.world, tick.tribe.claimedPlants) === null) {
+      if (ripestFruitTree(tick.tribe, tick.context.world) === null) {
         return 0;
       }
 
@@ -147,3 +89,61 @@ export const ERA_WORK_OPTIONS: readonly WorkOption[] = [
     },
   },
 ];
+
+const ORE_TARGETS: Readonly<Record<DepositKind, number>> = { clay: 0, copper: 14, iron: 14, tin: 9 };
+const POTTERY_CLAY = 6;
+const MINERS_SHARE = 8;
+const CRAFT_WEIGHTS: Readonly<Record<RecipeId, number>> = {
+  arrows: 0.8,
+  bows: 0.8,
+  bronze: 2.4,
+  copper: 2.4,
+  iron: 2.4,
+  pottery: 2,
+  spears: 1,
+  tools: 2.6,
+};
+
+function clayWanted(tick: PersonTick, construction: ResourceAmounts): number {
+  const { tribe } = tick;
+
+  const forPottery = tribe.stock.pottery < 12 ? POTTERY_CLAY : 0;
+
+  return amountOf(construction, "clay") + forPottery;
+}
+
+function oreOnTheWay(tick: PersonTick, kind: DepositKind): number {
+  const { resource } = DEPOSITS[kind];
+
+  return tick.context.people
+    .membersOf(tick.tribe)
+    .reduce((total, person) => total + carriedAmount(person, resource) + (person.job?.kind === "mine" ? 1 : 0), 0);
+}
+
+function oreNeed(tick: PersonTick, kind: DepositKind): number {
+  const mine = mineFor(tick.tribe, tick.context, kind);
+
+  if (mine === null || mine.progress < 1) {
+    return 0;
+  }
+
+  const stocked = tick.tribe.stock[DEPOSITS[kind].resource] + oreOnTheWay(tick, kind) * MINERS_SHARE;
+
+  return Math.max(0, 1 - stocked / ORE_TARGETS[kind]);
+}
+
+function neediestOre(tick: PersonTick): DepositKind | null {
+  let neediest: DepositKind | null = null;
+  let neediestNeed = 0;
+
+  for (const kind of MINED_DEPOSIT_KINDS) {
+    const need = oreNeed(tick, kind);
+
+    if (need > neediestNeed) {
+      neediest = kind;
+      neediestNeed = need;
+    }
+  }
+
+  return neediest;
+}

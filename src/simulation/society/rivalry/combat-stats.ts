@@ -1,6 +1,8 @@
 import { TOOL_MATERIAL_DEFINITIONS } from "../../../content/weapons.ts";
 import type { CarriedWeapon } from "../weapons.ts";
 
+export const BARE_HANDS: CarriedWeapon = { kind: "none" };
+
 const EDGE_PER_HIT_BONUS = 4;
 
 export type WeaponKind = CarriedWeapon["kind"];
@@ -11,8 +13,6 @@ interface WeaponStats {
   readonly reach: number;
   readonly strikeSeconds: number;
 }
-
-export const BARE_HANDS: CarriedWeapon = { kind: "none" };
 
 export const WEAPON_STATS: Readonly<Record<WeaponKind, WeaponStats>> = {
   bow: { accuracy: 0.62, damage: 0.2, reach: 26, strikeSeconds: 2.4 },

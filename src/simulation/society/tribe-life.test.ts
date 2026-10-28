@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createStripHarness, STRIP_HALF_WIDTH, settle, standsOnDryLand } from "../testing/test-society.ts";
+import { createStripHarness, isOnDryLand, STRIP_HALF_WIDTH, settle } from "../testing/test-society.ts";
 import { updateTribe } from "./tribe-life.ts";
 
 describe("staying dry", () => {
@@ -33,6 +33,6 @@ describe("staying dry", () => {
 
     expect(tribe.births).toBe(1);
     expect(newborn?.age).toBe(0);
-    expect(newborn === undefined ? false : standsOnDryLand(harness, newborn)).toBe(true);
+    expect(newborn === undefined ? false : isOnDryLand(harness, newborn)).toBe(true);
   });
 });

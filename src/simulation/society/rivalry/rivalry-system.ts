@@ -166,6 +166,13 @@ function claimFor(tribe: Tribe, context: SocietyContext): Claim {
   return claimOf(tribe, tribe.memberCount, buildings);
 }
 
+function isRaidBetween(raid: Raid, firstId: number, secondId: number): boolean {
+  return (
+    (raid.attackerId === firstId && raid.defenderId === secondId) ||
+    (raid.attackerId === secondId && raid.defenderId === firstId)
+  );
+}
+
 function enterPhase(raid: Raid, phase: RaidPhase): void {
   raid.phase = phase;
   raid.phaseSeconds = 0;
@@ -267,6 +274,30 @@ function advanceMarch(raid: Raid, raiders: readonly Person[]): void {
   if (raid.phaseSeconds > LONGEST_MARCH_SECONDS) {
     enterPhase(raid, "retreat");
   }
+}
+
+function copyDates(target: Map<number, number>, source: ReadonlyMap<number, number>): void {
+  target.clear();
+
+  for (const [tribeId, day] of source) {
+    target.set(tribeId, day);
+  }
+}
+
+function isNear(person: Person, point: Waypoint, radius: number): boolean {
+  return distanceFrom(person, point) < radius;
+}
+
+function distanceFrom(person: Person, point: Waypoint): number {
+  return Math.hypot(person.mover.x - point.x, person.mover.z - point.z);
+}
+
+function towards(from: Waypoint, to: Tribe, distance: number): Waypoint {
+  const awayX = to.campX - from.x;
+  const awayZ = to.campZ - from.z;
+  const length = Math.max(1, Math.hypot(awayX, awayZ));
+
+  return { x: from.x + (awayX / length) * distance, z: from.z + (awayZ / length) * distance };
 }
 
 export class RivalrySystem implements Battleground {
@@ -376,9 +407,11 @@ export class RivalrySystem implements Battleground {
       return;
     }
 
+    const side = sideOf(relation, victimTribe.id);
+
     aggrieve(relation, victimTribe.id, BLOOD_GRIEVANCE, "blood");
-    sideOf(relation, victimTribe.id).deaths += 1;
-    sideOf(relation, victimTribe.id).weariness += DEATH_WEARINESS;
+    side.deaths += 1;
+    side.weariness += DEATH_WEARINESS;
   }
 
   receiveEnvoy(guest: Tribe, host: Tribe, gifts: Stock, context: SocietyContext): void {
@@ -890,22 +923,14 @@ export class RivalrySystem implements Battleground {
     }
 
     for (const raid of this.#raids) {
-      const isBetween =
-        (raid.attackerId === relation.first.tribeId && raid.defenderId === relation.second.tribeId) ||
-        (raid.attackerId === relation.second.tribeId && raid.defenderId === relation.first.tribeId);
-
-      if (isBetween && raid.phase !== "retreat") {
+      if (isRaidBetween(raid, relation.first.tribeId, relation.second.tribeId) && raid.phase !== "retreat") {
         enterPhase(raid, "retreat");
       }
     }
   }
 
   #raidBetween(firstId: number, secondId: number): Raid | null {
-    const raid = this.#raids.find(
-      (candidate) =>
-        (candidate.attackerId === firstId && candidate.defenderId === secondId) ||
-        (candidate.attackerId === secondId && candidate.defenderId === firstId)
-    );
+    const raid = this.#raids.find((candidate) => isRaidBetween(candidate, firstId, secondId));
 
     if (raid === undefined) {
       return null;
@@ -927,28 +952,4 @@ export class RivalrySystem implements Battleground {
       }
     }
   }
-}
-
-function copyDates(target: Map<number, number>, source: ReadonlyMap<number, number>): void {
-  target.clear();
-
-  for (const [tribeId, day] of source) {
-    target.set(tribeId, day);
-  }
-}
-
-function isNear(person: Person, point: Waypoint, radius: number): boolean {
-  return distanceFrom(person, point) < radius;
-}
-
-function distanceFrom(person: Person, point: Waypoint): number {
-  return Math.hypot(person.mover.x - point.x, person.mover.z - point.z);
-}
-
-function towards(from: Waypoint, to: Tribe, distance: number): Waypoint {
-  const awayX = to.campX - from.x;
-  const awayZ = to.campZ - from.z;
-  const length = Math.max(1, Math.hypot(awayX, awayZ));
-
-  return { x: from.x + (awayX / length) * distance, z: from.z + (awayZ / length) * distance };
 }

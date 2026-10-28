@@ -32,10 +32,24 @@ export interface WaterRecomputationSnapshot {
   settledHeights: SparseValues;
 }
 
-export type WaterChange = "features" | "levels" | "none" | "settled";
+type WaterChange = "features" | "levels" | "none" | "settled";
 
 function easeOut(amount: number): number {
   return 1 - (1 - amount) * (1 - amount);
+}
+
+function haveSameValues(first: Float32Array | Uint8Array, second: Float32Array | Uint8Array): boolean {
+  for (let index = 0; index < first.length; index += 1) {
+    if (first[index] !== second[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isNewWater(cells: readonly number[], level: number, previousLevels: Float32Array): boolean {
+  return cells.some((cell) => previousLevels[cell] === NO_WATER || previousLevels[cell] < level - NOTICEABLE_RISE);
 }
 
 export class WaterRecomputation {
@@ -397,18 +411,4 @@ export class WaterRecomputation {
     fields.wetness[cell] = 1;
     this.#world.markSurfaceCell(cell);
   }
-}
-
-function haveSameValues(first: Float32Array | Uint8Array, second: Float32Array | Uint8Array): boolean {
-  for (let index = 0; index < first.length; index += 1) {
-    if (first[index] !== second[index]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function isNewWater(cells: readonly number[], level: number, previousLevels: Float32Array): boolean {
-  return cells.some((cell) => previousLevels[cell] === NO_WATER || previousLevels[cell] < level - NOTICEABLE_RISE);
 }

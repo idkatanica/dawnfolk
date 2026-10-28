@@ -10,29 +10,6 @@ const MEAL_SECONDS = 2.5;
 const MEAL_HUNGER_RELIEF = 0.55;
 const COOKED_MEAL_BONUS = 0.2;
 
-export class EatJob implements Job {
-  readonly kind = "eat";
-  readonly #errand = new Errand(MEAL_SECONDS, "eat");
-
-  constructor(tick: PersonTick, place: Waypoint) {
-    headTo(tick.person, place, tick.context);
-  }
-
-  update(tick: PersonTick): Job | null {
-    const progress = this.#errand.update(tick);
-
-    if (progress !== "finished") {
-      return progress === "abandoned" ? null : this;
-    }
-
-    const isCooked = litCampfireOf(tick.tribe, tick.context.buildings) !== null;
-
-    eatMeal(tick.person, tick.tribe, isCooked);
-
-    return null;
-  }
-}
-
 export function eatProvisions(person: Person, tribe: Tribe): void {
   eatMeal(person, tribe, false);
 }
@@ -61,4 +38,27 @@ function takeFoodPortion(person: Person, tribe: Tribe): boolean {
   takeFood(tribe.stock, 1);
 
   return true;
+}
+
+export class EatJob implements Job {
+  readonly kind = "eat";
+  readonly #errand = new Errand(MEAL_SECONDS, "eat");
+
+  constructor(tick: PersonTick, place: Waypoint) {
+    headTo(tick.person, place, tick.context);
+  }
+
+  update(tick: PersonTick): Job | null {
+    const progress = this.#errand.update(tick);
+
+    if (progress !== "finished") {
+      return progress === "abandoned" ? null : this;
+    }
+
+    const isCooked = litCampfireOf(tick.tribe, tick.context.buildings) !== null;
+
+    eatMeal(tick.person, tick.tribe, isCooked);
+
+    return null;
+  }
 }

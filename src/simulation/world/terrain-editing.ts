@@ -30,7 +30,7 @@ interface AreaCell {
   row: number;
 }
 
-interface Levelling {
+interface Leveling {
   readonly keptRelief: number;
   readonly largestChange: number;
   readonly level: number;
@@ -131,8 +131,8 @@ function regionAround(world: WorldState, cells: readonly number[]): CellRegion {
   };
 }
 
-export function levelGround(world: WorldState, cells: readonly number[], levelling: Levelling): void {
-  const { keptRelief, largestChange, level } = levelling;
+export function levelGround(world: WorldState, cells: readonly number[], leveling: Leveling): void {
+  const { keptRelief, largestChange, level } = leveling;
 
   if (cells.length === 0) {
     return;

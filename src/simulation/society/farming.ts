@@ -23,7 +23,7 @@ import { campPoint } from "./tribe-places.ts";
 const MAXIMUM_FIELDS = 12;
 const FIELDS_PER_MEMBER = 0.5;
 const FIRST_FIELDS = 2;
-const PLOUGHED_FIELDS = 2;
+const PLOWED_FIELDS = 2;
 const FIELD_ATTEMPTS = 40;
 const FIELD_SLOPE = 0.3;
 const FERTILE_GROUND = 0.4;
@@ -33,18 +33,19 @@ const TENDED_GROWTH = 0.45;
 const TENDING_DECAY = 0.5;
 const SPROUT_DISPLAY = 0.04;
 const SEASONS_IN_YEAR = 4;
-const TASK_PRIORITY: Readonly<Record<FieldTask, number>> = { harvest: 3, sow: 2, tend: 1 };
 
 export type FieldTask = "harvest" | "sow" | "tend";
+
+const TASK_PRIORITY: Readonly<Record<FieldTask, number>> = { harvest: 3, sow: 2, tend: 1 };
 
 function knownCrops(tribe: Tribe): CropKind[] {
   return CROP_KINDS.filter((kind) => knows(tribe, CROPS[kind].technology));
 }
 
 function wantedFields(tribe: Tribe): number {
-  const ploughed = knows(tribe, "ploughing") ? PLOUGHED_FIELDS : 0;
+  const plowed = knows(tribe, "ploughing") ? PLOWED_FIELDS : 0;
 
-  return Math.min(MAXIMUM_FIELDS, FIRST_FIELDS + ploughed + tribe.memberCount * FIELDS_PER_MEMBER);
+  return Math.min(MAXIMUM_FIELDS, FIRST_FIELDS + plowed + tribe.memberCount * FIELDS_PER_MEMBER);
 }
 
 function isFarmable(tribe: Tribe, cell: number, context: SocietyContext): boolean {

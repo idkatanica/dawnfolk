@@ -21,7 +21,7 @@ interface AnimalDefinition {
   bodyRadius: number;
   breeding: Breeding;
   edgeBiomes: readonly BiomeIndex[];
-  favouriteBiomes: readonly BiomeIndex[];
+  favoriteBiomes: readonly BiomeIndex[];
   fleeDistance: number;
   food: number;
   health: number;
@@ -45,7 +45,7 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     bodyRadius: 0.45,
     breeding: SPRING_CALVING,
     edgeBiomes: [],
-    favouriteBiomes: [Biome.Meadow, Biome.Forest, Biome.Steppe, Biome.Taiga, Biome.Scrub, Biome.Swamp],
+    favoriteBiomes: [Biome.Meadow, Biome.Forest, Biome.Steppe, Biome.Taiga, Biome.Scrub, Biome.Swamp],
     fleeDistance: 55,
     food: 10,
     health: 1,
@@ -67,7 +67,7 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     bodyRadius: 0.15,
     breeding: { litterSize: [1, 3], perDay: 0.5, season: [0.1, 2.2] },
     edgeBiomes: [Biome.Forest],
-    favouriteBiomes: [Biome.Meadow, Biome.Steppe, Biome.Scrub],
+    favoriteBiomes: [Biome.Meadow, Biome.Steppe, Biome.Scrub],
     fleeDistance: 40,
     food: 3,
     health: 1,
@@ -89,7 +89,7 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     bodyRadius: 0.4,
     breeding: SPRING_CALVING,
     edgeBiomes: [],
-    favouriteBiomes: [Biome.Alpine, Biome.Mesa, Biome.Tundra],
+    favoriteBiomes: [Biome.Alpine, Biome.Mesa, Biome.Tundra],
     fleeDistance: 60,
     food: 8,
     health: 1,
@@ -111,7 +111,7 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     bodyRadius: 1.6,
     breeding: SPRING_CALVING,
     edgeBiomes: [],
-    favouriteBiomes: [Biome.Tundra, Biome.Taiga, Biome.Steppe, Biome.Glacier],
+    favoriteBiomes: [Biome.Tundra, Biome.Taiga, Biome.Steppe, Biome.Glacier],
     fleeDistance: 30,
     food: 45,
     health: 5,
@@ -133,7 +133,7 @@ export const ANIMALS: Readonly<Record<AnimalKind, AnimalDefinition>> = {
     bodyRadius: 0.35,
     breeding: SPRING_CALVING,
     edgeBiomes: [],
-    favouriteBiomes: [Biome.Taiga, Biome.Tundra, Biome.Forest, Biome.Steppe],
+    favoriteBiomes: [Biome.Taiga, Biome.Tundra, Biome.Forest, Biome.Steppe],
     fleeDistance: 80,
     food: 6,
     health: 1,
@@ -160,6 +160,6 @@ export function animalWithArticle(kind: AnimalKind): string {
 
 export function animalsAt(biome: number): readonly AnimalKind[] {
   return ANIMAL_KINDS.filter(
-    (kind) => !ANIMALS[kind].isSmallGame && ANIMALS[kind].favouriteBiomes.some((favourite) => favourite === biome)
+    (kind) => !ANIMALS[kind].isSmallGame && ANIMALS[kind].favoriteBiomes.some((favorite) => favorite === biome)
   );
 }

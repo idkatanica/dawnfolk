@@ -8,7 +8,7 @@ const STARTER_SPEARS = 3;
 const STARTER_BOWS = 1;
 const STARTER_ARROWS = 12;
 
-export interface TribeGoal {
+interface TribeGoal {
   isBlocked: boolean;
   need: string | null;
   progress: number;

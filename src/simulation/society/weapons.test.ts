@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { firstMemberTick, SocietyHarness, settle } from "../testing/test-society.ts";
+import { firstMemberTick, MORNING, SocietyHarness, settle } from "../testing/test-society.ts";
 import { findGame } from "./jobs/hunt-job.ts";
 import type { Job } from "./jobs/job.ts";
 import { armForHunt, carriedWeapon, hasWeaponsToHunt } from "./weapons.ts";
-
-const MORNING = 0.3;
 
 describe("weapons", () => {
   it("are carried by nobody until a hunter takes one from the stock", () => {

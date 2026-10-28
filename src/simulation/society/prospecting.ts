@@ -14,7 +14,7 @@ const CANDIDATE_DEPOSITS = 6;
 const LATEST_SEASON_TO_TRAVEL = 1.2;
 const FARTHEST_JOURNEY = 2200;
 
-export interface ProspectingMove {
+interface ProspectingMove {
   kind: DepositKind;
   origin: Waypoint;
   reason: string;

@@ -48,7 +48,6 @@ export function sleepingSpot(person: Person, tribe: Tribe, buildings: BuildingSy
 
   const angle = (person.id * GOLDEN_ANGLE) % FULL_TURN;
   const distance = 5 + (person.id % 4) * 1.5;
-
   const center = fireOrCamp(tribe, buildings);
 
   return aroundPoint(center, distance, angle);

@@ -21,6 +21,23 @@ const STEP_SECONDS = 0.1;
 const GORGE_DIMENSIONS = { cellSize: 10, cellsPerSide: 64 };
 const GORGE_HALF_WIDTH = 10;
 const GORGE_WATER_LEVEL = 102;
+const LOG: LogBridge = {
+  endDeck: 101,
+  endX: 0,
+  endZ: -1,
+  id: 1,
+  kind: "log",
+  seed: 0.4,
+  startDeck: 101,
+  startX: 0,
+  startZ: 1,
+};
+
+interface Crossed {
+  readonly deckSeconds: number;
+  readonly hasArrived: boolean;
+  readonly wasInWater: boolean;
+}
 
 function walk(mover: Mover, world: WorldState, seconds: number, speed = 3): boolean {
   const navigation = new NavigationGrid(world);
@@ -32,6 +49,96 @@ function walk(mover: Mover, world: WorldState, seconds: number, speed = 3): bool
   }
 
   return false;
+}
+
+function createBowlLake(): WorldState {
+  const world = createTestWorld({ heightAt: (x, z) => 98 + Math.hypot(x, z) * 0.05 });
+
+  for (const cell of world.grid.cellsInRadius(0, 0, 70)) {
+    world.terrain.waterSurface[cell] = 101;
+  }
+
+  return world;
+}
+
+function depthAt(world: WorldState, mover: Mover): number {
+  const cell = world.grid.cellAt(mover.x, mover.z);
+
+  if (!world.isWater(cell)) {
+    return 0;
+  }
+
+  return world.waterDepth(cell);
+}
+
+function createGorge(): WorldState {
+  const world = createTestWorld({
+    dimensions: GORGE_DIMENSIONS,
+    heightAt: (x, z) => {
+      const sideways = Math.max(0, Math.abs(x) - GORGE_HALF_WIDTH);
+
+      return 100 + sideways * (z > 0 ? 0.2 : 5);
+    },
+  });
+
+  for (const cell of world.grid.cellsInRadius(0, 0, world.grid.worldSize)) {
+    if (Math.abs(world.grid.cellCenterX(cell)) < GORGE_HALF_WIDTH) {
+      world.terrain.waterSurface[cell] = GORGE_WATER_LEVEL;
+    }
+  }
+
+  return world;
+}
+
+function secondsToLand(mover: Mover, world: WorldState, limit: number): number {
+  const navigation = new NavigationGrid(world);
+
+  let elapsed = 0;
+
+  while (elapsed < limit && depthAt(world, mover) > 0) {
+    moveAlong(mover, STEP_SECONDS, 3, world, navigation);
+    elapsed += STEP_SECONDS;
+  }
+
+  return elapsed;
+}
+
+function createLake(depth: number): WorldState {
+  const world = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 96 } });
+
+  floodCells(world, world.grid.cellsInRadius(0, 0, 60), depth);
+
+  return world;
+}
+
+function crossRiver(crossing: Crossing, start: { x: number; z: number }, goal: { x: number; z: number }): Crossed {
+  const world = createTestWorld({ crossings: [crossing] });
+
+  floodStrip(world, 20, 1.5);
+
+  const navigation = new NavigationGrid(world);
+  const mover = createMover(start.x, start.z, 0);
+
+  let deckSeconds = 0;
+  let wasInWater = false;
+
+  setDestination(mover, goal, navigation);
+
+  for (let elapsed = 0; elapsed < 200 && !hasArrived(mover); elapsed += STEP_SECONDS) {
+    moveAlong(mover, STEP_SECONDS, 3, world, navigation);
+    wasInWater = wasInWater || isStranded(mover, world);
+    deckSeconds += world.isWaterAt(mover.x, mover.z) ? STEP_SECONDS : 0;
+  }
+
+  return { deckSeconds, hasArrived: hasArrived(mover), wasInWater };
+}
+
+function plantAt(world: WorldState, species: PlantSpeciesIndex, height: number): number {
+  return world.plant({ bornDay: 0, height, rotation: 0, seed: 0.5, species, x: 0, z: 0 });
+}
+
+function radiusOf(world: WorldState, plant: number): number {
+  return plantSpeciesDefinition(world.vegetation.species[plant]).radiusPerMeter * world.vegetation.height[plant];
 }
 
 describe("movement", () => {
@@ -197,26 +304,6 @@ describe("unreachable destinations", () => {
 });
 
 describe("leaving water", () => {
-  function createBowlLake(): WorldState {
-    const world = createTestWorld({ heightAt: (x, z) => 98 + Math.hypot(x, z) * 0.05 });
-
-    for (const cell of world.grid.cellsInRadius(0, 0, 70)) {
-      world.terrain.waterSurface[cell] = 101;
-    }
-
-    return world;
-  }
-
-  function depthAt(world: WorldState, mover: Mover): number {
-    const cell = world.grid.cellAt(mover.x, mover.z);
-
-    if (!world.isWater(cell)) {
-      return 0;
-    }
-
-    return world.waterDepth(cell);
-  }
-
   it("never wades deeper than where it stands", () => {
     const world = createBowlLake();
 
@@ -249,38 +336,6 @@ describe("leaving water", () => {
     expect(depthAt(world, mover)).toBe(0);
   });
 
-  function createGorge(): WorldState {
-    const world = createTestWorld({
-      dimensions: GORGE_DIMENSIONS,
-      heightAt: (x, z) => {
-        const sideways = Math.max(0, Math.abs(x) - GORGE_HALF_WIDTH);
-
-        return 100 + sideways * (z > 0 ? 0.2 : 5);
-      },
-    });
-
-    for (const cell of world.grid.cellsInRadius(0, 0, world.grid.worldSize)) {
-      if (Math.abs(world.grid.cellCenterX(cell)) < GORGE_HALF_WIDTH) {
-        world.terrain.waterSurface[cell] = GORGE_WATER_LEVEL;
-      }
-    }
-
-    return world;
-  }
-
-  function secondsToLand(mover: Mover, world: WorldState, limit: number): number {
-    const navigation = new NavigationGrid(world);
-
-    let elapsed = 0;
-
-    while (elapsed < limit && depthAt(world, mover) > 0) {
-      moveAlong(mover, STEP_SECONDS, 3, world, navigation);
-      elapsed += STEP_SECONDS;
-    }
-
-    return elapsed;
-  }
-
   it("climbs out of a river between banks too steep to climb at the nearest gentle bank", () => {
     const world = createGorge();
 
@@ -308,14 +363,6 @@ describe("leaving water", () => {
 });
 
 describe("routes", () => {
-  function createLake(depth: number): WorldState {
-    const world = createTestWorld({ dimensions: { cellSize: 10, cellsPerSide: 96 } });
-
-    floodCells(world, world.grid.cellsInRadius(0, 0, 60), depth);
-
-    return world;
-  }
-
   it("never end in water the mover cannot stand in", () => {
     const world = createLake(3);
     const navigation = new NavigationGrid(world);
@@ -347,46 +394,6 @@ describe("routes", () => {
 });
 
 describe("crossings", () => {
-  const LOG: LogBridge = {
-    endDeck: 101,
-    endX: 0,
-    endZ: -1,
-    id: 1,
-    kind: "log",
-    seed: 0.4,
-    startDeck: 101,
-    startX: 0,
-    startZ: 1,
-  };
-
-  interface Crossed {
-    readonly deckSeconds: number;
-    readonly hasArrived: boolean;
-    readonly wasInWater: boolean;
-  }
-
-  function crossRiver(crossing: Crossing, start: { x: number; z: number }, goal: { x: number; z: number }): Crossed {
-    const world = createTestWorld({ crossings: [crossing] });
-
-    floodStrip(world, 20, 1.5);
-
-    const navigation = new NavigationGrid(world);
-    const mover = createMover(start.x, start.z, 0);
-
-    let deckSeconds = 0;
-    let wasInWater = false;
-
-    setDestination(mover, goal, navigation);
-
-    for (let elapsed = 0; elapsed < 200 && !hasArrived(mover); elapsed += STEP_SECONDS) {
-      moveAlong(mover, STEP_SECONDS, 3, world, navigation);
-      wasInWater = wasInWater || isStranded(mover, world);
-      deckSeconds += world.isWaterAt(mover.x, mover.z) ? STEP_SECONDS : 0;
-    }
-
-    return { deckSeconds, hasArrived: hasArrived(mover), wasInWater };
-  }
-
   it("walks over a ford at walking speed and never into the water beside it", () => {
     const crossed = crossRiver(fordAcross(-24, 24, -40), { x: -90, z: 60 }, { x: 90, z: 60 });
 
@@ -480,14 +487,6 @@ describe("crossings", () => {
 });
 
 describe("obstacles", () => {
-  function plantAt(world: WorldState, species: PlantSpeciesIndex, height: number): number {
-    return world.plant({ bornDay: 0, height, rotation: 0, seed: 0.5, species, x: 0, z: 0 });
-  }
-
-  function radiusOf(world: WorldState, plant: number): number {
-    return plantSpeciesDefinition(world.vegetation.species[plant]).radiusPerMeter * world.vegetation.height[plant];
-  }
-
   it.each([
     ["a tree trunk", PlantSpecies.Oak, 20],
     ["a boulder", PlantSpecies.Boulder, 3],

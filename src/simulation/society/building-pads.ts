@@ -7,7 +7,7 @@ import { CROSSING_GROUND, MONUMENT_GROUND, SPRING_GROUND, type WorldState } from
 import type { Building } from "./buildings.ts";
 import { cellsNear, distanceToCell } from "./footprints.ts";
 
-export const DEEPEST_LEVELLING = 1.5;
+export const DEEPEST_LEVELING = 1.5;
 const KEPT_RELIEF = 0.04;
 const COAST_CLEARANCE = 30;
 const POOLING_DEPTH = 0.5;
@@ -18,7 +18,7 @@ export interface BuildingPad {
   readonly unevenness: number;
 }
 
-export function isLevelled(kind: BuildingKind): boolean {
+export function isLeveled(kind: BuildingKind): boolean {
   return kind !== "mine" && !isEnclosure(kind);
 }
 
@@ -112,5 +112,5 @@ export function planPad(
 }
 
 export function levelPad(world: WorldState, pad: BuildingPad): void {
-  levelGround(world, pad.cells, { keptRelief: KEPT_RELIEF, largestChange: DEEPEST_LEVELLING, level: pad.level });
+  levelGround(world, pad.cells, { keptRelief: KEPT_RELIEF, largestChange: DEEPEST_LEVELING, level: pad.level });
 }
