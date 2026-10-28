@@ -42,8 +42,20 @@ Chromium; without Playwright's own browser, point them at a system one:
 Biome formats and lints at a line width of 120, and TypeScript runs under
 `@tsconfig/bases/strictest`. On top of that:
 
-- Write names in full words: `distanceFromCenter`, not `dist`; `column`, not
-  `x`. Name a file after what it holds, in kebab case: `water-material.ts`.
+- Write names in full words and American spelling: `distanceFromCenter`, not
+  `dist`; `neighbor`, not `neighbour`. Booleans start with `is`, `has`, `can`
+  or `should`. A function that does something is a verb; one that returns a
+  value may be a noun, such as `trunkRadius`. Handlers that a component or hook
+  creates for an event are `handleX`.
+- Name a file after what it holds, in kebab case: `water-material.ts`. A test
+  sits next to the file it tests and shares its name: `water.ts` and
+  `water.test.ts`. Helpers shared by tests live in the area's `testing` folder.
+- Order a file as imports, constants (exported first), types, helper
+  functions, then classes or components, with the exported component last. A
+  constant typed by a local interface sits right after it. Order a class as
+  fields, constructor, getters, public methods, then private methods.
+- Pass the context first, then the subject, then options:
+  `plantAt(world, cell, options)`.
 - Declare functions with `function`, never as arrow functions assigned to a
   name. Inline callbacks may be arrows.
 - Check preconditions at the top and return early, so the happy path stays at

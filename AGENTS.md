@@ -12,8 +12,8 @@ bun run typecheck  # tsc --build over the engine, app and tooling projects
 bun run test       # unit tests in Node, browser tests in Chromium
 ```
 
-- Run all three before you push. Browser tests need Chromium. Without Playwright's browser, prefix the command with
-  `CHROMIUM_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"`.
+- Run all three before you push. Browser tests need Chromium; [Scripts and checks](CONTRIBUTING.md#scripts-and-checks)
+  shows how to point them at a system one.
 - Run one area with `bunx vitest run --project unit src/generation`.
 - Merging to `main` deploys playdawnfolk.com. Leave the merge to a person unless they ask you to merge.
 - Releases follow [CONTRIBUTING.md](CONTRIBUTING.md#releases). Leave publishing one to a person unless they ask.
@@ -31,7 +31,8 @@ bun run test       # unit tests in Node, browser tests in Chromium
 
 ## Rules that are easy to miss
 
-- Don't use `??`, `&&` to pick values, `as` casts or `!` assertions. Write explicit checks instead.
+- The code style is in [CONTRIBUTING.md](CONTRIBUTING.md#code) and isn't repeated here. The `code-style` agent in
+  `.claude/agents` reviews a change against it.
 - The engine never imports React, and the simulation never imports rendering. The `noRestrictedImports` overrides in
   `biome.jsonc` enforce this. The UI reads the session through small Zustand stores and sends commands, which zod
   validates at the worker boundary.
@@ -40,7 +41,7 @@ bun run test       # unit tests in Node, browser tests in Chromium
   and the default seed may use `Math.random`.
 - Water has one rule: `hasWater` and `touchesWaterCell` in `src/world`. Planting, regrowth, grass and the water shader
   must agree on it, or plants stand in rivers.
-- Terrain and water share their level of detail per patch. A shader that reads a neighbour cell must account for the
+- Terrain and water share their level of detail per patch. A shader that reads a neighbor cell must account for the
   patch step, or far views break.
 - The island edge is one outline per shape, in `rendering/terrain/island-outline.ts`. Terrain, water, grass and rain
   are cut by it. Plants keep clear of the coast through `hasRoomFromCoast`.
@@ -50,4 +51,6 @@ bun run test       # unit tests in Node, browser tests in Chromium
   in `design/icons`; commit only the final WebP, not masters. Interface controls use `lucide-react` in the text
   color.
 - Panels are islands from `design/island.tsx`: solid paper, no glass or blur. Islands in one row have the same height.
+- Saves store technology ids, plant species names and snapshot fields. Renaming one breaks old saves unless loading
+  maps it.
 - Several agents may share this checkout. Work in your own `git worktree` and stage only your own files.
