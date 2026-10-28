@@ -140,7 +140,6 @@ export class RainSplashes {
   readonly #reach = uniform(NEAREST_SPAN / 2);
   readonly #rippleColor = uniform(new Color());
   readonly #viewportSpan = uniform(1);
-  #cycles = 0;
 
   constructor(axes: CameraAxes, textures: TerrainTextures, grid: WorldGrid) {
     const material = new MeshBasicNodeMaterial({ depthWrite: false, side: DoubleSide, transparent: true });
@@ -226,8 +225,7 @@ export class RainSplashes {
       return;
     }
 
-    this.#cycles = (this.#cycles + view.realSeconds * SPLASHES_PER_SECOND) % CYCLES;
-    this.#clock.value = this.#cycles;
+    this.#clock.value = (this.#clock.value + view.realSeconds * SPLASHES_PER_SECOND) % CYCLES;
     this.#focus.value.set(view.focusX, view.focusZ);
     this.#reach.value = span / 2;
     this.#viewportSpan.value = 2 * Math.tan((view.camera.fov * Math.PI) / 360);

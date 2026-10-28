@@ -274,13 +274,13 @@ export class AnimalView {
 
     poseAnimal(visual.kind, this.#pose, ANIMAL_POSES[motion.clip], motion.phase, context);
 
-    const pose = this.#blendIfNeeded(visual);
+    const pose = this.#blendIfNeeded(visual, context);
 
     kindView.poser.pose(pose, visual.scales);
     kindView.poser.writePalette(this.#palette.data, this.#palette.rowOffset(row));
   }
 
-  #blendIfNeeded(visual: AnimalVisual): Pose {
+  #blendIfNeeded(visual: AnimalVisual, context: { readonly variation: number }): Pose {
     const { motion } = visual;
 
     if (motion.blend >= 1) {
@@ -288,7 +288,6 @@ export class AnimalView {
     }
 
     const eased = smoothstep(0, 1, motion.blend);
-    const context = { variation: visual.variation };
 
     poseAnimal(visual.kind, this.#previousPose, ANIMAL_POSES[motion.previousClip], motion.previousPhase, context);
     this.#blendedPose.blendBetween(this.#previousPose, this.#pose, eased);

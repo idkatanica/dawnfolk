@@ -74,27 +74,27 @@ function roughRing(radiusX: number, radiusZ: number, y: number, offset: number, 
   };
 }
 
+const STANDING_PROFILE: readonly (readonly [number, number])[] = [
+  [-0.06, 0.92],
+  [0.12, 1],
+  [0.3, 0.99],
+  [0.48, 0.95],
+  [0.64, 0.9],
+  [0.78, 0.82],
+  [0.88, 0.7],
+  [0.95, 0.5],
+  [0.99, 0.24],
+];
+
 function standingStone(context: MonumentContext, stone: StandingStone): Shape {
   const { height, thickness, width } = stone;
 
   const offset = context.random.next() * 30;
   const bend = context.random.signed() * 0.06;
 
-  const profile: readonly (readonly [number, number])[] = [
-    [-0.06, 0.92],
-    [0.12, 1],
-    [0.3, 0.99],
-    [0.48, 0.95],
-    [0.64, 0.9],
-    [0.78, 0.82],
-    [0.88, 0.7],
-    [0.95, 0.5],
-    [0.99, 0.24],
-  ];
-
   const sections: LoftSection[] = [
     { radiusX: 0, radiusZ: 0, y: -0.06 * height - 0.06 },
-    ...profile.map(([along, girth]) =>
+    ...STANDING_PROFILE.map(([along, girth]) =>
       roughRing(
         (width / 2) * girth,
         (thickness / 2) * girth,
@@ -246,12 +246,8 @@ const HEAD_RINGS: readonly HeadRing[] = [
 
 function faceDepth(y: number): number {
   const above = HEAD_RINGS.findIndex((ring) => ring.y >= y);
-  const upper = HEAD_RINGS[Math.max(0, above)];
-  const lower = HEAD_RINGS[Math.max(0, above - 1)];
-
-  if (upper.y === lower.y) {
-    return 1.1;
-  }
+  const upper = HEAD_RINGS[above];
+  const lower = HEAD_RINGS[above - 1];
 
   return lerp(lower.radiusZ, upper.radiusZ, (y - lower.y) / (upper.y - lower.y));
 }
@@ -350,7 +346,9 @@ function idol(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Idol
   addHead(context, { rotation: [-0.14, 0, random.signed() * 0.06] });
 }
 
-function drumShape(context: MonumentContext, height: number, broken: boolean): Shape {
+const DRUM_HEIGHT = 1.15;
+
+function drumShape(context: MonumentContext, broken: boolean): Shape {
   const segments = DRUM_SEGMENTS[context.level];
   const fluting = context.level === "high" ? 0.045 : 0;
   const offset = context.random.next() * 30;
@@ -365,7 +363,12 @@ function drumShape(context: MonumentContext, height: number, broken: boolean): S
   }
 
   const drum = loft(
-    [{ radiusX: 0, radiusZ: 0, y: 0 }, ring(0.47, 0), ring(0.46, height), { radiusX: 0, radiusZ: 0, y: height }],
+    [
+      { radiusX: 0, radiusZ: 0, y: 0 },
+      ring(0.47, 0),
+      ring(0.46, DRUM_HEIGHT),
+      { radiusX: 0, radiusZ: 0, y: DRUM_HEIGHT },
+    ],
     segments
   );
 
@@ -375,7 +378,7 @@ function drumShape(context: MonumentContext, height: number, broken: boolean): S
 
   return facetShape(
     deformShape(drum, (vertex) => {
-      if (vertex.y < height * 0.5) {
+      if (vertex.y < DRUM_HEIGHT * 0.5) {
         return [0, 0, 0];
       }
 
@@ -387,7 +390,6 @@ function drumShape(context: MonumentContext, height: number, broken: boolean): S
 }
 
 const PLINTH: TransformOptions = { position: [0, 0.1, 0] };
-const DRUM_HEIGHT = 1.15;
 
 function addColumn(context: MonumentContext, drums: number): void {
   const { random } = context;
@@ -399,7 +401,7 @@ function addColumn(context: MonumentContext, drums: number): void {
 
     addStone(
       context,
-      drumShape(context, DRUM_HEIGHT, isTop),
+      drumShape(context, isTop),
       {
         position: [random.signed() * 0.03, 0.34 + drum * (DRUM_HEIGHT - 0.02), random.signed() * 0.03],
         rotation: [random.signed() * 0.015, random.next() * FULL_TURN, random.signed() * 0.015],
@@ -427,7 +429,7 @@ function pillar(context: MonumentContext, form: PieceForm<typeof PlantSpecies.Pi
   for (let drum = 0; drum < 3; drum += 1) {
     addStone(
       context,
-      drumShape(context, DRUM_HEIGHT, false),
+      drumShape(context, false),
       {
         position: [2 + drum * 1.22, 0.3, random.signed() * 0.18 + drum * 0.12],
         rotation: [random.signed() * 0.1, random.signed() * 0.2, QUARTER_TURN],

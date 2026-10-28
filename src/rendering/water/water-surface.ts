@@ -31,9 +31,13 @@ function highestLevel(
   row: number,
   offsets: readonly (readonly [number, number])[]
 ): number {
-  return Math.max(
-    ...offsets.map(([columnOffset, rowOffset]) => levelAt(terrain, grid, column + columnOffset, row + rowOffset))
-  );
+  let highest = Number.NEGATIVE_INFINITY;
+
+  for (const [columnOffset, rowOffset] of offsets) {
+    highest = Math.max(highest, levelAt(terrain, grid, column + columnOffset, row + rowOffset));
+  }
+
+  return highest;
 }
 
 export function waterVertexLevel(terrain: SampledTerrain, grid: WorldGrid, column: number, row: number): number {

@@ -6,10 +6,10 @@ import { rigidStyle } from "../rig/skin-weights.ts";
 import { forEachSide, headShape, headStroke } from "./human-anatomy.ts";
 import { type HumanDetail, trimSegments } from "./human-detail.ts";
 import { armStyle } from "./human-rigging.ts";
-import { HumanBone } from "./human-skeleton.ts";
+import { HumanBone, SIDES } from "./human-skeleton.ts";
 
 function addWarBands(builder: MeshBuilder, detail: HumanDetail): void {
-  for (const side of [1, -1] as const) {
+  for (const side of SIDES) {
     builder.add(torus(0.064, 0.012, trimSegments(detail, 14), 4), {
       style: { ...armStyle(side), slot: MaterialSlot.Berry },
       transform: transformOf({ position: [0.202 * side, 1.25, -0.004], rotation: [0, 0, -0.05 * side] }),

@@ -82,7 +82,7 @@ export class FordField {
   rebuild(crossings: readonly Crossing[]): void {
     const grid = this.#grid;
     const fords = crossings.filter(isFord).slice(0, LARGEST_FORD_COUNT);
-    const reach = FORD_BED_HALF_WIDTH + EDGE_WOBBLE + grid.cellSize * Math.SQRT1_2;
+    const reach = MARKED_HALF_WIDTH + grid.cellSize * Math.SQRT1_2;
 
     this.#cellData.fill(0);
     this.#segmentData.fill(0);
@@ -149,7 +149,9 @@ export class FordField {
         const isNear = abs(frame.across).lessThan(MARKED_HALF_WIDTH).and(beyondFord(frame).lessThan(FORD_PATH_REACH));
 
         If(isNear, () => {
-          marks.assign(vec2(bedOf(frame, point), pathOf(frame, point)));
+          const wobble = edgeWobble(point);
+
+          marks.assign(vec2(bedOf(frame, wobble), pathOf(frame, point, wobble)));
         });
       });
 
@@ -166,8 +168,8 @@ function beyondFord(frame: FordFrame): Node<"float"> {
   return max(frame.along.negate(), frame.along.sub(frame.length));
 }
 
-function bedOf(frame: FordFrame, point: Node<"vec2">): Node<"float"> {
-  const width = float(FORD_BED_HALF_WIDTH).add(edgeWobble(point));
+function bedOf(frame: FordFrame, wobble: Node<"float">): Node<"float"> {
+  const width = float(FORD_BED_HALF_WIDTH).add(wobble);
 
   const across = smoothstep(width, width.mul(0.55), abs(frame.across));
   const along = smoothstep(BED_OVERHANG, 0, beyondFord(frame));
@@ -175,7 +177,7 @@ function bedOf(frame: FordFrame, point: Node<"vec2">): Node<"float"> {
   return across.mul(along);
 }
 
-function pathOf(frame: FordFrame, point: Node<"vec2">): Node<"float"> {
+function pathOf(frame: FordFrame, point: Node<"vec2">, wobble: Node<"float">): Node<"float"> {
   const beyond = max(beyondFord(frame), 0);
   const narrowing = min(beyond.div(FORD_PATH_REACH), 1);
   const bend = mx_noise_float(vec3(point.mul(0.08), 5.1))
@@ -183,7 +185,7 @@ function pathOf(frame: FordFrame, point: Node<"vec2">): Node<"float"> {
     .mul(1.4);
   const width = float(FORD_PATH_HALF_WIDTH)
     .mul(float(1.25).sub(narrowing.mul(0.55)))
-    .add(edgeWobble(point).mul(0.4));
+    .add(wobble.mul(0.4));
 
   const across = smoothstep(width, width.mul(0.35), abs(frame.across.sub(bend)));
   const along = smoothstep(FORD_PATH_REACH, FORD_PATH_REACH * 0.55, beyond);

@@ -1,7 +1,7 @@
 import type { AnimalPose } from "../../world/agent-poses.ts";
 import { alongPath, alongTube, segmentsAtLeast, segmentsUpTo } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
-import type { MeshBuilder, SurfacePoint } from "../mesh/mesh-builder.ts";
+import type { MeshBuilder, SurfacePoint, VertexStyle } from "../mesh/mesh-builder.ts";
 import { curveBodySections } from "../mesh/path-curves.ts";
 import { type Shape, transformShape } from "../mesh/shape.ts";
 import { type BodySection, lengthwiseLoft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
@@ -179,14 +179,15 @@ function addFace(builder: MeshBuilder, shape: Shape, detail: AnimalDetail): void
 
 function addEars(builder: MeshBuilder, detail: AnimalDetail): void {
   const ear = tube(alongPath(EAR, detail), { radialSegments: segmentsUpTo(detail, 6) });
+  const style: VertexStyle = {
+    ...rigidStyle(EARS_BONE),
+    slot: (point) => (point.position.y > EAR_TIP_HEIGHT ? MaterialSlot.Hoof : MaterialSlot.Coat),
+  };
 
   for (const side of LEG_SIDES) {
     builder.add(ear, {
       seam: EAR_SEAM,
-      style: {
-        ...rigidStyle(EARS_BONE),
-        slot: (point) => (point.position.y > EAR_TIP_HEIGHT ? MaterialSlot.Hoof : MaterialSlot.Coat),
-      },
+      style,
       transform: combine(
         sideMirror(side),
         transformOf({ position: [0.022, 0.335, 0.185], rotation: [-0.32, 0, -0.16], scale: [1, 1, 0.42] })

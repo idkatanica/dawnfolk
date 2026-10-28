@@ -193,6 +193,7 @@ function logPiece(bridge: LogBridge): PlacedPiece {
 
 export class CrossingView {
   readonly group = new Group();
+  readonly #all: readonly InstanceBatch[];
   readonly #batches: readonly (readonly InstanceBatch[])[];
   readonly #bar: Mesh<BufferGeometry, MeshStandardNodeMaterial>;
   readonly #foam: InstanceBatch;
@@ -220,6 +221,7 @@ export class CrossingView {
       64
     );
     this.#foam.mesh.renderOrder = 3;
+    this.#all = [...this.#batches.flat(), this.#foam];
     this.#bar = new Mesh(new BufferGeometry(), createBarMaterial(textures, mirror));
     this.#bar.receiveShadow = true;
     this.group.add(this.#foam.mesh, this.#bar);
@@ -249,7 +251,7 @@ export class CrossingView {
   }
 
   dispose(): void {
-    for (const batch of [...this.#batches.flat(), this.#foam]) {
+    for (const batch of this.#all) {
       batch.dispose();
     }
 
@@ -258,23 +260,29 @@ export class CrossingView {
   }
 
   #refill(): void {
-    const batches = [...this.#batches.flat(), this.#foam];
-
-    for (const batch of batches) {
+    for (const batch of this.#all) {
       batch.begin();
     }
 
-    for (const crossing of this.#placed.filter((placed) => placed.level !== HIDDEN_LEVEL)) {
+    for (const crossing of this.#placed) {
+      if (crossing.level === HIDDEN_LEVEL) {
+        continue;
+      }
+
       const isNear = crossing.level < FINE_LEVEL_COUNT;
 
-      for (const piece of crossing.pieces.filter((candidate) => isNear || !candidate.isFine)) {
+      for (const piece of crossing.pieces) {
+        if (piece.isFine && !isNear) {
+          continue;
+        }
+
         const batch = piece.batch === FOAM_BATCH ? this.#foam : this.#batches[crossing.level][piece.batch];
 
         batch.add(piece.data);
       }
     }
 
-    for (const batch of batches) {
+    for (const batch of this.#all) {
       batch.commit();
     }
   }

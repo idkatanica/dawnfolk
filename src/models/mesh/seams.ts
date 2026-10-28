@@ -132,9 +132,14 @@ function setWeights(first: number, second: number, third: number): void {
   barycentric[2] = third;
 }
 
-function closestWeights(positions: Float32Array, indices: Uint32Array, offset: number, point: Vector): void {
-  const [x, y, z] = point;
-
+function closestWeights(
+  positions: Float32Array,
+  indices: Uint32Array,
+  offset: number,
+  x: number,
+  y: number,
+  z: number
+): void {
   const first = indices[offset] * 3;
   const second = indices[offset + 1] * 3;
   const third = indices[offset + 2] * 3;
@@ -222,12 +227,13 @@ function closestWeights(positions: Float32Array, indices: Uint32Array, offset: n
 function nearestOnSurface(
   geometry: SeamGeometry,
   prepared: PreparedSurface,
-  point: Vector,
+  x: number,
+  y: number,
+  z: number,
   reach: number
 ): Nearest | null {
   const { indices, normals, positions } = geometry;
   const { sphereCenters, sphereRadii, surface } = prepared;
-  const [x, y, z] = point;
 
   let best = reach;
   let nearest: Nearest | null = null;
@@ -245,7 +251,7 @@ function nearestOnSurface(
 
     const corner = (surface.firstTriangle + triangle) * 3;
 
-    closestWeights(positions, indices, corner, point);
+    closestWeights(positions, indices, corner, x, y, z);
 
     let pointX = 0;
     let pointY = 0;
@@ -304,7 +310,9 @@ function sideOf(geometry: SeamGeometry, owner: PreparedSurface, vertex: number, 
   const nearest = nearestOnSurface(
     geometry,
     owner,
-    [positions[vertex * 3], positions[vertex * 3 + 1], positions[vertex * 3 + 2]],
+    positions[vertex * 3],
+    positions[vertex * 3 + 1],
+    positions[vertex * 3 + 2],
     Number.POSITIVE_INFINITY
   );
 
@@ -362,7 +370,7 @@ function collectBlends(
       continue;
     }
 
-    const nearest = nearestOnSurface(geometry, other, [x, y, z], reach);
+    const nearest = nearestOnSurface(geometry, other, x, y, z, reach);
 
     if (nearest === null) {
       continue;

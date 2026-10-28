@@ -366,8 +366,10 @@ export class CropField {
 
     field.growth = growth;
 
+    const share = growth / BYTE;
+
     for (let offset = GROWTH_OFFSET; offset < field.plants.length; offset += FLOATS_PER_PLANT) {
-      field.plants[offset] = growth / BYTE;
+      field.plants[offset] = share;
     }
 
     this.#grownKinds.add(field.kind);
@@ -458,19 +460,14 @@ export class CropField {
         const x = isAlongX ? along : across;
         const z = isAlongX ? across : along;
 
-        data.set(
-          [
-            x,
-            this.#mirror.heightAt(x, z) - CROP_SINK,
-            z,
-            hashToUnit(cell, line + 0.75, plant) * FULL_TURN,
-            growth,
-            0.85 + hashToUnit(plant, cell, line) * 0.3,
-            kindIndex,
-            hashToUnit(line, plant, cell),
-          ],
-          offset
-        );
+        data[offset] = x;
+        data[offset + 1] = this.#mirror.heightAt(x, z) - CROP_SINK;
+        data[offset + 2] = z;
+        data[offset + 3] = hashToUnit(cell, line + 0.75, plant) * FULL_TURN;
+        data[offset + GROWTH_OFFSET] = growth;
+        data[offset + 5] = 0.85 + hashToUnit(plant, cell, line) * 0.3;
+        data[offset + 6] = kindIndex;
+        data[offset + 7] = hashToUnit(line, plant, cell);
         offset += FLOATS_PER_PLANT;
       }
     }

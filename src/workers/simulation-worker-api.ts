@@ -46,7 +46,7 @@ function channelBuffers(vegetation: VegetationChannels): ArrayBufferLike[] {
   return VEGETATION_CHANNELS.map((channel) => vegetation[channel].buffer);
 }
 
-function frameTransferables(frame: SimulationFrame): ArrayBuffer[] {
+function frameBuffers(frame: SimulationFrame): ArrayBufferLike[] {
   const buffers: ArrayBufferLike[] = [
     frame.people.buffer,
     frame.animals.buffer,
@@ -72,7 +72,7 @@ function frameTransferables(frame: SimulationFrame): ArrayBuffer[] {
     buffers.push(...channelBuffers(frame.vegetation), frame.vegetation.indices.buffer);
   }
 
-  return uniqueArrayBuffers(buffers);
+  return buffers;
 }
 
 function uniqueArrayBuffers(buffers: readonly ArrayBufferLike[]): ArrayBuffer[] {
@@ -84,14 +84,13 @@ function uniqueArrayBuffers(buffers: readonly ArrayBufferLike[]): ArrayBuffer[] 
 function initialWorldTransferables(world: InitialWorld): ArrayBuffer[] {
   const { terrain, vegetation } = world;
 
-  const buffers: ArrayBufferLike[] = [
+  return uniqueArrayBuffers([
     world.ground.buffer,
     world.surface.buffer,
     ...Object.values(terrain).map((values) => values.buffer),
     ...channelBuffers(vegetation),
-  ];
-
-  return uniqueArrayBuffers([...buffers, ...frameTransferables(world.frame)]);
+    ...frameBuffers(world.frame),
+  ]);
 }
 
 export function createSimulationWorkerApi(
@@ -122,7 +121,7 @@ export function createSimulationWorkerApi(
 
       const frame = simulation.advance(realSeconds);
 
-      return transfer(frame, frameTransferables(frame));
+      return transfer(frame, uniqueArrayBuffers(frameBuffers(frame)));
     },
     createWorld: (worldRequest, onProgress) => sendWorld(createSimulation(worldRequest, onProgress), worldRequest),
     loadWorld: (saved, onProgress) => {

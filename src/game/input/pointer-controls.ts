@@ -97,7 +97,7 @@ export class PointerControls {
     canvas.addEventListener("pointerup", (event) => this.#up(event, true), options);
     canvas.addEventListener("pointercancel", (event) => this.#up(event, false), options);
     canvas.addEventListener("pointerleave", () => this.#tool.hover(null), options);
-    canvas.addEventListener("wheel", (event) => this.#wheel(event), { passive: false, signal: this.#abort.signal });
+    canvas.addEventListener("wheel", (event) => this.#wheel(event), { ...options, passive: false });
     canvas.addEventListener("contextmenu", (event) => event.preventDefault(), options);
   }
 
@@ -328,9 +328,7 @@ export class PointerControls {
     }
 
     if (gesture.kind === "pan" && gesture.travel < TAP_TOLERANCE) {
-      const screen = { x: pointer.x, y: pointer.y };
-
-      this.#tap.tap(this.#pick(pointer.x, pointer.y), screen);
+      this.#tap.tap(this.#pick(pointer.x, pointer.y), { x: pointer.x, y: pointer.y });
     }
   }
 

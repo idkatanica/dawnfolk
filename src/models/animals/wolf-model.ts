@@ -119,9 +119,11 @@ function coatSlot(point: SurfacePoint): number {
 }
 
 function addPaws(builder: MeshBuilder, detail: AnimalDetail, segments: number): void {
+  const paw = sphere(0.042, segments, segmentsAtLeast(detail, 4, segments - 2));
+
   for (const side of LEG_SIDES) {
     for (const end of LEG_ENDS) {
-      builder.add(sphere(0.042, segments, segmentsAtLeast(detail, 4, segments - 2)), {
+      builder.add(paw, {
         seam: PAW_SEAM,
         style: { ...legStyle(WOLF_FRAME, end, side, BLEND), slot: MaterialSlot.Coat },
         transform: combine(sideMirror(side), transformOf({ position: PAWS[end], scale: [0.88, 0.62, 1.45] })),
@@ -193,10 +195,13 @@ function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
   });
   addFace(builder, shape, detail);
 
+  const ear = cone(0.045, 0.13, segmentsUpTo(detail, 5));
+  const earStyle = { ...head, slot: MaterialSlot.Coat };
+
   for (const side of LEG_SIDES) {
-    builder.add(cone(0.045, 0.13, segmentsUpTo(detail, 5)), {
+    builder.add(ear, {
       seam: EAR_SEAM,
-      style: { ...head, slot: MaterialSlot.Coat },
+      style: earStyle,
       transform: combine(
         sideMirror(side),
         transformOf({ position: [0.05, 1.105, 0.6], rotation: [-0.2, 0, -0.3], scale: [1, 1, 0.45] })

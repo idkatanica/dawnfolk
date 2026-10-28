@@ -66,11 +66,13 @@ const WAR_PAINT = humanPartIndex("warPaint");
 
 interface PersonVisual {
   readonly appearance: PersonAppearance;
-  readonly appearanceKey: string;
   readonly baseParts: readonly number[];
   readonly colors: readonly Color[];
+  readonly era: number;
   readonly motion: AgentMotion;
   readonly scales: Float32Array;
+  readonly tribeId: number;
+  readonly years: number;
 }
 
 function activityTable(): readonly (readonly (readonly (readonly number[])[])[])[] {
@@ -283,11 +285,11 @@ export class PeopleView {
     const age = people[offset + PersonField.Age];
     const tribeId = people[offset + PersonField.TribeId];
     const era = people[offset + PersonField.Era];
-    const key = `${Math.floor(age)}:${tribeId}:${era}`;
+    const years = Math.floor(age);
 
     const existing = this.#visuals.get(id);
 
-    if (existing !== undefined && existing.appearanceKey === key) {
+    if (existing !== undefined && existing.years === years && existing.tribeId === tribeId && existing.era === era) {
       return existing;
     }
 
@@ -301,9 +303,9 @@ export class PeopleView {
 
     const visual: PersonVisual = {
       appearance,
-      appearanceKey: key,
       baseParts: appearanceParts(appearance).map((part) => humanPartIndex(part)),
       colors: colorsOf(appearance),
+      era,
       motion:
         existing === undefined
           ? new AgentMotion(
@@ -313,6 +315,8 @@ export class PeopleView {
             )
           : existing.motion,
       scales: humanBoneScales(appearance.body),
+      tribeId,
+      years,
     };
 
     this.#visuals.set(id, visual);

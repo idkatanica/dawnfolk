@@ -248,21 +248,25 @@ function addFace(builder: MeshBuilder, head: Shape, detail: AnimalDetail): void 
   const style = rigidStyle(QuadrupedBone.Head);
   const eye = outermostHit(head, new Vector3(0, 2.92, 1.5), new Vector3(1, -0.05, 0.75));
   const ear = outermostHit(head, new Vector3(0, 3.02, 1.12), new Vector3(1, 0.12, -0.2));
+  const eyeShape = sphere(EYE_RADIUS, 6, 4);
+  const flap = earShape(detail);
+  const eyeStyle = { ...style, slot: MaterialSlot.Eye };
+  const earStyle = { ...style, slot: MaterialSlot.Coat };
 
   for (const side of LEG_SIDES) {
     const mirror = sideMirror(side);
 
     if (eye !== null && detail.hasSmallParts) {
-      builder.add(sphere(EYE_RADIUS, 6, 4), {
-        style: { ...style, slot: MaterialSlot.Eye },
+      builder.add(eyeShape, {
+        style: eyeStyle,
         transform: combine(mirror, surfaceTransform(eye, EYE_RADIUS * 0.65)),
       });
     }
 
     if (ear !== null) {
-      builder.add(earShape(detail), {
+      builder.add(flap, {
         seam: EAR_SEAM,
-        style: { ...style, slot: MaterialSlot.Coat },
+        style: earStyle,
         transform: combine(mirror, surfaceTransform(ear, 0.005)),
       });
     }
@@ -304,10 +308,13 @@ function tuskPath(length: number): TubePoint[] {
 
 function addTusks(builder: MeshBuilder, detail: AnimalDetail, length: number): void {
   const style = { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Tusk };
-  const radialSegments = segmentsAtLeast(detail, 5, detail.segments - 2);
+  const tusk = tube(tuskPath(length), {
+    hasEndCap: false,
+    radialSegments: segmentsAtLeast(detail, 5, detail.segments - 2),
+  });
 
   for (const side of LEG_SIDES) {
-    builder.add(tube(tuskPath(length), { hasEndCap: false, radialSegments }), {
+    builder.add(tusk, {
       style,
       transform: sideMirror(side),
     });

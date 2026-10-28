@@ -172,7 +172,7 @@ function bedAt(ford: Ford, surroundings: FordSurroundings, along: number, across
   const drop = BAR_SIDE_DROP * smoothstep(barHalfWidthAt(ford, along), BAR_FOOT, Math.abs(across));
   const surface = surroundings.waterSurfaceAt(point.x, point.z);
   const deepest = surface === NO_WATER ? waterLevel : Math.min(waterLevel, surface);
-  const bar = Math.min(waterLevel, deepest) - barDepthAt(ford, along) - drop;
+  const bar = deepest - barDepthAt(ford, along) - drop;
 
   return { ground, height: Math.max(ground, bar), waterLevel };
 }

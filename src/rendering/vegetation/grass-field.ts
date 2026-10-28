@@ -176,13 +176,14 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
 
   const root = lattice.add(vec2(random(SALT_JITTER_X), random(SALT_JITTER_Z))).mul(spacing);
 
-  const ground = texture(textures.albedo, root.add(grid.halfSize).div(grid.worldSize)).level(float(0));
+  const rootUv = root.add(grid.halfSize).div(grid.worldSize);
+  const ground = texture(textures.albedo, rootUv).level(float(0));
   const cell = ivec2(clamp(floor(root.add(grid.halfSize).div(grid.cellSize)), vec2(0, 0), vec2(last, last)));
   const height = renderedHeightNode(textures, grid, root);
 
   const surface = textureLoad(textures.surface, cell);
-  const understoryCover = texture(understory, root.add(grid.halfSize).div(grid.worldSize)).level(float(0)).x;
-  const wetland = texture(textures.wetland, root.add(grid.halfSize).div(grid.worldSize)).level(float(0));
+  const understoryCover = texture(understory, rootUv).level(float(0)).x;
+  const wetland = texture(textures.wetland, rootUv).level(float(0));
   const footprint = floor(root.add(grid.halfSize).div(grid.cellSize).sub(0.5));
 
   function waterAt(column: number, row: number) {
