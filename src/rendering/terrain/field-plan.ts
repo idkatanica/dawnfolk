@@ -28,6 +28,11 @@ interface FieldShape {
   readonly width: number;
 }
 
+interface FieldShares {
+  readonly axis: Node<"int">;
+  readonly shares: readonly Node<"float">[];
+}
+
 function gradientXAt(heights: Float32Array, grid: WorldGrid, cell: number): number {
   const column = grid.columnOf(cell);
   const row = grid.rowOf(cell);
@@ -51,6 +56,45 @@ function axisOf(shape: FieldShape): FurrowAxisCode {
   }
 
   return hashToUnit(Math.min(...cells), cells.length, TIE_SALT) < 0.5 ? FurrowAxis.AlongX : FurrowAxis.AlongZ;
+}
+
+export function fieldSharesNode(
+  plan: DataTexture,
+  grid: WorldGrid,
+  point: Node<"vec2">,
+  edgeWidths: readonly number[],
+  blur: Node<"float">
+): FieldShares {
+  const last = grid.cellsPerSide - 1;
+  const cellCoordinate = point.add(grid.halfSize).div(grid.cellSize).sub(0.5);
+
+  const base = floor(cellCoordinate);
+  const fraction = cellCoordinate.sub(base);
+
+  function axisAt(column: number, row: number): Node<"float"> {
+    const cell = ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(last, last)));
+
+    return textureLoad(plan, cell).x.mul(BYTE);
+  }
+
+  const northWest = axisAt(0, 0);
+  const northEast = axisAt(1, 0);
+  const southWest = axisAt(0, 1);
+  const southEast = axisAt(1, 1);
+
+  const axis = int(max(max(northWest, northEast), max(southWest, southEast)).add(0.5));
+
+  const shares = edgeWidths.map((edgeWidth) => {
+    const width = max(blur, edgeWidth / grid.cellSize);
+    const across = smoothstep(width.oneMinus().mul(0.5), width.add(1).mul(0.5), fraction);
+
+    const near = mix(northWest.min(1), northEast.min(1), across.x);
+    const far = mix(southWest.min(1), southEast.min(1), across.x);
+
+    return mix(near, far, across.y);
+  });
+
+  return { axis, shares };
 }
 
 export class FieldPlan {
@@ -216,48 +260,4 @@ export class FieldPlan {
       width: lastColumn - firstColumn + 1,
     };
   }
-}
-
-export interface FieldShares {
-  readonly axis: Node<"int">;
-  readonly shares: readonly Node<"float">[];
-}
-
-export function fieldSharesNode(
-  plan: DataTexture,
-  grid: WorldGrid,
-  point: Node<"vec2">,
-  edgeWidths: readonly number[],
-  blur: Node<"float">
-): FieldShares {
-  const last = grid.cellsPerSide - 1;
-  const cellCoordinate = point.add(grid.halfSize).div(grid.cellSize).sub(0.5);
-
-  const base = floor(cellCoordinate);
-  const fraction = cellCoordinate.sub(base);
-
-  function axisAt(column: number, row: number): Node<"float"> {
-    const cell = ivec2(clamp(base.add(vec2(column, row)), vec2(0, 0), vec2(last, last)));
-
-    return textureLoad(plan, cell).x.mul(BYTE);
-  }
-
-  const northWest = axisAt(0, 0);
-  const northEast = axisAt(1, 0);
-  const southWest = axisAt(0, 1);
-  const southEast = axisAt(1, 1);
-
-  const axis = int(max(max(northWest, northEast), max(southWest, southEast)).add(0.5));
-
-  const shares = edgeWidths.map((edgeWidth) => {
-    const width = max(blur, edgeWidth / grid.cellSize);
-    const across = smoothstep(width.oneMinus().mul(0.5), width.add(1).mul(0.5), fraction);
-
-    const near = mix(northWest.min(1), northEast.min(1), across.x);
-    const far = mix(southWest.min(1), southEast.min(1), across.x);
-
-    return mix(near, far, across.y);
-  });
-
-  return { axis, shares };
 }

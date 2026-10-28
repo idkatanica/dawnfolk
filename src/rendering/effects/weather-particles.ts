@@ -61,28 +61,6 @@ interface PrecipitationLook {
   readonly windShare: number;
 }
 
-interface PrecipitationView {
-  readonly camera: PerspectiveCamera;
-  readonly focus: Vector3;
-  readonly realSeconds: number;
-  readonly viewDistance: number;
-}
-
-interface Precipitating {
-  readonly brightness: number;
-  readonly form: Precipitation;
-  readonly precipitation: number;
-  readonly windX: number;
-  readonly windZ: number;
-}
-
-interface DropSources {
-  readonly axes: CameraAxes;
-  readonly grid: WorldGrid;
-  readonly textures: TerrainTextures;
-  readonly uniforms: DropUniforms;
-}
-
 const LOOKS: Readonly<Record<Precipitation, PrecipitationLook>> = {
   rain: {
     color: 0xc8_d2_de,
@@ -109,6 +87,28 @@ const LOOKS: Readonly<Record<Precipitation, PrecipitationLook>> = {
     windShare: 1,
   },
 };
+
+interface PrecipitationView {
+  readonly camera: PerspectiveCamera;
+  readonly focus: Vector3;
+  readonly realSeconds: number;
+  readonly viewDistance: number;
+}
+
+interface Precipitating {
+  readonly brightness: number;
+  readonly form: Precipitation;
+  readonly precipitation: number;
+  readonly windX: number;
+  readonly windZ: number;
+}
+
+interface DropSources {
+  readonly axes: CameraAxes;
+  readonly grid: WorldGrid;
+  readonly textures: TerrainTextures;
+  readonly uniforms: DropUniforms;
+}
 
 export function precipitationOf(kind: WeatherKind, temperature: number): Precipitation {
   if (fallsAsSnow(kind, temperature)) {

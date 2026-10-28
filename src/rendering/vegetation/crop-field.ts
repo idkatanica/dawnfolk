@@ -25,7 +25,6 @@ import {
   buildFenceModel,
   CROP_DETAIL_LEVELS,
   CROP_HEAD_PART,
-  type CropDetailLevel,
 } from "../../models/plants/crop-models.ts";
 import { FULL_TURN, hashToUnit } from "../../shared/math.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
@@ -228,7 +227,7 @@ export class CropField {
       )
     );
 
-    this.#fenceBatches = CROP_DETAIL_LEVELS.map((level: CropDetailLevel) =>
+    this.#fenceBatches = CROP_DETAIL_LEVELS.map((level) =>
       this.#createBatch(buildFenceModel(mirror.grid.cellSize, level), fenceMaterial, FENCE_FIELDS, true)
     );
 
@@ -269,7 +268,7 @@ export class CropField {
     data: MeshData,
     material: MeshStandardNodeMaterial,
     fields: typeof CROP_FIELDS | typeof FENCE_FIELDS,
-    castsShadow: boolean
+    shouldCastShadow: boolean
   ): InstanceBatch {
     const batch = new InstanceBatch(
       geometryFromMeshData(data, ["part", "shade", "slot", "sway"]),
@@ -278,7 +277,7 @@ export class CropField {
       256
     );
 
-    batch.mesh.castShadow = castsShadow;
+    batch.mesh.castShadow = shouldCastShadow;
     batch.mesh.receiveShadow = true;
     this.group.add(batch.mesh);
 

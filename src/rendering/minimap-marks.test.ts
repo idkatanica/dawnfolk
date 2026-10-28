@@ -52,7 +52,7 @@ function personBuffer(people: readonly PersonAt[]) {
 }
 
 describe("minimap marks", () => {
-  it("marks each herd once at the centre of its living animals", () => {
+  it("marks each herd once at the center of its living animals", () => {
     const marks = herdMarks(
       animalBuffer([
         { herd: 4, kind: "deer", pose: "graze", x: 0, z: 0 },
@@ -70,7 +70,7 @@ describe("minimap marks", () => {
     expect(wolves).toMatchObject({ color: "#e2443a", shape: MarkerShape.Triangle, x: -500, z: 200 });
   });
 
-  it("marks living people in their tribe's colour", () => {
+  it("marks living people in their tribe's color", () => {
     const marks = personMarks(
       personBuffer([
         { pose: "walk", tribe: 1, x: 12, z: -40 },

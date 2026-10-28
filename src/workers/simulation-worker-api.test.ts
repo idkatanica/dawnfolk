@@ -10,11 +10,13 @@ interface WorldSender {
   createWorld: (request: WorldRequest) => InitialWorld;
 }
 
+function createTestSimulation(): Simulation {
+  return new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 } }));
+}
+
 describe("creating the world", () => {
   it("moves every terrain buffer to the main thread instead of copying it", async () => {
-    const api = createSimulationWorkerApi(
-      () => new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 } }))
-    );
+    const api = createSimulationWorkerApi(createTestSimulation);
 
     const sent: InitialWorld[] = [];
     const { port1, port2 } = new MessageChannel();
@@ -48,10 +50,7 @@ describe("creating the world", () => {
 
 describe("saving the world", () => {
   function createApi(): SimulationWorkerApi {
-    return createSimulationWorkerApi(
-      () => new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 } })),
-      () => new Simulation(createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 } }))
-    );
+    return createSimulationWorkerApi(createTestSimulation, createTestSimulation);
   }
 
   it("saves nothing before a world exists", () => {

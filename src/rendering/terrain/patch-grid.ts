@@ -23,11 +23,11 @@ import {
 const NO_LEVEL = -1;
 
 interface PatchGridOptions {
-  readonly castsShadow: boolean;
   readonly edges: PatchEdges;
   readonly materials: readonly Material[];
   readonly pieceCells: number;
   readonly renderOrder: number;
+  readonly shouldCastShadow: boolean;
 }
 
 export interface HeightRange {
@@ -191,7 +191,7 @@ export class PatchGrid {
 
     mesh.frustumCulled = false;
     mesh.receiveShadow = true;
-    mesh.castShadow = options.castsShadow;
+    mesh.castShadow = options.shouldCastShadow;
     mesh.renderOrder = options.renderOrder;
     this.group.add(mesh);
 

@@ -5,13 +5,11 @@ import { Pose } from "../rig/pose.ts";
 import type { ContactPoint } from "../rig/skeleton.ts";
 import { SkeletonPoser } from "../rig/skeleton-poser.ts";
 import { measureStride } from "../rig/stride.ts";
+import { ADULT, jointOf, pointOf, posedHuman } from "../testing/posed-human.ts";
 import { uniformScales } from "../testing/uniform-scales.ts";
-import type { MotionStyle } from "./appearance.ts";
 import { applyHumanClip, type HumanClipContext } from "./human-clips.ts";
 import { HUMAN_SKELETON, HumanBone } from "./human-skeleton.ts";
 
-const MOTION: MotionStyle = { armSwing: 1, posture: 0, stride: 1 };
-const ADULT: HumanClipContext = { ageGroup: "adult", carried: "nothing", motion: MOTION };
 const RIGHT_FIST = new Vector3(-0.217, 0.832, 0.018);
 const STICK_TIP = new Vector3(-0.217, 0.122, 0.038);
 const PLANTED = 0.02;
@@ -31,24 +29,6 @@ const STANDING_WORK: readonly PersonPose[] = [
 const KNEE_CONTACT = HUMAN_SKELETON.allContacts.find(
   (contact) => contact.bone === HumanBone.ShinRight && contact.position[1] > 0.4
 );
-
-function posed(clip: PersonPose, phase: number): SkeletonPoser {
-  const poser = new SkeletonPoser(HUMAN_SKELETON);
-  const pose = new Pose(HUMAN_SKELETON.bones.length);
-
-  applyHumanClip(pose, clip, phase, ADULT);
-  poser.pose(pose, uniformScales(HUMAN_SKELETON));
-
-  return poser;
-}
-
-function pointOf(poser: SkeletonPoser, bone: number, rest: Vector3): Vector3 {
-  return poser.skinPoint(bone, rest, new Vector3());
-}
-
-function jointOf(poser: SkeletonPoser, bone: number): Vector3 {
-  return poser.jointPosition(bone, new Vector3());
-}
 
 function footHeights(poser: SkeletonPoser): number[] {
   const point = new Vector3();
@@ -93,8 +73,8 @@ describe("human clips", () => {
   });
 
   it("alternates the leading foot while walking", () => {
-    const start = posed("walk", 0);
-    const half = posed("walk", 0.5);
+    const start = posedHuman("walk", 0);
+    const half = posedHuman("walk", 0.5);
 
     expect(jointOf(start, HumanBone.FootLeft).z).toBeGreaterThan(jointOf(start, HumanBone.FootRight).z);
     expect(jointOf(half, HumanBone.FootRight).z).toBeGreaterThan(jointOf(half, HumanBone.FootLeft).z);
@@ -112,8 +92,8 @@ describe("human clips", () => {
   });
 
   it("swings the axe from above the head down to the waist", () => {
-    const windUp = posed("chop", 0.2);
-    const strike = posed("chop", 0.55);
+    const windUp = posedHuman("chop", 0.2);
+    const strike = posedHuman("chop", 0.55);
 
     expect(jointOf(windUp, HumanBone.HandRight).y).toBeGreaterThan(jointOf(windUp, HumanBone.Head).y);
     expect(jointOf(strike, HumanBone.HandRight).y).toBeLessThan(jointOf(strike, HumanBone.Chest).y);
@@ -121,14 +101,14 @@ describe("human clips", () => {
 
   it("brings the body down to the ground when resting", () => {
     for (const clip of ["sleep", "dead", "sit", "pray"] as const) {
-      expect(jointOf(posed(clip, 0.3), HumanBone.Pelvis).y).toBeLessThan(0.6);
+      expect(jointOf(posedHuman(clip, 0.3), HumanBone.Pelvis).y).toBeLessThan(0.6);
     }
 
-    expect(jointOf(posed("idle", 0.3), HumanBone.Pelvis).y).toBeGreaterThan(0.85);
+    expect(jointOf(posedHuman("idle", 0.3), HumanBone.Pelvis).y).toBeGreaterThan(0.85);
   });
 
-  it("draws the bow string back to the face while holding the bow out towards the target", () => {
-    const anchored = posed("shoot", 0.5);
+  it("draws the bow string back to the face while holding the bow out toward the target", () => {
+    const anchored = posedHuman("shoot", 0.5);
 
     const head = jointOf(anchored, HumanBone.Head);
     const drawHand = jointOf(anchored, HumanBone.HandRight);
@@ -140,8 +120,8 @@ describe("human clips", () => {
   });
 
   it("swings the pickaxe from over the head down to the ground", () => {
-    const windUp = posed("mine", 0.2);
-    const strike = posed("mine", 0.62);
+    const windUp = posedHuman("mine", 0.2);
+    const strike = posedHuman("mine", 0.62);
 
     expect(jointOf(windUp, HumanBone.HandRight).y).toBeGreaterThan(jointOf(windUp, HumanBone.Head).y);
     expect(jointOf(strike, HumanBone.HandRight).y).toBeLessThan(1);
@@ -150,7 +130,7 @@ describe("human clips", () => {
   it("keeps both feet on the ground through standing work and fights", () => {
     for (const clip of STANDING_WORK) {
       for (let phase = 0; phase < 1; phase += 0.05) {
-        const [leftHeel, leftToe, rightHeel, rightToe] = footHeights(posed(clip, phase));
+        const [leftHeel, leftToe, rightHeel, rightToe] = footHeights(posedHuman(clip, phase));
 
         expect(Math.min(leftHeel, leftToe), `${clip} ${phase} left`).toBeLessThan(PLANTED);
         expect(Math.min(rightHeel, rightToe), `${clip} ${phase} right`).toBeLessThan(PLANTED);
@@ -165,20 +145,20 @@ describe("human clips", () => {
     }
 
     for (let phase = 0; phase < 1; phase += 0.05) {
-      const poser = posed("build", phase);
+      const poser = posedHuman("build", phase);
       const [leftHeel, leftToe] = footHeights(poser);
 
       expect(contactHeight(poser, KNEE_CONTACT), `${phase} knee`).toBeLessThan(PLANTED);
       expect(Math.max(leftHeel, leftToe), `${phase} standing foot`).toBeLessThan(PLANTED);
     }
 
-    expect(jointOf(posed("build", 0.5), HumanBone.HandRight).y).toBeGreaterThan(1);
-    expect(pointOf(posed("build", 0.64), HumanBone.HandRight, RIGHT_FIST).y).toBeLessThan(0.35);
+    expect(jointOf(posedHuman("build", 0.5), HumanBone.HandRight).y).toBeGreaterThan(1);
+    expect(pointOf(posedHuman("build", 0.64), HumanBone.HandRight, RIGHT_FIST).y).toBeLessThan(0.35);
   });
 
   it("drives the digging stick down into the ground", () => {
-    const raised = posed("dig", 0.2);
-    const thrust = posed("dig", 0.55);
+    const raised = posedHuman("dig", 0.2);
+    const thrust = posedHuman("dig", 0.55);
 
     expect(pointOf(raised, HumanBone.HandRight, STICK_TIP).y).toBeGreaterThan(0.25);
     expect(pointOf(thrust, HumanBone.HandRight, STICK_TIP).y).toBeLessThan(0.05);
@@ -188,13 +168,13 @@ describe("human clips", () => {
   });
 
   it("is in the air at the widest stride of a leap and lands as the legs pass", () => {
-    expect(lowestFoot(posed("leap", 0))).toBeGreaterThan(0.15);
-    expect(lowestFoot(posed("leap", 0.5))).toBeGreaterThan(0.15);
-    expect(lowestFoot(posed("leap", 0.25))).toBeLessThan(PLANTED);
-    expect(lowestFoot(posed("leap", 0.75))).toBeLessThan(PLANTED);
+    expect(lowestFoot(posedHuman("leap", 0))).toBeGreaterThan(0.15);
+    expect(lowestFoot(posedHuman("leap", 0.5))).toBeGreaterThan(0.15);
+    expect(lowestFoot(posedHuman("leap", 0.25))).toBeLessThan(PLANTED);
+    expect(lowestFoot(posedHuman("leap", 0.75))).toBeLessThan(PLANTED);
   });
 
   it("leaves the ground in the middle of a jump", () => {
-    expect(lowestFoot(posed("play", 0.48))).toBeGreaterThan(0.15);
+    expect(lowestFoot(posedHuman("play", 0.48))).toBeGreaterThan(0.15);
   });
 });

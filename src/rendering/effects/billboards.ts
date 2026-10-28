@@ -10,29 +10,17 @@ import {
 } from "three/webgpu";
 import { InstanceBatch } from "../instancing.ts";
 
-const CORNER_ATTRIBUTE = "billboardCorner";
-
 export const BILLBOARD_FIELDS = [
   { name: "billboardPlacement", size: 4 },
   { name: "billboardLook", size: 4 },
 ] as const;
 
+const CORNER_ATTRIBUTE = "billboardCorner";
+
 interface BillboardNodes {
   readonly corner: Node<"vec2">;
   readonly look: Node<"vec4">;
   readonly placement: Node<"vec4">;
-}
-
-export class CameraAxes {
-  readonly right = uniform(new Vector3(1, 0, 0));
-  readonly up = uniform(new Vector3(0, 1, 0));
-
-  update(camera: PerspectiveCamera): void {
-    const { elements } = camera.matrixWorld;
-
-    this.right.value.set(elements[0], elements[1], elements[2]).normalize();
-    this.up.value.set(elements[4], elements[5], elements[6]).normalize();
-  }
 }
 
 export function billboardNodes(): BillboardNodes {
@@ -68,4 +56,16 @@ export function createBillboardBatch(material: Material, renderOrder: number): I
   batch.mesh.renderOrder = renderOrder;
 
   return batch;
+}
+
+export class CameraAxes {
+  readonly right = uniform(new Vector3(1, 0, 0));
+  readonly up = uniform(new Vector3(0, 1, 0));
+
+  update(camera: PerspectiveCamera): void {
+    const { elements } = camera.matrixWorld;
+
+    this.right.value.set(elements[0], elements[1], elements[2]).normalize();
+    this.up.value.set(elements[4], elements[5], elements[6]).normalize();
+  }
 }

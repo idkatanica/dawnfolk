@@ -76,6 +76,34 @@ function averageTriangles(species: PlantSpeciesIndex, level: PlantDetailLevel): 
   return variants.reduce((sum, mesh) => sum + triangleCount(mesh), 0) / variants.length;
 }
 
+function berryPieces(bush: MeshData): MeshPiece[] {
+  return meshPieces(bush).filter((piece) => isBerryPart(bush.channels.part[piece.vertices[0]]));
+}
+
+function widestSpan(mesh: MeshData, piece: MeshPiece): number {
+  let widest = 0;
+
+  for (const first of piece.vertices) {
+    for (const second of piece.vertices) {
+      const between = Math.hypot(
+        mesh.positions[first * 3] - mesh.positions[second * 3],
+        mesh.positions[first * 3 + 1] - mesh.positions[second * 3 + 1],
+        mesh.positions[first * 3 + 2] - mesh.positions[second * 3 + 2]
+      );
+
+      widest = Math.max(widest, between);
+    }
+  }
+
+  return widest;
+}
+
+function highestVertex(mesh: MeshData, vertices: readonly number[]): number {
+  return vertices.reduce((highest, vertex) =>
+    mesh.positions[vertex * 3 + 1] > mesh.positions[highest * 3 + 1] ? vertex : highest
+  );
+}
+
 describe.each(SPECIES)("plant species %i", (species) => {
   test("builds clean variants at every level of detail", () => {
     for (const level of PLANT_DETAIL_LEVELS) {
@@ -154,34 +182,6 @@ describe.each(SPECIES)("plant species %i", (species) => {
     }
   });
 });
-
-function berryPieces(bush: MeshData): MeshPiece[] {
-  return meshPieces(bush).filter((piece) => isBerryPart(bush.channels.part[piece.vertices[0]]));
-}
-
-function widestSpan(mesh: MeshData, piece: MeshPiece): number {
-  let widest = 0;
-
-  for (const first of piece.vertices) {
-    for (const second of piece.vertices) {
-      const between = Math.hypot(
-        mesh.positions[first * 3] - mesh.positions[second * 3],
-        mesh.positions[first * 3 + 1] - mesh.positions[second * 3 + 1],
-        mesh.positions[first * 3 + 2] - mesh.positions[second * 3 + 2]
-      );
-
-      widest = Math.max(widest, between);
-    }
-  }
-
-  return widest;
-}
-
-function highestVertex(mesh: MeshData, vertices: readonly number[]): number {
-  return vertices.reduce((highest, vertex) =>
-    mesh.positions[vertex * 3 + 1] > mesh.positions[highest * 3 + 1] ? vertex : highest
-  );
-}
 
 describe("tree details", () => {
   it.each(TREES)("flutters only the foliage of species %i and sways it more than the trunk foot", (species) => {

@@ -4,12 +4,12 @@ import type { TribeLook } from "../models/people/appearance.ts";
 import { parseHexColor } from "../shared/color.ts";
 import type { TribeSummary } from "../simulation/frame.ts";
 
+const NEUTRAL_LOOK: TribeLook = { accent: SLOT_COLOR_TABLE[MaterialSlot.Accent], fur: 0x6b_4a_33, id: -1 };
+
 interface KnownTribe {
   readonly accent: Color;
   readonly look: TribeLook;
 }
-
-const NEUTRAL_LOOK: TribeLook = { accent: SLOT_COLOR_TABLE[MaterialSlot.Accent], fur: 0x6b_4a_33, id: -1 };
 
 function knownTribeOf(tribe: TribeSummary): KnownTribe {
   const look: TribeLook = { accent: parseHexColor(tribe.color), fur: parseHexColor(tribe.furColor), id: tribe.id };

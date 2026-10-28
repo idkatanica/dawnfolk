@@ -45,7 +45,7 @@ describe.each(FRUIT_SLOTS)("orchard species %i", (species, slot) => {
     }
   });
 
-  test("hangs its fruit as a separate part in its own colour, near and middle distance only", () => {
+  test("hangs its fruit as a separate part in its own color, near and middle distance only", () => {
     for (const level of ["high", "medium"] as const) {
       for (const mesh of buildPlantVariants(species, level)) {
         const fruit = fruitOf(mesh);

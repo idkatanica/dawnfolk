@@ -30,15 +30,6 @@ const FENCE_POST_TOP = 0.95;
 const FENCE_RAIL_RADIUS = 0.035;
 const FENCE_RAIL_HEIGHTS: readonly number[] = [0.42, 0.8];
 
-const CLUMP_BUILDERS: Readonly<Record<CropKind, ClumpBuilder>> = {
-  barley: addBarley,
-  beans: addBeans,
-  carrots: addCarrots,
-  flax: addFlax,
-  turnips: addTurnips,
-  wheat: addWheat,
-};
-
 export type CropDetailLevel = "high" | "low";
 
 interface LeafPlacement {
@@ -57,6 +48,15 @@ interface ClumpContext {
 }
 
 type ClumpBuilder = (context: ClumpContext) => void;
+
+const CLUMP_BUILDERS: Readonly<Record<CropKind, ClumpBuilder>> = {
+  barley: addBarley,
+  beans: addBeans,
+  carrots: addCarrots,
+  flax: addFlax,
+  turnips: addTurnips,
+  wheat: addWheat,
+};
 
 function plantStyle(context: ClumpContext, slot: MaterialSlotIndex, part: number): VertexStyle {
   return {

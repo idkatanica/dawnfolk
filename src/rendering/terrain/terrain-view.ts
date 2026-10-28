@@ -57,7 +57,7 @@ export class TerrainView {
     };
 
     const patchesPerSide = Math.ceil(grid.cellsPerSide / PATCH_CELLS);
-    const inland = createTerrainMaterial({ ...options, cutsAtCoast: false });
+    const inland = createTerrainMaterial({ ...options, shouldCutAtCoast: false });
 
     this.#levels = new Int8Array(patchesPerSide * patchesPerSide);
     this.#inland = this.#createGrid((region) => this.#measureInland(region), [inland], PATCH_CELLS);
@@ -69,7 +69,7 @@ export class TerrainView {
       return;
     }
 
-    this.#materials = [inland, createTerrainMaterial({ ...options, cutsAtCoast: true })];
+    this.#materials = [inland, createTerrainMaterial({ ...options, shouldCutAtCoast: true })];
     this.#coast = this.#createGrid((region) => this.#measureCoast(region), this.#materials, COAST_PIECE_CELLS);
   }
 
@@ -121,11 +121,11 @@ export class TerrainView {
     pieceCells: number
   ): PatchGrid {
     const patches = new PatchGrid(this.#mirror.grid, measure, {
-      castsShadow: true,
       edges: "skirted",
       materials,
       pieceCells,
       renderOrder: 0,
+      shouldCastShadow: true,
     });
 
     this.group.add(patches.group);

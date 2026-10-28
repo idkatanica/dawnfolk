@@ -28,7 +28,7 @@ const FLAMING_FULL = 0.45;
 const AFTERGLOW_SCORCH = 0.78;
 const AFTERGLOW_HEIGHT = 14;
 const AFTERGLOW_CROWN = 0.35;
-const SMOULDER_GLOW = 0.22;
+const SMOLDER_GLOW = 0.22;
 const EMBER_COLOR = vec3(2.2, 0.48, 0.07);
 const FLAME_COLOR = vec3(3.2, 1.1, 0.2);
 const FAR_FLAME_COLOR = vec3(1.9, 0.62, 0.12);
@@ -41,7 +41,7 @@ const DETAIL_FADE_START = 500;
 const DETAIL_FADE_END = 1300;
 const GLOW_FLOOR = 0.004;
 
-export interface BurnInput {
+interface BurnInput {
   readonly alive: Node<"float">;
   readonly burnt: Node<"float">;
   readonly fallen: Node<"float">;
@@ -51,19 +51,19 @@ export interface BurnInput {
   readonly scorch: Node<"float">;
 }
 
-export interface PlantBurn {
+interface PlantBurn {
   readonly charring: Node<"float">;
   readonly crownLeft: Node<"float">;
   readonly embers: Node<"float">;
   readonly flames: Node<"float">;
-  readonly smoulder: Node<"float">;
+  readonly smolder: Node<"float">;
 }
 
-export interface BurnGlowInput {
+interface BurnGlowInput {
   readonly embers: Node<"float">;
   readonly flames: Node<"float">;
   readonly phase: Node<"float">;
-  readonly smoulder: Node<"float">;
+  readonly smolder: Node<"float">;
 }
 
 export function remainingCrown(fire: number, scorch: number): number {
@@ -89,15 +89,15 @@ export function plantBurn({ alive, burnt, fallen, fire, foliage, height, scorch 
   const isOut = float(1).sub(smoothstep(0.008, 0.04, fire));
   const afterglow = smoothstep(AFTERGLOW_SCORCH, 1, scorch).mul(isOut);
   const trunkGlow = mix(float(AFTERGLOW_CROWN), float(1), smoothstep(AFTERGLOW_HEIGHT, 0, height));
-  const smoulder = afterglow.mul(burnt.mul(trunkGlow).add(fallen));
+  const smolder = afterglow.mul(burnt.mul(trunkGlow).add(fallen));
 
   const burningWood = mix(float(1), smoothstep(0.15, 0.7, livingCharring), foliage);
-  const embers = alive.mul(flaming).mul(burningWood).add(burnt.mul(flaming)).add(smoulder);
+  const embers = alive.mul(flaming).mul(burningWood).add(burnt.mul(flaming)).add(smolder);
 
   const flameSurface = mix(crownLeft.mul(0.5).add(0.25), crownLeft, foliage);
   const flames = alive.add(burnt).mul(flaming).mul(flameSurface);
 
-  return { charring, crownLeft, embers, flames, smoulder };
+  return { charring, crownLeft, embers, flames, smolder };
 }
 
 export function charredColor(color: Node<"vec3">, charring: Node<"float">, charcoal: Node<"vec3">): Node<"vec3"> {
@@ -107,7 +107,7 @@ export function charredColor(color: Node<"vec3">, charring: Node<"float">, charc
   return mix(browned, charcoal, smoothstep(0.35, 0.95, charring));
 }
 
-export function burnGlow({ embers, flames, phase, smoulder }: BurnGlowInput): Node<"vec3"> {
+export function burnGlow({ embers, flames, phase, smolder }: BurnGlowInput): Node<"vec3"> {
   return Fn(() => {
     const glow = vec3(0).toVar();
 
@@ -117,7 +117,7 @@ export function burnGlow({ embers, flames, phase, smoulder }: BurnGlowInput): No
       );
 
       glow.assign(
-        FAR_FLAME_COLOR.mul(flames.mul(0.45).add(embers.mul(0.25)).add(smoulder.mul(0.1))).mul(float(1).sub(detail))
+        FAR_FLAME_COLOR.mul(flames.mul(0.45).add(embers.mul(0.25)).add(smolder.mul(0.1))).mul(float(1).sub(detail))
       );
 
       If(detail.greaterThan(0), () => {
@@ -139,9 +139,9 @@ export function burnGlow({ embers, flames, phase, smoulder }: BurnGlowInput): No
         const breathing = sin(time.mul(1.3).add(patches.mul(5)).add(phase))
           .mul(0.35)
           .add(0.65);
-        const smouldering = smoulder.mul(breathing).mul(patches.mul(0.7).add(0.3)).mul(SMOULDER_GLOW);
+        const smoldering = smolder.mul(breathing).mul(patches.mul(0.7).add(0.3)).mul(SMOLDER_GLOW);
 
-        const near = EMBER_COLOR.mul(cracks.mul(flicker).mul(embers).add(smouldering)).add(FLAME_COLOR.mul(tongues));
+        const near = EMBER_COLOR.mul(cracks.mul(flicker).mul(embers).add(smoldering)).add(FLAME_COLOR.mul(tongues));
 
         glow.addAssign(near.mul(detail));
       });

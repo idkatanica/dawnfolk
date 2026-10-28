@@ -17,6 +17,22 @@ const PAD_ROOTING = 0.55;
 const PAD_THICKNESS = 0.3;
 const PAD_STRETCH = 1.3;
 
+type CactusForm = (typeof CACTUS_FORMS)[number];
+
+interface CactusDetail {
+  readonly hasFlowers: boolean;
+  readonly maximumStems: number;
+  readonly ribs: number;
+  readonly segments: number;
+}
+
+const CACTUS_DETAILS: Readonly<Record<PlantDetailLevel, CactusDetail>> = {
+  far: { hasFlowers: false, maximumStems: 1, ribs: 0, segments: 4 },
+  high: { hasFlowers: true, maximumStems: 12, ribs: 9, segments: 14 },
+  low: { hasFlowers: false, maximumStems: 2, ribs: 0, segments: 5 },
+  medium: { hasFlowers: true, maximumStems: 6, ribs: 7, segments: 9 },
+};
+
 const FORM_BUILDERS: Readonly<
   Record<CactusForm, (builder: MeshBuilder, random: RandomSource, detail: CactusDetail) => void>
 > = {
@@ -24,22 +40,6 @@ const FORM_BUILDERS: Readonly<
   organPipe: addOrganPipe,
   pricklyPear: addPricklyPear,
   saguaro: addSaguaro,
-};
-
-type CactusForm = (typeof CACTUS_FORMS)[number];
-
-interface CactusDetail {
-  readonly maximumStems: number;
-  readonly ribs: number;
-  readonly segments: number;
-  readonly withFlowers: boolean;
-}
-
-const CACTUS_DETAILS: Readonly<Record<PlantDetailLevel, CactusDetail>> = {
-  far: { maximumStems: 1, ribs: 0, segments: 4, withFlowers: false },
-  high: { maximumStems: 12, ribs: 9, segments: 14, withFlowers: true },
-  low: { maximumStems: 2, ribs: 0, segments: 5, withFlowers: false },
-  medium: { maximumStems: 6, ribs: 7, segments: 9, withFlowers: true },
 };
 
 interface Column {
@@ -168,7 +168,7 @@ function addSaguaro(builder: MeshBuilder, random: RandomSource, detail: CactusDe
     });
   }
 
-  if (detail.withFlowers) {
+  if (detail.hasFlowers) {
     addFlowerCrown(builder, new Vector3(0, height - 0.04, 0), radius * 0.4, 4, 0.065);
   }
 }
@@ -229,7 +229,7 @@ function addBarrel(builder: MeshBuilder, random: RandomSource, detail: CactusDet
       transform: transformOf({ position: position.toArray() }),
     });
 
-    if (detail.withFlowers) {
+    if (detail.hasFlowers) {
       addFlowerCrown(builder, position.clone().setY(height * 0.98), radius * 0.24, 5, 0.085);
     }
   }
@@ -305,7 +305,7 @@ function addPricklyPear(builder: MeshBuilder, random: RandomSource, detail: Cact
     });
   }
 
-  if (!detail.withFlowers) {
+  if (!detail.hasFlowers) {
     return;
   }
 

@@ -27,13 +27,13 @@ import { addLegs, hoofBelow, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
 import { LEG_SIDES, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
+export const MAMMOTH_BONE_COUNT = 21;
+
 const MammothBone = {
   TrunkBase: 18,
   TrunkMiddle: 19,
   TrunkTip: 20,
 } as const;
-
-export const MAMMOTH_BONE_COUNT = 21;
 
 export const MAMMOTH_FRAME: QuadrupedFrame = {
   bodyContacts: [

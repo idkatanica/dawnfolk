@@ -117,7 +117,6 @@ export function outermostHit(
 
 export function surfaceTransform(hit: SurfaceHit, depth = 0): Matrix4 {
   const base = hit.point.clone().addScaledVector(hit.normal, -depth);
-
   const tip = base.clone().add(hit.normal);
 
   return segmentTransform(base.toArray(), tip.toArray());

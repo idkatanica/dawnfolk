@@ -70,10 +70,10 @@ interface Marsh {
 }
 
 interface TerrainMaterialOptions {
-  readonly cutsAtCoast: boolean;
   readonly glow: FireGlow;
   readonly grid: WorldGrid;
   readonly plinth: number;
+  readonly shouldCutAtCoast: boolean;
   readonly textures: TerrainTextures;
   readonly warp: GroundWarp;
 }
@@ -111,10 +111,10 @@ function burningGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"floa
     .add(0.6);
   const embers = smoothstep(0.35, 0.8, unitNoise(point.mul(0.6)).mul(0.6).add(grain.mul(0.4)));
 
-  const smoulder = smoothstep(0.02, 0.35, fire).mul(embers.mul(1.1).add(0.08)).mul(flicker);
+  const smolder = smoothstep(0.02, 0.35, fire).mul(embers.mul(1.1).add(0.08)).mul(flicker);
   const blaze = fire.mul(fire).mul(embers.mul(0.8).add(0.2));
 
-  return EMBER_DEEP.mul(smoulder).add(EMBER_BRIGHT.mul(blaze));
+  return EMBER_DEEP.mul(smolder).add(EMBER_BRIGHT.mul(blaze));
 }
 
 function emberGlow(fire: Node<"float">, point: Node<"vec2">, grain: Node<"float">): Node<"vec3"> {
@@ -243,10 +243,10 @@ function fordGround(ground: Node<"vec3">, marks: Node<"vec2">, rock: Node<"float
 }
 
 export function createTerrainMaterial({
-  cutsAtCoast,
   glow,
   grid,
   plinth,
+  shouldCutAtCoast,
   textures,
   warp,
 }: TerrainMaterialOptions): MeshStandardNodeMaterial {
@@ -254,7 +254,7 @@ export function createTerrainMaterial({
 
   material.positionNode = terrainPosition(textures, grid, plinth);
 
-  if (cutsAtCoast) {
+  if (shouldCutAtCoast) {
     material.maskNode = textures.outline.insideNode(positionWorld.xz);
   }
 

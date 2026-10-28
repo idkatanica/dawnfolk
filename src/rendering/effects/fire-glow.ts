@@ -31,6 +31,12 @@ function blur(source: Float32Array, target: Float32Array, step: number, resoluti
   }
 }
 
+export function fireLightAt(glow: FireGlow, grid: WorldGrid, point: Node<"vec2">): Node<"vec3"> {
+  const coordinates = point.add(grid.halfSize).div(grid.worldSize);
+
+  return GLOW_COLOR.mul(texture(glow.texture, coordinates).level(float(0)).r.mul(GLOW_STRENGTH));
+}
+
 export class FireGlow {
   readonly texture: DataTexture;
   readonly #accumulated: Float32Array;
@@ -111,10 +117,4 @@ export class FireGlow {
     this.#litTexels = litTexels;
     this.texture.needsUpdate = true;
   }
-}
-
-export function fireLightAt(glow: FireGlow, grid: WorldGrid, point: Node<"vec2">): Node<"vec3"> {
-  const coordinates = point.add(grid.halfSize).div(grid.worldSize);
-
-  return GLOW_COLOR.mul(texture(glow.texture, coordinates).level(float(0)).r.mul(GLOW_STRENGTH));
 }

@@ -16,7 +16,7 @@ const BEAR_CLAN = 0xc8_55_3d;
 const HANDOVER = 420;
 
 describe("marker look", () => {
-  it("gives every kind of animal a colour of its own", () => {
+  it("gives every kind of animal a color of its own", () => {
     const colors = new Set(ANIMAL_KINDS.map((kind) => ANIMAL_MARKERS[kind].color));
 
     expect(colors.size).toBe(ANIMAL_KINDS.length);
@@ -33,7 +33,7 @@ describe("marker look", () => {
     expect(prey.every((style) => style.extent < wolf.extent)).toBe(true);
   });
 
-  it("marks people as circles in their tribe's colour above every animal", () => {
+  it("marks people as circles in their tribe's color above every animal", () => {
     const person = personMarker(BEAR_CLAN);
 
     expect(person.color).toBe(BEAR_CLAN);

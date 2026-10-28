@@ -21,7 +21,7 @@ describe("path curves", () => {
     expect(curved.filter((_, index) => index % 2 === 0)).toEqual(BENT);
   });
 
-  it("keeps each new point between its neighbours along the path", () => {
+  it("keeps each new point between its neighbors along the path", () => {
     const curved = curveTube(BENT, 2);
 
     for (let index = 1; index < curved.length; index += 2) {

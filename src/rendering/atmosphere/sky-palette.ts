@@ -12,11 +12,6 @@ export interface SkyPalette {
   readonly zenith: number;
 }
 
-interface PaletteKey {
-  readonly palette: SkyPalette;
-  readonly sunHeight: number;
-}
-
 const NIGHT: SkyPalette = {
   abyss: 0x0e_16_28,
   ambientGround: 0x1a_1e_2a,
@@ -82,6 +77,11 @@ const RAINY: SkyPalette = {
   sunlight: 0xa8_b0_ba,
   zenith: 0x68_72_7e,
 };
+
+interface PaletteKey {
+  readonly palette: SkyPalette;
+  readonly sunHeight: number;
+}
 
 const NIGHT_KEY: PaletteKey = { palette: NIGHT, sunHeight: -0.22 };
 

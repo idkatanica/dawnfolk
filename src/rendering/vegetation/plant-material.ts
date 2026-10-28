@@ -192,7 +192,7 @@ export function createPlantMaterial({
   const snow = varying(smoothstep(0.1, 0.45, surface.r), "plantSnow");
   const embers = varying(burn.embers, "plantEmbers");
   const flames = varying(burn.flames, "plantFlames");
-  const smoulder = varying(burn.smoulder, "plantSmoulder");
+  const smolder = varying(burn.smolder, "plantSmolder");
   const charring = burn.charring.add(fallen.mul(surface.b).mul(FALLEN_CHARRING));
 
   const slotColors = slotColorTable();
@@ -203,7 +203,7 @@ export function createPlantMaterial({
   const vertexColor = varying(charredColor(shaded, charring, CHARCOAL), "plantColor");
   const snowOnTop = snow.mul(smoothstep(0.25, 0.75, normalWorld.y));
   const fireLight = varying(fireLightAt(glow, grid, placement.xz), "plantFireLight");
-  const burning = burnGlow({ embers, flames, phase: placement.x.mul(0.37).fract().mul(6), smoulder });
+  const burning = burnGlow({ embers, flames, phase: placement.x.mul(0.37).fract().mul(6), smolder });
 
   material.colorNode = mix(vertexColor, SNOW, snowOnTop);
   material.emissiveNode = vertexColor.mul(fireLight).mul(CROWN_FIRE_LIGHT).add(burning);

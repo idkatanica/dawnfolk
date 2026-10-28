@@ -274,7 +274,7 @@ function addBranches(builder: MeshBuilder, structure: TreeStructure, look: TreeL
   }
 }
 
-function thinned(points: readonly TubePoint[]): TubePoint[] {
+export function thinned(points: readonly TubePoint[]): TubePoint[] {
   return points.filter((_point, index) => index % 2 === 0 || index === points.length - 1);
 }
 

@@ -14,7 +14,7 @@ import { outermostHit } from "../mesh/surface-probe.ts";
 import { transformOf } from "../mesh/transforms.ts";
 import { BERRY_PART } from "./berries.ts";
 import { addBlob, addLimb, addTrunk, BLOB_TINT, createGrowth, finish, type Growth } from "./tree-growth.ts";
-import { FOLIAGE_FLUTTER, meshTree, type PlantDetailLevel, plantSway, type TreeLook } from "./tree-mesher.ts";
+import { FOLIAGE_FLUTTER, meshTree, type PlantDetailLevel, plantSway, type TreeLook, thinned } from "./tree-mesher.ts";
 import {
   type FoliageBlob,
   GOLDEN_ANGLE,
@@ -54,18 +54,6 @@ const FRUIT_TREE_LOOK: TreeLook = { bark: MaterialSlot.Bark, foliage: MaterialSl
 const LEAF_NOISE = createVolumeNoise(createRandom(7171));
 const GROUNDED_ENVELOPE = 0.8;
 const BURIED_MARGIN = 0.01;
-
-const FRUIT_TREE_GENERATORS: Readonly<Record<FruitTreeSpecies, (seed: number) => TreeStructure>> = {
-  [CultivatedSpecies.AppleTree]: apple,
-  [CultivatedSpecies.PearTree]: pear,
-  [CultivatedSpecies.PlumTree]: plum,
-};
-
-const BUSH_GENERATORS: Readonly<Record<BushSpecies, (seed: number) => BushStructure>> = {
-  [CultivatedSpecies.Blueberry]: blueberry,
-  [CultivatedSpecies.Currant]: currant,
-  [CultivatedSpecies.Raspberry]: raspberry,
-};
 
 type OrchardSpecies = keyof typeof ORCHARD_HEIGHTS;
 
@@ -193,6 +181,18 @@ type FruitTreeSpecies =
   | typeof CultivatedSpecies.PlumTree;
 
 type BushSpecies = Exclude<OrchardSpecies, FruitTreeSpecies>;
+
+const FRUIT_TREE_GENERATORS: Readonly<Record<FruitTreeSpecies, (seed: number) => TreeStructure>> = {
+  [CultivatedSpecies.AppleTree]: apple,
+  [CultivatedSpecies.PearTree]: pear,
+  [CultivatedSpecies.PlumTree]: plum,
+};
+
+const BUSH_GENERATORS: Readonly<Record<BushSpecies, (seed: number) => BushStructure>> = {
+  [CultivatedSpecies.Blueberry]: blueberry,
+  [CultivatedSpecies.Currant]: currant,
+  [CultivatedSpecies.Raspberry]: raspberry,
+};
 
 interface FruitHost {
   readonly center: Vector3;
@@ -627,7 +627,7 @@ function stemPoints(stem: readonly TubePoint[], level: PlantDetailLevel): TubePo
     return stem.map((point) => ({ ...point, radius: point.radius * STEM_WIDENING }));
   }
 
-  return stem.filter((_point, index) => index % 2 === 0 || index === stem.length - 1);
+  return thinned(stem);
 }
 
 function bushStems(structure: BushStructure, level: PlantDetailLevel): MeshData {

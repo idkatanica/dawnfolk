@@ -153,7 +153,7 @@ function createCrossingMaterial(textures: TerrainTextures, mirror: WorldMirror):
   return material;
 }
 
-function fordFlowOf(ford: Ford, mirror: WorldMirror): FordFlow {
+function fordFlowOf(mirror: WorldMirror, ford: Ford): FordFlow {
   const middle = crossingLength(ford) / 2;
   const upstream = pointOnCrossing(ford, middle, -FLOW_PROBE);
   const downstream = pointOnCrossing(ford, middle, FLOW_PROBE);
@@ -332,10 +332,10 @@ export class CrossingView {
     }
   }
 
-  #createBatch(model: MeshData, material: MeshStandardNodeMaterial, castsShadow: boolean): InstanceBatch {
+  #createBatch(model: MeshData, material: MeshStandardNodeMaterial, shouldCastShadow: boolean): InstanceBatch {
     const batch = new InstanceBatch(geometryFromMeshData(model, ["shade", "slot"]), material, CROSSING_FIELDS, 16);
 
-    batch.mesh.castShadow = castsShadow;
+    batch.mesh.castShadow = shouldCastShadow;
     batch.mesh.receiveShadow = true;
     this.group.add(batch.mesh);
 
@@ -359,7 +359,7 @@ export class CrossingView {
   #fordOf(ford: Ford): { bar: readonly (readonly BarPoint[])[]; pieces: PlacedPiece[] } {
     const mirror = this.#mirror;
     const textures = this.#textures;
-    const flow = fordFlowOf(ford, mirror);
+    const flow = fordFlowOf(mirror, ford);
 
     const { bar, stones } = layFord(ford, {
       heightAt: (x, z) => mirror.heightAt(x, z),

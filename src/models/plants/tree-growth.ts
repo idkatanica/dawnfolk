@@ -26,7 +26,7 @@ export interface Growth {
   readonly random: RandomSource;
 }
 
-export interface TrunkOptions {
+interface TrunkOptions {
   readonly height: number;
   readonly isForked: boolean;
   readonly lean: number;
@@ -36,7 +36,7 @@ export interface TrunkOptions {
   readonly wobble: number;
 }
 
-export interface LimbOptions {
+interface LimbOptions {
   readonly bend: number;
   readonly depth: number;
   readonly gravity: number;

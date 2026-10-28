@@ -126,69 +126,6 @@ function insideRing(opening: Opening, step: number, random: RandomSource): Point
   }));
 }
 
-class ShapeWriter {
-  readonly #indices: number[] = [];
-  readonly #positions: number[] = [];
-
-  addPoint(point: Point): number {
-    this.#positions.push(point.x, point.y, point.z);
-
-    return this.#positions.length / 3 - 1;
-  }
-
-  addRing(points: readonly Point[]): number[] {
-    return points.map((point) => this.addPoint(point));
-  }
-
-  addTriangle(first: number, second: number, third: number): void {
-    this.#indices.push(first, second, third);
-  }
-
-  addBand(inner: readonly number[], outer: readonly number[], facesOut: boolean): void {
-    for (let index = 0; index < inner.length - 1; index += 1) {
-      const corners = [inner[index], inner[index + 1], outer[index + 1], outer[index]];
-
-      if (facesOut) {
-        this.addTriangle(corners[0], corners[1], corners[2]);
-        this.addTriangle(corners[0], corners[2], corners[3]);
-
-        continue;
-      }
-
-      this.addTriangle(corners[0], corners[2], corners[1]);
-      this.addTriangle(corners[0], corners[3], corners[2]);
-    }
-  }
-
-  addFan(center: number, ring: readonly number[], facesFront: boolean): void {
-    for (let index = 0; index < ring.length; index += 1) {
-      const current = ring[index];
-      const next = ring[(index + 1) % ring.length];
-
-      if (facesFront) {
-        this.addTriangle(center, next, current);
-
-        continue;
-      }
-
-      this.addTriangle(center, current, next);
-    }
-  }
-
-  build(): Shape {
-    const positions = Float32Array.from(this.#positions);
-    const count = positions.length / 3;
-
-    return facetShape({
-      along: new Float32Array(count),
-      around: new Float32Array(count),
-      indices: Uint32Array.from(this.#indices),
-      normals: new Float32Array(positions.length),
-      positions,
-    });
-  }
-}
-
 function outcropShape(opening: Opening, options: CaveMouthOptions, random: RandomSource): Shape {
   const writer = new ShapeWriter();
 
@@ -282,4 +219,67 @@ export function meshCaveMouth(options: CaveMouthOptions): MeshData {
   });
 
   return builder.build();
+}
+
+class ShapeWriter {
+  readonly #indices: number[] = [];
+  readonly #positions: number[] = [];
+
+  addPoint(point: Point): number {
+    this.#positions.push(point.x, point.y, point.z);
+
+    return this.#positions.length / 3 - 1;
+  }
+
+  addRing(points: readonly Point[]): number[] {
+    return points.map((point) => this.addPoint(point));
+  }
+
+  addTriangle(first: number, second: number, third: number): void {
+    this.#indices.push(first, second, third);
+  }
+
+  addBand(inner: readonly number[], outer: readonly number[], isFacingOut: boolean): void {
+    for (let index = 0; index < inner.length - 1; index += 1) {
+      const corners = [inner[index], inner[index + 1], outer[index + 1], outer[index]];
+
+      if (isFacingOut) {
+        this.addTriangle(corners[0], corners[1], corners[2]);
+        this.addTriangle(corners[0], corners[2], corners[3]);
+
+        continue;
+      }
+
+      this.addTriangle(corners[0], corners[2], corners[1]);
+      this.addTriangle(corners[0], corners[3], corners[2]);
+    }
+  }
+
+  addFan(center: number, ring: readonly number[], isFacingFront: boolean): void {
+    for (let index = 0; index < ring.length; index += 1) {
+      const current = ring[index];
+      const next = ring[(index + 1) % ring.length];
+
+      if (isFacingFront) {
+        this.addTriangle(center, next, current);
+
+        continue;
+      }
+
+      this.addTriangle(center, current, next);
+    }
+  }
+
+  build(): Shape {
+    const positions = Float32Array.from(this.#positions);
+    const count = positions.length / 3;
+
+    return facetShape({
+      along: new Float32Array(count),
+      around: new Float32Array(count),
+      indices: Uint32Array.from(this.#indices),
+      normals: new Float32Array(positions.length),
+      positions,
+    });
+  }
 }

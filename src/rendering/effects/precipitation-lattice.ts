@@ -1,11 +1,11 @@
 import { clamp, float, floor, hash, instanceIndex, uint, uniform, vec2 } from "three/tsl";
 import { type Node, Vector2 } from "three/webgpu";
 
+export const CYCLES = 256;
+
 const IDENTITY_PERIOD = 65_536;
 const IDENTITY_MASK = 0xff_ff;
 const SALT_RANK = 0x5b_d1_e9_95;
-
-export const CYCLES = 256;
 
 export interface LatticeArea {
   readonly centerX: number;
@@ -35,6 +35,41 @@ export function unitHash(seed: Node<"uint">, salt: number): Node<"float"> {
 
 function wrapIdentity(value: number): number {
   return ((value % IDENTITY_PERIOD) + IDENTITY_PERIOD) % IDENTITY_PERIOD;
+}
+
+export function latticeElement(cover: LatticeCover, salt: Node<"uint">): LatticeElement {
+  const index = float(instanceIndex);
+  const tileIndex = floor(index.add(0.5).div(cover.slots));
+  const slot = index.sub(tileIndex.mul(cover.slots));
+  const row = floor(tileIndex.add(0.5).div(cover.columns));
+  const cell = vec2(tileIndex.sub(row.mul(cover.columns)), row);
+
+  const identityColumn = uint(cover.identity.x.add(cell.x)).bitAnd(IDENTITY_MASK);
+  const identityRow = uint(cover.identity.y.add(cell.y)).bitAnd(IDENTITY_MASK);
+
+  const tileSeed = scramble(identityColumn.shiftLeft(16).bitOr(identityRow).bitXor(salt));
+  const rank = slot.add(unitHash(tileSeed, SALT_RANK));
+
+  return {
+    presence: clamp(cover.shown.sub(rank), 0, 1),
+    seed: scramble(tileSeed.add(uint(slot))),
+    tile: cover.origin.add(cell),
+  };
+}
+
+export function cycleOf(element: LatticeElement, clock: Node<"float">, salts: CycleSalts) {
+  const phase = unitHash(element.seed, salts.phase);
+  const progress = clock.add(phase);
+  const cycle = floor(progress);
+
+  const wrapped = uint(cycle).bitAnd(CYCLES - 1);
+  const cycleSeed = scramble(element.seed.add(wrapped.mul(salts.cycle)));
+
+  return {
+    age: progress.sub(cycle),
+    phase,
+    spread: vec2(unitHash(cycleSeed, salts.across), unitHash(cycleSeed, salts.along)),
+  };
 }
 
 export class LatticeCover {
@@ -72,39 +107,4 @@ export class LatticeCover {
     this.slots.value = slots;
     this.count = columns * rows * slots;
   }
-}
-
-export function latticeElement(cover: LatticeCover, salt: Node<"uint">): LatticeElement {
-  const index = float(instanceIndex);
-  const tileIndex = floor(index.add(0.5).div(cover.slots));
-  const slot = index.sub(tileIndex.mul(cover.slots));
-  const row = floor(tileIndex.add(0.5).div(cover.columns));
-  const cell = vec2(tileIndex.sub(row.mul(cover.columns)), row);
-
-  const identityColumn = uint(cover.identity.x.add(cell.x)).bitAnd(IDENTITY_MASK);
-  const identityRow = uint(cover.identity.y.add(cell.y)).bitAnd(IDENTITY_MASK);
-
-  const tileSeed = scramble(identityColumn.shiftLeft(16).bitOr(identityRow).bitXor(salt));
-  const rank = slot.add(unitHash(tileSeed, SALT_RANK));
-
-  return {
-    presence: clamp(cover.shown.sub(rank), 0, 1),
-    seed: scramble(tileSeed.add(uint(slot))),
-    tile: cover.origin.add(cell),
-  };
-}
-
-export function cycleOf(element: LatticeElement, clock: Node<"float">, salts: CycleSalts) {
-  const phase = unitHash(element.seed, salts.phase);
-  const progress = clock.add(phase);
-  const cycle = floor(progress);
-
-  const wrapped = uint(cycle).bitAnd(CYCLES - 1);
-  const cycleSeed = scramble(element.seed.add(wrapped.mul(salts.cycle)));
-
-  return {
-    age: progress.sub(cycle),
-    phase,
-    spread: vec2(unitHash(cycleSeed, salts.across), unitHash(cycleSeed, salts.along)),
-  };
 }

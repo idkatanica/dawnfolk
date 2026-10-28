@@ -4,7 +4,7 @@ import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../world
 import { ANIMAL_POSES, PERSON_POSES } from "../world/agent-poses.ts";
 import { ANIMAL_MARKERS, herdScale, MarkerShape, type MarkerShapeCode } from "./agents/marker-look.ts";
 
-export interface MinimapMark {
+interface MinimapMark {
   readonly color: string;
   readonly scale: number;
   readonly shape: MarkerShapeCode;

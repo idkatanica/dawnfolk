@@ -34,7 +34,7 @@ const DRY_BIOMES: ReadonlySet<number> = new Set([Biome.Desert, Biome.Mesa]);
 const WOODED_BIOMES: ReadonlySet<number> = new Set([Biome.Forest, Biome.Swamp, Biome.Taiga]);
 const SHORE_BIOMES: ReadonlySet<number> = new Set([Biome.Beach, Biome.Water]);
 
-function landBiomeNear(spring: Spring, mirror: WorldMirror): number {
+function landBiomeNear(mirror: WorldMirror, spring: Spring): number {
   for (const reach of LAND_REACHES) {
     for (let sample = 0; sample < LAND_SAMPLES; sample += 1) {
       const angle = (sample / LAND_SAMPLES) * FULL_TURN;
@@ -52,7 +52,7 @@ function landBiomeNear(spring: Spring, mirror: WorldMirror): number {
   return Biome.Meadow;
 }
 
-function riseBehind(spring: Spring, mirror: WorldMirror): number {
+function riseBehind(mirror: WorldMirror, spring: Spring): number {
   let highest = 0;
 
   for (const reach of RISE_REACHES) {
@@ -91,7 +91,7 @@ function headingOf(spring: Spring): Matrix4 {
   return new Matrix4().makeRotationY(Math.atan2(spring.directionX, spring.directionZ));
 }
 
-function lowestGroundUnder(spring: Spring, mirror: WorldMirror): number {
+function lowestGroundUnder(mirror: WorldMirror, spring: Spring): number {
   const reach = spring.radius * FOOTPRINT_SHOULDER + 1;
 
   let lowest = Number.POSITIVE_INFINITY;
@@ -115,10 +115,10 @@ function groundReach(spring: Spring): number {
   return Math.max(...RISE_REACHES, -FOOTPRINT_BACK) + spring.radius * FOOTPRINT_SHOULDER + 1;
 }
 
-function addCave(builder: MeshBuilder, spring: Spring, mirror: WorldMirror, models: ModelCache): void {
-  const biome = landBiomeNear(spring, mirror);
-  const rise = Math.round(riseBehind(spring, mirror) * 2) / 2;
-  const sinking = spring.level - lowestGroundUnder(spring, mirror) + BURY_MARGIN;
+function addCave(builder: MeshBuilder, mirror: WorldMirror, spring: Spring, models: ModelCache): void {
+  const biome = landBiomeNear(mirror, spring);
+  const rise = Math.round(riseBehind(mirror, spring) * 2) / 2;
+  const sinking = spring.level - lowestGroundUnder(mirror, spring) + BURY_MARGIN;
   const bury = Math.round(clamp(sinking, SHALLOWEST_BURY, DEEPEST_BURY) * 2) / 2;
 
   const cave = models.model(`cave ${spring.seed} ${spring.radius} ${rise} ${bury} ${biome}`, () =>
@@ -180,7 +180,7 @@ export class SpringView {
 
     for (const spring of mirror.water.springs) {
       if (spring.kind === "cave") {
-        addCave(builder, spring, mirror, this.#models);
+        addCave(builder, mirror, spring, this.#models);
       }
     }
 
