@@ -286,14 +286,14 @@ const SHED_BACK_HEIGHT = 2.1;
 const SHED_FRONT_HEIGHT = 2.6;
 const SHED_ROOF_THICKNESS = 0.22;
 
-function shedFrame(context: StructureContext, order: number): void {
+function shedFrame(context: StructureContext): void {
   for (const x of [-SHED_HALF_WIDTH, SHED_HALF_WIDTH]) {
     addLog(context, [x, 0, SHED_HALF_DEPTH], [x, SHED_FRONT_HEIGHT, SHED_HALF_DEPTH], 0.09, {
-      buildOrder: order,
+      buildOrder: 0.15,
       slot: MaterialSlot.Wood,
     });
     addLog(context, [x, 0, -SHED_HALF_DEPTH], [x, SHED_BACK_HEIGHT, -SHED_HALF_DEPTH], 0.09, {
-      buildOrder: order,
+      buildOrder: 0.15,
       slot: MaterialSlot.Wood,
     });
   }
@@ -399,7 +399,7 @@ function anvilStone(context: StructureContext, x: number, z: number, order: numb
 }
 
 export function workshop(context: StructureContext): void {
-  shedFrame(context, 0.15);
+  shedFrame(context);
   addBlock(context, [SHED_HALF_WIDTH * 2 + 0.1, 1.3, 0.14], [0, 0.65, -SHED_HALF_DEPTH], {
     buildOrder: 0.35,
     shade: (point) => 0.75 + 0.25 * saturate(point.position.y / 1.3),
