@@ -4,7 +4,7 @@
 
 <h1 align="center">Dawnfolk</h1>
 
-<p align="center">A god game about the first tribes on a floating island.</p>
+<p align="center">A god game about the first tribes on a floating island</p>
 
 <p align="center">
   <a
