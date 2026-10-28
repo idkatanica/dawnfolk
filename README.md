@@ -4,7 +4,7 @@
 
 <h1 align="center">Dawnfolk</h1>
 
-<p align="center">A god game about the first tribes on a floating island.</p>
+<p align="center">A god game about the first tribes on a floating island</p>
 
 <p align="center">
   <a
@@ -71,9 +71,11 @@ Age to the Iron Age on a procedurally generated island rendered with WebGPU.
 
 ## Stack
 
-Bun · Vite 8 · React 19 with the React Compiler · TypeScript 7 (`@tsconfig/bases` strictest) · three.js r186
-(WebGPU + TSL, WebGL 2 fallback) · Base UI · Tailwind CSS 4 · Zustand · Zod · Comlink · Biome with Ultracite ·
-Vitest 5 (node and browser projects) · Playwright · Lefthook.
+- **App:** Bun, Vite 8, React 19 with the React Compiler, TypeScript 7
+- **Graphics:** three.js r186 on WebGPU with TSL, WebGL 2 fallback
+- **Interface:** Base UI, Tailwind CSS 4, Zustand
+- **Data:** Zod, Comlink
+- **Tooling:** Biome with Ultracite, Vitest 5, Playwright, Lefthook
 
 ## Getting started
 
@@ -83,11 +85,8 @@ You need [Bun](https://bun.sh) 1.4 or later and a browser with WebGPU or WebGL 2
 git clone https://github.com/imsvidskiy/dawnfolk.git
 cd dawnfolk
 bun install
-bun run dev          # http://localhost:5173
+bun run dev  # http://localhost:5173
 ```
-
-Without parameters the game opens on a start screen that continues a saved world or names a new one and picks its shape. URL parameters skip
-it and make a scene reproducible: `?seed=7&shape=round|square&name=Ashvale&quality=low|medium|high&hours=21&paused=1&camera=x,z,distance,pitch,yaw`.
 
 [CONTRIBUTING.md](CONTRIBUTING.md) has the other scripts, the checks and the code style.
 
@@ -95,31 +94,22 @@ it and make a scene reproducible: `?seed=7&shape=round|square&name=Ashvale&quali
 
 ```
 src/
-  shared/      math, seeded random, noise, astronomy
-  content/     data registries: grounds, biomes, plants, animals, weather, technologies, buildings, powers,
-               world rules (powers and rules are zod schemas with UI metadata)
-  world/       world grid and the data shared by the simulation and the renderer
-  generation/  relief → erosion → hydrology → climate, wetlands and biomes → ruins and river crossings → vegetation →
-               ore deposits
-  simulation/  deterministic fixed-tick simulation: nature (calendar, weather, fire, embers, surface, growth),
-               agents (navigation, movement), fauna, society (people, jobs, tribes, buildings, settlement,
-               rivalry), powers, commands, frames
-  workers/     the simulation worker (Comlink)
-  game/        main thread: worker connection, world mirror, session, engine loop, god camera, input, power tools
-  models/      procedural model engine: mesh builder, rig and clips, people, animals, plants and rocks,
-               buildings, monuments, crossings
-  rendering/   WebGPU renderer: sky, height fog and atmosphere, terrain and water patches, bog pools and lily pads,
-               waterfalls, vegetation chunks and grass, skinned agents with far markers, buildings, fire, smoke,
-               weather, bloom
-  design/      design system: paper islands, game icons, buttons, fields, meters, tooltips, formatting
-  features/    UI features with their stores: time, powers, inspector, journal, tribes and rivalry, minimap,
-               map labels, notices, settings, new world, saves, project links, privacy page
-  app/         app shell, start screen, engine launch, HUD layouts
+  shared/      math, seeded random, noise
+  content/     game data: plants, animals, buildings, powers
+  world/       world grid shared by simulation and renderer
+  generation/  island generation from a seed
+  simulation/  nature, animals and tribes
+  workers/     simulation worker
+  game/        session, camera, input
+  models/      procedural meshes and animation
+  rendering/   WebGPU renderer
+  design/      design system
+  features/    interface features
+  app/         app shell and start screen
 ```
 
-The simulation runs in a Web Worker and posts frames; the main thread mirrors them for the renderer and the HUD,
-and the HUD sends commands back. [AGENTS.md](AGENTS.md#rules-that-are-easy-to-miss) has the rules that keep these
-parts apart.
+The simulation runs in a Web Worker. The renderer and the HUD read its frames and send commands back.
+[AGENTS.md](AGENTS.md#rules-that-are-easy-to-miss) has the rules that keep these parts apart.
 
 ## Sponsor
 

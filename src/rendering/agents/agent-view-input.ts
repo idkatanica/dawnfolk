@@ -56,6 +56,15 @@ export function farthestFigure(limits: LevelDistances, detail: number): number {
   return limits.far * detail;
 }
 
+export function slopeLean(mirror: WorldMirror, x: number, z: number, heading: number, reach: number): number {
+  const stepX = Math.sin(heading) * reach;
+  const stepZ = Math.cos(heading) * reach;
+
+  const rise = mirror.heightAt(x + stepX, z + stepZ) - mirror.heightAt(x - stepX, z - stepZ);
+
+  return Math.atan2(rise, reach * 2);
+}
+
 export function standingHeight(mirror: WorldMirror, x: number, z: number, wadingDepth: number): number {
   const ground = mirror.heightAt(x, z);
   const crossing = mirror.crossingAt(x, z);
