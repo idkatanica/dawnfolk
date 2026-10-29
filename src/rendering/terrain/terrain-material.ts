@@ -37,7 +37,7 @@ import { POOL_BANK, poolReachNode } from "./bog-pools.ts";
 import { fieldGroundNode } from "./field-ground.ts";
 import { FIREWEED, fireweedNode } from "./fireweed.ts";
 import type { GroundWarp } from "./ground-warp.ts";
-import { sampleCellsNode } from "./height-sampling.ts";
+import { cellAtNode, mapCoordinatesNode, sampleCellsNode } from "./height-sampling.ts";
 import { PATCH_CELLS } from "./terrain-patches.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
@@ -79,7 +79,7 @@ interface TerrainMaterialOptions {
 }
 
 function marshAt(textures: TerrainTextures, grid: WorldGrid, wobble: Node<"float">): Marsh {
-  const wetland = texture(textures.wetland, positionWorld.xz.add(grid.halfSize).div(grid.worldSize));
+  const wetland = texture(textures.wetland, mapCoordinatesNode(grid, positionWorld.xz));
   const bank = float(1).sub(wobble).mul(POOL_WOBBLE).add(POOL_BANK);
 
   return {
@@ -208,13 +208,12 @@ function terrainPosition(textures: TerrainTextures, grid: WorldGrid, plinth: num
 function warpedMapCoordinates(warp: GroundWarp, grid: WorldGrid): Node<"vec2"> {
   const point = positionWorld.xz;
 
-  return point.add(warp.offsetAt(point)).add(grid.halfSize).div(grid.worldSize);
+  return mapCoordinatesNode(grid, point.add(warp.offsetAt(point)));
 }
 
 function underwaterDepth(textures: TerrainTextures, grid: WorldGrid): Node<"float"> {
-  const last = grid.cellsPerSide - 1;
-  const cell = clamp(positionWorld.xz.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
-  const reach = textureLoad(textures.shore, ivec2(cell)).w;
+  const cell = cellAtNode(grid, positionWorld.xz);
+  const reach = textureLoad(textures.shore, cell).w;
 
   return Fn(() => {
     const depth = float(0).toVar();

@@ -1,6 +1,5 @@
 import {
   abs,
-  clamp,
   dot,
   Fn,
   float,
@@ -21,6 +20,7 @@ import { distanceToSegment } from "../../shared/math.ts";
 import { type Crossing, crossingLength, type Ford } from "../../world/crossings.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { floatDataTexture } from "../data-textures.ts";
+import { cellAtNode } from "../terrain/height-sampling.ts";
 
 export const FORD_PATH_REACH = 9;
 
@@ -140,10 +140,9 @@ export class FordField {
 
   marksNode(point: Node<"vec2">): Node<"vec2"> {
     const grid = this.#grid;
-    const last = grid.cellsPerSide - 1;
 
-    const cell = clamp(point.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
-    const slot = textureLoad(this.cells, ivec2(cell)).x;
+    const cell = cellAtNode(grid, point);
+    const slot = textureLoad(this.cells, cell).x;
 
     return Fn(() => {
       const marks = vec2(0, 0).toVar();

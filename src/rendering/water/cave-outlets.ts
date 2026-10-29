@@ -1,9 +1,10 @@
-import { abs, clamp, cos, dot, ivec2, min, sin, smoothstep, step, textureLoad, vec2 } from "three/tsl";
+import { abs, cos, dot, ivec2, min, sin, smoothstep, step, textureLoad, vec2 } from "three/tsl";
 import { type DataTexture, type Node, RedFormat, RGBAFormat } from "three/webgpu";
 import { distanceToSegment } from "../../shared/math.ts";
 import type { Spring } from "../../world/water.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { floatDataTexture } from "../data-textures.ts";
+import { cellAtNode } from "../terrain/height-sampling.ts";
 
 const MOUTH_MARGIN = 2.5;
 const CHANNEL_DEPTH = 1.2;
@@ -93,10 +94,9 @@ export class CaveOutlets {
 
   outletAt(point: Node<"vec2">): CaveOutlet {
     const grid = this.#grid;
-    const last = grid.cellsPerSide - 1;
 
-    const cell = clamp(point.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
-    const slot = textureLoad(this.cells, ivec2(cell)).x;
+    const cell = cellAtNode(grid, point);
+    const slot = textureLoad(this.cells, cell).x;
     const mouth = textureLoad(this.mouths, ivec2(vec2(slot.add(0.5).floor(), 0)));
 
     const direction = vec2(cos(mouth.z), sin(mouth.z));

@@ -1,13 +1,11 @@
 import {
   abs,
   attribute,
-  clamp,
   dot,
   Fn,
   float,
   fract,
   int,
-  ivec2,
   mix,
   normalLocal,
   normalWorld,
@@ -30,7 +28,7 @@ import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import { markOutlined } from "../outlines.ts";
-import { coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
+import { cellAtNode, coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { burnGlow, charredColor, plantBurn } from "./plant-burning.ts";
 
@@ -137,9 +135,8 @@ export function createPlantMaterial({
   const treeThreshold = fract(tint.mul(13.7)).mul(0.9).add(0.05);
   const ripening = fract(part.add(tint));
 
-  const last = grid.cellsPerSide - 1;
-  const cell = clamp(placement.xz.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
-  const surface = textureLoad(textures.surface, ivec2(cell));
+  const cell = cellAtNode(grid, placement.xz);
+  const surface = textureLoad(textures.surface, cell);
 
   const burn = plantBurn({
     alive,

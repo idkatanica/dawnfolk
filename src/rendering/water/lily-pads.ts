@@ -1,13 +1,10 @@
 import {
   attribute,
   cameraPosition,
-  clamp,
   cos,
   distance,
   Fn,
   float,
-  floor,
-  ivec2,
   mix,
   positionGeometry,
   select,
@@ -16,7 +13,6 @@ import {
   textureLoad,
   transformNormalToView,
   uniform,
-  vec2,
   vec3,
 } from "three/tsl";
 import {
@@ -36,7 +32,7 @@ import { hasWater } from "../../world/water.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { markOutlined } from "../outlines.ts";
 import { POOL_BANK, poolReachNode } from "../terrain/bog-pools.ts";
-import { coarseGroundOffsetNode, sampleHeightNode } from "../terrain/height-sampling.ts";
+import { cellAtNode, coarseGroundOffsetNode, sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 
 const LilyPart = {
@@ -260,7 +256,6 @@ function createLilyMaterial(
   isFlower: boolean
 ): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ side: DoubleSide });
-  const last = grid.cellsPerSide - 1;
 
   const lily = attribute("lily", "vec4");
   const part = attribute("lilyPart", "float");
@@ -268,7 +263,7 @@ function createLilyMaterial(
   const point = lily.xy;
   const size = lily.w.abs();
   const turn = lily.z;
-  const cell = ivec2(clamp(floor(point.add(grid.halfSize).div(grid.cellSize)), vec2(0, 0), vec2(last, last)));
+  const cell = cellAtNode(grid, point);
 
   const ground = sampleHeightNode(textures.height, grid, point).add(coarseGroundOffsetNode(textures, grid, point));
   const water = textureLoad(textures.water, cell).x;

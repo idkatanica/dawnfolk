@@ -31,7 +31,7 @@ import {
 } from "three/tsl";
 import { Color, MeshPhysicalNodeMaterial, type MeshStandardNodeMaterial, type Node, Vector2 } from "three/webgpu";
 import type { WorldGrid } from "../../world/world-grid.ts";
-import { sampleCellsNode } from "../terrain/height-sampling.ts";
+import { mapCoordinatesNode, sampleCellsNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { rainDimples } from "./rain-dimples.ts";
 import { BANK_SINK, PRESENT_LEVEL } from "./shore-field.ts";
@@ -218,7 +218,7 @@ export function createWaterMaterial(
 
   const shore = sampleCellsNode(textures.shore, grid, positionWorld.xz);
   const viewDistance = distance(positionWorld, cameraPosition);
-  const mapCoordinates = positionWorld.xz.add(grid.halfSize).div(grid.worldSize);
+  const mapCoordinates = mapCoordinatesNode(grid, positionWorld.xz);
   const viewDirection = normalize(cameraPosition.sub(positionWorld));
 
   const outlet = textures.caveOutlets.outletAt(positionWorld.xz);

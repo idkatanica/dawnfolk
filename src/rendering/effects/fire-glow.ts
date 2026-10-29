@@ -2,6 +2,7 @@ import { float, texture, vec3 } from "three/tsl";
 import { ClampToEdgeWrapping, DataTexture, LinearFilter, type Node, RedFormat, UnsignedByteType } from "three/webgpu";
 import type { SimulationFrame } from "../../simulation/frame.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
+import { mapCoordinatesNode } from "../terrain/height-sampling.ts";
 
 const CELLS_PER_TEXEL = 4;
 const BLUR_RADIUS = 3;
@@ -32,7 +33,7 @@ function blur(source: Float32Array, target: Float32Array, step: number, resoluti
 }
 
 export function fireLightAt(glow: FireGlow, grid: WorldGrid, point: Node<"vec2">): Node<"vec3"> {
-  const coordinates = point.add(grid.halfSize).div(grid.worldSize);
+  const coordinates = mapCoordinatesNode(grid, point);
 
   return GLOW_COLOR.mul(texture(glow.texture, coordinates).level(float(0)).r.mul(GLOW_STRENGTH));
 }

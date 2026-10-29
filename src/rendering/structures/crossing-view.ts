@@ -1,12 +1,10 @@
 import {
   abs,
   attribute,
-  clamp,
   cos,
   Fn,
   float,
   int,
-  ivec2,
   mix,
   normalize,
   normalLocal,
@@ -17,7 +15,6 @@ import {
   smoothstep,
   textureLoad,
   varying,
-  vec2,
   vec3,
 } from "three/tsl";
 import {
@@ -59,7 +56,7 @@ import { NO_WATER } from "../../world/water.ts";
 import { geometryFromMeshData, InstanceBatch, toInstancedGeometry } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import { markOutlined } from "../outlines.ts";
-import { coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
+import { cellAtNode, coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { assignSphereLevels, HIDDEN_LEVEL } from "../view-input.ts";
 import { sampleWaterSurface } from "../water/water-surface.ts";
@@ -133,10 +130,9 @@ function createCrossingMaterial(textures: TerrainTextures, mirror: WorldMirror):
       .add(ground);
   })();
 
-  const last = grid.cellsPerSide - 1;
-  const cell = clamp(placement.xz.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
+  const cell = cellAtNode(grid, placement.xz);
 
-  const snow = varying(smoothstep(0.1, 0.45, textureLoad(textures.surface, ivec2(cell)).r), "crossingSnow");
+  const snow = varying(smoothstep(0.1, 0.45, textureLoad(textures.surface, cell).r), "crossingSnow");
   const base = varying(slotColorTable().element(slot).mul(shade).mul(look.y), "crossingColor");
 
   const belowWater = look.x.sub(positionWorld.y);

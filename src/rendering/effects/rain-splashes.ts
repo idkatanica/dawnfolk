@@ -5,9 +5,7 @@ import {
   clamp,
   distance,
   float,
-  floor,
   fwidth,
-  ivec2,
   length,
   max,
   mix,
@@ -35,7 +33,7 @@ import {
 } from "three/webgpu";
 import { clamp as clampNumber, saturate } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
-import { sampleHeightNode } from "../terrain/height-sampling.ts";
+import { cellAtNode, sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import type { CameraAxes } from "./billboards.ts";
 import { CYCLES, cycleOf, LatticeCover, latticeElement } from "./precipitation-lattice.ts";
@@ -142,13 +140,12 @@ export class RainSplashes {
   constructor(axes: CameraAxes, textures: TerrainTextures, grid: WorldGrid) {
     const material = new MeshBasicNodeMaterial({ depthWrite: false, side: DoubleSide, transparent: true });
     const corner = attribute("splashCorner", "vec2");
-    const last = grid.cellsPerSide - 1;
 
     const element = latticeElement(this.#cover, uint(SALT_SPLASH));
     const { age, spread } = cycleOf(element, this.#clock, CYCLE_SALTS);
     const spot = element.tile.add(spread).mul(TILE_SIZE);
 
-    const cell = ivec2(clamp(floor(spot.add(grid.halfSize).div(grid.cellSize)), vec2(0, 0), vec2(last, last)));
+    const cell = cellAtNode(grid, spot);
     const ground = sampleHeightNode(textures.height, grid, spot);
     const water = textureLoad(textures.water, cell).x;
     const snow = textureLoad(textures.surface, cell).r;
