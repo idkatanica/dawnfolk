@@ -194,13 +194,9 @@ export class NavigationGrid {
       const row = grid.rowOf(cell);
 
       for (const offset of NEIGHBOR_OFFSETS) {
-        if (!grid.contains(column + offset.column, row + offset.row)) {
-          continue;
-        }
+        const neighbor = grid.neighborIndex(column, row, offset);
 
-        const neighbor = grid.index(column + offset.column, row + offset.row);
-
-        if (steps[neighbor] === NO_SHORE) {
+        if (neighbor >= 0 && steps[neighbor] === NO_SHORE) {
           steps[neighbor] = steps[cell] + 1;
           this.#leadsToSteepShore[neighbor] = leadsToSteepShore;
           queue[length] = neighbor;
@@ -217,10 +213,9 @@ export class NavigationGrid {
     const row = grid.rowOf(cell);
 
     for (const offset of NEIGHBOR_OFFSETS) {
-      if (
-        grid.contains(column + offset.column, row + offset.row) &&
-        isShore(grid.index(column + offset.column, row + offset.row))
-      ) {
+      const neighbor = grid.neighborIndex(column, row, offset);
+
+      if (neighbor >= 0 && isShore(neighbor)) {
         return true;
       }
     }
@@ -241,13 +236,9 @@ export class NavigationGrid {
     let nearestDistance = Number.POSITIVE_INFINITY;
 
     for (const offset of NEIGHBOR_OFFSETS) {
-      if (!grid.contains(column + offset.column, row + offset.row)) {
-        continue;
-      }
+      const neighbor = grid.neighborIndex(column, row, offset);
 
-      const neighbor = grid.index(column + offset.column, row + offset.row);
-
-      if (!this.#isStepAshore(neighbor, closer, this.#leadsToSteepShore[cell] === 1)) {
+      if (neighbor < 0 || !this.#isStepAshore(neighbor, closer, this.#leadsToSteepShore[cell] === 1)) {
         continue;
       }
 

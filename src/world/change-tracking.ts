@@ -48,14 +48,7 @@ export function regionOfCells(grid: WorldGrid, cells: Iterable<number>, margin: 
     lastRow = Math.max(lastRow, row);
   }
 
-  const lastIndex = grid.cellsPerSide - 1;
-
-  return {
-    firstColumn: Math.max(0, firstColumn - margin),
-    firstRow: Math.max(0, firstRow - margin),
-    lastColumn: Math.min(lastIndex, lastColumn + margin),
-    lastRow: Math.min(lastIndex, lastRow + margin),
-  };
+  return grownRegion({ firstColumn, firstRow, lastColumn, lastRow }, margin, grid.cellsPerSide);
 }
 
 export class RowChangeTracker {

@@ -7,7 +7,7 @@ export interface SampledTerrain {
   readonly waterSurface: Float32Array;
 }
 
-export interface CellLookup {
+interface CellLookup {
   amountX: number;
   amountZ: number;
   column: number;
@@ -16,18 +16,18 @@ export interface CellLookup {
 
 const lookup: CellLookup = { amountX: 0, amountZ: 0, column: 0, row: 0 };
 
-export function lookUpCell(grid: WorldGrid, x: number, z: number, into: CellLookup): CellLookup {
+export function lookUpCell(grid: WorldGrid, x: number, z: number): CellLookup {
   const { cellsPerSide, cellSize, halfSize } = grid;
 
   const gridX = clamp((x + halfSize) / cellSize - 0.5, 0, cellsPerSide - 1.001);
   const gridZ = clamp((z + halfSize) / cellSize - 0.5, 0, cellsPerSide - 1.001);
 
-  into.column = Math.floor(gridX);
-  into.row = Math.floor(gridZ);
-  into.amountX = gridX - into.column;
-  into.amountZ = gridZ - into.row;
+  lookup.column = Math.floor(gridX);
+  lookup.row = Math.floor(gridZ);
+  lookup.amountX = gridX - lookup.column;
+  lookup.amountZ = gridZ - lookup.row;
 
-  return into;
+  return lookup;
 }
 
 export function sampleCells(
@@ -38,7 +38,7 @@ export function sampleCells(
   stride: number,
   channel: number
 ): number {
-  const { amountX, amountZ, column, row } = lookUpCell(grid, x, z, lookup);
+  const { amountX, amountZ, column, row } = lookUpCell(grid, x, z);
 
   const first = grid.index(column, row) * stride + channel;
   const below = first + grid.cellsPerSide * stride;
@@ -75,7 +75,7 @@ export function sampleWaterLevel(terrain: SampledTerrain, grid: WorldGrid, x: nu
     return NO_WATER;
   }
 
-  const { amountX, amountZ, column, row } = lookUpCell(grid, x, z, lookup);
+  const { amountX, amountZ, column, row } = lookUpCell(grid, x, z);
 
   const cell = grid.index(column, row);
   const below = cell + grid.cellsPerSide;

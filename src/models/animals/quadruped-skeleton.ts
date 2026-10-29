@@ -87,8 +87,7 @@ function legDefinitions(frame: QuadrupedFrame, end: LegEnd, side: Side): BoneDef
   const bones = legBones(end, side);
   const joints = end === "front" ? frame.frontLeg : frame.hindLeg;
   const parent = end === "front" ? QuadrupedBone.Chest : QuadrupedBone.Pelvis;
-  const sideLabel = sideName(side);
-  const name = `${end}${sideLabel.charAt(0).toUpperCase()}${sideLabel.slice(1)}`;
+  const name = `${end}${side === 1 ? "Left" : "Right"}`;
 
   return [
     { joint: onSide(joints[0], side), name: `upper${name}`, order: "limb", parent },
