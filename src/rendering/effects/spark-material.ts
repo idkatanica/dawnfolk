@@ -14,6 +14,7 @@ export function createSparkMaterial(axes: CameraAxes, look: SmokeLook): MeshBasi
   const material = new MeshBasicNodeMaterial({ depthWrite: false, transparent: true });
 
   blendAsGlow(material);
+
   const { corner, look: spark, placement } = billboardNodes();
 
   const seed = spark.x;

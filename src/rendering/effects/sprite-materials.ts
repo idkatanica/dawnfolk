@@ -7,6 +7,7 @@ export function createGlowMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
   const material = new MeshBasicNodeMaterial({ depthWrite: false, transparent: true });
 
   blendAsGlow(material);
+
   const { corner, look, placement } = billboardNodes();
 
   material.positionNode = facingBillboard(axes, placement.xyz, corner, placement.w);

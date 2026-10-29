@@ -79,6 +79,7 @@ function createRibbonMaterial(brightnesses: PerObjectValues): MeshBasicNodeMater
   const material = new MeshBasicNodeMaterial({ depthWrite: false, transparent: true });
 
   blendAsGlow(material);
+
   const brightness = uniform(1).onObjectUpdate(({ object }) => brightnesses.read(object));
   const tangent = attribute("ribbonTangent", "vec3");
   const side = attribute("ribbonSide", "float");
