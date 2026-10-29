@@ -1,15 +1,10 @@
-import {
-  Frustum,
-  Matrix4,
-  type PerspectiveCamera,
-  Scene,
-  Vector2,
-  type Vector3,
-  type WebGPURenderer,
-} from "three/webgpu";
+import { Frustum, Matrix4, type PerspectiveCamera, Scene, Vector2, Vector3, type WebGPURenderer } from "three/webgpu";
 import type { WorldMirror } from "../game/world-mirror.ts";
 import { lerp } from "../shared/math.ts";
 import type { SimulationEffect } from "../simulation/effects.ts";
+import type { GrabTarget } from "../simulation/hand/grab-target.ts";
+import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../world/agent-buffers.ts";
+import { NO_PLANT } from "../world/vegetation-store.ts";
 import { AgentMarkers } from "./agents/agent-markers.ts";
 import type { AgentViewInput } from "./agents/agent-view-input.ts";
 import { AnimalView } from "./agents/animal-view.ts";
@@ -27,6 +22,7 @@ import {
   precipitationStrength,
   WeatherParticles,
 } from "./effects/weather-particles.ts";
+import { HandMotion } from "./hand-motion.ts";
 import { createRenderOutput, type RenderOutput } from "./render-output.ts";
 import type { RenderQuality } from "./render-quality.ts";
 import { BuildingView } from "./structures/building-view.ts";
@@ -52,7 +48,16 @@ const SELECTION_COLOR = 0xff_f2_c8;
 const HELD_RING_RADIUS = 2.5;
 const PLACEABLE_COLOR = 0xff_ff_ff;
 const BLOCKED_COLOR = 0xff_4a_3a;
+const HOVER_OPACITY = 0.55;
+const RING_SHARE_OF_DISTANCE = 0.02;
+const RING_WIDTH_SHARE_OF_DISTANCE = 0.004;
+const PLANT_RING_SHARE = 0.3;
 const NIGHT_MARKER_BRIGHTNESS = 0.8;
+
+const AGENT_ROWS = {
+  animal: { id: AnimalField.Id, ringRadius: 2.2, stride: ANIMAL_STRIDE, x: AnimalField.X, z: AnimalField.Z },
+  person: { id: PersonField.Id, ringRadius: 1.4, stride: PERSON_STRIDE, x: PersonField.X, z: PersonField.Z },
+} as const;
 
 const SELECTION_RADIUS: Readonly<Record<"animal" | "building" | "cell" | "person", number>> = {
   animal: 2.6,
@@ -95,7 +100,9 @@ export class WorldRenderer {
   readonly #fireGlow: FireGlow;
   readonly #frustum = new Frustum();
   readonly #grass: GrassField;
+  readonly #hand = new HandMotion();
   readonly #heldRing: GroundRing;
+  readonly #ringCenter = new Vector3();
   readonly #islandBase: IslandBase;
   readonly #lilies: LilyPads;
   readonly #markers: AgentMarkers;
@@ -118,6 +125,7 @@ export class WorldRenderer {
   readonly #water: WaterView;
   readonly #waterfalls = new WaterfallView();
   readonly #weather: WeatherParticles;
+  #highlighted: GrabTarget | null = null;
 
   constructor({ camera, mirror, onShake, quality, renderer }: WorldRendererOptions) {
     this.#mirror = mirror;
@@ -197,6 +205,10 @@ export class WorldRenderer {
     );
 
     this.#output = createRenderOutput(renderer, this.scene, camera, quality);
+  }
+
+  highlight(target: GrabTarget | null): void {
+    this.#highlighted = target;
   }
 
   setOutlinesShown(areShown: boolean): void {
@@ -286,7 +298,9 @@ export class WorldRenderer {
     this.#terrain.update(view.camera, this.#frustum, this.#quality.terrainDetail);
     this.#textures.followPatchLevels(this.#terrain.patchLevels);
     this.#water.update(view.camera, this.#frustum, this.#quality.terrainDetail, this.#terrain.patchLevels);
-    this.#vegetation.hold(frame.held);
+    this.#hand.update(frame.held, view.realSeconds);
+    this.#vegetation.hold(this.#hand);
+    this.#vegetation.highlightPlant(this.#highlightedPlant());
     this.#vegetation.update(
       view.camera,
       this.#frustum,
@@ -300,7 +314,7 @@ export class WorldRenderer {
     this.#lilies.update(frame.calendar.season);
     this.#updateAgents(view, gameSeconds);
     this.#markSelection();
-    this.#markHeld();
+    this.#markHeld(view.camera);
     this.#updateEffects(view, gameSeconds, form, rainfall, { metersPerSecond, windX, windZ });
     this.#output.render();
   }
@@ -359,6 +373,8 @@ export class WorldRenderer {
       detail: this.#quality.agentDetail,
       frustum: this.#frustum,
       gameSeconds,
+      hand: this.#hand,
+      highlighted: this.#hoverTarget(),
       markers: this.#markers,
       mirror,
       realSeconds: view.realSeconds,
@@ -438,19 +454,89 @@ export class WorldRenderer {
     this.#selectionRing.show(inspection.x, inspection.z, SELECTION_RADIUS[inspection.kind], SELECTION_COLOR, 0.9);
   }
 
-  #markHeld(): void {
+  #hoverTarget(): GrabTarget | null {
+    if (this.#mirror.frame.held !== null) {
+      return null;
+    }
+
+    return this.#highlighted;
+  }
+
+  #highlightedPlant(): number {
+    const target = this.#hoverTarget();
+
+    if (target === null || target.kind !== "plant") {
+      return NO_PLANT;
+    }
+
+    return target.id;
+  }
+
+  #markHeld(camera: PerspectiveCamera): void {
     const mirror = this.#mirror;
     const { held } = mirror.frame;
 
     if (held === null) {
-      this.#heldRing.hide();
+      this.#markHover(camera);
 
       return;
     }
 
     const color = held.isPlaceable ? PLACEABLE_COLOR : BLOCKED_COLOR;
-    const floor = mirror.isWaterAt(held.x, held.z) ? mirror.surfaceAt(held.x, held.z) : NO_FLOOR;
 
-    this.#heldRing.show(held.x, held.z, HELD_RING_RADIUS, color, 0.95, floor);
+    this.#showRing(held.x, held.z, HELD_RING_RADIUS, color, 0.95, camera);
+  }
+
+  #markHover(camera: PerspectiveCamera): void {
+    const target = this.#hoverTarget();
+    const spot = target === null ? null : this.#spotOf(target);
+
+    if (spot === null) {
+      this.#heldRing.hide();
+
+      return;
+    }
+
+    this.#showRing(spot.x, spot.z, spot.radius, PLACEABLE_COLOR, HOVER_OPACITY, camera);
+  }
+
+  #spotOf(target: GrabTarget): { radius: number; x: number; z: number } | null {
+    const { frame, vegetation } = this.#mirror;
+
+    if (target.kind === "plant") {
+      const radius = Math.max(HELD_RING_RADIUS, vegetation.height[target.id] * PLANT_RING_SHARE);
+
+      return { radius, x: vegetation.x[target.id], z: vegetation.z[target.id] };
+    }
+
+    const agents = AGENT_ROWS[target.kind];
+    const data = target.kind === "person" ? frame.people : frame.animals;
+    const count = target.kind === "person" ? frame.personCount : frame.animalCount;
+
+    for (let agent = 0; agent < count; agent += 1) {
+      const offset = agent * agents.stride;
+
+      if (data[offset + agents.id] === target.id) {
+        return { radius: agents.ringRadius, x: data[offset + agents.x], z: data[offset + agents.z] };
+      }
+    }
+
+    return null;
+  }
+
+  #showRing(x: number, z: number, radius: number, color: number, opacity: number, camera: PerspectiveCamera): void {
+    const mirror = this.#mirror;
+
+    const distance = camera.position.distanceTo(this.#ringCenter.set(x, mirror.heightAt(x, z), z));
+    const shownRadius = Math.max(radius, distance * RING_SHARE_OF_DISTANCE);
+    const width = distance * RING_WIDTH_SHARE_OF_DISTANCE;
+
+    this.#heldRing.show(x, z, shownRadius, color, opacity, this.#floorAt(x, z), width);
+  }
+
+  #floorAt(x: number, z: number): number {
+    const mirror = this.#mirror;
+
+    return mirror.isWaterAt(x, z) ? mirror.surfaceAt(x, z) : NO_FLOOR;
   }
 }

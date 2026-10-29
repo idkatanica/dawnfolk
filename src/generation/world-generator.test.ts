@@ -21,6 +21,7 @@ import {
 import { NEIGHBOR_OFFSETS, WorldGrid } from "../world/world-grid.ts";
 import { DEFAULT_GENERATION_OPTIONS, type GenerationProgress, type IslandSketch } from "./generation-options.ts";
 import { pondShoreReach } from "./ponds.ts";
+import { SOURCE_REACH } from "./river-spacing.ts";
 import { type GeneratedWorld, generateWorld } from "./world-generator.ts";
 
 const TEST_DIMENSIONS = { cellSize: 40, cellsPerSide: 128 };
@@ -31,6 +32,9 @@ const CLIFF = Math.tan((55 * Math.PI) / 180);
 const SMALLEST_RIVER_GAP = 35;
 const CONFLUENCE_REACH = 100;
 const JUNCTION_CELLS = 1.5;
+const TRUNK_LAKE_CELLS = 1.5;
+const SMOOTHING_SLACK = 10;
+const LAKE_REACH = 20;
 const RIVER_SAMPLE_STEP = 5;
 const STRAIGHT_RUN = 150;
 const STRAIGHT_DEVIATION = 3;
@@ -468,6 +472,16 @@ function isFedByLake(generated: GeneratedWorld, grid: WorldGrid, river: River): 
   });
 }
 
+function isTrunkFedByLake(generated: GeneratedWorld, grid: WorldGrid, river: River): boolean {
+  const [head] = riverPathCells(grid, river);
+
+  return grid
+    .cellsInRadius(grid.cellCenterX(head), grid.cellCenterZ(head), grid.cellSize * TRUNK_LAKE_CELLS)
+    .some((cell) => {
+      return isLakeWater(generated.terrain, cell);
+    });
+}
+
 function pondsOf(generated: GeneratedWorld): Spring[] {
   return generated.water.springs.filter((spring) => {
     return spring.kind === "pond";
@@ -793,6 +807,80 @@ function straightRiverShare(generated: GeneratedWorld): number {
   }, 0);
 
   return straight / total;
+}
+
+function alongToNearest(river: River, target: RiverPoint): { along: number; distance: number } {
+  let along = 0;
+  let best = { along: 0, distance: Number.POSITIVE_INFINITY };
+
+  for (const [index, point] of river.points.entries()) {
+    const previous = river.points[Math.max(0, index - 1)];
+
+    along += Math.hypot(point.x - previous.x, point.z - previous.z);
+
+    const distance = Math.hypot(point.x - target.x, point.z - target.z);
+
+    if (distance < best.distance) {
+      best = { along, distance };
+    }
+  }
+
+  return best;
+}
+
+function joinsNearSources(generated: GeneratedWorld): string[] {
+  const { cellSize } = generated.dimensions;
+  const { rivers } = generated.water;
+
+  const grid = new WorldGrid(generated.dimensions);
+  const trunks = rivers.filter((river) => {
+    return !isTrunkFedByLake(generated, grid, river);
+  });
+  const faults: string[] = [];
+
+  for (const tributary of rivers) {
+    const end = riverEnd(tributary);
+
+    for (const main of trunks) {
+      if (main === tributary) {
+        continue;
+      }
+
+      const nearest = alongToNearest(main, end);
+
+      if (nearest.distance < cellSize * JUNCTION_CELLS && nearest.along < SOURCE_REACH - SMOOTHING_SLACK) {
+        faults.push(`river ${tributary.id} joins river ${main.id} ${Math.round(nearest.along)} m below its source`);
+      }
+    }
+  }
+
+  return faults;
+}
+
+function endsAwayFromWater(generated: GeneratedWorld): string[] {
+  const { cellSize } = generated.dimensions;
+  const { rivers } = generated.water;
+
+  const grid = new WorldGrid(generated.dimensions);
+
+  return rivers
+    .filter((river) => {
+      const end = riverEnd(river);
+
+      const joins = rivers.some((other) => {
+        return other !== river && joinsRiver(river, other, cellSize * JUNCTION_CELLS);
+      });
+      const reachesLake = grid.cellsInRadius(end.x, end.z, LAKE_REACH).some((cell) => {
+        return isLakeWater(generated.terrain, cell);
+      });
+
+      return !(river.reachesEdge || joins || reachesLake);
+    })
+    .map((river) => {
+      const end = riverEnd(river);
+
+      return `river ${river.id} ends at ${Math.round(end.x)}, ${Math.round(end.z)}`;
+    });
 }
 
 function distanceToWaterfall(generated: GeneratedWorld, grid: WorldGrid, cell: number): number {
@@ -1385,5 +1473,30 @@ describe("full-size island rim", () => {
 
     expect(shareAbove(slopes, STEEP)).toBeLessThan(0.03);
     expect(shareAbove(slopes, CLIFF)).toBeLessThan(0.0005);
+  });
+});
+
+describe("full-size river joins", () => {
+  let worlds: GeneratedWorld[];
+
+  beforeAll(() => {
+    worlds = [
+      generateWorld(10),
+      generateWorld(11),
+      generateWorld(3, { ...DEFAULT_GENERATION_OPTIONS, shape: "square" }),
+      generateWorld(8, { ...DEFAULT_GENERATION_OPTIONS, shape: "square" }),
+    ];
+  }, 60_000);
+
+  it("joins no river into another just below its cave or pond on several seeds and both shapes", () => {
+    for (const generated of worlds) {
+      expect(joinsNearSources(generated)).toEqual([]);
+    }
+  });
+
+  it("ends every river in water: past the coast, in a lake or in another river", () => {
+    for (const generated of worlds) {
+      expect(endsAwayFromWater(generated)).toEqual([]);
+    }
   });
 });

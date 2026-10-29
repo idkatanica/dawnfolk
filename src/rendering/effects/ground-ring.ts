@@ -76,11 +76,11 @@ export class GroundRing {
     this.mesh.visible = false;
   }
 
-  show(x: number, z: number, radius: number, color: number, opacity: number, floor = NO_FLOOR): void {
+  show(x: number, z: number, radius: number, color: number, opacity: number, floor = NO_FLOOR, width = 0): void {
     this.#center.value.set(x, z);
     this.#floor.value = floor;
     this.#radius.value = radius;
-    this.#width.value = Math.max(0.35, radius * 0.045);
+    this.#width.value = Math.max(0.35, radius * 0.045, width);
     this.#color.value.setHex(color);
     this.#opacity.value = opacity;
     this.mesh.visible = true;

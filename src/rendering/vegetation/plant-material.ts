@@ -1,6 +1,7 @@
 import {
   abs,
   attribute,
+  distance,
   dot,
   Fn,
   float,
@@ -20,12 +21,13 @@ import {
   vec2,
   vec3,
 } from "three/tsl";
-import { Color, MeshStandardNodeMaterial, type Node, Vector2 } from "three/webgpu";
+import { Color, MeshStandardNodeMaterial, type Node, type UniformNode, Vector2, type Vector3 } from "three/webgpu";
 import { MaterialSlot } from "../../models/materials.ts";
 import { BERRY_PART } from "../../models/plants/berries.ts";
 import { clamp as clampNumber } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
+import { highlightGlow } from "../highlight.ts";
 import { rotateAroundUp, SNOW_COLOR, slotColorTable, snowCoverNode } from "../node-helpers.ts";
 import { markOutlined } from "../outlines.ts";
 import { cellAtNode, coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
@@ -42,6 +44,8 @@ const CROWN_BURN_SHRINK = 0.6;
 const TIER_BURN_SHRINK = 0.85;
 const CROWN_LEFT_FLOOR = 0.06;
 const STRICTLY_ABOVE = 0.0001;
+const HIGHLIGHT_MATCH = 0.05;
+const PLANT_HIGHLIGHT_SHARE = 0.55;
 const FALLEN_TILT = Math.PI / 2 - 0.06;
 const FALLEN_CHARRING = 0.85;
 
@@ -54,6 +58,7 @@ interface PlantMaterialOptions {
   readonly crown: CrownShape;
   readonly glow: FireGlow;
   readonly grid: WorldGrid;
+  readonly highlight: UniformNode<"vec3", Vector3>;
   readonly isFlammable: boolean;
   readonly look: SpeciesLook;
   readonly textures: TerrainTextures;
@@ -104,6 +109,7 @@ export function createPlantMaterial({
   crown,
   glow,
   grid,
+  highlight,
   isFlammable,
   look,
   textures,
@@ -202,7 +208,16 @@ export function createPlantMaterial({
   const burning = burnGlow({ embers, flames, phase: placement.x.mul(0.37).fract().mul(6), smolder });
 
   material.colorNode = mix(vertexColor, SNOW_COLOR, snowOnTop);
-  material.emissiveNode = vertexColor.mul(fireLight).mul(CROWN_FIRE_LIGHT).add(burning);
+  const highlighted = float(1)
+    .sub(step(HIGHLIGHT_MATCH, distance(placement.xz, highlight.xy)))
+    .mul(highlight.z)
+    .mul(PLANT_HIGHLIGHT_SHARE);
+
+  material.emissiveNode = vertexColor
+    .mul(fireLight)
+    .mul(CROWN_FIRE_LIGHT)
+    .add(burning)
+    .add(highlightGlow(varying(highlighted, "plantHighlight")));
   material.roughnessNode = float(0.88);
 
   markOutlined(material);

@@ -5,6 +5,7 @@ import { type QualityLevel, RENDER_QUALITY } from "../rendering/render-quality.t
 import { WorldRenderer } from "../rendering/world-renderer.ts";
 import { clamp } from "../shared/math.ts";
 import type { ChronicleEntry } from "../simulation/chronicle.ts";
+import type { SimulationFrame } from "../simulation/frame.ts";
 import type { GrabTarget } from "../simulation/hand/grab-target.ts";
 import type { SavedWorldState } from "../simulation/saved-world.ts";
 import { type CameraState, GodCamera, type GroundPoint } from "./camera/god-camera.ts";
@@ -19,7 +20,8 @@ import { type LabelPlacement, LabelProjector } from "./label-projector.ts";
 import type { Landmark } from "./landmarks.ts";
 import { ResolutionGovernor } from "./resolution-governor.ts";
 import { type SimulationConnection, WorkerSimulationConnection } from "./simulation-connection.ts";
-import { HandTool } from "./tools/hand-tool.ts";
+import { showHandCursor } from "./tools/hand-cursor.ts";
+import { type HandCursor, HandTool } from "./tools/hand-tool.ts";
 import { type PowerSelection, PowerTool } from "./tools/power-tool.ts";
 
 const LONGEST_FRAME_SECONDS = 0.1;
@@ -91,6 +93,8 @@ export class GameEngine implements EngineHandle {
   readonly #resolution: ResolutionGovernor;
   readonly #world: WorldRenderer;
   #devicePixelRatio = 0;
+  #handCursor: HandCursor = "none";
+  #hoveredFrame: SimulationFrame | null = null;
   #reportedFocusX = Number.NaN;
   #reportedFocusZ = Number.NaN;
   #viewport: ViewportSize = { height: 1, width: 1 };
@@ -290,6 +294,9 @@ export class GameEngine implements EngineHandle {
     this.session.update(realSeconds);
     this.#keyboard.update(realSeconds);
     this.camera.update(realSeconds);
+    this.#rehoverOnNewFrame();
+    this.#pointer.update();
+    this.#showHand();
 
     this.#world.render({
       camera: this.camera.camera,
@@ -306,6 +313,26 @@ export class GameEngine implements EngineHandle {
 
     this.#noticeCameraMotion(time);
     this.#reportViewFocus();
+  }
+
+  #rehoverOnNewFrame(): void {
+    const { frame } = this.session;
+
+    if (frame !== this.#hoveredFrame) {
+      this.#hoveredFrame = frame;
+      this.#pointer.rehover();
+    }
+  }
+
+  #showHand(): void {
+    const cursor = this.hand.cursor(this.session.frame.held);
+
+    this.#world.highlight(this.hand.hovered);
+
+    if (cursor !== this.#handCursor) {
+      this.#handCursor = cursor;
+      showHandCursor(this.#canvas, cursor);
+    }
   }
 
   #noticeCameraMotion(time: number): void {

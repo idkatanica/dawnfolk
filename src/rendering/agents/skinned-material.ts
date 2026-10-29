@@ -11,6 +11,7 @@ import {
   normalLocal,
   positionLocal,
   select,
+  step,
   uniformArray,
   varying,
   vec3,
@@ -18,6 +19,7 @@ import {
 } from "three/tsl";
 import { MeshStandardNodeMaterial, type Node } from "three/webgpu";
 import { SLOT_COLOR_TABLE } from "../../models/materials.ts";
+import { highlightGlow } from "../highlight.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
 import { markOutlined } from "../outlines.ts";
 import type { AgentPalette } from "./agent-palette.ts";
@@ -31,7 +33,8 @@ function skin(rows: BoneRows, vector: Node<"vec4">): Node<"vec3"> {
 
 export function createSkinnedMaterial(palette: AgentPalette, layout: PaletteLayout): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial();
-  const row = int(attribute("agentRow", "float"));
+  const rowNumber = attribute("agentRow", "float");
+  const row = int(rowNumber);
   const boneA = int(attribute("boneA", "float").add(0.5));
   const boneB = int(attribute("boneB", "float").add(0.5));
   const weight = attribute("boneWeight", "float");
@@ -80,6 +83,9 @@ export function createSkinnedMaterial(palette: AgentPalette, layout: PaletteLayo
   const color = select(colorIndex.greaterThanEqual(0), paletteColor, slotColors.element(slot));
 
   material.colorNode = varying(color.mul(shade), "agentColor");
+  material.emissiveNode = highlightGlow(
+    varying(float(1).sub(step(0.5, rowNumber.sub(palette.highlightRow).abs())), "agentHighlight")
+  );
   material.roughnessNode = float(0.82);
 
   markOutlined(material);

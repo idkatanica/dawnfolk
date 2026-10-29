@@ -1,12 +1,15 @@
-import { texture } from "three/tsl";
+import { texture, uniform } from "three/tsl";
 import { type Color, type DataTexture, RGBAFormat, type TextureNode } from "three/webgpu";
 import { floatDataTexture } from "../data-textures.ts";
 import { colorTexel, type PaletteLayout, paletteWidth, rootTexel, TEXELS_PER_BONE } from "./palette-layout.ts";
+
+export const NO_ROW = -1;
 
 const CHANNELS = 4;
 const INITIAL_ROWS = 32;
 
 export class AgentPalette {
+  readonly highlightRow = uniform(NO_ROW);
   readonly node: TextureNode;
   readonly #layout: PaletteLayout;
   readonly #rootTexel: number;
@@ -68,25 +71,15 @@ export class AgentPalette {
   }
 
   lean(row: number, angle: number): void {
-    if (angle === 0) {
-      return;
-    }
+    this.#turn(row, 1, 2, angle);
+  }
 
-    const cosine = Math.cos(angle);
-    const sine = Math.sin(angle);
+  tiltToward(row: number, heading: number, towardX: number, towardZ: number): void {
+    const cosine = Math.cos(heading);
+    const sine = Math.sin(heading);
 
-    for (let bone = 0; bone < this.#layout.boneCount; bone += 1) {
-      const up = this.#texelOffset(row, bone * TEXELS_PER_BONE + 1);
-      const forward = up + CHANNELS;
-
-      for (let channel = 0; channel < CHANNELS; channel += 1) {
-        const upValue = this.#data[up + channel];
-        const forwardValue = this.#data[forward + channel];
-
-        this.#data[up + channel] = cosine * upValue + sine * forwardValue;
-        this.#data[forward + channel] = cosine * forwardValue - sine * upValue;
-      }
-    }
+    this.#turn(row, 1, 2, -(towardX * sine + towardZ * cosine));
+    this.#turn(row, 1, 0, -(towardX * cosine - towardZ * sine));
   }
 
   writeColor(row: number, index: number, color: Color): void {
@@ -107,6 +100,28 @@ export class AgentPalette {
 
   dispose(): void {
     this.#texture.dispose();
+  }
+
+  #turn(row: number, firstAxis: number, secondAxis: number, angle: number): void {
+    if (angle === 0) {
+      return;
+    }
+
+    const cosine = Math.cos(angle);
+    const sine = Math.sin(angle);
+
+    for (let bone = 0; bone < this.#layout.boneCount; bone += 1) {
+      const first = this.#texelOffset(row, bone * TEXELS_PER_BONE + firstAxis);
+      const second = this.#texelOffset(row, bone * TEXELS_PER_BONE + secondAxis);
+
+      for (let channel = 0; channel < CHANNELS; channel += 1) {
+        const firstValue = this.#data[first + channel];
+        const secondValue = this.#data[second + channel];
+
+        this.#data[first + channel] = cosine * firstValue + sine * secondValue;
+        this.#data[second + channel] = cosine * secondValue - sine * firstValue;
+      }
+    }
   }
 
   #texelOffset(row: number, texel: number): number {

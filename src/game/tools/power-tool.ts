@@ -50,6 +50,7 @@ function cursorRadius(selection: PowerSelection): number {
 }
 
 export class PowerTool implements ToolGestures {
+  readonly canHoldThroughPinch = false;
   readonly #cursor: BrushCursor;
   readonly #send: CommandSink;
   #selection: PowerSelection | null = null;
