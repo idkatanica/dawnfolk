@@ -14,10 +14,8 @@ const DATABASE_NAME = "dawnfolk";
 const DATABASE_VERSION = 1;
 const WORLDS = "worlds";
 const STATES = "states";
-const RIVERS_REWORKED_AT = Date.UTC(2026, 9, 29, 11, 19, 21);
 
 const listingSchema = z.object({
-  generationFingerprint: z.number().nullable().catch(null),
   id: z.string(),
   isLandChanged: z.boolean().catch(false),
   name: z.string().catch("Unnamed world"),
@@ -175,12 +173,10 @@ function readListing(value: unknown): SavedWorldListing | null {
     return null;
   }
 
-  const { generationFingerprint, id, isLandChanged, name, savedAt, seed, shape, summary, version } = result.data;
-
-  const isBeforeRiverRework = generationFingerprint === null && savedAt < RIVERS_REWORKED_AT;
+  const { id, isLandChanged, name, savedAt, seed, shape, summary, version } = result.data;
 
   return {
-    hasLandChanged: isLandChanged || isBeforeRiverRework,
+    hasLandChanged: isLandChanged,
     id,
     isLoadable: version === SAVE_VERSION && summary !== null,
     name,

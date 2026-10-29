@@ -1,86 +1,52 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-react";
-import { useEngineStore } from "../../app/engine-store.ts";
 import { useLaunchStore } from "../../app/launch-store.ts";
-import { GameSession } from "../../game/game-session.ts";
-import { LocalSimulationConnection } from "../../game/testing/local-session.ts";
-import { DEFAULT_WORLD_REQUEST } from "../../generation/generation-options.ts";
-import { ignore } from "../../shared/ignore.ts";
-import { Simulation } from "../../simulation/simulation.ts";
-import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
-import { createSimulationWorkerApi } from "../../workers/simulation-worker-api.ts";
-import { startTestEngine } from "../testing/engine-fixtures.ts";
+import { SAVE_VERSION } from "../../simulation/saved-world.ts";
+import { CHANGED_HEIGHT, startLoadedWorld, UNCHANGED_HEIGHT } from "../testing/land-change-fixtures.ts";
 import { LandChangedDialog } from "./land-changed-dialog.tsx";
+import { deleteSavedWorld, listSavedWorlds, writeSavedWorld } from "./save-database.ts";
 import { useSavesStore } from "./saves-store.ts";
 
-const TEST_DIMENSIONS = { cellSize: 10, cellsPerSide: 64 };
-
 const initialSaves = useSavesStore.getState();
+const initialLaunch = useLaunchStore.getState();
 
-function islandAt(height: number): Simulation {
-  return new Simulation(
-    createVegetatedWorld({
-      dimensions: TEST_DIMENSIONS,
-      heightAt: () => {
-        return height;
-      },
-    })
-  );
+interface ShownWorldOptions {
+  readonly isSavedPaused?: boolean;
 }
 
-function loadedSession(regrownHeight: number): Promise<GameSession> {
-  const api = createSimulationWorkerApi(() => {
-    return islandAt(100);
-  });
-
-  api.createWorld(DEFAULT_WORLD_REQUEST, ignore);
-
-  const saved = api.saveWorld();
-
-  if (saved === null) {
-    throw new Error("The test world was busy");
-  }
-
-  const connection = new LocalSimulationConnection(
-    createSimulationWorkerApi(
-      () => {
-        return islandAt(regrownHeight);
-      },
-      () => {
-        return islandAt(regrownHeight);
-      }
-    )
-  );
-
-  return GameSession.load(connection, saved);
-}
-
-async function showLoadedWorld(regrownHeight: number) {
-  const { engine } = await startTestEngine();
-  const session = await loadedSession(regrownHeight);
+async function showLoadedWorld(regrownHeight: number, { isSavedPaused = false }: ShownWorldOptions = {}) {
+  const { saved, session } = await startLoadedWorld({ isSavedPaused, regrownHeight });
   const send = vi.spyOn(session, "send");
 
-  useEngineStore.setState({ status: { engine: { ...engine, session }, kind: "ready" } });
   await render(<LandChangedDialog />);
 
-  return { send, session };
+  return { saved, send, session };
 }
 
-afterEach(() => {
+afterEach(async () => {
   useSavesStore.setState(initialSaves, true);
+  useLaunchStore.setState(initialLaunch, true);
+
+  const worlds = await listSavedWorlds();
+
+  await Promise.all(
+    worlds.map((world) => {
+      return deleteSavedWorld(world.id);
+    })
+  );
 });
 
 describe("the land changed dialog", () => {
   it("stays away when the land grows as it did", async () => {
-    const { send } = await showLoadedWorld(100);
+    const { send } = await showLoadedWorld(UNCHANGED_HEIGHT);
 
     expect(page.getByRole("alertdialog")).not.toBeInTheDocument();
     expect(send).not.toHaveBeenCalled();
   });
 
   it("pauses a world whose land changed and plays on when asked", async () => {
-    const { send, session } = await showLoadedWorld(140);
+    const { send, session } = await showLoadedWorld(CHANGED_HEIGHT);
 
     await expect.element(page.getByRole("alertdialog", { name: "The land has changed" })).toBeVisible();
     expect(send).toHaveBeenCalledWith({ isPaused: true, type: "setPaused" });
@@ -92,10 +58,62 @@ describe("the land changed dialog", () => {
     expect(useSavesStore.getState().acceptedLand).toBe(session);
   });
 
+  it("keeps a world paused on Play on when it was saved paused", async () => {
+    const { send, session } = await showLoadedWorld(CHANGED_HEIGHT, { isSavedPaused: true });
+
+    expect(session.frame.isPaused).toBe(true);
+
+    await page.getByRole("button", { name: "Play on" }).click();
+
+    await expect.element(page.getByRole("alertdialog")).not.toBeInTheDocument();
+    expect(send).not.toHaveBeenCalledWith({ isPaused: false, type: "setPaused" });
+  });
+
+  it("keeps a world paused on Play on when the launch asked for a pause", async () => {
+    useLaunchStore.setState({ launch: { ...initialLaunch.launch, isPaused: true } });
+
+    const { send, session } = await showLoadedWorld(CHANGED_HEIGHT);
+
+    expect(session.frame.isPaused).toBe(false);
+
+    await page.getByRole("button", { name: "Play on" }).click();
+
+    await expect.element(page.getByRole("alertdialog")).not.toBeInTheDocument();
+    expect(send).not.toHaveBeenCalledWith({ isPaused: false, type: "setPaused" });
+  });
+
+  it("marks the saved world as changed", async () => {
+    const { worldId } = useLaunchStore.getState();
+    const { saved } = await startLoadedWorld({ regrownHeight: CHANGED_HEIGHT });
+
+    await writeSavedWorld(
+      {
+        generationFingerprint: saved.generationFingerprint,
+        id: worldId,
+        isLandChanged: false,
+        name: "Old Ford",
+        savedAt: Date.now(),
+        seed: saved.request.seed,
+        shape: saved.request.options.shape,
+        summary: saved.summary,
+        version: SAVE_VERSION,
+      },
+      saved,
+      []
+    );
+    await render(<LandChangedDialog />);
+
+    await expect
+      .poll(async () => {
+        return await listSavedWorlds();
+      })
+      .toMatchObject([{ hasLandChanged: true, id: worldId }]);
+  });
+
   it("grows the same seed anew as another world", async () => {
     const { launch, worldId } = useLaunchStore.getState();
 
-    await showLoadedWorld(140);
+    await showLoadedWorld(CHANGED_HEIGHT);
     await page.getByRole("button", { name: "Grow anew" }).click();
 
     expect(useLaunchStore.getState().worldId).not.toBe(worldId);

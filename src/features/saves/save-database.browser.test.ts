@@ -165,22 +165,16 @@ describe("saved worlds", () => {
     expect(hasLandChanged).toBe(false);
   });
 
-  it("marks worlds saved without a fingerprint before the rivers changed", async () => {
+  it("leaves worlds saved without a fingerprint unmarked until loading finds the land changed", async () => {
     const state = savedState();
 
-    await writeSavedWorld(recordFor("before", state, { generationFingerprint: null, savedAt: 1000 }), state, []);
-    await writeSavedWorld(recordFor("after", state, { generationFingerprint: null }), state, []);
-    await writeSavedWorld(recordFor("fingerprinted", state, { savedAt: 1000 }), state, []);
+    await writeSavedWorld(recordFor("older", state, { generationFingerprint: null, savedAt: 1000 }), state, []);
 
-    const listed = await listSavedWorlds();
+    expect(await listSavedWorlds()).toMatchObject([{ hasLandChanged: false, id: "older" }]);
 
-    expect(
-      Object.fromEntries(
-        listed.map((world) => {
-          return [world.id, world.hasLandChanged];
-        })
-      )
-    ).toEqual({ after: false, before: true, fingerprinted: false });
+    await markLandChanged("older");
+
+    expect(await listSavedWorlds()).toMatchObject([{ hasLandChanged: true, id: "older" }]);
   });
 
   it("marks a world whose land has changed until it is saved again", async () => {
@@ -209,6 +203,6 @@ describe("saved worlds", () => {
       generationFingerprint: null,
       isLandChanged: false,
     });
-    expect(await listSavedWorlds()).toMatchObject([{ hasLandChanged: true, id: "older", isLoadable: true }]);
+    expect(await listSavedWorlds()).toMatchObject([{ hasLandChanged: false, id: "older", isLoadable: true }]);
   });
 });

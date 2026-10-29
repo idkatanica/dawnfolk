@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ignore } from "../shared/ignore.ts";
 import { PlantState } from "../world/vegetation-store.ts";
+import type { RiverPoint } from "../world/water.ts";
 import {
   hasLandChanged,
   PLANT_SPECIES_NAMES,
@@ -32,6 +33,33 @@ function loadedFrom(state: SavedWorldState, generated: Simulation): boolean {
 
 function otherIsland(): Simulation {
   return Simulation.generate(GENERATION_SEED + 1, GENERATION_OPTIONS, ignore);
+}
+
+function riverPointAt(simulation: Simulation, isOnWater: boolean): RiverPoint {
+  const { grid, terrain } = simulation.world;
+
+  for (let cell = 0; cell < grid.cellCount; cell += 1) {
+    const isWet = simulation.world.isWater(cell) || terrain.riverStrength[cell] > 0;
+
+    if (isWet === isOnWater) {
+      return { depth: 1, flow: 1, surface: 0, width: 1, x: grid.cellCenterX(cell), z: grid.cellCenterZ(cell) };
+    }
+  }
+
+  throw new Error("The test island has no such cell");
+}
+
+function warnsWithRiverPoints(wetPoints: number, dryPoints: number): boolean {
+  const simulation = generateSimulation();
+  const state = { ...savedState(simulation), generationFingerprint: null };
+
+  const wet = riverPointAt(simulation, true);
+  const dry = riverPointAt(simulation, false);
+  const points = [...new Array<RiverPoint>(wetPoints).fill(wet), ...new Array<RiverPoint>(dryPoints).fill(dry)];
+
+  simulation.world.water.rivers = [{ id: 0, points, reachesEdge: false }];
+
+  return hasLandChanged(simulation, state);
 }
 
 describe("generation fingerprints", () => {
@@ -80,6 +108,16 @@ describe("loading a world whose land grows differently now", () => {
 
     expect(state.simulation.world.water.rivers.length).toBeGreaterThan(0);
     expect(loadedFrom(state, otherIsland())).toBe(true);
+  });
+
+  it("does not judge a save without a fingerprint by fewer than 50 river points", () => {
+    expect(warnsWithRiverPoints(0, 49)).toBe(false);
+    expect(warnsWithRiverPoints(0, 50)).toBe(true);
+  });
+
+  it("warns about a save without a fingerprint when less than 90% of its river lies on water", () => {
+    expect(warnsWithRiverPoints(90, 10)).toBe(false);
+    expect(warnsWithRiverPoints(89, 11)).toBe(true);
   });
 });
 

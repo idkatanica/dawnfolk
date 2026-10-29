@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { connectGuide } from "../features/guide/connect-guide.ts";
 import { useInterfaceStore } from "../features/interface/interface-store.ts";
 import { connectPowers } from "../features/powers/connect-powers.ts";
-import { connectAutosave, useIsLandChangePending } from "../features/saves/saves-store.ts";
+import { connectAutosave, useIsLandChangePending, useSavesStore } from "../features/saves/saves-store.ts";
 import { connectWorldStore } from "../features/world/world-store.ts";
 import { rememberWorldInAddress, useLaunchStore } from "./launch-store.ts";
 import { useEngine } from "./use-engine.ts";
@@ -33,6 +33,10 @@ export function useEngineBridges(): void {
       disconnectWorld();
       disconnectPowers();
       disconnectGuide();
+
+      if (useSavesStore.getState().acceptedLand === engine.session) {
+        useSavesStore.setState({ acceptedLand: null });
+      }
     };
   }, [engine]);
 

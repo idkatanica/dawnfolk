@@ -35,10 +35,10 @@ function useLandChangedDialog() {
       return;
     }
 
-    wasPaused.current = session.frame.isPaused;
+    wasPaused.current = session.frame.isPaused || launch.isPaused;
     session.send({ isPaused: true, type: "setPaused" });
     markLandChanged(worldId).catch(ignore);
-  }, [isPending, session, worldId]);
+  }, [isPending, launch.isPaused, session, worldId]);
 
   function handlePlayOn(): void {
     if (session === null) {
