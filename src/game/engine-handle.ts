@@ -21,6 +21,7 @@ export interface EngineHandle {
   readonly placeLabel: (x: number, z: number, lift: number) => LabelPlacement | null;
   readonly selectPower: (selection: PowerSelection | null) => void;
   readonly session: GameSession;
+  readonly setOutlinesShown: (areShown: boolean) => void;
   readonly stopFollowing: () => void;
   readonly subscribeToRenders: (listener: () => void) => () => void;
 }

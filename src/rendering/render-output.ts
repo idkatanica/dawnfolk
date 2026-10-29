@@ -1,6 +1,8 @@
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
+import { fxaa } from "three/addons/tsl/display/FXAANode.js";
 import { dot, float, pass, screenUV, vec4 } from "three/tsl";
-import { type Camera, RenderPipeline, type Scene, type WebGPURenderer } from "three/webgpu";
+import { type Camera, HalfFloatType, type Node, RenderPipeline, type Scene, type WebGPURenderer } from "three/webgpu";
+import { createOutlineControls, OUTLINE_TARGET, outlinedColor, sceneTargets } from "./outlines.ts";
 import type { RenderQuality } from "./render-quality.ts";
 
 const BLOOM_STRENGTH = 0.28;
@@ -11,33 +13,28 @@ const VIGNETTE_STRENGTH = 0.38;
 export interface RenderOutput {
   readonly dispose: () => void;
   readonly render: () => void;
+  readonly setOutlinesShown: (areShown: boolean) => void;
 }
 
-function directOutput(renderer: WebGPURenderer, scene: Scene, camera: Camera): RenderOutput {
-  return {
-    dispose: () => undefined,
-    render: () => renderer.render(scene, camera),
-  };
+interface FinishedColor {
+  readonly color: Node<"vec4">;
+  readonly dispose: () => void;
 }
 
-function bloomOutput(renderer: WebGPURenderer, scene: Scene, camera: Camera): RenderOutput {
-  const scenePass = pass(scene, camera, { storeMultisampledColorBuffer: false, storeMultisampledDepthBuffer: false });
-  const sceneColor = scenePass.getTextureNode("output");
-
-  const glow = bloom(sceneColor, BLOOM_STRENGTH, BLOOM_RADIUS, BLOOM_THRESHOLD);
+function withBloom(color: Node<"vec4">): FinishedColor {
+  const glow = bloom(color, BLOOM_STRENGTH, BLOOM_RADIUS, BLOOM_THRESHOLD);
   const fromCenter = screenUV.sub(0.5);
   const vignette = float(1).sub(dot(fromCenter, fromCenter).mul(VIGNETTE_STRENGTH));
 
-  const pipeline = new RenderPipeline(renderer, vec4(sceneColor.add(glow).rgb.mul(vignette), 1));
+  return { color: vec4(color.add(glow).rgb.mul(vignette), 1), dispose: () => glow.dispose() };
+}
 
-  return {
-    dispose: () => {
-      pipeline.dispose();
-      glow.dispose();
-      scenePass.dispose();
-    },
-    render: () => pipeline.render(),
-  };
+function finish(color: Node<"vec4">, quality: RenderQuality): FinishedColor {
+  if (quality.hasBloom) {
+    return withBloom(color);
+  }
+
+  return { color, dispose: () => undefined };
 }
 
 export function createRenderOutput(
@@ -46,9 +43,32 @@ export function createRenderOutput(
   camera: Camera,
   quality: RenderQuality
 ): RenderOutput {
-  if (quality.hasBloom) {
-    return bloomOutput(renderer, scene, camera);
-  }
+  const scenePass = pass(scene, camera, { storeMultisampledColorBuffer: false, storeMultisampledDepthBuffer: false });
 
-  return directOutput(renderer, scene, camera);
+  scenePass.setMRT(sceneTargets());
+  scenePass.getTexture(OUTLINE_TARGET).type = HalfFloatType;
+
+  const outlines = createOutlineControls();
+  const surfaces = scenePass.getTextureNode(OUTLINE_TARGET);
+  const outlined = outlinedColor(scenePass.getTextureNode("output"), surfaces, outlines);
+  const finished = finish(vec4(outlined, 1), quality);
+  const smoothed = fxaa(finished.color);
+
+  const pipeline = new RenderPipeline(renderer, smoothed);
+
+  return {
+    dispose: () => {
+      pipeline.dispose();
+      smoothed.dispose();
+      finished.dispose();
+      scenePass.dispose();
+    },
+    render: () => {
+      outlines.pixelRatio.value = renderer.getPixelRatio();
+      pipeline.render();
+    },
+    setOutlinesShown: (areShown) => {
+      outlines.strength.value = areShown ? 1 : 0;
+    },
+  };
 }

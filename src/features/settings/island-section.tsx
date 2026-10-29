@@ -73,17 +73,33 @@ function QualityChoice() {
 function DisplayChoice() {
   const areLabelsShown = useInterfaceStore((state) => state.areLabelsShown);
   const setLabelsShown = useInterfaceStore((state) => state.setLabelsShown);
+  const areOutlinesShown = useInterfaceStore((state) => state.areOutlinesShown);
+  const setOutlinesShown = useInterfaceStore((state) => state.setOutlinesShown);
   const areTipsShown = useGuideStore((state) => !state.progress.isOff);
   const setTipsShown = useGuideStore((state) => state.setTipsShown);
 
   return (
-    <SettingsGroup
-      description="Tribe banners and the names of peaks and lakes over the island. Tips start again from the first one."
-      title="Display"
-    >
-      <ToggleField isChecked={areLabelsShown} label="Map labels" onChange={setLabelsShown} />
+    <SettingsGroup description="What is drawn over the island, and the tips for new players." title="Display">
+      <ToggleField
+        description="Tribe banners and the names of peaks and lakes."
+        isChecked={areLabelsShown}
+        label="Map labels"
+        onChange={setLabelsShown}
+      />
 
-      <ToggleField isChecked={areTipsShown} label="Tips" onChange={setTipsShown} />
+      <ToggleField
+        description="A dark line around people, animals, plants and buildings."
+        isChecked={areOutlinesShown}
+        label="Outlines"
+        onChange={setOutlinesShown}
+      />
+
+      <ToggleField
+        description="Tips start again from the first one."
+        isChecked={areTipsShown}
+        label="Tips"
+        onChange={setTipsShown}
+      />
     </SettingsGroup>
   );
 }
