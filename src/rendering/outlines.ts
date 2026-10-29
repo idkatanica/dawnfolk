@@ -63,11 +63,11 @@ function facingOf(surface: Node<"vec4">): Node<"float"> {
   return sqrt(max(float(1).sub(surface.x.mul(surface.x)).sub(surface.y.mul(surface.y)), 0));
 }
 
+const sceneSurface = Fn(({ material }) => (material.transparent ? vec4(0) : surfaceOf(false)));
+
 export function createOutlineControls(): OutlineControls {
   return { pixelRatio: uniform(1), strength: uniform(1) };
 }
-
-const sceneSurface = Fn(({ material }) => (material.transparent ? vec4(0) : surfaceOf(false)));
 
 export function sceneTargets(): MRTNode {
   return mrt({ [OUTLINE_TARGET]: sceneSurface(), output }).setBlendMode(
