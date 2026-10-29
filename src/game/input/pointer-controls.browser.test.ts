@@ -15,6 +15,8 @@ interface Rig {
   readonly controls: PointerControls;
   readonly tool: {
     readonly begin: ReturnType<typeof vi.fn>;
+    readonly canBegin: () => boolean;
+    readonly cancel: ReturnType<typeof vi.fn>;
     readonly end: ReturnType<typeof vi.fn>;
     readonly hover: ReturnType<typeof vi.fn>;
     readonly isActive: () => boolean;
@@ -31,7 +33,15 @@ function settle(camera: GodCamera): void {
   }
 }
 
-function createRig(): Rig {
+function isAlwaysTrue(): boolean {
+  return true;
+}
+
+function isNeverTrue(): boolean {
+  return false;
+}
+
+function createRig(canBegin: () => boolean = isAlwaysTrue): Rig {
   const canvas = document.createElement("canvas");
 
   canvas.style.cssText = `position: fixed; left: 0; top: 0; width: ${CANVAS_WIDTH}px; height: ${CANVAS_HEIGHT}px`;
@@ -44,9 +54,18 @@ function createRig(): Rig {
   camera.jumpTo({ distance: 600, targetX: 0, targetZ: 0 });
   settle(camera);
 
-  const tool = { begin: vi.fn(), end: vi.fn(), hover: vi.fn(), isActive: () => true, move: vi.fn(), tap: vi.fn() };
+  const tool = {
+    begin: vi.fn(),
+    canBegin,
+    cancel: vi.fn(),
+    end: vi.fn(),
+    hover: vi.fn(),
+    isActive: isAlwaysTrue,
+    move: vi.fn(),
+    tap: vi.fn(),
+  };
   const picker = new GroundPicker(perspective, () => 0, WORLD_HALF_SIZE);
-  const rig = { camera, canvas, controls: new PointerControls(canvas, camera, picker, tool, tool), tool };
+  const rig = { camera, canvas, controls: new PointerControls(canvas, camera, picker, [tool], tool), tool };
 
   rigs.push(rig);
 
@@ -63,6 +82,12 @@ function touch(rig: Rig, type: string, pointerId: number, x: number, y: number):
       pointerId,
       pointerType: "touch",
     })
+  );
+}
+
+function mouse(rig: Rig, type: string, x: number, y: number): void {
+  rig.canvas.dispatchEvent(
+    new PointerEvent(type, { button: 0, clientX: x, clientY: y, pointerId: 1, pointerType: "mouse" })
   );
 }
 
@@ -167,5 +192,35 @@ describe("pointer controls", () => {
     );
 
     expect(rig.tool.begin).toHaveBeenCalledTimes(1);
+  });
+
+  it("pans when the tool has nothing to take under the pointer", () => {
+    const rig = createRig(isNeverTrue);
+
+    const before = rig.camera.state.targetX;
+
+    mouse(rig, "pointerdown", 195, 420);
+
+    for (let step = 1; step <= 10; step += 1) {
+      mouse(rig, "pointermove", 195 + step * 10, 420);
+    }
+
+    mouse(rig, "pointerup", 295, 420);
+    settle(rig.camera);
+
+    expect(rig.tool.begin).not.toHaveBeenCalled();
+    expect(rig.tool.move).not.toHaveBeenCalled();
+    expect(rig.camera.state.targetX).not.toBeCloseTo(before);
+  });
+
+  it("cancels the tool rather than finishing it when the browser takes the pointer away", () => {
+    const rig = createRig();
+
+    mouse(rig, "pointerdown", 195, 420);
+    mouse(rig, "pointermove", 205, 420);
+    mouse(rig, "pointercancel", 205, 420);
+
+    expect(rig.tool.cancel).toHaveBeenCalledTimes(1);
+    expect(rig.tool.end).not.toHaveBeenCalled();
   });
 });

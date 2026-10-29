@@ -11,7 +11,9 @@ const WHEEL_ZOOM_RATE = 0.0015;
 const WHEEL_LINE_PIXELS = 16;
 
 export interface ToolGestures {
-  readonly begin: (point: Vector3) => void;
+  readonly begin: (point: Vector3, screen: ScreenPoint) => void;
+  readonly canBegin: (point: Vector3, screen: ScreenPoint) => boolean;
+  readonly cancel: () => void;
   readonly end: () => void;
   readonly hover: (point: Vector3 | null) => void;
   readonly isActive: () => boolean;
@@ -41,8 +43,8 @@ type Gesture =
   | { readonly kind: "idle" }
   | { readonly kind: "orbit" }
   | { readonly kind: "pan"; travel: number }
-  | { readonly kind: "tool" }
-  | { readonly kind: "waiting"; readonly point: Vector3 }
+  | { readonly kind: "tool"; readonly tool: ToolGestures }
+  | { readonly kind: "waiting"; readonly point: Vector3; readonly screen: ScreenPoint; readonly tool: ToolGestures }
   | { angle: number; distance: number; readonly kind: "pinch"; middleX: number; middleY: number };
 
 function wheelPixels(event: WheelEvent, pageHeight: number): number {
@@ -79,15 +81,21 @@ export class PointerControls {
   readonly #picker: GroundPicker;
   readonly #pointers = new Map<number, TrackedPointer>();
   readonly #tap: TapHandler;
-  readonly #tool: ToolGestures;
+  readonly #tools: readonly ToolGestures[];
   #gesture: Gesture = { kind: "idle" };
   #holdTimer: number | null = null;
 
-  constructor(canvas: HTMLCanvasElement, camera: GodCamera, picker: GroundPicker, tool: ToolGestures, tap: TapHandler) {
+  constructor(
+    canvas: HTMLCanvasElement,
+    camera: GodCamera,
+    picker: GroundPicker,
+    tools: readonly ToolGestures[],
+    tap: TapHandler
+  ) {
     this.#canvas = canvas;
     this.#camera = camera;
     this.#picker = picker;
-    this.#tool = tool;
+    this.#tools = tools;
     this.#tap = tap;
 
     const options = { signal: this.#abort.signal };
@@ -96,7 +104,13 @@ export class PointerControls {
     canvas.addEventListener("pointermove", (event) => this.#move(event), options);
     canvas.addEventListener("pointerup", (event) => this.#up(event, true), options);
     canvas.addEventListener("pointercancel", (event) => this.#up(event, false), options);
-    canvas.addEventListener("pointerleave", () => this.#tool.hover(null), options);
+    canvas.addEventListener(
+      "pointerleave",
+      () => {
+        this.#hoverNothing();
+      },
+      options
+    );
     canvas.addEventListener("wheel", (event) => this.#wheel(event), { ...options, passive: false });
     canvas.addEventListener("contextmenu", (event) => event.preventDefault(), options);
   }
@@ -134,27 +148,29 @@ export class PointerControls {
       return;
     }
 
-    const point = this.#pick(event.offsetX, event.offsetY);
+    const screen = { x: event.offsetX, y: event.offsetY };
+    const point = this.#pick(screen.x, screen.y);
+    const tool = this.#activeTool();
 
-    if (!this.#tool.isActive() || point === null) {
+    if (tool === null || point === null || !tool.canBegin(point, screen)) {
       this.#gesture = { kind: "pan", travel: 0 };
 
       return;
     }
 
     if (event.pointerType === "touch") {
-      this.#waitForSecondTouch(point);
+      this.#waitForSecondTouch({ kind: "waiting", point, screen, tool });
 
       return;
     }
 
-    this.#gesture = { kind: "tool" };
-    this.#tool.begin(point);
+    this.#gesture = { kind: "tool", tool };
+    tool.begin(point, screen);
   }
 
-  #waitForSecondTouch(point: Vector3): void {
-    this.#gesture = { kind: "waiting", point };
-    this.#tool.hover(point);
+  #waitForSecondTouch(waiting: Extract<Gesture, { kind: "waiting" }>): void {
+    this.#gesture = waiting;
+    waiting.tool.hover(waiting.point);
     this.#holdTimer = window.setTimeout(() => this.#commitTool(this.#onlyPointer()), TOUCH_HOLD_MILLISECONDS);
   }
 
@@ -177,9 +193,9 @@ export class PointerControls {
       return;
     }
 
-    this.#gesture = { kind: "tool" };
-    this.#tool.begin(gesture.point);
-    this.#continueTool(pointer);
+    this.#gesture = { kind: "tool", tool: gesture.tool };
+    gesture.tool.begin(gesture.point, gesture.screen);
+    this.#continueTool(gesture.tool, pointer);
   }
 
   #stopHold(): void {
@@ -192,13 +208,15 @@ export class PointerControls {
   }
 
   #beginPinch(): void {
+    const gesture = this.#gesture;
+
     this.#stopHold();
 
-    if (this.#gesture.kind === "tool") {
-      this.#tool.end();
+    if (gesture.kind === "tool") {
+      gesture.tool.cancel();
     }
 
-    this.#tool.hover(null);
+    this.#hoverNothing();
 
     const pinch = measurePinch(this.#pointers);
 
@@ -241,18 +259,18 @@ export class PointerControls {
         this.#continuePinch(gesture);
         break;
       case "tool":
-        this.#continueTool(pointer);
+        this.#continueTool(gesture.tool, pointer);
         break;
       default:
         break;
     }
   }
 
-  #continueTool(pointer: TrackedPointer): void {
+  #continueTool(tool: ToolGestures, pointer: TrackedPointer): void {
     const point = this.#pick(pointer.x, pointer.y);
 
     if (point !== null) {
-      this.#tool.move(point);
+      tool.move(point);
     }
   }
 
@@ -300,14 +318,16 @@ export class PointerControls {
   }
 
   #abandonGesture(): void {
+    const gesture = this.#gesture;
+
     this.#stopHold();
 
-    if (this.#gesture.kind === "tool") {
-      this.#tool.end();
+    if (gesture.kind === "tool") {
+      gesture.tool.cancel();
     }
 
-    if (this.#gesture.kind === "waiting") {
-      this.#tool.hover(null);
+    if (gesture.kind === "waiting") {
+      gesture.tool.hover(null);
     }
 
     this.#gesture = { kind: "idle" };
@@ -321,7 +341,7 @@ export class PointerControls {
     const gesture = this.#gesture;
 
     if (gesture.kind === "tool") {
-      this.#tool.end();
+      gesture.tool.end();
       this.#gesture = { kind: "idle" };
 
       return;
@@ -333,11 +353,31 @@ export class PointerControls {
   }
 
   #hover(event: PointerEvent): void {
-    if (event.pointerType !== "mouse" || !this.#tool.isActive()) {
+    const tool = this.#activeTool();
+
+    if (event.pointerType !== "mouse" || tool === null) {
       return;
     }
 
-    this.#tool.hover(this.#pick(event.offsetX, event.offsetY));
+    tool.hover(this.#pick(event.offsetX, event.offsetY));
+  }
+
+  #hoverNothing(): void {
+    const tool = this.#activeTool();
+
+    if (tool !== null) {
+      tool.hover(null);
+    }
+  }
+
+  #activeTool(): ToolGestures | null {
+    for (const tool of this.#tools) {
+      if (tool.isActive()) {
+        return tool;
+      }
+    }
+
+    return null;
   }
 
   #wheel(event: WheelEvent): void {
