@@ -1,6 +1,7 @@
 import { cn } from "../design/cn.ts";
 import { Island } from "../design/island.tsx";
 import { useIsCompact } from "../design/use-media-query.ts";
+import { GuideCard } from "../features/guide/guide-card.tsx";
 import { CompactTopBar, PanelBar, StatusCard } from "../features/interface/top-bar.tsx";
 import { JournalSheet } from "../features/journal/journal-sheet.tsx";
 import { SidePanel } from "../features/journal/side-panel.tsx";
@@ -39,7 +40,11 @@ function WideHud() {
           <MinimapIsland />
         </div>
 
-        <PowerDock className="min-w-0" />
+        <div className="flex min-w-0 flex-col gap-3">
+          <GuideCard />
+
+          <PowerDock className="max-w-full min-w-0" />
+        </div>
 
         <div className="flex flex-1 justify-end">
           <Island className="px-1.5 py-1">
@@ -62,6 +67,8 @@ function CompactHud() {
         <MinimapIsland className="self-start" />
 
         <PowerSettings className="max-h-details min-h-0" />
+
+        <GuideCard />
 
         <PowerDock />
       </div>

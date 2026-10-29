@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render } from "vitest-browser-react";
 import type { LaunchOptions } from "../../app/launch-options.ts";
 import { useLaunchStore } from "../../app/launch-store.ts";
+import { useGuideStore } from "../guide/guide-store.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
 import { LARGEST_SEED } from "../new-world/seeds.ts";
 import { IslandSection } from "./island-section.tsx";
@@ -53,6 +54,22 @@ describe("island section", () => {
 
     await expect.element(labels).toBeChecked();
     expect(useInterfaceStore.getState().areLabelsShown).toBe(true);
+  });
+
+  it("turns the tips off and starts them again", async () => {
+    const screen = await render(<IslandSection />);
+
+    const tips = screen.getByRole("switch", { name: "Tips" });
+
+    await tips.click();
+
+    await expect.element(tips).not.toBeChecked();
+    expect(useGuideStore.getState().progress.isOff).toBe(true);
+
+    await tips.click();
+
+    await expect.element(tips).toBeChecked();
+    expect(useGuideStore.getState().progress.done).toEqual([]);
   });
 
   it("starts the seed field at the seed of the current world", async () => {

@@ -5,6 +5,7 @@ import { TextButton } from "../../design/buttons.tsx";
 import { ChoiceField } from "../../design/choice-field.tsx";
 import { ToggleField } from "../../design/toggle-field.tsx";
 import { isQualityLevel, QUALITY_LEVELS, type QualityLevel } from "../../rendering/render-quality.ts";
+import { useGuideStore } from "../guide/guide-store.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
 import { useWorldDraft } from "../new-world/use-world-draft.ts";
 import { NameField, SeedField, ShapeChoice } from "../new-world/world-fields.tsx";
@@ -69,13 +70,20 @@ function QualityChoice() {
   );
 }
 
-function MapLabelsChoice() {
+function DisplayChoice() {
   const areLabelsShown = useInterfaceStore((state) => state.areLabelsShown);
   const setLabelsShown = useInterfaceStore((state) => state.setLabelsShown);
+  const areTipsShown = useGuideStore((state) => !state.progress.isOff);
+  const setTipsShown = useGuideStore((state) => state.setTipsShown);
 
   return (
-    <SettingsGroup description="Tribe banners and the names of peaks and lakes over the island." title="Display">
+    <SettingsGroup
+      description="Tribe banners and the names of peaks and lakes over the island. Tips start again from the first one."
+      title="Display"
+    >
       <ToggleField isChecked={areLabelsShown} label="Map labels" onChange={setLabelsShown} />
+
+      <ToggleField isChecked={areTipsShown} label="Tips" onChange={setTipsShown} />
     </SettingsGroup>
   );
 }
@@ -119,7 +127,7 @@ export function IslandSection() {
 
       <QualityChoice />
 
-      <MapLabelsChoice />
+      <DisplayChoice />
 
       <NewWorld />
     </>
