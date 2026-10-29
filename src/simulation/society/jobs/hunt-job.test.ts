@@ -98,6 +98,31 @@ describe("choosing game", () => {
   });
 });
 
+describe("held game", () => {
+  it("stops stalking an animal the player is holding and never picks it", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+
+    const tribe = settle(harness, 3);
+
+    const tick = firstMemberTick(harness, tribe);
+
+    tribe.stock.spears = 2;
+
+    const ibex = firstAnimal(
+      harness,
+      harness.fauna.spawnHerd("ibex", tribe.campX + 20, tribe.campZ, 1, harness.random)
+    );
+
+    const hunt = new HuntJob(tick, ibex, STONE_SPEAR);
+
+    harness.fauna.hold(ibex);
+
+    expect(hunt.update(tick)).toBeNull();
+    expect(findGame(tick)).toBeNull();
+    expect(ibex.isAlive).toBe(true);
+  });
+});
+
 describe("small game", () => {
   it("takes a hare near camp over deer far away, but walks to deer that are close enough", () => {
     const harness = new SocietyHarness({ day: MORNING });

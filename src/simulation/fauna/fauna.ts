@@ -164,7 +164,6 @@ function hopSpeedOf(kind: AnimalKind): number {
 
 export class FaunaSystem {
   readonly #animalsById = new Map<number, Animal>();
-  readonly #heldIds = new Set<number>();
   readonly #herdsById = new Map<number, Herd>();
   readonly #identifiers: IdentifierSource;
   readonly #instincts: BeastInstincts;
@@ -172,6 +171,7 @@ export class FaunaSystem {
   readonly #smallGameRandom: RandomSource;
   readonly #world: WorldState;
   #animals: Animal[] = [];
+  #heldId: number | null = null;
   #herds: Herd[] = [];
   #predators: Animal[] = [];
 
@@ -214,7 +214,7 @@ export class FaunaSystem {
     this.#animals = snapshot.animals;
     this.#herds = snapshot.herds;
     this.#predators = [];
-    this.#heldIds.clear();
+    this.#heldId = null;
     this.#animalsById.clear();
     this.#herdsById.clear();
 
@@ -316,7 +316,7 @@ export class FaunaSystem {
     for (const animal of this.#animals) {
       const squaredDistance = distanceSquared(animal.mover.x, animal.mover.z, x, z);
 
-      if (animal.isAlive && squaredDistance < nearestDistance && accepts(animal)) {
+      if (animal.isAlive && !this.isHeld(animal) && squaredDistance < nearestDistance && accepts(animal)) {
         nearest = animal;
         nearestDistance = squaredDistance;
       }
@@ -394,7 +394,7 @@ export class FaunaSystem {
   }
 
   hold(animal: Animal): void {
-    this.#heldIds.add(animal.id);
+    this.#heldId = animal.id;
     this.#instincts.forget(animal);
     animal.pose = "graze";
     animal.speed = 0;
@@ -402,12 +402,12 @@ export class FaunaSystem {
   }
 
   setDown(animal: Animal, x: number, z: number): void {
-    this.#heldIds.delete(animal.id);
+    this.#heldId = null;
     placeMover(animal.mover, x, z);
   }
 
   isHeld(animal: Animal): boolean {
-    return this.#heldIds.has(animal.id);
+    return this.#heldId === animal.id;
   }
 
   kill(animal: Animal, cause: AnimalDeathCause): void {

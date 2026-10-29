@@ -1,93 +1,113 @@
 import { plantSpeciesDefinition } from "../../content/plants.ts";
 import { ignore } from "../../shared/ignore.ts";
 import { hasRoomFromCoast } from "../../world/coast.ts";
-import { placeMover } from "../agents/movement.ts";
+import { type Mover, placeMover } from "../agents/movement.ts";
 import type { Waypoint } from "../agents/navigation.ts";
+import { nearestSpotWhere } from "../agents/walkable-ground.ts";
+import type { Animal } from "../fauna/fauna.ts";
+import type { Person } from "../society/person.ts";
 import type { SocietyContext } from "../society/society-context.ts";
 import { type GrabbableKind, isGrabbablePlant } from "./grab-target.ts";
+
+const PUT_BACK_RADIUS = 60;
 
 interface GrabHandler {
   readonly canPlace: (context: SocietyContext, id: number, x: number, z: number) => boolean;
   readonly carry: (context: SocietyContext, id: number, x: number, z: number) => void;
   readonly lift: (context: SocietyContext, id: number) => Waypoint | null;
   readonly place: (context: SocietyContext, id: number, x: number, z: number) => void;
+  readonly putBack: (context: SocietyContext, id: number, origin: Waypoint) => void;
 }
 
 type GrabHandlers = { readonly [Kind in GrabbableKind]: GrabHandler };
 
-const personGrab: GrabHandler = {
-  canPlace: canPersonStand,
-  carry: (context, id, x, z) => {
-    const person = context.people.findPerson(id);
+interface HeldAgent {
+  readonly isAlive: boolean;
+  readonly mover: Mover;
+}
 
-    if (person === null) {
-      return;
+interface AgentKeeper<Agent extends HeldAgent> {
+  readonly canStand: (context: SocietyContext, agent: Agent, x: number, z: number) => boolean;
+  readonly find: (context: SocietyContext, id: number) => Agent | null;
+  readonly hold: (context: SocietyContext, agent: Agent) => void;
+  readonly setDown: (context: SocietyContext, agent: Agent, x: number, z: number) => void;
+}
+
+function agentGrab<Agent extends HeldAgent>(keeper: AgentKeeper<Agent>): GrabHandler {
+  function standingSpot(context: SocietyContext, agent: Agent, origin: Waypoint): Waypoint {
+    if (keeper.canStand(context, agent, origin.x, origin.z)) {
+      return origin;
     }
 
-    placeMover(person.mover, x, z);
-  },
-  lift: (context, id) => {
-    const person = context.people.findPerson(id);
+    const spot = nearestSpotWhere(context.world, origin, PUT_BACK_RADIUS, ({ grid }, cell) =>
+      keeper.canStand(context, agent, grid.cellCenterX(cell), grid.cellCenterZ(cell))
+    );
 
-    if (person === null || !person.isAlive) {
-      return null;
-    }
+    return spot === null ? origin : spot;
+  }
 
-    context.people.hold(person);
+  return {
+    canPlace: (context, id, x, z) => {
+      const agent = keeper.find(context, id);
 
-    return { x: person.mover.x, z: person.mover.z };
-  },
-  place: (context, id, x, z) => {
-    const person = context.people.findPerson(id);
+      return agent !== null && keeper.canStand(context, agent, x, z);
+    },
+    carry: (context, id, x, z) => {
+      const agent = keeper.find(context, id);
 
-    if (person === null) {
-      return;
-    }
+      if (agent === null) {
+        return;
+      }
 
-    context.people.setDown(person, x, z);
-  },
-};
+      placeMover(agent.mover, x, z);
+    },
+    lift: (context, id) => {
+      const agent = keeper.find(context, id);
 
-const animalGrab: GrabHandler = {
-  canPlace: (context, id, x, z) => {
-    const animal = context.fauna.findAnimal(id);
+      if (agent === null || !agent.isAlive) {
+        return null;
+      }
 
-    if (animal === null) {
-      return false;
-    }
+      keeper.hold(context, agent);
 
-    return context.fauna.canStand(animal.kind, x, z);
-  },
-  carry: (context, id, x, z) => {
-    const animal = context.fauna.findAnimal(id);
+      return { x: agent.mover.x, z: agent.mover.z };
+    },
+    place: (context, id, x, z) => {
+      const agent = keeper.find(context, id);
 
-    if (animal === null) {
-      return;
-    }
+      if (agent === null) {
+        return;
+      }
 
-    placeMover(animal.mover, x, z);
-  },
-  lift: (context, id) => {
-    const animal = context.fauna.findAnimal(id);
+      keeper.setDown(context, agent, x, z);
+    },
+    putBack: (context, id, origin) => {
+      const agent = keeper.find(context, id);
 
-    if (animal === null || !animal.isAlive) {
-      return null;
-    }
+      if (agent === null) {
+        return;
+      }
 
-    context.fauna.hold(animal);
+      const spot = standingSpot(context, agent, origin);
 
-    return { x: animal.mover.x, z: animal.mover.z };
-  },
-  place: (context, id, x, z) => {
-    const animal = context.fauna.findAnimal(id);
+      keeper.setDown(context, agent, spot.x, spot.z);
+    },
+  };
+}
 
-    if (animal === null) {
-      return;
-    }
+const personGrab = agentGrab<Person>({
+  canStand: ({ world }, _person, x, z) => world.isWalkableAt(x, z),
+  find: ({ people }, id) => people.findPerson(id),
+  hold: ({ people }, person) => people.hold(person),
+  setDown: ({ people }, person, x, z) => people.setDown(person, x, z),
+});
 
-    context.fauna.setDown(animal, x, z);
-  },
-};
+const animalGrab = agentGrab<Animal>({
+  canStand: ({ fauna }, animal, x, z) => fauna.canStand(animal.kind, x, z),
+  find: ({ fauna }, id) => fauna.findAnimal(id),
+  hold: ({ fauna }, animal) => fauna.hold(animal),
+  setDown: ({ fauna }, animal, x, z) => fauna.setDown(animal, x, z),
+});
 
 const plantGrab: GrabHandler = {
   canPlace: ({ world }, id, x, z) => {
@@ -102,19 +122,33 @@ const plantGrab: GrabHandler = {
     return world.canPlace(cell, steepestSlope) && hasRoomFromCoast(world.terrain.coastDistance, world.grid, x, z);
   },
   carry: ignore,
-  lift: ({ world }, id) => {
+  lift: ({ people, world }, id) => {
     const { vegetation } = world;
 
     if (id >= vegetation.count || !vegetation.isAlive(id) || !isGrabbablePlant(vegetation.species[id])) {
       return null;
     }
 
+    people.releasePlant(id);
     world.liftPlant(id);
 
     return { x: vegetation.x[id], z: vegetation.z[id] };
   },
   place: ({ world }, id, x, z) => {
     world.setPlantDown(id, x, z);
+  },
+  putBack: ({ world }, id, origin) => {
+    const cell = world.grid.cellAt(origin.x, origin.z);
+
+    const { steepestSlope } = plantSpeciesDefinition(world.vegetation.species[id]);
+
+    if (cell < 0 || !world.canPlace(cell, steepestSlope)) {
+      world.removePlant(id);
+
+      return;
+    }
+
+    world.setPlantDown(id, origin.x, origin.z);
   },
 };
 
@@ -123,7 +157,3 @@ export const GRAB_HANDLERS: GrabHandlers = {
   person: personGrab,
   plant: plantGrab,
 };
-
-function canPersonStand(context: SocietyContext, _id: number, x: number, z: number): boolean {
-  return context.world.isWalkableAt(x, z);
-}

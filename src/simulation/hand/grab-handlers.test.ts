@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { PlantSpecies } from "../../content/plants.ts";
+import { NO_PLANT } from "../../world/vegetation-store.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import { Simulation } from "../simulation.ts";
+import { findTree } from "../society/jobs/chop-job.ts";
+import { plantNear } from "../testing/test-jobs.ts";
+import { firstMemberTick, MORNING, SocietyHarness, settle } from "../testing/test-society.ts";
 import { createVegetatedWorld, floodCells } from "../testing/test-world.ts";
 import { GRAB_HANDLERS } from "./grab-handlers.ts";
 import { GRABBABLE_KINDS, type GrabbableKind, type GrabTarget, isGrabbablePlant } from "./grab-target.ts";
@@ -9,6 +14,11 @@ const SHORE_X = 150;
 const WATER: Waypoint = { x: 250, z: 0 };
 const OPEN_GROUND: Waypoint = { x: -45, z: -45 };
 const HELD_SECONDS = 5;
+const COAST: Waypoint = { x: -45, z: 45 };
+const STEEP: Waypoint = { x: 45, z: -45 };
+const NEAR_COAST_DISTANCE = 2;
+const STEEP_RISE_PER_METER = 4;
+const PROVOCATIONS = 200;
 
 interface Subject {
   readonly position: () => Waypoint;
@@ -82,6 +92,25 @@ function otherPlant(simulation: Simulation, excluded: number): number {
   }
 
   throw new Error("The test world has only one plant");
+}
+
+function clearSpot(simulation: Simulation, point: Waypoint): void {
+  const { grid } = simulation.world;
+
+  simulation.world.clearPlants(grid.cellAt(point.x, point.z), true);
+}
+
+function standsInWater(simulation: Simulation, subject: Subject): boolean {
+  const { grid, vegetation } = simulation.world;
+  const { id, kind } = subject.target;
+
+  if (kind === "plant" && !vegetation.isAlive(id)) {
+    return false;
+  }
+
+  const { x, z } = subject.position();
+
+  return simulation.world.isWater(grid.cellAt(x, z));
 }
 
 function createSimulation(): Simulation {
@@ -160,6 +189,19 @@ describe("grab handlers", () => {
 
       expect(simulation.held).toBeNull();
       expect(subject.position()).toEqual(origin);
+    });
+
+    it("goes to dry ground when the spot it was picked up from floods while it is held", () => {
+      const simulation = createSimulation();
+      const { grid } = simulation.world;
+      const subject = SUBJECTS[kind](simulation);
+      const origin = subject.position();
+
+      simulation.execute({ target: subject.target, type: "grab" });
+      floodCells(simulation.world, [grid.cellAt(origin.x, origin.z)], 2);
+      simulation.execute({ type: "cancelGrab" });
+
+      expect(standsInWater(simulation, subject)).toBe(false);
     });
 
     it("is never saved in the air", () => {
@@ -252,6 +294,101 @@ describe("grab handlers", () => {
     simulation.execute({ type: "drop" });
 
     expect(subject.position()).toEqual(origin);
+  });
+
+  it("refuses to set a plant down too close to the coast", () => {
+    const simulation = createSimulation();
+    const { grid, terrain } = simulation.world;
+    const subject = SUBJECTS.plant(simulation);
+    const origin = subject.position();
+
+    clearSpot(simulation, COAST);
+
+    for (const cell of grid.cellsInRadius(COAST.x, COAST.z, grid.cellSize * 2)) {
+      terrain.coastDistance[cell] = NEAR_COAST_DISTANCE;
+    }
+
+    simulation.execute({ target: subject.target, type: "grab" });
+    simulation.execute({ type: "carry", ...COAST });
+
+    expect(simulation.held?.isPlaceable).toBe(false);
+
+    simulation.execute({ type: "drop" });
+
+    expect(subject.position()).toEqual(origin);
+  });
+
+  it("refuses to set a plant down on a slope too steep for it", () => {
+    const simulation = createSimulation();
+    const { grid, terrain } = simulation.world;
+    const subject = SUBJECTS.plant(simulation);
+    const origin = subject.position();
+
+    clearSpot(simulation, STEEP);
+
+    for (const cell of grid.cellsInRadius(STEEP.x, STEEP.z, grid.cellSize * 2)) {
+      terrain.height[cell] = 100 + (grid.cellCenterX(cell) - STEEP.x) * STEEP_RISE_PER_METER;
+    }
+
+    simulation.execute({ target: subject.target, type: "grab" });
+    simulation.execute({ type: "carry", ...STEEP });
+
+    expect(simulation.held?.isPlaceable).toBe(false);
+
+    simulation.execute({ type: "drop" });
+
+    expect(subject.position()).toEqual(origin);
+  });
+
+  it("takes a lifted plant away from the tribe that was working on it", () => {
+    const harness = new SocietyHarness({ day: MORNING });
+    const tribe = settle(harness, 1);
+    const tick = firstMemberTick(harness, tribe);
+
+    plantNear(tick, PlantSpecies.Oak, 16);
+    tick.person.job = findTree(tick);
+
+    const tree = tick.person.job?.claimedPlant;
+
+    if (tree === undefined) {
+      throw new Error("Expected a tree to chop");
+    }
+
+    tribe.plots.push({
+      cells: [],
+      kind: "woodlot",
+      spots: [{ plant: tree, plantedDay: 0, species: PlantSpecies.Oak, x: 0, z: 0 }],
+    });
+
+    expect(tribe.claimedPlants.has(tree)).toBe(true);
+
+    GRAB_HANDLERS.plant.lift(harness.context, tree);
+
+    expect(tick.person.job).toBeNull();
+    expect(tribe.claimedPlants.has(tree)).toBe(false);
+    expect(tribe.plots.flatMap((plot) => plot.spots.map((spot) => spot.plant))).toEqual([NO_PLANT]);
+  });
+
+  it("calms an animal that was charging once it is lifted", () => {
+    const simulation = createSimulation();
+    const herd = simulation.fauna.spawnHerd("mammoth", -60, -120, 1, simulation.random);
+    const mammoth = herd === null ? null : simulation.fauna.findAnimal(herd.memberIds[0]);
+
+    if (mammoth === null) {
+      throw new Error("Expected a mammoth");
+    }
+
+    const assailant = { id: 1, x: mammoth.mover.x + 10, z: mammoth.mover.z };
+
+    for (let provocation = 0; provocation < PROVOCATIONS && !simulation.fauna.isMenacing(mammoth); provocation += 1) {
+      simulation.fauna.provoke(mammoth, assailant, simulation.services.rules);
+    }
+
+    expect(simulation.fauna.isMenacing(mammoth)).toBe(true);
+
+    simulation.execute({ target: { id: mammoth.id, kind: "animal" }, type: "grab" });
+
+    expect(simulation.fauna.isMenacing(mammoth)).toBe(false);
   });
 
   it("ignores things that cannot be lifted", () => {

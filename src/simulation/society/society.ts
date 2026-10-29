@@ -1,6 +1,7 @@
 import { personName, tribeIdentity } from "../../content/names.ts";
 import type { TechnologyId } from "../../content/technologies.ts";
 import type { RandomSource } from "../../shared/random.ts";
+import { NO_PLANT } from "../../world/vegetation-store.ts";
 import { isHopping, isLeaping } from "../agents/hops.ts";
 import { isStranded, moveAlong, placeMover, savedMover, stopMoving } from "../agents/movement.ts";
 import type { Waypoint } from "../agents/navigation.ts";
@@ -114,10 +115,10 @@ function keepHopping(tick: PersonTick): void {
 
 export class SocietySystem {
   readonly #dependencies: SocietyDependencies;
-  readonly #heldIds = new Set<number>();
   readonly #peopleById = new Map<number, Person>();
   readonly #tribesById = new Map<number, Tribe>();
   readonly #trodden = new TroddenGround();
+  #heldId: number | null = null;
   #people: Person[] = [];
   #tribeNumber = 0;
   #tribes: Tribe[] = [];
@@ -147,7 +148,7 @@ export class SocietySystem {
     this.#people = snapshot.people;
     this.#tribes = snapshot.tribes;
     this.#tribeNumber = snapshot.tribeNumber;
-    this.#heldIds.clear();
+    this.#heldId = null;
     this.#peopleById.clear();
     this.#tribesById.clear();
 
@@ -271,7 +272,7 @@ export class SocietySystem {
   }
 
   hold(person: Person): void {
-    this.#heldIds.add(person.id);
+    this.#heldId = person.id;
     this.#forgetJob(person);
     person.pose = "idle";
     person.speed = 0;
@@ -279,13 +280,33 @@ export class SocietySystem {
   }
 
   setDown(person: Person, x: number, z: number): void {
-    this.#heldIds.delete(person.id);
+    this.#heldId = null;
     this.#forgetJob(person);
     placeMover(person.mover, x, z);
   }
 
   isHeld(person: Person): boolean {
-    return this.#heldIds.has(person.id);
+    return this.#heldId === person.id;
+  }
+
+  releasePlant(plant: number): void {
+    for (const person of this.#people) {
+      if (person.job?.claimedPlant === plant) {
+        this.#forgetJob(person);
+      }
+    }
+
+    for (const tribe of this.#tribes) {
+      tribe.claimedPlants.delete(plant);
+
+      for (const plot of tribe.plots) {
+        for (const spot of plot.spots) {
+          if (spot.plant === plant) {
+            spot.plant = NO_PLANT;
+          }
+        }
+      }
+    }
   }
 
   kill(person: Person, cause: DeathCause, account: DeathAccount | null = null): void {

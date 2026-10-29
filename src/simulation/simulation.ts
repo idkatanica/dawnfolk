@@ -467,9 +467,13 @@ export class Simulation {
     const { id, kind } = grab.target;
 
     const handler = GRAB_HANDLERS[kind];
-    const spot = handler.canPlace(this.services, id, grab.x, grab.z) ? grab : grab.origin;
 
-    handler.place(this.services, id, spot.x, spot.z);
+    if (handler.canPlace(this.services, id, grab.x, grab.z)) {
+      handler.place(this.services, id, grab.x, grab.z);
+    } else {
+      handler.putBack(this.services, id, grab.origin);
+    }
+
     this.#grab = null;
   }
 
@@ -480,7 +484,7 @@ export class Simulation {
       return;
     }
 
-    GRAB_HANDLERS[grab.target.kind].place(this.services, grab.target.id, grab.origin.x, grab.origin.z);
+    GRAB_HANDLERS[grab.target.kind].putBack(this.services, grab.target.id, grab.origin);
     this.#grab = null;
   }
 

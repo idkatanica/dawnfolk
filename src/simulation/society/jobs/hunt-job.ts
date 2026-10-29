@@ -197,7 +197,7 @@ export class HuntJob implements Job {
 
     const animal = tick.context.fauna.findAnimal(this.#animalId);
 
-    if (animal === null || !animal.isAlive || this.#remainingSeconds <= 0) {
+    if (animal === null || !animal.isAlive || tick.context.fauna.isHeld(animal) || this.#remainingSeconds <= 0) {
       return null;
     }
 
