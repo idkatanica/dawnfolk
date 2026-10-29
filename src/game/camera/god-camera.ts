@@ -117,7 +117,7 @@ export class GodCamera {
   }
 
   arriveFromAbove(): void {
-    const halfView = Math.tan((this.camera.fov * Math.PI) / 360);
+    const halfView = this.#halfViewTangent();
     const share = Math.min(SKETCH_HEIGHT_SHARE, SKETCH_WIDTH_SHARE * this.camera.aspect);
 
     Object.assign(this.#current, {
@@ -170,7 +170,7 @@ export class GodCamera {
 
     const { yaw } = this.#current;
 
-    const metersPerPixel = (2 * this.#goal.distance * Math.tan((this.camera.fov * Math.PI) / 360)) / viewportHeight;
+    const metersPerPixel = (2 * this.#goal.distance * this.#halfViewTangent()) / viewportHeight;
     const slant = Math.max(0.35, Math.sin(this.#current.pitch) * 0.6 + 0.4);
 
     const scale = metersPerPixel / slant;
@@ -247,6 +247,10 @@ export class GodCamera {
     goal.pitch = clamp(goal.pitch, MINIMUM_PITCH, MAXIMUM_PITCH);
     goal.targetX = clamp(goal.targetX, -limit, limit);
     goal.targetZ = clamp(goal.targetZ, -limit, limit);
+  }
+
+  #halfViewTangent(): number {
+    return Math.tan((this.camera.fov * Math.PI) / 360);
   }
 
   #place(): void {
