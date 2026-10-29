@@ -10,7 +10,6 @@ const CHANNEL_DEPTH = 1.2;
 const INSIDE_REACH = 6;
 const STRAIGHT_REACH = 3;
 const BLEND_REACH = 16;
-// Up to the river head, the cells beside a mouth hold grid water two whole cells wide; past it the river runs free.
 const MOUTH_CLEARANCE_CELLS = 2;
 const SIDE_CLEARANCE = 2;
 const SIDE_FADE = 3;
@@ -55,11 +54,9 @@ export class CaveOutlets {
   readonly #cellData: Float32Array;
   readonly #grid: WorldGrid;
   readonly #mouthData: Float32Array;
-  readonly #mouthClearance: number;
 
   constructor(grid: WorldGrid, springs: readonly Spring[]) {
     this.#grid = grid;
-    this.#mouthClearance = grid.cellSize * MOUTH_CLEARANCE_CELLS;
     this.#cellData = new Float32Array(grid.cellCount);
     this.#mouthData = new Float32Array((LARGEST_CAVE_COUNT + 1) * 4);
     this.cells = floatDataTexture(this.#cellData, grid.cellsPerSide, grid.cellsPerSide, RedFormat);
@@ -70,6 +67,7 @@ export class CaveOutlets {
   rebuild(springs: readonly Spring[]): void {
     const grid = this.#grid;
     const caves = springs.filter(isCave).slice(0, LARGEST_CAVE_COUNT);
+    const mouthClearance = grid.cellSize * MOUTH_CLEARANCE_CELLS;
 
     this.#cellData.fill(0);
     this.#mouthData.fill(0);
@@ -77,7 +75,7 @@ export class CaveOutlets {
     for (const [index, cave] of caves.entries()) {
       const slot = index + 1;
       const reach = cave.radius + SIDE_CLEARANCE + SIDE_FADE + grid.cellSize * Math.SQRT1_2;
-      const mouthReach = reach - SIDE_CLEARANCE + this.#mouthClearance;
+      const mouthReach = reach - SIDE_CLEARANCE + mouthClearance;
 
       const back: [number, number] = [cave.x - cave.directionX * INSIDE_REACH, cave.z - cave.directionZ * INSIDE_REACH];
       const head: [number, number] = [
@@ -89,7 +87,8 @@ export class CaveOutlets {
       this.#mouthData.set([cave.x, cave.z, Math.atan2(cave.directionZ, cave.directionX), cave.radius], slot * 4);
 
       for (const cell of grid.cellsInRadius(cave.x, cave.z, BLEND_REACH + mouthReach)) {
-        const [x, z] = [grid.cellCenterX(cell), grid.cellCenterZ(cell)];
+        const x = grid.cellCenterX(cell);
+        const z = grid.cellCenterZ(cell);
 
         if (distanceToSegment(x, z, back, front) <= reach || distanceToSegment(x, z, back, head) <= mouthReach) {
           this.#cellData[cell] = slot;
@@ -104,6 +103,7 @@ export class CaveOutlets {
   outletAt(point: Node<"vec2">): CaveOutlet {
     const grid = this.#grid;
     const last = grid.cellsPerSide - 1;
+    const mouthClearance = grid.cellSize * MOUTH_CLEARANCE_CELLS;
 
     const cell = clamp(point.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
     const slot = textureLoad(this.cells, ivec2(cell)).x;
@@ -118,7 +118,7 @@ export class CaveOutlets {
       along: dot(offset, direction),
     };
 
-    const share = outletShare(frame, halfWidth, this.#mouthClearance).mul(step(0.5, slot));
+    const share = outletShare(frame, halfWidth, mouthClearance).mul(step(0.5, slot));
 
     return {
       depth: channelDepth(frame, halfWidth),
