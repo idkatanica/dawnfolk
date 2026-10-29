@@ -1,5 +1,5 @@
 import { clamp } from "../../shared/math.ts";
-import type { CellRegion } from "../../world/change-tracking.ts";
+import { type CellRegion, grownRegion } from "../../world/change-tracking.ts";
 import { NO_WATER } from "../../world/water.ts";
 
 export const ShoreChannel = {
@@ -156,17 +156,6 @@ function reachThrough(target: Float32Array, size: number, column: number, row: n
   }
 
   return target[(row * size + column) * SHORE_CHANNELS + ShoreChannel.Reach] + 1;
-}
-
-function grownRegion(region: CellRegion, cells: number, size: number): CellRegion {
-  const last = size - 1;
-
-  return {
-    firstColumn: Math.max(0, region.firstColumn - cells),
-    firstRow: Math.max(0, region.firstRow - cells),
-    lastColumn: Math.min(last, region.lastColumn + cells),
-    lastRow: Math.min(last, region.lastRow + cells),
-  };
 }
 
 function resetReach(source: ShoreSource, region: CellRegion, target: Float32Array): void {

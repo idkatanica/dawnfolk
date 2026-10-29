@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { slopeAt } from "../world/footing.ts";
 import { landEverywhere } from "../world/testing/terrain-fixtures.ts";
 import { NO_WATER } from "../world/water.ts";
 import { WorldGrid } from "../world/world-grid.ts";
@@ -7,6 +8,13 @@ import { findPools, findSmallAreas, isWetland, measureWetness } from "./wetlands
 const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 96 });
 const LAKE_RADIUS = 120;
 const LAKE_LEVEL = 100.5;
+
+function wetnessOf(seed: number, desert = 0): Float32Array {
+  const world = lakeWorld(seed, desert);
+  const slopes = Float64Array.from({ length: grid.cellCount }, (_, cell) => slopeAt(world.heights, grid, cell));
+
+  return measureWetness(world, slopes);
+}
 
 function lakeWorld(seed: number, desert = 0) {
   const heights = new Float32Array(grid.cellCount);
@@ -71,7 +79,7 @@ describe("wetlands", () => {
     const seeds = [1, 2, 3, 4, 5];
 
     const soaked = seeds.map((seed) => {
-      const wetness = measureWetness(lakeWorld(seed));
+      const wetness = wetnessOf(seed);
 
       expect(shoreCells(1).every((cell) => !isWetland(wetness[cell]))).toBe(true);
       expect(wetness[grid.cellAt(0, 0)]).toBe(0);
@@ -83,11 +91,11 @@ describe("wetlands", () => {
   });
 
   it("finds no wetland in a desert", () => {
-    expect(measureWetness(lakeWorld(1, 0.6)).every((wetness) => wetness === 0)).toBe(true);
+    expect(wetnessOf(1, 0.6).every((wetness) => wetness === 0)).toBe(true);
   });
 
   it("comes out the same for the same seed", () => {
-    expect(measureWetness(lakeWorld(3))).toEqual(measureWetness(lakeWorld(3)));
+    expect(wetnessOf(3)).toEqual(wetnessOf(3));
   });
 
   it("drains patches too small to read as a swamp", () => {

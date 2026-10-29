@@ -5,7 +5,7 @@ import type { Crossing } from "../../world/crossings.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { WorldState } from "../world/world-state.ts";
 import type { Waypoint } from "./navigation.ts";
-import { nearestWalkableSpot, pointInsideCell } from "./walkable-ground.ts";
+import { nearestSpotWhere, nearestWalkableSpot } from "./walkable-ground.ts";
 
 export const NO_REGION = -1;
 
@@ -37,10 +37,6 @@ interface AreaStep {
 interface Route {
   readonly cost: number;
   readonly waypoints: Waypoint[];
-}
-
-interface AreaSeed {
-  readonly cells: number[];
 }
 
 function slopePenalty(slope: number): number {
@@ -152,7 +148,12 @@ export class LandAreas {
 
   nearestInRegion(point: Waypoint, region: number, fallback: Waypoint): Waypoint {
     for (const radius of REGION_SEARCH_RADII) {
-      const spot = this.#nearestCellInRegion(point, region, radius);
+      const spot = nearestSpotWhere(
+        this.#world,
+        point,
+        radius,
+        (_world, cell) => this.#walkable[cell] === 1 && this.#regionOfArea[this.#areaOfCell[cell]] === region
+      );
 
       if (spot !== null) {
         return spot;
@@ -483,11 +484,11 @@ export class LandAreas {
     this.#hopTarget = Int32Array.from(targets);
   }
 
-  #findAreas(): AreaSeed[] {
+  #findAreas(): number[][] {
     const { grid } = this.#world;
 
     const blocksPerSide = Math.ceil(grid.cellsPerSide / this.#cellsPerArea);
-    const areas: AreaSeed[] = [];
+    const areas: number[][] = [];
 
     for (let blockRow = 0; blockRow < blocksPerSide; blockRow += 1) {
       for (let blockColumn = 0; blockColumn < blocksPerSide; blockColumn += 1) {
@@ -513,7 +514,7 @@ export class LandAreas {
     return areas;
   }
 
-  #floodBlock(first: number, area: number, corner: { column: number; row: number }): AreaSeed {
+  #floodBlock(first: number, area: number, corner: { column: number; row: number }): number[] {
     const { grid } = this.#world;
 
     const cells = [first];
@@ -545,10 +546,10 @@ export class LandAreas {
       }
     }
 
-    return { cells };
+    return cells;
   }
 
-  #linkAreas(areas: readonly AreaSeed[]): void {
+  #linkAreas(areas: readonly (readonly number[])[]): void {
     const { grid } = this.#world;
 
     const count = areas.length;
@@ -606,24 +607,25 @@ export class LandAreas {
     this.#regionOfArea = new Int32Array(count).fill(NO_REGION);
   }
 
-  #placeAnchors(areas: readonly AreaSeed[]): void {
+  #placeAnchors(areas: readonly (readonly number[])[]): void {
     const { grid } = this.#world;
 
     this.#anchorX = new Float64Array(areas.length);
     this.#anchorZ = new Float64Array(areas.length);
 
-    for (const [area, { cells }] of areas.entries()) {
+    for (const [area, cells] of areas.entries()) {
       const centerX = cells.reduce((sum, cell) => sum + grid.cellCenterX(cell), 0) / cells.length;
       const centerZ = cells.reduce((sum, cell) => sum + grid.cellCenterZ(cell), 0) / cells.length;
 
       let [anchor] = cells;
+      let bestDistance = distanceSquared(grid.cellCenterX(anchor), grid.cellCenterZ(anchor), centerX, centerZ);
 
       for (const cell of cells) {
         const distance = distanceSquared(grid.cellCenterX(cell), grid.cellCenterZ(cell), centerX, centerZ);
-        const best = distanceSquared(grid.cellCenterX(anchor), grid.cellCenterZ(anchor), centerX, centerZ);
 
-        if (distance < best) {
+        if (distance < bestDistance) {
           anchor = cell;
+          bestDistance = distance;
         }
       }
 
@@ -845,10 +847,7 @@ export class LandAreas {
       for (let hop = this.#hopStart[cell]; hop < this.#hopStart[cell + 1]; hop += 1) {
         const next = this.#hopTarget[hop];
 
-        const distance = Math.hypot(
-          grid.cellCenterX(next) - grid.cellCenterX(cell),
-          grid.cellCenterZ(next) - grid.cellCenterZ(cell)
-        );
+        const distance = grid.distanceBetween(cell, next);
 
         this.#reachCell(cell, next, goal, distance + HOP_COST);
       }
@@ -891,28 +890,6 @@ export class LandAreas {
     }
 
     return cells.reverse();
-  }
-
-  #nearestCellInRegion(point: Waypoint, region: number, radius: number): Waypoint | null {
-    let nearest: Waypoint | null = null;
-    let nearestDistance = Number.POSITIVE_INFINITY;
-
-    for (const cell of this.#world.grid.cellsInRadius(point.x, point.z, radius)) {
-      if (this.#walkable[cell] === 0 || this.#regionOfArea[this.#areaOfCell[cell]] !== region) {
-        continue;
-      }
-
-      const spot = pointInsideCell(this.#world, cell, point.x, point.z);
-
-      const distance = distanceSquared(point.x, point.z, spot.x, spot.z);
-
-      if (distance < nearestDistance) {
-        nearest = spot;
-        nearestDistance = distance;
-      }
-    }
-
-    return nearest;
   }
 
   #retreatToward(point: Waypoint, fallback: Waypoint, region: number): Waypoint {

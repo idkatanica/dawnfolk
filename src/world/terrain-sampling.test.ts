@@ -5,6 +5,7 @@ import {
   type SampledTerrain,
   sampleHeight,
   sampleSurface,
+  sampleWaterLevel,
   touchesWaterCell,
 } from "./terrain-sampling.ts";
 import { NO_WATER } from "./water.ts";
@@ -85,6 +86,42 @@ describe("water sampling", () => {
 
     expect(isWaterAtPoint(terrain, grid, grid.halfSize + 1, 0)).toBe(false);
     expect(sampleSurface(terrain, grid, grid.halfSize + 1, 0)).toBeLessThan(100);
+  });
+});
+
+describe("water level", () => {
+  it("keeps the flooded cell's surface next to dry ground", () => {
+    const terrain = createSlopedTerrain();
+
+    terrain.waterSurface[grid.index(1, 1)] = 20;
+
+    expect(sampleWaterLevel(terrain, grid, grid.centerX(1) + 4, grid.centerZ(1) + 3)).toBeCloseTo(20);
+  });
+
+  it("weighs flooded cells by distance", () => {
+    const terrain = createSlopedTerrain();
+
+    terrain.waterSurface[grid.index(1, 1)] = 20;
+    terrain.waterSurface[grid.index(2, 1)] = 30;
+
+    expect(sampleWaterLevel(terrain, grid, grid.centerX(1) + 4, grid.centerZ(1))).toBeCloseTo(24);
+  });
+
+  it("weighs all four corners, the lower right one included", () => {
+    const terrain = createSlopedTerrain();
+
+    terrain.waterSurface[grid.index(1, 1)] = 20;
+    terrain.waterSurface[grid.index(2, 1)] = 30;
+    terrain.waterSurface[grid.index(1, 2)] = 40;
+    terrain.waterSurface[grid.index(2, 2)] = 60;
+
+    expect(sampleWaterLevel(terrain, grid, grid.centerX(1) + 4, grid.centerZ(1) + 3)).toBeCloseTo(31.2);
+  });
+
+  it("finds no level over dry ground", () => {
+    const terrain = createSlopedTerrain();
+
+    expect(sampleWaterLevel(terrain, grid, grid.centerX(1), grid.centerZ(1))).toBe(NO_WATER);
   });
 });
 

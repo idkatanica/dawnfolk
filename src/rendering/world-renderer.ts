@@ -288,7 +288,7 @@ export class WorldRenderer {
     this.#lilies.update(frame.calendar.season);
     this.#updateAgents(view, gameSeconds);
     this.#markSelection();
-    this.#updateEffects(view, gameSeconds, form, rainfall, metersPerSecond);
+    this.#updateEffects(view, gameSeconds, form, rainfall, { metersPerSecond, windX, windZ });
     this.#output.render();
   }
 
@@ -365,7 +365,7 @@ export class WorldRenderer {
     gameSeconds: number,
     form: Precipitation,
     rainfall: number,
-    metersPerSecond: number
+    wind: { metersPerSecond: number; windX: number; windZ: number }
   ): void {
     const { weather } = this.#mirror.frame;
 
@@ -378,7 +378,9 @@ export class WorldRenderer {
     this.#fire.smoke.sunDirection.value
       .subVectors(this.#atmosphere.sun.position, this.#atmosphere.sun.target.position)
       .normalize();
-    this.#fire.smoke.wind.value.set(weather.windX, weather.windZ).multiplyScalar(Math.min(1.5, metersPerSecond / 5));
+    this.#fire.smoke.wind.value
+      .set(weather.windX, weather.windZ)
+      .multiplyScalar(Math.min(1.5, wind.metersPerSecond / 5));
     this.#fire.update(this.#mirror, view.camera, darkness);
     this.#effects.add(view.effects);
     this.#effects.update(view.realSeconds, gameSeconds);
@@ -394,8 +396,8 @@ export class WorldRenderer {
         brightness,
         form,
         precipitation: weather.precipitation,
-        windX: weather.windX * metersPerSecond,
-        windZ: weather.windZ * metersPerSecond,
+        windX: wind.windX,
+        windZ: wind.windZ,
       },
       view
     );

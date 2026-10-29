@@ -1,6 +1,6 @@
 import type { BuildingKind } from "../../../content/buildings.ts";
 import type { Mover } from "../../agents/movement.ts";
-import type { Building } from "../buildings.ts";
+import { type Building, isComplete } from "../buildings.ts";
 import type { Person } from "../person.ts";
 
 const WALL_COVER: Readonly<Partial<Record<BuildingKind, number>>> = { palisade: 0.3, stoneWall: 0.5 };
@@ -15,7 +15,7 @@ export function wallCover(victim: Person, attacker: Person, buildings: readonly 
   for (const building of buildings) {
     const shelter = WALL_COVER[building.kind];
 
-    if (shelter === undefined || building.tribeId !== victim.tribeId || building.progress < 1) {
+    if (shelter === undefined || building.tribeId !== victim.tribeId || !isComplete(building)) {
       continue;
     }
 

@@ -6,7 +6,7 @@ import { ORTHOGONAL_STEPS } from "../../world/world-grid.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import type { WorldState } from "../world/world-state.ts";
 
-const HOT_GROUND = 0.03;
+export const HOT_GROUND = 0.03;
 const QUARRY_SLOPE = 0.9;
 const CLIFF_SLOPE = 1.1;
 const FISHING_DEPTH = 0.6;

@@ -4,10 +4,10 @@ import { saturate } from "../shared/math.ts";
 import { createNoiseSampler } from "../shared/noise.ts";
 import { createRandom } from "../shared/random.ts";
 import { gradientZAt, slopeAt } from "../world/footing.ts";
-import { hasWater, type River } from "../world/water.ts";
-import type { WorldGrid } from "../world/world-grid.ts";
+import { hasWater } from "../world/water.ts";
+import { ORTHOGONAL_STEPS, type WorldGrid } from "../world/world-grid.ts";
 import { islandPointAt } from "./relief.ts";
-import { findPools, findSmallAreas, isWetland, measureWetness } from "./wetlands.ts";
+import { findPools, findSmallAreas, isWetland, measureWetness, type WetlandInputs } from "./wetlands.ts";
 
 const MAXIMUM_WATER_DISTANCE = 64;
 const GLACIER_TEMPERATURE = -2.4;
@@ -41,18 +41,6 @@ const BIOME_GROUND: Readonly<Record<BiomeIndex, GroundIndex>> = {
   [Biome.Tundra]: Ground.Tundra,
   [Biome.Water]: Ground.Sand,
 };
-
-interface ClimateInputs {
-  coastDistance: Float32Array;
-  desert: Float64Array;
-  grid: WorldGrid;
-  heights: Float32Array;
-  lakeIds: Int32Array;
-  riverStrength: Uint8Array;
-  rivers: readonly River[];
-  seed: number;
-  waterSurface: Float32Array;
-}
 
 interface ClimateResult {
   baseTemperature: Float32Array;
@@ -194,7 +182,16 @@ function distanceToWater(grid: WorldGrid, waterSurface: Float32Array, heights: F
       continue;
     }
 
-    for (const neighbor of orthogonalNeighbors(grid, cell)) {
+    const column = grid.columnOf(cell);
+    const row = grid.rowOf(cell);
+
+    for (const [columnOffset, rowOffset] of ORTHOGONAL_STEPS) {
+      if (!grid.contains(column + columnOffset, row + rowOffset)) {
+        continue;
+      }
+
+      const neighbor = grid.index(column + columnOffset, row + rowOffset);
+
       if (distances[neighbor] > next) {
         distances[neighbor] = next;
         queue[tail] = neighbor;
@@ -206,30 +203,6 @@ function distanceToWater(grid: WorldGrid, waterSurface: Float32Array, heights: F
   return distances;
 }
 
-function orthogonalNeighbors(grid: WorldGrid, cell: number): number[] {
-  const column = grid.columnOf(cell);
-  const row = grid.rowOf(cell);
-  const neighbors: number[] = [];
-
-  if (column > 0) {
-    neighbors.push(cell - 1);
-  }
-
-  if (column < grid.cellsPerSide - 1) {
-    neighbors.push(cell + 1);
-  }
-
-  if (row > 0) {
-    neighbors.push(cell - grid.cellsPerSide);
-  }
-
-  if (row < grid.cellsPerSide - 1) {
-    neighbors.push(cell + grid.cellsPerSide);
-  }
-
-  return neighbors;
-}
-
 function northFacing(gradientZ: number, slope: number): number {
   if (slope < 1e-4) {
     return 0;
@@ -238,17 +211,10 @@ function northFacing(gradientZ: number, slope: number): number {
   return (gradientZ / slope) * Math.min(1, slope * 3);
 }
 
-function measureSlopes(grid: WorldGrid, heights: Float32Array): Slopes {
-  const slopes: Slopes = { north: new Float32Array(grid.cellCount), slope: new Float32Array(grid.cellCount) };
+function measureSlopes(grid: WorldGrid, heights: Float32Array, slopes: Float64Array): Slopes {
+  const north = slopes.map((slope, cell) => northFacing(gradientZAt(heights, grid, cell), slope));
 
-  for (let cell = 0; cell < grid.cellCount; cell += 1) {
-    const slope = slopeAt(heights, grid, cell);
-
-    slopes.north[cell] = northFacing(gradientZAt(heights, grid, cell), slope);
-    slopes.slope[cell] = slope;
-  }
-
-  return slopes;
+  return { north: Float32Array.from(north), slope: Float32Array.from(slopes) };
 }
 
 function riverBankWidth(strength: number): number {
@@ -259,7 +225,7 @@ function riverBankWidth(strength: number): number {
   return strength >= BROAD_RIVER_STRENGTH ? 2 : 1;
 }
 
-function markRiverBank(inputs: ClimateInputs, slopes: Float32Array, banks: Uint8Array, source: number): void {
+function markRiverBank(inputs: WetlandInputs, slopes: Float32Array, banks: Uint8Array, source: number): void {
   const { grid, heights, waterSurface } = inputs;
 
   const width = riverBankWidth(inputs.riverStrength[source]);
@@ -285,7 +251,7 @@ function markRiverBank(inputs: ClimateInputs, slopes: Float32Array, banks: Uint8
   }
 }
 
-function findRiverBanks(inputs: ClimateInputs, slopes: Float32Array): Uint8Array {
+function findRiverBanks(inputs: WetlandInputs, slopes: Float32Array): Uint8Array {
   const { heights, riverStrength, waterSurface } = inputs;
 
   const banks = new Uint8Array(heights.length);
@@ -299,7 +265,7 @@ function findRiverBanks(inputs: ClimateInputs, slopes: Float32Array): Uint8Array
   return banks;
 }
 
-function isStillWater(inputs: ClimateInputs, cell: number): boolean {
+function isStillWater(inputs: WetlandInputs, cell: number): boolean {
   if (inputs.lakeIds[cell] >= 0) {
     return true;
   }
@@ -307,7 +273,7 @@ function isStillWater(inputs: ClimateInputs, cell: number): boolean {
   return inputs.riverStrength[cell] === 0 && hasWater(inputs.waterSurface[cell], inputs.heights[cell]);
 }
 
-function isNearLakeShore(inputs: ClimateInputs, column: number, row: number, height: number): boolean {
+function isNearLakeShore(inputs: WetlandInputs, column: number, row: number, height: number): boolean {
   const { grid } = inputs;
 
   for (let rowOffset = -3; rowOffset <= 3; rowOffset += 1) {
@@ -342,14 +308,15 @@ function groundFor(biome: BiomeIndex, cell: CellClimate, waterLevel: number): Gr
   return BIOME_GROUND[biome];
 }
 
-export function buildClimate(inputs: ClimateInputs): ClimateResult {
+export function buildClimate(inputs: WetlandInputs): ClimateResult {
   const { grid, heights, waterSurface } = inputs;
 
   const noise = createNoiseSampler(createRandom(inputs.seed * 13 + 5));
   const waterDistance = distanceToWater(grid, waterSurface, heights);
-  const slopes = measureSlopes(grid, heights);
+  const exactSlopes = Float64Array.from({ length: grid.cellCount }, (_, cell) => slopeAt(heights, grid, cell));
+  const slopes = measureSlopes(grid, heights, exactSlopes);
   const riverBanks = findRiverBanks(inputs, slopes.slope);
-  const wetness = measureWetness(inputs);
+  const wetness = measureWetness(inputs, exactSlopes);
   const drained = new Uint8Array(grid.cellCount);
   const drainedGround = new Uint8Array(grid.cellCount);
   const result: ClimateResult = {
@@ -417,7 +384,7 @@ export function buildClimate(inputs: ClimateInputs): ClimateResult {
   return result;
 }
 
-function shapeSwamps(inputs: ClimateInputs, result: ClimateResult, wetness: Float32Array, drained: DrainedLand): void {
+function shapeSwamps(inputs: WetlandInputs, result: ClimateResult, wetness: Float32Array, drained: DrainedLand): void {
   const { grid, seed } = inputs;
 
   for (const cell of findSmallAreas(grid, (candidate) => result.biome[candidate] === Biome.Swamp)) {

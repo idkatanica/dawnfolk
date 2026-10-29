@@ -2,7 +2,6 @@ import { DEPOSIT_KINDS, DEPOSITS, type DepositKind } from "../content/deposits.t
 import { Ground } from "../content/grounds.ts";
 import { FULL_TURN, hashToUnit } from "../shared/math.ts";
 import { createRandom, type RandomSource } from "../shared/random.ts";
-import { isOnIsland } from "../world/coast.ts";
 import type { Deposit } from "../world/deposits.ts";
 import { slopeAt } from "../world/footing.ts";
 import type { TerrainData } from "../world/terrain-data.ts";
@@ -36,7 +35,7 @@ interface DepositPlanner {
 function isLand(planner: DepositPlanner, cell: number): boolean {
   const { grid, reserved, terrain } = planner;
 
-  if (!isOnIsland(terrain.coastDistance, cell) || terrain.coastDistance[cell] < RIM_MARGIN || grid.isOnEdge(cell)) {
+  if (terrain.coastDistance[cell] < RIM_MARGIN || grid.isOnEdge(cell)) {
     return false;
   }
 
@@ -127,10 +126,7 @@ function isInVein(planner: DepositPlanner, center: number, cell: number, angle: 
 function isInClayBank(planner: DepositPlanner, center: number, cell: number, radius: number): boolean {
   const { grid } = planner;
 
-  const distance = Math.hypot(
-    grid.cellCenterX(cell) - grid.cellCenterX(center),
-    grid.cellCenterZ(cell) - grid.cellCenterZ(center)
-  );
+  const distance = grid.distanceBetween(center, cell);
 
   return hashToUnit(grid.columnOf(cell), grid.rowOf(cell), VEIN_SALT) < 1.15 - distance / radius;
 }

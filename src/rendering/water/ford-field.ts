@@ -1,6 +1,5 @@
 import {
   abs,
-  clamp,
   dot,
   Fn,
   float,
@@ -18,9 +17,10 @@ import {
 } from "three/tsl";
 import { type DataTexture, type Node, RedFormat, RGBAFormat } from "three/webgpu";
 import { distanceToSegment } from "../../shared/math.ts";
-import { type Crossing, crossingLength, type Ford } from "../../world/crossings.ts";
+import { type Crossing, crossingLength, crossingMiddle, type Ford } from "../../world/crossings.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { floatDataTexture } from "../data-textures.ts";
+import { cellAtNode } from "../terrain/height-sampling.ts";
 
 export const FORD_PATH_REACH = 9;
 
@@ -124,10 +124,9 @@ export class FordField {
 
       this.#segmentData.set([ford.startX, ford.startZ, ford.endX, ford.endZ], slot * 4);
 
-      const middleX = (ford.startX + ford.endX) / 2;
-      const middleZ = (ford.startZ + ford.endZ) / 2;
+      const middle = crossingMiddle(ford);
 
-      for (const cell of grid.cellsInRadius(middleX, middleZ, fordLength / 2 + FORD_PATH_REACH + reach)) {
+      for (const cell of grid.cellsInRadius(middle.x, middle.z, fordLength / 2 + FORD_PATH_REACH + reach)) {
         if (distanceToSegment(grid.cellCenterX(cell), grid.cellCenterZ(cell), start, end) <= reach) {
           this.#cellData[cell] = slot;
         }
@@ -140,10 +139,9 @@ export class FordField {
 
   marksNode(point: Node<"vec2">): Node<"vec2"> {
     const grid = this.#grid;
-    const last = grid.cellsPerSide - 1;
 
-    const cell = clamp(point.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
-    const slot = textureLoad(this.cells, ivec2(cell)).x;
+    const cell = cellAtNode(grid, point);
+    const slot = textureLoad(this.cells, cell).x;
 
     return Fn(() => {
       const marks = vec2(0, 0).toVar();

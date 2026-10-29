@@ -59,14 +59,18 @@ export function crossingLength(crossing: CrossingSpan): number {
   return Math.hypot(crossing.endX - crossing.startX, crossing.endZ - crossing.startZ);
 }
 
-function directionOf(crossing: CrossingSpan): { x: number; z: number } {
+export function crossingMiddle(crossing: CrossingSpan): { x: number; z: number } {
+  return { x: (crossing.startX + crossing.endX) / 2, z: (crossing.startZ + crossing.endZ) / 2 };
+}
+
+export function crossingDirection(crossing: CrossingSpan): { x: number; z: number } {
   const length = Math.max(1e-6, crossingLength(crossing));
 
   return { x: (crossing.endX - crossing.startX) / length, z: (crossing.endZ - crossing.startZ) / length };
 }
 
 export function crossingPointOf(crossing: CrossingSpan, x: number, z: number): CrossingPoint {
-  const direction = directionOf(crossing);
+  const direction = crossingDirection(crossing);
 
   const offsetX = x - crossing.startX;
   const offsetZ = z - crossing.startZ;
@@ -78,7 +82,7 @@ export function crossingPointOf(crossing: CrossingSpan, x: number, z: number): C
 }
 
 export function pointOnCrossing(crossing: CrossingSpan, along: number, across: number): { x: number; z: number } {
-  const direction = directionOf(crossing);
+  const direction = crossingDirection(crossing);
 
   return {
     x: crossing.startX + direction.x * along - direction.z * across,
@@ -139,7 +143,7 @@ export function logRadiusAt(crossing: CrossingSpan, along: number): number {
 export function fallenLog(log: LogBridge): FallenLog {
   const length = Math.max(1e-6, crossingLength(log));
   const hasRootAtStart = isRootAtStart(log);
-  const direction = directionOf(log);
+  const direction = crossingDirection(log);
 
   const startBottom = log.startDeck - 2 * logRadiusAt(log, 0);
   const endBottom = log.endDeck - 2 * logRadiusAt(log, length);

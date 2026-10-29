@@ -1,7 +1,15 @@
 import { smoothstep } from "../../shared/math.ts";
 import type { SurfacePoint, VertexStyle } from "../mesh/mesh-builder.ts";
-import { type BoneBlend, chainBlend, chainStyle, createChain, type WeightChain } from "../rig/skin-weights.ts";
-import { HumanBone, HumanJoint, onSide, type Side, sideBones } from "./human-skeleton.ts";
+import { onSide, type Side } from "../mesh/transforms.ts";
+import {
+  type BoneBlend,
+  blendStyle,
+  chainBlend,
+  chainStyle,
+  createChain,
+  type WeightChain,
+} from "../rig/skin-weights.ts";
+import { HumanBone, HumanJoint, sideBones } from "./human-skeleton.ts";
 
 const TORSO_CHAIN = createChain(
   [HumanBone.Pelvis, HumanBone.Spine, HumanBone.Chest, HumanBone.Neck, HumanBone.Head],
@@ -15,13 +23,10 @@ const TORSO_CHAIN = createChain(
 
 export const TORSO_STYLE: VertexStyle = chainStyle(TORSO_CHAIN);
 
-export const FLEXIBLE_TORSO_STYLE: VertexStyle = {
-  boneA: (point) => torsoBlend(point).boneA,
-  boneB: (point) => torsoBlend(point).boneB,
-  boneWeight: (point) => torsoBlend(point).weight,
-};
+export const FLEXIBLE_TORSO_STYLE: VertexStyle = blendStyle(torsoBlend);
 
 const SKIRT_BACK_FOLLOW = 0.4;
+const SKIRT_HIP_LINE = 0.92;
 const SKIRT_SPLIT_START = 0.01;
 const SKIRT_SPLIT_END = 0.09;
 const ARM_CHAINS = { left: armChain(1), right: armChain(-1) };
@@ -98,7 +103,7 @@ function torsoBlend(point: SurfacePoint): BoneBlend {
   return { boneA: chain.boneA, boneB: influence.bone, weight: influence.weight };
 }
 
-export function skirtStyle(followsLegs: number, hipLine: number, hemLine: number): VertexStyle {
+export function skirtStyle(followsLegs: number, hemLine: number): VertexStyle {
   return {
     boneA: HumanBone.Pelvis,
     boneB: (point) => sideBones(sideOf(point)).thigh,
@@ -107,7 +112,7 @@ export function skirtStyle(followsLegs: number, hipLine: number, hemLine: number
       const follow = followsLegs * (SKIRT_BACK_FOLLOW + (1 - SKIRT_BACK_FOLLOW) * front);
       const apart = smoothstep(SKIRT_SPLIT_START, SKIRT_SPLIT_END, Math.abs(point.position.x));
 
-      return follow * apart * smoothstep(hipLine, hemLine, point.position.y);
+      return follow * apart * smoothstep(SKIRT_HIP_LINE, hemLine, point.position.y);
     },
   };
 }

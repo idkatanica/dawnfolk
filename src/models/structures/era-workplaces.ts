@@ -1,7 +1,7 @@
 import { FULL_TURN, saturate, smoothstep } from "../../shared/math.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import type { SurfacePoint } from "../mesh/mesh-builder.ts";
-import { card, cylinder, type LoftSection, lathe, loft, tube } from "../mesh/shapes.ts";
+import { card, cylinder, lathe, loft, tube } from "../mesh/shapes.ts";
 import { type Triple, transformOf } from "../mesh/transforms.ts";
 import {
   addBlock,
@@ -20,6 +20,7 @@ import {
   rising,
   type StructureContext,
   stoneShade,
+  thatchSections,
 } from "./structure-parts.ts";
 
 const GLOWING_EMBERS = { part: GLOW_PART, slot: MaterialSlot.Ember } as const;
@@ -74,17 +75,6 @@ function granaryWallRadius(height: number): number {
   const bottom = FLOOR_TOP - 0.01;
 
   return GRANARY_WALL_RADIUS - (GRANARY_WALL_TAPER * (height - bottom)) / (GRANARY_WALL_TOP - bottom);
-}
-
-function thatchCone(bottom: number, top: number, radius: number): LoftSection[] {
-  return [
-    { radiusX: 0, radiusZ: 0, y: bottom + 0.25 },
-    { radiusX: radius * 0.8, radiusZ: radius * 0.8, y: bottom + 0.12 },
-    { radiusX: radius, radiusZ: radius, y: bottom },
-    { radiusX: radius * 0.45, radiusZ: radius * 0.45, y: bottom + (top - bottom) * 0.62 },
-    { radiusX: 0.05, radiusZ: 0.05, y: top },
-    { radiusX: 0, radiusZ: 0, y: top + 0.02 },
-  ];
 }
 
 function addGranaryStilts(context: StructureContext): void {
@@ -170,7 +160,9 @@ function addGranaryStore(context: StructureContext): void {
     slot: MaterialSlot.Ash,
   });
 
-  context.builder.add(loft(thatchCone(GRANARY_ROOF_BOTTOM, GRANARY_ROOF_TOP, GRANARY_ROOF_RADIUS), segments), {
+  const thatch = thatchSections(GRANARY_ROOF_BOTTOM, GRANARY_ROOF_TOP, GRANARY_ROOF_RADIUS, () => 1);
+
+  context.builder.add(loft(thatch, segments), {
     style: {
       buildOrder: rising(0.68, 0.92, GRANARY_ROOF_BOTTOM, GRANARY_ROOF_TOP),
       shade: (point) => 0.72 + 0.28 * smoothstep(GRANARY_ROOF_BOTTOM, GRANARY_ROOF_TOP, point.position.y),

@@ -15,12 +15,6 @@ export interface SimulationConnection {
   send: (command: SimulationCommand) => void;
 }
 
-function settle<Value>(run: () => Value): Promise<Value> {
-  return new Promise((resolve) => {
-    resolve(run());
-  });
-}
-
 function failureOf(worker: Worker): Promise<never> {
   const failure = new Promise<never>((_resolve, reject) => {
     worker.addEventListener(
@@ -76,43 +70,6 @@ export class WorkerSimulationConnection implements SimulationConnection {
 
   dispose(): void {
     this.#worker.terminate();
-  }
-
-  send(command: SimulationCommand): void {
-    this.#commands.push(command);
-  }
-}
-
-export class LocalSimulationConnection implements SimulationConnection {
-  readonly #api: SimulationWorkerApi;
-  readonly #commands: SimulationCommand[] = [];
-
-  constructor(api: SimulationWorkerApi) {
-    this.#api = api;
-  }
-
-  advance(realSeconds: number): Promise<SimulationFrame> {
-    return settle(() => this.#api.advance(realSeconds, this.#commands.splice(0)));
-  }
-
-  createWorld(request: WorldRequest, onProgress: (progress: GenerationProgress) => void): Promise<InitialWorld> {
-    this.#commands.splice(0);
-
-    return settle(() => this.#api.createWorld(request, onProgress));
-  }
-
-  loadWorld(saved: SavedWorldState, onProgress: (progress: GenerationProgress) => void): Promise<InitialWorld> {
-    this.#commands.splice(0);
-
-    return settle(() => this.#api.loadWorld(saved, onProgress));
-  }
-
-  saveWorld(): Promise<SavedWorldState | null> {
-    return settle(() => this.#api.saveWorld());
-  }
-
-  dispose(): void {
-    this.#commands.splice(0);
   }
 
   send(command: SimulationCommand): void {

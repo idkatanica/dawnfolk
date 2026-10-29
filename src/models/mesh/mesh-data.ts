@@ -65,17 +65,17 @@ export function boundsOf(positions: Float32Array): Bounds {
   return { maximum, minimum };
 }
 
-function emptyChannels(count: number): Record<VertexChannel, Float32Array> {
+export function channelRecord<Value>(make: (channel: VertexChannel) => Value): Record<VertexChannel, Value> {
   return {
-    boneA: new Float32Array(count),
-    boneB: new Float32Array(count),
-    boneWeight: new Float32Array(count),
-    buildOrder: new Float32Array(count),
-    flutter: new Float32Array(count),
-    part: new Float32Array(count),
-    shade: new Float32Array(count),
-    slot: new Float32Array(count),
-    sway: new Float32Array(count),
+    boneA: make("boneA"),
+    boneB: make("boneB"),
+    boneWeight: make("boneWeight"),
+    buildOrder: make("buildOrder"),
+    flutter: make("flutter"),
+    part: make("part"),
+    shade: make("shade"),
+    slot: make("slot"),
+    sway: make("sway"),
   };
 }
 
@@ -86,7 +86,7 @@ export function mergeMeshes(meshes: readonly MeshData[]): MeshData {
   const positions = new Float32Array(totalVertices * 3);
   const normals = new Float32Array(totalVertices * 3);
   const indices = new Uint32Array(totalIndices);
-  const channels = emptyChannels(totalVertices);
+  const channels = channelRecord(() => new Float32Array(totalVertices));
 
   let vertexOffset = 0;
   let indexOffset = 0;

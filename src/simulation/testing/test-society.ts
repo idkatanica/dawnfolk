@@ -4,6 +4,7 @@ import { createRandom, type RandomSource } from "../../shared/random.ts";
 import { WorldGrid } from "../../world/world-grid.ts";
 import { HazardMap } from "../agents/hazards.ts";
 import { NavigationGrid } from "../agents/navigation.ts";
+import { isDryFooting } from "../agents/walkable-ground.ts";
 import { Chronicle } from "../chronicle.ts";
 import { EffectLog } from "../effects.ts";
 import { FaunaSystem } from "../fauna/fauna.ts";
@@ -139,9 +140,7 @@ export function isOnDryLand(harness: SocietyHarness, person: Person): boolean {
 }
 
 export function isOnDryFooting(harness: SocietyHarness, x: number, z: number): boolean {
-  const cell = harness.world.grid.cellAt(x, z);
-
-  return harness.world.isWalkable(cell) && !harness.world.touchesWater(cell);
+  return isDryFooting(harness.world, harness.world.grid.cellAt(x, z));
 }
 
 export class SocietyHarness {

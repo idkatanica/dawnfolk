@@ -3,6 +3,7 @@ import { setDestination } from "../../agents/movement.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
 import type { WorldState } from "../../world/world-state.ts";
 import { dropCarrying, runSpeed } from "../person.ts";
+import { HOT_GROUND } from "../resources.ts";
 import type { PersonTick } from "../society-context.ts";
 import { type Job, walk } from "./job.ts";
 
@@ -15,7 +16,6 @@ const OPEN_RUN_WEIGHT = 2;
 const CORNERED_RUN = 90;
 const LOOKAHEAD_STEP = 38;
 const LOOKAHEAD_STEPS = 4;
-const HOT_GROUND = 0.03;
 const BURNT_OUT = 0.8;
 const STEEP = 1;
 const NOT_WET = -1;

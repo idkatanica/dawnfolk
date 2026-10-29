@@ -1,11 +1,12 @@
+import { isLitCampfire } from "../../content/buildings.ts";
 import { FULL_TURN } from "../../shared/math.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { aroundPoint, type Waypoint } from "../agents/navigation.ts";
-import { type Building, type BuildingSystem, isCampfireLit, isComplete } from "./buildings.ts";
+import { type Building, type BuildingSystem, isComplete } from "./buildings.ts";
 import type { Person } from "./person.ts";
 import type { Tribe } from "./tribe.ts";
 
-const GOLDEN_ANGLE = 2.399;
+export const GOLDEN_ANGLE = 2.399;
 
 export function campPoint(tribe: Tribe): Waypoint {
   return { x: tribe.campX, z: tribe.campZ };
@@ -22,7 +23,7 @@ export function campfireOf(tribe: Tribe, buildings: BuildingSystem): Building | 
 export function litCampfireOf(tribe: Tribe, buildings: BuildingSystem): Building | null {
   const campfire = campfireOf(tribe, buildings);
 
-  if (!isCampfireLit(campfire)) {
+  if (campfire === null || !isLitCampfire(campfire)) {
     return null;
   }
 

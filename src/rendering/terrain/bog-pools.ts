@@ -17,6 +17,7 @@ import {
 } from "three/tsl";
 import type { Node } from "three/webgpu";
 import type { WorldGrid } from "../../world/world-grid.ts";
+import { mapCoordinatesNode } from "./height-sampling.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
 export const POOL_BANK = 0.1;
@@ -29,7 +30,7 @@ const NO_POOL = -1;
 
 export function poolReachNode(textures: TerrainTextures, grid: WorldGrid, point: Node<"vec2">): Node<"float"> {
   const last = grid.cellsPerSide - 1;
-  const nearPool = texture(textures.wetland, point.add(grid.halfSize).div(grid.worldSize)).level(float(0)).g;
+  const nearPool = texture(textures.wetland, mapCoordinatesNode(grid, point)).level(float(0)).g;
 
   return Fn(() => {
     const reach = float(NO_POOL).toVar();

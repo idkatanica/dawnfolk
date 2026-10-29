@@ -5,6 +5,7 @@ import { type MeshData, triangleCount, vertexCount } from "../mesh/mesh-data.ts"
 import { highestExposedOpenEdge, meshProblems } from "../testing/mesh-checks.ts";
 import { isInsidePiece, loosePieces, type MeshPiece, meshPieces } from "../testing/mesh-connectivity.ts";
 import { windBentMesh } from "../testing/moved-mesh.ts";
+import { widestReach } from "../testing/structure-checks.ts";
 import { BERRY_RADIUS, isBerryPart } from "./berries.ts";
 import { CACTUS_FORMS, cactusForm } from "./cacti.ts";
 import {
@@ -49,15 +50,7 @@ function shortestVariantShare(species: PlantSpeciesIndex): number {
 }
 
 function widestRadius(species: PlantSpeciesIndex): number {
-  let widest = 0;
-
-  for (const mesh of buildPlantVariants(species, "high")) {
-    for (let vertex = 0; vertex < vertexCount(mesh); vertex += 1) {
-      widest = Math.max(widest, Math.hypot(mesh.positions[vertex * 3], mesh.positions[vertex * 3 + 2]));
-    }
-  }
-
-  return widest;
+  return buildPlantVariants(species, "high").reduce((widest, mesh) => Math.max(widest, widestReach(mesh)), 0);
 }
 
 function workingRadius(species: PlantSpeciesIndex): number {

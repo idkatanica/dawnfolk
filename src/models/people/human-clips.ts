@@ -1,12 +1,13 @@
 import type { AgeGroup } from "../../content/life-stages.ts";
 import type { CarriedItem, PersonPose } from "../../world/agent-poses.ts";
+import { SIDES, type Side } from "../mesh/transforms.ts";
 import { arc, cosineWave, degrees, type Keyframe, keyframes, wave } from "../rig/curves.ts";
 import { type ClipTiming, type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import type { MotionStyle } from "./appearance.ts";
 import { FIGHT_CLIPS } from "./fight-clips.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
-import { HumanBone, otherSide, SIDES, type Side } from "./human-skeleton.ts";
-import { RUNNING, runningLegs, WALKING, walkingLegs } from "./leg-cycles.ts";
+import { HumanBone, otherSide } from "./human-skeleton.ts";
+import { cycleLegs, RUNNING, WALKING } from "./leg-cycles.ts";
 import { plantFeet } from "./planted-feet.ts";
 
 const LEAP_STRIDE = 1.45;
@@ -219,7 +220,7 @@ function carryingArms(pose: Pose, phase: number, context: HumanClipContext): voi
 }
 
 function walk(pose: Pose, phase: number, context: HumanClipContext): void {
-  walkingLegs(pose, phase, strideScale(context, context.motion.stride), WALKING);
+  cycleLegs(pose, phase, strideScale(context, context.motion.stride), WALKING);
   walkingTrunk(pose, phase);
   walkingArm(pose, phase, 1, context.motion.armSwing);
   walkingArm(pose, phase, -1, context.motion.armSwing);
@@ -227,14 +228,14 @@ function walk(pose: Pose, phase: number, context: HumanClipContext): void {
 }
 
 function carry(pose: Pose, phase: number, context: HumanClipContext): void {
-  walkingLegs(pose, phase, strideScale(context, context.motion.stride) * 0.9, WALKING);
+  cycleLegs(pose, phase, strideScale(context, context.motion.stride) * 0.9, WALKING);
   walkingTrunk(pose, phase);
   carryingArms(pose, phase, context);
   stoop(pose, context);
 }
 
 function running(pose: Pose, phase: number, context: HumanClipContext, stride: number): void {
-  runningLegs(pose, phase, stride, RUNNING);
+  cycleLegs(pose, phase, stride, RUNNING);
 
   for (const side of SIDES) {
     const armSwing = -side * cosineWave(phase) * context.motion.armSwing;

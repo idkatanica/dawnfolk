@@ -59,7 +59,7 @@ export function pondFits(grid: WorldGrid, heights: Float32Array, pond: Spring): 
   return true;
 }
 
-function isRiverWater(targets: PondTargets, cell: number): boolean {
+export function isRiverWater(targets: PondTargets, cell: number): boolean {
   return targets.riverStrength[cell] > 0 && hasWater(targets.waterSurface[cell], targets.heights[cell]);
 }
 

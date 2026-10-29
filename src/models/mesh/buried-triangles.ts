@@ -1,4 +1,4 @@
-import { boundsOf, type MeshData, type VertexChannel, vertexCount } from "./mesh-data.ts";
+import { boundsOf, channelRecord, type MeshData, type VertexChannel, vertexCount } from "./mesh-data.ts";
 import type { Triple } from "./transforms.ts";
 
 const RAY_DIRECTIONS: readonly Triple[] = [
@@ -214,17 +214,7 @@ function keptTriangles(mesh: MeshData, keeps: (triangle: number) => boolean): Me
 
   return {
     bounds: boundsOf(positions),
-    channels: {
-      boneA: pickedChannel(mesh, "boneA", order),
-      boneB: pickedChannel(mesh, "boneB", order),
-      boneWeight: pickedChannel(mesh, "boneWeight", order),
-      buildOrder: pickedChannel(mesh, "buildOrder", order),
-      flutter: pickedChannel(mesh, "flutter", order),
-      part: pickedChannel(mesh, "part", order),
-      shade: pickedChannel(mesh, "shade", order),
-      slot: pickedChannel(mesh, "slot", order),
-      sway: pickedChannel(mesh, "sway", order),
-    },
+    channels: channelRecord((channel) => pickedChannel(mesh, channel, order)),
     indices: Uint32Array.from(indices),
     normals,
     positions,

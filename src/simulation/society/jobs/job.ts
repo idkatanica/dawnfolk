@@ -4,7 +4,6 @@ import type { VegetationStore } from "../../../world/vegetation-store.ts";
 import { faceTowards, moveAlong, setDestination, stopMoving } from "../../agents/movement.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
 import { dryStandSpot, nearestDrySpot } from "../../agents/walkable-ground.ts";
-import type { WorldState } from "../../world/world-state.ts";
 import { isCarryingAnything, type Person, walkSpeed } from "../person.ts";
 import type { PersonTick, SocietyContext } from "../society-context.ts";
 
@@ -125,8 +124,19 @@ function approachDirection(person: Person, target: WorkTarget): Waypoint {
   return { x: awayX / distance, z: awayZ / distance };
 }
 
-export function canWorkAt(world: WorldState, target: WorkTarget, from: Waypoint): boolean {
-  return dryStandSpot(world, target, target.radius + target.reach, from) !== null;
+export function isFreePlant(tick: PersonTick, plant: number): boolean {
+  return tick.context.world.vegetation.isAlive(plant) && !tick.tribe.claimedPlants.has(plant);
+}
+
+export function canWorkAtPlant(tick: PersonTick, plant: number, reach: number): boolean {
+  const { navigation, world } = tick.context;
+  const { mover } = tick.person;
+
+  const target = plantTarget(world.vegetation, plant, reach);
+
+  return (
+    dryStandSpot(world, target, target.radius + target.reach, mover) !== null && navigation.isWithinWalk(mover, target)
+  );
 }
 
 export function headToWork(person: Person, target: WorkTarget, context: SocietyContext): void {

@@ -8,14 +8,29 @@ const AXIS_X = new Vector3(1, 0, 0);
 const AXIS_Y = new Vector3(0, 1, 0);
 const AXIS_Z = new Vector3(0, 0, 1);
 const UNIT_SCALE = new Vector3(1, 1, 1);
+const pitch = new Quaternion();
+const roll = new Quaternion();
+const yaw = new Quaternion();
+
+export function boneRotation(angles: Float32Array, bone: number, isLimb: boolean, target: Quaternion): Quaternion {
+  const offset = bone * ANGLES_PER_BONE;
+
+  pitch.setFromAxisAngle(AXIS_X, angles[offset + RotationAxis.Pitch]);
+  roll.setFromAxisAngle(AXIS_Z, angles[offset + RotationAxis.Roll]);
+  yaw.setFromAxisAngle(AXIS_Y, angles[offset + RotationAxis.Yaw]);
+
+  if (isLimb) {
+    return target.copy(pitch).multiply(roll).multiply(yaw);
+  }
+
+  return target.copy(roll).multiply(pitch).multiply(yaw);
+}
 
 export class SkeletonPoser {
   readonly #isLimb: readonly boolean[];
   readonly #offsets: readonly Vector3[];
-  readonly #pitch = new Quaternion();
   readonly #point = new Vector3();
   readonly #restJoints: readonly Vector3[];
-  readonly #roll = new Quaternion();
   readonly #rotation = new Quaternion();
   readonly #scaleMatrix = new Matrix4();
   readonly #skeleton: Skeleton;
@@ -23,7 +38,6 @@ export class SkeletonPoser {
   readonly #toJoint = new Matrix4();
   readonly #translation = new Vector3();
   readonly #world: readonly Matrix4[];
-  readonly #yaw = new Quaternion();
 
   constructor(skeleton: Skeleton) {
     this.#skeleton = skeleton;
@@ -82,13 +96,9 @@ export class SkeletonPoser {
   }
 
   #poseBone(index: number, parent: number, pose: Pose, scales: Float32Array): void {
-    const angleOffset = index * ANGLES_PER_BONE;
     const joint = this.#restJoints[index];
 
-    this.#pitch.setFromAxisAngle(AXIS_X, pose.angles[angleOffset + RotationAxis.Pitch]);
-    this.#roll.setFromAxisAngle(AXIS_Z, pose.angles[angleOffset + RotationAxis.Roll]);
-    this.#yaw.setFromAxisAngle(AXIS_Y, pose.angles[angleOffset + RotationAxis.Yaw]);
-    this.#composeRotation(this.#isLimb[index]);
+    boneRotation(pose.angles, index, this.#isLimb[index], this.#rotation);
     this.#translation.copy(this.#offsets[index]);
 
     if (parent !== NO_PARENT) {
@@ -106,16 +116,6 @@ export class SkeletonPoser {
     this.#scaleMatrix.makeScale(scales[index * 3], scales[index * 3 + 1], scales[index * 3 + 2]);
     this.#toJoint.makeTranslation(-joint.x, -joint.y, -joint.z);
     this.#skin[index].multiplyMatrices(world, this.#scaleMatrix).multiply(this.#toJoint);
-  }
-
-  #composeRotation(isLimb: boolean): void {
-    if (isLimb) {
-      this.#rotation.copy(this.#pitch).multiply(this.#roll).multiply(this.#yaw);
-
-      return;
-    }
-
-    this.#rotation.copy(this.#roll).multiply(this.#pitch).multiply(this.#yaw);
   }
 
   #placeOnGround(pose: Pose): void {

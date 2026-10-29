@@ -32,6 +32,7 @@ import {
   type StructureContext,
   type StructureLevel,
   scaledMesh,
+  thatchSections,
 } from "./structure-parts.ts";
 
 export const SINGLE_MODEL_KINDS: readonly SingleModelKind[] = BUILDING_KINDS.filter(hasSingleModel);
@@ -330,17 +331,6 @@ function addHutDoor(context: StructureContext): void {
   );
 }
 
-function thatchRing(radius: number, bottom: number, top: number, segments: number): LoftSection[] {
-  return [
-    { radiusX: 0, radiusZ: 0, y: bottom + 0.25 },
-    { radiusX: radius * 0.8, radiusZ: radius * 0.8, y: bottom + 0.12 },
-    { radiusX: radius, radiusZ: radius, ripple: (around) => 1 + 0.03 * Math.sin(around * segments * 3), y: bottom },
-    { radiusX: radius * 0.45, radiusZ: radius * 0.45, y: bottom + (top - bottom) * 0.62 },
-    { radiusX: 0.05, radiusZ: 0.05, y: top },
-    { radiusX: 0, radiusZ: 0, y: top + 0.02 },
-  ];
-}
-
 function addHut(context: StructureContext): void {
   const { builder } = context;
 
@@ -383,7 +373,9 @@ function addHut(context: StructureContext): void {
     const bottom = 1.55 + tier * 0.55;
     const radius = (HUT_RADIUS + 0.55) * (1 - tier * 0.28);
 
-    builder.add(loft(thatchRing(radius, bottom, 3.7, segments), segments), {
+    const thatch = thatchSections(bottom, 3.7, radius, (around) => 1 + 0.03 * Math.sin(around * segments * 3));
+
+    builder.add(loft(thatch, segments), {
       style: {
         buildOrder: 0.55 + tier * 0.15,
         shade: (point) => 0.72 + 0.28 * smoothstep(bottom, 3.7, point.position.y),

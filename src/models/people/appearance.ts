@@ -1,7 +1,7 @@
 import { type AgeGroup, ageGroupOf, ELDER_AGE } from "../../content/life-stages.ts";
 import { colorFromPalette, mixColors, scaleColor } from "../../shared/color.ts";
 import { clamp, hashToUnit, lerp, smoothstep } from "../../shared/math.ts";
-import { createRandom, type RandomSource } from "../../shared/random.ts";
+import { type RandomSource, randomFromUnitSeed } from "../../shared/random.ts";
 
 const CHILD_GROWTH_YEARS = 12;
 
@@ -323,7 +323,7 @@ function clothingColors(random: RandomSource, tribe: TribeLook): Pick<Appearance
 }
 
 function eraRolls(seed: number): EraRolls {
-  const random = createRandom(Math.floor(seed * 2_147_483_647) + ERA_SALT);
+  const random = randomFromUnitSeed(seed, ERA_SALT);
 
   return {
     boots: random.next(),
@@ -406,7 +406,7 @@ function withEraDetails(appearance: PersonAppearance, era: number, seed: number)
 }
 
 export function personAppearance(input: AppearanceInput): PersonAppearance {
-  const random = createRandom(Math.floor(input.seed * 2_147_483_647) + 1);
+  const random = randomFromUnitSeed(input.seed, 1);
   const ageGroup = ageGroupOf(input.age);
   const elderGray = smoothstep(ELDER_AGE, ELDER_AGE + 15, input.age);
   const skinDarkness = skinTonePosition(random, input.tribe.id);

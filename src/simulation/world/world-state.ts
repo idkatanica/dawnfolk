@@ -374,10 +374,6 @@ export class WorldState {
     return this.occupancy[cell] === MONUMENT_GROUND || this.occupancy[cell] === SPRING_GROUND;
   }
 
-  isObstructedAt(x: number, z: number): boolean {
-    return this.isObstructed(this.grid.cellAt(x, z));
-  }
-
   isObstructedBetween(fromX: number, fromZ: number, toX: number, toZ: number): boolean {
     const from = this.grid.cellAt(fromX, fromZ);
 

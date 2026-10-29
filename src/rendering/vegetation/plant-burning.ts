@@ -15,6 +15,7 @@ import {
 } from "three/tsl";
 import type { Node } from "three/webgpu";
 import { smoothstep as smoothstepNumber } from "../../shared/math.ts";
+import { unitNoise3 } from "../node-helpers.ts";
 
 const CROWN_FIRE_START = 0.04;
 const CROWN_FIRE_FULL = 0.3;
@@ -29,6 +30,7 @@ const AFTERGLOW_SCORCH = 0.78;
 const AFTERGLOW_HEIGHT = 14;
 const AFTERGLOW_CROWN = 0.35;
 const SMOLDER_GLOW = 0.22;
+const CHARCOAL = vec3(0.035, 0.03, 0.028);
 const EMBER_COLOR = vec3(2.2, 0.48, 0.07);
 const FLAME_COLOR = vec3(3.2, 1.1, 0.2);
 const FAR_FLAME_COLOR = vec3(1.9, 0.62, 0.12);
@@ -100,11 +102,11 @@ export function plantBurn({ alive, burnt, fallen, fire, foliage, height, scorch 
   return { charring, crownLeft, embers, flames, smolder };
 }
 
-export function charredColor(color: Node<"vec3">, charring: Node<"float">, charcoal: Node<"vec3">): Node<"vec3"> {
+export function charredColor(color: Node<"vec3">, charring: Node<"float">): Node<"vec3"> {
   const scorched = vec3(0.13, 0.075, 0.04);
   const browned = mix(color, scorched, smoothstep(0, 0.45, charring));
 
-  return mix(browned, charcoal, smoothstep(0.35, 0.95, charring));
+  return mix(browned, CHARCOAL, smoothstep(0.35, 0.95, charring));
 }
 
 export function burnGlow({ embers, flames, phase, smolder }: BurnGlowInput): Node<"vec3"> {
@@ -133,7 +135,7 @@ export function burnGlow({ embers, flames, phase, smolder }: BurnGlowInput): Nod
           positionWorld.y.mul(TONGUE_STRETCH).sub(time.mul(TONGUE_RISE)).add(phase),
           positionWorld.z.mul(TONGUE_SCALE)
         );
-        const tongueNoise = mx_noise_float(rising).mul(0.5).add(0.5);
+        const tongueNoise = unitNoise3(rising);
         const tongues = smoothstep(float(0.82).sub(flames.mul(0.14)), 1, tongueNoise).mul(flames);
 
         const breathing = sin(time.mul(1.3).add(patches.mul(5)).add(phase))

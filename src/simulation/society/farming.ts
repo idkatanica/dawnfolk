@@ -64,8 +64,8 @@ function isFarmable(tribe: Tribe, cell: number, context: SocietyContext): boolea
   }
 
   return isDryWay(world, campPoint(tribe), {
-    x: world.grid.centerX(world.grid.columnOf(cell)),
-    z: world.grid.centerZ(world.grid.rowOf(cell)),
+    x: world.grid.cellCenterX(cell),
+    z: world.grid.cellCenterZ(cell),
   });
 }
 

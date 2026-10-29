@@ -1,5 +1,5 @@
 import { BUILDINGS, type BuildingRole } from "../../content/buildings.ts";
-import type { Building } from "./buildings.ts";
+import { type Building, isComplete } from "./buildings.ts";
 import { tribeBuildings } from "./camp-plan.ts";
 import { walkSpeed } from "./person.ts";
 import type { PersonTick } from "./society-context.ts";
@@ -64,7 +64,7 @@ function warmPlaces(tick: PersonTick): WarmPlace[] {
   const campfire = litCampfireOf(tick.tribe, tick.context.buildings);
 
   const hearths = tribeBuildings(tick.tribe, tick.context)
-    .filter((building) => building.progress >= 1 && HEARTH_ROLES.has(BUILDINGS[building.kind].role))
+    .filter((building) => isComplete(building) && HEARTH_ROLES.has(BUILDINGS[building.kind].role))
     .map((building) => ({
       building,
       reach: BUILDINGS[building.kind].footprint + SHELTER_REACH,

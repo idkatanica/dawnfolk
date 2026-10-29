@@ -1,15 +1,12 @@
 import {
   cameraViewMatrix,
-  clamp,
   cos,
   Fn,
   float,
-  floor,
   fract,
   fwidth,
   If,
   int,
-  ivec2,
   mix,
   normalize,
   normalWorldGeometry,
@@ -19,7 +16,6 @@ import {
   smoothstep,
   textureLoad,
   uniformArray,
-  vec2,
   vec3,
   vec4,
 } from "three/tsl";
@@ -27,6 +23,7 @@ import { Color, type Node, SRGBColorSpace, Vector3 } from "three/webgpu";
 import { CROP_KINDS, type CropKind, FENCED_CROP_OFFSET } from "../../content/crops.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { FurrowAxis, fieldSharesNode } from "./field-plan.ts";
+import { cellAtNode } from "./height-sampling.ts";
 import type { TerrainTextures } from "./terrain-textures.ts";
 
 export const FURROW_SPACING = 1;
@@ -98,7 +95,6 @@ export function fieldGroundNode(
   grain: Node<"vec2">
 ): FieldGround {
   const { earth, soil } = textures.groundAlbedo;
-  const last = grid.cellsPerSide - 1;
   const point = positionWorld.xz;
 
   const wobbled = point.add(grain.mul(EDGE_WOBBLE));
@@ -110,7 +106,7 @@ export function fieldGroundNode(
   const clods = grain.x.mul(0.08).add(grain.y.mul(0.05)).add(1);
 
   const { axis, shares } = fieldSharesNode(textures.fields.texture, grid, wobbled, [SOIL_EDGE, BORDER_EDGE], blur);
-  const cell = ivec2(clamp(floor(wobbled.add(grid.halfSize).div(grid.cellSize)), vec2(0, 0), vec2(last, last)));
+  const cell = cellAtNode(grid, wobbled);
 
   const isAlongX = axis.equal(int(FurrowAxis.AlongX));
 

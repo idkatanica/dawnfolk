@@ -1,4 +1,4 @@
-import type { CellRegion } from "../../world/change-tracking.ts";
+import { type CellRegion, grownRegion } from "../../world/change-tracking.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { LandAreas, NO_REGION } from "./land-areas.ts";
@@ -67,10 +67,6 @@ export class NavigationGrid {
     this.rebuild();
 
     return true;
-  }
-
-  isPassable(x: number, z: number): boolean {
-    return this.#world.isWalkableAt(x, z);
   }
 
   landingSpot(point: Waypoint): Waypoint {
@@ -148,11 +144,7 @@ export class NavigationGrid {
   #keepsFooting(region: CellRegion): boolean {
     const { grid } = this.#world;
 
-    const last = grid.cellsPerSide - 1;
-    const firstColumn = Math.max(0, region.firstColumn - 1);
-    const lastColumn = Math.min(last, region.lastColumn + 1);
-    const firstRow = Math.max(0, region.firstRow - 1);
-    const lastRow = Math.min(last, region.lastRow + 1);
+    const { firstColumn, firstRow, lastColumn, lastRow } = grownRegion(region, 1, grid.cellsPerSide);
 
     for (let row = firstRow; row <= lastRow; row += 1) {
       for (let column = firstColumn; column <= lastColumn; column += 1) {
@@ -198,9 +190,13 @@ export class NavigationGrid {
 
     for (let next = 0; next < length; next += 1) {
       const cell = queue[next];
+      const column = grid.columnOf(cell);
+      const row = grid.rowOf(cell);
 
-      for (const neighbor of this.#neighborsOf(cell)) {
-        if (steps[neighbor] === NO_SHORE) {
+      for (const offset of NEIGHBOR_OFFSETS) {
+        const neighbor = grid.neighborIndex(column, row, offset);
+
+        if (neighbor >= 0 && steps[neighbor] === NO_SHORE) {
           steps[neighbor] = steps[cell] + 1;
           this.#leadsToSteepShore[neighbor] = leadsToSteepShore;
           queue[length] = neighbor;
@@ -211,35 +207,38 @@ export class NavigationGrid {
   }
 
   #bordersOn(cell: number, isShore: (cell: number) => boolean): boolean {
-    return this.#neighborsOf(cell).some((neighbor) => isShore(neighbor));
-  }
-
-  #neighborsOf(cell: number): number[] {
     const { grid } = this.#world;
 
     const column = grid.columnOf(cell);
     const row = grid.rowOf(cell);
-    const neighbors: number[] = [];
 
     for (const offset of NEIGHBOR_OFFSETS) {
-      if (grid.contains(column + offset.column, row + offset.row)) {
-        neighbors.push(grid.index(column + offset.column, row + offset.row));
+      const neighbor = grid.neighborIndex(column, row, offset);
+
+      if (neighbor >= 0 && isShore(neighbor)) {
+        return true;
       }
     }
 
-    return neighbors;
+    return false;
   }
 
   #nearestStepAshore(cell: number, x: number, z: number): Waypoint | null {
     const world = this.#world;
 
+    const { grid } = world;
+
     const closer = this.#shoreSteps[cell] - 1;
+    const column = grid.columnOf(cell);
+    const row = grid.rowOf(cell);
 
     let nearest: Waypoint | null = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
 
-    for (const neighbor of this.#neighborsOf(cell)) {
-      if (!this.#isStepAshore(neighbor, closer, this.#leadsToSteepShore[cell] === 1)) {
+    for (const offset of NEIGHBOR_OFFSETS) {
+      const neighbor = grid.neighborIndex(column, row, offset);
+
+      if (neighbor < 0 || !this.#isStepAshore(neighbor, closer, this.#leadsToSteepShore[cell] === 1)) {
         continue;
       }
 

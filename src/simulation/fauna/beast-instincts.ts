@@ -646,7 +646,6 @@ export class BeastInstincts {
 
     if (distance > reach) {
       this.#runAt(animal, target, this.#strikeOf(animal), ANIMALS[animal.kind].runSpeed * CHARGE_SPEED_SHARE, tick);
-      animal.pose = "charge";
 
       return;
     }

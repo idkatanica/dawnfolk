@@ -13,7 +13,7 @@ import {
   type Waterfall,
 } from "../world/water.ts";
 import { NEIGHBOR_OFFSETS, type WorldGrid } from "../world/world-grid.ts";
-import { carvePond } from "./ponds.ts";
+import { carvePond, isRiverWater } from "./ponds.ts";
 import { interpolatePoint, makeSurfaceDescend, smoothRiverPath } from "./river-paths.ts";
 import { type RiverLand, spaceRiverChains } from "./river-spacing.ts";
 import { placeSprings } from "./springs.ts";
@@ -160,18 +160,18 @@ function toCellThresholds(grid: WorldGrid, options: HydrologyOptions): CellThres
   };
 }
 
+export function isNearLake(grid: WorldGrid, lakeIds: Int32Array, x: number, z: number, radius: number): boolean {
+  return grid.cellsInRadius(x, z, radius).some((cell) => lakeIds[cell] !== NO_CELL);
+}
+
 export function touchesOffIsland(grid: WorldGrid, coastDistance: Float32Array, cell: number): boolean {
   const column = grid.columnOf(cell);
   const row = grid.rowOf(cell);
 
   for (const offset of NEIGHBOR_OFFSETS) {
-    const neighborColumn = column + offset.column;
-    const neighborRow = row + offset.row;
+    const neighbor = grid.neighborIndex(column, row, offset);
 
-    if (
-      grid.contains(neighborColumn, neighborRow) &&
-      !isOnIsland(coastDistance, grid.index(neighborColumn, neighborRow))
-    ) {
+    if (neighbor >= 0 && !isOnIsland(coastDistance, neighbor)) {
       return true;
     }
   }
@@ -221,14 +221,11 @@ function fillDepressions(heights: Float32Array, grid: WorldGrid, coastDistance: 
     processed += 1;
 
     for (const offset of NEIGHBOR_OFFSETS) {
-      const neighborColumn = column + offset.column;
-      const neighborRow = row + offset.row;
+      const neighbor = grid.neighborIndex(column, row, offset);
 
-      if (!grid.contains(neighborColumn, neighborRow)) {
+      if (neighbor < 0) {
         continue;
       }
-
-      const neighbor = grid.index(neighborColumn, neighborRow);
 
       if (closed[neighbor] === 1 || !isOnIsland(coastDistance, neighbor)) {
         continue;
@@ -280,14 +277,11 @@ function collectFloodedArea(
     const row = grid.rowOf(cell);
 
     for (const offset of NEIGHBOR_OFFSETS) {
-      const neighborColumn = column + offset.column;
-      const neighborRow = row + offset.row;
+      const neighbor = grid.neighborIndex(column, row, offset);
 
-      if (!grid.contains(neighborColumn, neighborRow)) {
+      if (neighbor < 0) {
         continue;
       }
-
-      const neighbor = grid.index(neighborColumn, neighborRow);
 
       if (visited[neighbor] === NO_CELL && network.filled[neighbor] - heights[neighbor] >= FLOODED_DEPTH) {
         visited[neighbor] = marker;
@@ -569,14 +563,11 @@ function offIslandNeighbors(grid: WorldGrid, coastDistance: Float32Array, cell: 
   const neighbors: NeighborCell[] = [];
 
   for (const offset of NEIGHBOR_OFFSETS) {
-    const neighborColumn = column + offset.column;
-    const neighborRow = row + offset.row;
+    const neighbor = grid.neighborIndex(column, row, offset);
 
-    if (!grid.contains(neighborColumn, neighborRow)) {
+    if (neighbor < 0) {
       continue;
     }
-
-    const neighbor = grid.index(neighborColumn, neighborRow);
 
     if (!isOnIsland(coastDistance, neighbor)) {
       neighbors.push({
@@ -855,15 +846,9 @@ function keepRiversDescending(targets: ChannelTargets, rivers: readonly River[])
 }
 
 function isRiverWaterAt(targets: ChannelTargets, column: number, row: number): boolean {
-  const { grid, heights, riverStrength, waterSurface } = targets;
+  const { grid } = targets;
 
-  if (!grid.contains(column, row)) {
-    return false;
-  }
-
-  const cell = grid.index(column, row);
-
-  return riverStrength[cell] > 0 && hasWater(waterSurface[cell], heights[cell]);
+  return grid.contains(column, row) && isRiverWater(targets, grid.index(column, row));
 }
 
 function pinchedBank(targets: ChannelTargets, cell: number): PinchedBank | null {
@@ -965,14 +950,11 @@ function waterLevelBeside(targets: ChannelTargets, cell: number): number {
   let isBesideRiver = false;
 
   for (const offset of NEIGHBOR_OFFSETS) {
-    const neighborColumn = column + offset.column;
-    const neighborRow = row + offset.row;
+    const neighbor = grid.neighborIndex(column, row, offset);
 
-    if (!grid.contains(neighborColumn, neighborRow)) {
+    if (neighbor < 0) {
       continue;
     }
-
-    const neighbor = grid.index(neighborColumn, neighborRow);
 
     if (!hasWater(waterSurface[neighbor], heights[neighbor])) {
       continue;
@@ -1044,14 +1026,12 @@ function spreadBankLowering(targets: ChannelTargets, lowering: BankLowering): vo
     const row = grid.rowOf(cell);
 
     for (const offset of NEIGHBOR_OFFSETS) {
-      const neighborColumn = column + offset.column;
-      const neighborRow = row + offset.row;
+      const neighbor = grid.neighborIndex(column, row, offset);
 
-      if (!grid.contains(neighborColumn, neighborRow)) {
+      if (neighbor < 0) {
         continue;
       }
 
-      const neighbor = grid.index(neighborColumn, neighborRow);
       const cut = cuts[cell] - BANK_LOWERING_FADE * offset.distance * grid.cellSize;
 
       if (cut <= cuts[neighbor] || settled[neighbor] === 1 || !isDryLand(targets, neighbor)) {

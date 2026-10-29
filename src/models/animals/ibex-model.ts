@@ -3,15 +3,15 @@ import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, SurfacePoint } from "../mesh/mesh-builder.ts";
 import { curveBodySections } from "../mesh/path-curves.ts";
 import { type Shape, transformShape } from "../mesh/shape.ts";
-import { type BodySection, lengthwiseLoft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
-import { combine, sideMirror, transformOf } from "../mesh/transforms.ts";
+import { type BodySection, lengthwiseLoft, type TubePoint, tube } from "../mesh/shapes.ts";
+import { SIDES, sideMirror, transformOf } from "../mesh/transforms.ts";
 import { degrees } from "../rig/curves.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
 import type { AnimalDetail } from "./animal-detail.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
-import { addEyes, addLegs, hoofBelow, legPath } from "./quadruped-parts.ts";
+import { addEllipsoidEars, addLegs, addMuzzleFace, hoofBelow, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
-import { LEG_SIDES, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
+import { QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
 export const IBEX_FRAME: QuadrupedFrame = {
   bodyContacts: [
@@ -148,39 +148,20 @@ function headShape(detail: AnimalDetail): Shape {
   return transformShape(muzzle, transformOf({ scale: [0.8, 1, 1] }));
 }
 
-function addFace(builder: MeshBuilder, shape: Shape, detail: AnimalDetail): void {
-  if (!detail.hasSmallParts) {
-    return;
-  }
-
-  builder.add(sphere(0.026, 6, 4), {
-    style: { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Hoof },
-    transform: transformOf({ position: [0, 1.13, 0.875] }),
-  });
-  addEyes(builder, shape, { direction: [1, 0.45, 0.12], origin: [0, 1.26, 0.65], radius: 0.016, sink: 0.5 });
-}
-
 function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
-  const head = rigidStyle(QuadrupedBone.Head);
   const shape = headShape(detail);
 
-  builder.add(shape, { seam: HEAD_SEAM, style: { ...head, slot: MaterialSlot.Coat } });
-  addFace(builder, shape, detail);
-
-  const ear = sphere(1, segmentsUpTo(detail, 6), 4);
-  const earStyle = { ...head, slot: MaterialSlot.Coat };
-
-  for (const side of LEG_SIDES) {
-    builder.add(ear, {
-      seam: EAR_SEAM,
-      style: earStyle,
-      transform: combine(
-        sideMirror(side),
-        transformOf({ position: [0.045, 1.3, 0.56], rotation: [0.2, 0, -1.25] }),
-        EAR
-      ),
-    });
-  }
+  builder.add(shape, { seam: HEAD_SEAM, style: { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Coat } });
+  addMuzzleFace(builder, shape, detail, {
+    eyes: { direction: [1, 0.45, 0.12], origin: [0, 1.26, 0.65], radius: 0.016, sink: 0.5 },
+    nose: [0, 1.13, 0.875],
+    noseRadius: 0.026,
+  });
+  addEllipsoidEars(builder, detail, {
+    placement: { position: [0.045, 1.3, 0.56], rotation: [0.2, 0, -1.25] },
+    seam: EAR_SEAM,
+    shape: EAR,
+  });
 }
 
 export function addIbexBody(builder: MeshBuilder, detail: AnimalDetail): void {
@@ -240,7 +221,7 @@ function addHorns(builder: MeshBuilder, detail: AnimalDetail, length: number): v
     radialSegments: segmentsAtLeast(detail, 5, detail.segments - 3),
   });
 
-  for (const side of LEG_SIDES) {
+  for (const side of SIDES) {
     builder.add(horn, {
       style,
       transform: sideMirror(side),

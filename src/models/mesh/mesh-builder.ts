@@ -2,6 +2,7 @@ import { Matrix3, Matrix4, Vector3 } from "three";
 import { GrowableFloatArray, GrowableIndexArray } from "./growable-array.ts";
 import {
   boundsOf,
+  channelRecord,
   DEFAULT_VERTEX_VALUES,
   type MeshData,
   VERTEX_CHANNELS,
@@ -43,23 +44,9 @@ export function resolveChannel(value: ChannelValue | undefined, fallback: number
   return value(point);
 }
 
-function createChannelArrays(): Record<VertexChannel, GrowableFloatArray> {
-  return {
-    boneA: new GrowableFloatArray(),
-    boneB: new GrowableFloatArray(),
-    boneWeight: new GrowableFloatArray(),
-    buildOrder: new GrowableFloatArray(),
-    flutter: new GrowableFloatArray(),
-    part: new GrowableFloatArray(),
-    shade: new GrowableFloatArray(),
-    slot: new GrowableFloatArray(),
-    sway: new GrowableFloatArray(),
-  };
-}
-
 export class MeshBuilder {
   readonly #baseStyle: VertexStyle;
-  readonly #channels = createChannelArrays();
+  readonly #channels = channelRecord(() => new GrowableFloatArray());
   readonly #indices = new GrowableIndexArray();
   readonly #normals = new GrowableFloatArray();
   readonly #positions = new GrowableFloatArray();
@@ -124,7 +111,7 @@ export class MeshBuilder {
     this.#pushTriangles(mesh.indices, firstVertex, isMirrored);
   }
 
-  addSeamReference(shape: Shape, transform: Matrix4 = IDENTITY): void {
+  addSeamReference(shape: Shape): void {
     const references = this.#referenceBuilder();
 
     this.#referenceSeams.push({
@@ -135,7 +122,7 @@ export class MeshBuilder {
       triangleCount: shape.indices.length / 3,
       vertexCount: shapeVertexCount(shape),
     });
-    references.add(shape, { transform });
+    references.add(shape);
   }
 
   build(): MeshData {
@@ -147,17 +134,7 @@ export class MeshBuilder {
 
     return {
       bounds: boundsOf(positions),
-      channels: {
-        boneA: this.#channels.boneA.toArray(),
-        boneB: this.#channels.boneB.toArray(),
-        boneWeight: this.#channels.boneWeight.toArray(),
-        buildOrder: this.#channels.buildOrder.toArray(),
-        flutter: this.#channels.flutter.toArray(),
-        part: this.#channels.part.toArray(),
-        shade: this.#channels.shade.toArray(),
-        slot: this.#channels.slot.toArray(),
-        sway: this.#channels.sway.toArray(),
-      },
+      channels: channelRecord((channel) => this.#channels[channel].toArray()),
       indices,
       normals,
       positions,

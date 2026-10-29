@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { calendarAt } from "../testing/test-calendar.ts";
 import { Calendar, DEFAULT_DAY_SECONDS } from "./calendar.ts";
-
-function calendarAt(day: number): Calendar {
-  const calendar = new Calendar();
-
-  calendar.day = day;
-
-  return calendar;
-}
 
 describe("calendar", () => {
   it("starts on a spring morning", () => {

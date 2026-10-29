@@ -6,8 +6,6 @@ import {
   distance,
   dot,
   float,
-  floor,
-  ivec2,
   length,
   max,
   mix,
@@ -27,7 +25,7 @@ import { Color, Group, Mesh, MeshBasicNodeMaterial, type PerspectiveCamera, Vect
 import { fallsAsSnow, type WeatherKind } from "../../content/weather.ts";
 import { fractionalPart, saturate } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
-import { sampleHeightNode } from "../terrain/height-sampling.ts";
+import { cellAtNode, sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { billboardNodes, type CameraAxes, createQuadGeometry, distanceFromBillboardCenter } from "./billboards.ts";
 import { CYCLES, cycleOf, type LatticeArea, LatticeCover, latticeElement, unitHash } from "./precipitation-lattice.ts";
@@ -143,7 +141,7 @@ class DropUniforms {
 
 class DropOctave {
   readonly mesh: Mesh;
-  readonly #cover = new LatticeCover();
+  readonly #cover: LatticeCover;
   readonly #geometry = createQuadGeometry();
   readonly #level = uniform(0);
   readonly #material = new MeshBasicNodeMaterial({ depthWrite: false, fog: false, transparent: true });
@@ -152,8 +150,9 @@ class DropOctave {
   constructor({ axes, grid, textures, uniforms }: DropSources) {
     const material = this.#material;
     const { corner } = billboardNodes();
-    const last = grid.cellsPerSide - 1;
     const scale = this.#scale;
+
+    this.#cover = new LatticeCover(grid.halfSize);
 
     const element = latticeElement(this.#cover, uint(this.#level).mul(SALT_OCTAVE));
     const { age: fall, phase, spread } = cycleOf(element, uniforms.fallen, CYCLE_SALTS);
@@ -168,7 +167,7 @@ class DropOctave {
     const wander = swirl.mul(uniforms.sway).mul(scale);
     const landing = place.add(uniforms.slant.mul(height));
 
-    const cell = ivec2(clamp(floor(landing.add(grid.halfSize).div(grid.cellSize)), vec2(0, 0), vec2(last, last)));
+    const cell = cellAtNode(grid, landing);
     const surface = max(sampleHeightNode(textures.height, grid, landing), textureLoad(textures.water, cell).x);
     const center = vec3(place.x.add(wander.x), surface.add(height), place.y.add(wander.y));
 
@@ -248,7 +247,6 @@ export class WeatherParticles {
   readonly #coarse: DropOctave;
   readonly #drift = new Vector2();
   readonly #fine: DropOctave;
-  readonly #halfSize: number;
   readonly #uniforms = new DropUniforms();
 
   constructor(axes: CameraAxes, textures: TerrainTextures, grid: WorldGrid) {
@@ -256,7 +254,6 @@ export class WeatherParticles {
 
     this.#fine = new DropOctave(sources);
     this.#coarse = new DropOctave(sources);
-    this.#halfSize = grid.halfSize;
     this.group.add(this.#fine.mesh, this.#coarse.mesh);
   }
 
@@ -279,7 +276,7 @@ export class WeatherParticles {
 
     const finer = Math.floor(octave);
     const perTile = DROPS_PER_TILE * strength * Math.max(1, (NATURAL_SPAN / span) ** 2);
-    const area = { centerX: view.focus.x, centerZ: view.focus.z, halfSize: this.#halfSize, radius: span / 2 };
+    const area = { centerX: view.focus.x, centerZ: view.focus.z, radius: span / 2 };
     const blend = octave - finer;
 
     this.#drift.x += (windX * seconds) / TILE_SIZE;

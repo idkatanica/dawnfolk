@@ -1,6 +1,7 @@
 import type { AnimalFightPose } from "../../world/agent-poses.ts";
+import { SIDES } from "../mesh/transforms.ts";
 import { degrees, type Keyframe, keyframes, wave } from "../rig/curves.ts";
-import { type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
+import { once, type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import type { AnimalClip, AnimalClipContext } from "./quadruped-clips.ts";
 import {
   bendBone,
@@ -8,17 +9,16 @@ import {
   LYING_SPREAD,
   LYING_SWING,
   moveLeg,
-  sideName,
   stepLegs,
   WALK_PHASES,
 } from "./quadruped-motion.ts";
-import { LEG_ENDS, LEG_SIDES, QuadrupedBone } from "./quadruped-skeleton.ts";
+import { LEG_ENDS, QuadrupedBone, sideName } from "./quadruped-skeleton.ts";
 
 export const QUADRUPED_FIGHT_CLIPS: Readonly<Record<AnimalFightPose, AnimalClip>> = {
   attack: { apply: attack, timing: seconds(0.9) },
   charge: { apply: charge, timing: STRIDE_TIMING },
-  fall: { apply: fall, timing: { cycleSeconds: 1.3, kind: "once" } },
-  flinch: { apply: flinch, timing: { cycleSeconds: 0.5, kind: "once" } },
+  fall: { apply: fall, timing: once(1.3) },
+  flinch: { apply: flinch, timing: once(0.5) },
 };
 
 const LUNGE: readonly Keyframe[] = [
@@ -64,7 +64,7 @@ function attack(pose: Pose, phase: number, context: AnimalClipContext): void {
   bendBone(pose, QuadrupedBone.Head, -degrees(4) * reach + degrees(18) * gather, 0, degrees(6) * wave(phase * 3));
   bendBone(pose, QuadrupedBone.Tail, -degrees(20), degrees(8) * wave(phase * 2));
 
-  for (const side of LEG_SIDES) {
+  for (const side of SIDES) {
     moveLeg(pose, "front", side, degrees(30) * reach - degrees(10) * gather, context.gait.lowerFlex * 0.5 * gather);
     moveLeg(pose, "hind", side, -degrees(28) * reach + degrees(14) * gather, context.gait.lowerFlex * 0.4 * gather);
   }
@@ -97,7 +97,7 @@ function flinch(pose: Pose, phase: number, context: AnimalClipContext): void {
   bendBone(pose, QuadrupedBone.Tail, degrees(20) * jolt);
 
   for (const end of LEG_ENDS) {
-    for (const side of LEG_SIDES) {
+    for (const side of SIDES) {
       moveLeg(
         pose,
         end,
@@ -121,7 +121,7 @@ function fall(pose: Pose, phase: number, context: AnimalClipContext): void {
   bendBone(pose, QuadrupedBone.Tail, -degrees(10) * buckle);
 
   for (const end of LEG_ENDS) {
-    for (const side of LEG_SIDES) {
+    for (const side of SIDES) {
       moveLeg(
         pose,
         end,

@@ -5,7 +5,7 @@ import type { WorldMirror } from "../../game/world-mirror.ts";
 import { hashToUnit } from "../../shared/math.ts";
 import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import type { CellRegion, RowRun } from "../../world/change-tracking.ts";
-import { gradientZAt } from "../../world/footing.ts";
+import { gradientXAt, gradientZAt } from "../../world/footing.ts";
 import { NEIGHBOR_OFFSETS, type WorldGrid } from "../../world/world-grid.ts";
 
 export const FurrowAxis = {
@@ -31,17 +31,6 @@ interface FieldShape {
 interface FieldShares {
   readonly axis: Node<"int">;
   readonly shares: readonly Node<"float">[];
-}
-
-function gradientXAt(heights: Float32Array, grid: WorldGrid, cell: number): number {
-  const column = grid.columnOf(cell);
-  const row = grid.rowOf(cell);
-  const last = grid.cellsPerSide - 1;
-
-  const east = heights[grid.index(Math.min(last, column + 1), row)];
-  const west = heights[grid.index(Math.max(0, column - 1), row)];
-
-  return (east - west) / (2 * grid.cellSize);
 }
 
 function axisOf(shape: FieldShape): FurrowAxisCode {

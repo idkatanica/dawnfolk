@@ -2,10 +2,10 @@ import { FULL_TURN } from "../../../shared/math.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
 import type { Person } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
+import { GOLDEN_ANGLE } from "../tribe-places.ts";
 import { type Foe, personFoe } from "./foes.ts";
 import { canFight } from "./raids.ts";
 
-const GOLDEN_ANGLE = 2.399;
 const FORMATION_SPACING = 2.6;
 const PURSUIT_RADIUS = 40;
 
@@ -41,7 +41,7 @@ export function nearestFoeAmong(tick: PersonTick, candidates: readonly Person[],
   for (const candidate of candidates) {
     const distance = Math.hypot(candidate.mover.x - mover.x, candidate.mover.z - mover.z);
 
-    if (candidate.isAlive && distance < nearestDistance) {
+    if (distance < nearestDistance) {
       nearest = candidate;
       nearestDistance = distance;
     }

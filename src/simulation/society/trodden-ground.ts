@@ -1,7 +1,7 @@
 import { BUILDINGS, isEnclosure } from "../../content/buildings.ts";
 import { smoothstep } from "../../shared/math.ts";
 import type { WorldState } from "../world/world-state.ts";
-import type { Building } from "./buildings.ts";
+import { type Building, isComplete } from "./buildings.ts";
 import { tribeBuildings } from "./camp-plan.ts";
 import type { SocietyContext } from "./society-context.ts";
 import type { Tribe } from "./tribe.ts";
@@ -64,7 +64,7 @@ function treadAround(wear: Wear, world: WorldState, tribe: Tribe, building: Buil
 
   const radius = BUILDINGS[building.kind].footprint + BUILDING_MARGIN;
 
-  treadPatch(wear, world, { radius, wear: building.progress >= 1 ? 1 : SITE_WEAR, x: building.x, z: building.z });
+  treadPatch(wear, world, { radius, wear: isComplete(building) ? 1 : SITE_WEAR, x: building.x, z: building.z });
 
   if (building.kind === "campfire") {
     return;

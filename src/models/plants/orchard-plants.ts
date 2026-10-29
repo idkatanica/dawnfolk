@@ -1,9 +1,10 @@
 import { Vector3 } from "three";
 import { CultivatedSpecies } from "../../content/cultivated-plants.ts";
 import type { PlantSpeciesIndex } from "../../content/plants.ts";
-import { clamp, FULL_TURN, lerp, smoothstep } from "../../shared/math.ts";
+import { FULL_TURN, lerp, smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
+import { thinned } from "../level-of-detail.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { withoutBuriedOverlaps, withoutBuriedTriangles } from "../mesh/buried-triangles.ts";
 import { MeshBuilder, type VertexStyle } from "../mesh/mesh-builder.ts";
@@ -14,13 +15,21 @@ import { outermostHit } from "../mesh/surface-probe.ts";
 import { transformOf } from "../mesh/transforms.ts";
 import { BERRY_PART } from "./berries.ts";
 import { addBlob, addLimb, addTrunk, BLOB_TINT, createGrowth, finish, type Growth } from "./tree-growth.ts";
-import { FOLIAGE_FLUTTER, meshTree, type PlantDetailLevel, plantSway, type TreeLook, thinned } from "./tree-mesher.ts";
+import {
+  FOLIAGE_FLUTTER,
+  foliageStyle,
+  meshTree,
+  type PlantDetailLevel,
+  plantSway,
+  type TreeLook,
+} from "./tree-mesher.ts";
 import {
   type FoliageBlob,
   GOLDEN_ANGLE,
   growBranch,
   jitter,
   type TreeStructure,
+  tiltedDirection,
   tipOf,
   toVector,
 } from "./tree-structure.ts";
@@ -210,11 +219,7 @@ interface FruitPlacement {
 function growStem(growth: Growth, azimuth: number, options: StemOptions): TubePoint[] {
   const { random } = growth;
 
-  const direction = new Vector3(
-    Math.cos(azimuth) * Math.sin(options.tilt),
-    Math.cos(options.tilt),
-    Math.sin(azimuth) * Math.sin(options.tilt)
-  );
+  const direction = tiltedDirection(azimuth, options.tilt);
 
   return growBranch({
     bend: 0.04,
@@ -546,24 +551,6 @@ function fruitMeshes(plant: MeshData, placement: FruitPlacement): MeshData[] {
   return fruits;
 }
 
-function leafStyle(structure: BushStructure, leaf: BushLeaf): VertexStyle {
-  const outward = new Vector3();
-
-  return {
-    flutter: FOLIAGE_FLUTTER,
-    shade: (point) => {
-      outward.copy(point.position).sub(leaf.center).normalize();
-
-      const facing = outward.dot(point.normal) * 0.5 + 0.5;
-      const lift = smoothstep(0, structure.height, point.position.y) * 0.15;
-
-      return clamp(0.5 + 0.38 * facing + lift + leaf.tint, 0.3, 1.15);
-    },
-    slot: MaterialSlot.Leaf,
-    sway: (point) => plantSway(point.position.y, structure.height),
-  };
-}
-
 function stemStyle(structure: BushStructure): VertexStyle {
   return {
     shade: (point) => 0.7 + 0.3 * smoothstep(0, structure.height * 0.4, point.position.y),
@@ -615,7 +602,7 @@ function distantBush(structure: BushStructure): MeshData {
   const envelope = envelopeLeaf(structure);
 
   builder.add(icosphere(envelope.radius, 0), {
-    style: leafStyle(structure, envelope),
+    style: foliageStyle(structure, FRUIT_TREE_LOOK, envelope.tint, envelope.center),
     transform: transformOf({ position: envelope.center.toArray(), scale: [1, envelope.squash, 1] }),
   });
 
@@ -645,7 +632,7 @@ function bushLeaf(structure: BushStructure, leaf: BushLeaf, level: PlantDetailLe
   const builder = new MeshBuilder();
 
   builder.add(leafShape(leaf, level), {
-    style: leafStyle(structure, leaf),
+    style: foliageStyle(structure, FRUIT_TREE_LOOK, leaf.tint, leaf.center),
     transform: transformOf({ position: leaf.center.toArray(), scale: [1, leaf.squash, 1] }),
   });
 

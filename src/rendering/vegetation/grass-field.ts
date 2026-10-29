@@ -42,7 +42,7 @@ import { unitNoise } from "../node-helpers.ts";
 import { POOL_BANK, poolReachNode } from "../terrain/bog-pools.ts";
 import { fieldClearingNode } from "../terrain/field-ground.ts";
 import { FIREWEED, fireweedNode } from "../terrain/fireweed.ts";
-import { renderedHeightNode } from "../terrain/height-sampling.ts";
+import { cellAtNode, mapCoordinatesNode, renderedHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { gustAt, type PlantWeather } from "./plant-material.ts";
 
@@ -176,9 +176,9 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
 
   const root = lattice.add(vec2(random(SALT_JITTER_X), random(SALT_JITTER_Z))).mul(spacing);
 
-  const rootUv = root.add(grid.halfSize).div(grid.worldSize);
-  const ground = texture(textures.albedo, rootUv).level(float(0));
-  const cell = ivec2(clamp(floor(root.add(grid.halfSize).div(grid.cellSize)), vec2(0, 0), vec2(last, last)));
+  const rootUv = mapCoordinatesNode(grid, root);
+  const ground = texture(textures.groundAlbedo.texture, rootUv).level(float(0));
+  const cell = cellAtNode(grid, root);
   const height = renderedHeightNode(textures, grid, root);
 
   const surface = textureLoad(textures.surface, cell);

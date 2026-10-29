@@ -1,5 +1,6 @@
+import { SIDES } from "../mesh/transforms.ts";
 import type { BodyShape } from "./appearance.ts";
-import { HUMAN_BONE_COUNT, HumanBone, SIDES, sideBones } from "./human-skeleton.ts";
+import { HUMAN_BONE_COUNT, HumanBone, sideBones } from "./human-skeleton.ts";
 
 export const FIGURE_SCALE = 1.18;
 

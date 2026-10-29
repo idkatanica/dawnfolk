@@ -1,5 +1,12 @@
 import type { WorldGrid } from "../world/world-grid.ts";
-import { type DrainageBasins, NO_CELL, type RiverChain, riverWidthFor, touchesOffIsland } from "./hydrology.ts";
+import {
+  type DrainageBasins,
+  isNearLake,
+  NO_CELL,
+  type RiverChain,
+  riverWidthFor,
+  touchesOffIsland,
+} from "./hydrology.ts";
 
 const SMALLEST_SPACING = 40;
 const SPACING_WIDTHS = 2.5;
@@ -26,15 +33,11 @@ interface NearbyRiver {
   readonly distance: number;
 }
 
-function cellDistance(grid: WorldGrid, from: number, to: number): number {
-  return Math.hypot(grid.cellCenterX(to) - grid.cellCenterX(from), grid.cellCenterZ(to) - grid.cellCenterZ(from));
-}
-
 function pathLength(grid: WorldGrid, cells: readonly number[]): number {
   let length = 0;
 
   for (let index = 1; index < cells.length; index += 1) {
-    length += cellDistance(grid, cells[index - 1], cells[index]);
+    length += grid.distanceBetween(cells[index - 1], cells[index]);
   }
 
   return length;
@@ -77,7 +80,7 @@ function nearestRiver(spacing: Spacing, cell: number, isAllowed: (other: number)
         continue;
       }
 
-      const distance = cellDistance(grid, cell, other);
+      const distance = grid.distanceBetween(cell, other);
 
       if (nearest === null || distance < nearest.distance) {
         nearest = { cell: other, distance };
@@ -202,9 +205,13 @@ function isFedByLake(spacing: Spacing, chain: RiverChain): boolean {
 
   const [head] = chain.cells;
 
-  return grid
-    .cellsInRadius(grid.cellCenterX(head), grid.cellCenterZ(head), grid.cellSize * SPACING_CELLS)
-    .some((cell) => basins.lakeIds[cell] !== NO_CELL);
+  return isNearLake(
+    grid,
+    basins.lakeIds,
+    grid.cellCenterX(head),
+    grid.cellCenterZ(head),
+    grid.cellSize * SPACING_CELLS
+  );
 }
 
 function isLongEnough(spacing: Spacing, chain: RiverChain): boolean {

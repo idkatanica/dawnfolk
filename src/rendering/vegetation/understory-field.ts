@@ -3,7 +3,7 @@ import { isTreeSpecies } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { grownIndexArray } from "../../shared/growth.ts";
 import { smoothstep } from "../../shared/math.ts";
-import type { CellRegion } from "../../world/change-tracking.ts";
+import { type CellRegion, grownRegion } from "../../world/change-tracking.ts";
 import { slopeAt } from "../../world/footing.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 
@@ -61,11 +61,7 @@ export class UnderstoryField {
   heightsChanged(region: CellRegion): void {
     const { grid } = this.#mirror;
 
-    const last = grid.cellsPerSide - 1;
-    const firstColumn = Math.max(0, region.firstColumn - 1);
-    const lastColumn = Math.min(last, region.lastColumn + 1);
-    const firstRow = Math.max(0, region.firstRow - 1);
-    const lastRow = Math.min(last, region.lastRow + 1);
+    const { firstColumn, firstRow, lastColumn, lastRow } = grownRegion(region, 1, grid.cellsPerSide);
 
     for (let row = firstRow; row <= lastRow; row += 1) {
       for (let column = firstColumn; column <= lastColumn; column += 1) {

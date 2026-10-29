@@ -1,4 +1,4 @@
-import { FULL_TURN, fractionalPart } from "../../shared/math.ts";
+import { FULL_TURN, fractionalPart, lerp, smoothstep } from "../../shared/math.ts";
 
 export type Keyframe = readonly [time: number, value: number];
 
@@ -40,10 +40,6 @@ export function arc(phase: number, start: number, duration: number): number {
   return Math.sin(Math.PI * progress);
 }
 
-function smoothBlend(amount: number): number {
-  return amount * amount * (3 - 2 * amount);
-}
-
 export function keyframes(phase: number, keys: readonly Keyframe[]): number {
   const lastKey = keys.at(-1);
 
@@ -58,7 +54,7 @@ export function keyframes(phase: number, keys: readonly Keyframe[]): number {
     const [previousTime, previousValue] = keys[nextIndex - 1];
     const [nextTime, nextValue] = keys[nextIndex];
 
-    return previousValue + (nextValue - previousValue) * smoothBlend((time - previousTime) / (nextTime - previousTime));
+    return lerp(previousValue, nextValue, smoothstep(0, 1, (time - previousTime) / (nextTime - previousTime)));
   }
 
   const [firstTime, firstValue] = keys[0];
@@ -66,5 +62,5 @@ export function keyframes(phase: number, keys: readonly Keyframe[]): number {
   const span = 1 - lastKey[0] + firstTime;
   const elapsed = nextIndex === 0 ? time + 1 - lastKey[0] : time - lastKey[0];
 
-  return lastKey[1] + (firstValue - lastKey[1]) * smoothBlend(elapsed / span);
+  return lerp(lastKey[1], firstValue, smoothstep(0, 1, elapsed / span));
 }

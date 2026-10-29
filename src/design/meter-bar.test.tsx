@@ -20,6 +20,12 @@ describe("meter bar", () => {
     await expect.element(screen.getByText("40%")).toBeVisible();
   });
 
+  it("shows the value as a percent when no value text is given", async () => {
+    const screen = await render(<MeterBar label="Warmth" tone="dawn" value={0.4} />);
+
+    await expect.element(screen.getByText("40%")).toBeVisible();
+  });
+
   it("keeps values outside the range within the bar", async () => {
     const screen = await render(<MeterBar label="Faith" tone="gold" value={1.6} valueText="160" />);
 

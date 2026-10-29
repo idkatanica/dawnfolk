@@ -10,6 +10,7 @@ import {
   type WebGPURenderer,
 } from "three/webgpu";
 import type { WorldGrid } from "../../world/world-grid.ts";
+import { mapCoordinatesNode } from "./height-sampling.ts";
 
 const METERS_PER_TEXEL = 2;
 
@@ -57,9 +58,7 @@ export class GroundWarp {
   }
 
   offsetAt(point: Node<"vec2">): Node<"vec2"> {
-    const { halfSize, worldSize } = this.#grid;
-
-    return texture(this.#target.texture, point.add(halfSize).div(worldSize)).level(float(0)).xy;
+    return texture(this.#target.texture, mapCoordinatesNode(this.#grid, point)).level(float(0)).xy;
   }
 
   dispose(): void {

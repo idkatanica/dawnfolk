@@ -6,14 +6,14 @@ import type { MeshBuilder, SurfacePoint } from "../mesh/mesh-builder.ts";
 import { curveBodySections } from "../mesh/path-curves.ts";
 import { deformShape, type Shape, transformShape } from "../mesh/shape.ts";
 import { type BodySection, cone, lengthwiseLoft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
-import { combine, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
+import { combine, SIDES, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
 import { degrees } from "../rig/curves.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
 import type { AnimalDetail } from "./animal-detail.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
-import { addEyes, addLegs, legPath } from "./quadruped-parts.ts";
+import { addLegs, addMuzzleFace, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, legStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
-import { LEG_ENDS, LEG_SIDES, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
+import { LEG_ENDS, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
 export const WOLF_FRAME: QuadrupedFrame = {
   bodyContacts: [
@@ -139,7 +139,7 @@ function coatSlot(point: SurfacePoint): number {
 function addPaws(builder: MeshBuilder, detail: AnimalDetail, segments: number): void {
   const paw = sphere(0.042, segments, segmentsAtLeast(detail, 4, segments - 2));
 
-  for (const side of LEG_SIDES) {
+  for (const side of SIDES) {
     for (const end of LEG_ENDS) {
       builder.add(paw, {
         seam: PAW_SEAM,
@@ -188,18 +188,6 @@ function headShape(detail: AnimalDetail): Shape {
   return transformShape(muzzle, transformOf({ scale: [0.88, 1, 1] }));
 }
 
-function addFace(builder: MeshBuilder, shape: Shape, detail: AnimalDetail): void {
-  if (!detail.hasSmallParts) {
-    return;
-  }
-
-  builder.add(sphere(0.026, 6, 4), {
-    style: { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Hoof },
-    transform: transformOf({ position: [0, 0.97, 0.905] }),
-  });
-  addEyes(builder, shape, { direction: [1, 0.7, 0.35], origin: [0, 1.04, 0.68], radius: 0.016, sink: 0.5 });
-}
-
 function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
   const head = rigidStyle(QuadrupedBone.Head);
   const shape = headShape(detail);
@@ -211,12 +199,16 @@ function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
       slot: (point) => (point.position.y < 0.99 && point.position.z > 0.7 ? MaterialSlot.CoatLight : MaterialSlot.Coat),
     },
   });
-  addFace(builder, shape, detail);
+  addMuzzleFace(builder, shape, detail, {
+    eyes: { direction: [1, 0.7, 0.35], origin: [0, 1.04, 0.68], radius: 0.016, sink: 0.5 },
+    nose: [0, 0.97, 0.905],
+    noseRadius: 0.026,
+  });
 
   const ear = cone(0.045, 0.13, segmentsUpTo(detail, 5));
   const earStyle = { ...head, slot: MaterialSlot.Coat };
 
-  for (const side of LEG_SIDES) {
+  for (const side of SIDES) {
     builder.add(ear, {
       seam: EAR_SEAM,
       style: earStyle,

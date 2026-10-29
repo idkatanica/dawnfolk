@@ -1,4 +1,4 @@
-import type { Triple } from "../mesh/transforms.ts";
+import { onSide, type Side, type Triple } from "../mesh/transforms.ts";
 import { type BoneDefinition, type ContactPoint, createSkeleton, NO_PARENT, type Skeleton } from "../rig/skeleton.ts";
 
 export const QuadrupedBone = {
@@ -22,7 +22,7 @@ export const QuadrupedBone = {
   UpperHindRight: 15,
 } as const;
 
-export const LEG_SIDES: readonly LegSide[] = [1, -1];
+export const FIRST_EXTRA_BONE = 18;
 export const LEG_ENDS: readonly LegEnd[] = ["front", "hind"];
 
 type LegJoints = readonly [upper: Triple, lower: Triple, hoof: Triple];
@@ -42,9 +42,9 @@ export interface QuadrupedFrame {
   readonly tail: Triple;
 }
 
-export type LegSide = -1 | 1;
-
 export type LegEnd = "front" | "hind";
+
+export type SideName = "left" | "right";
 
 interface LegBones {
   readonly hoof: number;
@@ -52,7 +52,7 @@ interface LegBones {
   readonly upper: number;
 }
 
-const LEG_BONES: Readonly<Record<LegEnd, Readonly<Record<"left" | "right", LegBones>>>> = {
+const LEG_BONES: Readonly<Record<LegEnd, Readonly<Record<SideName, LegBones>>>> = {
   front: {
     left: {
       hoof: QuadrupedBone.HoofFrontLeft,
@@ -75,28 +75,28 @@ const LEG_BONES: Readonly<Record<LegEnd, Readonly<Record<"left" | "right", LegBo
   },
 };
 
-export function legBones(end: LegEnd, side: LegSide): LegBones {
-  return LEG_BONES[end][side === 1 ? "left" : "right"];
+export function sideName(side: Side): SideName {
+  return side === 1 ? "left" : "right";
 }
 
-export function mirrored(point: Triple, side: LegSide): Triple {
-  return [point[0] * side, point[1], point[2]];
+export function legBones(end: LegEnd, side: Side): LegBones {
+  return LEG_BONES[end][sideName(side)];
 }
 
-function legDefinitions(frame: QuadrupedFrame, end: LegEnd, side: LegSide): BoneDefinition[] {
+function legDefinitions(frame: QuadrupedFrame, end: LegEnd, side: Side): BoneDefinition[] {
   const bones = legBones(end, side);
   const joints = end === "front" ? frame.frontLeg : frame.hindLeg;
   const parent = end === "front" ? QuadrupedBone.Chest : QuadrupedBone.Pelvis;
   const name = `${end}${side === 1 ? "Left" : "Right"}`;
 
   return [
-    { joint: mirrored(joints[0], side), name: `upper${name}`, order: "limb", parent },
-    { joint: mirrored(joints[1], side), name: `lower${name}`, order: "limb", parent: bones.upper },
-    { joint: mirrored(joints[2], side), name: `hoof${name}`, order: "limb", parent: bones.lower },
+    { joint: onSide(joints[0], side), name: `upper${name}`, order: "limb", parent },
+    { joint: onSide(joints[1], side), name: `lower${name}`, order: "limb", parent: bones.upper },
+    { joint: onSide(joints[2], side), name: `hoof${name}`, order: "limb", parent: bones.lower },
   ];
 }
 
-function hoofContacts(frame: QuadrupedFrame, end: LegEnd, side: LegSide): ContactPoint[] {
+function hoofContacts(frame: QuadrupedFrame, end: LegEnd, side: Side): ContactPoint[] {
   const { hoof } = legBones(end, side);
   const [x, , z] = end === "front" ? frame.frontHoof : frame.hindHoof;
 

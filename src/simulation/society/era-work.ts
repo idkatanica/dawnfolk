@@ -1,6 +1,7 @@
 import { DEPOSITS, type DepositKind, MINED_DEPOSIT_KINDS } from "../../content/deposits.ts";
 import type { RecipeId, ResourceAmounts } from "../../content/recipes.ts";
 import { isWinter } from "../../content/seasons.ts";
+import { isComplete } from "./buildings.ts";
 import { mineFor } from "./camp-plan.ts";
 import { isExpeditionSeason } from "./jobs/build-job.ts";
 import { findClay } from "./jobs/clay-job.ts";
@@ -123,7 +124,7 @@ function oreOnTheWay(tick: PersonTick, kind: DepositKind): number {
 function oreNeed(tick: PersonTick, kind: DepositKind): number {
   const mine = mineFor(tick.tribe, tick.context, kind);
 
-  if (mine === null || mine.progress < 1) {
+  if (mine === null || !isComplete(mine)) {
     return 0;
   }
 

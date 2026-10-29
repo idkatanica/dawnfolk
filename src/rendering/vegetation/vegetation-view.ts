@@ -140,9 +140,9 @@ export class VegetationView {
   readonly #changedBuckets: readonly Set<number>[];
   readonly #chunkLevels: Int8Array;
   readonly #chunkShadows: Uint8Array;
-  readonly #dirtyLevels = new Set<number>();
   readonly #looks: readonly SpeciesLook[];
   readonly #shadowProxies: readonly PlantBatch[];
+  #shouldRefillAll = true;
 
   constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow) {
     this.chunks = new VegetationChunks(mirror);
@@ -184,10 +184,6 @@ export class VegetationView {
     );
 
     this.#changedBuckets = this.#batches.map(() => new Set<number>());
-
-    for (const level of this.#batches.keys()) {
-      this.#dirtyLevels.add(level);
-    }
   }
 
   plantsChanged(indices: readonly number[]): void {
@@ -205,7 +201,8 @@ export class VegetationView {
 
     this.#assignLevels(camera, frustum, sun, detail);
     this.#markBucketsOf(repacked);
-    this.#refillDirtyLevels();
+    this.#refillDirtyLevels(this.#shouldRefillAll);
+    this.#shouldRefillAll = false;
   }
 
   dispose(): void {
@@ -316,9 +313,8 @@ export class VegetationView {
     }
   }
 
-  #refillDirtyLevels(): void {
+  #refillDirtyLevels(isWhole: boolean): void {
     for (const [level, batches] of this.#batches.entries()) {
-      const isWhole = this.#dirtyLevels.has(level);
       const changed = this.#changedBuckets[level];
 
       if (!isWhole && changed.size === 0) {
@@ -349,7 +345,5 @@ export class VegetationView {
 
       changed.clear();
     }
-
-    this.#dirtyLevels.clear();
   }
 }

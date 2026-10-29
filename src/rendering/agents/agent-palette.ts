@@ -1,20 +1,10 @@
 import { texture } from "three/tsl";
-import { type Color, DataTexture, FloatType, NearestFilter, RGBAFormat, type TextureNode } from "three/webgpu";
+import { type Color, type DataTexture, RGBAFormat, type TextureNode } from "three/webgpu";
+import { floatDataTexture } from "../data-textures.ts";
 import { colorTexel, type PaletteLayout, paletteWidth, rootTexel, TEXELS_PER_BONE } from "./palette-layout.ts";
 
 const CHANNELS = 4;
 const INITIAL_ROWS = 32;
-
-function createTexture(data: Float32Array, width: number, rows: number): DataTexture {
-  const created = new DataTexture(data, width, rows, RGBAFormat, FloatType);
-
-  created.minFilter = NearestFilter;
-  created.magFilter = NearestFilter;
-  created.generateMipmaps = false;
-  created.needsUpdate = true;
-
-  return created;
-}
 
 export class AgentPalette {
   readonly node: TextureNode;
@@ -34,7 +24,7 @@ export class AgentPalette {
     this.#rootTexel = rootTexel(layout);
     this.#rows = INITIAL_ROWS;
     this.#data = new Float32Array(this.#rowFloats * this.#rows);
-    this.#texture = createTexture(this.#data, this.#width, this.#rows);
+    this.#texture = floatDataTexture(this.#data, this.#width, this.#rows, RGBAFormat);
     this.node = texture(this.#texture);
   }
 
@@ -59,7 +49,7 @@ export class AgentPalette {
     data.set(this.#data);
     this.#rows = next;
     this.#data = data;
-    this.#texture = createTexture(data, this.#width, next);
+    this.#texture = floatDataTexture(data, this.#width, next, RGBAFormat);
     this.node.value = this.#texture;
     previous.dispose();
   }

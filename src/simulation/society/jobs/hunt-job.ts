@@ -3,6 +3,7 @@ import { faceTowards } from "../../agents/movement.ts";
 import type { Animal } from "../../fauna/fauna.ts";
 import { startleAnimal } from "../../fauna/fear.ts";
 import { pickUp, type Weapon, walkSpeed } from "../person.ts";
+import { ARROW_SPEED } from "../rivalry/arrows.ts";
 import type { PersonTick } from "../society-context.ts";
 import { learn, markScarce } from "../tribe.ts";
 import { armForHunt, canShoot, weaponHitBonus } from "../weapons.ts";
@@ -14,7 +15,6 @@ const HUNTING_RANGE = 800;
 const THROWING_RANGE = 28;
 const SHOOTING_RANGE = 46;
 const LOST_RANGE_MARGIN = 6;
-const ARROW_SPEED = 38;
 const RETARGET_SECONDS = 2;
 const FIRST_THROW_DELAY = 0.5;
 const THROW_COOLDOWN = 2.2;
@@ -37,14 +37,13 @@ function strikingRange(weapon: Weapon): number {
 export function findGame(tick: PersonTick): HuntJob | null {
   const { tribe } = tick;
 
-  const hunters = tribe.memberCount;
   const weapon = armForHunt(tick.person, tribe);
 
   if (weapon === null) {
     return null;
   }
 
-  const animal = chooseGame(tick, hunters);
+  const animal = chooseGame(tick);
 
   if (animal === null) {
     markScarce(tribe, "game", tick.context.environment.day);
@@ -55,15 +54,17 @@ export function findGame(tick: PersonTick): HuntJob | null {
   return new HuntJob(tick, animal, weapon);
 }
 
-function chooseGame(tick: PersonTick, hunters: number): Animal | null {
-  const { campX, campZ } = tick.tribe;
+function chooseGame(tick: PersonTick): Animal | null {
+  const { campX, campZ, memberCount } = tick.tribe;
   const { fauna } = tick.context;
 
   function isHuntable(candidate: Animal, isSmallGame: boolean): boolean {
     const { huntingPartySize } = ANIMALS[candidate.kind];
 
     return (
-      ANIMALS[candidate.kind].isSmallGame === isSmallGame && huntingPartySize !== null && hunters >= huntingPartySize
+      ANIMALS[candidate.kind].isSmallGame === isSmallGame &&
+      huntingPartySize !== null &&
+      memberCount >= huntingPartySize
     );
   }
 

@@ -5,10 +5,10 @@ import {
   float,
   max,
   mix,
-  mx_noise_float,
   positionWorld,
   smoothstep,
   time,
+  vec2,
   vec3,
 } from "three/tsl";
 import {
@@ -23,6 +23,7 @@ import { saturate } from "../../shared/math.ts";
 import { type CellRegion, regionsOverlap } from "../../world/change-tracking.ts";
 import type { Waterfall } from "../../world/water.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
+import { unitNoise, unitNoise3 } from "../node-helpers.ts";
 import type { IslandOutline } from "../terrain/island-outline.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 
@@ -201,12 +202,8 @@ function createCurtainMaterial(): MeshBasicNodeMaterial {
   const sideAmount = attribute("fallSide", "float");
   const drop = attribute("fallDrop", "float");
 
-  const streaks = mx_noise_float(vec3(coordinates.x.mul(0.45), coordinates.y.sub(time.mul(1.4)), 0))
-    .mul(0.5)
-    .add(0.5);
-  const spray = mx_noise_float(vec3(coordinates.x.mul(5), coordinates.y.mul(3).sub(time.mul(3)), 7))
-    .mul(0.5)
-    .add(0.5);
+  const streaks = unitNoise(vec2(coordinates.x.mul(0.45), coordinates.y.sub(time.mul(1.4))));
+  const spray = unitNoise3(vec3(coordinates.x.mul(5), coordinates.y.mul(3).sub(time.mul(3)), 7));
 
   const mist = max(smoothstep(0.08, 0.45, progress), smoothstep(600, 2400, distance(positionWorld, cameraPosition)));
   const edges = smoothstep(0, 0.06, sideAmount).mul(smoothstep(1, 0.94, sideAmount));

@@ -20,7 +20,6 @@ import {
 import {
   Color,
   DataTexture,
-  FloatType,
   LinearFilter,
   NearestFilter,
   type Node,
@@ -32,7 +31,6 @@ import {
   RGFormat,
   SRGBColorSpace,
   type Texture,
-  type TextureDataType,
   UnsignedByteType,
   Vector4,
   type WebGPURenderer,
@@ -40,6 +38,7 @@ import {
 import { GROUNDS, Ground, seasonalGroundColor } from "../../content/grounds.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { lerp, saturate } from "../../shared/math.ts";
+import { floatDataTexture } from "../data-textures.ts";
 
 const BYTE = 255;
 const COVER_REACH = 2;
@@ -56,13 +55,8 @@ interface CellLook {
   readonly isOpen: Node<"float">;
 }
 
-function cellTexture(
-  data: Float32Array | Uint8Array,
-  size: number,
-  type: TextureDataType,
-  format: PixelFormat
-): DataTexture {
-  const texture = new DataTexture(data, size, size, format, type);
+function cellTexture(data: Uint8Array, size: number, format: PixelFormat): DataTexture {
+  const texture = new DataTexture(data, size, size, format, UnsignedByteType);
 
   texture.minFilter = NearestFilter;
   texture.magFilter = NearestFilter;
@@ -149,8 +143,8 @@ export class GroundAlbedo {
   constructor(mirror: WorldMirror) {
     const size = mirror.grid.cellsPerSide;
 
-    this.#ground = cellTexture(mirror.ground, size, UnsignedByteType, RGBAFormat);
-    this.#lushness = cellTexture(lushnessData(mirror), size, FloatType, RGFormat);
+    this.#ground = cellTexture(mirror.ground, size, RGBAFormat);
+    this.#lushness = floatDataTexture(lushnessData(mirror), size, size, RGFormat);
     this.#target = new RenderTarget(size, size, {
       colorSpace: SRGBColorSpace,
       depthBuffer: false,

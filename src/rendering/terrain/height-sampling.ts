@@ -21,6 +21,16 @@ export function sampleCellsNode(cells: DataTexture, grid: WorldGrid, point: Node
   return mix(near, far, fraction.y);
 }
 
+export function cellAtNode(grid: WorldGrid, point: Node<"vec2">): Node<"ivec2"> {
+  const last = grid.cellsPerSide - 1;
+
+  return ivec2(clamp(floor(point.add(grid.halfSize).div(grid.cellSize)), vec2(0, 0), vec2(last, last)));
+}
+
+export function mapCoordinatesNode(grid: WorldGrid, point: Node<"vec2">): Node<"vec2"> {
+  return point.add(grid.halfSize).div(grid.worldSize);
+}
+
 export function sampleHeightNode(heights: DataTexture, grid: WorldGrid, point: Node<"vec2">): Node<"float"> {
   return sampleCellsNode(heights, grid, point).x;
 }
@@ -39,9 +49,18 @@ function patchStepNode(textures: TerrainTextures, cell: Node<"vec2">): Node<"flo
 }
 
 export function renderedHeightNode(textures: TerrainTextures, grid: WorldGrid, point: Node<"vec2">): Node<"float"> {
-  const last = grid.cellsPerSide - 1;
   const cell = patchCellNode(grid, point);
-  const step = patchStepNode(textures, cell);
+
+  return renderedHeightFrom(textures, grid, cell, patchStepNode(textures, cell));
+}
+
+function renderedHeightFrom(
+  textures: TerrainTextures,
+  grid: WorldGrid,
+  cell: Node<"vec2">,
+  step: Node<"float">
+): Node<"float"> {
+  const last = grid.cellsPerSide - 1;
 
   const origin = floor(cell.div(PATCH_CELLS)).mul(PATCH_CELLS);
   const start = origin.add(floor(cell.sub(origin).div(step)).mul(step));
@@ -82,9 +101,11 @@ export function renderedHeightNode(textures: TerrainTextures, grid: WorldGrid, p
 export function coarseGroundOffsetNode(textures: TerrainTextures, grid: WorldGrid, point: Node<"vec2">): Node<"float"> {
   return Fn(() => {
     const offset = float(0).toVar();
+    const cell = patchCellNode(grid, point);
+    const step = patchStepNode(textures, cell);
 
-    If(patchStepNode(textures, patchCellNode(grid, point)).greaterThan(1), () => {
-      offset.assign(renderedHeightNode(textures, grid, point).sub(sampleHeightNode(textures.height, grid, point)));
+    If(step.greaterThan(1), () => {
+      offset.assign(renderedHeightFrom(textures, grid, cell, step).sub(sampleHeightNode(textures.height, grid, point)));
     });
 
     return offset;

@@ -4,16 +4,16 @@ import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, SurfacePoint, VertexStyle } from "../mesh/mesh-builder.ts";
 import { curveBodySections } from "../mesh/path-curves.ts";
 import { type Shape, transformShape } from "../mesh/shape.ts";
-import { type BodySection, lengthwiseLoft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
-import { combine, sideMirror, transformOf } from "../mesh/transforms.ts";
+import { type BodySection, lengthwiseLoft, type TubePoint, tube } from "../mesh/shapes.ts";
+import { combine, SIDES, sideMirror, transformOf } from "../mesh/transforms.ts";
 import { degrees, wave } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
 import type { AnimalDetail } from "./animal-detail.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
-import { addEyes, addLegs, legPath } from "./quadruped-parts.ts";
+import { addLegs, addMuzzleFace, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, legStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
-import { LEG_SIDES, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
+import { FIRST_EXTRA_BONE, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
 export const HARE_FRAME: QuadrupedFrame = {
   bodyContacts: [
@@ -59,7 +59,7 @@ export const HARE_GAIT: GaitStyle = {
   walkSwing: degrees(24),
 };
 
-const EARS_BONE = 18;
+const EARS_BONE = FIRST_EXTRA_BONE;
 
 const BODY: readonly BodySection[] = [
   { centerY: 0.21, halfHeight: 0, halfWidth: 0, z: -0.295 },
@@ -163,18 +163,6 @@ function headShape(detail: AnimalDetail): Shape {
   return transformShape(head, transformOf({ scale: [0.82, 1, 1] }));
 }
 
-function addFace(builder: MeshBuilder, shape: Shape, detail: AnimalDetail): void {
-  if (!detail.hasSmallParts) {
-    return;
-  }
-
-  builder.add(sphere(0.01, 6, 4), {
-    style: { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Hoof },
-    transform: transformOf({ position: [0, 0.298, 0.278] }),
-  });
-  addEyes(builder, shape, { direction: [1, 0.4, 0.2], origin: [0, 0.33, 0.2], radius: 0.015, sink: 0.4 });
-}
-
 function addEars(builder: MeshBuilder, detail: AnimalDetail): void {
   const ear = tube(alongPath(EAR, detail), { radialSegments: segmentsUpTo(detail, 6) });
   const style: VertexStyle = {
@@ -182,7 +170,7 @@ function addEars(builder: MeshBuilder, detail: AnimalDetail): void {
     slot: (point) => (point.position.y > EAR_TIP_HEIGHT ? MaterialSlot.Hoof : MaterialSlot.Coat),
   };
 
-  for (const side of LEG_SIDES) {
+  for (const side of SIDES) {
     builder.add(ear, {
       seam: EAR_SEAM,
       style,
@@ -205,7 +193,11 @@ function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
         point.position.y < 0.3 && point.position.z > MUZZLE_DEPTH ? MaterialSlot.CoatLight : MaterialSlot.Coat,
     },
   });
-  addFace(builder, shape, detail);
+  addMuzzleFace(builder, shape, detail, {
+    eyes: { direction: [1, 0.4, 0.2], origin: [0, 0.33, 0.2], radius: 0.015, sink: 0.4 },
+    nose: [0, 0.298, 0.278],
+    noseRadius: 0.01,
+  });
   addEars(builder, detail);
 }
 
@@ -215,7 +207,7 @@ function addFeet(builder: MeshBuilder, detail: AnimalDetail): void {
   const paw = tube(alongPath(FRONT_PAW, detail), { radialSegments: segments });
   const foot = tube(alongPath(HIND_FOOT, detail), { radialSegments: segments });
 
-  for (const side of LEG_SIDES) {
+  for (const side of SIDES) {
     builder.add(paw, {
       seam: PAW_SEAM,
       style: { ...legStyle(HARE_FRAME, "front", side, BLEND), slot: MaterialSlot.CoatLight },

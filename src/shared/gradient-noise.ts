@@ -1,4 +1,4 @@
-import type { RandomSource } from "./random.ts";
+import { type RandomSource, shuffle } from "./random.ts";
 
 const SQUARE_ROOT_OF_THREE = Math.sqrt(3);
 const SKEW = 0.5 * (SQUARE_ROOT_OF_THREE - 1);
@@ -31,13 +31,7 @@ function shuffledTable(random: RandomSource): Uint8Array {
     table[index] = index;
   }
 
-  for (let index = TABLE_SIZE - 1; index > 0; index -= 1) {
-    const swap = Math.floor(random.next() * (index + 1));
-    const kept = table[index];
-
-    table[index] = table[swap];
-    table[swap] = kept;
-  }
+  shuffle(random, table.subarray(0, TABLE_SIZE));
 
   for (let index = 0; index < TABLE_SIZE; index += 1) {
     table[index + TABLE_SIZE] = table[index];

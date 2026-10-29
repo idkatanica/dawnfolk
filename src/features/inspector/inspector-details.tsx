@@ -40,13 +40,13 @@ export function PersonDetails({ person }: { readonly person: PersonInspection })
       <p className="text-ink text-sm">{person.activity}</p>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-        <MeterBar label="Health" tone="ember" value={person.health} valueText={formatPercent(person.health)} />
+        <MeterBar label="Health" tone="ember" value={person.health} />
 
-        <MeterBar label="Fed" tone="gold" value={1 - person.hunger} valueText={formatPercent(1 - person.hunger)} />
+        <MeterBar label="Fed" tone="gold" value={1 - person.hunger} />
 
-        <MeterBar label="Warmth" tone="dawn" value={person.warmth} valueText={formatPercent(person.warmth)} />
+        <MeterBar label="Warmth" tone="dawn" value={person.warmth} />
 
-        <MeterBar label="Energy" tone="meadow" value={person.energy} valueText={formatPercent(person.energy)} />
+        <MeterBar label="Energy" tone="meadow" value={person.energy} />
       </div>
     </div>
   );
@@ -57,7 +57,7 @@ export function AnimalDetails({ animal }: { readonly animal: AnimalInspection })
     <div className="flex flex-col gap-3">
       <p className="text-ink text-sm">{animal.activity}</p>
 
-      <MeterBar label="Health" tone="ember" value={animal.health} valueText={formatPercent(animal.health)} />
+      <MeterBar label="Health" tone="ember" value={animal.health} />
     </div>
   );
 }
@@ -81,7 +81,7 @@ function CampfireFuel({ building }: { readonly building: BuildingInspection }) {
 
   const label = building.fuel > LIT_CAMPFIRE_FUEL ? "Firewood" : "Gone out";
 
-  return <MeterBar label={label} tone="dawn" value={building.fuel} valueText={formatPercent(building.fuel)} />;
+  return <MeterBar label={label} tone="dawn" value={building.fuel} />;
 }
 
 export function BuildingDetails({ building }: { readonly building: BuildingInspection }) {
@@ -89,7 +89,7 @@ export function BuildingDetails({ building }: { readonly building: BuildingInspe
     <div className="flex flex-col gap-3">
       <BuildingState building={building} />
 
-      <MeterBar label="Condition" tone="meadow" value={building.health} valueText={formatPercent(building.health)} />
+      <MeterBar label="Condition" tone="meadow" value={building.health} />
 
       <CampfireFuel building={building} />
     </div>
@@ -162,12 +162,7 @@ function NextDiscovery({ tribe }: { readonly tribe: TribeInspection }) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <MeterBar
-        label={`Next: ${goal.technologyName}`}
-        tone="lake"
-        value={goal.progress}
-        valueText={formatPercent(goal.progress)}
-      />
+      <MeterBar label={`Next: ${goal.technologyName}`} tone="lake" value={goal.progress} />
 
       <GoalNeed goal={goal} />
     </div>
