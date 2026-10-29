@@ -70,7 +70,7 @@ export function hoofBelow(height: number): (point: SurfacePoint) => number {
   return (point) => (point.position.y < height ? MaterialSlot.Hoof : MaterialSlot.Coat);
 }
 
-export function addEyes(builder: MeshBuilder, head: Shape, options: EyeOptions): void {
+function addEyes(builder: MeshBuilder, head: Shape, options: EyeOptions): void {
   const { direction, origin, radius, sink } = options;
 
   const hit = outermostHit(head, new Vector3(...origin), new Vector3(...direction));
