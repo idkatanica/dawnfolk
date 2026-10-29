@@ -8,6 +8,11 @@ const GRID = new WorldGrid({ cellSize: 5, cellsPerSide: 96 });
 const FAR_FROM_COAST = 1000;
 const NEAR_COAST = 60;
 const LAKE_EDGE_X = 15;
+const STRAIGHT_RIVER = riverThrough([
+  [60, 0],
+  [90, 0],
+  [120, 0],
+]);
 
 function point(x: number, z: number): RiverPoint {
   return { depth: 1, flow: 1, surface: 0, width: 4, x, z };
@@ -22,12 +27,6 @@ function riverThrough(points: readonly (readonly [number, number])[]): River {
     reachesEdge: false,
   };
 }
-
-const STRAIGHT_RIVER = riverThrough([
-  [60, 0],
-  [90, 0],
-  [120, 0],
-]);
 
 function springKindOf(river: River, coastDistance: number, lakeIds: Int32Array): string {
   const siting = {

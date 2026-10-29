@@ -165,13 +165,11 @@ function shapeSeed(site: SpringSite, shape: number): number {
 function isInland(siting: SpringSiting, pond: Spring): boolean {
   const { coastDistance, grid, lakeIds } = siting;
 
-  const extent = pondOutlineExtent(pond);
-
   if (sampleHeight(coastDistance, grid, pond.x, pond.z) < pondShoreReach(pond) + POND_COAST_CLEARANCE) {
     return false;
   }
 
-  return !isNearLake(grid, lakeIds, pond.x, pond.z, extent + POND_LAKE_CLEARANCE);
+  return !isNearLake(grid, lakeIds, pond.x, pond.z, pondOutlineExtent(pond) + POND_LAKE_CLEARANCE);
 }
 
 function crowdsOtherRiver(pond: Spring, river: River): boolean {

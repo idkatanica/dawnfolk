@@ -507,11 +507,13 @@ function ownRiverFaults(pond: Spring, river: River): string[] {
     return pondEdgeReach(pond, point.x, point.z) < -point.width / 2;
   });
 
-  const turnsBack =
-    leaving >= 0 &&
-    river.points.slice(leaving).some((point) => {
-      return pondEdgeReach(pond, point.x, point.z) > -point.width / 2;
-    });
+  if (leaving < 0) {
+    return [];
+  }
+
+  const turnsBack = river.points.slice(leaving).some((point) => {
+    return pondEdgeReach(pond, point.x, point.z) > -point.width / 2;
+  });
 
   return turnsBack ? [`river ${river.id} turns back into its own pond`] : [];
 }
