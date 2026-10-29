@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { connectGuide } from "../features/guide/connect-guide.ts";
 import { useInterfaceStore } from "../features/interface/interface-store.ts";
 import { connectPowers } from "../features/powers/connect-powers.ts";
-import { connectAutosave } from "../features/saves/saves-store.ts";
+import { connectAutosave, useIsLandChangePending } from "../features/saves/saves-store.ts";
 import { connectWorldStore } from "../features/world/world-store.ts";
 import { rememberWorldInAddress, useLaunchStore } from "./launch-store.ts";
 import { useEngine } from "./use-engine.ts";
@@ -18,6 +18,7 @@ export function useEngineBridges(): void {
   const areOutlinesShown = useInterfaceStore((state) => {
     return state.areOutlinesShown;
   });
+  const isLandChangePending = useIsLandChangePending(engine === null ? null : engine.session);
 
   useEffect(() => {
     if (engine === null) {
@@ -42,8 +43,12 @@ export function useEngineBridges(): void {
 
     rememberWorldInAddress(worldId);
 
+    if (isLandChangePending) {
+      return;
+    }
+
     return connectAutosave(engine.session, { id: worldId, name });
-  }, [engine, name, worldId]);
+  }, [engine, isLandChangePending, name, worldId]);
 
   useEffect(() => {
     if (engine === null) {
