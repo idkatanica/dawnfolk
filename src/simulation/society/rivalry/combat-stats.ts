@@ -29,7 +29,3 @@ export function weaponDamage(weapon: CarriedWeapon): number {
 
   return damage * (1 + TOOL_MATERIAL_DEFINITIONS[weapon.material].hitBonus * EDGE_PER_HIT_BONUS);
 }
-
-export function isRanged(weapon: CarriedWeapon): boolean {
-  return weapon.kind === "bow";
-}

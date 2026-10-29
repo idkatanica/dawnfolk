@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { isLitCampfire } from "../../content/buildings.ts";
 import { createRandom } from "../../shared/random.ts";
 import { IdentifierSource } from "../identifiers.ts";
 import { FireSystem } from "../nature/fire.ts";
 import { createTestWorld } from "../testing/test-world.ts";
 import { NO_BUILDING } from "../world/world-state.ts";
-import { BuildingSystem, type BuildingTick, isCampfireLit } from "./buildings.ts";
+import { BuildingSystem, type BuildingTick } from "./buildings.ts";
 
 function createBuildings() {
   const world = createTestWorld();
@@ -71,10 +72,10 @@ describe("buildings", () => {
 
     campfire.progress = 1;
 
-    expect(isCampfireLit(campfire)).toBe(true);
+    expect(isLitCampfire(campfire)).toBe(true);
 
     buildings.update(tickOf(fire, { days: 2 }));
 
-    expect(isCampfireLit(campfire)).toBe(false);
+    expect(isLitCampfire(campfire)).toBe(false);
   });
 });

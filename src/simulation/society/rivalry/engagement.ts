@@ -6,7 +6,7 @@ import { standStill, walk } from "../jobs/job.ts";
 import { runSpeed, walkSpeed } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
 import { type CarriedWeapon, canShoot } from "../weapons.ts";
-import { BARE_HANDS, isRanged, WEAPON_STATS } from "./combat-stats.ts";
+import { BARE_HANDS, WEAPON_STATS } from "./combat-stats.ts";
 import { distanceTo, type Foe, foeGirth, foeMover } from "./foes.ts";
 import { strike } from "./strikes.ts";
 
@@ -63,7 +63,7 @@ export class Engagement {
 
     const distance = distanceTo(person.mover, foe);
 
-    if (!isRanged(this.#weapon)) {
+    if (this.#weapon.kind !== "bow") {
       return this.#fight(tick, foe, distance, this.#weapon);
     }
 

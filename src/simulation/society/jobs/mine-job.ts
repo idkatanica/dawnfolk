@@ -1,6 +1,6 @@
 import { BUILDINGS } from "../../../content/buildings.ts";
 import { DEPOSITS, type DepositKind } from "../../../content/deposits.ts";
-import type { Building } from "../buildings.ts";
+import { type Building, isComplete } from "../buildings.ts";
 import { mineFor } from "../camp-plan.ts";
 import { pickUp } from "../person.ts";
 import type { PersonTick } from "../society-context.ts";
@@ -17,7 +17,7 @@ const ENTRANCE_SHARE = 0.55;
 export function findMineWork(tick: PersonTick, kind: DepositKind): MineJob | null {
   const mine = mineFor(tick.tribe, tick.context, kind);
 
-  if (mine === null || mine.progress < 1) {
+  if (mine === null || !isComplete(mine)) {
     return null;
   }
 

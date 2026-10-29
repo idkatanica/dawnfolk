@@ -1,4 +1,4 @@
-import { BUILDINGS, type BuildingKind, isFlammable, isLitCampfire } from "../../content/buildings.ts";
+import { BUILDINGS, type BuildingKind, isFlammable } from "../../content/buildings.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { IdentifierSource } from "../identifiers.ts";
@@ -84,10 +84,6 @@ export interface BuildingsSnapshot {
 
 export function isComplete(building: Building): boolean {
   return building.progress >= 1;
-}
-
-export function isCampfireLit(building: Building | null): boolean {
-  return building !== null && isLitCampfire(building);
 }
 
 export function setAlight(building: Building): void {

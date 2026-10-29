@@ -1,6 +1,7 @@
 import { BUILDINGS } from "../../content/buildings.ts";
 import { personName } from "../../content/names.ts";
 import { nearestWalkableSpot } from "../agents/walkable-ground.ts";
+import { isComplete } from "./buildings.ts";
 import { completedOfKind, tribeBuildings } from "./camp-plan.ts";
 import { planConstruction } from "./construction.ts";
 import { abandonFloodedFields, updateFields } from "./farming.ts";
@@ -102,7 +103,7 @@ function discoverUpcoming(tribe: Tribe, context: SocietyContext): void {
 
 function storageOf(tribe: Tribe, context: SocietyContext): Storage {
   const stores = tribeBuildings(tribe, context).filter(
-    (building) => building.progress >= 1 && BUILDINGS[building.kind].storage > 0
+    (building) => isComplete(building) && BUILDINGS[building.kind].storage > 0
   );
 
   const extra = stores.reduce((total, building) => total + BUILDINGS[building.kind].storage, 0);

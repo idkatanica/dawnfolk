@@ -16,9 +16,10 @@ import { carriedFood, isCarryingAnything, isChild, type Person } from "./person.
 import { respondToFoes } from "./rivalry/responses.ts";
 import type { PersonTick, SocietyContext } from "./society-context.ts";
 import { totalFood } from "./stock.ts";
-import { isWorthLookingFor, type Tribe } from "./tribe.ts";
+import type { Tribe } from "./tribe.ts";
 import { nearCamp } from "./tribe-places.ts";
 import { isWithinReach, nearestWarmPlace, warmthOnArrival } from "./warmth.ts";
+import { isWorthIt } from "./work-needs.ts";
 import { chooseWork } from "./work-planner.ts";
 
 const RETHINK_SECONDS = 5;
@@ -323,7 +324,7 @@ function mayGatherBerries(tick: PersonTick): boolean {
     return false;
   }
 
-  if (!isWorthLookingFor(tick.tribe, "berries", environment.day, 0.3)) {
+  if (!isWorthIt(tick, "berries", 0.3)) {
     return false;
   }
 

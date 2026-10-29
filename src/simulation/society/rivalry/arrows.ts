@@ -6,7 +6,7 @@ import { WEAPON_STATS } from "./combat-stats.ts";
 import { distanceTo, type Foe, foeGirth, foeMover, isFoeAlive } from "./foes.ts";
 import { type Battleground, hurtAnimal, hurtPerson, rolledDamage } from "./strikes.ts";
 
-const ARROW_SPEED = 38;
+export const ARROW_SPEED = 38;
 const SHORTEST_FLIGHT = 0.15;
 const LONG_SHOT_PENALTY = 0.45;
 const MOVING_TARGET = 3;

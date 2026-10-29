@@ -1,6 +1,6 @@
 import { BUILDINGS, type BuildingRole, isFlammable } from "../../../content/buildings.ts";
 import type { Waypoint } from "../../agents/navigation.ts";
-import type { Building } from "../buildings.ts";
+import { type Building, isComplete } from "../buildings.ts";
 import { isChild, isElder, NEED_SECONDS, type Person } from "../person.ts";
 import type { Stock } from "../stock.ts";
 import type { Tribe } from "../tribe.ts";
@@ -115,7 +115,7 @@ export function lossShare(raid: Raid): number {
 
 export function burnableBuilding(buildings: readonly Building[], tribe: Tribe): Building | null {
   const standing = buildings.filter(
-    (building) => building.tribeId === tribe.id && building.progress >= 1 && isFlammable(building.kind)
+    (building) => building.tribeId === tribe.id && isComplete(building) && isFlammable(building.kind)
   );
 
   for (const role of TORCHED_ROLES) {

@@ -5,7 +5,7 @@ import { nearestPlant } from "../resources.ts";
 import type { PersonTick } from "../society-context.ts";
 import { learn, markScarce } from "../tribe.ts";
 import { DeliverJob } from "./deliver-job.ts";
-import { canWorkAt, Errand, headToWork, type Job, plantTarget } from "./job.ts";
+import { canWorkAtPlant, Errand, headToWork, isFreePlant, type Job, plantTarget } from "./job.ts";
 
 const GATHERING_SECONDS = 4;
 const GATHERING_REACH = 0.35;
@@ -26,17 +26,14 @@ interface SearchArea {
   z: number;
 }
 
-function isRipeBush(tick: PersonTick): (plant: number) => boolean {
+function isRipeBush(tick: PersonTick, plant: number): boolean {
   const { vegetation } = tick.context.world;
-  const { claimedPlants } = tick.tribe;
 
-  return (plant) => {
-    if (!vegetation.isAlive(plant) || claimedPlants.has(plant)) {
-      return false;
-    }
+  if (!isFreePlant(tick, plant)) {
+    return false;
+  }
 
-    return plantSpeciesDefinition(vegetation.species[plant]).givesBerries && vegetation.fruit[plant] > RIPE_BUSH;
-  };
+  return plantSpeciesDefinition(vegetation.species[plant]).givesBerries && vegetation.fruit[plant] > RIPE_BUSH;
 }
 
 function gatheringArea(tick: PersonTick): SearchArea {
@@ -50,18 +47,9 @@ function gatheringArea(tick: PersonTick): SearchArea {
 }
 
 function nearestReachableBush(tick: PersonTick, area: SearchArea): number | null {
-  const { navigation, world } = tick.context;
-  const { mover } = tick.person;
-
-  const isRipe = isRipeBush(tick);
-
-  return nearestPlant(world, {
+  return nearestPlant(tick.context.world, {
     ...area,
-    accepts: (plant) => {
-      const target = plantTarget(world.vegetation, plant, GATHERING_REACH);
-
-      return isRipe(plant) && canWorkAt(world, target, mover) && navigation.isWithinWalk(mover, target);
-    },
+    accepts: (plant) => isRipeBush(tick, plant) && canWorkAtPlant(tick, plant, GATHERING_REACH),
   });
 }
 
@@ -80,15 +68,7 @@ export function findBerries(tick: PersonTick): ForageJob | null {
 export function findFruit(tick: PersonTick): ForageJob | null {
   const tree = ripestFruitTree(tick.tribe, tick.context.world);
 
-  if (tree === null) {
-    return null;
-  }
-
-  const { navigation, world } = tick.context;
-
-  const target = plantTarget(world.vegetation, tree, GATHERING_REACH);
-
-  if (!(canWorkAt(world, target, tick.person.mover) && navigation.isWithinWalk(tick.person.mover, target))) {
+  if (tree === null || !canWorkAtPlant(tick, tree, GATHERING_REACH)) {
     return null;
   }
 
