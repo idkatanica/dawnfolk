@@ -21,7 +21,9 @@ function subscriberFor(query: string): Subscribe {
 
     mediaList.addEventListener("change", onChange);
 
-    return () => mediaList.removeEventListener("change", onChange);
+    return () => {
+      return mediaList.removeEventListener("change", onChange);
+    };
   }
 
   subscribers.set(query, subscribe);
@@ -32,8 +34,12 @@ function subscriberFor(query: string): Subscribe {
 function useMediaQuery(query: string): boolean {
   return useSyncExternalStore(
     subscriberFor(query),
-    () => window.matchMedia(query).matches,
-    () => false
+    () => {
+      return window.matchMedia(query).matches;
+    },
+    () => {
+      return false;
+    }
   );
 }
 

@@ -82,7 +82,9 @@ export function addTrunk(growth: Growth, options: TrunkOptions, start = new Vect
     wobble: options.wobble,
   });
 
-  const flared = points.map((point, index) => (index === 0 ? { ...point, radius: point.radius * ROOT_FLARE } : point));
+  const flared = points.map((point, index) => {
+    return index === 0 ? { ...point, radius: point.radius * ROOT_FLARE } : point;
+  });
 
   growth.branches.push({ depth: 0, isForked: options.isForked, points: rooted(flared) });
 

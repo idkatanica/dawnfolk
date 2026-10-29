@@ -30,7 +30,9 @@ describe("tribe relations", () => {
       neighbors
         .getByRole("listitem")
         .elements()
-        .map((item) => item.textContent)
+        .map((item) => {
+          return item.textContent;
+        })
     ).toEqual(["Wolf ClanFeud for 1 dHostile", "Elk ClanKinFriendly"]);
   });
 

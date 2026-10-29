@@ -71,15 +71,25 @@ export function tribeBuildings(tribe: Tribe, context: Pick<SocietyContext, "buil
     ...buildings.structureIds,
   ];
 
-  return ids.map((id) => context.buildings.find(id)).filter((building) => building !== null);
+  return ids
+    .map((id) => {
+      return context.buildings.find(id);
+    })
+    .filter((building) => {
+      return building !== null;
+    });
 }
 
 export function buildingsOfKind(tribe: Tribe, context: SocietyContext, kind: BuildingKind): Building[] {
-  return tribeBuildings(tribe, context).filter((building) => building.kind === kind);
+  return tribeBuildings(tribe, context).filter((building) => {
+    return building.kind === kind;
+  });
 }
 
 export function completedOfKind(tribe: Tribe, context: SocietyContext, kind: BuildingKind): Building | null {
-  const building = buildingsOfKind(tribe, context, kind).find((candidate) => isComplete(candidate));
+  const building = buildingsOfKind(tribe, context, kind).find((candidate) => {
+    return isComplete(candidate);
+  });
 
   if (building === undefined) {
     return null;
@@ -136,7 +146,9 @@ function singleBuilding(
   kind: BuildingKind,
   nearest: number,
   farthest: number,
-  isWanted: (tribe: Tribe, context: SocietyContext) => boolean = () => true
+  isWanted: (tribe: Tribe, context: SocietyContext) => boolean = () => {
+    return true;
+  }
 ): Planner {
   return (tribe, context) => {
     if (!isUnlocked(tribe, kind, context) || buildingsOfKind(tribe, context, kind).length > 0) {
@@ -216,9 +228,9 @@ function upgradePlan(tribe: Tribe, context: SocietyContext): BuildingPlan | null
 
   const rank = DWELLING_LADDER.indexOf(best);
 
-  const outdated = completedShelters(tribe, context).find(
-    (shelter) => DWELLING_LADDER.indexOf(shelter.kind) < rank && !shelter.isRetiring
-  );
+  const outdated = completedShelters(tribe, context).find((shelter) => {
+    return DWELLING_LADDER.indexOf(shelter.kind) < rank && !shelter.isRetiring;
+  });
 
   if (outdated === undefined) {
     return null;
@@ -240,7 +252,9 @@ function bestEnclosure(tribe: Tribe): BuildingKind | null {
 }
 
 function enclosureOf(tribe: Tribe, context: SocietyContext): Building | null {
-  const enclosure = tribeBuildings(tribe, context).find((building) => isEnclosure(building.kind));
+  const enclosure = tribeBuildings(tribe, context).find((building) => {
+    return isEnclosure(building.kind);
+  });
 
   if (enclosure === undefined) {
     return null;
@@ -278,9 +292,9 @@ function enclosurePlan(tribe: Tribe, context: SocietyContext): BuildingPlan | nu
     return null;
   }
 
-  const campBuildings = tribeBuildings(tribe, context).filter(
-    (building) => building.kind !== "mine" && isComplete(building)
-  );
+  const campBuildings = tribeBuildings(tribe, context).filter((building) => {
+    return building.kind !== "mine" && isComplete(building);
+  });
 
   if (campBuildings.length < SMALLEST_WALLED_CAMP) {
     return null;

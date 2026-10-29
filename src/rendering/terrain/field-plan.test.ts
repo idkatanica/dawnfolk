@@ -11,7 +11,9 @@ const FIRST_ROW = 24;
 type CellStep = readonly [column: number, row: number];
 
 function cellsOf(mirror: WorldMirror, steps: readonly CellStep[]): number[] {
-  return steps.map(([column, row]) => mirror.grid.index(FIRST_COLUMN + column, FIRST_ROW + row));
+  return steps.map(([column, row]) => {
+    return mirror.grid.index(FIRST_COLUMN + column, FIRST_ROW + row);
+  });
 }
 
 function setGround(mirror: WorldMirror, cells: readonly number[], ground: number): void {
@@ -41,7 +43,11 @@ describe("field plan", () => {
 
     plow(mirror, plan, field, Ground.Farm);
 
-    const axes = new Set(field.map((cell) => plan.axisAt(cell)));
+    const axes = new Set(
+      field.map((cell) => {
+        return plan.axisAt(cell);
+      })
+    );
 
     expect(axes.size).toBe(1);
     expect(axes.has(FurrowAxis.None)).toBe(false);
@@ -65,12 +71,24 @@ describe("field plan", () => {
 
     plow(mirror, plan, [...wide, ...long], Ground.Farm);
 
-    expect(wide.every((cell) => plan.axisAt(cell) === FurrowAxis.AlongX)).toBe(true);
-    expect(long.every((cell) => plan.axisAt(cell) === FurrowAxis.AlongZ)).toBe(true);
+    expect(
+      wide.every((cell) => {
+        return plan.axisAt(cell) === FurrowAxis.AlongX;
+      })
+    ).toBe(true);
+    expect(
+      long.every((cell) => {
+        return plan.axisAt(cell) === FurrowAxis.AlongZ;
+      })
+    ).toBe(true);
   });
 
   it("runs furrows across the slope of a hillside field", () => {
-    const mirror = createVegetatedMirror({ heightAt: (x) => 100 + x * 0.2 });
+    const mirror = createVegetatedMirror({
+      heightAt: (x) => {
+        return 100 + x * 0.2;
+      },
+    });
     const plan = new FieldPlan(mirror);
 
     const field = cellsOf(mirror, [
@@ -81,7 +99,11 @@ describe("field plan", () => {
 
     plow(mirror, plan, field, Ground.Farm);
 
-    expect(field.every((cell) => plan.axisAt(cell) === FurrowAxis.AlongZ)).toBe(true);
+    expect(
+      field.every((cell) => {
+        return plan.axisAt(cell) === FurrowAxis.AlongZ;
+      })
+    ).toBe(true);
   });
 
   it("forgets cells that are no longer farmed", () => {
@@ -99,7 +121,11 @@ describe("field plan", () => {
 
     plow(mirror, plan, field, Ground.Meadow);
 
-    expect(field.every((cell) => plan.axisAt(cell) === FurrowAxis.None)).toBe(true);
+    expect(
+      field.every((cell) => {
+        return plan.axisAt(cell) === FurrowAxis.None;
+      })
+    ).toBe(true);
     expect(plan.revision).toBeGreaterThan(revision);
   });
 });

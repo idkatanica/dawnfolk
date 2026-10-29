@@ -59,7 +59,9 @@ Biome formats and lints at a line width of 120, and TypeScript runs under
 - Pass the context first, then the subject, then options:
   `plantAt(world, cell, options)`.
 - Declare functions with `function`, never as arrow functions assigned to a
-  name. Inline callbacks may be arrows.
+  name. Inline callbacks may be arrows, always with a block body:
+  `(tree) => { return tree.height; }`. Biome enforces it. A callback that does
+  nothing is `ignore` from `shared/ignore.ts`.
 - Check preconditions at the top and return early, so the happy path stays at
   the left margin.
 - Put every `if` and loop body in braces, even a single `return`.

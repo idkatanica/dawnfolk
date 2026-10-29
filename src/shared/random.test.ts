@@ -42,13 +42,17 @@ describe("seeded random", () => {
   });
 
   it("spreads the first values of neighboring seeds", () => {
-    const firstValues = [1, 2, 3, 13, 90, 167, 244].map((seed) => createRandom(seed).next());
+    const firstValues = [1, 2, 3, 13, 90, 167, 244].map((seed) => {
+      return createRandom(seed).next();
+    });
 
     expect(Math.min(...firstValues)).toBeLessThan(0.5);
     expect(Math.max(...firstValues) - Math.min(...firstValues)).toBeGreaterThan(0.3);
   });
 
   it("refuses to pick from an empty list", () => {
-    expect(() => createRandom(1).pick([])).toThrow(RangeError);
+    expect(() => {
+      return createRandom(1).pick([]);
+    }).toThrow(RangeError);
   });
 });

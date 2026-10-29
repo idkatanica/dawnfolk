@@ -167,8 +167,12 @@ export class NavigationGrid {
       this.#leadsToSteepShore[cell] = 0;
     }
 
-    this.#spreadFromShore((cell) => world.isWalkable(cell), 0);
-    this.#spreadFromShore((cell) => isDryLand(world, cell), 1);
+    this.#spreadFromShore((cell) => {
+      return world.isWalkable(cell);
+    }, 0);
+    this.#spreadFromShore((cell) => {
+      return isDryLand(world, cell);
+    }, 1);
   }
 
   #spreadFromShore(isShore: (cell: number) => boolean, leadsToSteepShore: number): void {

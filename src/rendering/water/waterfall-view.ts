@@ -232,7 +232,9 @@ export class WaterfallView {
   rebuild(waterfalls: readonly Waterfall[], textures: TerrainTextures, plinth: number): void {
     const writer: CurtainWriter = { coordinates: [], drops: [], indices: [], positions: [], progress: [], sides: [] };
 
-    this.#lips = waterfalls.map((waterfall) => findLip(waterfall, textures));
+    this.#lips = waterfalls.map((waterfall) => {
+      return findLip(waterfall, textures);
+    });
 
     for (const lip of this.#lips) {
       addCurtain(writer, lip, textures.outline, plinth);
@@ -259,7 +261,9 @@ export class WaterfallView {
 
     const reach = SPAN_INSET + WIDEST_HALF_SPAN + grid.cellSize * SHORE_SAMPLE_CELLS;
 
-    return this.#lips.some((lip) => regionsOverlap(region, grid.circleBounds(lip.centerX, lip.centerZ, reach)));
+    return this.#lips.some((lip) => {
+      return regionsOverlap(region, grid.circleBounds(lip.centerX, lip.centerZ, reach));
+    });
   }
 
   dispose(): void {

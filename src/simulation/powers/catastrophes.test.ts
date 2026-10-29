@@ -36,7 +36,9 @@ function settle(simulation: Simulation, seconds: number): void {
 function waterCellsWithin(simulation: Simulation, x: number, z: number, radius: number): number {
   const { world } = simulation;
 
-  return world.grid.cellsInRadius(x, z, radius).filter((cell) => world.isWater(cell)).length;
+  return world.grid.cellsInRadius(x, z, radius).filter((cell) => {
+    return world.isWater(cell);
+  }).length;
 }
 
 function depthAt(simulation: Simulation, x: number, z: number): number {
@@ -106,7 +108,9 @@ describe("water after a blast", () => {
     simulation.usePower("explosion", 50, 0, { radius: 45 });
     settle(simulation, 8);
 
-    const upstream = simulation.world.water.lakes.filter((lake) => lake.centerZ > 0 && Math.abs(lake.centerX) < 80);
+    const upstream = simulation.world.water.lakes.filter((lake) => {
+      return lake.centerZ > 0 && Math.abs(lake.centerX) < 80;
+    });
 
     expect(simulation.world.water.lakes.length).toBeGreaterThan(before);
     expect(upstream.length).toBeGreaterThan(0);
@@ -132,7 +136,9 @@ describe("water after a blast", () => {
     simulation.usePower("meteor", 0, METEOR_Z, { craterRadius: 140, fallTime: 0.5 });
     settle(simulation, 10);
 
-    const drowned = Array.from({ length: vegetation.count }, (_, plant) => plant).filter((plant) => {
+    const drowned = Array.from({ length: vegetation.count }, (_, plant) => {
+      return plant;
+    }).filter((plant) => {
       const { form } = plantSpeciesDefinition(vegetation.species[plant]);
 
       const isGrowing = form !== "stone" && form !== "monument";
@@ -240,7 +246,9 @@ describe("fire after a blast", () => {
 
     simulation.usePower("explosion", 0, 0, { radius: 45 });
 
-    const flights = simulation.advance(0).effects.filter((effect) => effect.kind === "ember");
+    const flights = simulation.advance(0).effects.filter((effect) => {
+      return effect.kind === "ember";
+    });
 
     expect(flights.length).toBeGreaterThan(5);
     expect(simulation.embers.flying.length).toBe(flights.length);
@@ -306,8 +314,16 @@ describe("fire after a blast", () => {
     vegetation.height[boulder] = 3.5;
     simulation.usePower("explosion", 0, 0, { radius: 45 });
 
-    expect(boulders((height) => height > 3)).toBe(0);
-    expect(boulders((height) => height < 1.6)).toBeGreaterThan(1);
+    expect(
+      boulders((height) => {
+        return height > 3;
+      })
+    ).toBe(0);
+    expect(
+      boulders((height) => {
+        return height < 1.6;
+      })
+    ).toBeGreaterThan(1);
   });
 });
 
@@ -326,9 +342,11 @@ describe("earthquakes", () => {
 
     simulation.usePower("earthquake", 0, 0, { magnitude: 100, radius: 300 });
 
-    const fallen = Array.from({ length: vegetation.count }, (_, plant) => plant).findIndex(
-      (plant) => vegetation.state[plant] === PlantState.Fallen
-    );
+    const fallen = Array.from({ length: vegetation.count }, (_, plant) => {
+      return plant;
+    }).findIndex((plant) => {
+      return vegetation.state[plant] === PlantState.Fallen;
+    });
 
     expect(fallen).toBeGreaterThanOrEqual(0);
 

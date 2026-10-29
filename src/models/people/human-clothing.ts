@@ -107,11 +107,25 @@ function jaggedEdge(shape: Shape, isEdge: (vertex: ShapeVertex) => boolean, teet
 }
 
 function jaggedHem(shape: Shape, belowY: number, teeth: number, depth: number): Shape {
-  return jaggedEdge(shape, (vertex) => vertex.y <= belowY, teeth, depth);
+  return jaggedEdge(
+    shape,
+    (vertex) => {
+      return vertex.y <= belowY;
+    },
+    teeth,
+    depth
+  );
 }
 
 function jaggedTop(shape: Shape, aboveY: number, teeth: number, depth: number): Shape {
-  return jaggedEdge(shape, (vertex) => vertex.y >= aboveY, teeth, depth);
+  return jaggedEdge(
+    shape,
+    (vertex) => {
+      return vertex.y >= aboveY;
+    },
+    teeth,
+    depth
+  );
 }
 
 function garmentChannel(point: SurfacePoint, lower: VertexStyle, channel: "boneA" | "boneB" | "boneWeight"): number {
@@ -124,9 +138,15 @@ function garmentStyle(followsLegs: number, hemLine = 0.55): VertexStyle {
   const lower = skirtStyle(followsLegs, hemLine);
 
   return {
-    boneA: (point) => garmentChannel(point, lower, "boneA"),
-    boneB: (point) => garmentChannel(point, lower, "boneB"),
-    boneWeight: (point) => garmentChannel(point, lower, "boneWeight"),
+    boneA: (point) => {
+      return garmentChannel(point, lower, "boneA");
+    },
+    boneB: (point) => {
+      return garmentChannel(point, lower, "boneB");
+    },
+    boneWeight: (point) => {
+      return garmentChannel(point, lower, "boneWeight");
+    },
   };
 }
 

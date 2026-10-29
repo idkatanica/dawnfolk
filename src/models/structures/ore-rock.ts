@@ -51,14 +51,18 @@ function isStreak(point: Triple, richness: number): boolean {
 }
 
 function facetsWhere(faceted: Shape, keep: (triangle: number) => boolean): Shape {
-  const triangles = Array.from({ length: faceted.indices.length / 3 }, (_, triangle) => triangle).filter(keep);
+  const triangles = Array.from({ length: faceted.indices.length / 3 }, (_, triangle) => {
+    return triangle;
+  }).filter(keep);
   const corners = triangles.length * 3;
 
   const positions = new Float32Array(corners * 3);
   const normals = new Float32Array(corners * 3);
   const along = new Float32Array(corners);
   const around = new Float32Array(corners);
-  const indices = Uint32Array.from({ length: corners }, (_, corner) => corner);
+  const indices = Uint32Array.from({ length: corners }, (_, corner) => {
+    return corner;
+  });
 
   for (const [index, triangle] of triangles.entries()) {
     for (let corner = 0; corner < 3; corner += 1) {
@@ -77,16 +81,20 @@ function facetsWhere(faceted: Shape, keep: (triangle: number) => boolean): Shape
 
 export function addStreakedRock(context: StructureContext, shape: Shape, look: OreLook, style: VertexStyle): void {
   const faceted = facetShape(shape);
-  const streaks = Array.from({ length: faceted.indices.length / 3 }, (_, triangle) =>
-    isStreak(centroidAt(faceted, triangle), look.richness)
-  );
+  const streaks = Array.from({ length: faceted.indices.length / 3 }, (_, triangle) => {
+    return isStreak(centroidAt(faceted, triangle), look.richness);
+  });
 
   context.builder.add(
-    facetsWhere(faceted, (triangle) => streaks[triangle]),
+    facetsWhere(faceted, (triangle) => {
+      return streaks[triangle];
+    }),
     { style: { ...style, slot: look.ore } }
   );
   context.builder.add(
-    facetsWhere(faceted, (triangle) => !streaks[triangle]),
+    facetsWhere(faceted, (triangle) => {
+      return !streaks[triangle];
+    }),
     { style: { ...style, slot: look.rock } }
   );
 }

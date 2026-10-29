@@ -395,7 +395,9 @@ function obstaclesOnTheWay(mover: Mover, step: number, world: WorldState): reado
 
   const obstacles = world.obstacles.near(mover.x, mover.z, Math.max(OBSTACLE_SCAN, reach));
 
-  mover.nearbyObstacles = obstacles.filter((obstacle) => !isAround(obstacle, mover));
+  mover.nearbyObstacles = obstacles.filter((obstacle) => {
+    return !isAround(obstacle, mover);
+  });
   mover.scannedX = mover.x;
   mover.scannedZ = mover.z;
 

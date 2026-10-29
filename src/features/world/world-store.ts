@@ -51,11 +51,13 @@ interface WorldStore {
   readonly snapshot: WorldSnapshot | null;
 }
 
-export const useWorldStore = create<WorldStore>()(() => ({
-  chronicle: [],
-  notices: [],
-  snapshot: null,
-}));
+export const useWorldStore = create<WorldStore>()(() => {
+  return {
+    chronicle: [],
+    notices: [],
+    snapshot: null,
+  };
+});
 
 function keptRules(previous: WorldSnapshot | null, rules: WorldRules): WorldRules {
   if (previous === null || JSON.stringify(previous.rules) !== JSON.stringify(rules)) {
@@ -88,10 +90,19 @@ function createNotice(category: WorldNotice["category"], text: string): WorldNot
 
 function noticesFrom(frame: SimulationFrame): WorldNotice[] {
   const announced = frame.chronicle
-    .filter((entry) => ANNOUNCED_CATEGORIES.has(entry.category))
-    .map((entry) => createNotice(entry.category, entry.text));
+    .filter((entry) => {
+      return ANNOUNCED_CATEGORIES.has(entry.category);
+    })
+    .map((entry) => {
+      return createNotice(entry.category, entry.text);
+    });
 
-  return [...frame.notices.map((text) => createNotice("notice", text)), ...announced];
+  return [
+    ...frame.notices.map((text) => {
+      return createNotice("notice", text);
+    }),
+    ...announced,
+  ];
 }
 
 export function connectWorldStore(feed: WorldFeed): () => void {
@@ -102,7 +113,9 @@ export function connectWorldStore(feed: WorldFeed): () => void {
     clearTimeout(trailingRefresh);
     trailingRefresh = undefined;
     lastRefresh = performance.now();
-    useWorldStore.setState((state) => ({ snapshot: snapshotOf(frame, state.snapshot) }));
+    useWorldStore.setState((state) => {
+      return { snapshot: snapshotOf(frame, state.snapshot) };
+    });
   }
 
   useWorldStore.setState({
@@ -116,15 +129,22 @@ export function connectWorldStore(feed: WorldFeed): () => void {
     const hasNews = frame.chronicle.length > 0 || frame.notices.length > 0;
 
     if (hasNews) {
-      useWorldStore.setState((state) => ({
-        chronicle: [...feed.chronicle],
-        notices: [...state.notices, ...noticesFrom(frame)].slice(-MAXIMUM_NOTICES),
-      }));
+      useWorldStore.setState((state) => {
+        return {
+          chronicle: [...feed.chronicle],
+          notices: [...state.notices, ...noticesFrom(frame)].slice(-MAXIMUM_NOTICES),
+        };
+      });
     }
 
     if (now - lastRefresh < REFRESH_MILLISECONDS && !hasNews) {
       if (trailingRefresh === undefined) {
-        trailingRefresh = setTimeout(() => refresh(feed.frame), lastRefresh + REFRESH_MILLISECONDS - now);
+        trailingRefresh = setTimeout(
+          () => {
+            return refresh(feed.frame);
+          },
+          lastRefresh + REFRESH_MILLISECONDS - now
+        );
       }
 
       return;
@@ -140,5 +160,11 @@ export function connectWorldStore(feed: WorldFeed): () => void {
 }
 
 export function dismissNotice(noticeId: number): void {
-  useWorldStore.setState((state) => ({ notices: state.notices.filter((notice) => notice.id !== noticeId) }));
+  useWorldStore.setState((state) => {
+    return {
+      notices: state.notices.filter((notice) => {
+        return notice.id !== noticeId;
+      }),
+    };
+  });
 }

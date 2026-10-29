@@ -13,7 +13,9 @@ interface NeighborProps {
 }
 
 function Neighbor({ relation, tribeId, tribes }: NeighborProps) {
-  const other = tribes.find((tribe) => tribe.id === otherTribeOf(relation, tribeId));
+  const other = tribes.find((tribe) => {
+    return tribe.id === otherTribeOf(relation, tribeId);
+  });
 
   if (other === undefined) {
     return null;
@@ -35,14 +37,18 @@ function Neighbor({ relation, tribeId, tribes }: NeighborProps) {
 }
 
 function RaidLine({ tribeId, tribes }: { readonly tribeId: number; readonly tribes: readonly TribeSummary[] }) {
-  const raid = useWorldStore((state) => (state.snapshot === null ? null : raidOf(state.snapshot.rivalry, tribeId)));
+  const raid = useWorldStore((state) => {
+    return state.snapshot === null ? null : raidOf(state.snapshot.rivalry, tribeId);
+  });
 
   if (raid === null) {
     return null;
   }
 
   const isAttacker = raid.attackerId === tribeId;
-  const other = tribes.find((tribe) => tribe.id === (isAttacker ? raid.defenderId : raid.attackerId));
+  const other = tribes.find((tribe) => {
+    return tribe.id === (isAttacker ? raid.defenderId : raid.attackerId);
+  });
   const otherName = other === undefined ? "their enemies" : `the ${other.name}`;
 
   return (
@@ -54,14 +60,22 @@ function RaidLine({ tribeId, tribes }: { readonly tribeId: number; readonly trib
 }
 
 export function TribeRelations({ tribeId }: { readonly tribeId: number }) {
-  const relations = useWorldStore((state) => state.snapshot?.rivalry.relations);
-  const tribes = useWorldStore((state) => state.snapshot?.tribes);
+  const relations = useWorldStore((state) => {
+    return state.snapshot?.rivalry.relations;
+  });
+  const tribes = useWorldStore((state) => {
+    return state.snapshot?.tribes;
+  });
 
   if (relations === undefined || tribes === undefined) {
     return null;
   }
 
-  const own = relations.filter((relation) => isRelationOf(relation, tribeId)).toSorted(byStance);
+  const own = relations
+    .filter((relation) => {
+      return isRelationOf(relation, tribeId);
+    })
+    .toSorted(byStance);
 
   if (own.length === 0) {
     return null;
@@ -74,14 +88,16 @@ export function TribeRelations({ tribeId }: { readonly tribeId: number }) {
       <RaidLine tribeId={tribeId} tribes={tribes} />
 
       <ul className="divide-line divide-y">
-        {own.map((relation) => (
-          <Neighbor
-            key={`${relation.firstId}-${relation.secondId}`}
-            relation={relation}
-            tribeId={tribeId}
-            tribes={tribes}
-          />
-        ))}
+        {own.map((relation) => {
+          return (
+            <Neighbor
+              key={`${relation.firstId}-${relation.secondId}`}
+              relation={relation}
+              tribeId={tribeId}
+              tribes={tribes}
+            />
+          );
+        })}
       </ul>
     </section>
   );

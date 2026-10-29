@@ -8,7 +8,11 @@ const TEXELS_PER_SIDE = 128;
 function burning(cells: readonly number[], intensity = 255): BurningCells {
   return {
     burningCells: Int32Array.from(cells),
-    burningIntensity: Uint8Array.from(cells.map(() => intensity)),
+    burningIntensity: Uint8Array.from(
+      cells.map(() => {
+        return intensity;
+      })
+    ),
   };
 }
 

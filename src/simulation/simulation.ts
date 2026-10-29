@@ -99,29 +99,57 @@ type CommandHandlers = {
 };
 
 const COMMAND_HANDLERS: CommandHandlers = {
-  beginStroke: (simulation, command) =>
-    simulation.beginStroke(command.powerId, command.x, command.z, command.parameters),
-  endStroke: (simulation) => simulation.endStroke(),
-  moveStroke: (simulation, command) => simulation.moveStroke(command.x, command.z),
+  beginStroke: (simulation, command) => {
+    return simulation.beginStroke(command.powerId, command.x, command.z, command.parameters);
+  },
+  endStroke: (simulation) => {
+    return simulation.endStroke();
+  },
+  moveStroke: (simulation, command) => {
+    return simulation.moveStroke(command.x, command.z);
+  },
   setDaySeconds: (simulation, command) => {
     simulation.calendar.daySeconds = command.seconds;
   },
-  setDaysPerSeason: (simulation, command) => simulation.calendar.setDaysPerSeason(command.days),
-  setHours: (simulation, command) => simulation.calendar.setHours(command.hours),
-  setPaused: (simulation, command) => simulation.setPaused(command.isPaused),
-  setSeason: (simulation, command) => simulation.calendar.setSeason(command.season),
-  setSelection: (simulation, command) => simulation.setSelection(command.selection),
-  setSpeed: (simulation, command) => simulation.setSpeed(command.speed),
-  setTemperatureOffset: (simulation, command) => simulation.weather.setUserTemperatureOffset(command.offset),
+  setDaysPerSeason: (simulation, command) => {
+    return simulation.calendar.setDaysPerSeason(command.days);
+  },
+  setHours: (simulation, command) => {
+    return simulation.calendar.setHours(command.hours);
+  },
+  setPaused: (simulation, command) => {
+    return simulation.setPaused(command.isPaused);
+  },
+  setSeason: (simulation, command) => {
+    return simulation.calendar.setSeason(command.season);
+  },
+  setSelection: (simulation, command) => {
+    return simulation.setSelection(command.selection);
+  },
+  setSpeed: (simulation, command) => {
+    return simulation.setSpeed(command.speed);
+  },
+  setTemperatureOffset: (simulation, command) => {
+    return simulation.weather.setUserTemperatureOffset(command.offset);
+  },
   setTimeFrozen: (simulation, command) => {
     simulation.calendar.isTimeFrozen = command.isFrozen;
   },
-  setViewFocus: (simulation, command) => simulation.setViewFocus(command.x, command.z),
-  setWeather: (simulation, command) => simulation.setWeather(command.weather),
-  setWind: (simulation, command) =>
-    simulation.weather.setWind(command.direction, command.speed, simulation.rules.storms.windStrength),
-  setWorldRules: (simulation, command) => simulation.setRules(readWorldRules(command.rules)),
-  usePower: (simulation, command) => simulation.usePower(command.powerId, command.x, command.z, command.parameters),
+  setViewFocus: (simulation, command) => {
+    return simulation.setViewFocus(command.x, command.z);
+  },
+  setWeather: (simulation, command) => {
+    return simulation.setWeather(command.weather);
+  },
+  setWind: (simulation, command) => {
+    return simulation.weather.setWind(command.direction, command.speed, simulation.rules.storms.windStrength);
+  },
+  setWorldRules: (simulation, command) => {
+    return simulation.setRules(readWorldRules(command.rules));
+  },
+  usePower: (simulation, command) => {
+    return simulation.usePower(command.powerId, command.x, command.z, command.parameters);
+  },
 };
 
 function runCommand<Type extends SimulationCommandType>(
@@ -364,7 +392,9 @@ export class Simulation {
     }
 
     this.#stroke = {
-      apply: (target) => applyPower(powerId, parameters, target, this.services),
+      apply: (target) => {
+        return applyPower(powerId, parameters, target, this.services);
+      },
       startHeight: this.world.heightAt(x, z),
       x,
       z,
@@ -508,7 +538,9 @@ export class Simulation {
       random: this.random,
       rivalry: this.rivalry,
       rules: DEFAULT_WORLD_RULES,
-      schedule: (delaySeconds, run) => this.#schedule(delaySeconds, run),
+      schedule: (delaySeconds, run) => {
+        return this.#schedule(delaySeconds, run);
+      },
       tornadoes: this.tornadoes,
       world: this.world,
     };
@@ -516,7 +548,9 @@ export class Simulation {
 
   #createFaunaThreats(): FaunaThreats {
     return {
-      dangerNear: (x, z, radius) => this.hazards.dangerNear(x, z, radius),
+      dangerNear: (x, z, radius) => {
+        return this.hazards.dangerNear(x, z, radius);
+      },
       hunterNear: (x, z, radius) => {
         const hunter = this.society.nearestPerson(x, z, radius, (person) => {
           const isStalking = person.job?.kind === "hunt";
@@ -575,7 +609,9 @@ export class Simulation {
       }
     }
 
-    this.#tasks = this.#tasks.filter((task) => task.remainingSeconds > 0);
+    this.#tasks = this.#tasks.filter((task) => {
+      return task.remainingSeconds > 0;
+    });
 
     for (const task of due) {
       task.run();
@@ -669,7 +705,9 @@ export class Simulation {
       this.embers.launch(cell, wind, this.random);
     }
 
-    this.embers.update(TICK_SECONDS, (ember) => this.#landEmber(ember));
+    this.embers.update(TICK_SECONDS, (ember) => {
+      return this.#landEmber(ember);
+    });
     this.tornadoes.update(TICK_SECONDS, this.services);
     this.surface.update(TICK_SECONDS, days, environment, rules);
     this.#vegetationGrowth.update(days, environment, rules, this.random);
@@ -719,8 +757,20 @@ export class Simulation {
   }
 
   #keepAgentsApart(): void {
-    const people = this.society.people.filter((person) => person.isAlive).map((person) => person.mover);
-    const animals = this.fauna.animals.filter((animal) => animal.isAlive).map((animal) => animal.mover);
+    const people = this.society.people
+      .filter((person) => {
+        return person.isAlive;
+      })
+      .map((person) => {
+        return person.mover;
+      });
+    const animals = this.fauna.animals
+      .filter((animal) => {
+        return animal.isAlive;
+      })
+      .map((animal) => {
+        return animal.mover;
+      });
 
     keepApart([...people, ...animals], this.world, TICK_SECONDS * CROWDING_TICKS);
   }

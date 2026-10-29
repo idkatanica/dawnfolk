@@ -61,7 +61,9 @@ interface SpringSite {
 function downstreamDirection(river: River): Direction | null {
   const [head] = river.points;
 
-  const ahead = river.points.find((point) => Math.hypot(point.x - head.x, point.z - head.z) >= DIRECTION_REACH);
+  const ahead = river.points.find((point) => {
+    return Math.hypot(point.x - head.x, point.z - head.z) >= DIRECTION_REACH;
+  });
   const target = ahead === undefined ? river.points.at(-1) : ahead;
 
   if (target === undefined) {

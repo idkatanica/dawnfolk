@@ -1,4 +1,5 @@
 import { Ground } from "../content/grounds.ts";
+import { ignore } from "../shared/ignore.ts";
 import { lerp, smoothstep } from "../shared/math.ts";
 import { createRandom } from "../shared/random.ts";
 import { isOnIsland } from "../world/coast.ts";
@@ -64,17 +65,27 @@ export interface GeneratedWorld {
 }
 
 function erosionScales(grid: WorldGrid, strength: number): ErosionScale[] {
-  const coarse = VALLEY_CELL_SIZES.map((meters) => Math.round(meters / grid.cellSize))
-    .filter((factor) => factor >= 2 && grid.cellsPerSide % factor === 0)
-    .map((factor) => ({ dropletsPerCell: VALLEY_DROPLETS_PER_CELL * strength, factor }));
+  const coarse = VALLEY_CELL_SIZES.map((meters) => {
+    return Math.round(meters / grid.cellSize);
+  })
+    .filter((factor) => {
+      return factor >= 2 && grid.cellsPerSide % factor === 0;
+    })
+    .map((factor) => {
+      return { dropletsPerCell: VALLEY_DROPLETS_PER_CELL * strength, factor };
+    });
 
   return [...coarse, { dropletsPerCell: GULLY_DROPLETS_PER_CELL * strength, factor: 1 }];
 }
 
 function erosionPlan(grid: WorldGrid, heights: Float32Array, dryness: Float32Array, strength: number): ErosionPlan {
   return {
-    coarseReach: heights.map((height, cell) => smoothstep(LOWLAND_HEIGHT, UPLAND_HEIGHT, height) * (1 - dryness[cell])),
-    resistance: dryness.map((value) => DESERT_RESISTANCE * value),
+    coarseReach: heights.map((height, cell) => {
+      return smoothstep(LOWLAND_HEIGHT, UPLAND_HEIGHT, height) * (1 - dryness[cell]);
+    }),
+    resistance: dryness.map((value) => {
+      return DESERT_RESISTANCE * value;
+    }),
     scales: erosionScales(grid, strength),
   };
 }
@@ -96,7 +107,9 @@ function digLakeBasins(heights: Float32Array, grid: WorldGrid, relief: Relief): 
 }
 
 function boundaryDistances(grid: WorldGrid, relief: Relief): (cell: number) => number {
-  return (cell) => relief.boundaryDistanceAt(islandPointAt(grid, grid.columnOf(cell), grid.rowOf(cell)));
+  return (cell) => {
+    return relief.boundaryDistanceAt(islandPointAt(grid, grid.columnOf(cell), grid.rowOf(cell)));
+  };
 }
 
 function buildRelief(grid: WorldGrid, seed: number, shapeKind: IslandShapeKind) {
@@ -143,7 +156,7 @@ function bareOffIsland(ground: Uint8Array, coastDistance: Float32Array): void {
 export function generateWorld(
   seed: number,
   options: GenerationOptions = DEFAULT_GENERATION_OPTIONS,
-  onProgress: (progress: GenerationProgress) => void = () => undefined
+  onProgress: (progress: GenerationProgress) => void = ignore
 ): GeneratedWorld {
   const grid = new WorldGrid(options.dimensions);
   const size = grid.cellsPerSide;
@@ -225,7 +238,9 @@ export function generateWorld(
   const ruinGround = cellMask(grid.cellCount, ruins.monuments);
   const crossings = planCrossings({
     grid,
-    isBlocked: (cell) => ruinGround[cell] === 1,
+    isBlocked: (cell) => {
+      return ruinGround[cell] === 1;
+    },
     lakeIds: hydrology.lakeIds,
     terrain,
     water: hydrology.features,

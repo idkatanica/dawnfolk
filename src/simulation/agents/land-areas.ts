@@ -148,12 +148,9 @@ export class LandAreas {
 
   nearestInRegion(point: Waypoint, region: number, fallback: Waypoint): Waypoint {
     for (const radius of REGION_SEARCH_RADII) {
-      const spot = nearestSpotWhere(
-        this.#world,
-        point,
-        radius,
-        (_world, cell) => this.#walkable[cell] === 1 && this.#regionOfArea[this.#areaOfCell[cell]] === region
-      );
+      const spot = nearestSpotWhere(this.#world, point, radius, (_world, cell) => {
+        return this.#walkable[cell] === 1 && this.#regionOfArea[this.#areaOfCell[cell]] === region;
+      });
 
       if (spot !== null) {
         return spot;
@@ -369,7 +366,9 @@ export class LandAreas {
       return [to];
     }
 
-    const points = cells.slice(1, -1).map((cell) => ({ x: grid.cellCenterX(cell), z: grid.cellCenterZ(cell) }));
+    const points = cells.slice(1, -1).map((cell) => {
+      return { x: grid.cellCenterX(cell), z: grid.cellCenterZ(cell) };
+    });
 
     return this.#straighten(from, [...points, to]);
   }
@@ -460,11 +459,18 @@ export class LandAreas {
     const targets: number[] = [];
 
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
-      if (this.#walkable[cell] === 0 || !bordersBrook(grid, cell, (neighbor) => this.#passageOf(neighbor))) {
+      if (
+        this.#walkable[cell] === 0 ||
+        !bordersBrook(grid, cell, (neighbor) => {
+          return this.#passageOf(neighbor);
+        })
+      ) {
         continue;
       }
 
-      for (const target of hopTargets(grid, cell, (neighbor) => this.#passageOf(neighbor))) {
+      for (const target of hopTargets(grid, cell, (neighbor) => {
+        return this.#passageOf(neighbor);
+      })) {
         addHop(hopsFrom, cell, target);
         addHop(hopsFrom, target, cell);
       }
@@ -558,8 +564,12 @@ export class LandAreas {
     this.#clearSearches(count);
     this.#placeAnchors(areas);
 
-    const neighbors: Map<number, number>[] = Array.from({ length: count }, () => new Map<number, number>());
-    const crossingsTo: Map<number, number>[] = Array.from({ length: count }, () => new Map<number, number>());
+    const neighbors: Map<number, number>[] = Array.from({ length: count }, () => {
+      return new Map<number, number>();
+    });
+    const crossingsTo: Map<number, number>[] = Array.from({ length: count }, () => {
+      return new Map<number, number>();
+    });
 
     for (let cell = 0; cell < grid.cellCount; cell += 1) {
       if (this.#walkable[cell] === 0) {
@@ -614,8 +624,14 @@ export class LandAreas {
     this.#anchorZ = new Float64Array(areas.length);
 
     for (const [area, cells] of areas.entries()) {
-      const centerX = cells.reduce((sum, cell) => sum + grid.cellCenterX(cell), 0) / cells.length;
-      const centerZ = cells.reduce((sum, cell) => sum + grid.cellCenterZ(cell), 0) / cells.length;
+      const centerX =
+        cells.reduce((sum, cell) => {
+          return sum + grid.cellCenterX(cell);
+        }, 0) / cells.length;
+      const centerZ =
+        cells.reduce((sum, cell) => {
+          return sum + grid.cellCenterZ(cell);
+        }, 0) / cells.length;
 
       let [anchor] = cells;
       let bestDistance = distanceSquared(grid.cellCenterX(anchor), grid.cellCenterZ(anchor), centerX, centerZ);

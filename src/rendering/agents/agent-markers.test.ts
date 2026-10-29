@@ -10,7 +10,12 @@ const VIEWPORT_HEIGHT = 900;
 const HANDOVER = 420;
 const HERD = 7;
 const BEAR_CLAN = personMarker(0xc8_55_3d);
-const FLAT_GROUND: SightGround = { grid: { halfSize: 5000 }, heightAt: () => 0 };
+const FLAT_GROUND: SightGround = {
+  grid: { halfSize: 5000 },
+  heightAt: () => {
+    return 0;
+  },
+};
 
 function markersSeenFrom(height: number, ground: SightGround = FLAT_GROUND): AgentMarkers {
   const camera = new PerspectiveCamera(45, 1.6, 0.5, 40_000);
@@ -47,10 +52,12 @@ function drawnStyles(markers: AgentMarkers): { readonly isSelected: boolean; rea
 
   const styles = mesh.geometry.getAttribute(MARKER_STYLE_ATTRIBUTE);
 
-  return Array.from({ length: markers.count }, (_, index) => ({
-    isSelected: styles.getZ(index) > 0.5,
-    shape: styles.getX(index),
-  }));
+  return Array.from({ length: markers.count }, (_, index) => {
+    return {
+      isSelected: styles.getZ(index) > 0.5,
+      shape: styles.getX(index),
+    };
+  });
 }
 
 describe("agent markers", () => {
@@ -95,7 +102,12 @@ describe("agent markers", () => {
   });
 
   it("keeps agents under trees but hides them behind a ridge", () => {
-    const ridge: SightGround = { grid: { halfSize: 5000 }, heightAt: (_x, z) => (Math.abs(z - 200) < 40 ? 600 : 0) };
+    const ridge: SightGround = {
+      grid: { halfSize: 5000 },
+      heightAt: (_x, z) => {
+        return Math.abs(z - 200) < 40 ? 600 : 0;
+      },
+    };
 
     const open = markersSeenFrom(600);
     const hidden = markersSeenFrom(600, ridge);

@@ -21,14 +21,18 @@ interface PlantBucket {
   readonly variant: number;
 }
 
-export const PLANT_BUCKETS: readonly PlantBucket[] = PLANT_SPECIES.flatMap((definition) =>
-  Array.from({ length: plantVariantCount(definition.index) }, (_, variant) => ({ species: definition.index, variant }))
-);
+export const PLANT_BUCKETS: readonly PlantBucket[] = PLANT_SPECIES.flatMap((definition) => {
+  return Array.from({ length: plantVariantCount(definition.index) }, (_, variant) => {
+    return { species: definition.index, variant };
+  });
+});
 export const BUCKET_COUNT = PLANT_BUCKETS.length;
 
-const FIRST_BUCKETS: readonly number[] = PLANT_SPECIES.map((definition) =>
-  PLANT_BUCKETS.findIndex((bucket) => bucket.species === definition.index)
-);
+const FIRST_BUCKETS: readonly number[] = PLANT_SPECIES.map((definition) => {
+  return PLANT_BUCKETS.findIndex((bucket) => {
+    return bucket.species === definition.index;
+  });
+});
 
 export interface VegetationChunk {
   readonly bounds: Box3;
@@ -46,7 +50,9 @@ function bucketOf(species: number, seed: number): number {
 
 export function bucketGroups(level: PlantDetailLevel): number[][] {
   if (!isDistantLevel(level)) {
-    return PLANT_BUCKETS.map((_bucket, index) => [index]);
+    return PLANT_BUCKETS.map((_bucket, index) => {
+      return [index];
+    });
   }
 
   const groups = new Map<string, number[]>();
@@ -78,7 +84,9 @@ function allocateBucket(count: number): Float32Array {
 export class VegetationChunks {
   readonly chunks: VegetationChunk[] = [];
   readonly chunksPerSide: number;
-  readonly #footprints: readonly number[] = PLANT_SPECIES.map((species) => footprintRadius(species.index));
+  readonly #footprints: readonly number[] = PLANT_SPECIES.map((species) => {
+    return footprintRadius(species.index);
+  });
   readonly #mirror: WorldMirror;
   readonly #touchedBuckets: Set<number>[] = [];
   #bucketOfPlant = new Int32Array(0);
@@ -192,7 +200,9 @@ export class VegetationChunks {
       counts[this.#bucketOfPlant[plant]] += 1;
     }
 
-    const buckets = counts.map((count) => allocateBucket(count));
+    const buckets = counts.map((count) => {
+      return allocateBucket(count);
+    });
     const filled = new Array<number>(BUCKET_COUNT).fill(0);
 
     chunk.bounds.makeEmpty();

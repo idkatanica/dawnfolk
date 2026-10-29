@@ -24,14 +24,20 @@ import { StockList } from "../tribes/stock-list.tsx";
 function landFacts(summary: TribeInspection["summary"]) {
   const { farmland } = summary;
 
-  const crops = farmland.crops.map((crop) => `${crop.name} ${crop.count}`).join(" · ");
+  const crops = farmland.crops
+    .map((crop) => {
+      return `${crop.name} ${crop.count}`;
+    })
+    .join(" · ");
   const facts = [
     { label: "Fields", value: crops.length > 0 ? `${farmland.fields} (${crops})` : String(farmland.fields) },
     { label: "Orchard trees", value: farmland.orchardTrees },
     { label: "Woodlot trees", value: farmland.woodlotTrees },
   ];
 
-  return facts.filter((fact) => fact.value !== 0 && fact.value !== "0");
+  return facts.filter((fact) => {
+    return fact.value !== 0 && fact.value !== "0";
+  });
 }
 
 export function PersonDetails({ person }: { readonly person: PersonInspection }) {
@@ -109,11 +115,13 @@ function PlantList({ plants }: { readonly plants: readonly PlantDescription[] })
 
   return (
     <ul aria-label="Plants" className="flex flex-wrap gap-1.5">
-      {plants.map((plant, index) => (
-        <li className="flex" key={`${plant.name}-${String(index)}`}>
-          <PlantChip plant={plant} />
-        </li>
-      ))}
+      {plants.map((plant, index) => {
+        return (
+          <li className="flex" key={`${plant.name}-${String(index)}`}>
+            <PlantChip plant={plant} />
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -173,12 +181,14 @@ function EraSteps({ era }: { readonly era: EraView }) {
   return (
     <div className="flex items-center gap-2">
       <ol aria-label={`Era ${era.index + 1} of ${era.count}`} className="flex flex-1 gap-1">
-        {Array.from({ length: era.count }, (_, step) => (
-          <li
-            className={cn("h-1.5 flex-1 rounded-full", step <= era.index ? "bg-gold" : "bg-ink/10")}
-            key={`era-${String(step)}`}
-          />
-        ))}
+        {Array.from({ length: era.count }, (_, step) => {
+          return (
+            <li
+              className={cn("h-1.5 flex-1 rounded-full", step <= era.index ? "bg-gold" : "bg-ink/10")}
+              key={`era-${String(step)}`}
+            />
+          );
+        })}
       </ol>
 
       <span className="text-ink-muted text-xs">{era.nextName === null ? "Last era" : `Next: ${era.nextName}`}</span>
@@ -240,11 +250,13 @@ export function TribeDetails({ tribe }: { readonly tribe: TribeInspection }) {
 
       {summary.technologies.length > 0 ? (
         <ul aria-label="Discoveries" className="flex flex-wrap gap-1.5">
-          {summary.technologies.map((name) => (
-            <li className="flex" key={name}>
-              <Badge tone="muted">{name}</Badge>
-            </li>
-          ))}
+          {summary.technologies.map((name) => {
+            return (
+              <li className="flex" key={name}>
+                <Badge tone="muted">{name}</Badge>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
     </div>

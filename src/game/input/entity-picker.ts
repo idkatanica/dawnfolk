@@ -57,8 +57,12 @@ export class EntityPicker {
     const visibleReach = this.#visibleReach(ground);
 
     const [nearest] = candidates
-      .filter((candidate) => candidate.reach <= visibleReach)
-      .toSorted((first, second) => first.distance - second.distance);
+      .filter((candidate) => {
+        return candidate.reach <= visibleReach;
+      })
+      .toSorted((first, second) => {
+        return first.distance - second.distance;
+      });
 
     if (nearest !== undefined) {
       return nearest.selection;

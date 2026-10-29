@@ -16,7 +16,15 @@ const STEEPEST_FOOTING = 1.05;
 
 describe("plants", () => {
   it("lists plant species in the order of their indices", () => {
-    expect(PLANT_SPECIES.map((species) => species.index)).toEqual(PLANT_SPECIES.map((_species, position) => position));
+    expect(
+      PLANT_SPECIES.map((species) => {
+        return species.index;
+      })
+    ).toEqual(
+      PLANT_SPECIES.map((_species, position) => {
+        return position;
+      })
+    );
     expect(PLANT_SPECIES).toHaveLength(Object.keys(PlantSpecies).length);
   });
 
@@ -35,18 +43,32 @@ describe("plants", () => {
   });
 
   it("shapes every monument species as monument pieces", () => {
-    const monuments = PLANT_SPECIES.filter((species) => isMonumentSpecies(species.index)).map(
-      (species) => species.index
-    );
+    const monuments = PLANT_SPECIES.filter((species) => {
+      return isMonumentSpecies(species.index);
+    }).map((species) => {
+      return species.index;
+    });
 
     expect(monuments).toEqual(Object.keys(PIECE_FORMS).map(Number));
   });
 
   it("asks trees for gentler ground than bushes and keeps everything off cliffs", () => {
-    const trees = PLANT_SPECIES.filter((species) => isTreeSpecies(species.index));
-    const undergrowth = PLANT_SPECIES.filter((species) => isShrubSpecies(species.index));
-    const steepestTree = Math.max(...trees.map((species) => species.steepestSlope));
-    const gentlestUndergrowth = Math.min(...undergrowth.map((species) => species.steepestSlope));
+    const trees = PLANT_SPECIES.filter((species) => {
+      return isTreeSpecies(species.index);
+    });
+    const undergrowth = PLANT_SPECIES.filter((species) => {
+      return isShrubSpecies(species.index);
+    });
+    const steepestTree = Math.max(
+      ...trees.map((species) => {
+        return species.steepestSlope;
+      })
+    );
+    const gentlestUndergrowth = Math.min(
+      ...undergrowth.map((species) => {
+        return species.steepestSlope;
+      })
+    );
 
     expect(steepestTree).toBeLessThan(gentlestUndergrowth);
 

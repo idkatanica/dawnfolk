@@ -140,8 +140,12 @@ function TribeLabel({ isSelected, mood, tribe }: TribeLabelProps) {
 }
 
 function TribeLabels() {
-  const tribes = useWorldStore((state) => state.snapshot?.tribes);
-  const rivalry = useWorldStore((state) => state.snapshot?.rivalry);
+  const tribes = useWorldStore((state) => {
+    return state.snapshot?.tribes;
+  });
+  const rivalry = useWorldStore((state) => {
+    return state.snapshot?.rivalry;
+  });
   const selectedTribeId = useWorldStore(selectedTribeIdOf);
 
   if (tribes === undefined || tribes.length === 0) {
@@ -150,14 +154,16 @@ function TribeLabels() {
 
   return (
     <ul aria-label="Tribes">
-      {tribes.map((tribe) => (
-        <TribeLabel
-          isSelected={tribe.id === selectedTribeId}
-          key={tribe.id}
-          mood={moodOf(rivalry, tribe.id)}
-          tribe={tribe}
-        />
-      ))}
+      {tribes.map((tribe) => {
+        return (
+          <TribeLabel
+            isSelected={tribe.id === selectedTribeId}
+            key={tribe.id}
+            mood={moodOf(rivalry, tribe.id)}
+            tribe={tribe}
+          />
+        );
+      })}
     </ul>
   );
 }
@@ -171,9 +177,9 @@ function LabelLayer({ engine }: { readonly engine: EngineHandle }) {
   return (
     <div className="group pointer-events-none fixed inset-0 overflow-hidden" ref={layerReference}>
       <ul aria-label="Places">
-        {landmarks.map((landmark) => (
-          <LandmarkLabel key={landmark.id} landmark={landmark} />
-        ))}
+        {landmarks.map((landmark) => {
+          return <LandmarkLabel key={landmark.id} landmark={landmark} />;
+        })}
       </ul>
 
       <TribeLabels />
@@ -183,7 +189,9 @@ function LabelLayer({ engine }: { readonly engine: EngineHandle }) {
 
 export function WorldLabels() {
   const engine = useEngine();
-  const areLabelsShown = useInterfaceStore((state) => state.areLabelsShown);
+  const areLabelsShown = useInterfaceStore((state) => {
+    return state.areLabelsShown;
+  });
 
   if (engine === null || !areLabelsShown) {
     return null;

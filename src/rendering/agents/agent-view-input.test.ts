@@ -17,7 +17,12 @@ const WADING_DEPTH = 1.1;
 
 function mirrorWithPool(depth: number) {
   const simulation = new Simulation(
-    createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 }, heightAt: () => 100 })
+    createVegetatedWorld({
+      dimensions: { cellSize: 10, cellsPerSide: 64 },
+      heightAt: () => {
+        return 100;
+      },
+    })
   );
 
   const pool = centerCell(simulation.world);
@@ -56,7 +61,12 @@ describe("standing height", () => {
 describe("standing over brooks", () => {
   it("runs over a brook ankle-deep in the water, not on its bed", () => {
     const simulation = new Simulation(
-      createVegetatedWorld({ dimensions: { cellSize: 10, cellsPerSide: 64 }, heightAt: () => 100 })
+      createVegetatedWorld({
+        dimensions: { cellSize: 10, cellsPerSide: 64 },
+        heightAt: () => {
+          return 100;
+        },
+      })
     );
 
     riverStrip(simulation.world, -20, 0, BROOK_STRENGTH);
@@ -75,7 +85,9 @@ describe("standing on crossings", () => {
       createVegetatedWorld({
         crossings: [crossing],
         dimensions: { cellSize: 10, cellsPerSide: 64 },
-        heightAt: () => 100,
+        heightAt: () => {
+          return 100;
+        },
       })
     );
 

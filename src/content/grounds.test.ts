@@ -3,7 +3,15 @@ import { GROUNDS, Ground, seasonalGroundColor } from "./grounds.ts";
 
 describe("grounds", () => {
   it("lists grounds in the order of their indices", () => {
-    expect(GROUNDS.map((ground) => ground.index)).toEqual(GROUNDS.map((_ground, position) => position));
+    expect(
+      GROUNDS.map((ground) => {
+        return ground.index;
+      })
+    ).toEqual(
+      GROUNDS.map((_ground, position) => {
+        return position;
+      })
+    );
     expect(GROUNDS).toHaveLength(Object.keys(Ground).length);
   });
 
@@ -16,11 +24,21 @@ describe("grounds", () => {
   });
 
   it("grows grass on soft ground and none on bare stone or eternal snow", () => {
-    const covers = GROUNDS.map((ground) => ground.grass);
+    const covers = GROUNDS.map((ground) => {
+      return ground.grass;
+    });
 
-    expect(covers.every((cover) => cover >= 0 && cover <= 1)).toBe(true);
+    expect(
+      covers.every((cover) => {
+        return cover >= 0 && cover <= 1;
+      })
+    ).toBe(true);
     expect(GROUNDS[Ground.Meadow].grass).toBe(1);
     expect(GROUNDS[Ground.Forest].grass).toBeLessThan(GROUNDS[Ground.Meadow].grass);
-    expect([Ground.Rock, Ground.RedRock, Ground.Snow].map((index) => GROUNDS[index].grass)).toEqual([0, 0, 0]);
+    expect(
+      [Ground.Rock, Ground.RedRock, Ground.Snow].map((index) => {
+        return GROUNDS[index].grass;
+      })
+    ).toEqual([0, 0, 0]);
   });
 });

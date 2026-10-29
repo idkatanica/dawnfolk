@@ -4,7 +4,9 @@ import { WorldGrid } from "./world-grid.ts";
 const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 8 });
 
 function columnsAndRows(cells: readonly number[]): string[] {
-  return cells.map((cell) => `${grid.columnOf(cell)},${grid.rowOf(cell)}`);
+  return cells.map((cell) => {
+    return `${grid.columnOf(cell)},${grid.rowOf(cell)}`;
+  });
 }
 
 describe("world grid", () => {
@@ -36,7 +38,11 @@ describe("world grid", () => {
   });
 
   it("finds nothing along a segment when no cell matches", () => {
-    expect(grid.someCellAlong(-35, -35, -5, -35, (cell) => grid.rowOf(cell) === 1)).toBe(false);
+    expect(
+      grid.someCellAlong(-35, -35, -5, -35, (cell) => {
+        return grid.rowOf(cell) === 1;
+      })
+    ).toBe(false);
   });
 
   it("finds a neighbor inside the grid and none past each edge", () => {

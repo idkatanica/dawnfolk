@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { defaultPowerParameters } from "../../content/powers.ts";
+import { ignore } from "../../shared/ignore.ts";
 import { parametersOf, readStoredParameters, usePowerStore } from "./power-store.ts";
 
 const STORAGE_KEY = "dawnfolk.powers";
@@ -50,7 +51,7 @@ describe("power store", () => {
   });
 
   it("falls back to the defaults and warns when a value is out of range", () => {
-    const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warning = vi.spyOn(console, "warn").mockImplementation(ignore);
 
     usePowerStore.getState().setParameter("fire", "intensity", 80);
     usePowerStore.getState().setParameter("fire", "intensity", 500);
@@ -101,7 +102,7 @@ describe("power store", () => {
   });
 
   it("drops saved settings of unknown powers and repairs invalid ones", async () => {
-    const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warning = vi.spyOn(console, "warn").mockImplementation(ignore);
 
     saveSettings({ fire: { intensity: 900 }, volcano: { size: 3 } });
 
@@ -132,7 +133,7 @@ describe("stored power parameters", () => {
   });
 
   it("ignores saved data of the wrong shape and warns about it", () => {
-    const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warning = vi.spyOn(console, "warn").mockImplementation(ignore);
 
     const parameters = readStoredParameters("not settings");
 

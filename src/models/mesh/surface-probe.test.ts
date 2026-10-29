@@ -20,7 +20,9 @@ function rounded(vector: Vector3 | undefined): number[] {
     return [];
   }
 
-  return vector.toArray().map((value) => Math.round(value * 1e6) / 1e6 + 0);
+  return vector.toArray().map((value) => {
+    return Math.round(value * 1e6) / 1e6 + 0;
+  });
 }
 
 describe("surface probe", () => {
@@ -39,7 +41,9 @@ describe("surface probe", () => {
   });
 
   it("ignores the triangles left out by the filter", () => {
-    const hit = outermostHit(twoBoxes(), new Vector3(), new Vector3(1, 0, 0), (triangle) => triangle < 12);
+    const hit = outermostHit(twoBoxes(), new Vector3(), new Vector3(1, 0, 0), (triangle) => {
+      return triangle < 12;
+    });
 
     expect(rounded(hit?.point)).toEqual([1, 0, 0]);
   });

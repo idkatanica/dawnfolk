@@ -167,7 +167,9 @@ export class Succession {
     }
 
     if (recovered.size > 0) {
-      recovering.retain((cell) => !recovered.has(cell));
+      recovering.retain((cell) => {
+        return !recovered.has(cell);
+      });
     }
   }
 

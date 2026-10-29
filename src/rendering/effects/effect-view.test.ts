@@ -20,9 +20,18 @@ function createEffects() {
 
   const textures = new TerrainTextures(mirror);
 
-  const createRing = vi.fn(() => new GroundRing(textures, mirror.grid));
+  const createRing = vi.fn(() => {
+    return new GroundRing(textures, mirror.grid);
+  });
 
-  const view = new EffectView({ axes: new CameraAxes(), createRing, heightAt: () => 0, shake: vi.fn() });
+  const view = new EffectView({
+    axes: new CameraAxes(),
+    createRing,
+    heightAt: () => {
+      return 0;
+    },
+    shake: vi.fn(),
+  });
 
   return { createRing, view };
 }

@@ -3,7 +3,14 @@ import { LabelProjector } from "./label-projector.ts";
 import { cameraLookingAt, VIEWPORT } from "./testing/view-fixtures.ts";
 
 const WORLD_HALF_SIZE = 2000;
-const FLAT_GROUND = { heightAt: () => 0, surfaceAt: () => 0 };
+const FLAT_GROUND = {
+  heightAt: () => {
+    return 0;
+  },
+  surfaceAt: () => {
+    return 0;
+  },
+};
 
 function ridgeHeight(x: number, z: number): number {
   const isOnRidge = Math.abs(x) < 1000 && Math.abs(z - 150) < 40;
@@ -55,7 +62,12 @@ describe("label projector", () => {
   it("hides points behind a hill", () => {
     const projector = new LabelProjector(
       cameraLookingAt(0, 0),
-      { heightAt: ridgeHeight, surfaceAt: () => 0 },
+      {
+        heightAt: ridgeHeight,
+        surfaceAt: () => {
+          return 0;
+        },
+      },
       WORLD_HALF_SIZE
     );
 
@@ -63,7 +75,14 @@ describe("label projector", () => {
   });
 
   it("stands lake labels on the water surface", () => {
-    const lake = { heightAt: () => -30, surfaceAt: () => 0 };
+    const lake = {
+      heightAt: () => {
+        return -30;
+      },
+      surfaceAt: () => {
+        return 0;
+      },
+    };
 
     const onWater = new LabelProjector(cameraLookingAt(0, 0), lake, WORLD_HALF_SIZE).place(0, 0, 0, VIEWPORT);
     const onGround = new LabelProjector(cameraLookingAt(0, 0), FLAT_GROUND, WORLD_HALF_SIZE).place(0, 0, 0, VIEWPORT);
@@ -74,7 +93,12 @@ describe("label projector", () => {
   it("ignores terrain beyond the island edge", () => {
     const projector = new LabelProjector(
       cameraLookingAt(0, 0),
-      { heightAt: wallAroundCenter, surfaceAt: () => 0 },
+      {
+        heightAt: wallAroundCenter,
+        surfaceAt: () => {
+          return 0;
+        },
+      },
       100
     );
 

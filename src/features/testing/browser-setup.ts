@@ -19,7 +19,9 @@ const initialAddress = window.location.href;
 beforeEach(() => {
   vi.stubGlobal(
     "fetch",
-    vi.fn(() => Promise.resolve(new Response(null, { status: 503 })))
+    vi.fn(() => {
+      return Promise.resolve(new Response(null, { status: 503 }));
+    })
   );
 });
 

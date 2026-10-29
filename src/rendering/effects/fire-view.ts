@@ -141,7 +141,11 @@ function nearestBurningCells(mirror: WorldMirror, camera: PerspectiveCamera): Bu
     cells.push({ cell, distance, intensity: burningIntensity[index] / BYTE });
   }
 
-  return cells.toSorted((first, second) => first.distance - second.distance).slice(0, FLAME_CELL_LIMIT);
+  return cells
+    .toSorted((first, second) => {
+      return first.distance - second.distance;
+    })
+    .slice(0, FLAME_CELL_LIMIT);
 }
 
 export class FireView {
@@ -161,10 +165,9 @@ export class FireView {
     this.#flames = createBillboardBatch(createFlameMaterial(axes), 6);
     this.#puffs = createBillboardBatch(createSmokeMaterial(axes, this.smoke), 5);
     this.#sparks = createBillboardBatch(createSparkMaterial(axes, this.smoke), 7);
-    this.#lights = Array.from(
-      { length: CAMPFIRE_LIGHTS },
-      () => new PointLight(0xff_9a_52, 0, CAMPFIRE_LIGHT_RANGE, 1.6)
-    );
+    this.#lights = Array.from({ length: CAMPFIRE_LIGHTS }, () => {
+      return new PointLight(0xff_9a_52, 0, CAMPFIRE_LIGHT_RANGE, 1.6);
+    });
     this.group.add(this.#puffs.mesh, this.#flames.mesh, this.#sparks.mesh, ...this.#lights);
   }
 
@@ -201,7 +204,11 @@ export class FireView {
 
   #rebuild(mirror: WorldMirror, camera: PerspectiveCamera): void {
     const cells = nearestBurningCells(mirror, camera);
-    const intensities = new Map(cells.map((burning) => [burning.cell, burning.intensity]));
+    const intensities = new Map(
+      cells.map((burning) => {
+        return [burning.cell, burning.intensity];
+      })
+    );
 
     this.#flames.begin();
     this.#puffs.begin();
@@ -424,7 +431,9 @@ export class FireView {
 
     this.#litCampfires = mirror.frame.buildings
       .filter(isLitCampfire)
-      .toSorted((first, second) => distanceTo(first) - distanceTo(second))
+      .toSorted((first, second) => {
+        return distanceTo(first) - distanceTo(second);
+      })
       .slice(0, CAMPFIRE_LIGHTS);
 
     for (const [index, light] of this.#lights.entries()) {

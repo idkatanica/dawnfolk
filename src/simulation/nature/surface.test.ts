@@ -171,7 +171,9 @@ function firstDifferentCell(values: Float32Array, expected: Float32Array): numbe
   const bits = new Uint32Array(values.buffer);
   const expectedBits = new Uint32Array(expected.buffer);
 
-  return bits.findIndex((value, cell) => value !== expectedBits[cell]);
+  return bits.findIndex((value, cell) => {
+    return value !== expectedBits[cell];
+  });
 }
 
 describe("surface", () => {
@@ -225,8 +227,16 @@ describe("surface", () => {
       }
     }
 
-    expect(swept.fields.snow.some((snow) => snow > 0)).toBe(true);
-    expect(swept.fields.wetness.some((wetness) => wetness > 0 && wetness < 1)).toBe(true);
+    expect(
+      swept.fields.snow.some((snow) => {
+        return snow > 0;
+      })
+    ).toBe(true);
+    expect(
+      swept.fields.wetness.some((wetness) => {
+        return wetness > 0 && wetness < 1;
+      })
+    ).toBe(true);
   });
 
   it("wakes a settled stretch when fire or a new ground changes it", () => {

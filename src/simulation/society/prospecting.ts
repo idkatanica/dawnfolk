@@ -21,7 +21,9 @@ interface ProspectingMove {
 }
 
 function depositKindFor(resource: ResourceKind): DepositKind | null {
-  const kind = DEPOSIT_KINDS.find((candidate) => DEPOSITS[candidate].resource === resource);
+  const kind = DEPOSIT_KINDS.find((candidate) => {
+    return DEPOSITS[candidate].resource === resource;
+  });
 
   if (kind === undefined) {
     return null;
@@ -42,16 +44,17 @@ function isReadyToTravel(tribe: Tribe, context: SocietyContext): boolean {
 
 function promisingDeposit(context: SocietyContext, kind: DepositKind, from: Waypoint): Deposit | null {
   const candidates = context.world.deposits
-    .filter((deposit) => deposit.kind === kind && Math.hypot(deposit.x - from.x, deposit.z - from.z) < FARTHEST_JOURNEY)
-    .sort(
-      (first, second) =>
-        Math.hypot(first.x - from.x, first.z - from.z) - Math.hypot(second.x - from.x, second.z - from.z)
-    )
+    .filter((deposit) => {
+      return deposit.kind === kind && Math.hypot(deposit.x - from.x, deposit.z - from.z) < FARTHEST_JOURNEY;
+    })
+    .sort((first, second) => {
+      return Math.hypot(first.x - from.x, first.z - from.z) - Math.hypot(second.x - from.x, second.z - from.z);
+    })
     .slice(0, CANDIDATE_DEPOSITS);
 
-  const withClay = candidates.find(
-    (deposit) => nearestDeposit(context.world, "clay", deposit, DEPOSITS.clay.reach) !== null
-  );
+  const withClay = candidates.find((deposit) => {
+    return nearestDeposit(context.world, "clay", deposit, DEPOSITS.clay.reach) !== null;
+  });
 
   if (withClay !== undefined) {
     return withClay;

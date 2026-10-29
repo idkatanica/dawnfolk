@@ -45,7 +45,11 @@ describe("hopping over a brook", () => {
 
     expect(isHopping(person.mover)).toBe(false);
     expect(harness.world.isWaterAt(person.mover.x, person.mover.z)).toBe(false);
-    expect([...poses].every((pose) => pose === "leap" || pose === "run")).toBe(true);
+    expect(
+      [...poses].every((pose) => {
+        return pose === "leap" || pose === "run";
+      })
+    ).toBe(true);
     expect(poses.has("leap")).toBe(true);
   });
 });

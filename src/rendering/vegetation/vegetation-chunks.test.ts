@@ -15,10 +15,14 @@ import {
 const SLOPE = 0.6;
 
 function packedPlantCount(chunks: VegetationChunks): number {
-  return chunks.chunks.reduce(
-    (total, chunk) => total + chunk.buckets.reduce((sum, bucket) => sum + bucket.length / FLOATS_PER_PLANT, 0),
-    0
-  );
+  return chunks.chunks.reduce((total, chunk) => {
+    return (
+      total +
+      chunk.buckets.reduce((sum, bucket) => {
+        return sum + bucket.length / FLOATS_PER_PLANT;
+      }, 0)
+    );
+  }, 0);
 }
 
 function alivePlantCount(mirror: WorldMirror): number {
@@ -72,7 +76,11 @@ describe("vegetation chunks", () => {
 
     chunks.repackDirty();
 
-    const before = chunks.chunks.map((chunk) => chunk.buckets.map((bucket) => [...bucket]));
+    const before = chunks.chunks.map((chunk) => {
+      return chunk.buckets.map((bucket) => {
+        return [...bucket];
+      });
+    });
 
     mirror.vegetation.height[0] *= 1.5;
     mirror.vegetation.state[1] = PlantState.Removed;
@@ -87,7 +95,9 @@ describe("vegetation chunks", () => {
 
       expect(changedBuckets.length).toBeGreaterThan(0);
 
-      const unchanged = [...buckets.entries()].filter(([bucket]) => !changedBuckets.includes(bucket));
+      const unchanged = [...buckets.entries()].filter(([bucket]) => {
+        return !changedBuckets.includes(bucket);
+      });
 
       for (const [bucket, data] of unchanged) {
         expect([...data]).toEqual(before[index][bucket]);
@@ -112,8 +122,12 @@ describe("vegetation chunks", () => {
 
     chunks.repackDirty();
 
-    const chunk = chunks.chunks.find((candidate) => candidate.plants.size > 0);
-    const bucket = chunk?.buckets.find((candidate) => candidate.length > 0);
+    const chunk = chunks.chunks.find((candidate) => {
+      return candidate.plants.size > 0;
+    });
+    const bucket = chunk?.buckets.find((candidate) => {
+      return candidate.length > 0;
+    });
 
     if (bucket === undefined) {
       throw new Error("The test world should have plants");
@@ -125,12 +139,20 @@ describe("vegetation chunks", () => {
   });
 
   it("sinks plants on a slope until their downhill side touches the ground", () => {
-    const mirror = createVegetatedMirror({ heightAt: (x) => 100 + x * SLOPE });
+    const mirror = createVegetatedMirror({
+      heightAt: (x) => {
+        return 100 + x * SLOPE;
+      },
+    });
     const chunks = new VegetationChunks(mirror);
 
     chunks.repackDirty();
 
-    const buckets = chunks.chunks.flatMap((chunk) => chunk.buckets.filter((bucket) => bucket.length > 0));
+    const buckets = chunks.chunks.flatMap((chunk) => {
+      return chunk.buckets.filter((bucket) => {
+        return bucket.length > 0;
+      });
+    });
 
     expect(buckets.length).toBeGreaterThan(0);
 
@@ -146,8 +168,14 @@ describe("vegetation chunks", () => {
   it.each(["high", "medium", "low"] as const)("draws every bucket in exactly one %s batch", (level) => {
     const drawn = bucketGroups(level).flat();
 
-    expect([...drawn].sort((first, second) => first - second)).toEqual(
-      Array.from({ length: BUCKET_COUNT }, (_, bucket) => bucket)
+    expect(
+      [...drawn].sort((first, second) => {
+        return first - second;
+      })
+    ).toEqual(
+      Array.from({ length: BUCKET_COUNT }, (_, bucket) => {
+        return bucket;
+      })
     );
   });
 
@@ -155,11 +183,15 @@ describe("vegetation chunks", () => {
     const farGroups = bucketGroups("low");
 
     function groupsOf(species: number): number {
-      return farGroups.filter((group) => PLANT_BUCKETS[group[0]].species === species).length;
+      return farGroups.filter((group) => {
+        return PLANT_BUCKETS[group[0]].species === species;
+      }).length;
     }
 
     function bucketsOf(species: number): number {
-      return PLANT_BUCKETS.filter((bucket) => bucket.species === species).length;
+      return PLANT_BUCKETS.filter((bucket) => {
+        return bucket.species === species;
+      }).length;
     }
 
     expect(farGroups.length).toBeLessThan(BUCKET_COUNT / 2);

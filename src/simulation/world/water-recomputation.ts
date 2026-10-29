@@ -49,7 +49,9 @@ function haveSameValues(first: Float32Array | Uint8Array, second: Float32Array |
 }
 
 function isNewWater(cells: readonly number[], level: number, previousLevels: Float32Array): boolean {
-  return cells.some((cell) => previousLevels[cell] === NO_WATER || previousLevels[cell] < level - NOTICEABLE_RISE);
+  return cells.some((cell) => {
+    return previousLevels[cell] === NO_WATER || previousLevels[cell] < level - NOTICEABLE_RISE;
+  });
 }
 
 export class WaterRecomputation {
@@ -138,7 +140,9 @@ export class WaterRecomputation {
     const crossings = refreshCrossings(
       {
         grid,
-        isBlocked: (cell) => this.#world.isObstructed(cell),
+        isBlocked: (cell) => {
+          return this.#world.isObstructed(cell);
+        },
         lakeIds: hydrology.lakeIds,
         terrain,
         water: hydrology.features,
@@ -206,7 +210,9 @@ export class WaterRecomputation {
   }
 
   #startFilling(lakeIds: Int32Array, lakes: readonly Lake[], previousLevels: Float32Array): Filling | null {
-    const cellsOfLakes = lakes.map((): number[] => []);
+    const cellsOfLakes = lakes.map((): number[] => {
+      return [];
+    });
 
     for (let cell = 0; cell < lakeIds.length; cell += 1) {
       const cells = cellsOfLakes[lakeIds[cell]];
@@ -251,13 +257,22 @@ export class WaterRecomputation {
       floor = Math.min(floor, height[cell]);
     }
 
-    return { cells, floor, keptLevels: Float32Array.from(cells, (cell) => previousLevels[cell]), level };
+    return {
+      cells,
+      floor,
+      keptLevels: Float32Array.from(cells, (cell) => {
+        return previousLevels[cell];
+      }),
+      level,
+    };
   }
 
   #regionOf(lakes: readonly RisingLake[]): CellRegion {
     return regionOfCells(
       this.#world.grid,
-      lakes.flatMap((lake) => lake.cells),
+      lakes.flatMap((lake) => {
+        return lake.cells;
+      }),
       0
     );
   }

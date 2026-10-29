@@ -38,7 +38,12 @@ describe("mesh builder", () => {
     const builder = new MeshBuilder({ slot: 3 });
 
     builder.add(cylinder({ height: 2, radiusBottom: 1, radiusTop: 1 }), {
-      style: { part: 5, sway: (point) => point.position.y / 2 },
+      style: {
+        part: 5,
+        sway: (point) => {
+          return point.position.y / 2;
+        },
+      },
     });
 
     const mesh = builder.build();

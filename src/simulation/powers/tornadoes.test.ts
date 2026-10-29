@@ -11,7 +11,11 @@ function runFor(simulation: Simulation, seconds: number): string[] {
   const texts: string[] = [];
 
   for (let elapsed = 0; elapsed < seconds; elapsed += 0.25) {
-    texts.push(...simulation.advance(0.25).chronicle.map((entry) => entry.text));
+    texts.push(
+      ...simulation.advance(0.25).chronicle.map((entry) => {
+        return entry.text;
+      })
+    );
   }
 
   return texts;

@@ -23,8 +23,16 @@ describe("seasonal weather", () => {
   it("never snows in summer and never brings a heatwave in winter", () => {
     const random = createRandom(2);
 
-    const summer = new Set(Array.from({ length: 400 }, () => pickSeasonalWeather(1.5, random)));
-    const winter = new Set(Array.from({ length: 400 }, () => pickSeasonalWeather(3.5, random)));
+    const summer = new Set(
+      Array.from({ length: 400 }, () => {
+        return pickSeasonalWeather(1.5, random);
+      })
+    );
+    const winter = new Set(
+      Array.from({ length: 400 }, () => {
+        return pickSeasonalWeather(3.5, random);
+      })
+    );
 
     expect(summer.has("snow")).toBe(false);
     expect(summer.has("blizzard")).toBe(false);

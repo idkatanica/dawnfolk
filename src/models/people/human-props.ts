@@ -56,7 +56,9 @@ export function addFeather(builder: MeshBuilder, detail: HumanDetail): void {
   builder.add(featherVane(detail), {
     style: {
       ...style,
-      slot: (point) => (point.local.y > FEATHER_LENGTH - FEATHER_TIP ? MaterialSlot.Accent : MaterialSlot.Bone),
+      slot: (point) => {
+        return point.local.y > FEATHER_LENGTH - FEATHER_TIP ? MaterialSlot.Accent : MaterialSlot.Bone;
+      },
     },
     transform: quill,
   });

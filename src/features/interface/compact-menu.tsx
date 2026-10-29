@@ -16,9 +16,15 @@ interface MenuEntryProps {
 
 function useCompactMenu() {
   const { openJournal } = useSidePanel();
-  const isMapOpen = useInterfaceStore((state) => state.isMapOpen);
-  const openSettings = useInterfaceStore((state) => state.openSettings);
-  const toggleMap = useInterfaceStore((state) => state.toggleMap);
+  const isMapOpen = useInterfaceStore((state) => {
+    return state.isMapOpen;
+  });
+  const openSettings = useInterfaceStore((state) => {
+    return state.openSettings;
+  });
+  const toggleMap = useInterfaceStore((state) => {
+    return state.toggleMap;
+  });
 
   function handleJournal(): void {
     openJournal("tribes");

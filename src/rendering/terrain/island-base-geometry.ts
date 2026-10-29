@@ -228,7 +228,9 @@ function buildUnderside(outline: BaseOutline): BufferGeometry {
   const rimRing: RingVertex = { cliffAmount: 0, depth: 0 };
   const rings = undersideRings();
   const stride = Math.max(NARROWEST_UNDERSIDE_STRIDE, Math.round(outline.points.length / UNDERSIDE_COLUMNS));
-  const coarsePoints = outline.points.filter((_, index) => index % stride === 0);
+  const coarsePoints = outline.points.filter((_, index) => {
+    return index % stride === 0;
+  });
 
   const positions: number[] = [];
   const indices: number[] = [];

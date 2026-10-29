@@ -22,11 +22,9 @@ interface CarvedWater {
 function carveValley(wallSlope: number, ridgeHeight = 0) {
   const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 64 });
 
-  const uncarved = shapeTerrain(
-    grid,
-    (x, z) =>
-      100 + Math.abs(x) * wallSlope + (z + grid.halfSize) * 0.05 + ridgeHeight * Math.exp(-(z * z) / RIDGE_SPREAD)
-  );
+  const uncarved = shapeTerrain(grid, (x, z) => {
+    return 100 + Math.abs(x) * wallSlope + (z + grid.halfSize) * 0.05 + ridgeHeight * Math.exp(-(z * z) / RIDGE_SPREAD);
+  });
 
   const carved = Float32Array.from(uncarved);
   const options = { ...DEFAULT_HYDROLOGY, riverCatchmentArea: 30_000 };
@@ -108,15 +106,19 @@ describe("river carving", () => {
     const { carved, grid, uncarved } = carveValley(GENTLE_WALLS);
 
     const row = grid.rowAt(-150);
-    const profile = Array.from({ length: 12 }, (_, step) => carved[grid.index(grid.columnAt(5 + step * 10), row)]);
+    const profile = Array.from({ length: 12 }, (_, step) => {
+      return carved[grid.index(grid.columnAt(5 + step * 10), row)];
+    });
 
     for (let step = 1; step < profile.length; step += 1) {
       expect(profile[step]).toBeGreaterThanOrEqual(profile[step - 1]);
     }
 
-    const untouched = Array.from({ length: grid.cellCount }, (_, cell) => cell).filter(
-      (cell) => Math.abs(grid.cellCenterX(cell)) > UNTOUCHED_DISTANCE
-    );
+    const untouched = Array.from({ length: grid.cellCount }, (_, cell) => {
+      return cell;
+    }).filter((cell) => {
+      return Math.abs(grid.cellCenterX(cell)) > UNTOUCHED_DISTANCE;
+    });
 
     for (const cell of untouched) {
       expect(carved[cell]).toBe(uncarved[cell]);
@@ -135,7 +137,9 @@ describe("river carving", () => {
     }
 
     const row = grid.rowAt(-150);
-    const profile = Array.from({ length: 12 }, (_, step) => carved[grid.index(grid.columnAt(15 + step * 10), row)]);
+    const profile = Array.from({ length: 12 }, (_, step) => {
+      return carved[grid.index(grid.columnAt(15 + step * 10), row)];
+    });
 
     expect(deepestWallCut).toBeGreaterThan(5);
     expect(deepestWallCut).toBeLessThanOrEqual(DEEPEST_BANK_LOWERING + 0.01);
@@ -149,7 +153,13 @@ describe("river carving", () => {
   it("cuts a gorge through a ridge across the valley instead of lifting the water over it", () => {
     const { carved, grid, result, uncarved } = carveValley(GENTLE_WALLS, RIDGE_HEIGHT);
 
-    const crossing = result.features.rivers.flatMap((river) => river.points).find((point) => Math.abs(point.z) < 5);
+    const crossing = result.features.rivers
+      .flatMap((river) => {
+        return river.points;
+      })
+      .find((point) => {
+        return Math.abs(point.z) < 5;
+      });
 
     expect(crossing).toBeDefined();
 
@@ -165,7 +175,9 @@ describe("river carving", () => {
     expect(carved[wall] - result.waterSurface[crest]).toBeGreaterThan(5);
 
     for (const river of result.features.rivers) {
-      const levels = river.points.map((point) => result.waterSurface[grid.cellAt(point.x, point.z)]);
+      const levels = river.points.map((point) => {
+        return result.waterSurface[grid.cellAt(point.x, point.z)];
+      });
 
       for (let index = 1; index < levels.length; index += 1) {
         expect(levels[index]).toBeLessThanOrEqual(levels[index - 1] + 1e-3);

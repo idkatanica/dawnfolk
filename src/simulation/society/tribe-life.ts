@@ -66,8 +66,12 @@ function buildingLearning(tick: TribeTick): number {
 function learnAndDiscover(tick: TribeTick): void {
   const { context, members, tribe } = tick;
 
-  const adults = members.filter((person) => !isChild(person)).length;
-  const elders = members.filter((person) => isElder(person)).length;
+  const adults = members.filter((person) => {
+    return !isChild(person);
+  }).length;
+  const elders = members.filter((person) => {
+    return isElder(person);
+  }).length;
 
   const learning =
     BASE_LEARNING_PER_DAY +
@@ -102,16 +106,22 @@ function discoverUpcoming(tribe: Tribe, context: SocietyContext): void {
 }
 
 function storageOf(tribe: Tribe, context: SocietyContext): Storage {
-  const stores = tribeBuildings(tribe, context).filter(
-    (building) => isComplete(building) && BUILDINGS[building.kind].storage > 0
-  );
+  const stores = tribeBuildings(tribe, context).filter((building) => {
+    return isComplete(building) && BUILDINGS[building.kind].storage > 0;
+  });
 
-  const extra = stores.reduce((total, building) => total + BUILDINGS[building.kind].storage, 0);
+  const extra = stores.reduce((total, building) => {
+    return total + BUILDINGS[building.kind].storage;
+  }, 0);
 
   return {
     foodCapacity: OPEN_FOOD_STORAGE + extra,
-    hasGranary: stores.some((building) => building.kind === "granary"),
-    hasStorehouse: stores.some((building) => building.kind === "storehouse"),
+    hasGranary: stores.some((building) => {
+      return building.kind === "granary";
+    }),
+    hasStorehouse: stores.some((building) => {
+      return building.kind === "storehouse";
+    }),
     pottery: tribe.stock.pottery,
   };
 }
@@ -178,8 +188,12 @@ function chooseMother(tick: TribeTick, elapsedDays: number): Person | null {
 
     return person.isFemale && isOfAge && day - person.lastBirthDay > DAYS_BETWEEN_CHILDREN;
   });
-  const hasFather = members.some((person) => !person.isFemale && person.age > FATHER_YOUNGEST);
-  const children = members.filter((person) => isChild(person)).length;
+  const hasFather = members.some((person) => {
+    return !person.isFemale && person.age > FATHER_YOUNGEST;
+  });
+  const children = members.filter((person) => {
+    return isChild(person);
+  }).length;
 
   const isFed = totalFood(tribe.stock) > members.length * FOOD_PER_PERSON_FOR_BIRTHS;
   const hasRoom = members.length < housingCapacity(tribe, context);

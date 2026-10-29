@@ -34,7 +34,9 @@ function spawnPack(harness: SocietyHarness, x: number, z: number, size: number):
     throw new Error("Expected the pack to spawn");
   }
 
-  return harness.fauna.animals.filter((animal) => animal.herdId === pack.id);
+  return harness.fauna.animals.filter((animal) => {
+    return animal.herdId === pack.id;
+  });
 }
 
 function tribeOf(harness: SocietyHarness, person: Person): Tribe {
@@ -72,7 +74,11 @@ describe("wolves", () => {
     });
 
     expect(wanderer.health).toBeLessThan(0.7);
-    expect(wolves.some((wolf) => wolf.pose === "attack" || wolf.pose === "charge")).toBe(true);
+    expect(
+      wolves.some((wolf) => {
+        return wolf.pose === "attack" || wolf.pose === "charge";
+      })
+    ).toBe(true);
     expect(fought).toContain("fight");
     expect(chronicleTexts(harness)).toContainEqual(expect.stringMatching(WOLF_ATTACK_STORY));
   });
@@ -83,16 +89,32 @@ describe("wolves", () => {
     const wanderer = loneWanderer(harness, 260);
     const wolves = spawnPack(harness, 330, 40, 4);
 
-    runUntil(harness, 120, () => wolves.some((wolf) => harness.fauna.isMenacing(wolf)));
+    runUntil(harness, 120, () => {
+      return wolves.some((wolf) => {
+        return harness.fauna.isMenacing(wolf);
+      });
+    });
 
-    expect(wolves.some((wolf) => harness.fauna.isMenacing(wolf))).toBe(true);
+    expect(
+      wolves.some((wolf) => {
+        return harness.fauna.isMenacing(wolf);
+      })
+    ).toBe(true);
 
     wanderer.mover.x = 2;
     wanderer.mover.z = 2;
     harness.run(1);
 
-    expect(wolves.some((wolf) => harness.fauna.isMenacing(wolf))).toBe(false);
-    expect(wolves.every((wolf) => wolf.fear > 0.5)).toBe(true);
+    expect(
+      wolves.some((wolf) => {
+        return harness.fauna.isMenacing(wolf);
+      })
+    ).toBe(false);
+    expect(
+      wolves.every((wolf) => {
+        return wolf.fear > 0.5;
+      })
+    ).toBe(true);
   });
 
   it("break off when one of the pack is badly hurt", () => {
@@ -102,14 +124,22 @@ describe("wolves", () => {
 
     const wolves = spawnPack(harness, 330, 40, 4);
 
-    runUntil(harness, 120, () => wolves.some((wolf) => harness.fauna.isMenacing(wolf)));
+    runUntil(harness, 120, () => {
+      return wolves.some((wolf) => {
+        return harness.fauna.isMenacing(wolf);
+      });
+    });
 
     const [bitten] = wolves;
 
     harness.fauna.wound(bitten, 0.6, { id: 0, x: 260, z: 0 }, BOLD);
     harness.run(1);
 
-    expect(wolves.some((wolf) => harness.fauna.isMenacing(wolf))).toBe(false);
+    expect(
+      wolves.some((wolf) => {
+        return harness.fauna.isMenacing(wolf);
+      })
+    ).toBe(false);
     expect(bitten.fear).toBeGreaterThan(0.5);
   });
 
@@ -135,7 +165,9 @@ describe("big game", () => {
 
     const hunter = loneWanderer(harness, 200);
     const herd = harness.fauna.spawnHerd("mammoth", 230, 0, 1, createRandom(3));
-    const [mammoth] = harness.fauna.animals.filter((animal) => animal.herdId === herd?.id);
+    const [mammoth] = harness.fauna.animals.filter((animal) => {
+      return animal.herdId === herd?.id;
+    });
 
     hunter.health = 0.3;
     hunter.job = new FightJob(tickFor(harness, hunter, tribeOf(harness, hunter)), animalFoe(mammoth), SPEAR);
@@ -143,7 +175,9 @@ describe("big game", () => {
 
     expect(harness.fauna.isMenacing(mammoth)).toBe(true);
 
-    runUntil(harness, 20, () => !hunter.isAlive);
+    runUntil(harness, 20, () => {
+      return !hunter.isAlive;
+    });
 
     expect(hunter.isAlive).toBe(false);
     expect(hunter.causeOfDeath).toBe("mammoth");
@@ -155,7 +189,9 @@ describe("big game", () => {
 
     const herder = loneWanderer(harness, 200);
     const herd = harness.fauna.spawnHerd("deer", 202, 0, 1, createRandom(3));
-    const [stag] = harness.fauna.animals.filter((animal) => animal.herdId === herd?.id);
+    const [stag] = harness.fauna.animals.filter((animal) => {
+      return animal.herdId === herd?.id;
+    });
 
     herder.health = 0.12;
     stag.mover.x = herder.mover.x + 2;
@@ -166,7 +202,9 @@ describe("big game", () => {
 
     expect(harness.fauna.isMenacing(stag)).toBe(true);
 
-    runUntil(harness, 10, () => !herder.isAlive);
+    runUntil(harness, 10, () => {
+      return !herder.isAlive;
+    });
 
     expect(herder.causeOfDeath).toBe("beast");
     expect(chronicleTexts(harness)).toContainEqual(expect.stringMatching(GORE_STORY));
@@ -184,8 +222,12 @@ describe("beast determinism", () => {
 
     return [
       `${wanderer.health.toFixed(5)} ${wanderer.mover.x.toFixed(4)}`,
-      ...harness.fauna.animals.map((wolf) => `${wolf.id} ${wolf.mover.x.toFixed(4)} ${wolf.health.toFixed(4)}`),
-      ...harness.chronicle.takeEntries().map((entry) => entry.text),
+      ...harness.fauna.animals.map((wolf) => {
+        return `${wolf.id} ${wolf.mover.x.toFixed(4)} ${wolf.health.toFixed(4)}`;
+      }),
+      ...harness.chronicle.takeEntries().map((entry) => {
+        return entry.text;
+      }),
     ];
   }
 

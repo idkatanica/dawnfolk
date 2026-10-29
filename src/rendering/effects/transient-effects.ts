@@ -90,7 +90,9 @@ function subdivide(points: readonly Vector3[], roughness: number): Vector3[] {
 }
 
 function toRibbon(points: readonly Vector3[], width: number): RibbonPoint[] {
-  return points.map((position, index) => ({ position, width: width * (1 - (index / points.length) * 0.4) }));
+  return points.map((position, index) => {
+    return { position, width: width * (1 - (index / points.length) * 0.4) };
+  });
 }
 
 function branchFrom(trunk: readonly Vector3[], share: number): RibbonPoint[] {
@@ -133,7 +135,12 @@ export class LightningStrike implements ActiveEffect {
     const skyOffset = new Vector3((Math.random() - 0.5) * 300, BOLT_HEIGHT, (Math.random() - 0.5) * 300);
 
     const trunk = jaggedPath(ground.clone().add(skyOffset), ground, 0.42);
-    const strands = [toRibbon(trunk, 1.6), ...[0.3, 0.55, 0.7].map((share) => branchFrom(trunk, share))];
+    const strands = [
+      toRibbon(trunk, 1.6),
+      ...[0.3, 0.55, 0.7].map((share) => {
+        return branchFrom(trunk, share);
+      }),
+    ];
 
     this.#effectMeshes = context.meshes;
     this.#bolt = context.meshes.createBolt(strands);

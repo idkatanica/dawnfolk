@@ -252,11 +252,13 @@ export class CrossingView {
 
     const material = createCrossingMaterial(textures, mirror);
 
-    this.#batches = CROSSING_DETAIL_LEVELS.map((level, levelIndex) =>
-      [...buildSteppingStones(level), ...buildFallenLogs(level), ...buildSteppingStones("low")].map((model, index) =>
-        this.#createBatch(model, material, index < PEBBLE_BATCH && levelIndex < SHADOW_LEVEL_COUNT)
-      )
-    );
+    this.#batches = CROSSING_DETAIL_LEVELS.map((level, levelIndex) => {
+      return [...buildSteppingStones(level), ...buildFallenLogs(level), ...buildSteppingStones("low")].map(
+        (model, index) => {
+          return this.#createBatch(model, material, index < PEBBLE_BATCH && levelIndex < SHADOW_LEVEL_COUNT);
+        }
+      );
+    });
 
     this.#foam = new InstanceBatch(
       toInstancedGeometry(new PlaneGeometry(1, 1).rotateX(-Math.PI / 2)),
@@ -275,12 +277,24 @@ export class CrossingView {
 
   rebuild(): void {
     this.#placed = this.#mirror.crossings
-      .map((crossing) => this.#place(crossing))
-      .filter((placed) => placed.pieces.length > 0);
+      .map((crossing) => {
+        return this.#place(crossing);
+      })
+      .filter((placed) => {
+        return placed.pieces.length > 0;
+      });
     this.#isDirty = true;
 
     this.#bar.geometry.dispose();
-    this.#bar.geometry = createBarGeometry(this.#placed.map((placed) => placed.bar).filter((bar) => bar.length > 1));
+    this.#bar.geometry = createBarGeometry(
+      this.#placed
+        .map((placed) => {
+          return placed.bar;
+        })
+        .filter((bar) => {
+          return bar.length > 1;
+        })
+    );
   }
 
   update(camera: PerspectiveCamera, frustum: Frustum, detail: number): void {
@@ -360,16 +374,30 @@ export class CrossingView {
     const flow = fordFlowOf(mirror, ford);
 
     const { bar, stones } = layFord(ford, {
-      heightAt: (x, z) => mirror.heightAt(x, z),
-      shoreDepthAt: (x, z) => textures.shoreDepthAt(x, z),
-      waterLevelAt: (x, z) => mirror.waterLevelAt(x, z),
-      waterSurfaceAt: (x, z) => sampleWaterSurface(mirror.terrain, mirror.grid, x, z),
+      heightAt: (x, z) => {
+        return mirror.heightAt(x, z);
+      },
+      shoreDepthAt: (x, z) => {
+        return textures.shoreDepthAt(x, z);
+      },
+      waterLevelAt: (x, z) => {
+        return mirror.waterLevelAt(x, z);
+      },
+      waterSurfaceAt: (x, z) => {
+        return sampleWaterSurface(mirror.terrain, mirror.grid, x, z);
+      },
     });
 
     const foam = stones
-      .filter((stone) => (stone.kind === "step" || stone.kind === "boulder") && stone.waterLevel !== NO_WATER)
-      .filter((stone) => stone.top > stone.waterLevel - FOAM_ABOVE)
-      .map((stone) => foamPiece(stone, flow));
+      .filter((stone) => {
+        return (stone.kind === "step" || stone.kind === "boulder") && stone.waterLevel !== NO_WATER;
+      })
+      .filter((stone) => {
+        return stone.top > stone.waterLevel - FOAM_ABOVE;
+      })
+      .map((stone) => {
+        return foamPiece(stone, flow);
+      });
 
     return { bar, pieces: [...stones.map(stonePiece), ...foam] };
   }

@@ -7,9 +7,15 @@ import { useGuideStore } from "./guide-store.ts";
 import { currentTip, GUIDE_TIPS, type GuideTip } from "./guide-tips.ts";
 
 function useGuideCard() {
-  const tipId = useGuideStore((state) => currentTip(state.progress));
-  const dismiss = useGuideStore((state) => state.dismiss);
-  const setTipsShown = useGuideStore((state) => state.setTipsShown);
+  const tipId = useGuideStore((state) => {
+    return currentTip(state.progress);
+  });
+  const dismiss = useGuideStore((state) => {
+    return state.dismiss;
+  });
+  const setTipsShown = useGuideStore((state) => {
+    return state.setTipsShown;
+  });
 
   function handleHide(): void {
     setTipsShown(false);

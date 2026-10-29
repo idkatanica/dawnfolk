@@ -79,7 +79,9 @@ export class AgentMarkers {
   readonly #ground: SightGround;
   readonly #herds = new Map<number, GatheredHerd>();
   readonly #instances: InterleavedInstances;
-  readonly #layers: readonly number[][] = Object.values(MarkerImportance).map(() => []);
+  readonly #layers: readonly number[][] = Object.values(MarkerImportance).map(() => {
+    return [];
+  });
   readonly #materials: readonly MeshBasicNodeMaterial[];
   readonly #offset = new Vector3();
   readonly #position = new Vector3();
@@ -93,7 +95,9 @@ export class AgentMarkers {
     this.#ground = ground;
     this.#geometry = createQuadGeometry();
     this.#instances = new InterleavedInstances(this.#geometry, MARKER_FIELDS, 256);
-    this.#materials = MARKER_PASSES.map((pass) => createMarkerMaterial(axes, this.brightness, pass));
+    this.#materials = MARKER_PASSES.map((pass) => {
+      return createMarkerMaterial(axes, this.brightness, pass);
+    });
 
     for (const [index, material] of this.#materials.entries()) {
       const mesh = new Mesh(this.#geometry, material);
@@ -292,7 +296,10 @@ export class AgentMarkers {
   }
 
   #upload(): void {
-    const count = this.#layers.reduce((sum, layer) => sum + layer.length, 0) / FLOATS_PER_MARKER;
+    const count =
+      this.#layers.reduce((sum, layer) => {
+        return sum + layer.length;
+      }, 0) / FLOATS_PER_MARKER;
 
     this.#instances.ensureCapacity(count);
 

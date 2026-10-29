@@ -56,6 +56,10 @@ describe("mesh connectivity", () => {
 
     const detached = detachedPieces(mesh, TOLERANCE, holdsPart(mesh, 1));
 
-    expect(detached.map((piece) => piece.minimum[0])).toEqual([3.75]);
+    expect(
+      detached.map((piece) => {
+        return piece.minimum[0];
+      })
+    ).toEqual([3.75]);
   });
 });

@@ -15,7 +15,9 @@ interface StarState {
   readonly stars: number | null;
 }
 
-export const useStarStore = create<StarState>(() => ({ hasRequested: false, stars: null }));
+export const useStarStore = create<StarState>(() => {
+  return { hasRequested: false, stars: null };
+});
 
 async function fetchStars(): Promise<number | null> {
   const response = await fetch(REPOSITORY_API, { headers: { Accept: "application/vnd.github+json" } });
@@ -41,8 +43,12 @@ export function requestStars(): void {
   useStarStore.setState({ hasRequested: true });
 
   fetchStars()
-    .then((stars) => useStarStore.setState({ stars }))
-    .catch((error: unknown) => console.warn("The star count is not available", error));
+    .then((stars) => {
+      return useStarStore.setState({ stars });
+    })
+    .catch((error: unknown) => {
+      return console.warn("The star count is not available", error);
+    });
 }
 
 export function formatStars(stars: number): string {

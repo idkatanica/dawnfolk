@@ -39,7 +39,9 @@ export type FieldTask = "harvest" | "sow" | "tend";
 const TASK_PRIORITY: Readonly<Record<FieldTask, number>> = { harvest: 3, sow: 2, tend: 1 };
 
 function knownCrops(tribe: Tribe): CropKind[] {
-  return CROP_KINDS.filter((kind) => knows(tribe, CROPS[kind].technology));
+  return CROP_KINDS.filter((kind) => {
+    return knows(tribe, CROPS[kind].technology);
+  });
 }
 
 function wantedFields(tribe: Tribe): number {
@@ -59,7 +61,11 @@ function isFarmable(tribe: Tribe, cell: number, context: SocietyContext): boolea
     return false;
   }
 
-  if (tribe.fields.some((field) => field.cell === cell)) {
+  if (
+    tribe.fields.some((field) => {
+      return field.cell === cell;
+    })
+  ) {
     return false;
   }
 
@@ -225,7 +231,9 @@ export function updateFields(tribe: Tribe, context: SocietyContext, days: number
 }
 
 export function abandonFloodedFields(tribe: Tribe, world: WorldState): void {
-  const flooded = tribe.fields.filter((field) => world.isWater(field.cell));
+  const flooded = tribe.fields.filter((field) => {
+    return world.isWater(field.cell);
+  });
 
   if (flooded.length === 0) {
     return;
@@ -235,11 +243,15 @@ export function abandonFloodedFields(tribe: Tribe, world: WorldState): void {
     abandonField(field, world);
   }
 
-  tribe.fields = tribe.fields.filter((field) => !flooded.includes(field));
+  tribe.fields = tribe.fields.filter((field) => {
+    return !flooded.includes(field);
+  });
 }
 
 function cropToSow(tribe: Tribe, field: Field, season: number): CropKind | null {
-  const sowable = knownCrops(tribe).filter((kind) => isSowingTime(kind, season));
+  const sowable = knownCrops(tribe).filter((kind) => {
+    return isSowingTime(kind, season);
+  });
 
   if (sowable.length === 0) {
     return null;

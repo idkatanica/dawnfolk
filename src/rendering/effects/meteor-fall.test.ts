@@ -30,7 +30,9 @@ function createMeteor() {
   const meteor = new MeteorFall(
     {
       flash: vi.fn(),
-      heightAt: () => 0,
+      heightAt: () => {
+        return 0;
+      },
       light: vi.fn(),
       meshes: new EffectMeshes(),
       releaseRing: vi.fn(),
@@ -56,7 +58,9 @@ function runFor(meteor: MeteorFall, sinks: SpriteSinks, seconds: number): void {
 function opacities(sinks: SpriteSinks): number[] {
   const look = sinks.dust.mesh.geometry.getAttribute("billboardLook");
 
-  return Array.from({ length: sinks.dust.count }, (_, index) => look.getW(index));
+  return Array.from({ length: sinks.dust.count }, (_, index) => {
+    return look.getW(index);
+  });
 }
 
 describe("meteor fall", () => {

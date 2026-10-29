@@ -106,7 +106,9 @@ function torsoBlend(point: SurfacePoint): BoneBlend {
 export function skirtStyle(followsLegs: number, hemLine: number): VertexStyle {
   return {
     boneA: HumanBone.Pelvis,
-    boneB: (point) => sideBones(sideOf(point)).thigh,
+    boneB: (point) => {
+      return sideBones(sideOf(point)).thigh;
+    },
     boneWeight: (point) => {
       const front = smoothstep(-0.1, 0.06, point.position.z);
       const follow = followsLegs * (SKIRT_BACK_FOLLOW + (1 - SKIRT_BACK_FOLLOW) * front);
@@ -121,6 +123,8 @@ export function headToChestStyle(top: number, bottom: number): VertexStyle {
   return {
     boneA: HumanBone.Head,
     boneB: HumanBone.Chest,
-    boneWeight: (point) => smoothstep(top, bottom, point.position.y),
+    boneWeight: (point) => {
+      return smoothstep(top, bottom, point.position.y);
+    },
   };
 }

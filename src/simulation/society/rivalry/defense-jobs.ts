@@ -44,9 +44,11 @@ function guardPost(tribe: Tribe, raid: Raid, person: Person): Waypoint {
 function nearestRaider(tick: PersonTick, raid: Raid, radius: number): Foe | null {
   const { tribe } = tick;
 
-  const raiders = livingRaiders(raid, (id) => tick.context.people.findPerson(id)).filter(
-    (raider) => Math.hypot(raider.mover.x - tribe.campX, raider.mover.z - tribe.campZ) < GUARD_RADIUS
-  );
+  const raiders = livingRaiders(raid, (id) => {
+    return tick.context.people.findPerson(id);
+  }).filter((raider) => {
+    return Math.hypot(raider.mover.x - tribe.campX, raider.mover.z - tribe.campZ) < GUARD_RADIUS;
+  });
 
   return nearestFoeAmong(tick, raiders, radius);
 }

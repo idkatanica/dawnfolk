@@ -141,9 +141,9 @@ function isQuarry(world: WorldState, column: number, row: number): boolean {
     return true;
   }
 
-  return ORTHOGONAL_STEPS.some(
-    ([columnStep, rowStep]) => world.slope(grid.index(column + columnStep, row + rowStep)) > CLIFF_SLOPE
-  );
+  return ORTHOGONAL_STEPS.some(([columnStep, rowStep]) => {
+    return world.slope(grid.index(column + columnStep, row + rowStep)) > CLIFF_SLOPE;
+  });
 }
 
 export function nearestShore(
@@ -151,7 +151,9 @@ export function nearestShore(
   origin: Waypoint,
   radius: number,
   random: RandomSource,
-  accepts: (spot: ShoreSpot) => boolean = () => true
+  accepts: (spot: ShoreSpot) => boolean = () => {
+    return true;
+  }
 ): ShoreSpot | null {
   for (let attempt = 0; attempt < SHORE_ATTEMPTS; attempt += 1) {
     const angle = random.next() * FULL_TURN;

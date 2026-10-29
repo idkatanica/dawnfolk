@@ -19,13 +19,19 @@ export class WaterView {
   constructor(mirror: WorldMirror, textures: TerrainTextures) {
     this.#mirror = mirror;
     this.#material = createWaterMaterial(textures, mirror.grid, this.look);
-    this.#patches = new PatchGrid(mirror.grid, (region) => this.#measure(region), {
-      edges: "open",
-      materials: [this.#material],
-      pieceCells: PIECE_CELLS,
-      renderOrder: 2,
-      shouldCastShadow: false,
-    });
+    this.#patches = new PatchGrid(
+      mirror.grid,
+      (region) => {
+        return this.#measure(region);
+      },
+      {
+        edges: "open",
+        materials: [this.#material],
+        pieceCells: PIECE_CELLS,
+        renderOrder: 2,
+        shouldCastShadow: false,
+      }
+    );
   }
 
   get group(): Group {

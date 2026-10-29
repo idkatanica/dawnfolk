@@ -47,7 +47,9 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
   const renderListeners = new Set<() => void>();
   const camera = {
     camera: { matrixWorld: new Matrix4() },
-    groundFootprint: () => [],
+    groundFootprint: () => {
+      return [];
+    },
     isFollowing: false,
     state: { ...TEST_CAMERA, distance: cameraDistance },
   };
@@ -61,11 +63,21 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
   }
 
   const send = vi.spyOn(session, "send");
-  const clearSelection = vi.fn<() => void>(() => setFollowing(false));
-  const focusOn = vi.fn<(x: number, z: number, distance?: number) => void>(() => setFollowing(false));
-  const followSelection = vi.fn<() => void>(() => setFollowing(true));
-  const placeLabel = vi.fn<(x: number, z: number, lift: number) => LabelPlacement | null>(() => null);
-  const stopFollowing = vi.fn<() => void>(() => setFollowing(false));
+  const clearSelection = vi.fn<() => void>(() => {
+    return setFollowing(false);
+  });
+  const focusOn = vi.fn<(x: number, z: number, distance?: number) => void>(() => {
+    return setFollowing(false);
+  });
+  const followSelection = vi.fn<() => void>(() => {
+    return setFollowing(true);
+  });
+  const placeLabel = vi.fn<(x: number, z: number, lift: number) => LabelPlacement | null>(() => {
+    return null;
+  });
+  const stopFollowing = vi.fn<() => void>(() => {
+    return setFollowing(false);
+  });
 
   function subscribeToRenders(listener: () => void): () => void {
     renderListeners.add(listener);

@@ -27,13 +27,17 @@ function useFocusCamera() {
 export function useShowTribe(tribe: TribeSummary) {
   const focus = useFocusCamera();
 
-  return () => focus(tribe.campX, tribe.campZ, { id: tribe.id, kind: "tribe" });
+  return () => {
+    return focus(tribe.campX, tribe.campZ, { id: tribe.id, kind: "tribe" });
+  };
 }
 
 export function useShowSpot(x: number, z: number) {
   const focus = useFocusCamera();
   const isCompact = useIsCompact();
-  const closeJournal = useInterfaceStore((state) => state.closeJournal);
+  const closeJournal = useInterfaceStore((state) => {
+    return state.closeJournal;
+  });
 
   return () => {
     focus(x, z);

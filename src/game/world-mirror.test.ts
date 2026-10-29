@@ -23,7 +23,9 @@ function createSimulation(): Simulation {
   const simulation = new Simulation(
     createVegetatedWorld({
       dimensions: { cellSize: 10, cellsPerSide: 64 },
-      heightAt: (x, z) => 100 + x * 0.04 + z * 0.02,
+      heightAt: (x, z) => {
+        return 100 + x * 0.04 + z * 0.02;
+      },
     })
   );
 
@@ -102,7 +104,9 @@ describe("world mirror", () => {
     const simulation = new Simulation(
       createVegetatedWorld({
         dimensions: { cellSize: 10, cellsPerSide: 96 },
-        heightAt: (x, z) => 200 + Math.abs(x - 5) * 0.25 + z * 0.02,
+        heightAt: (x, z) => {
+          return 200 + Math.abs(x - 5) * 0.25 + z * 0.02;
+        },
       })
     );
 
@@ -268,7 +272,9 @@ describe("world mirror", () => {
     const simulation = new Simulation(
       createVegetatedWorld({
         dimensions: { cellSize: 10, cellsPerSide: 96 },
-        heightAt: (x, z) => 200 + Math.abs(x - 5) * 0.25 + z * 0.02,
+        heightAt: (x, z) => {
+          return 200 + Math.abs(x - 5) * 0.25 + z * 0.02;
+        },
       })
     );
 
@@ -277,12 +283,18 @@ describe("world mirror", () => {
 
     const mirror = new WorldMirror(simulation.initialWorld(), 0);
 
-    expect(mirror.landmarks.filter((landmark) => landmark.kind === "lake")).toEqual([]);
+    expect(
+      mirror.landmarks.filter((landmark) => {
+        return landmark.kind === "lake";
+      })
+    ).toEqual([]);
 
     simulation.usePower("meteor", 0, -200, { craterRadius: 140, fallTime: 0.5 });
     advanceTogether(simulation, mirror, 7);
 
-    const lakes = mirror.landmarks.filter((landmark) => landmark.kind === "lake");
+    const lakes = mirror.landmarks.filter((landmark) => {
+      return landmark.kind === "lake";
+    });
 
     expect(simulation.isBusy).toBe(false);
     expect(lakes).toHaveLength(1);

@@ -22,7 +22,11 @@ describe("surface rows", () => {
     const changed = packChangedSurfaceRows(world, marked, sent);
     const [current] = packSurfaceRows(world, allRows(world));
 
-    expect(changed.map(({ firstRow, rowCount }) => ({ firstRow, rowCount }))).toEqual([
+    expect(
+      changed.map(({ firstRow, rowCount }) => {
+        return { firstRow, rowCount };
+      })
+    ).toEqual([
       { firstRow: 3, rowCount: 2 },
       { firstRow: 10, rowCount: 1 },
       { firstRow: 15, rowCount: 1 },

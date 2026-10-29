@@ -120,9 +120,9 @@ describe("berry bushes", () => {
   it("change their fruit in index order while plants grow, burn and are cleared", () => {
     const store = new VegetationStore(new WorldGrid({ cellSize: 10, cellsPerSide: 64 }), 4000);
 
-    const plants = Array.from({ length: 3000 }, (_, plant) =>
-      plantAt(store, plant % 3 === 0 ? PlantSpecies.Oak : PlantSpecies.Bush, (plant % 600) - 300)
-    );
+    const plants = Array.from({ length: 3000 }, (_, plant) => {
+      return plantAt(store, plant % 3 === 0 ? PlantSpecies.Oak : PlantSpecies.Bush, (plant % 600) - 300);
+    });
 
     for (const [position, plant] of plants.entries()) {
       if (position % 7 === 1) {
@@ -144,7 +144,11 @@ describe("berry bushes", () => {
     store.changeBerryFruit(-0.25);
 
     expect(store.takeChanges()?.indices).toEqual(Int32Array.from(bushes));
-    expect(bushes.every((bush) => store.fruit[bush] === 0.75)).toBe(true);
+    expect(
+      bushes.every((bush) => {
+        return store.fruit[bush] === 0.75;
+      })
+    ).toBe(true);
     expect(bushes.length).toBeGreaterThan(1024);
   });
 

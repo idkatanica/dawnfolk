@@ -26,16 +26,30 @@ export interface GuideStore {
 
 export const useGuideStore = create<GuideStore>()(
   persist(
-    (set) => ({
-      dismiss: () => set((state) => ({ progress: dismissTip(state.progress) })),
-      progress: FRESH_GUIDE,
-      record: (event) => set((state) => ({ progress: applyGuideEvent(state.progress, event) })),
-      setTipsShown: (areShown) => set({ progress: areShown ? FRESH_GUIDE : { ...FRESH_GUIDE, isOff: true } }),
-    }),
+    (set) => {
+      return {
+        dismiss: () => {
+          return set((state) => {
+            return { progress: dismissTip(state.progress) };
+          });
+        },
+        progress: FRESH_GUIDE,
+        record: (event) => {
+          return set((state) => {
+            return { progress: applyGuideEvent(state.progress, event) };
+          });
+        },
+        setTipsShown: (areShown) => {
+          return set({ progress: areShown ? FRESH_GUIDE : { ...FRESH_GUIDE, isOff: true } });
+        },
+      };
+    },
     {
       merge: mergeStored,
       name: STORAGE_KEY,
-      partialize: (state) => ({ done: state.progress.done, isOff: state.progress.isOff }),
+      partialize: (state) => {
+        return { done: state.progress.done, isOff: state.progress.isOff };
+      },
     }
   )
 );

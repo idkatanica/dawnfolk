@@ -62,9 +62,27 @@ export class KeyboardControls {
 
     const options = { signal: this.#abort.signal };
 
-    target.addEventListener("keydown", (event) => this.#press(event), options);
-    target.addEventListener("keyup", (event) => this.#release(event), options);
-    target.addEventListener("blur", () => this.#held.clear(), options);
+    target.addEventListener(
+      "keydown",
+      (event) => {
+        return this.#press(event);
+      },
+      options
+    );
+    target.addEventListener(
+      "keyup",
+      (event) => {
+        return this.#release(event);
+      },
+      options
+    );
+    target.addEventListener(
+      "blur",
+      () => {
+        return this.#held.clear();
+      },
+      options
+    );
   }
 
   update(realSeconds: number): void {

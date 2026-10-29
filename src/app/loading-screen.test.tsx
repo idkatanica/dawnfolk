@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import type { GameSession } from "../game/game-session.ts";
 import { createLocalSession } from "../game/testing/local-session.ts";
+import { ignore } from "../shared/ignore.ts";
 import { Simulation } from "../simulation/simulation.ts";
 import { createVegetatedWorld } from "../simulation/testing/test-world.ts";
 import { reportStop } from "./engine-launcher.ts";
@@ -31,7 +32,7 @@ describe("loading screen", () => {
   });
 
   it("tells the player when the simulation stops and starts the world again", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.spyOn(console, "error").mockImplementation(ignore);
 
     const session = await startFailingSession(new Error("The worker crashed"));
 

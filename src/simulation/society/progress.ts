@@ -100,5 +100,7 @@ export function nextEraName(tribe: Tribe): string | null {
 }
 
 export function technologyNames(tribe: Tribe): string[] {
-  return [...tribe.technologies].map((technology) => technologyDefinition(technology).name);
+  return [...tribe.technologies].map((technology) => {
+    return technologyDefinition(technology).name;
+  });
 }

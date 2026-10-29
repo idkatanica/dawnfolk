@@ -241,7 +241,11 @@ function followHunt(mood: PackMood, hunt: PackHunt, members: readonly Animal[], 
     return;
   }
 
-  const isBroken = members.length < hunt.startingSize || members.some((member) => isHurt(member));
+  const isBroken =
+    members.length < hunt.startingSize ||
+    members.some((member) => {
+      return isHurt(member);
+    });
   const isGuarded = prey.isSheltered || prey.companions >= GROUP_COMPANIONS;
 
   if (isGuarded || isBroken || hunt.seconds > LONGEST_HUNT_SECONDS) {
@@ -316,7 +320,13 @@ export class BeastInstincts {
         continue;
       }
 
-      const members = pack.memberIds.map((id) => this.#prey.find(id)).filter((animal) => animal !== null);
+      const members = pack.memberIds
+        .map((id) => {
+          return this.#prey.find(id);
+        })
+        .filter((animal) => {
+          return animal !== null;
+        });
 
       this.#steerPack(pack, members, tick);
     }
@@ -564,7 +574,12 @@ export class BeastInstincts {
   #considerHunt(mood: PackMood, members: readonly Animal[], tick: FaunaTick): void {
     const [leader] = members;
 
-    if (leader === undefined || members.some((member) => isHurt(member))) {
+    if (
+      leader === undefined ||
+      members.some((member) => {
+        return isHurt(member);
+      })
+    ) {
       return;
     }
 

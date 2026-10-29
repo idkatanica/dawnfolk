@@ -159,7 +159,12 @@ export function animalWithArticle(kind: AnimalKind): string {
 }
 
 export function animalsAt(biome: number): readonly AnimalKind[] {
-  return ANIMAL_KINDS.filter(
-    (kind) => !ANIMALS[kind].isSmallGame && ANIMALS[kind].favoriteBiomes.some((favorite) => favorite === biome)
-  );
+  return ANIMAL_KINDS.filter((kind) => {
+    return (
+      !ANIMALS[kind].isSmallGame &&
+      ANIMALS[kind].favoriteBiomes.some((favorite) => {
+        return favorite === biome;
+      })
+    );
+  });
 }

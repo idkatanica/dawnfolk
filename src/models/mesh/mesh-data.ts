@@ -80,13 +80,19 @@ export function channelRecord<Value>(make: (channel: VertexChannel) => Value): R
 }
 
 export function mergeMeshes(meshes: readonly MeshData[]): MeshData {
-  const totalVertices = meshes.reduce((sum, mesh) => sum + vertexCount(mesh), 0);
-  const totalIndices = meshes.reduce((sum, mesh) => sum + mesh.indices.length, 0);
+  const totalVertices = meshes.reduce((sum, mesh) => {
+    return sum + vertexCount(mesh);
+  }, 0);
+  const totalIndices = meshes.reduce((sum, mesh) => {
+    return sum + mesh.indices.length;
+  }, 0);
 
   const positions = new Float32Array(totalVertices * 3);
   const normals = new Float32Array(totalVertices * 3);
   const indices = new Uint32Array(totalIndices);
-  const channels = channelRecord(() => new Float32Array(totalVertices));
+  const channels = channelRecord(() => {
+    return new Float32Array(totalVertices);
+  });
 
   let vertexOffset = 0;
   let indexOffset = 0;

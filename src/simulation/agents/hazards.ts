@@ -25,11 +25,15 @@ export class HazardMap {
   }
 
   snapshot(): DangerZone[] {
-    return this.#zones.map((zone) => ({ ...zone }));
+    return this.#zones.map((zone) => {
+      return { ...zone };
+    });
   }
 
   restore(zones: readonly DangerZone[]): void {
-    this.#zones = zones.map((zone) => ({ ...zone }));
+    this.#zones = zones.map((zone) => {
+      return { ...zone };
+    });
   }
 
   addZone(zone: DangerZone): void {
@@ -41,7 +45,9 @@ export class HazardMap {
       zone.remainingSeconds -= seconds;
     }
 
-    this.#zones = this.#zones.filter((zone) => zone.remainingSeconds > 0);
+    this.#zones = this.#zones.filter((zone) => {
+      return zone.remainingSeconds > 0;
+    });
   }
 
   dangerNear(x: number, z: number, radius: number): Waypoint | null {

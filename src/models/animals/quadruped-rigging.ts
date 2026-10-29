@@ -38,7 +38,9 @@ export function legStyle(frame: QuadrupedFrame, end: LegEnd, side: Side, blend: 
   const joints = end === "front" ? frame.frontLeg : frame.hindLeg;
   const body = end === "front" ? QuadrupedBone.Chest : QuadrupedBone.Pelvis;
 
-  const [upper, lower, hoof] = joints.map((joint) => onSide(joint, side));
+  const [upper, lower, hoof] = joints.map((joint) => {
+    return onSide(joint, side);
+  });
 
   return chainStyle(
     createChain(

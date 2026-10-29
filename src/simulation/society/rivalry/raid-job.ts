@@ -226,12 +226,16 @@ export class RaidJob implements Job {
       raid.aim === "burn" && raid.burned.length === 0 ? burnableBuilding(tick.context.buildings.all, victims) : null;
 
     if (building !== null) {
-      this.#workAt(tick, raid, building, KINDLING_SECONDS, () => setAblaze(building, raid));
+      this.#workAt(tick, raid, building, KINDLING_SECONDS, () => {
+        return setAblaze(building, raid);
+      });
 
       return;
     }
 
-    this.#workAt(tick, raid, plunderSpot(victims, tick), PLUNDER_SECONDS, () => this.#plunder(raid, victims));
+    this.#workAt(tick, raid, plunderSpot(victims, tick), PLUNDER_SECONDS, () => {
+      return this.#plunder(raid, victims);
+    });
   }
 
   #plunder(raid: Raid, victims: Tribe): void {

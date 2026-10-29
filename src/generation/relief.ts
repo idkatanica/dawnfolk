@@ -299,8 +299,14 @@ export function createRelief(seed: number, island: IslandShape, halfSize: number
   };
 
   return {
-    basinDepthAt: (point) => CENTRAL_LAKE_DEPTH * centralLake(point),
-    boundaryDistanceAt: (point) => boundaryDistance(noise, island, point, island.coastDistanceAt(point.x, point.z)),
-    sampleAt: (point) => reliefSample(noise, island, point),
+    basinDepthAt: (point) => {
+      return CENTRAL_LAKE_DEPTH * centralLake(point);
+    },
+    boundaryDistanceAt: (point) => {
+      return boundaryDistance(noise, island, point, island.coastDistanceAt(point.x, point.z));
+    },
+    sampleAt: (point) => {
+      return reliefSample(noise, island, point);
+    },
   };
 }

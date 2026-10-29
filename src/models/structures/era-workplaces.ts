@@ -136,7 +136,9 @@ function addGranaryStore(context: StructureContext): void {
     {
       style: {
         buildOrder: rising(0.28, 0.58, FLOOR_TOP, GRANARY_WALL_TOP),
-        shade: (point) => 0.72 + 0.28 * smoothstep(FLOOR_TOP, GRANARY_WALL_TOP, point.position.y),
+        shade: (point) => {
+          return 0.72 + 0.28 * smoothstep(FLOOR_TOP, GRANARY_WALL_TOP, point.position.y);
+        },
         slot: MaterialSlot.Daub,
       },
     }
@@ -160,12 +162,16 @@ function addGranaryStore(context: StructureContext): void {
     slot: MaterialSlot.Ash,
   });
 
-  const thatch = thatchSections(GRANARY_ROOF_BOTTOM, GRANARY_ROOF_TOP, GRANARY_ROOF_RADIUS, () => 1);
+  const thatch = thatchSections(GRANARY_ROOF_BOTTOM, GRANARY_ROOF_TOP, GRANARY_ROOF_RADIUS, () => {
+    return 1;
+  });
 
   context.builder.add(loft(thatch, segments), {
     style: {
       buildOrder: rising(0.68, 0.92, GRANARY_ROOF_BOTTOM, GRANARY_ROOF_TOP),
-      shade: (point) => 0.72 + 0.28 * smoothstep(GRANARY_ROOF_BOTTOM, GRANARY_ROOF_TOP, point.position.y),
+      shade: (point) => {
+        return 0.72 + 0.28 * smoothstep(GRANARY_ROOF_BOTTOM, GRANARY_ROOF_TOP, point.position.y);
+      },
       slot: MaterialSlot.Thatch,
     },
   });
@@ -236,7 +242,9 @@ function addKilnDome(context: StructureContext): void {
     {
       style: {
         buildOrder: rising(0.12, 0.8, 0, KILN_TOP),
-        shade: (point) => 0.72 + 0.28 * smoothstep(0, 1.6, point.position.y),
+        shade: (point) => {
+          return 0.72 + 0.28 * smoothstep(0, 1.6, point.position.y);
+        },
         slot: kilnDomeSlot,
       },
     }
@@ -359,7 +367,9 @@ function addWorkbench(context: StructureContext): void {
   });
   context.builder.add(
     tube(
-      bowTips.map(([x, y, z]) => ({ radius: 0.006, x, y, z })),
+      bowTips.map(([x, y, z]) => {
+        return { radius: 0.006, x, y, z };
+      }),
       { radialSegments: 3 }
     ),
     { style: { buildOrder: 0.92, slot: MaterialSlot.Rope } }
@@ -396,7 +406,9 @@ export function addWorkshop(context: StructureContext): void {
   addShedFrame(context);
   addBlock(context, [SHED_HALF_WIDTH * 2 + 0.1, 1.3, 0.14], [0, 0.65, -SHED_HALF_DEPTH], {
     buildOrder: 0.35,
-    shade: (point) => 0.75 + 0.25 * saturate(point.position.y / 1.3),
+    shade: (point) => {
+      return 0.75 + 0.25 * saturate(point.position.y / 1.3);
+    },
     slot: MaterialSlot.Daub,
   });
   addWorkbench(context);
@@ -448,7 +460,9 @@ function addSmelterShaft(context: StructureContext): void {
     {
       style: {
         buildOrder: rising(0.2, 0.75, SHAFT_BASE, SHAFT_TOP),
-        shade: (point) => 0.7 + 0.3 * smoothstep(SHAFT_BASE, SHAFT_TOP, point.position.y),
+        shade: (point) => {
+          return 0.7 + 0.3 * smoothstep(SHAFT_BASE, SHAFT_TOP, point.position.y);
+        },
         slot: shaftSlot,
       },
     }
@@ -516,7 +530,9 @@ export function addForge(context: StructureContext): void {
     span: (FORGE_HALF_DEPTH + 0.4) * 2,
     style: {
       buildOrder: rising(0.62, 0.86, FORGE_EAVE - 0.2, FORGE_RIDGE),
-      shade: (point) => 0.75 + 0.25 * smoothstep(FORGE_EAVE, FORGE_RIDGE, point.position.y),
+      shade: (point) => {
+        return 0.75 + 0.25 * smoothstep(FORGE_EAVE, FORGE_RIDGE, point.position.y);
+      },
       slot: MaterialSlot.Thatch,
     },
     thickness: 0.34,

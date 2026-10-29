@@ -25,27 +25,45 @@ interface InterfaceStore {
   readonly toggleMap: () => void;
 }
 
-export const useInterfaceStore = create<InterfaceStore>()((set) => ({
-  areLabelsShown: storedLabelsShown(),
-  areOutlinesShown: storedOutlinesShown(),
-  closeJournal: () => set({ isJournalOpen: false }),
-  isJournalOpen: false,
-  isMapOpen: !window.matchMedia(COMPACT_QUERY).matches,
-  isSettingsOpen: false,
-  journalTab: "tribes",
-  openJournal: (tab) => set({ isJournalOpen: true, journalTab: tab }),
-  openSettings: () => set({ isSettingsOpen: true, settingsTab: "world" }),
-  setJournalTab: (tab) => set({ journalTab: tab }),
-  setLabelsShown: (areShown) => {
-    storeLabelsShown(areShown);
-    set({ areLabelsShown: areShown });
-  },
-  setOutlinesShown: (areShown) => {
-    storeOutlinesShown(areShown);
-    set({ areOutlinesShown: areShown });
-  },
-  setSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
-  setSettingsTab: (tab) => set({ settingsTab: tab }),
-  settingsTab: "world",
-  toggleMap: () => set((state) => ({ isMapOpen: !state.isMapOpen })),
-}));
+export const useInterfaceStore = create<InterfaceStore>()((set) => {
+  return {
+    areLabelsShown: storedLabelsShown(),
+    areOutlinesShown: storedOutlinesShown(),
+    closeJournal: () => {
+      return set({ isJournalOpen: false });
+    },
+    isJournalOpen: false,
+    isMapOpen: !window.matchMedia(COMPACT_QUERY).matches,
+    isSettingsOpen: false,
+    journalTab: "tribes",
+    openJournal: (tab) => {
+      return set({ isJournalOpen: true, journalTab: tab });
+    },
+    openSettings: () => {
+      return set({ isSettingsOpen: true, settingsTab: "world" });
+    },
+    setJournalTab: (tab) => {
+      return set({ journalTab: tab });
+    },
+    setLabelsShown: (areShown) => {
+      storeLabelsShown(areShown);
+      set({ areLabelsShown: areShown });
+    },
+    setOutlinesShown: (areShown) => {
+      storeOutlinesShown(areShown);
+      set({ areOutlinesShown: areShown });
+    },
+    setSettingsOpen: (isOpen) => {
+      return set({ isSettingsOpen: isOpen });
+    },
+    setSettingsTab: (tab) => {
+      return set({ settingsTab: tab });
+    },
+    settingsTab: "world",
+    toggleMap: () => {
+      return set((state) => {
+        return { isMapOpen: !state.isMapOpen };
+      });
+    },
+  };
+});

@@ -50,8 +50,12 @@ function clusterDirection(cluster: number, clusters: number, twist: number): Vec
 }
 
 function crownMiddle(structure: TreeStructure): Vector3 {
-  const blobs = structure.foliage.filter((foliage) => foliage.kind === "blob");
-  const sum = blobs.reduce((total, blob) => total.add(new Vector3(...blob.center)), new Vector3());
+  const blobs = structure.foliage.filter((foliage) => {
+    return foliage.kind === "blob";
+  });
+  const sum = blobs.reduce((total, blob) => {
+    return total.add(new Vector3(...blob.center));
+  }, new Vector3());
 
   return sum.multiplyScalar(1 / Math.max(1, blobs.length));
 }

@@ -124,7 +124,12 @@ function ruination<Piece extends MonumentPiece>(
   order: readonly PieceForm<Piece>[],
   odds: DamageOdds
 ): Ruination {
-  return { odds, order: order.map((form) => pieceFormIndex(piece, form)) };
+  return {
+    odds,
+    order: order.map((form) => {
+      return pieceFormIndex(piece, form);
+    }),
+  };
 }
 
 function damageFrom(shock: Shock, monument: Monument): HarmLevel | null {
@@ -192,7 +197,9 @@ function piecesOf(world: WorldState, monument: Monument): number[] {
     }
   }
 
-  return pieces.sort((first, second) => first - second);
+  return pieces.sort((first, second) => {
+    return first - second;
+  });
 }
 
 function chosenRank(odds: readonly number[], roll: number): number {
@@ -320,7 +327,9 @@ export function drownMonuments(world: WorldState): Monument[] {
       continue;
     }
 
-    const wetCells = monument.cells.filter((cell) => world.isWater(cell)).length;
+    const wetCells = monument.cells.filter((cell) => {
+      return world.isWater(cell);
+    }).length;
 
     if (wetCells > monument.cells.length * DROWNED_SHARE) {
       condition.isDrowned = true;

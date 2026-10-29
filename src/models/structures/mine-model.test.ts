@@ -31,7 +31,9 @@ describe.each(MINED_DEPOSIT_KINDS)("%s mine", (ore) => {
   test("heaps its own ore and no other", () => {
     expect(high.channels.slot).toContain(ORE_SLOTS[ore]);
 
-    for (const other of MINED_DEPOSIT_KINDS.filter((kind) => kind !== ore)) {
+    for (const other of MINED_DEPOSIT_KINDS.filter((kind) => {
+      return kind !== ore;
+    })) {
       expect(high.channels.slot).not.toContain(ORE_SLOTS[other]);
     }
   });

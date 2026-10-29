@@ -81,7 +81,14 @@ describe("fight clips", () => {
         poser.pose(pose, humanBoneScales(appearance.body));
 
         const names: HumanPart[] = ["bodyMale", ...weapons];
-        const mesh = posedMesh(mergeMeshes(names.map((name) => parts[humanPartIndex(name)])), poser);
+        const mesh = posedMesh(
+          mergeMeshes(
+            names.map((name) => {
+              return parts[humanPartIndex(name)];
+            })
+          ),
+          poser
+        );
 
         expect(loosePieces(mesh, TOUCHING, isTorso), `${clip} ${phase}`).toEqual([]);
       }

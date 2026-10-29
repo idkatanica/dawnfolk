@@ -17,14 +17,20 @@ describe("orchards", () => {
       throw new Error("Expected an orchard");
     }
 
-    const tree = orchard.spots.find((spot) => isFruitTreeSpecies(spot.species));
+    const tree = orchard.spots.find((spot) => {
+      return isFruitTreeSpecies(spot.species);
+    });
 
     if (tree === undefined) {
       throw new Error("Expected a fruit tree spot");
     }
 
     expect(orchard.kind).toBe("orchard");
-    expect(orchard.spots.some((spot) => !isFruitTreeSpecies(spot.species))).toBe(true);
+    expect(
+      orchard.spots.some((spot) => {
+        return !isFruitTreeSpecies(spot.species);
+      })
+    ).toBe(true);
 
     plantSpot(tribe, tree, harness.context);
 

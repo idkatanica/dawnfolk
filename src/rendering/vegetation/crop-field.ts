@@ -109,7 +109,9 @@ interface PlantRows {
 }
 
 function hasEdge(edges: readonly FieldEdge[], column: number, row: number): boolean {
-  return edges.some((edge) => edge.column === column && edge.row === row);
+  return edges.some((edge) => {
+    return edge.column === column && edge.row === row;
+  });
 }
 
 function createCropMaterial(weather: PlantWeather): MeshStandardNodeMaterial {
@@ -153,7 +155,9 @@ function createCropMaterial(weather: PlantWeather): MeshStandardNodeMaterial {
 
   const slotColors = slotColorTable();
   const ripeStems = uniformArray<"vec3">(
-    CROP_KINDS.map((crop) => new Vector3(...RIPE_STEMS[crop])),
+    CROP_KINDS.map((crop) => {
+      return new Vector3(...RIPE_STEMS[crop]);
+    }),
     "vec3"
   );
 
@@ -224,15 +228,15 @@ export class CropField {
     const cropMaterial = createCropMaterial(weather);
     const fenceMaterial = createFenceMaterial(mirror.grid.cellSize);
 
-    this.#cropBatches = CROP_KINDS.map((kind) =>
-      CROP_DETAIL_LEVELS.map((level, levelIndex) =>
-        this.#createBatch(buildCropModel(kind, level), cropMaterial, CROP_FIELDS, levelIndex === 0)
-      )
-    );
+    this.#cropBatches = CROP_KINDS.map((kind) => {
+      return CROP_DETAIL_LEVELS.map((level, levelIndex) => {
+        return this.#createBatch(buildCropModel(kind, level), cropMaterial, CROP_FIELDS, levelIndex === 0);
+      });
+    });
 
-    this.#fenceBatches = CROP_DETAIL_LEVELS.map((level) =>
-      this.#createBatch(buildFenceModel(mirror.grid.cellSize, level), fenceMaterial, FENCE_FIELDS, true)
-    );
+    this.#fenceBatches = CROP_DETAIL_LEVELS.map((level) => {
+      return this.#createBatch(buildFenceModel(mirror.grid.cellSize, level), fenceMaterial, FENCE_FIELDS, true);
+    });
 
     this.#scanRows(0, mirror.grid.cellsPerSide - 1, false);
   }
@@ -344,7 +348,11 @@ export class CropField {
     const edges = this.#edges(column, row);
     const axis = this.#plan.axisAt(cell);
     const growth = this.#groundAt(column, row, GroundChannel.Crop);
-    const layout = `${code}:${axis}:${edges.map((edge) => `${edge.column},${edge.row}`).join(";")}`;
+    const layout = `${code}:${axis}:${edges
+      .map((edge) => {
+        return `${edge.column},${edge.row}`;
+      })
+      .join(";")}`;
 
     const existing = this.#cells.get(cell);
 
@@ -396,7 +404,9 @@ export class CropField {
       { column: column + 1, from: [east, north], row, to: [east, south] },
     ];
 
-    return candidates.filter((edge) => !this.#isFarm(edge.column, edge.row));
+    return candidates.filter((edge) => {
+      return !this.#isFarm(edge.column, edge.row);
+    });
   }
 
   #buildCell(
@@ -478,7 +488,11 @@ export class CropField {
   }
 
   #fenceInstances(edges: readonly FieldEdge[]): Float32Array {
-    return new Float32Array(edges.flatMap((edge) => this.#segment(...edge.from, ...edge.to)));
+    return new Float32Array(
+      edges.flatMap((edge) => {
+        return this.#segment(...edge.from, ...edge.to);
+      })
+    );
   }
 
   #segment(fromX: number, fromZ: number, toX: number, toZ: number): number[] {
@@ -495,17 +509,29 @@ export class CropField {
   }
 
   #refill(isWhole: boolean): void {
-    const fields = [...this.#cells.values()].filter((field) => field.level !== HIDDEN_LEVEL);
+    const fields = [...this.#cells.values()].filter((field) => {
+      return field.level !== HIDDEN_LEVEL;
+    });
 
     for (const [kindIndex, batches] of this.#cropBatches.entries()) {
       if (!(isWhole || this.#grownKinds.has(kindIndex))) {
         continue;
       }
 
-      const ofKind = fields.filter((field) => field.kind === kindIndex);
+      const ofKind = fields.filter((field) => {
+        return field.kind === kindIndex;
+      });
 
       for (const [level, batch] of batches.entries()) {
-        batch.fill(ofKind.filter((field) => field.level === level).map((field) => field.plants));
+        batch.fill(
+          ofKind
+            .filter((field) => {
+              return field.level === level;
+            })
+            .map((field) => {
+              return field.plants;
+            })
+        );
       }
     }
 
@@ -514,7 +540,15 @@ export class CropField {
     }
 
     for (const [level, batch] of this.#fenceBatches.entries()) {
-      batch.fill(fields.filter((field) => field.level === level).map((field) => field.fences));
+      batch.fill(
+        fields
+          .filter((field) => {
+            return field.level === level;
+          })
+          .map((field) => {
+            return field.fences;
+          })
+      );
     }
   }
 }

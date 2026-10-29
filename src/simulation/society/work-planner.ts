@@ -193,9 +193,9 @@ const WORK_OPTIONS: readonly WorkOption[] = [
 ];
 
 function expeditionBuilders(tick: PersonTick): number {
-  return tick.context.people
-    .membersOf(tick.tribe)
-    .filter((member) => member.job !== null && member.job.kind === "build" && member.job.isExpedition === true).length;
+  return tick.context.people.membersOf(tick.tribe).filter((member) => {
+    return member.job !== null && member.job.kind === "build" && member.job.isExpedition === true;
+  }).length;
 }
 
 function constructionSite(tick: PersonTick): Building | null {
@@ -242,9 +242,15 @@ function adjustedWeight(option: WorkOption, tick: PersonTick, construction: Reso
 export function chooseWork(tick: PersonTick): Job | null {
   const construction = constructionNeeds(tick.tribe, tick.context);
 
-  const candidates = WORK_OPTIONS.map((option) => ({ option, weight: adjustedWeight(option, tick, construction) }));
-  const weighted = candidates.filter((candidate) => candidate.weight > 0);
-  const totalWeight = weighted.reduce((total, candidate) => total + candidate.weight, 0);
+  const candidates = WORK_OPTIONS.map((option) => {
+    return { option, weight: adjustedWeight(option, tick, construction) };
+  });
+  const weighted = candidates.filter((candidate) => {
+    return candidate.weight > 0;
+  });
+  const totalWeight = weighted.reduce((total, candidate) => {
+    return total + candidate.weight;
+  }, 0);
 
   if (totalWeight <= 0) {
     return null;

@@ -36,7 +36,12 @@ describe("arriving tribes", () => {
 
   it("refuse land with nowhere to stand", () => {
     const harness = new SocietyHarness({
-      world: { dimensions: { cellSize: 10, cellsPerSide: 96 }, heightAt: (x) => x * 3 },
+      world: {
+        dimensions: { cellSize: 10, cellsPerSide: 96 },
+        heightAt: (x) => {
+          return x * 3;
+        },
+      },
     });
 
     expect(harness.spawnTribe(7)).toBeNull();
@@ -52,7 +57,9 @@ describe("daily life", () => {
     tribe.stock.berries = 0;
     harness.run(60);
 
-    const jobs = harness.society.membersOf(tribe).map((person) => person.job?.kind);
+    const jobs = harness.society.membersOf(tribe).map((person) => {
+      return person.job?.kind;
+    });
 
     expect(jobs).toContain("gather");
 
@@ -73,7 +80,13 @@ describe("daily life", () => {
 
     harness.run(40);
 
-    expect(Math.min(...members.map((person) => person.hunger))).toBeLessThan(0.6);
+    expect(
+      Math.min(
+        ...members.map((person) => {
+          return person.hunger;
+        })
+      )
+    ).toBeLessThan(0.6);
   });
 
   it("goes to sleep at night", () => {
@@ -83,7 +96,9 @@ describe("daily life", () => {
 
     harness.run(40);
 
-    const sleeping = harness.society.membersOf(tribe).filter((person) => person.job?.kind === "sleep");
+    const sleeping = harness.society.membersOf(tribe).filter((person) => {
+      return person.job?.kind === "sleep";
+    });
 
     expect(sleeping.length).toBeGreaterThan(2);
   });
@@ -95,14 +110,20 @@ describe("daily life", () => {
 
     harness.run(40);
 
-    const sleepers = harness.society.membersOf(tribe).filter((person) => person.pose === "sleep");
+    const sleepers = harness.society.membersOf(tribe).filter((person) => {
+      return person.pose === "sleep";
+    });
 
     expect(sleepers.length).toBeGreaterThan(0);
 
     harness.calendar.setHours(14);
     harness.step();
 
-    expect(sleepers.map((person) => person.job?.kind)).not.toContain("sleep");
+    expect(
+      sleepers.map((person) => {
+        return person.job?.kind;
+      })
+    ).not.toContain("sleep");
   });
 
   it("starves without food", () => {
@@ -137,7 +158,9 @@ describe("danger", () => {
 
     harness.run(2);
 
-    const fleeing = harness.society.membersOf(tribe).filter((person) => person.job?.kind === "flee");
+    const fleeing = harness.society.membersOf(tribe).filter((person) => {
+      return person.job?.kind === "flee";
+    });
 
     expect(fleeing.length).toBeGreaterThan(0);
   });
@@ -170,11 +193,31 @@ describe("people nearby", () => {
     placeOnAxis(fourth, 500);
     harness.society.kill(third, "age");
 
-    expect(harness.society.nearestPerson(0, 0, 50, () => true)).toBe(first);
-    expect(harness.society.nearestPerson(0, 0, 50, (person) => person !== first)).toBe(second);
-    expect(harness.society.nearestPerson(0, 0, 9, () => true)).toBeNull();
-    expect(harness.society.countNear(0, 0, 50, () => true)).toBe(2);
-    expect(harness.society.countNear(0, 0, 50, (person) => person === second)).toBe(1);
+    expect(
+      harness.society.nearestPerson(0, 0, 50, () => {
+        return true;
+      })
+    ).toBe(first);
+    expect(
+      harness.society.nearestPerson(0, 0, 50, (person) => {
+        return person !== first;
+      })
+    ).toBe(second);
+    expect(
+      harness.society.nearestPerson(0, 0, 9, () => {
+        return true;
+      })
+    ).toBeNull();
+    expect(
+      harness.society.countNear(0, 0, 50, () => {
+        return true;
+      })
+    ).toBe(2);
+    expect(
+      harness.society.countNear(0, 0, 50, (person) => {
+        return person === second;
+      })
+    ).toBe(1);
   });
 });
 
@@ -222,7 +265,11 @@ describe("staying dry", () => {
 
     const members = harness.society.membersOf(tribe);
 
-    expect(members.filter((person) => !isOnDryLand(harness, person))).toEqual([]);
+    expect(
+      members.filter((person) => {
+        return !isOnDryLand(harness, person);
+      })
+    ).toEqual([]);
   });
 
   it("walks people out of water that rose around them", () => {

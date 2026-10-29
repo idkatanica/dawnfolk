@@ -15,7 +15,9 @@ export function segmentsUpTo(detail: DetailSteps, segments: number): number {
 }
 
 export function thinned<Point>(points: readonly Point[]): Point[] {
-  return points.filter((_point, index) => index % 2 === 0 || index === points.length - 1);
+  return points.filter((_point, index) => {
+    return index % 2 === 0 || index === points.length - 1;
+  });
 }
 
 export function alongPath<Point>(points: readonly Point[], detail: DetailSteps): Point[] {

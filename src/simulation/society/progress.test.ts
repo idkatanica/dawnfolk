@@ -12,9 +12,15 @@ describe("eras", () => {
     discover(tribe, "fire", "fire", harness.context);
     discover(tribe, "shelter", "shelters", harness.context);
 
-    const eras = harness.chronicle.takeEntries().filter((entry) => entry.category === "era");
+    const eras = harness.chronicle.takeEntries().filter((entry) => {
+      return entry.category === "era";
+    });
 
-    expect(eras.map((entry) => entry.text)).toEqual(["The Bear Clan enters the Stone Age"]);
+    expect(
+      eras.map((entry) => {
+        return entry.text;
+      })
+    ).toEqual(["The Bear Clan enters the Stone Age"]);
     expect(tribe.eraIndex).toBe(1);
   });
 

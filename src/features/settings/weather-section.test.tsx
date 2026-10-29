@@ -39,9 +39,9 @@ describe("weather section", () => {
     await expect.element(screen.getByRole("option", { name: "Changes by itself" })).toBeVisible();
 
     await Promise.all(
-      WEATHER_KINDS.map((kind) =>
-        expect.element(screen.getByRole("option", { name: WEATHER[kind].name })).toBeInTheDocument()
-      )
+      WEATHER_KINDS.map((kind) => {
+        return expect.element(screen.getByRole("option", { name: WEATHER[kind].name })).toBeInTheDocument();
+      })
     );
   });
 

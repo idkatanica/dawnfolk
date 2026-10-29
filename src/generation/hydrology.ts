@@ -161,7 +161,9 @@ function toCellThresholds(grid: WorldGrid, options: HydrologyOptions): CellThres
 }
 
 export function isNearLake(grid: WorldGrid, lakeIds: Int32Array, x: number, z: number, radius: number): boolean {
-  return grid.cellsInRadius(x, z, radius).some((cell) => lakeIds[cell] !== NO_CELL);
+  return grid.cellsInRadius(x, z, radius).some((cell) => {
+    return lakeIds[cell] !== NO_CELL;
+  });
 }
 
 export function touchesOffIsland(grid: WorldGrid, coastDistance: Float32Array, cell: number): boolean {
@@ -516,7 +518,9 @@ function buildRivers(land: RiverLand, chains: readonly RiverChain[]): River[] {
       continue;
     }
 
-    const points = cells.map((cell) => riverPointFor(grid, heights, basins.network, cell, basins.riverThreshold));
+    const points = cells.map((cell) => {
+      return riverPointFor(grid, heights, basins.network, cell, basins.riverThreshold);
+    });
     const lakeId = lakeAtMouth(basins.lakeIds, chain);
     const reachesEdge = chain.mouthReceiver === NO_CELL && chain.joinsCell === NO_CELL;
 
@@ -584,8 +588,12 @@ function offIslandNeighbors(grid: WorldGrid, coastDistance: Float32Array, cell: 
 function cellPastCoast(land: RiverLand, mouthCell: number, claimed: ReadonlySet<number>): number {
   const neighbors = offIslandNeighbors(land.grid, land.coastDistance, mouthCell);
 
-  const outwardX = neighbors.reduce((total, neighbor) => total + neighbor.outwardX, 0);
-  const outwardZ = neighbors.reduce((total, neighbor) => total + neighbor.outwardZ, 0);
+  const outwardX = neighbors.reduce((total, neighbor) => {
+    return total + neighbor.outwardX;
+  }, 0);
+  const outwardZ = neighbors.reduce((total, neighbor) => {
+    return total + neighbor.outwardZ;
+  }, 0);
 
   let best = NO_CELL;
   let bestFacing = Number.NEGATIVE_INFINITY;
@@ -830,7 +838,9 @@ function lowerAlongPath(targets: ChannelTargets, path: readonly number[]): boole
 }
 
 function keepRiversDescending(targets: ChannelTargets, rivers: readonly River[]): void {
-  const paths = rivers.map((river) => riverPathCells(targets.grid, river));
+  const paths = rivers.map((river) => {
+    return riverPathCells(targets.grid, river);
+  });
 
   for (let pass = 0; pass < DESCENT_PASSES; pass += 1) {
     let hasLowered = false;
@@ -905,7 +915,9 @@ function fillPinchedBanks(targets: ChannelTargets): void {
 }
 
 function flowDirectionAt(river: River, mouth: RiverPoint): { directionX: number; directionZ: number } {
-  const upstream = river.points.findLast((point) => Math.hypot(point.x - mouth.x, point.z - mouth.z) >= FLOW_REACH);
+  const upstream = river.points.findLast((point) => {
+    return Math.hypot(point.x - mouth.x, point.z - mouth.z) >= FLOW_REACH;
+  });
   const from = upstream === undefined ? river.points[0] : upstream;
 
   const length = Math.max(1e-6, Math.hypot(mouth.x - from.x, mouth.z - from.z));
@@ -1135,7 +1147,9 @@ export function computeHydrology(
   fillPinchedBanks(targets);
 
   return {
-    carving: targets.uncarvedHeights.map((uncarvedHeight, cell) => uncarvedHeight - heights[cell]),
+    carving: targets.uncarvedHeights.map((uncarvedHeight, cell) => {
+      return uncarvedHeight - heights[cell];
+    }),
     features: { lakes, rivers, springs: springs.springs, waterfalls: findWaterfalls(rivers) },
     lakeIds,
     riverStrength,

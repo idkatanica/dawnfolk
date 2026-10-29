@@ -53,7 +53,9 @@ export const ERAS: readonly EraDefinition[] = [
 export const ERA_COUNT = ERAS.length;
 
 export function eraDefinition(id: EraId): EraDefinition {
-  const definition = ERAS.find((era) => era.id === id);
+  const definition = ERAS.find((era) => {
+    return era.id === id;
+  });
 
   if (definition === undefined) {
     throw new RangeError(`Unknown era ${id}`);

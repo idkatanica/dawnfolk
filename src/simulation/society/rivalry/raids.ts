@@ -78,7 +78,9 @@ function strongerFirst(first: Person, second: Person): number {
 }
 
 export function chooseWarriors(members: readonly Person[]): Person[] {
-  const able = members.filter((person) => isFitForRaid(person) && person.job?.kind !== "flee");
+  const able = members.filter((person) => {
+    return isFitForRaid(person) && person.job?.kind !== "flee";
+  });
 
   return able.toSorted(strongerFirst).slice(0, partySize(able.length));
 }
@@ -114,12 +116,14 @@ export function lossShare(raid: Raid): number {
 }
 
 export function burnableBuilding(buildings: readonly Building[], tribe: Tribe): Building | null {
-  const standing = buildings.filter(
-    (building) => building.tribeId === tribe.id && isComplete(building) && isFlammable(building.kind)
-  );
+  const standing = buildings.filter((building) => {
+    return building.tribeId === tribe.id && isComplete(building) && isFlammable(building.kind);
+  });
 
   for (const role of TORCHED_ROLES) {
-    const target = standing.find((building) => BUILDINGS[building.kind].role === role);
+    const target = standing.find((building) => {
+      return BUILDINGS[building.kind].role === role;
+    });
 
     if (target !== undefined) {
       return target;

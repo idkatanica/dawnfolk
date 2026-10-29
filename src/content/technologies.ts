@@ -174,7 +174,9 @@ export const TECHNOLOGIES: readonly TechnologyDefinition[] = [
 ];
 
 export function technologyDefinition(id: TechnologyId): TechnologyDefinition {
-  const definition = TECHNOLOGIES.find((technology) => technology.id === id);
+  const definition = TECHNOLOGIES.find((technology) => {
+    return technology.id === id;
+  });
 
   if (definition === undefined) {
     throw new RangeError(`Unknown technology ${id}`);
@@ -184,7 +186,12 @@ export function technologyDefinition(id: TechnologyId): TechnologyDefinition {
 }
 
 export function nextTechnology(known: ReadonlySet<TechnologyId>): TechnologyDefinition | undefined {
-  return TECHNOLOGIES.find(
-    (technology) => !known.has(technology.id) && technology.requires.every((required) => known.has(required))
-  );
+  return TECHNOLOGIES.find((technology) => {
+    return (
+      !known.has(technology.id) &&
+      technology.requires.every((required) => {
+        return known.has(required);
+      })
+    );
+  });
 }

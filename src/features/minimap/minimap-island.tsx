@@ -22,7 +22,9 @@ function useMinimapPainter(canvasReference: RefObject<HTMLCanvasElement | null>,
 
     painter.start();
 
-    return () => painter.stop();
+    return () => {
+      return painter.stop();
+    };
   }, [canvasReference, engine]);
 }
 
@@ -71,7 +73,9 @@ function MinimapCanvas({ engine }: { readonly engine: EngineHandle }) {
 
 export function MinimapIsland({ className }: { readonly className?: string | undefined }) {
   const engine = useEngine();
-  const isMapOpen = useInterfaceStore((state) => state.isMapOpen);
+  const isMapOpen = useInterfaceStore((state) => {
+    return state.isMapOpen;
+  });
 
   if (!isMapOpen || engine === null) {
     return null;

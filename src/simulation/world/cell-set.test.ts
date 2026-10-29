@@ -21,7 +21,9 @@ describe("cell set", () => {
       set.add(cell);
     }
 
-    set.retain((cell) => cell % 2 === 0);
+    set.retain((cell) => {
+      return cell % 2 === 0;
+    });
 
     expect([...set.values()]).toEqual([2, 4]);
     expect(set.has(1)).toBe(false);

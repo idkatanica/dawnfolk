@@ -69,7 +69,9 @@ function flatPlane(cut: FlatCut): CuttingPlane {
 export function chiseledStone(random: RandomSource, options: ChiselOptions, detail: number): Shape {
   const { flats = [], radius, roughness } = options;
 
-  const randomPlanes = Array.from({ length: options.cuts }, () => randomPlane(random, options.depth));
+  const randomPlanes = Array.from({ length: options.cuts }, () => {
+    return randomPlane(random, options.depth);
+  });
   const offset: Triple = [random.next() * 40, random.next() * 40, random.next() * 40];
   const planes = [...flats.map(flatPlane), ...randomPlanes];
   const direction = new Vector3();

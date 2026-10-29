@@ -97,9 +97,17 @@ class SimplexVolume implements VolumeNoise {
 }
 
 export function createNoiseSampler(random: RandomSource): NoiseSampler {
-  return new SimplexSampler(createNoise2D(() => random.next()));
+  return new SimplexSampler(
+    createNoise2D(() => {
+      return random.next();
+    })
+  );
 }
 
 export function createVolumeNoise(random: RandomSource): VolumeNoise {
-  return new SimplexVolume(createNoise3D(() => random.next()));
+  return new SimplexVolume(
+    createNoise3D(() => {
+      return random.next();
+    })
+  );
 }

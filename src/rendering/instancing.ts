@@ -65,7 +65,9 @@ export class InterleavedInstances {
   constructor(geometry: InstancedBufferGeometry, fields: readonly InterleavedField[], capacity: number) {
     this.#geometry = geometry;
     this.#fields = fields;
-    this.stride = fields.reduce((sum, field) => sum + field.size, 0);
+    this.stride = fields.reduce((sum, field) => {
+      return sum + field.size;
+    }, 0);
     this.#array = new Float32Array(capacity * this.stride);
     this.#buffer = this.#create(this.#array);
   }
@@ -154,7 +156,9 @@ export class InstanceBatch {
   }
 
   fill(sources: readonly ArrayLike<number>[]): void {
-    const total = sources.reduce((sum, source) => sum + source.length, 0);
+    const total = sources.reduce((sum, source) => {
+      return sum + source.length;
+    }, 0);
 
     this.#count = total / this.#instances.stride;
     this.#instances.ensureCapacity(this.#count);

@@ -26,25 +26,38 @@ export interface PowerStore {
 
 export const usePowerStore = create<PowerStore>()(
   persist(
-    (set) => ({
-      parameters: {},
-      resetParameters: (powerId) =>
-        set((state) => ({ parameters: { ...state.parameters, [powerId]: defaultPowerParameters(powerId) } })),
-      selectedPowerId: null,
-      selectPower: (powerId) => set({ selectedPowerId: powerId }),
-      setParameter: (powerId, key, value) =>
-        set((state) => {
-          const current = parametersOf(state.parameters, powerId);
+    (set) => {
+      return {
+        parameters: {},
+        resetParameters: (powerId) => {
+          return set((state) => {
+            return { parameters: { ...state.parameters, [powerId]: defaultPowerParameters(powerId) } };
+          });
+        },
+        selectedPowerId: null,
+        selectPower: (powerId) => {
+          return set({ selectedPowerId: powerId });
+        },
+        setParameter: (powerId, key, value) => {
+          return set((state) => {
+            const current = parametersOf(state.parameters, powerId);
 
-          return {
-            parameters: { ...state.parameters, [powerId]: readPowerParameters(powerId, { ...current, [key]: value }) },
-          };
-        }),
-    }),
+            return {
+              parameters: {
+                ...state.parameters,
+                [powerId]: readPowerParameters(powerId, { ...current, [key]: value }),
+              },
+            };
+          });
+        },
+      };
+    },
     {
       merge: mergeStored,
       name: STORAGE_KEY,
-      partialize: (state) => ({ parameters: state.parameters }),
+      partialize: (state) => {
+        return { parameters: state.parameters };
+      },
     }
   )
 );

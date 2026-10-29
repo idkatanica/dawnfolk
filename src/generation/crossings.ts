@@ -571,9 +571,9 @@ function wadingAlong(survey: CrossingSurvey, crossing: Crossing): Wading | null 
 function hasSteadyBanks(survey: CrossingSurvey, crossing: Crossing): boolean {
   const { grid, terrain } = survey;
 
-  return [grid.cellAt(crossing.startX, crossing.startZ), grid.cellAt(crossing.endX, crossing.endZ)].every(
-    (cell) => cell >= 0 && !isWaterCell(terrain, cell) && slopeAt(terrain.height, grid, cell) <= LENIENT_BANKS.approach
-  );
+  return [grid.cellAt(crossing.startX, crossing.startZ), grid.cellAt(crossing.endX, crossing.endZ)].every((cell) => {
+    return cell >= 0 && !isWaterCell(terrain, cell) && slopeAt(terrain.height, grid, cell) <= LENIENT_BANKS.approach;
+  });
 }
 
 function logClearsWater(survey: CrossingSurvey, log: LogBridge): boolean {
@@ -631,7 +631,9 @@ class CrossingPlanner {
   constructor(survey: CrossingSurvey, kept: readonly Crossing[]) {
     this.survey = survey;
     this.placed = [...kept];
-    this.#nextId = kept.reduce((highest, crossing) => Math.max(highest, crossing.id + 1), 0);
+    this.#nextId = kept.reduce((highest, crossing) => {
+      return Math.max(highest, crossing.id + 1);
+    }, 0);
   }
 
   planRiver(course: RiverCourse, limits: BankLimits): void {
@@ -661,7 +663,9 @@ class CrossingPlanner {
 
       const last = Math.min(cursor + WINDOW, usableEnd, nextAnchor - SPACING_ALONG);
       const best = this.#bestIn(course, {
-        connects: () => true,
+        connects: () => {
+          return true;
+        },
         from: cursor,
         limits,
         spacing: SPACING_ELSEWHERE,
@@ -691,7 +695,9 @@ class CrossingPlanner {
         }
 
         const best = this.#bestIn(course, {
-          connects: (crossing) => regions.wouldJoin(crossing),
+          connects: (crossing) => {
+            return regions.wouldJoin(crossing);
+          },
           from: Math.max(SOURCE_MARGIN, along - LINK_WINDOW),
           limits: LENIENT_BANKS,
           spacing: LINK_SPACING,
@@ -724,7 +730,9 @@ class CrossingPlanner {
       }
     }
 
-    return anchors.sort((first, second) => first - second);
+    return anchors.sort((first, second) => {
+      return first - second;
+    });
   }
 
   #bestIn(course: RiverCourse, stretch: Stretch): Candidate | null {
@@ -789,9 +797,9 @@ class CrossingPlanner {
   #isClearOfFalls(point: Point): boolean {
     const { grid, lakeIds, water } = this.survey;
 
-    const isNearFall = water.waterfalls.some(
-      (waterfall) => Math.hypot(waterfall.x - point.x, waterfall.z - point.z) < WATERFALL_CLEARANCE
-    );
+    const isNearFall = water.waterfalls.some((waterfall) => {
+      return Math.hypot(waterfall.x - point.x, waterfall.z - point.z) < WATERFALL_CLEARANCE;
+    });
 
     if (isNearFall) {
       return false;
@@ -818,7 +826,9 @@ class BankRegions {
   constructor(survey: CrossingSurvey, crossings: readonly Crossing[]) {
     const { grid } = survey;
 
-    const passages = Array.from({ length: grid.cellCount }, (_, cell) => passageIn(survey, cell));
+    const passages = Array.from({ length: grid.cellCount }, (_, cell) => {
+      return passageIn(survey, cell);
+    });
 
     function passageOf(cell: number): Passage {
       return passages[cell];
@@ -951,7 +961,9 @@ class BankRegions {
 
 export function planCrossings(survey: CrossingSurvey, kept: readonly Crossing[] = []): Crossing[] {
   const planner = new CrossingPlanner(survey, kept);
-  const courses = survey.water.rivers.map((river) => riverCourse(river));
+  const courses = survey.water.rivers.map((river) => {
+    return riverCourse(river);
+  });
 
   for (const limits of [STRICT_BANKS, LENIENT_BANKS]) {
     for (const course of courses) {

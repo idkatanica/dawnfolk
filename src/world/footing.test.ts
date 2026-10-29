@@ -24,7 +24,12 @@ function terrainOf(heightAt: (column: number, row: number) => number): FootingTe
 }
 
 function woodlandOf(density: number) {
-  return { ...terrainOf(() => 100), woodland: new Float32Array(grid.cellCount).fill(density) };
+  return {
+    ...terrainOf(() => {
+      return 100;
+    }),
+    woodland: new Float32Array(grid.cellCount).fill(density),
+  };
 }
 
 function admittedCells(density: number, species: number): number {
@@ -41,19 +46,25 @@ function admittedCells(density: number, species: number): number {
 
 describe("footing", () => {
   it("measures slope as rise over run across a cell", () => {
-    const terrain = terrainOf((column, row) => column * 6 + row * 8);
+    const terrain = terrainOf((column, row) => {
+      return column * 6 + row * 8;
+    });
 
     expect(slopeAt(terrain.height, grid, grid.index(3, 4))).toBeCloseTo(1);
   });
 
   it("takes the one-sided slope at the rim", () => {
-    const terrain = terrainOf((column) => column * 5);
+    const terrain = terrainOf((column) => {
+      return column * 5;
+    });
 
     expect(slopeAt(terrain.height, grid, grid.index(0, 4))).toBeCloseTo(0.25);
   });
 
   it("keeps the rim and the cells beside water off limits", () => {
-    const terrain = terrainOf(() => 100);
+    const terrain = terrainOf(() => {
+      return 100;
+    });
     const pond = grid.index(4, 4);
 
     terrain.waterSurface[pond] = 102;
@@ -66,7 +77,9 @@ describe("footing", () => {
   });
 
   it("keeps everything off the void beyond the coast", () => {
-    const terrain = terrainOf(() => 100);
+    const terrain = terrainOf(() => {
+      return 100;
+    });
     const cliff = grid.index(3, 3);
 
     terrain.coastDistance[cliff] = -4;
@@ -76,7 +89,9 @@ describe("footing", () => {
   });
 
   it("keeps everything out of a bog pool", () => {
-    const terrain = terrainOf(() => 100);
+    const terrain = terrainOf(() => {
+      return 100;
+    });
     const pool = grid.index(3, 3);
 
     terrain.ground[pool] = Ground.Bog;
@@ -87,7 +102,9 @@ describe("footing", () => {
   });
 
   it("lets something stand only where the ground is no steeper than it allows", () => {
-    const terrain = terrainOf((column) => column * column);
+    const terrain = terrainOf((column) => {
+      return column * column;
+    });
 
     const gentle = grid.index(1, 3);
     const steep = grid.index(5, 3);

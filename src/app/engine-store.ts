@@ -6,7 +6,11 @@ interface EngineStore {
   readonly status: EngineStatus;
 }
 
-export const useEngineStore = create<EngineStore>()((set) => ({
-  setStatus: (status) => set({ status }),
-  status: { kind: "loading", progress: null },
-}));
+export const useEngineStore = create<EngineStore>()((set) => {
+  return {
+    setStatus: (status) => {
+      return set({ status });
+    },
+    status: { kind: "loading", progress: null },
+  };
+});

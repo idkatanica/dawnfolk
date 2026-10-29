@@ -46,7 +46,9 @@ export function unpack(stock: Stock, pack: Stock): void {
 }
 
 export function totalGoods(stock: Stock): number {
-  return RESOURCE_KINDS.reduce((total, kind) => total + stock[kind], 0);
+  return RESOURCE_KINDS.reduce((total, kind) => {
+    return total + stock[kind];
+  }, 0);
 }
 
 export function goodsPhrases(stock: Stock): string[] {

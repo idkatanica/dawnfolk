@@ -123,9 +123,9 @@ function addCave(builder: MeshBuilder, mirror: WorldMirror, spring: Spring, mode
   const bury = Math.round(clamp(sinking, SHALLOWEST_BURY, DEEPEST_BURY) * 2) / 2;
 
   const width = caveMouthWidth(spring);
-  const cave = models.model(`cave ${spring.seed} ${width} ${rise} ${bury} ${biome}`, () =>
-    meshCaveMouth({ bury, look: caveLookFor(biome), rise, seed: spring.seed, width })
-  );
+  const cave = models.model(`cave ${spring.seed} ${width} ${rise} ${bury} ${biome}`, () => {
+    return meshCaveMouth({ bury, look: caveLookFor(biome), rise, seed: spring.seed, width });
+  });
 
   const placement = new Matrix4().makeTranslation(spring.x, spring.level, spring.z).multiply(headingOf(spring));
 
@@ -139,11 +139,12 @@ export function areSpringsShapedBy(region: CellRegion | null, mirror: WorldMirro
 
   const { grid } = mirror;
 
-  return mirror.water.springs.some(
-    (spring) =>
+  return mirror.water.springs.some((spring) => {
+    return (
       spring.kind === "cave" &&
       regionsOverlap(region, grid.circleBounds(spring.x, spring.z, groundReach(spring) + grid.cellSize))
-  );
+    );
+  });
 }
 
 class ModelCache {

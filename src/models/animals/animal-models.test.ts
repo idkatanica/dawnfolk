@@ -49,8 +49,16 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     for (const [index, mesh] of buildAnimalParts(kind, "high").entries()) {
       expect(meshProblems(mesh)).toEqual([]);
       expect(new Set(mesh.channels.part)).toEqual(new Set([index]));
-      expect(mesh.channels.boneA.every((bone) => bone < species.skeleton.bones.length)).toBe(true);
-      expect(mesh.channels.boneB.every((bone) => bone < species.skeleton.bones.length)).toBe(true);
+      expect(
+        mesh.channels.boneA.every((bone) => {
+          return bone < species.skeleton.bones.length;
+        })
+      ).toBe(true);
+      expect(
+        mesh.channels.boneB.every((bone) => {
+          return bone < species.skeleton.bones.length;
+        })
+      ).toBe(true);
     }
   });
 
@@ -111,7 +119,9 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
 
   test("uses fewer triangles at every lower level of detail", () => {
     function count(level: (typeof LEVELS)[number]): number {
-      return buildAnimalParts(kind, level).reduce((sum, mesh) => sum + mesh.indices.length, 0);
+      return buildAnimalParts(kind, level).reduce((sum, mesh) => {
+        return sum + mesh.indices.length;
+      }, 0);
     }
 
     expect(count("low")).toBeLessThan(count("high"));
@@ -125,7 +135,11 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
       for (const phase of [0, 0.3, 0.71]) {
         poseAnimal(kind, pose, clip, phase, { variation: 0.4 });
 
-        expect([...pose.angles].every((angle) => Number.isFinite(angle))).toBe(true);
+        expect(
+          [...pose.angles].every((angle) => {
+            return Number.isFinite(angle);
+          })
+        ).toBe(true);
       }
     }
   });
@@ -164,7 +178,9 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
     const stride = measureStride({
       pose: new Pose(species.skeleton.bones.length),
       poser: new SkeletonPoser(species.skeleton),
-      sample: (pose, phase) => poseAnimal(kind, pose, "walk", phase, { variation: 0 }),
+      sample: (pose, phase) => {
+        return poseAnimal(kind, pose, "walk", phase, { variation: 0 });
+      },
       scales: animalBoneScales(kind, appearance),
       skeleton: species.skeleton,
     });
@@ -182,19 +198,23 @@ describe("deer antlers", () => {
         mesh.positions[vertex * 3 + 2],
       ];
 
-      return beams.some((beam) => isInsidePiece(mesh, beam, point));
+      return beams.some((beam) => {
+        return isInsidePiece(mesh, beam, point);
+      });
     });
   }
 
   it.each(["antlersSmall", "antlersLarge"])("grows every tine of %s out of its beam", (name) => {
-    const part = ANIMAL_SPECIES.deer.parts.findIndex((candidate) => candidate.name === name);
+    const part = ANIMAL_SPECIES.deer.parts.findIndex((candidate) => {
+      return candidate.name === name;
+    });
 
     for (const level of LEVELS) {
       const mesh = buildAnimalParts("deer", level)[part];
 
-      const [first, second, ...tines] = meshPieces(mesh).toSorted(
-        (left, right) => right.vertices.length - left.vertices.length
-      );
+      const [first, second, ...tines] = meshPieces(mesh).toSorted((left, right) => {
+        return right.vertices.length - left.vertices.length;
+      });
 
       expect(tines, level).toHaveLength(6);
 

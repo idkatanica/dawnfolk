@@ -234,7 +234,9 @@ export function appearanceParts(appearance: PersonAppearance): HumanPart[] {
     parts.push("boots");
   }
 
-  return parts.filter((part) => part !== null);
+  return parts.filter((part) => {
+    return part !== null;
+  });
 }
 
 function weaponParts(pose: PersonPose, weapon: WeaponKind | null): HumanPart[] {

@@ -50,7 +50,9 @@ function addHill(context: StructureContext, ore: MineOre): void {
 
   addStreakedRock(context, mound, oreLook(ore, ORE_RICHNESS[ore]), {
     buildOrder: rising(0.05, 0.35, 0, 2.9),
-    shade: (point) => 0.72 + 0.12 * Math.min(1, point.position.y / 2.6),
+    shade: (point) => {
+      return 0.72 + 0.12 * Math.min(1, point.position.y / 2.6);
+    },
   });
 }
 

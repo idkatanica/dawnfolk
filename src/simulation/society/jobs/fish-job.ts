@@ -16,9 +16,9 @@ export function findFishingSpot(tick: PersonTick): FishJob | null {
   const { person, tribe } = tick;
   const { navigation, random, world } = tick.context;
 
-  const spot = nearestShore(world, campPoint(tribe), SEARCH_RADIUS, random, (shore) =>
-    navigation.isWithinWalk(person.mover, shore)
-  );
+  const spot = nearestShore(world, campPoint(tribe), SEARCH_RADIUS, random, (shore) => {
+    return navigation.isWithinWalk(person.mover, shore);
+  });
 
   if (spot === null) {
     markScarce(tribe, "fish", tick.context.environment.day);

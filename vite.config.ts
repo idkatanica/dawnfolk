@@ -11,7 +11,9 @@ interface BuiltAsset {
 }
 
 function assetFileName(asset: BuiltAsset): string {
-  const isVideo = asset.names.some((name) => name.endsWith(".mp4"));
+  const isVideo = asset.names.some((name) => {
+    return name.endsWith(".mp4");
+  });
 
   if (isVideo) {
     return "media/[name]-[hash][extname]";

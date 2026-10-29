@@ -6,21 +6,26 @@ import { completedBuilding } from "./tribe-places.ts";
 
 export function completedShelters(tribe: Tribe, context: SocietyContext): Building[] {
   return tribe.buildings.shelterIds
-    .map((shelterId) => completedBuilding(context.buildings, shelterId))
-    .filter((shelter) => shelter !== null);
+    .map((shelterId) => {
+      return completedBuilding(context.buildings, shelterId);
+    })
+    .filter((shelter) => {
+      return shelter !== null;
+    });
 }
 
 export function housingCapacity(tribe: Tribe, context: SocietyContext): number {
-  return completedShelters(tribe, context).reduce(
-    (capacity, shelter) => capacity + BUILDINGS[shelter.kind].capacity,
-    BASE_HOUSING
-  );
+  return completedShelters(tribe, context).reduce((capacity, shelter) => {
+    return capacity + BUILDINGS[shelter.kind].capacity;
+  }, BASE_HOUSING);
 }
 
 export function assignHomes(tribe: Tribe, context: SocietyContext): void {
-  const beds = completedShelters(tribe, context).flatMap((shelter) =>
-    Array.from({ length: BUILDINGS[shelter.kind].capacity }, () => shelter.id)
-  );
+  const beds = completedShelters(tribe, context).flatMap((shelter) => {
+    return Array.from({ length: BUILDINGS[shelter.kind].capacity }, () => {
+      return shelter.id;
+    });
+  });
 
   for (const [index, person] of context.people.membersOf(tribe).entries()) {
     person.homeId = bedAt(beds, index);

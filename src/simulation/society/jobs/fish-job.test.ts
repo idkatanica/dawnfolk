@@ -16,7 +16,11 @@ describe("staying dry", () => {
     const [fisher] = harness.society.membersOf(tribe);
 
     const tick = tickFor(harness, fisher, tribe);
-    const job = Array.from({ length: 6 }, () => findFishingSpot(tick)).find((found) => found !== null);
+    const job = Array.from({ length: 6 }, () => {
+      return findFishingSpot(tick);
+    }).find((found) => {
+      return found !== null;
+    });
 
     if (job === undefined || job === null) {
       throw new Error("Expected a fishing spot by the river");
@@ -38,7 +42,9 @@ describe("staying dry", () => {
         continue;
       }
 
-      const isOnBank = harness.world.grid.cellsInRadius(x, z, 11).some((cell) => harness.world.isWater(cell));
+      const isOnBank = harness.world.grid.cellsInRadius(x, z, 11).some((cell) => {
+        return harness.world.isWater(cell);
+      });
 
       expect(harness.world.isWalkableAt(x, z) && isOnBank).toBe(true);
       fishingSpots += 1;

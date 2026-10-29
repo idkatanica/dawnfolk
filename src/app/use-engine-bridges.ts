@@ -9,9 +9,15 @@ import { useEngine } from "./use-engine.ts";
 
 export function useEngineBridges(): void {
   const engine = useEngine();
-  const worldId = useLaunchStore((state) => state.worldId);
-  const name = useLaunchStore((state) => state.launch.name);
-  const areOutlinesShown = useInterfaceStore((state) => state.areOutlinesShown);
+  const worldId = useLaunchStore((state) => {
+    return state.worldId;
+  });
+  const name = useLaunchStore((state) => {
+    return state.launch.name;
+  });
+  const areOutlinesShown = useInterfaceStore((state) => {
+    return state.areOutlinesShown;
+  });
 
   useEffect(() => {
     if (engine === null) {

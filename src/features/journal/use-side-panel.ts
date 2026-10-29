@@ -19,11 +19,21 @@ function viewOf(inspection: Inspection | null, isJournalOpen: boolean): SidePane
 
 export function useSidePanel() {
   const engine = useEngine();
-  const inspection = useWorldStore((state) => (state.snapshot === null ? null : state.snapshot.inspection));
-  const isJournalOpen = useInterfaceStore((state) => state.isJournalOpen);
-  const journalTab = useInterfaceStore((state) => state.journalTab);
-  const showJournal = useInterfaceStore((state) => state.openJournal);
-  const hideJournal = useInterfaceStore((state) => state.closeJournal);
+  const inspection = useWorldStore((state) => {
+    return state.snapshot === null ? null : state.snapshot.inspection;
+  });
+  const isJournalOpen = useInterfaceStore((state) => {
+    return state.isJournalOpen;
+  });
+  const journalTab = useInterfaceStore((state) => {
+    return state.journalTab;
+  });
+  const showJournal = useInterfaceStore((state) => {
+    return state.openJournal;
+  });
+  const hideJournal = useInterfaceStore((state) => {
+    return state.closeJournal;
+  });
 
   function clearSelection(): void {
     if (engine !== null) {

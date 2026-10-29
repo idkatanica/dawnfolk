@@ -22,16 +22,16 @@ interface Spot {
 function raiseStoneCircles(spots: readonly Spot[], options: Partial<TestWorldOptions> = {}): GeneratedWorld {
   const grid = new WorldGrid(DIMENSIONS);
 
-  const monuments = spots.map(
-    (spot, id): Monument => ({
+  const monuments = spots.map((spot, id): Monument => {
+    return {
       cells: grid.cellsInRadius(spot.x, spot.z, 22),
       id,
       kind: "stoneCircle",
       name: `The Ring ${id + 1}`,
       x: spot.x,
       z: spot.z,
-    })
-  );
+    };
+  });
 
   const generated = createVegetatedWorld({ ...options, dimensions: DIMENSIONS, monuments });
 
@@ -76,7 +76,11 @@ function chronicleOf(simulation: Simulation, seconds: number): string[] {
   const texts: string[] = [];
 
   for (let elapsed = 0; elapsed < seconds; elapsed += 0.1) {
-    texts.push(...simulation.advance(0.1).chronicle.map((entry) => entry.text));
+    texts.push(
+      ...simulation.advance(0.1).chronicle.map((entry) => {
+        return entry.text;
+      })
+    );
   }
 
   return texts;
@@ -96,7 +100,9 @@ describe("monument damage", () => {
     simulation.usePower("meteor", 0, 0, { craterRadius: 140, fallTime: 0.5 });
 
     const texts = chronicleOf(simulation, 1);
-    const damage = simulation.world.monumentConditions.map((condition) => condition.damage);
+    const damage = simulation.world.monumentConditions.map((condition) => {
+      return condition.damage;
+    });
 
     expect(damage).toEqual([
       MonumentDamage.Rubble,
@@ -111,7 +117,11 @@ describe("monument damage", () => {
         "The meteor cracked the Ring 3",
       ])
     );
-    expect(texts.some((text) => text.includes("Ring 4"))).toBe(false);
+    expect(
+      texts.some((text) => {
+        return text.includes("Ring 4");
+      })
+    ).toBe(false);
   });
 
   it("lays the stones down and leaves rubble where the blast was strongest", () => {
@@ -122,7 +132,11 @@ describe("monument damage", () => {
 
     const forms = formsOf(simulation.world, 0);
 
-    expect(forms.filter((form) => form === "upright")).toEqual([]);
+    expect(
+      forms.filter((form) => {
+        return form === "upright";
+      })
+    ).toEqual([]);
     expect(forms.length).toBeGreaterThan(STONES);
   });
 
@@ -132,11 +146,14 @@ describe("monument damage", () => {
 
     simulation.usePower("explosion", 0, 0, {});
 
-    const fallen = Array.from({ length: vegetation.count }, (_, plant) => plant).filter(
-      (plant) =>
+    const fallen = Array.from({ length: vegetation.count }, (_, plant) => {
+      return plant;
+    }).filter((plant) => {
+      return (
         vegetation.species[plant] === PlantSpecies.Menhir &&
         PIECE_FORMS[PlantSpecies.Menhir][formIndexOf(PlantSpecies.Menhir, vegetation.seed[plant])] === "fallen"
-    );
+      );
+    });
 
     const turns = fallen.map((plant) => {
       const outward = Math.atan2(vegetation.x[plant], vegetation.z[plant]);
@@ -176,7 +193,9 @@ describe("monument damage", () => {
     simulation.usePower("earthquake", 0, 0, { magnitude: 100, radius: 300 });
 
     const texts = chronicleOf(simulation, 0.2);
-    const damage = simulation.world.monumentConditions.map((condition) => condition.damage);
+    const damage = simulation.world.monumentConditions.map((condition) => {
+      return condition.damage;
+    });
 
     expect(damage[0]).toBeGreaterThanOrEqual(MonumentDamage.Fallen);
     expect(damage[1]).toBe(MonumentDamage.Leaning);
@@ -188,7 +207,11 @@ describe("monument damage", () => {
 describe("drowned monuments", () => {
   it("tells when a new lake drowns a monument", () => {
     const simulation = new Simulation(
-      raiseStoneCircles([{ x: 5, z: -200 }], { heightAt: (x, z) => 200 + Math.abs(x - 5) * 0.25 + z * 0.02 })
+      raiseStoneCircles([{ x: 5, z: -200 }], {
+        heightAt: (x, z) => {
+          return 200 + Math.abs(x - 5) * 0.25 + z * 0.02;
+        },
+      })
     );
 
     simulation.waterRecomputation.recompute();

@@ -20,7 +20,9 @@ import { FOLIAGE_FLUTTER, type PlantDetailLevel, plantSway } from "./tree-mesher
 const RADIUS_TOLERANCE = 0.2;
 const STORM_PUSH = 2;
 const GROUND_LEVEL = 0.05;
-const SPECIES: readonly PlantSpeciesIndex[] = PLANT_SPECIES.map((definition) => definition.index);
+const SPECIES: readonly PlantSpeciesIndex[] = PLANT_SPECIES.map((definition) => {
+  return definition.index;
+});
 const FOLIAGE_SLOTS: ReadonlySet<number> = new Set([MaterialSlot.Leaf, MaterialSlot.Needle]);
 
 const TREES = [
@@ -38,7 +40,11 @@ const TREES = [
 const MIXED_FORMS: ReadonlySet<PlantSpeciesIndex> = new Set([PlantSpecies.Cactus, PlantSpecies.DeadTree]);
 
 const LYING_FORMS: ReadonlySet<PlantSpeciesIndex> = new Set(
-  PLANT_SPECIES.filter((definition) => definition.form === "monument").map((definition) => definition.index)
+  PLANT_SPECIES.filter((definition) => {
+    return definition.form === "monument";
+  }).map((definition) => {
+    return definition.index;
+  })
 );
 
 function shortestVariantShare(species: PlantSpeciesIndex): number {
@@ -50,7 +56,9 @@ function shortestVariantShare(species: PlantSpeciesIndex): number {
 }
 
 function widestRadius(species: PlantSpeciesIndex): number {
-  return buildPlantVariants(species, "high").reduce((widest, mesh) => Math.max(widest, widestReach(mesh)), 0);
+  return buildPlantVariants(species, "high").reduce((widest, mesh) => {
+    return Math.max(widest, widestReach(mesh));
+  }, 0);
 }
 
 function workingRadius(species: PlantSpeciesIndex): number {
@@ -66,11 +74,17 @@ function workingRadius(species: PlantSpeciesIndex): number {
 function averageTriangles(species: PlantSpeciesIndex, level: PlantDetailLevel): number {
   const variants = buildPlantVariants(species, level);
 
-  return variants.reduce((sum, mesh) => sum + triangleCount(mesh), 0) / variants.length;
+  return (
+    variants.reduce((sum, mesh) => {
+      return sum + triangleCount(mesh);
+    }, 0) / variants.length
+  );
 }
 
 function berryPieces(bush: MeshData): MeshPiece[] {
-  return meshPieces(bush).filter((piece) => isBerryPart(bush.channels.part[piece.vertices[0]]));
+  return meshPieces(bush).filter((piece) => {
+    return isBerryPart(bush.channels.part[piece.vertices[0]]);
+  });
 }
 
 function widestSpan(mesh: MeshData, piece: MeshPiece): number {
@@ -92,9 +106,9 @@ function widestSpan(mesh: MeshData, piece: MeshPiece): number {
 }
 
 function highestVertex(mesh: MeshData, vertices: readonly number[]): number {
-  return vertices.reduce((highest, vertex) =>
-    mesh.positions[vertex * 3 + 1] > mesh.positions[highest * 3 + 1] ? vertex : highest
-  );
+  return vertices.reduce((highest, vertex) => {
+    return mesh.positions[vertex * 3 + 1] > mesh.positions[highest * 3 + 1] ? vertex : highest;
+  });
 }
 
 describe.each(SPECIES)("plant species %i", (species) => {
@@ -122,7 +136,13 @@ describe.each(SPECIES)("plant species %i", (species) => {
       expect(mesh.bounds.maximum[1]).toBeLessThan(height * 1.25);
     }
 
-    expect(Math.max(...variants.map((mesh) => mesh.bounds.maximum[1]))).toBeGreaterThan(height * 0.62);
+    expect(
+      Math.max(
+        ...variants.map((mesh) => {
+          return mesh.bounds.maximum[1];
+        })
+      )
+    ).toBeGreaterThan(height * 0.62);
   });
 
   test("spends fewer triangles further away", () => {
@@ -180,32 +200,50 @@ describe("tree details", () => {
   it.each(TREES)("flutters only the foliage of species %i and sways it more than the trunk foot", (species) => {
     const [mesh] = buildPlantVariants(species, "high");
 
-    const vertices = Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex);
+    const vertices = Array.from({ length: vertexCount(mesh) }, (_, vertex) => {
+      return vertex;
+    });
 
     function isFoliage(vertex: number): boolean {
       return FOLIAGE_SLOTS.has(mesh.channels.slot[vertex]);
     }
 
     const foliage = vertices.filter(isFoliage);
-    const wood = vertices.filter((vertex) => !isFoliage(vertex));
-    const foot = wood.filter((vertex) => mesh.positions[vertex * 3 + 1] < canonicalHeight(species) / 3);
+    const wood = vertices.filter((vertex) => {
+      return !isFoliage(vertex);
+    });
+    const foot = wood.filter((vertex) => {
+      return mesh.positions[vertex * 3 + 1] < canonicalHeight(species) / 3;
+    });
 
     function averageSway(group: readonly number[]): number {
-      return group.reduce((sum, vertex) => sum + mesh.channels.sway[vertex], 0) / group.length;
+      return (
+        group.reduce((sum, vertex) => {
+          return sum + mesh.channels.sway[vertex];
+        }, 0) / group.length
+      );
     }
 
     expect(foliage.length).toBeGreaterThan(0);
-    expect(foliage.every((vertex) => mesh.channels.flutter[vertex] === FOLIAGE_FLUTTER)).toBe(true);
-    expect(wood.every((vertex) => mesh.channels.flutter[vertex] === 0)).toBe(true);
+    expect(
+      foliage.every((vertex) => {
+        return mesh.channels.flutter[vertex] === FOLIAGE_FLUTTER;
+      })
+    ).toBe(true);
+    expect(
+      wood.every((vertex) => {
+        return mesh.channels.flutter[vertex] === 0;
+      })
+    ).toBe(true);
     expect(averageSway(foliage)).toBeGreaterThan(averageSway(foot));
   });
 
   it("sways the top of every willow crown with the tree", () => {
     for (const level of ["high", "medium"] as const) {
       for (const willow of buildPlantVariants(PlantSpecies.Willow, level)) {
-        const foliage = meshPieces(willow).filter(
-          (piece) => willow.channels.flutter[piece.vertices[0]] === FOLIAGE_FLUTTER
-        );
+        const foliage = meshPieces(willow).filter((piece) => {
+          return willow.channels.flutter[piece.vertices[0]] === FOLIAGE_FLUTTER;
+        });
 
         for (const piece of foliage) {
           const top = highestVertex(willow, piece.vertices);
@@ -225,12 +263,22 @@ describe("tree details", () => {
         expect(berries.length).toBeGreaterThan(0);
 
         for (const piece of berries) {
-          const sways = [...new Set(piece.vertices.map((vertex) => bush.channels.sway[vertex]))];
+          const sways = [
+            ...new Set(
+              piece.vertices.map((vertex) => {
+                return bush.channels.sway[vertex];
+              })
+            ),
+          ];
           const middle = (piece.minimum[1] + piece.maximum[1]) / 2;
 
           expect(sways).toHaveLength(1);
           expect(sways[0]).toBeCloseTo(plantSway(middle, canonicalHeight(PlantSpecies.Bush)), 5);
-          expect(piece.vertices.every((vertex) => bush.channels.flutter[vertex] === FOLIAGE_FLUTTER)).toBe(true);
+          expect(
+            piece.vertices.every((vertex) => {
+              return bush.channels.flutter[vertex] === FOLIAGE_FLUTTER;
+            })
+          ).toBe(true);
         }
       }
     }
@@ -242,7 +290,11 @@ describe("tree details", () => {
         const bent = windBentMesh(bush, STORM_PUSH);
 
         for (const piece of berryPieces(bush)) {
-          const ripening = new Set(piece.vertices.map((vertex) => bush.channels.part[vertex]));
+          const ripening = new Set(
+            piece.vertices.map((vertex) => {
+              return bush.channels.part[vertex];
+            })
+          );
 
           expect(ripening.size).toBe(1);
           expect(widestSpan(bush, piece)).toBeLessThan(BERRY_RADIUS * 2.5);
@@ -256,21 +308,26 @@ describe("tree details", () => {
     for (const level of ["high", "medium"] as const) {
       for (const spruce of buildPlantVariants(PlantSpecies.Spruce, level)) {
         const tiers = meshPieces(spruce)
-          .filter((piece) => spruce.channels.slot[piece.vertices[0]] === MaterialSlot.Needle)
-          .sort((first, second) => first.maximum[1] - second.maximum[1]);
+          .filter((piece) => {
+            return spruce.channels.slot[piece.vertices[0]] === MaterialSlot.Needle;
+          })
+          .sort((first, second) => {
+            return first.maximum[1] - second.maximum[1];
+          });
 
         for (const tier of tiers.slice(0, -1)) {
           const tip = highestVertex(spruce, tier.vertices) * 3;
 
-          const isTucked = tiers.some(
-            (other) =>
+          const isTucked = tiers.some((other) => {
+            return (
               other !== tier &&
               isInsidePiece(spruce, other, [
                 spruce.positions[tip],
                 spruce.positions[tip + 1],
                 spruce.positions[tip + 2],
               ])
-          );
+            );
+          });
 
           expect(isTucked).toBe(true);
         }
@@ -303,9 +360,17 @@ describe("tree details", () => {
   it("grows a different kind of cactus from each variant", () => {
     const [saguaro, organPipe, barrel, pricklyPear] = buildPlantVariants(PlantSpecies.Cactus, "high");
 
-    expect(CACTUS_FORMS.map((_form, variant) => cactusForm(variant))).toEqual(CACTUS_FORMS);
+    expect(
+      CACTUS_FORMS.map((_form, variant) => {
+        return cactusForm(variant);
+      })
+    ).toEqual(CACTUS_FORMS);
     expect(saguaro.bounds.maximum[1]).toBeGreaterThan(3);
-    expect(meshPieces(organPipe).filter((piece) => piece.triangles.length > 60).length).toBeGreaterThan(3);
+    expect(
+      meshPieces(organPipe).filter((piece) => {
+        return piece.triangles.length > 60;
+      }).length
+    ).toBeGreaterThan(3);
     expect(barrel.bounds.maximum[1]).toBeLessThan(1.6);
     expect(pricklyPear.channels.slot).toContain(MaterialSlot.Berry);
     expect(saguaro.channels.slot).toContain(MaterialSlot.Blossom);
@@ -314,7 +379,11 @@ describe("tree details", () => {
   it("leaves dead trees bare in every season", () => {
     for (const level of PLANT_DETAIL_LEVELS) {
       for (const snag of buildPlantVariants(PlantSpecies.DeadTree, level)) {
-        expect([...snag.channels.slot].some((slot) => FOLIAGE_SLOTS.has(slot))).toBe(false);
+        expect(
+          [...snag.channels.slot].some((slot) => {
+            return FOLIAGE_SLOTS.has(slot);
+          })
+        ).toBe(false);
         expect(snag.channels.slot).toContain(MaterialSlot.Deadwood);
       }
     }

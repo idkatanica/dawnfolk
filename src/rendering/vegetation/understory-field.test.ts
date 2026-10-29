@@ -24,21 +24,37 @@ describe("understory field", () => {
     const field = new UnderstoryField(mirror);
 
     const shaded = treeCells(mirror);
-    const open = Array.from({ length: mirror.grid.cellCount }, (_, cell) => cell).filter((cell) => !shaded.has(cell));
+    const open = Array.from({ length: mirror.grid.cellCount }, (_, cell) => {
+      return cell;
+    }).filter((cell) => {
+      return !shaded.has(cell);
+    });
 
     expect(shaded.size).toBeGreaterThan(20);
     expect(open.length).toBeGreaterThan(20);
-    expect(Math.max(...[...shaded].map((cell) => field.coverAt(cell)))).toBeLessThan(0.6);
-    expect(open.every((cell) => field.coverAt(cell) === 1)).toBe(true);
+    expect(
+      Math.max(
+        ...[...shaded].map((cell) => {
+          return field.coverAt(cell);
+        })
+      )
+    ).toBeLessThan(0.6);
+    expect(
+      open.every((cell) => {
+        return field.coverAt(cell) === 1;
+      })
+    ).toBe(true);
   });
 
   it("lets the grass back once a tree is gone", () => {
     const mirror = createVegetatedMirror();
     const field = new UnderstoryField(mirror);
 
-    const tree = Array.from({ length: mirror.vegetation.count }, (_, plant) => plant).find((plant) =>
-      isTreeSpecies(mirror.vegetation.species[plant])
-    );
+    const tree = Array.from({ length: mirror.vegetation.count }, (_, plant) => {
+      return plant;
+    }).find((plant) => {
+      return isTreeSpecies(mirror.vegetation.species[plant]);
+    });
 
     if (tree === undefined) {
       throw new Error("The test world should have trees");
@@ -52,7 +68,11 @@ describe("understory field", () => {
       }
     }
 
-    field.plantsChanged(Array.from({ length: mirror.vegetation.count }, (_, plant) => plant));
+    field.plantsChanged(
+      Array.from({ length: mirror.vegetation.count }, (_, plant) => {
+        return plant;
+      })
+    );
 
     expect(field.coverAt(cell)).toBe(1);
   });

@@ -10,9 +10,11 @@ import { placementAt, plantNear, WORK_SPOT_TOLERANCE, workUntilPosed } from "../
 import { firstMemberTick, MORNING, SocietyHarness, settle } from "../../testing/test-society.ts";
 import { findStone } from "./quarry-job.ts";
 
-const ROCKS: readonly PlantSpeciesIndex[] = PLANT_SPECIES.filter((species) => isRockSpecies(species.index)).map(
-  (species) => species.index
-);
+const ROCKS: readonly PlantSpeciesIndex[] = PLANT_SPECIES.filter((species) => {
+  return isRockSpecies(species.index);
+}).map((species) => {
+  return species.index;
+});
 
 describe("quarrying", () => {
   it.each(ROCKS)("breaks stone from rock species %i at its edge and passes monuments by", (species) => {

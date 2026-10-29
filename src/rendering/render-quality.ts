@@ -47,5 +47,7 @@ export const RENDER_QUALITY: Readonly<Record<QualityLevel, RenderQuality>> = {
 };
 
 export function isQualityLevel(value: string): value is QualityLevel {
-  return QUALITY_LEVELS.some((level) => level === value);
+  return QUALITY_LEVELS.some((level) => {
+    return level === value;
+  });
 }

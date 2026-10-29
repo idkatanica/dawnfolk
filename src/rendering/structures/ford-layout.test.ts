@@ -30,21 +30,35 @@ function river(deepest: number): FordSurroundings {
   }
 
   return {
-    heightAt: (x) => heightAt(x),
-    shoreDepthAt: (x) => (Math.abs(x) < VISIBLE_HALF_WIDTH ? WATER_LEVEL + 0.2 - heightAt(x) : -1),
-    waterLevelAt: (x) => (Math.abs(x) < RIVER_HALF_WIDTH ? WATER_LEVEL : NO_WATER),
-    waterSurfaceAt: (x) => (Math.abs(x) < VISIBLE_HALF_WIDTH ? WATER_LEVEL : NO_WATER),
+    heightAt: (x) => {
+      return heightAt(x);
+    },
+    shoreDepthAt: (x) => {
+      return Math.abs(x) < VISIBLE_HALF_WIDTH ? WATER_LEVEL + 0.2 - heightAt(x) : -1;
+    },
+    waterLevelAt: (x) => {
+      return Math.abs(x) < RIVER_HALF_WIDTH ? WATER_LEVEL : NO_WATER;
+    },
+    waterSurfaceAt: (x) => {
+      return Math.abs(x) < VISIBLE_HALF_WIDTH ? WATER_LEVEL : NO_WATER;
+    },
   };
 }
 
 function footpath(stones: readonly FordStone[]): FordStone[] {
   return stones
-    .filter((stone) => stone.kind === "step" || stone.kind === "slab")
-    .sort((first, second) => first.along - second.along);
+    .filter((stone) => {
+      return stone.kind === "step" || stone.kind === "slab";
+    })
+    .sort((first, second) => {
+      return first.along - second.along;
+    });
 }
 
 function widestGap(stones: readonly FordStone[]): number {
-  const sorted = [...stones].sort((first, second) => first.along - first.radius - (second.along - second.radius));
+  const sorted = [...stones].sort((first, second) => {
+    return first.along - first.radius - (second.along - second.radius);
+  });
 
   let reach = sorted[0].along - sorted[0].radius;
   let widest = 0;
@@ -58,7 +72,11 @@ function widestGap(stones: readonly FordStone[]): number {
 }
 
 function averageRadius(stones: readonly FordStone[]): number {
-  return stones.reduce((sum, stone) => sum + stone.radius, 0) / stones.length;
+  return (
+    stones.reduce((sum, stone) => {
+      return sum + stone.radius;
+    }, 0) / stones.length
+  );
 }
 
 describe("layFord", () => {
@@ -83,8 +101,12 @@ describe("layFord", () => {
   it("sets larger stones near the banks than in midstream", () => {
     const stones = footpath(layFord(FORD, river(1.2)).stones);
 
-    const nearBanks = stones.filter((stone) => Math.abs(stone.x) > RIVER_HALF_WIDTH - 2.5);
-    const midstream = stones.filter((stone) => Math.abs(stone.x) < 5);
+    const nearBanks = stones.filter((stone) => {
+      return Math.abs(stone.x) > RIVER_HALF_WIDTH - 2.5;
+    });
+    const midstream = stones.filter((stone) => {
+      return Math.abs(stone.x) < 5;
+    });
 
     expect(nearBanks.length).toBeGreaterThan(1);
     expect(midstream.length).toBeGreaterThan(3);
@@ -95,8 +117,12 @@ describe("layFord", () => {
     const surroundings = river(1.2);
     const stones = footpath(layFord(FORD, surroundings).stones);
 
-    const steps = stones.filter((stone) => stone.kind === "step");
-    const slabs = stones.filter((stone) => stone.kind === "slab");
+    const steps = stones.filter((stone) => {
+      return stone.kind === "step";
+    });
+    const slabs = stones.filter((stone) => {
+      return stone.kind === "slab";
+    });
 
     expect(steps.length).toBeGreaterThan(10);
     expect(slabs.length).toBeGreaterThan(0);
@@ -120,7 +146,9 @@ describe("layFord", () => {
     const { bar } = layFord(FORD, surroundings);
 
     const points = bar.flat();
-    const raised = points.filter((point) => point.grounding === 0);
+    const raised = points.filter((point) => {
+      return point.grounding === 0;
+    });
 
     expect(bar.length).toBeGreaterThan(20);
     expect(raised.length).toBeGreaterThan(bar.length);
@@ -130,14 +158,18 @@ describe("layFord", () => {
       expect(point.y).toBeGreaterThanOrEqual(surroundings.heightAt(point.x, point.z));
     }
 
-    for (const point of points.filter((candidate) => candidate.grounding === 1)) {
+    for (const point of points.filter((candidate) => {
+      return candidate.grounding === 1;
+    })) {
       expect(point.y).toBeLessThan(surroundings.heightAt(point.x, point.z));
     }
   });
 
   it("scatters gravel only where the water is shallow", () => {
     const surroundings = river(2.8);
-    const pebbles = layFord(FORD, surroundings).stones.filter((stone) => stone.kind === "pebble");
+    const pebbles = layFord(FORD, surroundings).stones.filter((stone) => {
+      return stone.kind === "pebble";
+    });
 
     expect(pebbles.length).toBeGreaterThan(20);
 
@@ -151,6 +183,13 @@ describe("layFord", () => {
     const surroundings = river(1.2);
 
     expect(layFord(FORD, surroundings)).toEqual(layFord(FORD, surroundings));
-    expect(layFord(FORD, { ...surroundings, shoreDepthAt: () => -1 })).toEqual({ bar: [], stones: [] });
+    expect(
+      layFord(FORD, {
+        ...surroundings,
+        shoreDepthAt: () => {
+          return -1;
+        },
+      })
+    ).toEqual({ bar: [], stones: [] });
   });
 });

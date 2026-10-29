@@ -121,5 +121,7 @@ export const WILD_BERRY_RULES: Readonly<Record<BiomeIndex, readonly PlantingRule
 };
 
 export function isFruitTreeSpecies(species: number): boolean {
-  return FRUIT_TREE_SPECIES.some((fruitTree) => fruitTree === species);
+  return FRUIT_TREE_SPECIES.some((fruitTree) => {
+    return fruitTree === species;
+  });
 }

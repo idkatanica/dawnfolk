@@ -7,7 +7,9 @@ import { usePowerStore } from "./power-store.ts";
 
 const ELEMENT_POWERS = ["Fire", "Lightning", "Rain", "Snow", "Explosion", "Meteor", "Earthquake", "Tornado"] as const;
 const LAND_POWERS = ["Raise land", "Lower land", "Flatten", "Smooth", "Forest", "Paint ground"] as const;
-const LIFE_POWERS = powersInCategory("life").map((powerId) => POWERS[powerId].name);
+const LIFE_POWERS = powersInCategory("life").map((powerId) => {
+  return POWERS[powerId].name;
+});
 
 describe("power dock", () => {
   it("shows Select, the kinds and the powers of the chosen kind", async () => {
@@ -36,14 +38,18 @@ describe("power dock", () => {
     await kinds.getByRole("button", { name: "Land" }).click();
 
     await Promise.all(
-      LAND_POWERS.map((name) => expect.element(screen.getByRole("button", { exact: true, name })).toBeInTheDocument())
+      LAND_POWERS.map((name) => {
+        return expect.element(screen.getByRole("button", { exact: true, name })).toBeInTheDocument();
+      })
     );
     await expect.element(screen.getByRole("button", { exact: true, name: "Fire" })).not.toBeInTheDocument();
 
     await kinds.getByRole("button", { name: "Life" }).click();
 
     await Promise.all(
-      LIFE_POWERS.map((name) => expect.element(screen.getByRole("button", { exact: true, name })).toBeInTheDocument())
+      LIFE_POWERS.map((name) => {
+        return expect.element(screen.getByRole("button", { exact: true, name })).toBeInTheDocument();
+      })
     );
   });
 

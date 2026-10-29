@@ -136,7 +136,9 @@ export class GroundAlbedo {
   readonly #ground: DataTexture;
   readonly #lushness: DataTexture;
   readonly #material = new NodeMaterial();
-  readonly #palette = GROUNDS.map(() => new Vector4());
+  readonly #palette = GROUNDS.map(() => {
+    return new Vector4();
+  });
   readonly #quad = new QuadMesh(this.#material);
   readonly #target: RenderTarget;
 

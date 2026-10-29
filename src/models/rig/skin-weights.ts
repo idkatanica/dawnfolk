@@ -34,7 +34,12 @@ export function createChain(bones: readonly number[], joints: readonly ChainJoin
     throw new RangeError("A chain needs one bone more than it has joints");
   }
 
-  return { bones, joints: joints.map((joint) => ({ ...joint, axis: normalized(joint.axis) })) };
+  return {
+    bones,
+    joints: joints.map((joint) => {
+      return { ...joint, axis: normalized(joint.axis) };
+    }),
+  };
 }
 
 function signedDistance(joint: ChainJoint, x: number, y: number, z: number): number {
@@ -45,8 +50,12 @@ function signedDistance(joint: ChainJoint, x: number, y: number, z: number): num
 }
 
 export function chainBlend(chain: WeightChain, x: number, y: number, z: number): BoneBlend {
-  const distances = chain.joints.map((joint) => signedDistance(joint, x, y, z));
-  const segment = distances.filter((distance) => distance > 0).length;
+  const distances = chain.joints.map((joint) => {
+    return signedDistance(joint, x, y, z);
+  });
+  const segment = distances.filter((distance) => {
+    return distance > 0;
+  }).length;
   const passed = segment - 1;
 
   if (passed >= 0 && distances[passed] < chain.joints[passed].blend) {
@@ -74,14 +83,22 @@ export function chainBlend(chain: WeightChain, x: number, y: number, z: number):
 
 export function blendStyle(blendAt: (point: SurfacePoint) => BoneBlend): VertexStyle {
   return {
-    boneA: (point) => blendAt(point).boneA,
-    boneB: (point) => blendAt(point).boneB,
-    boneWeight: (point) => blendAt(point).weight,
+    boneA: (point) => {
+      return blendAt(point).boneA;
+    },
+    boneB: (point) => {
+      return blendAt(point).boneB;
+    },
+    boneWeight: (point) => {
+      return blendAt(point).weight;
+    },
   };
 }
 
 export function chainStyle(chain: WeightChain): VertexStyle {
-  return blendStyle((point) => chainBlend(chain, point.position.x, point.position.y, point.position.z));
+  return blendStyle((point) => {
+    return chainBlend(chain, point.position.x, point.position.y, point.position.z);
+  });
 }
 
 export function rigidStyle(bone: number): VertexStyle {

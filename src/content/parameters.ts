@@ -89,7 +89,12 @@ export function toggleParameter(specification: ToggleParameterSpecification) {
 export function choiceParameter<const Value extends string>(specification: ChoiceParameterSpecification<Value>) {
   const [firstOption, ...otherOptions] = specification.options;
 
-  const values: [Value, ...Value[]] = [firstOption.value, ...otherOptions.map((option) => option.value)];
+  const values: [Value, ...Value[]] = [
+    firstOption.value,
+    ...otherOptions.map((option) => {
+      return option.value;
+    }),
+  ];
 
   return z
     .enum(values)

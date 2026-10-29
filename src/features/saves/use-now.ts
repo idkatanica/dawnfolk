@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 
 export function useNow(intervalMilliseconds: number): number {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(() => {
+    return Date.now();
+  });
 
   useEffect(() => {
-    const interval = window.setInterval(() => setNow(Date.now()), intervalMilliseconds);
+    const interval = window.setInterval(() => {
+      return setNow(Date.now());
+    }, intervalMilliseconds);
 
-    return () => window.clearInterval(interval);
+    return () => {
+      return window.clearInterval(interval);
+    };
   }, [intervalMilliseconds]);
 
   return now;

@@ -14,7 +14,12 @@ export function sparseDifference(values: NumericArray, baseline: NumericArray): 
     }
   }
 
-  return { cells: Int32Array.from(cells), values: Float64Array.from(cells, (cell) => values[cell]) };
+  return {
+    cells: Int32Array.from(cells),
+    values: Float64Array.from(cells, (cell) => {
+      return values[cell];
+    }),
+  };
 }
 
 export function applySparse(target: NumericArray, sparse: SparseValues): void {

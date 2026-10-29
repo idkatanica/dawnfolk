@@ -46,7 +46,9 @@ function readSavedWorld(saved: unknown): SavedWorldState {
 }
 
 function channelBuffers(vegetation: VegetationChannels): ArrayBufferLike[] {
-  return VEGETATION_CHANNELS.map((channel) => vegetation[channel].buffer);
+  return VEGETATION_CHANNELS.map((channel) => {
+    return vegetation[channel].buffer;
+  });
 }
 
 function frameBuffers(frame: SimulationFrame): ArrayBufferLike[] {
@@ -55,8 +57,12 @@ function frameBuffers(frame: SimulationFrame): ArrayBufferLike[] {
     frame.animals.buffer,
     frame.burningCells.buffer,
     frame.burningIntensity.buffer,
-    ...frame.surfaceRows.map((rows) => rows.data.buffer),
-    ...frame.groundRows.map((rows) => rows.data.buffer),
+    ...frame.surfaceRows.map((rows) => {
+      return rows.data.buffer;
+    }),
+    ...frame.groundRows.map((rows) => {
+      return rows.data.buffer;
+    }),
   ];
 
   if (frame.heightPatch !== null) {
@@ -79,7 +85,11 @@ function frameBuffers(frame: SimulationFrame): ArrayBufferLike[] {
 }
 
 function uniqueArrayBuffers(buffers: readonly ArrayBufferLike[]): ArrayBuffer[] {
-  const unique = new Set(buffers.filter((buffer): buffer is ArrayBuffer => buffer instanceof ArrayBuffer));
+  const unique = new Set(
+    buffers.filter((buffer): buffer is ArrayBuffer => {
+      return buffer instanceof ArrayBuffer;
+    })
+  );
 
   return [...unique];
 }
@@ -90,7 +100,9 @@ function initialWorldTransferables(world: InitialWorld): ArrayBuffer[] {
   return uniqueArrayBuffers([
     world.ground.buffer,
     world.surface.buffer,
-    ...Object.values(terrain).map((values) => values.buffer),
+    ...Object.values(terrain).map((values) => {
+      return values.buffer;
+    }),
     ...channelBuffers(vegetation),
     ...frameBuffers(world.frame),
   ]);
@@ -126,8 +138,9 @@ export function createSimulationWorkerApi(
 
       return transfer(frame, uniqueArrayBuffers(frameBuffers(frame)));
     },
-    createWorld: (worldRequest, onProgress) =>
-      sendWorld(createSimulation(worldRequest, withSmallSketches(onProgress)), worldRequest),
+    createWorld: (worldRequest, onProgress) => {
+      return sendWorld(createSimulation(worldRequest, withSmallSketches(onProgress)), worldRequest);
+    },
     loadWorld: (saved, onProgress) => {
       const state = readSavedWorld(saved);
 

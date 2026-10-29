@@ -38,7 +38,11 @@ function setBurning(mirror: WorldMirror, burning: ReadonlyMap<number, number>): 
     ...mirror.frame,
     buildings: [],
     burningCells: Int32Array.from(burning.keys()),
-    burningIntensity: Uint8Array.from([...burning.values()].map((intensity) => Math.round(intensity * BYTE))),
+    burningIntensity: Uint8Array.from(
+      [...burning.values()].map((intensity) => {
+        return Math.round(intensity * BYTE);
+      })
+    ),
     tick: mirror.frame.tick + 1,
   };
 }

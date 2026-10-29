@@ -39,13 +39,34 @@ function createRig(): Rig {
   document.body.append(canvas);
 
   const perspective = new PerspectiveCamera(45, CANVAS_WIDTH / CANVAS_HEIGHT, 1, 40_000);
-  const camera = new GodCamera(perspective, () => 0, WORLD_HALF_SIZE);
+  const camera = new GodCamera(
+    perspective,
+    () => {
+      return 0;
+    },
+    WORLD_HALF_SIZE
+  );
 
   camera.jumpTo({ distance: 600, targetX: 0, targetZ: 0 });
   settle(camera);
 
-  const tool = { begin: vi.fn(), end: vi.fn(), hover: vi.fn(), isActive: () => true, move: vi.fn(), tap: vi.fn() };
-  const picker = new GroundPicker(perspective, () => 0, WORLD_HALF_SIZE);
+  const tool = {
+    begin: vi.fn(),
+    end: vi.fn(),
+    hover: vi.fn(),
+    isActive: () => {
+      return true;
+    },
+    move: vi.fn(),
+    tap: vi.fn(),
+  };
+  const picker = new GroundPicker(
+    perspective,
+    () => {
+      return 0;
+    },
+    WORLD_HALF_SIZE
+  );
   const rig = { camera, canvas, controls: new PointerControls(canvas, camera, picker, tool, tool), tool };
 
   rigs.push(rig);

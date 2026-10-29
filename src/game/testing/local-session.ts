@@ -26,23 +26,31 @@ export class LocalSimulationConnection implements SimulationConnection {
   }
 
   advance(realSeconds: number): Promise<SimulationFrame> {
-    return settle(() => this.#api.advance(realSeconds, this.#commands.splice(0)));
+    return settle(() => {
+      return this.#api.advance(realSeconds, this.#commands.splice(0));
+    });
   }
 
   createWorld(request: WorldRequest, onProgress: (progress: GenerationProgress) => void): Promise<InitialWorld> {
     this.#commands.splice(0);
 
-    return settle(() => this.#api.createWorld(request, onProgress));
+    return settle(() => {
+      return this.#api.createWorld(request, onProgress);
+    });
   }
 
   loadWorld(saved: SavedWorldState, onProgress: (progress: GenerationProgress) => void): Promise<InitialWorld> {
     this.#commands.splice(0);
 
-    return settle(() => this.#api.loadWorld(saved, onProgress));
+    return settle(() => {
+      return this.#api.loadWorld(saved, onProgress);
+    });
   }
 
   saveWorld(): Promise<SavedWorldState | null> {
-    return settle(() => this.#api.saveWorld());
+    return settle(() => {
+      return this.#api.saveWorld();
+    });
   }
 
   dispose(): void {
@@ -57,7 +65,11 @@ export class LocalSimulationConnection implements SimulationConnection {
 export async function createLocalSession(
   simulation: Simulation
 ): Promise<{ connection: LocalSimulationConnection; session: GameSession }> {
-  const connection = new LocalSimulationConnection(createSimulationWorkerApi(() => simulation));
+  const connection = new LocalSimulationConnection(
+    createSimulationWorkerApi(() => {
+      return simulation;
+    })
+  );
   const session = await GameSession.create(connection, DEFAULT_WORLD_REQUEST);
 
   return { connection, session };

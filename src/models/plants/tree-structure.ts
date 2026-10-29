@@ -108,7 +108,9 @@ export function tipOf(points: readonly TubePoint[]): TubePoint {
 }
 
 export function endedBelow(points: readonly TubePoint[], ceiling: number): TubePoint[] {
-  const cut = points.findIndex((point) => point.y > ceiling);
+  const cut = points.findIndex((point) => {
+    return point.y > ceiling;
+  });
 
   if (cut <= 0) {
     return [...points];

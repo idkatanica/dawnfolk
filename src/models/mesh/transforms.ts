@@ -50,7 +50,9 @@ export function lerpTriple(from: Triple, to: Triple, amount: number): Triple {
 }
 
 export function combine(...transforms: readonly Matrix4[]): Matrix4 {
-  return transforms.reduce((combined, transform) => combined.multiply(transform), new Matrix4());
+  return transforms.reduce((combined, transform) => {
+    return combined.multiply(transform);
+  }, new Matrix4());
 }
 
 export function onSide(point: Triple, side: Side): Triple {

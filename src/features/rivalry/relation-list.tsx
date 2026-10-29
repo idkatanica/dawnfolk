@@ -27,8 +27,12 @@ function tribePairs<Item>(
   for (const item of items) {
     const [firstId, secondId] = idsOf(item);
 
-    const first = tribes.find((tribe) => tribe.id === firstId);
-    const second = tribes.find((tribe) => tribe.id === secondId);
+    const first = tribes.find((tribe) => {
+      return tribe.id === firstId;
+    });
+    const second = tribes.find((tribe) => {
+      return tribe.id === secondId;
+    });
 
     if (first !== undefined && second !== undefined) {
       pairs.push({ first, item, second });
@@ -93,17 +97,21 @@ function RaidSection({ entries }: { readonly entries: readonly TribePair<RaidVie
       <h3 className="text-ink-soft px-2.5 text-xs font-semibold tracking-wide uppercase">Raids under way</h3>
 
       <ul className="flex flex-col gap-1">
-        {entries.map((entry) => (
-          <RaidRow entry={entry} key={entry.item.id} />
-        ))}
+        {entries.map((entry) => {
+          return <RaidRow entry={entry} key={entry.item.id} />;
+        })}
       </ul>
     </section>
   );
 }
 
 export function RelationList() {
-  const rivalry = useWorldStore((state) => state.snapshot?.rivalry);
-  const tribes = useWorldStore((state) => state.snapshot?.tribes);
+  const rivalry = useWorldStore((state) => {
+    return state.snapshot?.rivalry;
+  });
+  const tribes = useWorldStore((state) => {
+    return state.snapshot?.tribes;
+  });
 
   if (rivalry === undefined || tribes === undefined || rivalry.relations.length === 0) {
     return <p className="text-ink-muted p-3 text-sm">{QUIET_ISLAND}</p>;
@@ -113,12 +121,18 @@ export function RelationList() {
 
   return (
     <div className="flex flex-col gap-3">
-      <RaidSection entries={tribePairs(rivalry.raids, tribes, (raid) => [raid.attackerId, raid.defenderId])} />
+      <RaidSection
+        entries={tribePairs(rivalry.raids, tribes, (raid) => {
+          return [raid.attackerId, raid.defenderId];
+        })}
+      />
 
       <ul aria-label="Relations" className="flex flex-col gap-0.5">
-        {tribePairs(relations, tribes, (relation) => [relation.firstId, relation.secondId]).map((entry) => (
-          <RelationRow entry={entry} key={`${entry.first.id}-${entry.second.id}`} />
-        ))}
+        {tribePairs(relations, tribes, (relation) => {
+          return [relation.firstId, relation.secondId];
+        }).map((entry) => {
+          return <RelationRow entry={entry} key={`${entry.first.id}-${entry.second.id}`} />;
+        })}
       </ul>
     </div>
   );

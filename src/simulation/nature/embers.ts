@@ -45,12 +45,18 @@ export class EmberSystem {
   }
 
   snapshot(): Ember[] {
-    return this.#embers.map((ember) => ({ ...ember }));
+    return this.#embers.map((ember) => {
+      return { ...ember };
+    });
   }
 
   restore(embers: readonly Ember[]): void {
     this.#embers.length = 0;
-    this.#embers.push(...embers.map((ember) => ({ ...ember })));
+    this.#embers.push(
+      ...embers.map((ember) => {
+        return { ...ember };
+      })
+    );
   }
 
   launch(cell: number, wind: EmberWind, random: RandomSource): Ember {

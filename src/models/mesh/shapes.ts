@@ -202,7 +202,9 @@ function profileNormal(profile: readonly ProfilePoint[], index: number): Profile
 }
 
 function totalLengthOf(lengths: readonly number[]): number {
-  const longest = lengths.reduce((maximum, length) => Math.max(maximum, length), 0);
+  const longest = lengths.reduce((maximum, length) => {
+    return Math.max(maximum, length);
+  }, 0);
 
   return Math.max(longest, POLE_RADIUS);
 }
@@ -303,7 +305,13 @@ function sectionLengths(sections: readonly LoftSection[]): number[] {
 }
 
 function loftRing(writer: ShapeWriter, section: LoftSection, along: number, segments: number): Ring {
-  const { centerX = 0, centerZ = 0, ripple = () => 1 } = section;
+  const {
+    centerX = 0,
+    centerZ = 0,
+    ripple = () => {
+      return 1;
+    },
+  } = section;
 
   const placeholderNormal = new Vector3(0, 1, 0);
 
@@ -360,7 +368,13 @@ function panelRow(
   along: number,
   offset: number
 ): number[] {
-  const { centerX = 0, centerZ = 0, ripple = () => 1 } = section;
+  const {
+    centerX = 0,
+    centerZ = 0,
+    ripple = () => {
+      return 1;
+    },
+  } = section;
   const { angularSegments, endAngle, startAngle } = options;
 
   const placeholderNormal = new Vector3(0, 1, 0);
@@ -396,12 +410,12 @@ export function panel(options: PanelOptions): Shape {
 
   const totalLength = totalLengthOf(lengths);
 
-  const outer = sections.map((section, index) =>
-    panelRow(writer, section, options, lengths[index] / totalLength, thickness / 2)
-  );
-  const inner = sections.map((section, index) =>
-    panelRow(writer, section, options, lengths[index] / totalLength, -thickness / 2)
-  );
+  const outer = sections.map((section, index) => {
+    return panelRow(writer, section, options, lengths[index] / totalLength, thickness / 2);
+  });
+  const inner = sections.map((section, index) => {
+    return panelRow(writer, section, options, lengths[index] / totalLength, -thickness / 2);
+  });
 
   for (let row = 0; row < sections.length - 1; row += 1) {
     for (let column = 0; column < angularSegments; column += 1) {
@@ -623,7 +637,9 @@ export function tube(points: readonly TubePoint[], options: TubeOptions = {}): S
 
   const { hasEndCap = true, hasStartCap = true, radialSegments = 6 } = options;
 
-  const centers = points.map((point) => new Vector3(point.x, point.y, point.z));
+  const centers = points.map((point) => {
+    return new Vector3(point.x, point.y, point.z);
+  });
   const writer = new ShapeWriter();
   const rings: Ring[] = [];
 
@@ -782,7 +798,9 @@ export function ribbon(points: readonly TubePoint[]): Shape {
     throw new RangeError("A ribbon needs at least two points");
   }
 
-  const centers = points.map((point) => new Vector3(point.x, point.y, point.z));
+  const centers = points.map((point) => {
+    return new Vector3(point.x, point.y, point.z);
+  });
   const writer = new ShapeWriter();
 
   const frames = transportFrames(tubeTangents(centers));
@@ -902,13 +920,15 @@ export function blob(options: BlobOptions): Shape {
 }
 
 export function lengthwiseLoft(sections: readonly BodySection[], segments: number): Shape {
-  const loftSections = sections.map(({ centerX = 0, centerY, halfHeight, halfWidth, z }) => ({
-    centerX,
-    centerZ: -centerY,
-    radiusX: halfWidth,
-    radiusZ: halfHeight,
-    y: z,
-  }));
+  const loftSections = sections.map(({ centerX = 0, centerY, halfHeight, halfWidth, z }) => {
+    return {
+      centerX,
+      centerZ: -centerY,
+      radiusX: halfWidth,
+      radiusZ: halfHeight,
+      y: z,
+    };
+  });
 
   return transformShape(loft(loftSections, segments), LENGTHWISE);
 }
@@ -952,8 +972,12 @@ class IcosphereMesh {
   readonly #midpoints = new Map<number, number>();
 
   constructor() {
-    this.points = ICOSAHEDRON_VERTICES.map(([x, y, z]) => new Vector3(x, y, z).normalize());
-    this.faces = ICOSAHEDRON_FACES.map(([first, second, third]) => [first, second, third]);
+    this.points = ICOSAHEDRON_VERTICES.map(([x, y, z]) => {
+      return new Vector3(x, y, z).normalize();
+    });
+    this.faces = ICOSAHEDRON_FACES.map(([first, second, third]) => {
+      return [first, second, third];
+    });
   }
 
   subdivide(): void {

@@ -247,8 +247,12 @@ export class SocietyHarness {
       season: this.calendar.season,
       seconds: TICK_SECONDS,
       threats: {
-        dangerNear: (x, z, radius) => this.hazards.dangerNear(x, z, radius),
-        hunterNear: () => null,
+        dangerNear: (x, z, radius) => {
+          return this.hazards.dangerNear(x, z, radius);
+        },
+        hunterNear: () => {
+          return null;
+        },
         people: this.rivalry.senses(this.context),
       },
     });

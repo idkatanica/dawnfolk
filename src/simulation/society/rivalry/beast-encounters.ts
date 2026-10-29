@@ -134,7 +134,9 @@ export class BeastEncounters implements PeopleSense {
   nearest(x: number, z: number, radius: number): Quarry | null {
     const { people } = this.#context;
 
-    const person = people.nearestPerson(x, z, radius, (candidate) => people.findTribe(candidate.tribeId) !== null);
+    const person = people.nearestPerson(x, z, radius, (candidate) => {
+      return people.findTribe(candidate.tribeId) !== null;
+    });
 
     if (person === null) {
       return null;
@@ -205,7 +207,9 @@ export class BeastEncounters implements PeopleSense {
   #describe(person: Person, isPersonSheltered: boolean): Quarry {
     const { x, z } = person.mover;
 
-    const companions = this.#context.people.countNear(x, z, COMPANION_RADIUS, (other) => other !== person);
+    const companions = this.#context.people.countNear(x, z, COMPANION_RADIUS, (other) => {
+      return other !== person;
+    });
     const pairing = companions >= 1 ? PAIRED_FRAILTY : 1;
 
     return {
@@ -224,17 +228,16 @@ export class BeastEncounters implements PeopleSense {
     }
 
     if (canFight(person)) {
-      takeUpJob(
-        person,
-        tribe,
-        this.#context,
-        (tick) => new FightJob(tick, animalFoe(blow.attacker), carriedWeapon(person))
-      );
+      takeUpJob(person, tribe, this.#context, (tick) => {
+        return new FightJob(tick, animalFoe(blow.attacker), carriedWeapon(person));
+      });
 
       return;
     }
 
-    takeUpJob(person, tribe, this.#context, (tick) => new ShelterJob(tick, null));
+    takeUpJob(person, tribe, this.#context, (tick) => {
+      return new ShelterJob(tick, null);
+    });
   }
 
   #rallyKin(person: Person, tribe: Tribe, blow: BeastBlow): void {
@@ -245,7 +248,9 @@ export class BeastEncounters implements PeopleSense {
         continue;
       }
 
-      takeUpJob(kin, tribe, this.#context, (tick) => new FightJob(tick, animalFoe(blow.attacker), carriedWeapon(kin)));
+      takeUpJob(kin, tribe, this.#context, (tick) => {
+        return new FightJob(tick, animalFoe(blow.attacker), carriedWeapon(kin));
+      });
     }
   }
 }

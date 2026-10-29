@@ -61,9 +61,13 @@ const CLUMP_BUILDERS: Readonly<Record<CropKind, ClumpBuilder>> = {
 function plantStyle(context: ClumpContext, slot: MaterialSlotIndex, part: number): VertexStyle {
   return {
     part,
-    shade: (point) => 0.72 + 0.28 * saturate(point.position.y / context.height),
+    shade: (point) => {
+      return 0.72 + 0.28 * saturate(point.position.y / context.height);
+    },
     slot,
-    sway: (point) => plantSway(point.position.y, context.height),
+    sway: (point) => {
+      return plantSway(point.position.y, context.height);
+    },
   };
 }
 
@@ -329,7 +333,11 @@ export function buildFenceModel(length: number, level: CropDetailLevel): MeshDat
         radiusTop: FENCE_POST_RADIUS * 0.85,
       }),
       {
-        style: { shade: (point) => 0.78 + 0.22 * saturate(point.position.y / FENCE_POST_TOP) },
+        style: {
+          shade: (point) => {
+            return 0.78 + 0.22 * saturate(point.position.y / FENCE_POST_TOP);
+          },
+        },
         transform: transformOf({ position: [x, -FENCE_POST_SINK, 0] }),
       }
     );

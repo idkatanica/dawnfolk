@@ -77,7 +77,9 @@ function openingOutline(width: number, height: number, random: RandomSource): Ou
   const halfWidth = width / 2;
   const springLine = height - halfWidth;
 
-  const legs = Array.from({ length: LEG_SEGMENTS }, (_, step) => lerp(-SILL_DEPTH, springLine, step / LEG_SEGMENTS));
+  const legs = Array.from({ length: LEG_SEGMENTS }, (_, step) => {
+    return lerp(-SILL_DEPTH, springLine, step / LEG_SEGMENTS);
+  });
   const arch = Array.from({ length: ARCH_SEGMENTS + 1 }, (_, step) => {
     const angle = Math.PI * (1 - step / ARCH_SEGMENTS);
     const swell = 1 + random.signed() * 0.05;
@@ -91,9 +93,13 @@ function openingOutline(width: number, height: number, random: RandomSource): Ou
   });
 
   return [
-    ...legs.map((y) => ({ outwardX: -1, outwardY: 0, x: -halfWidth, y })),
+    ...legs.map((y) => {
+      return { outwardX: -1, outwardY: 0, x: -halfWidth, y };
+    }),
     ...arch,
-    ...legs.toReversed().map((y) => ({ outwardX: 1, outwardY: 0, x: halfWidth, y })),
+    ...legs.toReversed().map((y) => {
+      return { outwardX: 1, outwardY: 0, x: halfWidth, y };
+    }),
   ];
 }
 
@@ -120,11 +126,13 @@ function insideRing(opening: Opening, step: number, random: RandomSource): Point
   const share = step / INSIDE_RINGS;
   const narrowing = 1 - INSIDE_NARROWING * share;
 
-  return opening.outline.map((point, index) => ({
-    x: point.x * narrowing + random.signed() * 0.12,
-    y: isBottom(index, opening.outline) ? point.y : point.y * narrowing + random.signed() * 0.12,
-    z: LIP_Z - opening.depth * share,
-  }));
+  return opening.outline.map((point, index) => {
+    return {
+      x: point.x * narrowing + random.signed() * 0.12,
+      y: isBottom(index, opening.outline) ? point.y : point.y * narrowing + random.signed() * 0.12,
+      z: LIP_Z - opening.depth * share,
+    };
+  });
 }
 
 function outcropShape(opening: Opening, options: CaveMouthOptions, random: RandomSource): Shape {
@@ -135,16 +143,16 @@ function outcropShape(opening: Opening, options: CaveMouthOptions, random: Rando
   const lowest = Math.max(options.bury, SILL_DEPTH + 1);
   const length = Math.max(opening.width / BODY_WIDTH, 1);
 
-  const face = FACE_RINGS.map((ring, index) =>
-    writer.addRing(
+  const face = FACE_RINGS.map((ring, index) => {
+    return writer.addRing(
       faceRing(
         opening,
         { ...ring, drop: lerp(0, lowest - SILL_DEPTH, index / (FACE_RINGS.length - 1)), z: ring.z * length },
         spread,
         random
       )
-    )
-  );
+    );
+  });
 
   let [outermost] = face;
 
@@ -234,7 +242,9 @@ class ShapeWriter {
   }
 
   addRing(points: readonly Point[]): number[] {
-    return points.map((point) => this.addPoint(point));
+    return points.map((point) => {
+      return this.addPoint(point);
+    });
   }
 
   addTriangle(first: number, second: number, third: number): void {

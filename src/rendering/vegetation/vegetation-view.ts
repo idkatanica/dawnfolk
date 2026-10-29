@@ -60,7 +60,9 @@ function crownMiddle(models: readonly PlantModel[], species: number): number {
   let lowest = Number.POSITIVE_INFINITY;
   let highest = Number.NEGATIVE_INFINITY;
 
-  for (const { mesh } of models.filter((model) => model.species === species)) {
+  for (const { mesh } of models.filter((model) => {
+    return model.species === species;
+  })) {
     const { channels, positions } = mesh;
 
     for (const [vertex, slot] of channels.slot.entries()) {
@@ -101,7 +103,9 @@ function chunkLevelOf(chunk: VegetationChunk, camera: PerspectiveCamera, frustum
 
   const distance = chunk.bounds.distanceToPoint(camera.position);
 
-  return LEVEL_DISTANCES.findIndex((limit) => distance < limit * detail);
+  return LEVEL_DISTANCES.findIndex((limit) => {
+    return distance < limit * detail;
+  });
 }
 
 function fillPlants(plants: PlantBatch, chunks: readonly VegetationChunk[], casterCount: number): void {
@@ -148,18 +152,20 @@ export class VegetationView {
     this.chunks = new VegetationChunks(mirror);
     this.#chunkLevels = new Int8Array(this.chunks.chunks.length).fill(HIDDEN_LEVEL);
     this.#chunkShadows = new Uint8Array(this.chunks.chunks.length);
-    this.#looks = PLANT_SPECIES.map(() => new SpeciesLook());
+    this.#looks = PLANT_SPECIES.map(() => {
+      return new SpeciesLook();
+    });
 
-    const models = PLANT_DETAIL_LEVELS.map((level) =>
-      bucketGroups(level).map((buckets) => {
+    const models = PLANT_DETAIL_LEVELS.map((level) => {
+      return bucketGroups(level).map((buckets) => {
         const { species, variant } = PLANT_BUCKETS[buckets[0]];
 
         return { buckets, mesh: buildPlantVariant(species, variant, level), species };
-      })
-    );
+      });
+    });
 
-    const materials = this.#looks.map((look, species) =>
-      createPlantMaterial({
+    const materials = this.#looks.map((look, species) => {
+      return createPlantMaterial({
         crown: {
           hasTiers: species === PlantSpecies.Spruce,
           middle: crownMiddle(models[0], species),
@@ -170,20 +176,22 @@ export class VegetationView {
         look,
         textures,
         weather: this.weather,
-      })
-    );
+      });
+    });
 
-    this.#batches = models.map((levelModels, levelIndex) =>
-      levelModels.map(({ buckets, mesh, species }) =>
-        this.#createBatch(geometryFromMeshData(mesh, PLANT_CHANNELS), materials[species], levelIndex, buckets)
-      )
-    );
+    this.#batches = models.map((levelModels, levelIndex) => {
+      return levelModels.map(({ buckets, mesh, species }) => {
+        return this.#createBatch(geometryFromMeshData(mesh, PLANT_CHANNELS), materials[species], levelIndex, buckets);
+      });
+    });
 
-    this.#shadowProxies = models[SHADOW_PROXY_LEVEL].map(({ buckets, mesh, species }) =>
-      this.#createShadowProxy(geometryFromMeshData(mesh, PLANT_CHANNELS), materials[species], buckets)
-    );
+    this.#shadowProxies = models[SHADOW_PROXY_LEVEL].map(({ buckets, mesh, species }) => {
+      return this.#createShadowProxy(geometryFromMeshData(mesh, PLANT_CHANNELS), materials[species], buckets);
+    });
 
-    this.#changedBuckets = this.#batches.map(() => new Set<number>());
+    this.#changedBuckets = this.#batches.map(() => {
+      return new Set<number>();
+    });
   }
 
   plantsChanged(indices: readonly number[]): void {
@@ -321,23 +329,33 @@ export class VegetationView {
         continue;
       }
 
-      const casters = this.chunks.chunks.filter(
-        (_chunk, index) => this.#chunkLevels[index] === level && this.#chunkShadows[index] === 1
-      );
-      const others = this.chunks.chunks.filter(
-        (_chunk, index) => this.#chunkLevels[index] === level && this.#chunkShadows[index] === 0
-      );
+      const casters = this.chunks.chunks.filter((_chunk, index) => {
+        return this.#chunkLevels[index] === level && this.#chunkShadows[index] === 1;
+      });
+      const others = this.chunks.chunks.filter((_chunk, index) => {
+        return this.#chunkLevels[index] === level && this.#chunkShadows[index] === 0;
+      });
       const chunks = [...casters, ...others];
 
       for (const batch of batches) {
-        if (isWhole || batch.buckets.some((bucket) => changed.has(bucket))) {
+        if (
+          isWhole ||
+          batch.buckets.some((bucket) => {
+            return changed.has(bucket);
+          })
+        ) {
           fillPlants(batch, chunks, casters.length);
         }
       }
 
       if (level === NEAREST_LEVEL) {
         for (const proxy of this.#shadowProxies) {
-          if (isWhole || proxy.buckets.some((bucket) => changed.has(bucket))) {
+          if (
+            isWhole ||
+            proxy.buckets.some((bucket) => {
+              return changed.has(bucket);
+            })
+          ) {
             fillPlants(proxy, casters, casters.length);
           }
         }

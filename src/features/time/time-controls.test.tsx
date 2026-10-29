@@ -15,11 +15,11 @@ describe("time controls", () => {
     await expect.element(screen.getByRole("button", { exact: true, name: "Resume" })).toBeVisible();
 
     await Promise.all(
-      SIMULATION_SPEEDS.map((speed) =>
-        expect
+      SIMULATION_SPEEDS.map((speed) => {
+        return expect
           .element(screen.getByRole("button", { exact: true, name: `Speed ${speed} times` }))
-          .toHaveAttribute("aria-pressed", "false")
-      )
+          .toHaveAttribute("aria-pressed", "false");
+      })
     );
   });
 

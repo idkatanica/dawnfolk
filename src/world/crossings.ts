@@ -194,7 +194,9 @@ export function crossingCells(grid: WorldGrid, crossing: Crossing, margin = 0): 
     }
   }
 
-  return [...cells].sort((first, second) => first - second);
+  return [...cells].sort((first, second) => {
+    return first - second;
+  });
 }
 
 export class CrossingIndex {

@@ -54,12 +54,12 @@ const gradientDot = Fn(([hash, x, y, z]: [Node<"uint">, Node<"float">, Node<"flo
   type: "float",
 });
 
-const fade = Fn(([value]: [Node<"float">]) =>
-  value
+const fade = Fn(([value]: [Node<"float">]) => {
+  return value
     .mul(value)
     .mul(value)
-    .mul(value.mul(value.mul(6).sub(15)).add(10))
-).setLayout({
+    .mul(value.mul(value.mul(6).sub(15)).add(10));
+}).setLayout({
   inputs: [{ name: "value", type: "float" }],
   name: "waveFade",
   type: "float",
@@ -79,14 +79,14 @@ function perlinFromHashes(
   y: Node<"float">,
   z: Node<"float">
 ): Node<"float"> {
-  const slopes = CORNERS.map((corner) =>
-    gradientDot(
+  const slopes = CORNERS.map((corner) => {
+    return gradientDot(
       hashes[corner],
       corner % 2 === 0 ? x : x.sub(1),
       Math.floor(corner / 2) % 2 === 0 ? y : y.sub(1),
       corner < 4 ? z : z.sub(1)
-    )
-  );
+    );
+  });
 
   const weightX = fade(x).toVar();
   const weightY = fade(y).toVar();
@@ -114,9 +114,15 @@ export const perlinWithSteps = Fn(
     const eastColumn = int(floor(point.x.add(step).mul(frequency))).toVar();
     const southRow = int(floor(point.y.add(step).mul(frequency))).toVar();
 
-    const center = CORNERS.map((corner) => cornerHash(column, row, depth, corner).toVar());
-    const east = center.map((hash) => hash.toVar());
-    const south = center.map((hash) => hash.toVar());
+    const center = CORNERS.map((corner) => {
+      return cornerHash(column, row, depth, corner).toVar();
+    });
+    const east = center.map((hash) => {
+      return hash.toVar();
+    });
+    const south = center.map((hash) => {
+      return hash.toVar();
+    });
 
     If(eastColumn.notEqual(column), () => {
       for (const corner of [0, 2, 4, 6] as const) {

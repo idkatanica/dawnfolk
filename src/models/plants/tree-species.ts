@@ -387,7 +387,9 @@ function spruce(seed: number): TreeStructure {
 function addSpruceStubs(growth: Growth, trunk: readonly TubePoint[], height: number): void {
   const { random } = growth;
 
-  const skirts = growth.foliage.filter((item) => item.kind === "skirt");
+  const skirts = growth.foliage.filter((item) => {
+    return item.kind === "skirt";
+  });
 
   for (const [tier, skirt] of skirts.slice(0, -BARE_TOP_TIERS).entries()) {
     for (let stub = 0; stub < STUBS_PER_TIER; stub += 1) {
@@ -408,14 +410,20 @@ function addSpruceStubs(growth: Growth, trunk: readonly TubePoint[], height: num
 }
 
 function skirtCeiling(foliage: readonly Foliage[]): number {
-  const skirts = foliage.filter((item) => item.kind === "skirt");
-  const highest = skirts.reduce((top, skirt) => (skirt.top > top.top ? skirt : top));
+  const skirts = foliage.filter((item) => {
+    return item.kind === "skirt";
+  });
+  const highest = skirts.reduce((top, skirt) => {
+    return skirt.top > top.top ? skirt : top;
+  });
 
   return lerp(highest.top, highest.bottom, TUCKED_SHARE);
 }
 
 function tuckTrunk(growth: Growth, ceiling: number): void {
-  const index = growth.branches.findIndex((branch) => branch.depth === 0);
+  const index = growth.branches.findIndex((branch) => {
+    return branch.depth === 0;
+  });
   const trunk = growth.branches[index];
 
   growth.branches[index] = { ...trunk, points: endedBelow(trunk.points, ceiling) };
@@ -543,7 +551,11 @@ function palm(seed: number): TreeStructure {
 
   growth.branches.push({
     depth: 0,
-    points: rooted(trunk.map((point, index) => (index === 0 ? { ...point, radius: 0.42 } : point))),
+    points: rooted(
+      trunk.map((point, index) => {
+        return index === 0 ? { ...point, radius: 0.42 } : point;
+      })
+    ),
   });
 
   const crown = toVector(tipOf(trunk));

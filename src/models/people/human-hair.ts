@@ -71,7 +71,9 @@ const LOW_CURTAIN_RINGS: readonly CurtainRing[] = [
 ];
 
 function sectionAt(sections: readonly LoftSection[], y: number): LoftSection {
-  const upperIndex = sections.findIndex((section) => section.y >= y);
+  const upperIndex = sections.findIndex((section) => {
+    return section.y >= y;
+  });
 
   if (upperIndex <= 0) {
     return sections[0];
@@ -107,7 +109,11 @@ function headShell(detail: HumanDetail, options: ShellOptions): Shape {
   const sections: LoftSection[] = [
     { centerZ, radiusX: 0, radiusZ: 0, y: bottom },
     grown(bottomSection, offset),
-    ...HEAD_PROFILE.filter((section) => section.y > bottom + 0.012).map((section) => grown(section, offset)),
+    ...HEAD_PROFILE.filter((section) => {
+      return section.y > bottom + 0.012;
+    }).map((section) => {
+      return grown(section, offset);
+    }),
     { centerZ: -0.012, radiusX: 0, radiusZ: 0, y: HEAD_CROWN + offset },
   ];
   const shell = loft(alongPath(sections, detail), detail.headSegments + 2);
@@ -192,7 +198,9 @@ function curtainSection(ring: CurtainRing, strands: number): LoftSection {
     centerZ: centerZ - ring.flare * 0.8,
     radiusX: radiusX + reach,
     radiusZ: radiusZ + reach,
-    ripple: (around) => 1 + 0.035 * Math.abs(Math.sin(around * Math.PI * strands)) * smoothstep(1.66, 1.5, ring.y),
+    ripple: (around) => {
+      return 1 + 0.035 * Math.abs(Math.sin(around * Math.PI * strands)) * smoothstep(1.66, 1.5, ring.y);
+    },
     y: ring.y,
   };
 }
@@ -203,7 +211,11 @@ function curtainShape(detail: HumanDetail): Shape {
   const curtain = panel({
     angularSegments: detail.hasFineDetails ? 14 : 8,
     endAngle: CURTAIN_END,
-    sections: rings.map((ring) => curtainSection(ring, strands)).reverse(),
+    sections: rings
+      .map((ring) => {
+        return curtainSection(ring, strands);
+      })
+      .reverse(),
     startAngle: CURTAIN_START,
     thickness: CURTAIN_THICKNESS,
   });

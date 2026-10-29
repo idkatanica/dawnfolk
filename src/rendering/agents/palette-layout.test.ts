@@ -23,7 +23,11 @@ describe("palette layout", () => {
 
     expect(indices[MaterialSlot.Skin]).toBe(0);
     expect(indices[MaterialSlot.Hair]).toBe(1);
-    expect(indices.filter((index) => index >= 0)).toHaveLength(2);
+    expect(
+      indices.filter((index) => {
+        return index >= 0;
+      })
+    ).toHaveLength(2);
     expect(indices).toHaveLength(56);
   });
 });

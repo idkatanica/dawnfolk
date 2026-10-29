@@ -59,9 +59,13 @@ export const RESOURCES: Readonly<Record<ResourceKind, ResourceDefinition>> = {
 };
 
 export function isFoodKind(kind: string): kind is FoodKind {
-  return FOOD_KINDS.some((food) => food === kind);
+  return FOOD_KINDS.some((food) => {
+    return food === kind;
+  });
 }
 
 export function resourcesInGroup(group: ResourceGroup): readonly ResourceKind[] {
-  return RESOURCE_KINDS.filter((kind) => RESOURCES[kind].group === group);
+  return RESOURCE_KINDS.filter((kind) => {
+    return RESOURCES[kind].group === group;
+  });
 }

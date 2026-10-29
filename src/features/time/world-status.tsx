@@ -62,7 +62,9 @@ function DayRing({ hours }: { readonly hours: number }) {
 }
 
 function WeatherReading() {
-  const weather = useWorldStore((state) => state.snapshot?.weather);
+  const weather = useWorldStore((state) => {
+    return state.snapshot?.weather;
+  });
 
   if (weather === undefined) {
     return null;
@@ -80,10 +82,14 @@ function WeatherReading() {
 }
 
 function PopulationReading() {
-  const population = useWorldStore((state) =>
-    state.snapshot?.tribes.reduce((total, tribe) => total + tribe.population, 0)
-  );
-  const tribeCount = useWorldStore((state) => state.snapshot?.tribes.length);
+  const population = useWorldStore((state) => {
+    return state.snapshot?.tribes.reduce((total, tribe) => {
+      return total + tribe.population;
+    }, 0);
+  });
+  const tribeCount = useWorldStore((state) => {
+    return state.snapshot?.tribes.length;
+  });
 
   if (population === undefined || tribeCount === undefined) {
     return null;
@@ -103,7 +109,9 @@ function PopulationReading() {
 }
 
 export function CompactClock() {
-  const calendar = useWorldStore((state) => state.snapshot?.calendar);
+  const calendar = useWorldStore((state) => {
+    return state.snapshot?.calendar;
+  });
 
   if (calendar === undefined) {
     return null;
@@ -126,7 +134,9 @@ export function CompactClock() {
 }
 
 export function WorldStatus() {
-  const calendar = useWorldStore((state) => state.snapshot?.calendar);
+  const calendar = useWorldStore((state) => {
+    return state.snapshot?.calendar;
+  });
 
   if (calendar === undefined) {
     return null;

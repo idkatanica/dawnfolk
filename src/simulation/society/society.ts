@@ -130,14 +130,18 @@ export class SocietySystem {
   }
 
   get population(): number {
-    return this.#people.filter((person) => person.isAlive).length;
+    return this.#people.filter((person) => {
+      return person.isAlive;
+    }).length;
   }
 
   snapshot(): SocietySnapshot {
     return {
       people: this.#people.map(savedPerson),
       tribeNumber: this.#tribeNumber,
-      tribes: this.#tribes.map((tribe) => structuredClone({ ...tribe, claimedPlants: new Set<number>() })),
+      tribes: this.#tribes.map((tribe) => {
+        return structuredClone({ ...tribe, claimedPlants: new Set<number>() });
+      }),
       trodden: this.#trodden.snapshot(),
     };
   }
@@ -185,12 +189,20 @@ export class SocietySystem {
   }
 
   membersOf(tribe: Tribe): Person[] {
-    return this.#people.filter((person) => person.isAlive && person.tribeId === tribe.id);
+    return this.#people.filter((person) => {
+      return person.isAlive && person.tribeId === tribe.id;
+    });
   }
 
   membersOfEach(tribes: readonly Tribe[]): Person[][] {
-    const positions = new Map(tribes.map((tribe, position) => [tribe.id, position]));
-    const members = tribes.map((): Person[] => []);
+    const positions = new Map(
+      tribes.map((tribe, position) => {
+        return [tribe.id, position];
+      })
+    );
+    const members = tribes.map((): Person[] => {
+      return [];
+    });
 
     for (const person of this.#people) {
       const position = positions.get(person.tribeId);
@@ -313,7 +325,9 @@ export class SocietySystem {
   }
 
   livingWithin(x: number, z: number, radius: number): Person[] {
-    return this.#people.filter((person) => isLivingWithin(person, x, z, radius));
+    return this.#people.filter((person) => {
+      return isLivingWithin(person, x, z, radius);
+    });
   }
 
   countNear(x: number, z: number, radius: number, accepts: (person: Person) => boolean): number {
@@ -413,7 +427,9 @@ export class SocietySystem {
     const { buildings, chronicle } = this.#dependencies;
 
     buildings.abandonTribe(tribe.id);
-    this.#tribes = this.#tribes.filter((candidate) => candidate !== tribe);
+    this.#tribes = this.#tribes.filter((candidate) => {
+      return candidate !== tribe;
+    });
     this.#tribesById.delete(tribe.id);
     chronicle.record({
       category: "death",
@@ -474,7 +490,9 @@ export class SocietySystem {
   }
 
   #removeRemains(): void {
-    const hasExpired = this.#people.some((person) => !person.isAlive && person.deathSeconds > CORPSE_SECONDS);
+    const hasExpired = this.#people.some((person) => {
+      return !person.isAlive && person.deathSeconds > CORPSE_SECONDS;
+    });
 
     if (!hasExpired) {
       return;

@@ -1,5 +1,10 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "css": {
+    "formatter": {
+      "lineWidth": 120
+    }
+  },
   "extends": ["ultracite/biome/core", "ultracite/biome/react", "ultracite/biome/vitest"],
   "files": {
     "includes": ["!!.claude"]
@@ -7,14 +12,21 @@
   "formatter": {
     "lineWidth": 120
   },
-  "css": {
+  "json": {
     "formatter": {
       "lineWidth": 120
     }
   },
-  "json": {
-    "formatter": {
-      "lineWidth": 120
+  "linter": {
+    "rules": {
+      "style": {
+        "useConsistentArrowReturn": {
+          "level": "error",
+          "options": {
+            "style": "always"
+          }
+        }
+      }
     }
   },
   "overrides": [

@@ -4,7 +4,9 @@ import { type MeshData, vertexCount } from "./mesh-data.ts";
 import { sphere, tube } from "./shapes.ts";
 import { transformOf } from "./transforms.ts";
 
-const LIMB = [0, 0.9, 1.05, 1.3, 2].map((y) => ({ radius: 0.3, x: 0, y, z: 0 }));
+const LIMB = [0, 0.9, 1.05, 1.3, 2].map((y) => {
+  return { radius: 0.3, x: 0, y, z: 0 };
+});
 
 function seamOf(reach: number | null): { seam?: number } {
   return reach === null ? {} : { seam: reach };
@@ -31,18 +33,24 @@ function normalAngle(first: MeshData, second: MeshData, vertex: number): number 
 }
 
 function verticesWhere(mesh: MeshData, test: (x: number, y: number, z: number, part: number) => boolean): number[] {
-  return Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex).filter((vertex) =>
-    test(
+  return Array.from({ length: vertexCount(mesh) }, (_, vertex) => {
+    return vertex;
+  }).filter((vertex) => {
+    return test(
       mesh.positions[vertex * 3],
       mesh.positions[vertex * 3 + 1],
       mesh.positions[vertex * 3 + 2],
       mesh.channels.part[vertex]
-    )
-  );
+    );
+  });
 }
 
 function verticalness(mesh: MeshData, vertices: readonly number[]): number {
-  return vertices.reduce((sum, vertex) => sum + Math.abs(mesh.normals[vertex * 3 + 1]), 0) / vertices.length;
+  return (
+    vertices.reduce((sum, vertex) => {
+      return sum + Math.abs(mesh.normals[vertex * 3 + 1]);
+    }, 0) / vertices.length
+  );
 }
 
 describe("seam normals", () => {
@@ -50,8 +58,12 @@ describe("seam normals", () => {
   const blended = limbOnBody(0.3, 0.3);
 
   it("turns both surfaces toward each other where a limb leaves a body", () => {
-    const limbAtSeam = verticesWhere(plain, (_x, y, _z, part) => part === 1 && Math.abs(y - 1.05) < 1e-4);
-    const bodyAtSeam = verticesWhere(plain, (x, y, z, part) => part === 0 && y > 0.9 && Math.hypot(x, z) > 0.3);
+    const limbAtSeam = verticesWhere(plain, (_x, y, _z, part) => {
+      return part === 1 && Math.abs(y - 1.05) < 1e-4;
+    });
+    const bodyAtSeam = verticesWhere(plain, (x, y, z, part) => {
+      return part === 0 && y > 0.9 && Math.hypot(x, z) > 0.3;
+    });
 
     expect(limbAtSeam.length).toBeGreaterThan(0);
     expect(bodyAtSeam.length).toBeGreaterThan(0);
@@ -60,7 +72,9 @@ describe("seam normals", () => {
   });
 
   it("leaves normals away from the seam alone", () => {
-    const far = verticesWhere(plain, (_x, y) => y < 0.2 || y > 1.6);
+    const far = verticesWhere(plain, (_x, y) => {
+      return y < 0.2 || y > 1.6;
+    });
 
     for (const vertex of far) {
       expect(normalAngle(plain, blended, vertex)).toBeLessThan(1e-3);
@@ -84,8 +98,12 @@ describe("seam normals", () => {
     const limb = builder.build();
     const alone = limbOnBody(null, null);
 
-    const limbOnly = verticesWhere(alone, (_x, _y, _z, part) => part === 1);
-    const atSeam = verticesWhere(limb, (_x, y) => Math.abs(y - 1.05) < 1e-4);
+    const limbOnly = verticesWhere(alone, (_x, _y, _z, part) => {
+      return part === 1;
+    });
+    const atSeam = verticesWhere(limb, (_x, y) => {
+      return Math.abs(y - 1.05) < 1e-4;
+    });
 
     expect(vertexCount(limb)).toBe(limbOnly.length);
     expect(verticalness(limb, atSeam)).toBeGreaterThan(0.2);

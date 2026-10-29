@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { WorldMirror } from "../../game/world-mirror.ts";
+import { ignore } from "../../shared/ignore.ts";
 import { Simulation } from "../../simulation/simulation.ts";
 import { type GroundArea, IslandOutline, type OutlineSide } from "./island-outline.ts";
 
@@ -9,7 +10,7 @@ const round = new WorldMirror(
   Simulation.generate(
     5,
     { dimensions: { cellSize: 20, cellsPerSide: 96 }, erosionStrength: 0.4, shape: "round" },
-    () => undefined
+    ignore
   ).initialWorld(),
   0
 );

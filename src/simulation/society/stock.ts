@@ -43,7 +43,9 @@ export function emptyStock(): Stock {
 }
 
 export function totalFood(stock: Stock): number {
-  return FOOD_KINDS.reduce((total, kind) => total + stock[kind], 0);
+  return FOOD_KINDS.reduce((total, kind) => {
+    return total + stock[kind];
+  }, 0);
 }
 
 export function addToStock(stock: Stock, resource: ResourceKind, amount: number): void {
@@ -81,7 +83,9 @@ export function shareFood(stock: Stock, share: number): Stock {
 }
 
 export function hasResources(stock: Stock, amounts: ResourceAmounts): boolean {
-  return RESOURCE_KINDS.every((kind) => stock[kind] >= amountOf(amounts, kind));
+  return RESOURCE_KINDS.every((kind) => {
+    return stock[kind] >= amountOf(amounts, kind);
+  });
 }
 
 export function spendResources(stock: Stock, amounts: ResourceAmounts): void {

@@ -104,7 +104,9 @@ function copyTerrain(terrain: TerrainData): GeneratedTerrain {
 }
 
 function groundFuel(ground: Uint8Array): Float32Array {
-  return Float32Array.from(ground, (kind) => groundDefinition(kind).fuel);
+  return Float32Array.from(ground, (kind) => {
+    return groundDefinition(kind).fuel;
+  });
 }
 
 function restoreDense(target: Float32Array, saved: Float32Array): void {
@@ -179,7 +181,9 @@ export class WorldState {
     this.vegetation = generated.vegetation;
     this.water = generated.water;
     this.monuments = generated.monuments;
-    this.monumentConditions = generated.monuments.map(() => ({ damage: MonumentDamage.Standing, isDrowned: false }));
+    this.monumentConditions = generated.monuments.map(() => {
+      return { damage: MonumentDamage.Standing, isDrowned: false };
+    });
     this.deposits = generated.deposits;
     this.crossings = generated.crossings;
     this.#crossingIndex = new CrossingIndex(this.grid, this.crossings, CROSSING_TOLERANCE);
@@ -233,7 +237,9 @@ export class WorldState {
       },
       heightVersion: this.heightVersion,
       initialCanopyFuel: sparseDifference(this.initialCanopyFuel, this.canopyFuel),
-      monumentConditions: this.monumentConditions.map((condition) => ({ ...condition })),
+      monumentConditions: this.monumentConditions.map((condition) => {
+        return { ...condition };
+      }),
       occupancy: sparseDifference(this.occupancy, new Int32Array(cellCount).fill(NO_BUILDING)),
       recovering: this.recovering.snapshot(),
       terrain: {
@@ -381,7 +387,9 @@ export class WorldState {
       return false;
     }
 
-    return this.grid.someCellAlong(fromX, fromZ, toX, toZ, (cell) => this.isObstructed(cell));
+    return this.grid.someCellAlong(fromX, fromZ, toX, toZ, (cell) => {
+      return this.isObstructed(cell);
+    });
   }
 
   isWalkableAt(x: number, z: number): boolean {
@@ -570,9 +578,11 @@ export class WorldState {
   }
 
   hasFreeSpringGround(): boolean {
-    return this.water.springs.some((spring) =>
-      spring.cells.some((cell) => this.occupancy[cell] === NO_BUILDING || this.occupancy[cell] === CROSSING_GROUND)
-    );
+    return this.water.springs.some((spring) => {
+      return spring.cells.some((cell) => {
+        return this.occupancy[cell] === NO_BUILDING || this.occupancy[cell] === CROSSING_GROUND;
+      });
+    });
   }
 
   markWaterChanged(): void {

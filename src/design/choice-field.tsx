@@ -55,9 +55,9 @@ function SegmentedChoice({ label, onChange, options, value }: ChoiceFieldProps) 
 
   return (
     <ToggleGroup aria-label={label} className={SEGMENT_TRACK} onValueChange={handleChange} value={[value]}>
-      {options.map((option) => (
-        <SegmentOption key={option.value} option={option} />
-      ))}
+      {options.map((option) => {
+        return <SegmentOption key={option.value} option={option} />;
+      })}
     </ToggleGroup>
   );
 }
@@ -103,9 +103,9 @@ function ListChoice({ label, onChange, options, value }: ChoiceFieldProps) {
             className={cn(PAPER_SURFACE, POPUP_MOTION, "w-(--anchor-width) rounded-2xl p-1 duration-100 outline-none")}
           >
             <Select.List className="max-h-[min(var(--available-height),24rem)] overflow-y-auto">
-              {options.map((option) => (
-                <ListOption key={option.value} option={option} />
-              ))}
+              {options.map((option) => {
+                return <ListOption key={option.value} option={option} />;
+              })}
             </Select.List>
           </Select.Popup>
         </Select.Positioner>

@@ -8,7 +8,9 @@ function appearanceFor(overrides: Partial<AppearanceInput>): PersonAppearance {
 }
 
 function seeds(count: number): number[] {
-  return Array.from({ length: count }, (_, index) => (index * 0.618_033_988_7) % 1);
+  return Array.from({ length: count }, (_, index) => {
+    return (index * 0.618_033_988_7) % 1;
+  });
 }
 
 describe("person appearance", () => {
@@ -17,12 +19,38 @@ describe("person appearance", () => {
   });
 
   it("varies looks between people of one tribe", () => {
-    const crowd = seeds(200).map((seed) => appearanceFor({ isFemale: seed > 0.5, seed }));
+    const crowd = seeds(200).map((seed) => {
+      return appearanceFor({ isFemale: seed > 0.5, seed });
+    });
 
-    expect(new Set(crowd.map((person) => person.hair)).size).toBeGreaterThanOrEqual(6);
-    expect(new Set(crowd.map((person) => person.outfit)).size).toBe(4);
-    expect(new Set(crowd.map((person) => person.colors.skin)).size).toBeGreaterThan(60);
-    expect(new Set(crowd.map((person) => person.colors.accent))).toEqual(new Set([TRIBE.accent]));
+    expect(
+      new Set(
+        crowd.map((person) => {
+          return person.hair;
+        })
+      ).size
+    ).toBeGreaterThanOrEqual(6);
+    expect(
+      new Set(
+        crowd.map((person) => {
+          return person.outfit;
+        })
+      ).size
+    ).toBe(4);
+    expect(
+      new Set(
+        crowd.map((person) => {
+          return person.colors.skin;
+        })
+      ).size
+    ).toBeGreaterThan(60);
+    expect(
+      new Set(
+        crowd.map((person) => {
+          return person.colors.accent;
+        })
+      )
+    ).toEqual(new Set([TRIBE.accent]));
   });
 
   it("makes children small with large heads", () => {
@@ -35,15 +63,27 @@ describe("person appearance", () => {
   });
 
   it("grays and stoops most elders", () => {
-    const elders = seeds(60).map((seed) => appearanceFor({ age: 70, seed }));
-    const adults = seeds(60).map((seed) => appearanceFor({ age: 30, seed }));
+    const elders = seeds(60).map((seed) => {
+      return appearanceFor({ age: 70, seed });
+    });
+    const adults = seeds(60).map((seed) => {
+      return appearanceFor({ age: 30, seed });
+    });
 
     function averagePosture(people: readonly PersonAppearance[]): number {
-      return people.reduce((sum, person) => sum + person.motion.posture, 0) / people.length;
+      return (
+        people.reduce((sum, person) => {
+          return sum + person.motion.posture;
+        }, 0) / people.length
+      );
     }
 
     expect(averagePosture(elders)).toBeGreaterThan(averagePosture(adults) * 3);
-    expect(elders.filter((person) => person.colors.hair > 0x80_80_80).length).toBeGreaterThan(30);
+    expect(
+      elders.filter((person) => {
+        return person.colors.hair > 0x80_80_80;
+      }).length
+    ).toBeGreaterThan(30);
   });
 
   it("gives beards only to grown men", () => {
@@ -81,7 +121,9 @@ describe("person appearance", () => {
 
 describe("era details", () => {
   function crowd(era: number): PersonAppearance[] {
-    return seeds(200).map((seed) => appearanceFor({ age: 20 + seed * 30, era, isFemale: seed > 0.5, seed }));
+    return seeds(200).map((seed) => {
+      return appearanceFor({ age: 20 + seed * 30, era, isFemale: seed > 0.5, seed });
+    });
   }
 
   it("leaves the first eras looking as they always did", () => {
@@ -97,7 +139,9 @@ describe("era details", () => {
     const wanderers = crowd(0);
     const farmers = crowd(2);
 
-    const changed = farmers.filter((person, index) => person.colors.hide !== wanderers[index].colors.hide);
+    const changed = farmers.filter((person, index) => {
+      return person.colors.hide !== wanderers[index].colors.hide;
+    });
 
     expect(changed.length).toBeGreaterThan(60);
     expect(changed.length).toBeLessThan(140);
@@ -107,13 +151,31 @@ describe("era details", () => {
     const copper = crowd(3);
     const iron = crowd(5);
 
-    const helmeted = iron.filter((person) => person.accessories.has("helmet"));
+    const helmeted = iron.filter((person) => {
+      return person.accessories.has("helmet");
+    });
 
-    expect(copper.filter((person) => person.accessories.has("torc")).length).toBeGreaterThan(30);
-    expect(copper.some((person) => person.accessories.has("helmet") || person.accessories.has("buckle"))).toBe(false);
-    expect(iron.filter((person) => person.accessories.has("buckle")).length).toBeGreaterThan(50);
+    expect(
+      copper.filter((person) => {
+        return person.accessories.has("torc");
+      }).length
+    ).toBeGreaterThan(30);
+    expect(
+      copper.some((person) => {
+        return person.accessories.has("helmet") || person.accessories.has("buckle");
+      })
+    ).toBe(false);
+    expect(
+      iron.filter((person) => {
+        return person.accessories.has("buckle");
+      }).length
+    ).toBeGreaterThan(50);
     expect(helmeted.length).toBeGreaterThan(15);
-    expect(helmeted.every((person) => !person.isFemale && person.ageGroup !== "child")).toBe(true);
+    expect(
+      helmeted.every((person) => {
+        return !person.isFemale && person.ageGroup !== "child";
+      })
+    ).toBe(true);
   });
 
   it("keeps what a person wears as the tribe advances", () => {

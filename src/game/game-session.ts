@@ -1,5 +1,6 @@
 import type { GenerationProgress, WorldRequest } from "../generation/generation-options.ts";
 import { toError } from "../shared/errors.ts";
+import { ignore } from "../shared/ignore.ts";
 import type { ChronicleEntry } from "../simulation/chronicle.ts";
 import type { SimulationCommand } from "../simulation/commands.ts";
 import type { SimulationEffect } from "../simulation/effects.ts";
@@ -56,7 +57,7 @@ export class GameSession {
     request: WorldRequest,
     options: SessionOptions = {}
   ): Promise<GameSession> {
-    const { onProgress = () => undefined } = options;
+    const { onProgress = ignore } = options;
 
     const initial = await connection.createWorld(request, onProgress);
 
@@ -68,7 +69,7 @@ export class GameSession {
     saved: SavedWorldState,
     options: LoadOptions = {}
   ): Promise<GameSession> {
-    const { journal = [], onProgress = () => undefined } = options;
+    const { journal = [], onProgress = ignore } = options;
 
     const initial = await connection.loadWorld(saved, onProgress);
 

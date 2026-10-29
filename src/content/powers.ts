@@ -442,7 +442,9 @@ export function isPowerId(value: string): value is PowerId {
 }
 
 export function powersInCategory(category: PowerCategory): readonly PowerId[] {
-  return POWER_ORDER.filter((powerId) => POWERS[powerId].category === category);
+  return POWER_ORDER.filter((powerId) => {
+    return POWERS[powerId].category === category;
+  });
 }
 
 export function defaultPowerParameters(powerId: PowerId): ParameterValueMap {

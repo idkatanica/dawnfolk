@@ -157,7 +157,9 @@ export class BuildingSystem {
     const covered = footprintCells(grid, placement.x, placement.z, BUILDINGS[placement.kind].footprint);
     const id = this.#identifiers.next();
 
-    const cells = covered.filter((candidate) => this.#world.occupancy[candidate] === NO_BUILDING);
+    const cells = covered.filter((candidate) => {
+      return this.#world.occupancy[candidate] === NO_BUILDING;
+    });
 
     for (const occupied of cells) {
       this.#world.occupancy[occupied] = id;
@@ -225,7 +227,9 @@ export class BuildingSystem {
   }
 
   abandonTribe(tribeId: number): void {
-    for (const building of this.#buildings.filter((candidate) => candidate.tribeId === tribeId)) {
+    for (const building of this.#buildings.filter((candidate) => {
+      return candidate.tribeId === tribeId;
+    })) {
       this.remove(building, "abandoned");
     }
   }

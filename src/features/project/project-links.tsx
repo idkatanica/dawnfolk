@@ -33,7 +33,9 @@ function ExternalLink({ children, className, href, label }: ExternalLinkProps) {
 }
 
 function StarCount() {
-  const stars = useStarStore((state) => state.stars);
+  const stars = useStarStore((state) => {
+    return state.stars;
+  });
 
   if (stars === null) {
     return null;

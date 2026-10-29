@@ -42,7 +42,9 @@ interface EarOptions {
 }
 
 export function legPath(x: number, points: readonly LegPoint[]): TubePoint[] {
-  return points.map(([radius, y, z, inset = 0]) => ({ radius, x: x - inset, y, z }));
+  return points.map(([radius, y, z, inset = 0]) => {
+    return { radius, x: x - inset, y, z };
+  });
 }
 
 export function addLegs(builder: MeshBuilder, options: LegOptions): void {
@@ -67,7 +69,9 @@ export function addLegs(builder: MeshBuilder, options: LegOptions): void {
 }
 
 export function hoofBelow(height: number): (point: SurfacePoint) => number {
-  return (point) => (point.position.y < height ? MaterialSlot.Hoof : MaterialSlot.Coat);
+  return (point) => {
+    return point.position.y < height ? MaterialSlot.Hoof : MaterialSlot.Coat;
+  };
 }
 
 function addEyes(builder: MeshBuilder, head: Shape, options: EyeOptions): void {

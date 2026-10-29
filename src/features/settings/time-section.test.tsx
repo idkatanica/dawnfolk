@@ -36,7 +36,9 @@ describe("time section", () => {
     await screen.getByRole("combobox", { name: "Season" }).click();
 
     await Promise.all(
-      SEASONS.map((season) => expect.element(screen.getByRole("option", { name: season })).toBeInTheDocument())
+      SEASONS.map((season) => {
+        return expect.element(screen.getByRole("option", { name: season })).toBeInTheDocument();
+      })
     );
   });
 

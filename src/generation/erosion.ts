@@ -89,10 +89,14 @@ function createBrush(radius: number, size: number): ErosionBrush {
 
   return {
     columns: Int32Array.from(columns),
-    offsets: Int32Array.from(columns, (column, index) => rows[index] * size + column),
+    offsets: Int32Array.from(columns, (column, index) => {
+      return rows[index] * size + column;
+    }),
     radius,
     rows: Int32Array.from(rows),
-    weights: Float32Array.from(weights, (weight) => weight / weightSum),
+    weights: Float32Array.from(weights, (weight) => {
+      return weight / weightSum;
+    }),
   };
 }
 
@@ -103,7 +107,9 @@ function createNeighborhood(size: number): Neighborhood {
   return {
     columns,
     distances: Float32Array.of(1, 1, 1, 1, Math.SQRT2, Math.SQRT2, Math.SQRT2, Math.SQRT2),
-    offsets: columns.map((column, index) => rows[index] * size + column),
+    offsets: columns.map((column, index) => {
+      return rows[index] * size + column;
+    }),
     rows,
   };
 }
@@ -246,7 +252,9 @@ function erodeHydraulically(
   dropletCount: number
 ): void {
   const size = Math.round(Math.sqrt(heights.length));
-  const map = Float32Array.from(heights, (height) => height / HEIGHT_SCALE);
+  const map = Float32Array.from(heights, (height) => {
+    return height / HEIGHT_SCALE;
+  });
   const terrain: DropletTerrain = { brush: createBrush(BRUSH_RADIUS, size), map, resistance, size };
 
   for (let droplet = 0; droplet < dropletCount; droplet += 1) {
@@ -344,7 +352,9 @@ export function erodeAcrossScales(
     addUpsampledChange(
       heights,
       size,
-      coarse.map((height, cell) => height - before[cell]),
+      coarse.map((height, cell) => {
+        return height - before[cell];
+      }),
       scale.factor,
       coarseReach
     );

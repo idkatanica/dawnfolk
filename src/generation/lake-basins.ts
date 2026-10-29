@@ -61,7 +61,9 @@ function isClearOf(grid: WorldGrid, cell: number, ponds: readonly Pond[]): boole
   const x = grid.cellCenterX(cell);
   const z = grid.cellCenterZ(cell);
 
-  return ponds.every((pond) => Math.hypot(pond.x - x, pond.z - z) > pond.radius);
+  return ponds.every((pond) => {
+    return Math.hypot(pond.x - x, pond.z - z) > pond.radius;
+  });
 }
 
 function feedingCells(basins: DrainageBasins, siting: LakeSiting): number[] {
@@ -85,11 +87,13 @@ function chooseSites(heights: Float32Array, basins: DrainageBasins, siting: Lake
   const { grid } = siting;
 
   const cellArea = grid.cellSize * grid.cellSize;
-  const ponds: Pond[] = basins.lakes.map((lake) => ({
-    radius: Math.sqrt((lake.cellCount * cellArea) / Math.PI) + LAKE_CLEARANCE,
-    x: lake.centerX,
-    z: lake.centerZ,
-  }));
+  const ponds: Pond[] = basins.lakes.map((lake) => {
+    return {
+      radius: Math.sqrt((lake.cellCount * cellArea) / Math.PI) + LAKE_CLEARANCE,
+      x: lake.centerX,
+      z: lake.centerZ,
+    };
+  });
   const sites: LakeSite[] = [];
 
   for (const cell of shuffle(siting.random, feedingCells(basins, siting))) {

@@ -70,13 +70,14 @@ export function brushFalloff(distance: number, radius: number): number {
 function editableCells(world: WorldState, area: CircleArea): AreaCell[] {
   const lastEditable = world.grid.cellsPerSide - UNEDITABLE_RIM;
 
-  return cellsInArea(world, area).filter(
-    (areaCell) =>
+  return cellsInArea(world, area).filter((areaCell) => {
+    return (
       areaCell.column >= UNEDITABLE_RIM &&
       areaCell.row >= UNEDITABLE_RIM &&
       areaCell.column < lastEditable &&
       areaCell.row < lastEditable
-  );
+    );
+  });
 }
 
 export function raiseTerrain(world: WorldState, area: CircleArea, amount: number): void {
@@ -171,7 +172,9 @@ function distanceFromCenter(area: CircleArea, point: RiverPoint): number {
 }
 
 function firstCapturedPoint(river: River, crater: CircleArea): number {
-  return river.points.findIndex((point) => distanceFromCenter(crater, point) < crater.radius * CAPTURED_RIVER_REACH);
+  return river.points.findIndex((point) => {
+    return distanceFromCenter(crater, point) < crater.radius * CAPTURED_RIVER_REACH;
+  });
 }
 
 function opennessAt(breach: ReadonlyMap<number, number>, cell: number): number {

@@ -76,7 +76,9 @@ export function paintMinimapTerrain(mirror: WorldMirror, size: number): ImageDat
   const { frame, grid, terrain } = mirror;
 
   const image = new ImageData(size, size);
-  const palette = GROUNDS.map((_, index) => seasonalGroundColor(index, frame.calendar.season));
+  const palette = GROUNDS.map((_, index) => {
+    return seasonalGroundColor(index, frame.calendar.season);
+  });
   const last = grid.cellsPerSide - 1;
 
   for (let pixelRow = 0; pixelRow < size; pixelRow += 1) {
@@ -103,7 +105,9 @@ export function paintIslandSketch(island: IslandSketch): ImageData {
   const { cellSize, cellsPerSide, coastDistance, height } = island;
 
   const image = new ImageData(cellsPerSide, cellsPerSide);
-  const palette = GROUNDS.map((_, index) => seasonalGroundColor(index, SKETCH_SEASON));
+  const palette = GROUNDS.map((_, index) => {
+    return seasonalGroundColor(index, SKETCH_SEASON);
+  });
 
   for (let row = 0; row < cellsPerSide; row += 1) {
     for (let column = 0; column < cellsPerSide; column += 1) {

@@ -27,9 +27,9 @@ export function createTerrainData({ cellsPerSide }: GridDimensions): TerrainData
 }
 
 export function shapeTerrain(grid: WorldGrid, heightAt: (x: number, z: number) => number): Float32Array {
-  return Float32Array.from({ length: grid.cellCount }, (_, cell) =>
-    heightAt(grid.cellCenterX(cell), grid.cellCenterZ(cell))
-  );
+  return Float32Array.from({ length: grid.cellCount }, (_, cell) => {
+    return heightAt(grid.cellCenterX(cell), grid.cellCenterZ(cell));
+  });
 }
 
 export function trough(x: number, z: number): number {

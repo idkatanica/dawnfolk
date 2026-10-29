@@ -43,7 +43,9 @@ describe("work planning", () => {
     plantInCell(harness.world, harness.world.grid.cellAt(tribe.campX + 30, tribe.campZ), PlantSpecies.Boulder);
     planConstruction(tribe, harness.context);
 
-    const chosen = Array.from({ length: 40 }, () => chooseWork(tick)?.kind);
+    const chosen = Array.from({ length: 40 }, () => {
+      return chooseWork(tick)?.kind;
+    });
 
     expect(harness.buildings.find(tribe.buildings.constructionSiteId)?.kind).not.toBe("hut");
     expect(chosen).toContain("quarry");

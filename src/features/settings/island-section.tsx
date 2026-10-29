@@ -15,18 +15,30 @@ import { GROUP_CLASS, GroupHeading, SettingsGroup } from "./settings-group.tsx";
 
 const QUALITY_LABELS: Readonly<Record<QualityLevel, string>> = { high: "High", low: "Light", medium: "Balanced" };
 
-const QUALITY_OPTIONS = QUALITY_LEVELS.map((level) => ({ label: QUALITY_LABELS[level], value: level }));
+const QUALITY_OPTIONS = QUALITY_LEVELS.map((level) => {
+  return { label: QUALITY_LABELS[level], value: level };
+});
 
 function useCreateWorld(): (choice: WorldChoice) => void {
-  const createWorld = useLaunchStore((state) => state.createWorld);
+  const createWorld = useLaunchStore((state) => {
+    return state.createWorld;
+  });
   const leaveWorld = useLeaveWorld();
 
-  return (choice) => leaveWorld(() => createWorld(choice));
+  return (choice) => {
+    return leaveWorld(() => {
+      return createWorld(choice);
+    });
+  };
 }
 
 function useQualityChoice() {
-  const active = useLaunchStore((state) => state.launch.quality);
-  const relaunch = useLaunchStore((state) => state.relaunch);
+  const active = useLaunchStore((state) => {
+    return state.launch.quality;
+  });
+  const relaunch = useLaunchStore((state) => {
+    return state.relaunch;
+  });
   const leaveWorld = useLeaveWorld();
   const [quality, setQuality] = useState(active);
 
@@ -40,7 +52,9 @@ function useQualityChoice() {
   }
 
   function handleApply(): void {
-    leaveWorld(() => relaunch({ quality }));
+    leaveWorld(() => {
+      return relaunch({ quality });
+    });
   }
 
   return { handleApply, handleQualityChange, hasChanged: quality !== active, quality };
@@ -71,12 +85,24 @@ function QualityChoice() {
 }
 
 function DisplayChoice() {
-  const areLabelsShown = useInterfaceStore((state) => state.areLabelsShown);
-  const setLabelsShown = useInterfaceStore((state) => state.setLabelsShown);
-  const areOutlinesShown = useInterfaceStore((state) => state.areOutlinesShown);
-  const setOutlinesShown = useInterfaceStore((state) => state.setOutlinesShown);
-  const areTipsShown = useGuideStore((state) => !state.progress.isOff);
-  const setTipsShown = useGuideStore((state) => state.setTipsShown);
+  const areLabelsShown = useInterfaceStore((state) => {
+    return state.areLabelsShown;
+  });
+  const setLabelsShown = useInterfaceStore((state) => {
+    return state.setLabelsShown;
+  });
+  const areOutlinesShown = useInterfaceStore((state) => {
+    return state.areOutlinesShown;
+  });
+  const setOutlinesShown = useInterfaceStore((state) => {
+    return state.setOutlinesShown;
+  });
+  const areTipsShown = useGuideStore((state) => {
+    return !state.progress.isOff;
+  });
+  const setTipsShown = useGuideStore((state) => {
+    return state.setTipsShown;
+  });
 
   return (
     <SettingsGroup description="What is drawn over the island, and the tips for new players." title="Display">
@@ -105,7 +131,9 @@ function DisplayChoice() {
 }
 
 function NewWorld() {
-  const launch = useLaunchStore((state) => state.launch);
+  const launch = useLaunchStore((state) => {
+    return state.launch;
+  });
   const createWorld = useCreateWorld();
   const draft = useWorldDraft(launch, createWorld);
 

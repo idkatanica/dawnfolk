@@ -74,7 +74,9 @@ export class EngineLauncher {
     this.#canvas = createCanvas(container);
     this.#onStatus = onStatus;
     this.#onStatus({ kind: "loading", progress: null });
-    queueMicrotask(() => this.#startUnlessCanceled(launch, worldId));
+    queueMicrotask(() => {
+      return this.#startUnlessCanceled(launch, worldId);
+    });
   }
 
   cancel(): void {
@@ -93,7 +95,9 @@ export class EngineLauncher {
       return;
     }
 
-    this.#start(launch, worldId).catch((error: unknown) => this.#fail(error));
+    this.#start(launch, worldId).catch((error: unknown) => {
+      return this.#fail(error);
+    });
   }
 
   async #start(launch: LaunchOptions, worldId: string): Promise<void> {
@@ -102,7 +106,9 @@ export class EngineLauncher {
     const engine = await engineModule.GameEngine.start({
       camera: launch.camera,
       canvas: this.#canvas,
-      onProgress: (progress) => this.#reportProgress(progress),
+      onProgress: (progress) => {
+        return this.#reportProgress(progress);
+      },
       quality: launch.quality,
       world,
     });

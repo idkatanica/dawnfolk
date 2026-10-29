@@ -96,7 +96,9 @@ function censusWithin(world: WorldState, radius: number): Census {
 }
 
 function climaxTrees(world: WorldState, radius: number): number {
-  return world.grid.cellsInRadius(0, 0, radius).reduce((total, cell) => total + climaxOf(world, cell).trees.length, 0);
+  return world.grid.cellsInRadius(0, 0, radius).reduce((total, cell) => {
+    return total + climaxOf(world, cell).trees.length;
+  }, 0);
 }
 
 describe("succession after a fire", () => {
@@ -160,15 +162,17 @@ describe("succession after a fire", () => {
 
     new Seasons(world).pass(DAYS_PER_YEAR * 0.6);
 
-    const sprouted = Array.from({ length: vegetation.count - before }, (_, index) => before + index).filter(
-      (plant) => vegetation.isAlive(plant) && isLivingTreeSpecies(vegetation.species[plant])
-    );
+    const sprouted = Array.from({ length: vegetation.count - before }, (_, index) => {
+      return before + index;
+    }).filter((plant) => {
+      return vegetation.isAlive(plant) && isLivingTreeSpecies(vegetation.species[plant]);
+    });
 
     expect(sprouted.length).toBeGreaterThan(0);
     expect(
-      sprouted.every(
-        (plant) => vegetation.height[plant] < plantSpeciesDefinition(vegetation.species[plant]).heightRange[1]
-      )
+      sprouted.every((plant) => {
+        return vegetation.height[plant] < plantSpeciesDefinition(vegetation.species[plant]).heightRange[1];
+      })
     ).toBe(true);
     expect(SEEDLING_SHARE).toBeLessThan(0.5);
   });
@@ -192,17 +196,27 @@ describe("succession after a fire", () => {
         }
       }
 
-      return heights.map((height) => ({ cell, height }));
+      return heights.map((height) => {
+        return { cell, height };
+      });
     });
 
-    const fullHeights = snags.map(({ cell }) =>
-      climaxOf(world, cell)
-        .trees.filter((placement) => plantSpeciesDefinition(placement.species).form === "deadwood")
-        .map((placement) => Math.fround(placement.height))
-    );
+    const fullHeights = snags.map(({ cell }) => {
+      return climaxOf(world, cell)
+        .trees.filter((placement) => {
+          return plantSpeciesDefinition(placement.species).form === "deadwood";
+        })
+        .map((placement) => {
+          return Math.fround(placement.height);
+        });
+    });
 
     expect(snags.length).toBeGreaterThan(0);
-    expect(snags.every(({ height }, index) => fullHeights[index]?.includes(height))).toBe(true);
+    expect(
+      snags.every(({ height }, index) => {
+        return fullHeights[index]?.includes(height);
+      })
+    ).toBe(true);
   });
 
   it("brings glades back open and stands back thin", () => {
@@ -215,9 +229,15 @@ describe("succession after a fire", () => {
 
     new Seasons(world).pass(DAYS_PER_YEAR * 4);
 
-    const glade = grid.cellsInRadius(0, 0, BURNT_RADIUS).filter((cell) => grid.cellCenterX(cell) < -10);
+    const glade = grid.cellsInRadius(0, 0, BURNT_RADIUS).filter((cell) => {
+      return grid.cellCenterX(cell) < -10;
+    });
 
-    expect(glade.every((cell) => world.vegetation.countTreesInCell(cell) === 0)).toBe(true);
+    expect(
+      glade.every((cell) => {
+        return world.vegetation.countTreesInCell(cell) === 0;
+      })
+    ).toBe(true);
     expect(censusWithin(world, BURNT_RADIUS - 20).grownTrees).toBeGreaterThan(50);
   });
 

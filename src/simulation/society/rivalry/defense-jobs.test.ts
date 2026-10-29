@@ -26,7 +26,9 @@ describe("combat", () => {
     brawler.mover.z = spearman.mover.z;
     spearman.job = new FightJob(tickFor(harness, spearman, first), personFoe(brawler), SPEAR);
     brawler.job = new FightJob(tickFor(harness, brawler, second), personFoe(spearman), BARE_HANDS);
-    runUntil(harness, 40, () => !(spearman.isAlive && brawler.isAlive) || brawler.health < 0.25);
+    runUntil(harness, 40, () => {
+      return !(spearman.isAlive && brawler.isAlive) || brawler.health < 0.25;
+    });
 
     expect(brawler.health).toBeLessThan(spearman.health);
     expect(brawler.health).toBeLessThan(0.3);
@@ -47,9 +49,13 @@ describe("combat", () => {
     target.mover.x = archer.mover.x + 15;
     target.mover.z = archer.mover.z;
     archer.job = new FightJob(tickFor(harness, archer, first), personFoe(target), BOW);
-    runUntil(harness, 30, () => target.health < 1);
+    runUntil(harness, 30, () => {
+      return target.health < 1;
+    });
 
-    const arrows = harness.effects.takeEffects().filter((effect) => effect.kind === "arrow");
+    const arrows = harness.effects.takeEffects().filter((effect) => {
+      return effect.kind === "arrow";
+    });
 
     expect(arrows.length).toBeGreaterThan(0);
     expect(first.stock.arrows).toBe(QUIVER - arrows.length);
@@ -72,9 +78,15 @@ describe("combat", () => {
     target.mover.x = archer.mover.x + 15;
     target.mover.z = archer.mover.z;
     archer.job = new FightJob(tickFor(harness, archer, first), personFoe(target), BOW);
-    runUntil(harness, 20, () => archer.pose === "brawl");
+    runUntil(harness, 20, () => {
+      return archer.pose === "brawl";
+    });
 
-    expect(harness.effects.takeEffects().some((effect) => effect.kind === "arrow")).toBe(false);
+    expect(
+      harness.effects.takeEffects().some((effect) => {
+        return effect.kind === "arrow";
+      })
+    ).toBe(false);
     expect(archer.pose).toBe("brawl");
   });
 });

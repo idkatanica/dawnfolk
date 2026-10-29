@@ -57,7 +57,9 @@ function distanceSquared(first: Triple, second: Triple): number {
 
 export function vertexKey(mesh: MeshData, vertex: number): string {
   return pointOf(mesh, vertex)
-    .map((value) => Math.round(value * POSITION_GRID))
+    .map((value) => {
+      return Math.round(value * POSITION_GRID);
+    })
     .join(",");
 }
 
@@ -152,12 +154,16 @@ export function meshPieces(mesh: MeshData): MeshPiece[] {
   joinTriangles(mesh, sets);
   joinSharedPositions(mesh, sets, count);
 
-  const verticesByRoot = groupBy(count, (vertex) => sets.find(vertex));
-  const trianglesByRoot = groupBy(mesh.indices.length / 3, (triangle) => sets.find(mesh.indices[triangle * 3]));
+  const verticesByRoot = groupBy(count, (vertex) => {
+    return sets.find(vertex);
+  });
+  const trianglesByRoot = groupBy(mesh.indices.length / 3, (triangle) => {
+    return sets.find(mesh.indices[triangle * 3]);
+  });
 
-  return [...trianglesByRoot.entries()].map(([root, triangles]) =>
-    pieceFrom(mesh, groupAt(verticesByRoot, root), triangles)
-  );
+  return [...trianglesByRoot.entries()].map(([root, triangles]) => {
+    return pieceFrom(mesh, groupAt(verticesByRoot, root), triangles);
+  });
 }
 
 function triangleCorners(mesh: MeshData, triangle: number): Corners {
@@ -246,7 +252,9 @@ function rayCrossesTriangle(origin: Triple, corners: Corners): boolean {
 }
 
 export function isInsidePiece(mesh: MeshData, piece: MeshPiece, point: Triple): boolean {
-  const crossings = piece.triangles.filter((triangle) => rayCrossesTriangle(point, triangleCorners(mesh, triangle)));
+  const crossings = piece.triangles.filter((triangle) => {
+    return rayCrossesTriangle(point, triangleCorners(mesh, triangle));
+  });
 
   return crossings.length % 2 === 1;
 }
@@ -282,7 +290,9 @@ function boundsOverlap(first: MeshPiece, second: MeshPiece, margin: number): boo
 }
 
 function samplePoints(mesh: MeshData, piece: MeshPiece): Triple[] {
-  const corners = piece.vertices.map((vertex) => pointOf(mesh, vertex));
+  const corners = piece.vertices.map((vertex) => {
+    return pointOf(mesh, vertex);
+  });
   const centers = piece.triangles.map((triangle) => {
     const [first, second, third] = triangleCorners(mesh, triangle);
 
@@ -319,11 +329,17 @@ export function piecesTouch(mesh: MeshData, first: MeshPiece, second: MeshPiece,
 }
 
 function restsOnGround(tolerance: number): PieceAnchor {
-  return (piece) => piece.minimum[1] <= GROUND_HEIGHT + tolerance;
+  return (piece) => {
+    return piece.minimum[1] <= GROUND_HEIGHT + tolerance;
+  };
 }
 
 export function holdsPart(mesh: MeshData, part: number): PieceAnchor {
-  return (piece) => piece.vertices.some((vertex) => mesh.channels.part[vertex] === part);
+  return (piece) => {
+    return piece.vertices.some((vertex) => {
+      return mesh.channels.part[vertex] === part;
+    });
+  };
 }
 
 export function detachedPieces(
@@ -333,7 +349,11 @@ export function detachedPieces(
 ): MeshPiece[] {
   const pieces = meshPieces(mesh);
 
-  const attached = new Set(pieces.flatMap((piece, index) => (isAnchor(piece) ? [index] : [])));
+  const attached = new Set(
+    pieces.flatMap((piece, index) => {
+      return isAnchor(piece) ? [index] : [];
+    })
+  );
 
   const waiting = [...attached];
 
@@ -350,12 +370,22 @@ export function detachedPieces(
     }
   }
 
-  return pieces.filter((_, index) => !attached.has(index));
+  return pieces.filter((_, index) => {
+    return !attached.has(index);
+  });
 }
 
 function describePiece(mesh: MeshData, piece: MeshPiece): string {
-  const parts = new Set(piece.vertices.map((vertex) => mesh.channels.part[vertex]));
-  const slots = new Set(piece.vertices.map((vertex) => mesh.channels.slot[vertex]));
+  const parts = new Set(
+    piece.vertices.map((vertex) => {
+      return mesh.channels.part[vertex];
+    })
+  );
+  const slots = new Set(
+    piece.vertices.map((vertex) => {
+      return mesh.channels.slot[vertex];
+    })
+  );
 
   function range(axis: number): string {
     return `${piece.minimum[axis].toFixed(2)}..${piece.maximum[axis].toFixed(2)}`;
@@ -369,14 +399,18 @@ export function loosePieces(
   tolerance = TOUCHING,
   isAnchor: PieceAnchor = restsOnGround(tolerance)
 ): string[] {
-  return detachedPieces(mesh, tolerance, isAnchor).map((piece) => describePiece(mesh, piece));
+  return detachedPieces(mesh, tolerance, isAnchor).map((piece) => {
+    return describePiece(mesh, piece);
+  });
 }
 
 class DisjointSets {
   readonly #parents: Int32Array;
 
   constructor(size: number) {
-    this.#parents = Int32Array.from({ length: size }, (_, index) => index);
+    this.#parents = Int32Array.from({ length: size }, (_, index) => {
+      return index;
+    });
   }
 
   find(element: number): number {

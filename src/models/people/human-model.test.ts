@@ -46,13 +46,17 @@ const ARM_BONES: ReadonlySet<number> = new Set([
 ]);
 
 const TOOLS: ReadonlySet<HumanPart> = new Set(
-  PERSON_POSES.flatMap((clip) =>
-    CARRIED_ITEMS.flatMap((carried) =>
-      [null, ...WEAPON_KINDS].flatMap((weapon) => activityParts(clip, carried, weapon))
-    )
-  )
+  PERSON_POSES.flatMap((clip) => {
+    return CARRIED_ITEMS.flatMap((carried) => {
+      return [null, ...WEAPON_KINDS].flatMap((weapon) => {
+        return activityParts(clip, carried, weapon);
+      });
+    });
+  })
 );
-const GARMENTS = HUMAN_PARTS.filter((part) => isWorn(part) && !TOOLS.has(part));
+const GARMENTS = HUMAN_PARTS.filter((part) => {
+  return isWorn(part) && !TOOLS.has(part);
+});
 
 function isWorn(part: HumanPart): boolean {
   return !(part.startsWith("body") || part.startsWith("carried"));
@@ -63,31 +67,52 @@ function wornWith(part: HumanPart): HumanPart[] {
 }
 
 function isArm(mesh: MeshData, piece: MeshPiece): boolean {
-  const bound = piece.vertices.filter(
-    (vertex) => ARM_BONES.has(mesh.channels.boneA[vertex]) || ARM_BONES.has(mesh.channels.boneB[vertex])
-  );
+  const bound = piece.vertices.filter((vertex) => {
+    return ARM_BONES.has(mesh.channels.boneA[vertex]) || ARM_BONES.has(mesh.channels.boneB[vertex]);
+  });
 
   return bound.length * 2 > piece.vertices.length;
 }
 
 function bodyPartsOf(appearance: PersonAppearance): HumanPart[] {
-  return appearanceParts(appearance).filter((part) => part.startsWith("body"));
+  return appearanceParts(appearance).filter((part) => {
+    return part.startsWith("body");
+  });
 }
 
 function looseParts(parts: readonly MeshData[], names: readonly HumanPart[]): string[] {
-  const mesh = mergeMeshes(names.map((name) => parts[humanPartIndex(name)]));
+  const mesh = mergeMeshes(
+    names.map((name) => {
+      return parts[humanPartIndex(name)];
+    })
+  );
 
   return loosePieces(mesh);
 }
 
 function posedPartsOf(parts: readonly MeshData[], names: readonly HumanPart[], poser: SkeletonPoser): MeshData {
-  return posedMesh(mergeMeshes(names.map((name) => parts[humanPartIndex(name)])), poser);
+  return posedMesh(
+    mergeMeshes(
+      names.map((name) => {
+        return parts[humanPartIndex(name)];
+      })
+    ),
+    poser
+  );
 }
 
 function holdsBodyPart(mesh: MeshData, body: readonly HumanPart[]): (piece: MeshPiece) => boolean {
-  const bodyParts = new Set(body.map((name) => humanPartIndex(name)));
+  const bodyParts = new Set(
+    body.map((name) => {
+      return humanPartIndex(name);
+    })
+  );
 
-  return (piece) => piece.vertices.some((vertex) => bodyParts.has(mesh.channels.part[vertex]));
+  return (piece) => {
+    return piece.vertices.some((vertex) => {
+      return bodyParts.has(mesh.channels.part[vertex]);
+    });
+  };
 }
 
 function carriedTo(clip: PersonPose): CarriedItem {
@@ -108,14 +133,22 @@ describe("human model", () => {
 
     for (const channel of ["boneA", "boneB"] as const) {
       expect(
-        atlas.channels[channel].every((bone) => Number.isInteger(bone) && bone >= 0 && bone < HUMAN_BONE_COUNT)
+        atlas.channels[channel].every((bone) => {
+          return Number.isInteger(bone) && bone >= 0 && bone < HUMAN_BONE_COUNT;
+        })
       ).toBe(true);
     }
 
-    expect(atlas.channels.boneWeight.every((weight) => weight >= 0 && weight <= 1)).toBe(true);
-    expect(VERTEX_CHANNELS.every((channel) => atlas.channels[channel].length === atlas.positions.length / 3)).toBe(
-      true
-    );
+    expect(
+      atlas.channels.boneWeight.every((weight) => {
+        return weight >= 0 && weight <= 1;
+      })
+    ).toBe(true);
+    expect(
+      VERTEX_CHANNELS.every((channel) => {
+        return atlas.channels[channel].length === atlas.positions.length / 3;
+      })
+    ).toBe(true);
   });
 
   it("stands a body about as tall as a person", () => {
@@ -135,9 +168,15 @@ describe("human model", () => {
   });
 
   it("saves triangles at every lower level of detail", () => {
-    const highTriangles = highParts.reduce((sum, mesh) => sum + triangleCount(mesh), 0);
-    const lowTriangles = lowParts.reduce((sum, mesh) => sum + triangleCount(mesh), 0);
-    const farTriangles = farParts.reduce((sum, mesh) => sum + triangleCount(mesh), 0);
+    const highTriangles = highParts.reduce((sum, mesh) => {
+      return sum + triangleCount(mesh);
+    }, 0);
+    const lowTriangles = lowParts.reduce((sum, mesh) => {
+      return sum + triangleCount(mesh);
+    }, 0);
+    const farTriangles = farParts.reduce((sum, mesh) => {
+      return sum + triangleCount(mesh);
+    }, 0);
 
     expect(lowTriangles).toBeLessThan(highTriangles * 0.75);
     expect(farTriangles).toBeLessThan(lowTriangles * 0.5);
@@ -169,18 +208,39 @@ describe("attached parts", () => {
     for (const appearance of people) {
       const body = bodyPartsOf(appearance);
 
-      for (const carried of CARRIED_ITEMS.filter((item) => item !== "nothing")) {
+      for (const carried of CARRIED_ITEMS.filter((item) => {
+        return item !== "nothing";
+      })) {
         applyHumanClip(pose, "carry", 0.3, { ageGroup: appearance.ageGroup, carried, motion: appearance.motion });
         poser.pose(pose, humanBoneScales(appearance.body));
 
         const load = activityParts("carry", carried);
-        const mesh = posedMesh(mergeMeshes([...body, ...load].map((name) => highParts[humanPartIndex(name)])), poser);
-        const loadParts = new Set(load.map((name) => humanPartIndex(name)));
+        const mesh = posedMesh(
+          mergeMeshes(
+            [...body, ...load].map((name) => {
+              return highParts[humanPartIndex(name)];
+            })
+          ),
+          poser
+        );
+        const loadParts = new Set(
+          load.map((name) => {
+            return humanPartIndex(name);
+          })
+        );
         const pieces = meshPieces(mesh);
         const loose = loosePieces(mesh, TOUCHING, isTorso);
-        const arms = pieces.filter((piece) => isArm(mesh, piece));
-        const loads = pieces.filter((piece) => loadParts.has(mesh.channels.part[piece.vertices[0]]));
-        const isHeld = loads.some((piece) => arms.some((arm) => piecesTouch(mesh, piece, arm, TOUCHING)));
+        const arms = pieces.filter((piece) => {
+          return isArm(mesh, piece);
+        });
+        const loads = pieces.filter((piece) => {
+          return loadParts.has(mesh.channels.part[piece.vertices[0]]);
+        });
+        const isHeld = loads.some((piece) => {
+          return arms.some((arm) => {
+            return piecesTouch(mesh, piece, arm, TOUCHING);
+          });
+        });
 
         expect(loose, `${appearance.ageGroup} carrying ${carried}`).toEqual([]);
         expect(isHeld, `${appearance.ageGroup} carrying ${carried}`).toBe(true);
@@ -196,7 +256,9 @@ describe("moving parts", () => {
       [28, true],
       [9, false],
     ] as const
-  ).map(([age, isFemale]) => personAppearance({ age, isFemale, seed: 0.42, tribe: TRIBE }));
+  ).map(([age, isFemale]) => {
+    return personAppearance({ age, isFemale, seed: 0.42, tribe: TRIBE });
+  });
 
   describe.each([
     ["high", highParts, [0.15, 0.4, 0.7]],
@@ -267,11 +329,24 @@ describe("resting poses", () => {
       poser.pose(pose, humanBoneScales(appearance.body));
 
       const body = bodyPartsOf(appearance);
-      const mesh = posedMesh(mergeMeshes(body.map((name) => highParts[humanPartIndex(name)])), poser);
-      const seat = Array.from({ length: mesh.positions.length / 3 }, (_, vertex) => vertex).filter(
-        (vertex) => mesh.channels.boneA[vertex] === HumanBone.Pelvis && mesh.channels.boneWeight[vertex] === 0
+      const mesh = posedMesh(
+        mergeMeshes(
+          body.map((name) => {
+            return highParts[humanPartIndex(name)];
+          })
+        ),
+        poser
       );
-      const lowestSeat = Math.min(...seat.map((vertex) => mesh.positions[vertex * 3 + 1]));
+      const seat = Array.from({ length: mesh.positions.length / 3 }, (_, vertex) => {
+        return vertex;
+      }).filter((vertex) => {
+        return mesh.channels.boneA[vertex] === HumanBone.Pelvis && mesh.channels.boneWeight[vertex] === 0;
+      });
+      const lowestSeat = Math.min(
+        ...seat.map((vertex) => {
+          return mesh.positions[vertex * 3 + 1];
+        })
+      );
 
       expect(lowestSeat, `${appearance.ageGroup}`).toBeLessThan(0.08);
       expect(lowestSeat, `${appearance.ageGroup}`).toBeGreaterThan(-0.08);
@@ -290,8 +365,16 @@ describe("visible parts", () => {
       });
       const parts = appearanceParts(appearance);
 
-      expect(parts.filter((part) => part.startsWith("body"))).toHaveLength(1);
-      expect(parts.some((part) => ["dress", "loincloth", "tunic", "wrap"].includes(part))).toBe(true);
+      expect(
+        parts.filter((part) => {
+          return part.startsWith("body");
+        })
+      ).toHaveLength(1);
+      expect(
+        parts.some((part) => {
+          return ["dress", "loincloth", "tunic", "wrap"].includes(part);
+        })
+      ).toBe(true);
     }
   });
 
@@ -323,7 +406,14 @@ describe("weapons in hand", () => {
     applyHumanClip(pose, clip, phase, { ageGroup: hunter.ageGroup, carried: "nothing", motion: hunter.motion });
     poser.pose(pose, humanBoneScales(hunter.body));
 
-    return posedMesh(mergeMeshes(names.map((name) => highParts[humanPartIndex(name)])), poser);
+    return posedMesh(
+      mergeMeshes(
+        names.map((name) => {
+          return highParts[humanPartIndex(name)];
+        })
+      ),
+      poser
+    );
   }
 
   it.each(["walk", "run", "idle", "leap"] as const)("keeps the bow, the quiver and the spear in hand to %s", (clip) => {
@@ -343,10 +433,16 @@ describe("weapons in hand", () => {
   it("points the nocked arrow past the bow towards the target at full draw", () => {
     const mesh = posedParts("shoot", 0.5, ["drawnBow"]);
     const bowHand = poser.jointPosition(HumanBone.HandLeft, new Vector3());
-    const arrowhead = Array.from({ length: mesh.positions.length / 3 }, (_, vertex) => vertex).filter(
-      (vertex) => mesh.channels.slot[vertex] === MaterialSlot.Metal
+    const arrowhead = Array.from({ length: mesh.positions.length / 3 }, (_, vertex) => {
+      return vertex;
+    }).filter((vertex) => {
+      return mesh.channels.slot[vertex] === MaterialSlot.Metal;
+    });
+    const farthest = Math.max(
+      ...arrowhead.map((vertex) => {
+        return mesh.positions[vertex * 3 + 2];
+      })
     );
-    const farthest = Math.max(...arrowhead.map((vertex) => mesh.positions[vertex * 3 + 2]));
 
     expect(arrowhead.length).toBeGreaterThan(0);
     expect(farthest).toBeGreaterThan(bowHand.z + 0.05);
@@ -355,11 +451,15 @@ describe("weapons in hand", () => {
   it("stretches the bow string from the bow tips to the drawing hand", () => {
     const mesh = posedParts("shoot", 0.5, ["drawnBow"]);
     const drawHand = poser.jointPosition(HumanBone.HandRight, new Vector3());
-    const string = Array.from({ length: mesh.positions.length / 3 }, (_, vertex) => vertex).filter(
-      (vertex) => mesh.channels.slot[vertex] === MaterialSlot.Rope && mesh.channels.boneWeight[vertex] === 1
-    );
+    const string = Array.from({ length: mesh.positions.length / 3 }, (_, vertex) => {
+      return vertex;
+    }).filter((vertex) => {
+      return mesh.channels.slot[vertex] === MaterialSlot.Rope && mesh.channels.boneWeight[vertex] === 1;
+    });
     const nearest = Math.min(
-      ...string.map((vertex) => new Vector3().fromArray(mesh.positions, vertex * 3).distanceTo(drawHand))
+      ...string.map((vertex) => {
+        return new Vector3().fromArray(mesh.positions, vertex * 3).distanceTo(drawHand);
+      })
     );
 
     expect(string.length).toBeGreaterThan(0);

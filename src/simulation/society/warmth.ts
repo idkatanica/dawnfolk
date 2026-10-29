@@ -64,12 +64,16 @@ function warmPlaces(tick: PersonTick): WarmPlace[] {
   const campfire = litCampfireOf(tick.tribe, tick.context.buildings);
 
   const hearths = tribeBuildings(tick.tribe, tick.context)
-    .filter((building) => isComplete(building) && HEARTH_ROLES.has(BUILDINGS[building.kind].role))
-    .map((building) => ({
-      building,
-      reach: BUILDINGS[building.kind].footprint + SHELTER_REACH,
-      seat: BUILDINGS[building.kind].footprint + HEARTH_SEAT,
-    }));
+    .filter((building) => {
+      return isComplete(building) && HEARTH_ROLES.has(BUILDINGS[building.kind].role);
+    })
+    .map((building) => {
+      return {
+        building,
+        reach: BUILDINGS[building.kind].footprint + SHELTER_REACH,
+        seat: BUILDINGS[building.kind].footprint + HEARTH_SEAT,
+      };
+    });
 
   if (campfire === null) {
     return hearths;
@@ -115,7 +119,9 @@ export function isSheltered(tick: PersonTick, isAsleep: boolean): boolean {
     return true;
   }
 
-  return warmPlaces(tick).some((place) => isWithinReach(tick, place));
+  return warmPlaces(tick).some((place) => {
+    return isWithinReach(tick, place);
+  });
 }
 
 export function isWithinReach(tick: PersonTick, place: WarmPlace): boolean {

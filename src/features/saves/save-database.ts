@@ -36,7 +36,9 @@ const recordSchema = z.object({
 });
 
 const journalEntrySchema = z.looseObject({
-  category: z.string().refine((category) => Object.hasOwn(CHRONICLE_ICONS, category)),
+  category: z.string().refine((category) => {
+    return Object.hasOwn(CHRONICLE_ICONS, category);
+  }),
   day: z.number(),
   id: z.number(),
   text: z.string(),
@@ -49,7 +51,11 @@ const journalSchema = z.array(journalEntrySchema);
 
 const storedStateSchema = z.object({
   id: z.string(),
-  journal: z.custom<ChronicleEntry[]>((value) => journalSchema.safeParse(value).success).catch([]),
+  journal: z
+    .custom<ChronicleEntry[]>((value) => {
+      return journalSchema.safeParse(value).success;
+    })
+    .catch([]),
   state: savedWorldStateSchema,
 });
 
@@ -83,16 +89,26 @@ let opening: Promise<IDBDatabase> | null = null;
 
 function settleRequest<Value>(request: IDBRequest<Value>): Promise<Value> {
   return new Promise((resolve, reject) => {
-    request.addEventListener("success", () => resolve(request.result));
-    request.addEventListener("error", () => reject(request.error));
+    request.addEventListener("success", () => {
+      return resolve(request.result);
+    });
+    request.addEventListener("error", () => {
+      return reject(request.error);
+    });
   });
 }
 
 function settleTransaction(transaction: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
-    transaction.addEventListener("complete", () => resolve());
-    transaction.addEventListener("error", () => reject(transaction.error));
-    transaction.addEventListener("abort", () => reject(transaction.error));
+    transaction.addEventListener("complete", () => {
+      return resolve();
+    });
+    transaction.addEventListener("error", () => {
+      return reject(transaction.error);
+    });
+    transaction.addEventListener("abort", () => {
+      return reject(transaction.error);
+    });
   });
 }
 
@@ -113,7 +129,9 @@ function openDatabase(): Promise<IDBDatabase> {
 
   const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
 
-  request.addEventListener("upgradeneeded", () => createStores(request.result));
+  request.addEventListener("upgradeneeded", () => {
+    return createStores(request.result);
+  });
 
   const opened = settleRequest(request).then((database) => {
     database.addEventListener("versionchange", () => {
@@ -161,9 +179,13 @@ export function listSavedWorlds(): Promise<SavedWorldListing[]> {
 
       const records = await settleRequest(database.transaction(WORLDS).objectStore(WORLDS).getAll());
 
-      const listings = records.map(readListing).filter((listing) => listing !== null);
+      const listings = records.map(readListing).filter((listing) => {
+        return listing !== null;
+      });
 
-      return listings.toSorted((first, second) => second.savedAt - first.savedAt);
+      return listings.toSorted((first, second) => {
+        return second.savedAt - first.savedAt;
+      });
     },
     [],
     "Saved worlds are not available"

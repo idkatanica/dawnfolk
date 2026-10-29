@@ -62,7 +62,9 @@ function waterDistances(terrain: TerrainData, grid: WorldGrid): Float32Array {
     }
   }
 
-  return distances.map((distance) => distance * grid.cellSize);
+  return distances.map((distance) => {
+    return distance * grid.cellSize;
+  });
 }
 
 function standDensity(noise: NoiseSampler, x: number, z: number, waterDistance: number): number {

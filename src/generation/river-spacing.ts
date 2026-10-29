@@ -126,7 +126,9 @@ function endAtCoast(spacing: Spacing, chain: RiverChain): RiverChain {
     return chain;
   }
 
-  const mouth = chain.cells.findIndex((cell) => grid.isOnEdge(cell) || touchesOffIsland(grid, coastDistance, cell));
+  const mouth = chain.cells.findIndex((cell) => {
+    return grid.isOnEdge(cell) || touchesOffIsland(grid, coastDistance, cell);
+  });
 
   if (mouth < 0) {
     return chain;
@@ -167,7 +169,9 @@ function junctionFor(spacing: Spacing, cell: number): number {
     return NO_CELL;
   }
 
-  const lower = nearestRiver(spacing, cell, (other) => heights[other] <= heights[cell]);
+  const lower = nearestRiver(spacing, cell, (other) => {
+    return heights[other] <= heights[cell];
+  });
 
   if (lower === null || lower.distance >= spacingBetween(spacing, cell, lower.cell)) {
     return NO_CELL;

@@ -161,15 +161,15 @@ function standingStone(context: MonumentContext, stone: StandingStone): Shape {
 
   const sections: LoftSection[] = [
     { radiusX: 0, radiusZ: 0, y: -0.06 * height - 0.06 },
-    ...STANDING_PROFILE.map(([along, girth]) =>
-      roughRing(
+    ...STANDING_PROFILE.map(([along, girth]) => {
+      return roughRing(
         (width / 2) * girth,
         (thickness / 2) * girth,
         along * height,
         offset,
         bend * Math.sin(along * HALF_TURN)
-      )
-    ),
+      );
+    }),
     { radiusX: 0, radiusZ: 0, y: height },
   ];
 
@@ -281,7 +281,9 @@ function addDolmen(context: MonumentContext, form: PieceForm<typeof PlantSpecies
 }
 
 function faceDepth(y: number): number {
-  const above = HEAD_RINGS.findIndex((ring) => ring.y >= y);
+  const above = HEAD_RINGS.findIndex((ring) => {
+    return ring.y >= y;
+  });
   const upper = HEAD_RINGS[above];
   const lower = HEAD_RINGS[above - 1];
 
@@ -293,7 +295,9 @@ function headShape(context: MonumentContext): Shape {
 
   const sections: LoftSection[] = [
     { radiusX: 0, radiusZ: 0, y: -0.25 },
-    ...HEAD_RINGS.map((ring) => roughRing(ring.radiusX, ring.radiusZ, ring.y, offset)),
+    ...HEAD_RINGS.map((ring) => {
+      return roughRing(ring.radiusX, ring.radiusZ, ring.y, offset);
+    }),
     { radiusX: 0, radiusZ: 0, y: 5.16 },
   ];
 
@@ -391,7 +395,9 @@ function drumShape(context: MonumentContext, isBroken: boolean): Shape {
     return {
       radiusX: radius,
       radiusZ: radius,
-      ripple: (around) => 1 + fluting * Math.cos(around * FULL_TURN * FLUTES),
+      ripple: (around) => {
+        return 1 + fluting * Math.cos(around * FULL_TURN * FLUTES);
+      },
       y,
     };
   }
@@ -477,11 +483,13 @@ function hewnBox(random: RandomSource, block: Block): Shape {
   const offset = random.next() * 30;
   const wobble = Math.min(width, height, depth) * 0.08;
 
-  return deformShape(box(width, height, depth), (vertex) => [
-    STONE_NOISE.sample(vertex.x * 1.9 + offset, vertex.y * 1.9, vertex.z * 1.9) * wobble,
-    STONE_NOISE.sample(vertex.x * 1.9, vertex.y * 1.9 + offset, vertex.z * 1.9) * wobble,
-    STONE_NOISE.sample(vertex.x * 1.9, vertex.y * 1.9, vertex.z * 1.9 + offset) * wobble,
-  ]);
+  return deformShape(box(width, height, depth), (vertex) => {
+    return [
+      STONE_NOISE.sample(vertex.x * 1.9 + offset, vertex.y * 1.9, vertex.z * 1.9) * wobble,
+      STONE_NOISE.sample(vertex.x * 1.9, vertex.y * 1.9 + offset, vertex.z * 1.9) * wobble,
+      STONE_NOISE.sample(vertex.x * 1.9, vertex.y * 1.9, vertex.z * 1.9 + offset) * wobble,
+    ];
+  });
 }
 
 function blockShape(context: MonumentContext, block: Block): Shape {
@@ -649,7 +657,9 @@ function addCairn(context: MonumentContext, form: PieceForm<typeof PlantSpecies.
   const { level, random } = context;
 
   const rings = form === "tall" ? TALL_CAIRN : LOW_CAIRN;
-  const pebbles = Array.from({ length: CAIRN_PEBBLE_SHAPES }, () => cairnStone(context, CAIRN_PEBBLE, false));
+  const pebbles = Array.from({ length: CAIRN_PEBBLE_SHAPES }, () => {
+    return cairnStone(context, CAIRN_PEBBLE, false);
+  });
 
   for (const ring of rings) {
     const isPeak = ring.radius === 0;

@@ -38,37 +38,41 @@ function sceneOf(argument: string): Scene {
     return { name, query: argument.slice(split + 1) };
   }
 
-  const known = SCENES.find((scene) => scene.name === name);
+  const known = SCENES.find((scene) => {
+    return scene.name === name;
+  });
 
   if (known === undefined) {
-    throw new Error(`Unknown scene "${name}". Known: ${SCENES.map((scene) => scene.name).join(", ")}`);
+    throw new Error(
+      `Unknown scene "${name}". Known: ${SCENES.map((scene) => {
+        return scene.name;
+      }).join(", ")}`
+    );
   }
 
   return known;
 }
 
 async function waitForFrames(page: Page, count: number): Promise<void> {
-  await page.evaluate(
-    (frames) =>
-      new Promise<void>((resolve) => {
-        let left = frames;
+  await page.evaluate((frames) => {
+    return new Promise<void>((resolve) => {
+      let left = frames;
 
-        function tick(): void {
-          left -= 1;
+      function tick(): void {
+        left -= 1;
 
-          if (left <= 0) {
-            resolve();
+        if (left <= 0) {
+          resolve();
 
-            return;
-          }
-
-          requestAnimationFrame(tick);
+          return;
         }
 
         requestAnimationFrame(tick);
-      }),
-    count
-  );
+      }
+
+      requestAnimationFrame(tick);
+    });
+  }, count);
 }
 
 async function castPower(page: Page, cast: PowerCast): Promise<void> {
@@ -105,7 +109,13 @@ async function shoot(browser: Browser, address: string, scene: Scene, device: De
 
     await page.goto(address);
     await page
-      .waitForFunction(() => Reflect.has(window, "dawnfolk"), undefined, { timeout: WORLD_RISING_TIMEOUT })
+      .waitForFunction(
+        () => {
+          return Reflect.has(window, "dawnfolk");
+        },
+        undefined,
+        { timeout: WORLD_RISING_TIMEOUT }
+      )
       .catch(() => {
         throw new Error("Shots need a dev server, where the engine is on window.dawnfolk");
       });

@@ -30,7 +30,14 @@ const PICK_HAFT_LENGTH = 0.62;
 const PICK_HAFT_RADIUS = 0.017;
 
 function betweenHands(slot: MaterialSlotIndex): VertexStyle {
-  return { boneA: HumanBone.HandLeft, boneB: HumanBone.HandRight, boneWeight: (point) => point.along, slot };
+  return {
+    boneA: HumanBone.HandLeft,
+    boneB: HumanBone.HandRight,
+    boneWeight: (point) => {
+      return point.along;
+    },
+    slot,
+  };
 }
 
 function bowPoint(along: number): TubePoint {
@@ -55,7 +62,9 @@ function bowTip(side: Side): Triple {
 function addBowStave(builder: MeshBuilder, detail: HumanDetail): void {
   const samples = trimSegments(detail, 9);
 
-  const points = Array.from({ length: samples }, (_, index) => bowPoint((index / (samples - 1)) * 2 - 1));
+  const points = Array.from({ length: samples }, (_, index) => {
+    return bowPoint((index / (samples - 1)) * 2 - 1);
+  });
 
   builder.add(tube(points, { radialSegments: trimSegments(detail, 6) }), {
     style: inLeftHand(MaterialSlot.Wood),

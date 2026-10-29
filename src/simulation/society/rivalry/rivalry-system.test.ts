@@ -30,7 +30,9 @@ describe("relations between tribes", () => {
 
     const [first, second] = foundNeighboringTribes(harness, 480);
 
-    runUntil(harness, 2400, () => harness.rivalry.relations.find(first.id, second.id)?.stance === "hostile");
+    runUntil(harness, 2400, () => {
+      return harness.rivalry.relations.find(first.id, second.id)?.stance === "hostile";
+    });
 
     const relation = harness.rivalry.relations.find(first.id, second.id);
 
@@ -47,7 +49,12 @@ describe("relations between tribes", () => {
 
     poacher.mover.x = second.campX + 40;
     poacher.mover.z = second.campZ;
-    poacher.job = { kind: "hunt", update: () => poacher.job };
+    poacher.job = {
+      kind: "hunt",
+      update: () => {
+        return poacher.job;
+      },
+    };
     harness.run(4);
 
     const relation = harness.rivalry.relations.find(first.id, second.id);
@@ -122,7 +129,9 @@ describe("a raid", () => {
     victims.stock.wood = 30;
 
     harness.rivalry.launchRaid(raiders, victims, harness.context);
-    runUntil(harness, 900, () => harness.rivalry.raids.length === 0);
+    runUntil(harness, 900, () => {
+      return harness.rivalry.raids.length === 0;
+    });
 
     const story = chronicleTexts(harness);
 
@@ -145,8 +154,14 @@ describe("a raid", () => {
 
     const raid = harness.rivalry.launchRaid(raiders, victims, harness.context);
 
-    runUntil(harness, 1500, () => harness.rivalry.raids.length === 0);
-    runUntil(harness, 600, () => harness.society.membersOf(raiders).every((person) => person.job?.kind !== "raid"));
+    runUntil(harness, 1500, () => {
+      return harness.rivalry.raids.length === 0;
+    });
+    runUntil(harness, 600, () => {
+      return harness.society.membersOf(raiders).every((person) => {
+        return person.job?.kind !== "raid";
+      });
+    });
 
     expect(raid?.loot.copper).toBeGreaterThan(0);
     expect(raiders.stock.copper).toBe(raid?.loot.copper);
@@ -184,13 +199,17 @@ describe("peace", () => {
     sideOf(relation, first.id).weariness = 120;
     sideOf(relation, second.id).weariness = 40;
 
-    runUntil(harness, 200, () => relation.envoyId !== null);
+    runUntil(harness, 200, () => {
+      return relation.envoyId !== null;
+    });
 
     expect(relation.envoyId).not.toBeNull();
 
     const hostFood = totalFood(second.stock);
 
-    runUntil(harness, 600, () => relation.stance !== "hostile");
+    runUntil(harness, 600, () => {
+      return relation.stance !== "hostile";
+    });
 
     expect(relation.stance).toBe("neutral");
     expect(relation.truceUntilDay).toBeGreaterThan(harness.calendar.day);
@@ -222,7 +241,9 @@ describe("peace", () => {
       return relation.envoyId !== null;
     });
 
-    const envoy = harness.society.membersOf(first).find((person) => person.id === relation.envoyId);
+    const envoy = harness.society.membersOf(first).find((person) => {
+      return person.id === relation.envoyId;
+    });
 
     if (envoy === undefined) {
       throw new Error("Expected an envoy on the way");
@@ -275,10 +296,12 @@ describe("determinism", () => {
     harness.run(240);
 
     return [
-      ...harness.chronicle.takeEntries().map((entry) => entry.text),
-      ...harness.society.people.map(
-        (person) => `${person.id} ${person.mover.x.toFixed(4)} ${person.mover.z.toFixed(4)} ${person.health.toFixed(4)}`
-      ),
+      ...harness.chronicle.takeEntries().map((entry) => {
+        return entry.text;
+      }),
+      ...harness.society.people.map((person) => {
+        return `${person.id} ${person.mover.x.toFixed(4)} ${person.mover.z.toFixed(4)} ${person.health.toFixed(4)}`;
+      }),
     ];
   }
 

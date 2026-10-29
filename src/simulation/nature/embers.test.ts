@@ -15,7 +15,9 @@ describe("embers", () => {
 
     const ember = embers.launch(centerCell(world), { strength: 0.8, x: 1, z: 0 }, random);
 
-    embers.update(ember.durationSeconds / 2, (landing) => landed.push(landing));
+    embers.update(ember.durationSeconds / 2, (landing) => {
+      return landed.push(landing);
+    });
 
     expect(effects.takeEffects()).toEqual([
       {
@@ -30,7 +32,9 @@ describe("embers", () => {
     expect(landed).toHaveLength(0);
     expect(embers.flying).toHaveLength(1);
 
-    embers.update(ember.durationSeconds, (landing) => landed.push(landing));
+    embers.update(ember.durationSeconds, (landing) => {
+      return landed.push(landing);
+    });
 
     expect(landed).toEqual([ember]);
     expect(embers.flying).toHaveLength(0);

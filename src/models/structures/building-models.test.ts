@@ -53,7 +53,11 @@ describe.each(SINGLE_MODEL_KINDS)("%s model", (kind) => {
 
     expect(Math.min(...orders)).toBeLessThan(0.3);
     expect(Math.max(...orders)).toBeGreaterThan(0.85);
-    expect(orders.every((order) => order >= 0 && order <= 1)).toBe(true);
+    expect(
+      orders.every((order) => {
+        return order >= 0 && order <= 1;
+      })
+    ).toBe(true);
     expect(high.bounds.minimum[1]).toBeGreaterThan(-0.1);
   });
 });

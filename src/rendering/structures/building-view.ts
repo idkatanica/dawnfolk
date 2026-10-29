@@ -101,7 +101,9 @@ const MINE_GROUND_PROBES: readonly GroundProbe[] = [
   [1.95, 1],
   [-1.1, 0.4],
   [1.1, 0.4],
-].map(([x, z]): GroundProbe => [x * MINE_SCALE, z * MINE_SCALE]);
+].map(([x, z]): GroundProbe => {
+  return [x * MINE_SCALE, z * MINE_SCALE];
+});
 
 interface GroundBox {
   readonly centerX: number;
@@ -206,9 +208,9 @@ function seatOf(mirror: WorldMirror, piece: PiecePlacement, footing: Footing): S
   const cosine = Math.cos(piece.rotation);
   const sine = Math.sin(piece.rotation);
 
-  const heights = footing.probes.map(([localX, localZ]) =>
-    mirror.heightAt(piece.x + localX * cosine + localZ * sine, piece.z + localZ * cosine - localX * sine)
-  );
+  const heights = footing.probes.map(([localX, localZ]) => {
+    return mirror.heightAt(piece.x + localX * cosine + localZ * sine, piece.z + localZ * cosine - localX * sine);
+  });
 
   const lowest = Math.min(...heights);
   const highest = Math.max(...heights);
@@ -340,22 +342,38 @@ function modelSources(): ModelSource[] {
 
   for (const kind of SINGLE_MODEL_KINDS) {
     sources.push({
-      footing: (high) => (kind === "campfire" ? CAMPFIRE_FOOTING : plinthFooting(high, ROUND_KINDS.has(kind))),
+      footing: (high) => {
+        return kind === "campfire" ? CAMPFIRE_FOOTING : plinthFooting(high, ROUND_KINDS.has(kind));
+      },
       key: kind,
-      mesh: (level) => buildBuildingModel(kind, level),
+      mesh: (level) => {
+        return buildBuildingModel(kind, level);
+      },
     });
   }
 
   for (const ore of MINED_DEPOSIT_KINDS) {
-    sources.push({ footing: () => MINE_FOOTING, key: mineKey(ore), mesh: (level) => buildMineModel(ore, level) });
+    sources.push({
+      footing: () => {
+        return MINE_FOOTING;
+      },
+      key: mineKey(ore),
+      mesh: (level) => {
+        return buildMineModel(ore, level);
+      },
+    });
   }
 
   for (const kind of ENCLOSURE_KINDS) {
     for (const piece of ENCLOSURE_PIECES) {
       sources.push({
-        footing: () => ENCLOSURE_FOOTING,
+        footing: () => {
+          return ENCLOSURE_FOOTING;
+        },
         key: enclosureKey(kind, piece),
-        mesh: (level) => buildEnclosurePiece(kind, piece, level),
+        mesh: (level) => {
+          return buildEnclosurePiece(kind, piece, level);
+        },
       });
     }
   }
@@ -390,12 +408,18 @@ function ringOf(mirror: WorldMirror, building: BuildingSnapshot): PiecePlacement
   for (let index = 0; index < count; index += 1) {
     const angle = building.rotation + (index / count) * FULL_TURN;
 
-    const ends = [angle - halfStep, angle, angle + halfStep].map((end) => ({
-      x: building.x + Math.cos(end) * radius,
-      z: building.z + Math.sin(end) * radius,
-    }));
+    const ends = [angle - halfStep, angle, angle + halfStep].map((end) => {
+      return {
+        x: building.x + Math.cos(end) * radius,
+        z: building.z + Math.sin(end) * radius,
+      };
+    });
 
-    if (ends.some((end) => mirror.isWaterAt(end.x, end.z))) {
+    if (
+      ends.some((end) => {
+        return mirror.isWaterAt(end.x, end.z);
+      })
+    ) {
       continue;
     }
 
@@ -454,9 +478,9 @@ export class BuildingView {
 
       this.#batches.set(
         source.key,
-        [high, source.mesh("low")].map((meshData) =>
-          createBatch(geometryFromMeshData(meshData, BUILDING_CHANNELS), material, BUILDING_FIELDS)
-        )
+        [high, source.mesh("low")].map((meshData) => {
+          return createBatch(geometryFromMeshData(meshData, BUILDING_CHANNELS), material, BUILDING_FIELDS);
+        })
       );
       this.#footings.set(source.key, source.footing(high));
     }
@@ -469,7 +493,11 @@ export class BuildingView {
     ];
 
     this.#all = [...[...this.#batches.values()].flat(), ...this.#plinths];
-    this.group.add(...this.#all.map((batch) => batch.mesh));
+    this.group.add(
+      ...this.#all.map((batch) => {
+        return batch.mesh;
+      })
+    );
   }
 
   update(input: ViewInput): void {
