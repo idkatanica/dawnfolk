@@ -28,6 +28,8 @@ const DEEPEST_BURY = 14;
 const RISE_REACHES = [6, 10, 14] as const;
 const LAND_REACHES = [20, 40] as const;
 const LAND_SAMPLES = 8;
+const MOUTH_WIDENING = 1.5;
+const MOUTH_MARGIN = 3;
 
 const COLD_BIOMES: ReadonlySet<number> = new Set([Biome.Alpine, Biome.Glacier, Biome.Tundra]);
 const DRY_BIOMES: ReadonlySet<number> = new Set([Biome.Desert, Biome.Mesa]);
@@ -87,12 +89,16 @@ function createSpringMaterial(): MeshStandardNodeMaterial {
   return material;
 }
 
+function mouthWidth(spring: Spring): number {
+  return spring.radius * 2 * MOUTH_WIDENING + MOUTH_MARGIN;
+}
+
 function headingOf(spring: Spring): Matrix4 {
   return new Matrix4().makeRotationY(Math.atan2(spring.directionX, spring.directionZ));
 }
 
 function lowestGroundUnder(mirror: WorldMirror, spring: Spring): number {
-  const reach = spring.radius * FOOTPRINT_SHOULDER + 1;
+  const reach = (mouthWidth(spring) / 2) * FOOTPRINT_SHOULDER + 1;
 
   let lowest = Number.POSITIVE_INFINITY;
 
@@ -112,7 +118,7 @@ function lowestGroundUnder(mirror: WorldMirror, spring: Spring): number {
 }
 
 function groundReach(spring: Spring): number {
-  return Math.max(...RISE_REACHES, -FOOTPRINT_BACK) + spring.radius * FOOTPRINT_SHOULDER + 1;
+  return Math.max(...RISE_REACHES, -FOOTPRINT_BACK) + (mouthWidth(spring) / 2) * FOOTPRINT_SHOULDER + 1;
 }
 
 function addCave(builder: MeshBuilder, mirror: WorldMirror, spring: Spring, models: ModelCache): void {
@@ -121,8 +127,9 @@ function addCave(builder: MeshBuilder, mirror: WorldMirror, spring: Spring, mode
   const sinking = spring.level - lowestGroundUnder(mirror, spring) + BURY_MARGIN;
   const bury = Math.round(clamp(sinking, SHALLOWEST_BURY, DEEPEST_BURY) * 2) / 2;
 
-  const cave = models.model(`cave ${spring.seed} ${spring.radius} ${rise} ${bury} ${biome}`, () =>
-    meshCaveMouth({ bury, look: caveLookFor(biome), rise, seed: spring.seed, width: spring.radius * 2 })
+  const width = mouthWidth(spring);
+  const cave = models.model(`cave ${spring.seed} ${width} ${rise} ${bury} ${biome}`, () =>
+    meshCaveMouth({ bury, look: caveLookFor(biome), rise, seed: spring.seed, width })
   );
 
   const placement = new Matrix4().makeTranslation(spring.x, spring.level, spring.z).multiply(headingOf(spring));
