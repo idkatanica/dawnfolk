@@ -55,14 +55,16 @@ function frameBuffers(frame: SimulationFrame): ArrayBufferLike[] {
     frame.animals.buffer,
     frame.burningCells.buffer,
     frame.burningIntensity.buffer,
-    frame.lava.cells.buffer,
-    frame.lava.heat.buffer,
     ...frame.surfaceRows.map((rows) => rows.data.buffer),
     ...frame.groundRows.map((rows) => rows.data.buffer),
   ];
 
   if (frame.heightPatch !== null) {
     buffers.push(frame.heightPatch.values.buffer);
+  }
+
+  if (frame.lava !== null) {
+    buffers.push(frame.lava.cells.buffer, frame.lava.heat.buffer);
   }
 
   if (frame.water !== null) {

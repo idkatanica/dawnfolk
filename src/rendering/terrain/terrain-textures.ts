@@ -1,22 +1,11 @@
 import { uniform } from "three/tsl";
-import {
-  ClampToEdgeWrapping,
-  Color,
-  DataTexture,
-  LinearFilter,
-  type PixelFormat,
-  RedFormat,
-  RGBAFormat,
-  RGFormat,
-  UnsignedByteType,
-  type WebGPURenderer,
-} from "three/webgpu";
+import { Color, type DataTexture, RedFormat, RGBAFormat, RGFormat, type WebGPURenderer } from "three/webgpu";
 import { Ground, isPoolGround } from "../../content/grounds.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import type { CellRegion, RowRun } from "../../world/change-tracking.ts";
 import { sampleCells } from "../../world/terrain-sampling.ts";
 import { POND_SHORE_SLOPE, pondEdgeReach } from "../../world/water.ts";
-import { floatDataTexture } from "../data-textures.ts";
+import { byteTexture, floatDataTexture } from "../data-textures.ts";
 import { CaveOutlets } from "../water/cave-outlets.ts";
 import { FordField } from "../water/ford-field.ts";
 import {
@@ -40,18 +29,6 @@ const SEASON_STEP = 0.01;
 const POND_SHORE_CELLS = 2;
 const BYTE = 255;
 const WETLAND_CHANNELS = 2;
-
-function byteTexture(data: Uint8Array, size: number, format: PixelFormat): DataTexture {
-  const texture = new DataTexture(data, size, size, format, UnsignedByteType);
-
-  texture.minFilter = LinearFilter;
-  texture.magFilter = LinearFilter;
-  texture.wrapS = ClampToEdgeWrapping;
-  texture.wrapT = ClampToEdgeWrapping;
-  texture.needsUpdate = true;
-
-  return texture;
-}
 
 export class TerrainTextures {
   readonly bloom = uniform(0);

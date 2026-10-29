@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { Ground } from "../../content/grounds.ts";
+import type { LavaView } from "../frame.ts";
 import { Simulation } from "../simulation.ts";
 import { snapshotOf } from "../testing/test-simulation.ts";
 import { createVegetatedWorld, floodCells } from "../testing/test-world.ts";
+import { TICK_SECONDS } from "../tick.ts";
 import { COOLING_SECONDS, SWELL_SECONDS, type Volcano } from "./volcanoes.ts";
 
 const RADIUS = 100;
@@ -41,10 +43,14 @@ function createSimulation({ hasRiver }: VolcanoWorld): Simulation {
   return simulation;
 }
 
-function runFor(simulation: Simulation, seconds: number): void {
+function runFor(simulation: Simulation, seconds: number): LavaView | null {
+  let sent: LavaView | null = null;
+
   for (let elapsed = 0; elapsed < seconds; elapsed += 0.1) {
-    simulation.advance(0.1);
+    sent = simulation.advance(0.1).lava ?? sent;
   }
+
+  return sent;
 }
 
 function settle(simulation: Simulation): void {
@@ -61,6 +67,28 @@ function onlyVolcano(simulation: Simulation): Volcano {
   }
 
   return volcano;
+}
+
+interface LavaWarnings {
+  farHotCells: number;
+  unwarnedHotCells: number;
+}
+
+function warnOfLava(simulation: Simulation): LavaWarnings {
+  simulation.volcanoes.update(TICK_SECONDS, simulation.services);
+
+  const zones = simulation.hazards.snapshot();
+  const { grid } = simulation.world;
+
+  const hotCells = [...onlyVolcano(simulation).lava].filter(([, heat]) => heat > 0.3).map(([cell]) => cell);
+  const isWarned = (cell: number) =>
+    zones.some((zone) => Math.hypot(zone.x - grid.cellCenterX(cell), zone.z - grid.cellCenterZ(cell)) < zone.radius);
+
+  return {
+    farHotCells: hotCells.filter((cell) => Math.hypot(grid.cellCenterX(cell), grid.cellCenterZ(cell)) > RADIUS * 1.5)
+      .length,
+    unwarnedHotCells: hotCells.filter((cell) => !isWarned(cell)).length,
+  };
 }
 
 function erupt(world: VolcanoWorld, strength = 60): Simulation {
@@ -129,7 +157,11 @@ describe("volcanoes", () => {
     expect(simulation.fire.burningCount).toBeGreaterThan(0);
     expect(simulation.embers.flying.length).toBeGreaterThan(0);
     expect([...volcano.lava.keys()].every((cell) => terrain.ground[cell] === Ground.Basalt)).toBe(true);
-    expect(simulation.advance(0).lava.cells.length).toBe(volcano.lava.size);
+    expect(simulation.advance(0).lava).toBeNull();
+
+    simulation.step();
+
+    expect(simulation.advance(0).lava?.cells.length).toBe(volcano.lava.size);
   });
 
   it("hisses to steam and stops where it meets water", () => {
@@ -158,13 +190,14 @@ describe("volcanoes", () => {
 
     const lavaCells = [...onlyVolcano(simulation).lava.keys()];
 
-    runFor(simulation, 30 + COOLING_SECONDS * 1.4);
+    const lastLava = runFor(simulation, 30 + COOLING_SECONDS * 1.4);
 
     const ashCells = world.grid.cellsInRadius(0, 0, RADIUS).filter((cell) => world.terrain.ground[cell] === Ground.Ash);
 
     expect(simulation.volcanoes.all).toHaveLength(0);
-    expect(simulation.advance(0).lava.cells).toHaveLength(0);
+    expect(lastLava?.cells).toHaveLength(0);
     expect(lavaCells.every((cell) => world.terrain.ground[cell] === Ground.Basalt)).toBe(true);
+    expect(lavaCells.some((cell) => world.recovering.has(cell))).toBe(false);
     expect(ashCells.length).toBeGreaterThan(50);
     expect(ashCells.every((cell) => world.recovering.has(cell))).toBe(true);
   });
@@ -197,6 +230,28 @@ describe("volcanoes", () => {
     expect(animal.isAlive).toBe(false);
   });
 
+  it("warns people off all of the hot lava until it cools", () => {
+    const simulation = erupt({ hasRiver: false }, 100);
+
+    runFor(simulation, SWELL_SECONDS + 30);
+
+    const erupting = warnOfLava(simulation);
+
+    runFor(simulation, onlyVolcano(simulation).eruptionSeconds - 30 + COOLING_SECONDS * 0.4);
+
+    const cooling = warnOfLava(simulation);
+
+    runFor(simulation, COOLING_SECONDS * 1.2);
+    simulation.volcanoes.update(TICK_SECONDS, simulation.services);
+
+    expect(erupting.farHotCells).toBeGreaterThan(0);
+    expect(erupting.unwarnedHotCells).toBe(0);
+    expect(cooling.farHotCells).toBeGreaterThan(0);
+    expect(cooling.unwarnedHotCells).toBe(0);
+    expect(simulation.volcanoes.all).toHaveLength(0);
+    expect(simulation.hazards.snapshot()).toEqual([]);
+  });
+
   it("lets ash soil heal and regrow faster than ordinary ground", () => {
     const simulation = createSimulation({ hasRiver: false });
     const { grid, fields } = simulation.world;
@@ -227,6 +282,20 @@ describe("volcanoes", () => {
     expect(simulation.takeNotices()).toEqual(["A volcano needs dry land"]);
   });
 
+  it("refuses to rise past the coast or off the map", () => {
+    const simulation = createSimulation({ hasRiver: false });
+    const { grid, terrain } = simulation.world;
+
+    terrain.coastDistance[grid.cellAt(-300, 0)] = -5;
+
+    for (const x of [-300, grid.worldSize * 2]) {
+      simulation.execute({ parameters: { radius: RADIUS }, powerId: "volcano", type: "usePower", x, z: 0 });
+    }
+
+    expect(simulation.volcanoes.all).toHaveLength(0);
+    expect(simulation.takeNotices()).toEqual(["A volcano needs dry land", "A volcano needs dry land"]);
+  });
+
   it("saves and loads in the middle of an eruption", () => {
     const simulation = erupt({ hasRiver: true });
 
@@ -254,10 +323,11 @@ describe("volcanoes", () => {
     settle(simulation);
 
     const { volcanoes: _volcanoes, ...olderSnapshot } = snapshotOf(simulation);
-    const loaded = createSimulation({ hasRiver: false });
 
-    loaded.restore(structuredClone(olderSnapshot));
+    expect(simulation.volcanoes.all).toHaveLength(1);
 
-    expect(loaded.volcanoes.all).toHaveLength(0);
+    simulation.restore(structuredClone(olderSnapshot));
+
+    expect(simulation.volcanoes.all).toHaveLength(0);
   });
 });

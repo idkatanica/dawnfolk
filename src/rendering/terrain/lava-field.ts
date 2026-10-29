@@ -1,6 +1,7 @@
 import { abs, Fn, float, If, min, mix, mx_noise_float, smoothstep, texture, time, vec3, vec4 } from "three/tsl";
-import { ClampToEdgeWrapping, DataTexture, LinearFilter, type Node, RedFormat, UnsignedByteType } from "three/webgpu";
-import type { LavaView } from "../../simulation/powers/volcanoes.ts";
+import { type DataTexture, type Node, RedFormat } from "three/webgpu";
+import type { LavaView } from "../../simulation/frame.ts";
+import { byteTexture } from "../data-textures.ts";
 
 const CRUST = vec3(0.035, 0.03, 0.028);
 const MOLTEN_DEEP = vec3(2.2, 0.32, 0.03);
@@ -18,27 +19,15 @@ interface LavaLook {
 export class LavaField {
   readonly texture: DataTexture;
   readonly #data: Uint8Array;
-  #frame: LavaView | null = null;
   #lit: Int32Array = new Int32Array(0);
 
   constructor(cellsPerSide: number) {
     this.#data = new Uint8Array(cellsPerSide * cellsPerSide);
-    this.texture = new DataTexture(this.#data, cellsPerSide, cellsPerSide, RedFormat, UnsignedByteType);
-    this.texture.minFilter = LinearFilter;
-    this.texture.magFilter = LinearFilter;
-    this.texture.wrapS = ClampToEdgeWrapping;
-    this.texture.wrapT = ClampToEdgeWrapping;
-    this.texture.needsUpdate = true;
+    this.texture = byteTexture(this.#data, cellsPerSide, RedFormat);
   }
 
-  update(lava: LavaView): void {
-    if (lava === this.#frame) {
-      return;
-    }
-
-    this.#frame = lava;
-
-    if (lava.cells.length === 0 && this.#lit.length === 0) {
+  update(lava: LavaView | null): void {
+    if (lava === null || (lava.cells.length === 0 && this.#lit.length === 0)) {
       return;
     }
 

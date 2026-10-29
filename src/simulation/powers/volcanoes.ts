@@ -36,6 +36,7 @@ const FARTHEST_BOMB = 2.2;
 const SCARE_REACH = 3;
 const CRATER_DANGER = 1.2;
 const HEAD_DANGER_CELLS = 4;
+const TONGUE_DANGER_SPACING = 2;
 const COOLING_SPREAD = 0.6;
 const NO_CELL = -1;
 const SPLIT_SALT = 71;
@@ -54,7 +55,6 @@ interface LavaTongue {
   isStopped: boolean;
   progress: number;
   quenchedCell: number;
-  readonly reach: number;
 }
 
 export interface Volcano {
@@ -76,11 +76,6 @@ export interface VolcanoView {
   steam: number[];
   x: number;
   z: number;
-}
-
-export interface LavaView {
-  cells: Int32Array;
-  heat: Uint8Array;
 }
 
 function headOf(tongue: LavaTongue): number {
@@ -213,7 +208,6 @@ function planTongues(volcano: Volcano, services: PowerServices): LavaTongue[] {
   const { grid } = world;
 
   const count = Math.round(lerp(FEWEST_TONGUES, MOST_TONGUES, volcano.strength));
-  const reach = tongueReach(volcano, services);
   const firstAngle = random.next() * FULL_TURN;
   const rim = craterRadius(volcano) * RIM_SHARE;
 
@@ -227,7 +221,7 @@ function planTongues(volcano: Volcano, services: PowerServices): LavaTongue[] {
       continue;
     }
 
-    tongues.push({ cells: [start], isStopped: false, progress: 0, quenchedCell: NO_CELL, reach });
+    tongues.push({ cells: [start], isStopped: false, progress: 0, quenchedCell: NO_CELL });
   }
 
   return tongues;
@@ -285,6 +279,7 @@ function erupt(volcano: Volcano, seconds: number, services: PowerServices): void
   }
 
   hurlBombs(volcano, seconds, services);
+  services.world.recovering.retain((cell) => !volcano.lava.has(cell));
 }
 
 function advance(volcano: Volcano, tongue: LavaTongue, services: PowerServices): void {
@@ -293,7 +288,7 @@ function advance(volcano: Volcano, tongue: LavaTongue, services: PowerServices):
   const head = headOf(tongue);
   const next = nextLavaCell(services, volcano.lava, head);
 
-  if (next === NO_CELL || tongue.cells.length >= tongue.reach || !world.isOnIsland(next)) {
+  if (next === NO_CELL || tongue.cells.length >= tongueReach(volcano, services) || !world.isOnIsland(next)) {
     tongue.isStopped = true;
 
     return;
@@ -420,23 +415,32 @@ function endanger(volcano: Volcano, seconds: number, services: PowerServices): v
     }
   }
 
+  for (const tongue of volcano.tongues) {
+    let lastZone = Number.POSITIVE_INFINITY;
+
+    for (let index = tongue.cells.length - 1; index >= 0; index -= 1) {
+      const cell = tongue.cells[index];
+
+      if (lastZone - index < TONGUE_DANGER_SPACING || !isHot(volcano, cell)) {
+        continue;
+      }
+
+      lastZone = index;
+      hazards.addZone({
+        radius: grid.cellSize * HEAD_DANGER_CELLS,
+        remainingSeconds: seconds,
+        x: grid.cellCenterX(cell),
+        z: grid.cellCenterZ(cell),
+      });
+    }
+  }
+
   if (activityOf(volcano) <= 0) {
     return;
   }
 
   fauna.scare(volcano.x, volcano.z, volcano.radius * SCARE_REACH);
   hazards.addZone({ radius: volcano.radius * CRATER_DANGER, remainingSeconds: seconds, x: volcano.x, z: volcano.z });
-
-  for (const tongue of volcano.tongues) {
-    const head = headOf(tongue);
-
-    hazards.addZone({
-      radius: grid.cellSize * HEAD_DANGER_CELLS,
-      remainingSeconds: seconds,
-      x: grid.cellCenterX(head),
-      z: grid.cellCenterZ(head),
-    });
-  }
 }
 
 function isHot(volcano: Volcano, cell: number): boolean {
@@ -476,6 +480,7 @@ function createVolcano(eruption: Eruption): Volcano {
 }
 
 export class VolcanoSystem {
+  #lavaUpdate: ReadonlyMap<number, number> | null = null;
   #volcanoes: Volcano[] = [];
 
   get all(): readonly Volcano[] {
@@ -488,6 +493,7 @@ export class VolcanoSystem {
 
   restore(volcanoes: readonly Volcano[]): void {
     this.#volcanoes = structuredClone([...volcanoes]);
+    this.#lavaUpdate = this.#lava();
   }
 
   rumble(eruption: Eruption, services: PowerServices): void {
@@ -502,6 +508,10 @@ export class VolcanoSystem {
   }
 
   update(seconds: number, services: PowerServices): void {
+    if (this.#volcanoes.length === 0) {
+      return;
+    }
+
     for (const volcano of this.#volcanoes) {
       const before = volcano.age;
 
@@ -525,6 +535,7 @@ export class VolcanoSystem {
     }
 
     this.#volcanoes = this.#volcanoes.filter((volcano) => !isSpent(volcano));
+    this.#lavaUpdate = this.#lava();
   }
 
   views(services: PowerServices): VolcanoView[] {
@@ -538,7 +549,15 @@ export class VolcanoSystem {
     }));
   }
 
-  lava(): LavaView {
+  takeLava(): ReadonlyMap<number, number> | null {
+    const update = this.#lavaUpdate;
+
+    this.#lavaUpdate = null;
+
+    return update;
+  }
+
+  #lava(): ReadonlyMap<number, number> {
     const heats = new Map<number, number>();
 
     for (const volcano of this.#volcanoes) {
@@ -549,9 +568,6 @@ export class VolcanoSystem {
       }
     }
 
-    return {
-      cells: Int32Array.from(heats.keys()),
-      heat: Uint8Array.from(heats.values(), (heat) => Math.round(heat * 255)),
-    };
+    return heats;
   }
 }

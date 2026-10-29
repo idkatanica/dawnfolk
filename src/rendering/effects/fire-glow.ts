@@ -1,6 +1,6 @@
 import { float, texture, vec3 } from "three/tsl";
 import { ClampToEdgeWrapping, DataTexture, LinearFilter, type Node, RedFormat, UnsignedByteType } from "three/webgpu";
-import type { SimulationFrame } from "../../simulation/frame.ts";
+import type { LavaView, SimulationFrame } from "../../simulation/frame.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { mapCoordinatesNode } from "../terrain/height-sampling.ts";
 
@@ -47,6 +47,7 @@ export class FireGlow {
   readonly #resolution: number;
   readonly #scratch: Float32Array;
   #frame: BurningCells | null = null;
+  #lava: LavaView = { cells: new Int32Array(0), heat: new Uint8Array(0) };
   #litTexels = 0;
 
   constructor(grid: WorldGrid) {
@@ -72,7 +73,11 @@ export class FireGlow {
 
     this.#frame = frame;
 
-    if (frame.burningCells.length === 0 && frame.lava.cells.length === 0 && this.#litTexels === 0) {
+    if (frame.lava !== null) {
+      this.#lava = frame.lava;
+    }
+
+    if (frame.burningCells.length === 0 && this.#lava.cells.length === 0 && this.#litTexels === 0) {
       return;
     }
 
@@ -97,8 +102,8 @@ export class FireGlow {
       this.#light(cell, frame.burningIntensity[index] / BYTE);
     }
 
-    for (const [index, cell] of frame.lava.cells.entries()) {
-      this.#light(cell, (frame.lava.heat[index] / BYTE) * LAVA_GLOW);
+    for (const [index, cell] of this.#lava.cells.entries()) {
+      this.#light(cell, (this.#lava.heat[index] / BYTE) * LAVA_GLOW);
     }
   }
 

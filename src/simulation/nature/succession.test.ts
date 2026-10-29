@@ -221,6 +221,35 @@ describe("succession after a fire", () => {
     expect(censusWithin(world, BURNT_RADIUS - 20).grownTrees).toBeGreaterThan(50);
   });
 
+  it("brings bushes and young trees back three times sooner on ash soil", () => {
+    const ash = burntForest(Biome.Forest, Ground.Ash);
+    const forest = burntForest();
+
+    ash.fields.scorch.fill(0);
+    forest.fields.scorch.fill(0);
+
+    const ashSeasons = new Seasons(ash);
+    const forestSeasons = new Seasons(forest);
+
+    ashSeasons.pass(1.6);
+    forestSeasons.pass(1.6);
+
+    const earlyAsh = censusWithin(ash, BURNT_RADIUS - 20);
+
+    expect(earlyAsh.shrubs).toBeGreaterThan(0);
+    expect(earlyAsh.youngTrees).toBeGreaterThan(0);
+    expect(censusWithin(forest, BURNT_RADIUS - 20)).toEqual({ grownTrees: 0, shrubs: 0, youngTrees: 0 });
+
+    ashSeasons.pass(0.4);
+    forestSeasons.pass(4.4);
+
+    const onAsh = censusWithin(ash, BURNT_RADIUS - 20);
+    const onForest = censusWithin(forest, BURNT_RADIUS - 20);
+
+    expect(onAsh.shrubs).toBeGreaterThan(onForest.shrubs * 0.85);
+    expect(onAsh.youngTrees + onAsh.grownTrees).toBeGreaterThan((onForest.youngTrees + onForest.grownTrees) * 0.75);
+  });
+
   it("regrows the same way for the same world", () => {
     const first = burntForest();
     const second = burntForest();
