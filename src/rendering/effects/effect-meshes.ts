@@ -13,7 +13,6 @@ import {
   vec3,
 } from "three/tsl";
 import {
-  AdditiveBlending,
   BufferGeometry,
   Color,
   Float32BufferAttribute,
@@ -25,6 +24,7 @@ import {
   Uint32BufferAttribute,
   type Vector3,
 } from "three/webgpu";
+import { blendAsGlow } from "./glow-blending.ts";
 
 const RIBBON_COLOR = new Color(0xcf_e0_ff);
 
@@ -76,7 +76,10 @@ function buildRibbonGeometry(strands: readonly (readonly RibbonPoint[])[]): Buff
 }
 
 function createRibbonMaterial(brightnesses: PerObjectValues): MeshBasicNodeMaterial {
-  const material = new MeshBasicNodeMaterial({ blending: AdditiveBlending, depthWrite: false, transparent: true });
+  const material = new MeshBasicNodeMaterial({ depthWrite: false, transparent: true });
+
+  blendAsGlow(material);
+
   const brightness = uniform(1).onObjectUpdate(({ object }) => brightnesses.read(object));
   const tangent = attribute("ribbonTangent", "vec3");
   const side = attribute("ribbonSide", "float");
