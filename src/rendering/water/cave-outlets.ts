@@ -1,4 +1,4 @@
-import { abs, clamp, cos, dot, ivec2, min, sin, smoothstep, step, textureLoad, vec2 } from "three/tsl";
+import { abs, clamp, cos, dot, ivec2, min, mix, sin, smoothstep, step, textureLoad, vec2 } from "three/tsl";
 import { type DataTexture, type Node, RedFormat, RGBAFormat } from "three/webgpu";
 import { distanceToSegment } from "../../shared/math.ts";
 import type { Spring } from "../../world/water.ts";
@@ -10,9 +10,10 @@ const CHANNEL_DEPTH = 1.2;
 const INSIDE_REACH = 6;
 const STRAIGHT_REACH = 3;
 const BLEND_REACH = 16;
-// The river leaving a mouth covers up to two whole cells of the water grid on either side of its axis.
-const SIDE_CLEARANCE_CELLS = 2;
-const SIDE_FADE = 5;
+// Up to the river head, the cells beside a mouth hold grid water two whole cells wide; past it the river runs free.
+const MOUTH_CLEARANCE_CELLS = 2;
+const SIDE_CLEARANCE = 2;
+const SIDE_FADE = 3;
 const SHELTER_REACH = 3;
 const LARGEST_CAVE_COUNT = 255;
 
@@ -36,9 +37,10 @@ function channelDepth(frame: OutletFrame, halfWidth: Node<"float">): Node<"float
   return min(min(halfWidth.sub(abs(frame.across)), frame.along.add(INSIDE_REACH)), CHANNEL_DEPTH);
 }
 
-function outletShare(frame: OutletFrame, halfWidth: Node<"float">, clearance: number): Node<"float"> {
+function outletShare(frame: OutletFrame, halfWidth: Node<"float">, mouthClearance: number): Node<"float"> {
   const along = smoothstep(BLEND_REACH, STRAIGHT_REACH, frame.along);
-  const across = smoothstep(halfWidth.add(clearance + SIDE_FADE), halfWidth.add(clearance), abs(frame.across));
+  const clearance = halfWidth.add(mix(mouthClearance, SIDE_CLEARANCE, smoothstep(0, STRAIGHT_REACH, frame.along)));
+  const across = smoothstep(clearance.add(SIDE_FADE), clearance, abs(frame.across));
 
   return along.mul(across);
 }
@@ -53,11 +55,11 @@ export class CaveOutlets {
   readonly #cellData: Float32Array;
   readonly #grid: WorldGrid;
   readonly #mouthData: Float32Array;
-  readonly #sideClearance: number;
+  readonly #mouthClearance: number;
 
   constructor(grid: WorldGrid, springs: readonly Spring[]) {
     this.#grid = grid;
-    this.#sideClearance = grid.cellSize * SIDE_CLEARANCE_CELLS;
+    this.#mouthClearance = grid.cellSize * MOUTH_CLEARANCE_CELLS;
     this.#cellData = new Float32Array(grid.cellCount);
     this.#mouthData = new Float32Array((LARGEST_CAVE_COUNT + 1) * 4);
     this.cells = floatDataTexture(this.#cellData, grid.cellsPerSide, grid.cellsPerSide, RedFormat);
@@ -74,15 +76,22 @@ export class CaveOutlets {
 
     for (const [index, cave] of caves.entries()) {
       const slot = index + 1;
-      const reach = cave.radius + this.#sideClearance + SIDE_FADE + grid.cellSize * Math.SQRT1_2;
+      const reach = cave.radius + SIDE_CLEARANCE + SIDE_FADE + grid.cellSize * Math.SQRT1_2;
+      const mouthReach = reach - SIDE_CLEARANCE + this.#mouthClearance;
 
       const back: [number, number] = [cave.x - cave.directionX * INSIDE_REACH, cave.z - cave.directionZ * INSIDE_REACH];
+      const head: [number, number] = [
+        cave.x + cave.directionX * STRAIGHT_REACH,
+        cave.z + cave.directionZ * STRAIGHT_REACH,
+      ];
       const front: [number, number] = [cave.x + cave.directionX * BLEND_REACH, cave.z + cave.directionZ * BLEND_REACH];
 
       this.#mouthData.set([cave.x, cave.z, Math.atan2(cave.directionZ, cave.directionX), cave.radius], slot * 4);
 
-      for (const cell of grid.cellsInRadius(cave.x, cave.z, BLEND_REACH + reach)) {
-        if (distanceToSegment(grid.cellCenterX(cell), grid.cellCenterZ(cell), back, front) <= reach) {
+      for (const cell of grid.cellsInRadius(cave.x, cave.z, BLEND_REACH + mouthReach)) {
+        const [x, z] = [grid.cellCenterX(cell), grid.cellCenterZ(cell)];
+
+        if (distanceToSegment(x, z, back, front) <= reach || distanceToSegment(x, z, back, head) <= mouthReach) {
           this.#cellData[cell] = slot;
         }
       }
@@ -109,7 +118,7 @@ export class CaveOutlets {
       along: dot(offset, direction),
     };
 
-    const share = outletShare(frame, halfWidth, this.#sideClearance).mul(step(0.5, slot));
+    const share = outletShare(frame, halfWidth, this.#mouthClearance).mul(step(0.5, slot));
 
     return {
       depth: channelDepth(frame, halfWidth),
