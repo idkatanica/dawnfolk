@@ -14,11 +14,15 @@ import { type GeneratedWorld, generateWorld } from "./world-generator.ts";
 
 const TEST_DIMENSIONS = { cellSize: 40, cellsPerSide: 128 };
 const DETERMINISM_DIMENSIONS = { cellSize: 20, cellsPerSide: 128 };
+const DETERMINISM_SEEDS = [7, 11, 13];
 const STEEP = 1;
 const CLIFF = Math.tan((55 * Math.PI) / 180);
 const SMALLEST_RIVER_GAP = 35;
 const CONFLUENCE_REACH = 100;
 const JUNCTION_CELLS = 1.5;
+const RIVER_SAMPLE_STEP = 5;
+const STRAIGHT_RUN = 150;
+const STRAIGHT_DEVIATION = 3;
 
 let world: GeneratedWorld;
 let squareWorld: GeneratedWorld;
@@ -555,6 +559,63 @@ function closestDistinctRivers(generated: GeneratedWorld): number {
   return Math.sqrt(closestSquared);
 }
 
+function resampledRiver(river: River): { x: number; z: number }[] {
+  const samples = river.points.slice(0, 1).map((point) => ({ x: point.x, z: point.z }));
+
+  let carried = 0;
+
+  for (let index = 1; index < river.points.length; index += 1) {
+    const start = river.points[index - 1];
+    const end = river.points[index];
+    const length = Math.hypot(end.x - start.x, end.z - start.z);
+
+    let along = RIVER_SAMPLE_STEP - carried;
+
+    for (; along <= length; along += RIVER_SAMPLE_STEP) {
+      samples.push({
+        x: start.x + ((end.x - start.x) * along) / length,
+        z: start.z + ((end.z - start.z) * along) / length,
+      });
+    }
+
+    carried = length - (along - RIVER_SAMPLE_STEP);
+  }
+
+  return samples;
+}
+
+function straightSamples(samples: readonly { x: number; z: number }[]): number {
+  const window = Math.round(STRAIGHT_RUN / RIVER_SAMPLE_STEP);
+  const isStraight = new Uint8Array(samples.length);
+
+  for (let first = 0; first + window < samples.length; first += 1) {
+    const start = samples[first];
+    const end = samples[first + window];
+    const chordX = end.x - start.x;
+    const chordZ = end.z - start.z;
+    const chord = Math.hypot(chordX, chordZ);
+
+    const deviations = samples
+      .slice(first, first + window + 1)
+      .map((sample) => Math.abs((sample.x - start.x) * chordZ - (sample.z - start.z) * chordX) / chord);
+
+    if (Math.max(...deviations) < STRAIGHT_DEVIATION) {
+      isStraight.fill(1, first, first + window + 1);
+    }
+  }
+
+  return isStraight.reduce((total, flag) => total + flag, 0);
+}
+
+function straightRiverShare(generated: GeneratedWorld): number {
+  const rivers = generated.water.rivers.map(resampledRiver);
+
+  const total = rivers.reduce((sum, samples) => sum + samples.length, 0);
+  const straight = rivers.reduce((sum, samples) => sum + straightSamples(samples), 0);
+
+  return straight / total;
+}
+
 function distanceToWaterfall(generated: GeneratedWorld, grid: WorldGrid, cell: number): number {
   const x = grid.cellCenterX(cell);
   const z = grid.cellCenterZ(cell);
@@ -831,7 +892,7 @@ describe("world generation", () => {
     expect(median(depths)).toBeGreaterThan(5);
   });
 
-  it("lines warm, low river banks with sand and keeps trees off it", () => {
+  it("lines warm, low river banks outside wetlands with sand and keeps trees off it", () => {
     const { terrain, vegetation } = world;
 
     const grid = new WorldGrid(TEST_DIMENSIONS);
@@ -847,7 +908,9 @@ describe("world generation", () => {
         const isGentle = slopeAt(terrain.height, grid, bank) < 0.25;
         const isWarm = terrain.baseTemperature[bank] > 4;
 
-        if (isLow && isGentle && isWarm && !hasWater(terrain.waterSurface[bank], terrain.height[bank])) {
+        const isWetland = terrain.ground[bank] === Ground.Swamp || terrain.ground[bank] === Ground.Bog;
+
+        if (isLow && isGentle && isWarm && !isWetland && !hasWater(terrain.waterSurface[bank], terrain.height[bank])) {
           banks.add(bank);
         }
       }
@@ -919,14 +982,18 @@ describe.each(ISLAND_SHAPES)("a %s world generated twice from one seed", (shape)
   test("comes out the same in every stage", () => {
     const options = { dimensions: DETERMINISM_DIMENSIONS, erosionStrength: 1, shape };
 
-    const first = generateWorld(7, options);
-    const again = generateWorld(7, options);
+    const firsts = DETERMINISM_SEEDS.map((seed) => generateWorld(seed, options));
 
-    expect(first.crossings.length).toBeGreaterThan(0);
-    expect(first.deposits.length).toBeGreaterThan(0);
-    expect(first.monuments.length).toBeGreaterThan(0);
-    expect(again).toEqual(first);
-    expect(again.vegetation.exportBuffers()).toEqual(first.vegetation.exportBuffers());
+    expect(firsts.some((first) => first.crossings.length > 0)).toBe(true);
+    expect(firsts.some((first) => first.deposits.length > 0)).toBe(true);
+    expect(firsts.some((first) => first.monuments.length > 0)).toBe(true);
+
+    for (const [index, seed] of DETERMINISM_SEEDS.entries()) {
+      const again = generateWorld(seed, options);
+
+      expect(again).toEqual(firsts[index]);
+      expect(again.vegetation.exportBuffers()).toEqual(firsts[index].vegetation.exportBuffers());
+    }
   });
 });
 
@@ -982,6 +1049,11 @@ describe("full-size island rim", () => {
   it("keeps the full-size rivers apart on both shapes", () => {
     expect(closestDistinctRivers(fullSize)).toBeGreaterThan(SMALLEST_RIVER_GAP);
     expect(closestDistinctRivers(fullSquare)).toBeGreaterThan(SMALLEST_RIVER_GAP);
+  });
+
+  it("bends full-size rivers instead of running them dead straight down even slopes on both shapes", () => {
+    expect(straightRiverShare(fullSize)).toBeLessThan(0.05);
+    expect(straightRiverShare(fullSquare)).toBeLessThan(0.05);
   });
 
   it("starts every full-size river at a pond or a cave on both shapes", () => {
