@@ -34,7 +34,6 @@ import { FULL_TURN, hashToUnit, lerp, smoothstep as smoothstepNumber } from "../
 import { isOnIsland } from "../../world/coast.ts";
 import { hasWater } from "../../world/water.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
-import { markOutlined } from "../outlines.ts";
 import { POOL_BANK, poolReachNode } from "../terrain/bog-pools.ts";
 import { coarseGroundOffsetNode, sampleHeightNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
@@ -304,8 +303,6 @@ function createLilyMaterial(
     : mix(PAD_GREEN, PAD_YELLOW, tint);
   material.roughnessNode = float(isFlower ? 0.7 : 0.35);
   material.normalNode = transformNormalToView(vec3(0, 1, 0));
-
-  markOutlined(material);
 
   return material;
 }

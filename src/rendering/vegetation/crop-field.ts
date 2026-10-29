@@ -176,8 +176,6 @@ function createCropMaterial(weather: PlantWeather): MeshStandardNodeMaterial {
   material.colorNode = varying(color, "cropColor");
   material.roughnessNode = float(0.9);
 
-  markOutlined(material);
-
   return material;
 }
 
