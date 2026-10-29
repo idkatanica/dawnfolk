@@ -21,6 +21,7 @@ const CLIFF = Math.tan((55 * Math.PI) / 180);
 const SMALLEST_RIVER_GAP = 35;
 const CONFLUENCE_REACH = 100;
 const JUNCTION_CELLS = 1.5;
+const TRUNK_LAKE_CELLS = 1.5;
 const SMOOTHING_SLACK = 10;
 const LAKE_REACH = 20;
 const RIVER_SAMPLE_STEP = 5;
@@ -457,6 +458,16 @@ function isFedByLake(generated: GeneratedWorld, grid: WorldGrid, river: River): 
   });
 }
 
+function isTrunkFedByLake(generated: GeneratedWorld, grid: WorldGrid, river: River): boolean {
+  const [head] = riverPathCells(grid, river);
+
+  return grid
+    .cellsInRadius(grid.cellCenterX(head), grid.cellCenterZ(head), grid.cellSize * TRUNK_LAKE_CELLS)
+    .some((cell) => {
+      return isLakeWater(generated.terrain, cell);
+    });
+}
+
 function headFaults(generated: GeneratedWorld): string[] {
   const grid = new WorldGrid(generated.dimensions);
   const faults: string[] = [];
@@ -698,7 +709,7 @@ function joinsNearSources(generated: GeneratedWorld): string[] {
 
       if (
         main !== tributary &&
-        !isFedByLake(generated, grid, main) &&
+        !isTrunkFedByLake(generated, grid, main) &&
         nearest.distance < cellSize * JUNCTION_CELLS &&
         nearest.along < SOURCE_REACH - SMOOTHING_SLACK
       ) {
