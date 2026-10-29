@@ -563,7 +563,23 @@ function chainCells(chain: RiverChain): number[] {
   return chain.joinsCell === NO_CELL ? [...chain.cells] : [...chain.cells, chain.joinsCell];
 }
 
-function chainFlows(network: DrainageNetwork, chains: readonly RiverChain[]): number[][] {
+function downstreamChainCell(
+  network: DrainageNetwork,
+  positions: ReadonlyMap<number, { chain: number; index: number }>,
+  cell: number
+): { chain: number; index: number } | undefined {
+  for (let current = network.receivers[cell]; current !== NO_CELL; current = network.receivers[current]) {
+    const position = positions.get(current);
+
+    if (position !== undefined) {
+      return position;
+    }
+  }
+
+  return undefined;
+}
+
+export function chainFlows(network: DrainageNetwork, chains: readonly RiverChain[]): number[][] {
   const positions = new Map<number, { chain: number; index: number }>();
 
   for (const [chain, { cells }] of chains.entries()) {
@@ -587,10 +603,24 @@ function chainFlows(network: DrainageNetwork, chains: readonly RiverChain[]): nu
     });
 
     const last = chain.cells.at(-1);
+
+    if (last === undefined) {
+      continue;
+    }
+
+    const lastFlow = flows[chainIndex][chain.cells.length - 1];
     const junction = positions.get(chain.joinsCell);
 
-    if (last !== undefined && junction !== undefined && network.receivers[last] !== chain.joinsCell) {
-      inflows[junction.chain][junction.index] += flows[chainIndex][chain.cells.length - 1];
+    if (junction !== undefined && network.receivers[last] !== chain.joinsCell) {
+      inflows[junction.chain][junction.index] += lastFlow;
+      continue;
+    }
+
+    const downstream = downstreamChainCell(network, positions, last);
+    const addedFlow = lastFlow - network.accumulation[last];
+
+    if (downstream !== undefined && downstream.chain < chainIndex && addedFlow > 0) {
+      inflows[downstream.chain][downstream.index] += addedFlow;
     }
   }
 
