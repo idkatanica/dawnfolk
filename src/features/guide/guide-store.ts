@@ -1,0 +1,61 @@
+import { z } from "zod";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import {
+  applyGuideEvent,
+  dismissTip,
+  FRESH_GUIDE,
+  type GuideEvent,
+  type GuideProgress,
+  isGuideTipId,
+} from "./guide-tips.ts";
+
+const STORAGE_KEY = "dawnfolk.guide";
+
+const storedSchema = z.object({
+  done: z.array(z.string()).default([]),
+  isOff: z.boolean().default(false),
+});
+
+export interface GuideStore {
+  readonly dismiss: () => void;
+  readonly progress: GuideProgress;
+  readonly record: (event: GuideEvent) => void;
+  readonly setTipsShown: (areShown: boolean) => void;
+}
+
+export const useGuideStore = create<GuideStore>()(
+  persist(
+    (set) => ({
+      dismiss: () => set((state) => ({ progress: dismissTip(state.progress) })),
+      progress: FRESH_GUIDE,
+      record: (event) => set((state) => ({ progress: applyGuideEvent(state.progress, event) })),
+      setTipsShown: (areShown) => set({ progress: areShown ? FRESH_GUIDE : { ...FRESH_GUIDE, isOff: true } }),
+    }),
+    {
+      merge: mergeStored,
+      name: STORAGE_KEY,
+      partialize: (state) => ({ done: state.progress.done, isOff: state.progress.isOff }),
+    }
+  )
+);
+
+export function readStoredGuide(value: unknown): GuideProgress {
+  const result = storedSchema.safeParse(value);
+
+  if (!result.success) {
+    console.warn("Ignoring saved tips progress", result.error.issues);
+
+    return FRESH_GUIDE;
+  }
+
+  return { ...FRESH_GUIDE, done: result.data.done.filter(isGuideTipId), isOff: result.data.isOff };
+}
+
+function mergeStored(persisted: unknown, current: GuideStore): GuideStore {
+  if (persisted === undefined) {
+    return current;
+  }
+
+  return { ...current, progress: readStoredGuide(persisted) };
+}

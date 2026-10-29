@@ -5,6 +5,7 @@ import { TextButton } from "../../design/buttons.tsx";
 import { ChoiceField } from "../../design/choice-field.tsx";
 import { ToggleField } from "../../design/toggle-field.tsx";
 import { isQualityLevel, QUALITY_LEVELS, type QualityLevel } from "../../rendering/render-quality.ts";
+import { useGuideStore } from "../guide/guide-store.ts";
 import { useInterfaceStore } from "../interface/interface-store.ts";
 import { useWorldDraft } from "../new-world/use-world-draft.ts";
 import { NameField, SeedField, ShapeChoice } from "../new-world/world-fields.tsx";
@@ -74,9 +75,11 @@ function DisplayChoice() {
   const setLabelsShown = useInterfaceStore((state) => state.setLabelsShown);
   const areOutlinesShown = useInterfaceStore((state) => state.areOutlinesShown);
   const setOutlinesShown = useInterfaceStore((state) => state.setOutlinesShown);
+  const areTipsShown = useGuideStore((state) => !state.progress.isOff);
+  const setTipsShown = useGuideStore((state) => state.setTipsShown);
 
   return (
-    <SettingsGroup description="What is drawn over the island and its life." title="Display">
+    <SettingsGroup description="What is drawn over the island, and the tips for new players." title="Display">
       <ToggleField
         description="Tribe banners and the names of peaks and lakes."
         isChecked={areLabelsShown}
@@ -89,6 +92,13 @@ function DisplayChoice() {
         isChecked={areOutlinesShown}
         label="Outlines"
         onChange={setOutlinesShown}
+      />
+
+      <ToggleField
+        description="Tips start again from the first one."
+        isChecked={areTipsShown}
+        label="Tips"
+        onChange={setTipsShown}
       />
     </SettingsGroup>
   );
