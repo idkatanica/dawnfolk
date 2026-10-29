@@ -49,5 +49,7 @@ Review the folders or branch the request names. Without one, review the files th
 
 ## Finishing
 
-Commit on a `style/<area>` branch as `style(<scope>)` or `refactor(<scope>)` and open a pull request as CONTRIBUTING.md
-describes. Don't merge it. Report the pull request, the changes grouped by kind, and what you left and why.
+When the request names a worktree and branch, as the ship workflow does, work there, commit on that branch as
+`style(<scope>)` or `refactor(<scope>)`, skip screenshots (the workflow takes them) and don't push or open a pull
+request. Otherwise commit on a `style/<area>` branch and open a pull request as CONTRIBUTING.md describes. Don't merge
+it. Report the pull request or commits, the changes grouped by kind, and what you left and why.

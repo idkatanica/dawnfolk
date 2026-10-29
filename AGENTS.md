@@ -24,10 +24,22 @@ bun run test       # unit tests in Node, browser tests in Chromium
   `?seed=7&shape=round&quality=high&paused=1&hours=11&camera=x,z,distance,pitch,yaw`, and compare screenshots before
   and after at 1440×900, 768×1024 and 390×844. Keep the screenshots outside the repository.
 - Look at a far view too. Water, terrain and vegetation switch level of detail with distance.
-- Headless Chromium with SwiftShader renders in software, so colors and some WebGPU paths differ. Prefer system Chrome
-  with `--use-angle=metal --enable-gpu` on a Mac, and say which one you used.
+- `bun run shots <dev server url> <folder> [scene ...]` shoots the scenes in `tests/scenes.ts`, or `name=query`
+  scenes you pass, at those three sizes. It runs system Chrome headless with `--use-angle=metal --enable-gpu`, so it
+  renders on the GPU without opening a window, and prints the WebGPU adapter. Add a scene there when you fix a bug
+  that only shows by eye.
+- Playwright's own headless Chromium uses SwiftShader and renders in software, so colors and some WebGPU paths differ.
+  Say which browser you used.
 - In development the engine is on `window.dawnfolk`: `session.frame` holds the tribes, weather and calendar, `camera`
   the view, and `powers` the active tool.
+
+## Shipping a change
+
+- `/ship <worktree> [auto|light|full]` runs the saved workflow in `.claude/workflows/ship.js` on a committed branch:
+  the checks, read-only reviewers from `.claude/agents`, a verifier per finding, one fixer, the `code-style` agent,
+  screenshots before and after for rendering or interface changes, and the checks again. Light mode runs only the
+  bugs reviewer; auto picks full for changes over 200 lines or ones that touch the world, simulation, saves or shaders.
+- It doesn't push or open the pull request. Read its report, then push and open the pull request yourself.
 
 ## Rules that are easy to miss
 
