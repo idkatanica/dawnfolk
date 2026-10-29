@@ -50,6 +50,7 @@ const EMBER_BRIGHT = vec3(1.3, 0.42, 0.06);
 const GROUND_FIRE_LIGHT = 0.6;
 const STONE = vec3(0.19, 0.155, 0.12);
 const DARK_STONE = 0.04;
+const GRAY_STONE = 0.82;
 const STRATA_FREQUENCY = 0.45;
 const STRATA_CONTRAST = 0.035;
 const STEEP_FACE_SHADE = 0.82;
@@ -281,7 +282,9 @@ export function createTerrainMaterial({
   );
   const mottled = field.color;
   const redStone = smoothstep(0.6, 0.45, albedo.g.div(max(albedo.r, 0.001)));
-  const darkStone = smoothstep(DARK_STONE, DARK_STONE * 0.5, albedo.r);
+  const darkStone = smoothstep(DARK_STONE, DARK_STONE * 0.5, albedo.r).mul(
+    smoothstep(GRAY_STONE - 0.1, GRAY_STONE, albedo.b.div(max(albedo.g, 0.001)))
+  );
   const faceShade = mix(float(1), float(STEEP_FACE_SHADE), smoothstep(0.3, 0.7, steepness));
   const rockColor = mix(STONE, albedo.mul(0.85), max(redStone, darkStone))
     .mul(strata)
