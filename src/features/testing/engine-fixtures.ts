@@ -17,7 +17,7 @@ const TEST_CAMERA: CameraState = { distance: 300, pitch: 0.6, targetX: 0, target
 interface TestEngine {
   readonly clearSelection: Mock<() => void>;
   readonly engine: EngineHandle;
-  readonly focusOn: Mock<(x: number, z: number, distance?: number | null) => void>;
+  readonly focusOn: Mock<(x: number, z: number, distance?: number) => void>;
   readonly followSelection: Mock<() => void>;
   readonly placeLabel: Mock<(x: number, z: number, lift: number) => LabelPlacement | null>;
   readonly renderFrame: () => void;
@@ -62,7 +62,7 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
 
   const send = vi.spyOn(session, "send");
   const clearSelection = vi.fn<() => void>(() => setFollowing(false));
-  const focusOn = vi.fn<(x: number, z: number, distance?: number | null) => void>(() => setFollowing(false));
+  const focusOn = vi.fn<(x: number, z: number, distance?: number) => void>(() => setFollowing(false));
   const followSelection = vi.fn<() => void>(() => setFollowing(true));
   const placeLabel = vi.fn<(x: number, z: number, lift: number) => LabelPlacement | null>(() => null);
   const stopFollowing = vi.fn<() => void>(() => setFollowing(false));

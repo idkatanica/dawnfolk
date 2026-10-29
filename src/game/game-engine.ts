@@ -50,26 +50,18 @@ interface EngineParts {
   readonly session: GameSession;
 }
 
-function openSession(
-  connection: SimulationConnection,
-  world: WorldSource,
-  onProgress: (progress: GenerationProgress) => void
-): Promise<GameSession> {
-  if (world.kind === "saved") {
-    return GameSession.load(connection, world.state, { journal: world.journal, onProgress });
-  }
-
-  return GameSession.create(connection, world.request, { onProgress });
-}
-
-async function createSessionOrRelease(
+async function openSessionOrRelease(
   renderer: WebGPURenderer,
   connection: SimulationConnection,
   world: WorldSource,
   onProgress: (progress: GenerationProgress) => void
 ): Promise<GameSession> {
   try {
-    return await openSession(connection, world, onProgress);
+    if (world.kind === "saved") {
+      return await GameSession.load(connection, world.state, { journal: world.journal, onProgress });
+    }
+
+    return await GameSession.create(connection, world.request, { onProgress });
   } catch (error) {
     renderer.dispose();
     connection.dispose();
@@ -155,7 +147,7 @@ export class GameEngine implements EngineHandle {
   static async start(options: EngineOptions): Promise<GameEngine> {
     const renderer = await createRenderer(options.canvas, RENDER_QUALITY[options.quality]);
 
-    const session = await createSessionOrRelease(
+    const session = await openSessionOrRelease(
       renderer,
       new WorkerSimulationConnection(),
       options.world,
@@ -183,8 +175,8 @@ export class GameEngine implements EngineHandle {
     this.powers.select(selection);
   }
 
-  focusOn(x: number, z: number, distance: number | null = null): void {
-    this.camera.flyTo({ targetX: x, targetZ: z, ...(distance === null ? {} : { distance }) });
+  focusOn(x: number, z: number, distance?: number): void {
+    this.camera.flyTo({ targetX: x, targetZ: z, ...(distance === undefined ? {} : { distance }) });
   }
 
   followSelection(): void {
@@ -239,12 +231,14 @@ export class GameEngine implements EngineHandle {
   }
 
   #frame(time: number): void {
-    if (!this.#pacer.isFrameDue(time, document.hasFocus())) {
+    const hasFocus = document.hasFocus();
+
+    if (!this.#pacer.isFrameDue(time, hasFocus)) {
       return;
     }
 
     const elapsed = this.#pacer.markRendered(time);
-    const hasNewResolution = this.#resolution.record(elapsed, document.hasFocus());
+    const hasNewResolution = this.#resolution.record(elapsed, hasFocus);
 
     if (hasNewResolution || window.devicePixelRatio !== this.#devicePixelRatio) {
       this.#resize();
