@@ -5,7 +5,7 @@ import type { WorldRequest } from "../generation/generation-options.ts";
 import { ISLAND_SHAPES } from "../world/island-shape.ts";
 import type { Simulation, SimulationSnapshot } from "./simulation.ts";
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 const LARGEST_CELLS_PER_SIDE = 4096;
 const MISSING_SPECIES = -1;

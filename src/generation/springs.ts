@@ -141,16 +141,7 @@ function channelPoint(head: RiverPoint, x: number, z: number, width: number, dep
 function pondAround(site: SpringSite, radius: number, seed: number): Spring {
   const { direction, head } = site;
 
-  const shape = headPond(site, radius, seed);
-  const outlet = pondOutlineRadius(shape, Math.atan2(direction.z, direction.x)) * POND_OUTLET_SHARE;
-
-  return { ...shape, x: head.x - direction.x * outlet, z: head.z - direction.z * outlet };
-}
-
-function headPond(site: SpringSite, radius: number, seed: number): Spring {
-  const { direction, head } = site;
-
-  return {
+  const shape: Spring = {
     cells: [],
     directionX: direction.x,
     directionZ: direction.z,
@@ -162,13 +153,12 @@ function headPond(site: SpringSite, radius: number, seed: number): Spring {
     x: head.x,
     z: head.z,
   };
+  const outlet = pondOutlineRadius(shape, Math.atan2(direction.z, direction.x)) * POND_OUTLET_SHARE;
+
+  return { ...shape, x: head.x - direction.x * outlet, z: head.z - direction.z * outlet };
 }
 
 function shapeSeed(site: SpringSite, shape: number): number {
-  if (shape === 0) {
-    return site.seed;
-  }
-
   return hashToUnit(site.seed, shape, SHAPE_SALT);
 }
 
