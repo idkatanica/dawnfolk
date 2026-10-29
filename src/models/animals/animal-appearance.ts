@@ -1,7 +1,7 @@
 import type { AnimalKind } from "../../content/animals.ts";
 import { colorFromPalette, mixColors, scaleColor } from "../../shared/color.ts";
 import { lerp } from "../../shared/math.ts";
-import { createRandom, type RandomSource } from "../../shared/random.ts";
+import { type RandomSource, randomFromUnitSeed } from "../../shared/random.ts";
 
 const DEER_COATS: readonly number[] = [0x6e_4a_2e, 0x7a_4e_30, 0x8a_5a_36, 0x9a_6a_40, 0xa8_7a_4c];
 const DEER_BELLY = 0xe0_cc_aa;
@@ -37,6 +37,18 @@ export interface AnimalAppearance {
   readonly tuskLength: number;
 }
 
+const PLAIN_FEATURES: Pick<
+  AnimalAppearance,
+  "antlerSize" | "hasAntlers" | "hasRuff" | "hasSpots" | "hornLength" | "tuskLength"
+> = {
+  antlerSize: 0,
+  hasAntlers: false,
+  hasRuff: false,
+  hasSpots: false,
+  hornLength: 0,
+  tuskLength: 0,
+};
+
 interface AnimalAppearanceInput {
   readonly kind: AnimalKind;
   readonly seed: number;
@@ -59,16 +71,14 @@ function deerAppearance(random: RandomSource, youth: number): AnimalAppearance {
   const size = random.between(0.9, 1.12) * youthScale(youth);
 
   return {
+    ...PLAIN_FEATURES,
     ...antlerChoice(random, youth),
     coat,
     coatLight: mixColors(DEER_BELLY, coat, random.between(0.05, 0.25)),
-    hasRuff: false,
     hasSpots: youth > 0.35,
     headScale: lerp(1, 1.32, youth),
-    hornLength: 0,
     legScale: lerp(1, 1.14, youth),
     size,
-    tuskLength: 0,
   };
 }
 
@@ -77,14 +87,10 @@ function mammothAppearance(random: RandomSource, youth: number): AnimalAppearanc
   const size = random.between(0.9, 1.1) * youthScale(youth);
 
   return {
-    antlerSize: 0,
+    ...PLAIN_FEATURES,
     coat,
     coatLight: scaleColor(coat, 1.35),
-    hasAntlers: false,
-    hasRuff: false,
-    hasSpots: false,
     headScale: lerp(1, 1.25, youth),
-    hornLength: 0,
     legScale: lerp(1, 1.08, youth),
     size,
     tuskLength: random.between(0.65, 1.15) * (1 - youth * 0.8),
@@ -97,17 +103,13 @@ function ibexAppearance(random: RandomSource, youth: number): AnimalAppearance {
   const size = random.between(0.9, 1.1) * youthScale(youth);
 
   return {
-    antlerSize: 0,
+    ...PLAIN_FEATURES,
     coat,
     coatLight: mixColors(IBEX_BELLY, coat, random.between(0.05, 0.2)),
-    hasAntlers: false,
-    hasRuff: false,
-    hasSpots: false,
     headScale: lerp(1, 1.3, youth),
     hornLength: (isBuck ? random.between(0.85, 1.2) : random.between(0.3, 0.55)) * (1 - youth),
     legScale: lerp(1, 1.12, youth),
     size,
-    tuskLength: 0,
   };
 }
 
@@ -116,17 +118,12 @@ function hareAppearance(random: RandomSource, youth: number): AnimalAppearance {
   const size = HARE_STATURE * random.between(0.92, 1.08) * youthScale(youth);
 
   return {
-    antlerSize: 0,
+    ...PLAIN_FEATURES,
     coat,
     coatLight: mixColors(HARE_WHITE, coat, random.between(0.02, 0.14)),
-    hasAntlers: false,
-    hasRuff: false,
-    hasSpots: false,
     headScale: lerp(1, 1.3, youth),
-    hornLength: 0,
     legScale: lerp(1, 1.1, youth),
     size,
-    tuskLength: 0,
   };
 }
 
@@ -143,22 +140,18 @@ function wolfAppearance(random: RandomSource, youth: number): AnimalAppearance {
   const size = random.between(0.9, 1.12) * youthScale(youth);
 
   return {
-    antlerSize: 0,
+    ...PLAIN_FEATURES,
     coat,
     coatLight: mixColors(WOLF_BELLY, coat, random.between(0.1, 0.35)),
-    hasAntlers: false,
     hasRuff: youth < 0.3 && random.chance(0.7),
-    hasSpots: false,
     headScale: lerp(1, 1.35, youth),
-    hornLength: 0,
     legScale: lerp(1, 1.1, youth),
     size,
-    tuskLength: 0,
   };
 }
 
 export function animalAppearance(input: AnimalAppearanceInput): AnimalAppearance {
-  const random = createRandom(Math.floor(input.seed * 2_147_483_647) + 7);
+  const random = randomFromUnitSeed(input.seed, 7);
 
   return APPEARANCES[input.kind](random, input.youth);
 }

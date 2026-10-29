@@ -1,7 +1,14 @@
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import type { MeshBuilder, VertexStyle } from "../mesh/mesh-builder.ts";
 import { box, cone, cylinder, lathe, type TubePoint, tube } from "../mesh/shapes.ts";
-import { type Side, segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
+import {
+  lerpTriple,
+  type Side,
+  segmentLength,
+  segmentTransform,
+  type Triple,
+  transformOf,
+} from "../mesh/transforms.ts";
 import { type HumanDetail, trimSegments } from "./human-detail.ts";
 import { HumanBone } from "./human-skeleton.ts";
 import { addRod, inLeftHand, inRightHand, LEFT_FIST, onChest, RIGHT_FIST } from "./prop-placement.ts";
@@ -123,11 +130,7 @@ function quiverEnd(detail: HumanDetail, end: Triple): Triple {
 }
 
 function alongQuiver(share: number): Triple {
-  return [
-    QUIVER_BOTTOM[0] + (QUIVER_TOP[0] - QUIVER_BOTTOM[0]) * share,
-    QUIVER_BOTTOM[1] + (QUIVER_TOP[1] - QUIVER_BOTTOM[1]) * share,
-    QUIVER_BOTTOM[2] + (QUIVER_TOP[2] - QUIVER_BOTTOM[2]) * share,
-  ];
+  return lerpTriple(QUIVER_BOTTOM, QUIVER_TOP, share);
 }
 
 function addQuiverArrow(builder: MeshBuilder, detail: HumanDetail, index: number): void {
@@ -145,11 +148,7 @@ function addQuiverArrow(builder: MeshBuilder, detail: HumanDetail, index: number
     return;
   }
 
-  const fletching: Triple = [
-    base[0] + (end[0] - base[0]) * 0.86,
-    base[1] + (end[1] - base[1]) * 0.86,
-    base[2] + (end[2] - base[2]) * 0.86,
-  ];
+  const fletching = lerpTriple(base, end, 0.86);
 
   builder.add(box(0.026, 0.05, 0.006), {
     style: onChest(MaterialSlot.Accent),

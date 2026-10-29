@@ -72,16 +72,16 @@ export function chainBlend(chain: WeightChain, x: number, y: number, z: number):
   return { boneA: chain.bones[segment], boneB: chain.bones[segment], weight: 0 };
 }
 
-export function chainStyle(chain: WeightChain): VertexStyle {
-  function blendAt(point: SurfacePoint): BoneBlend {
-    return chainBlend(chain, point.position.x, point.position.y, point.position.z);
-  }
-
+export function blendStyle(blendAt: (point: SurfacePoint) => BoneBlend): VertexStyle {
   return {
     boneA: (point) => blendAt(point).boneA,
     boneB: (point) => blendAt(point).boneB,
     boneWeight: (point) => blendAt(point).weight,
   };
+}
+
+export function chainStyle(chain: WeightChain): VertexStyle {
+  return blendStyle((point) => chainBlend(chain, point.position.x, point.position.y, point.position.z));
 }
 
 export function rigidStyle(bone: number): VertexStyle {

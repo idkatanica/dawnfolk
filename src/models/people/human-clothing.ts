@@ -114,24 +114,19 @@ function jaggedTop(shape: Shape, aboveY: number, teeth: number, depth: number): 
   return jaggedEdge(shape, (vertex) => vertex.y >= aboveY, teeth, depth);
 }
 
-function garmentChannel(
-  point: SurfacePoint,
-  upper: VertexStyle,
-  lower: VertexStyle,
-  channel: "boneA" | "boneB" | "boneWeight"
-): number {
-  const style = point.position.y >= WAIST_LINE ? upper : lower;
+function garmentChannel(point: SurfacePoint, lower: VertexStyle, channel: "boneA" | "boneB" | "boneWeight"): number {
+  const style = point.position.y >= WAIST_LINE ? FLEXIBLE_TORSO_STYLE : lower;
 
   return resolveChannel(style[channel], 0, point);
 }
 
 function garmentStyle(followsLegs: number, hemLine = 0.55): VertexStyle {
-  const lower = skirtStyle(followsLegs, 0.92, hemLine);
+  const lower = skirtStyle(followsLegs, hemLine);
 
   return {
-    boneA: (point) => garmentChannel(point, FLEXIBLE_TORSO_STYLE, lower, "boneA"),
-    boneB: (point) => garmentChannel(point, FLEXIBLE_TORSO_STYLE, lower, "boneB"),
-    boneWeight: (point) => garmentChannel(point, FLEXIBLE_TORSO_STYLE, lower, "boneWeight"),
+    boneA: (point) => garmentChannel(point, lower, "boneA"),
+    boneB: (point) => garmentChannel(point, lower, "boneB"),
+    boneWeight: (point) => garmentChannel(point, lower, "boneWeight"),
   };
 }
 

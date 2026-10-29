@@ -37,8 +37,6 @@ export const HumanJoint = {
   Wrist: [0.215, 0.885, 0.01],
 } as const satisfies Readonly<Record<string, Triple>>;
 
-export const HUMAN_BONE_COUNT = 17;
-
 interface SideBones {
   readonly foot: HumanBoneIndex;
   readonly forearm: HumanBoneIndex;
@@ -93,6 +91,8 @@ export const HUMAN_SKELETON = createSkeleton({
   ],
   footContacts: [...footContacts(1), ...footContacts(-1)],
 });
+
+export const HUMAN_BONE_COUNT = HUMAN_SKELETON.bones.length;
 
 export function otherSide(side: Side): Side {
   return side === 1 ? -1 : 1;

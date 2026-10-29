@@ -1,7 +1,8 @@
+import { lerp } from "../../shared/math.ts";
 import type { FightPose } from "../../world/agent-poses.ts";
 import { SIDES, type Side } from "../mesh/transforms.ts";
 import { arc, cosineWave, degrees, type Keyframe, keyframes, wave } from "../rig/curves.ts";
-import { type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
+import { once, type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import type { HumanClip, HumanClipContext } from "./human-clips.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
 import { HumanBone } from "./human-skeleton.ts";
@@ -12,8 +13,8 @@ export const FIGHT_CLIPS: Readonly<Record<FightPose, HumanClip>> = {
   block: { apply: block, timing: seconds(1.2), tool: null },
   brawl: { apply: brawl, timing: seconds(0.9), tool: null },
   charge: { apply: charge, timing: STRIDE_TIMING, tool: null },
-  fall: { apply: fall, timing: { cycleSeconds: 1.5, kind: "once" }, tool: null },
-  flinch: { apply: flinch, timing: { cycleSeconds: 0.5, kind: "once" }, tool: null },
+  fall: { apply: fall, timing: once(1.5), tool: null },
+  flinch: { apply: flinch, timing: once(0.5), tool: null },
   march: { apply: march, timing: STRIDE_TIMING, tool: null },
   thrust: { apply: thrust, timing: seconds(1.1), tool: null },
 };
@@ -135,21 +136,21 @@ function arm(forward: number, outward: number, elbow: number, twist = 0, wrist =
 
 function mixAngles(from: ArmAngles, to: ArmAngles, amount: number): ArmAngles {
   return {
-    elbow: from.elbow + (to.elbow - from.elbow) * amount,
-    forward: from.forward + (to.forward - from.forward) * amount,
-    outward: from.outward + (to.outward - from.outward) * amount,
-    twist: from.twist + (to.twist - from.twist) * amount,
-    wrist: from.wrist + (to.wrist - from.wrist) * amount,
+    elbow: lerp(from.elbow, to.elbow, amount),
+    forward: lerp(from.forward, to.forward, amount),
+    outward: lerp(from.outward, to.outward, amount),
+    twist: lerp(from.twist, to.twist, amount),
+    wrist: lerp(from.wrist, to.wrist, amount),
   };
 }
 
 function mixStances(from: Stance, to: Stance, amount: number): Stance {
   return {
-    bodyForward: from.bodyForward + (to.bodyForward - from.bodyForward) * amount,
-    bodyTurn: from.bodyTurn + (to.bodyTurn - from.bodyTurn) * amount,
-    chestTurn: from.chestTurn + (to.chestTurn - from.chestTurn) * amount,
+    bodyForward: lerp(from.bodyForward, to.bodyForward, amount),
+    bodyTurn: lerp(from.bodyTurn, to.bodyTurn, amount),
+    chestTurn: lerp(from.chestTurn, to.chestTurn, amount),
     guardArm: mixAngles(from.guardArm, to.guardArm, amount),
-    headTurn: from.headTurn + (to.headTurn - from.headTurn) * amount,
+    headTurn: lerp(from.headTurn, to.headTurn, amount),
     weaponArm: mixAngles(from.weaponArm, to.weaponArm, amount),
   };
 }

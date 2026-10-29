@@ -1,4 +1,5 @@
 import { Euler, Matrix4, Quaternion, Vector3 } from "three";
+import { lerp } from "../../shared/math.ts";
 
 export const MIRROR_X = new Matrix4().makeScale(-1, 1, 1);
 
@@ -42,6 +43,10 @@ export function segmentTransform(start: Triple, end: Triple): Matrix4 {
 
 export function segmentLength(start: Triple, end: Triple): number {
   return Math.hypot(end[0] - start[0], end[1] - start[1], end[2] - start[2]);
+}
+
+export function lerpTriple(from: Triple, to: Triple, amount: number): Triple {
+  return [lerp(from[0], to[0], amount), lerp(from[1], to[1], amount), lerp(from[2], to[2], amount)];
 }
 
 export function combine(...transforms: readonly Matrix4[]): Matrix4 {

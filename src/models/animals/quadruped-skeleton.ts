@@ -22,6 +22,7 @@ export const QuadrupedBone = {
   UpperHindRight: 15,
 } as const;
 
+export const FIRST_EXTRA_BONE = 18;
 export const LEG_ENDS: readonly LegEnd[] = ["front", "hind"];
 
 type LegJoints = readonly [upper: Triple, lower: Triple, hoof: Triple];

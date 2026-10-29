@@ -13,7 +13,7 @@ import type { AnimalDetail } from "./animal-detail.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
 import { addLegs, addMuzzleFace, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, legStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
-import { QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
+import { FIRST_EXTRA_BONE, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
 export const HARE_FRAME: QuadrupedFrame = {
   bodyContacts: [
@@ -59,7 +59,7 @@ export const HARE_GAIT: GaitStyle = {
   walkSwing: degrees(24),
 };
 
-const EARS_BONE = 18;
+const EARS_BONE = FIRST_EXTRA_BONE;
 
 const BODY: readonly BodySection[] = [
   { centerY: 0.21, halfHeight: 0, halfWidth: 0, z: -0.295 },

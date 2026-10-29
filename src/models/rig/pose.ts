@@ -1,3 +1,4 @@
+import { lerp } from "../../shared/math.ts";
 import type { Grounding } from "./skeleton.ts";
 
 export const RotationAxis = {
@@ -17,6 +18,10 @@ export const STRIDE_TIMING: ClipTiming = { kind: "stride" };
 
 export function seconds(cycleSeconds: number): ClipTiming {
   return { cycleSeconds, kind: "seconds" };
+}
+
+export function once(cycleSeconds: number): ClipTiming {
+  return { cycleSeconds, kind: "once" };
 }
 
 function blendedGrounding(from: Grounding, to: Grounding): Grounding {
@@ -52,10 +57,10 @@ export class Pose {
 
   blendBetween(from: Pose, to: Pose, amount: number): void {
     for (let index = 0; index < this.angles.length; index += 1) {
-      this.angles[index] = from.angles[index] + (to.angles[index] - from.angles[index]) * amount;
+      this.angles[index] = lerp(from.angles[index], to.angles[index], amount);
     }
 
-    this.height = from.height + (to.height - from.height) * amount;
+    this.height = lerp(from.height, to.height, amount);
     this.grounding = blendedGrounding(from.grounding, to.grounding);
   }
 }

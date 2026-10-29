@@ -1,7 +1,7 @@
 import type { AnimalFightPose } from "../../world/agent-poses.ts";
 import { SIDES } from "../mesh/transforms.ts";
 import { degrees, type Keyframe, keyframes, wave } from "../rig/curves.ts";
-import { type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
+import { once, type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import type { AnimalClip, AnimalClipContext } from "./quadruped-clips.ts";
 import {
   bendBone,
@@ -17,8 +17,8 @@ import { LEG_ENDS, QuadrupedBone, sideName } from "./quadruped-skeleton.ts";
 export const QUADRUPED_FIGHT_CLIPS: Readonly<Record<AnimalFightPose, AnimalClip>> = {
   attack: { apply: attack, timing: seconds(0.9) },
   charge: { apply: charge, timing: STRIDE_TIMING },
-  fall: { apply: fall, timing: { cycleSeconds: 1.3, kind: "once" } },
-  flinch: { apply: flinch, timing: { cycleSeconds: 0.5, kind: "once" } },
+  fall: { apply: fall, timing: once(1.3) },
+  flinch: { apply: flinch, timing: once(0.5) },
 };
 
 const LUNGE: readonly Keyframe[] = [

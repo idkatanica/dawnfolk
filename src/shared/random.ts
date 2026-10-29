@@ -80,3 +80,7 @@ export function createRandom(seed: number): RandomSource {
 
   return new SeededRandom(generator);
 }
+
+export function randomFromUnitSeed(seed: number, salt: number): RandomSource {
+  return createRandom(Math.floor(seed * 2_147_483_647) + salt);
+}

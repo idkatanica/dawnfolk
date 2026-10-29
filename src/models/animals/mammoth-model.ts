@@ -25,14 +25,12 @@ import type { AnimalDetail } from "./animal-detail.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
 import { addLegs, hoofBelow, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
-import { QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
-
-export const MAMMOTH_BONE_COUNT = 21;
+import { FIRST_EXTRA_BONE, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
 const MammothBone = {
-  TrunkBase: 18,
-  TrunkMiddle: 19,
-  TrunkTip: 20,
+  TrunkBase: FIRST_EXTRA_BONE,
+  TrunkMiddle: FIRST_EXTRA_BONE + 1,
+  TrunkTip: FIRST_EXTRA_BONE + 2,
 } as const;
 
 export const MAMMOTH_FRAME: QuadrupedFrame = {
@@ -70,6 +68,8 @@ export const MAMMOTH_FRAME: QuadrupedFrame = {
   spine: [0, 2.25, -0.35],
   tail: [0, 2.15, -1.55],
 };
+
+export const MAMMOTH_BONE_COUNT = FIRST_EXTRA_BONE + MAMMOTH_FRAME.extraBones.length;
 
 export const MAMMOTH_GAIT: GaitStyle = {
   deadHeadRoll: 0,
