@@ -1,9 +1,11 @@
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import type { HeldView } from "../../simulation/hand/grab-target.ts";
+import type { GrabbableKind, GrabTarget } from "../../simulation/hand/grab-target.ts";
 import type { Inspection } from "../../simulation/inspection.ts";
 import { footingOn } from "../../world/crossings.ts";
-import { HELD_LIFT, HIDDEN_LEVEL, type ViewInput } from "../view-input.ts";
+import type { HandMotion, HandPose } from "../hand-motion.ts";
+import { HIDDEN_LEVEL, type ViewInput } from "../view-input.ts";
 import type { AgentMarkers } from "./agent-markers.ts";
+import type { AgentPalette } from "./agent-palette.ts";
 
 export const NO_SELECTION = -1;
 
@@ -11,6 +13,8 @@ const ANKLE_DEPTH = 0.18;
 
 export interface AgentViewInput extends ViewInput {
   readonly gameSeconds: number;
+  readonly hand: HandMotion;
+  readonly highlighted: GrabTarget | null;
   readonly markers: AgentMarkers;
   readonly realSeconds: number;
   readonly secondsSinceTick: number;
@@ -46,12 +50,32 @@ export function selectedAgentId(inspection: Inspection | null, kind: "animal" | 
   return inspection.id;
 }
 
-export function heldLift(held: HeldView | null, kind: "animal" | "person", id: number): number {
-  if (held === null || held.kind !== kind || held.id !== id) {
+export function liftOf(pose: HandPose | null): number {
+  if (pose === null) {
     return 0;
   }
 
-  return HELD_LIFT;
+  return pose.lift;
+}
+
+export function holdFigure(
+  palette: AgentPalette,
+  row: number,
+  heading: number,
+  pose: HandPose | null,
+  isHighlighted: boolean
+): void {
+  if (pose !== null) {
+    palette.tiltToward(row, heading, pose.tiltX, pose.tiltZ);
+  }
+
+  if (isHighlighted) {
+    palette.highlightRow.value = row;
+  }
+}
+
+export function isHighlightedAgent(highlighted: GrabTarget | null, kind: GrabbableKind, id: number): boolean {
+  return highlighted !== null && highlighted.kind === kind && highlighted.id === id;
 }
 
 export function forgetUnseen<Visual>(visuals: Map<number, Visual>, seen: ReadonlySet<number>): void {
