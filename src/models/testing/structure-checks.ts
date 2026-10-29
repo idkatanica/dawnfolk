@@ -14,9 +14,10 @@ export function widestReach(mesh: MeshData): number {
 
 export function soundnessProblems(mesh: MeshData): string[] {
   const detached = loosePieces(mesh).map((piece) => `detached ${piece}`);
-  const openEdge = highestOpenEdge(mesh) < 0.05 ? [] : [`open edge at ${highestOpenEdge(mesh).toFixed(2)}`];
+  const openEdge = highestOpenEdge(mesh);
+  const openEdges = openEdge < 0.05 ? [] : [`open edge at ${openEdge.toFixed(2)}`];
 
-  return [...meshProblems(mesh), ...detached, ...openEdge];
+  return [...meshProblems(mesh), ...detached, ...openEdges];
 }
 
 export function orderProblems(mesh: MeshData): string[] {
