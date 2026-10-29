@@ -44,10 +44,6 @@ const OPPOSITE_SIDES = [
   [1, 0],
 ] as const;
 
-export function isNearLake(grid: WorldGrid, lakeIds: Int32Array, x: number, z: number, radius: number): boolean {
-  return grid.cellsInRadius(x, z, radius).some((cell) => lakeIds[cell] !== NO_CELL);
-}
-
 interface HydrologyOptions {
   lakeMinimumArea: number;
   lakeMinimumCatchmentArea: number;
@@ -162,6 +158,10 @@ function toCellThresholds(grid: WorldGrid, options: HydrologyOptions): CellThres
     riverBasinMinimumDepth: options.riverBasinMinimumDepth,
     riverThreshold: options.riverCatchmentArea / cellArea,
   };
+}
+
+export function isNearLake(grid: WorldGrid, lakeIds: Int32Array, x: number, z: number, radius: number): boolean {
+  return grid.cellsInRadius(x, z, radius).some((cell) => lakeIds[cell] !== NO_CELL);
 }
 
 export function touchesOffIsland(grid: WorldGrid, coastDistance: Float32Array, cell: number): boolean {
