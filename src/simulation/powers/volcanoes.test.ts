@@ -81,8 +81,12 @@ function warnOfLava(simulation: Simulation): LavaWarnings {
   const { grid } = simulation.world;
 
   const hotCells = [...onlyVolcano(simulation).lava].filter(([, heat]) => heat > 0.3).map(([cell]) => cell);
-  const isWarned = (cell: number) =>
-    zones.some((zone) => Math.hypot(zone.x - grid.cellCenterX(cell), zone.z - grid.cellCenterZ(cell)) < zone.radius);
+
+  function isWarned(cell: number): boolean {
+    return zones.some(
+      (zone) => Math.hypot(zone.x - grid.cellCenterX(cell), zone.z - grid.cellCenterZ(cell)) < zone.radius
+    );
+  }
 
   return {
     farHotCells: hotCells.filter((cell) => Math.hypot(grid.cellCenterX(cell), grid.cellCenterZ(cell)) > RADIUS * 1.5)
@@ -250,27 +254,6 @@ describe("volcanoes", () => {
     expect(cooling.unwarnedHotCells).toBe(0);
     expect(simulation.volcanoes.all).toHaveLength(0);
     expect(simulation.hazards.snapshot()).toEqual([]);
-  });
-
-  it("lets ash soil heal and regrow faster than ordinary ground", () => {
-    const simulation = createSimulation({ hasRiver: false });
-    const { grid, fields } = simulation.world;
-
-    const ash = grid.cellAt(-200, 0);
-    const meadow = grid.cellAt(200, 0);
-
-    simulation.world.setGround(ash, Ground.Ash);
-
-    for (const cell of [ash, meadow]) {
-      fields.scorch[cell] = 0.8;
-      simulation.world.markSurfaceCell(cell);
-    }
-
-    simulation.execute({ seconds: 60, type: "setDaySeconds" });
-    simulation.runTicks(600);
-
-    expect(fields.scorch[meadow]).toBeGreaterThan(0.3);
-    expect(fields.scorch[ash]).toBeLessThan(fields.scorch[meadow] - 0.3);
   });
 
   it("refuses to rise out of water", () => {

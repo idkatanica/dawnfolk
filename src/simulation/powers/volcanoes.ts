@@ -151,7 +151,6 @@ function beginEruption(volcano: Volcano, services: PowerServices): void {
   const { chronicle, world } = services;
 
   for (const { cell } of cellsInArea(world, { ...volcano, radius: craterRadius(volcano) * CRATER_LAVA_SHARE })) {
-    world.clearPlants(cell, false);
     cover(volcano, cell, services);
   }
 
@@ -274,10 +273,6 @@ function erupt(volcano: Volcano, seconds: number, services: PowerServices): void
     }
   }
 
-  for (const cell of volcano.lava.keys()) {
-    volcano.lava.set(cell, 1);
-  }
-
   hurlBombs(volcano, seconds, services);
   services.world.recovering.retain((cell) => !volcano.lava.has(cell));
 }
@@ -308,7 +303,8 @@ function advance(volcano: Volcano, tongue: LavaTongue, services: PowerServices):
 }
 
 function widen(volcano: Volcano, from: number, cell: number, services: PowerServices): void {
-  const { grid, terrain } = services.world;
+  const { world } = services;
+  const { grid, terrain } = world;
 
   const column = grid.columnOf(cell);
   const row = grid.rowOf(cell);
@@ -328,7 +324,7 @@ function widen(volcano: Volcano, from: number, cell: number, services: PowerServ
     const isSpreading = hashToUnit(neighbor, SPLIT_SALT) < WIDENING_CHANCE * (0.5 + volcano.strength * 0.5);
     const isLevel = terrain.height[neighbor] <= terrain.height[cell] + POOLING_RISE;
 
-    if (isSpreading && isLevel && !volcano.lava.has(neighbor) && !services.world.isWater(neighbor)) {
+    if (isSpreading && isLevel && !volcano.lava.has(neighbor) && !world.isWater(neighbor)) {
       cover(volcano, neighbor, services);
     }
   }
@@ -338,6 +334,8 @@ function cover(volcano: Volcano, cell: number, services: PowerServices): void {
   const { buildings, fauna, fire, people, world } = services;
   const { fields, grid } = world;
 
+  const column = grid.columnOf(cell);
+  const row = grid.rowOf(cell);
   const x = grid.cellCenterX(cell);
   const z = grid.cellCenterZ(cell);
 
@@ -350,11 +348,8 @@ function cover(volcano: Volcano, cell: number, services: PowerServices): void {
   volcano.lava.set(cell, 1);
 
   for (const offset of NEIGHBOR_OFFSETS) {
-    const column = grid.columnOf(cell) + offset.column;
-    const row = grid.rowOf(cell) + offset.row;
-
-    if (grid.contains(column, row)) {
-      fire.addHeat(grid.index(column, row), LAVA_HEAT);
+    if (grid.contains(column + offset.column, row + offset.row)) {
+      fire.addHeat(grid.index(column + offset.column, row + offset.row), LAVA_HEAT);
     }
   }
 
