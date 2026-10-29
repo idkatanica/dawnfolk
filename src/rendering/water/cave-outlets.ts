@@ -1,4 +1,4 @@
-import { abs, clamp, cos, dot, ivec2, min, mix, sin, smoothstep, step, textureLoad, vec2 } from "three/tsl";
+import { abs, clamp, cos, dot, ivec2, min, sin, smoothstep, step, textureLoad, vec2 } from "three/tsl";
 import { type DataTexture, type Node, RedFormat, RGBAFormat } from "three/webgpu";
 import { distanceToSegment } from "../../shared/math.ts";
 import type { Spring } from "../../world/water.ts";
@@ -10,9 +10,8 @@ const CHANNEL_DEPTH = 1.2;
 const INSIDE_REACH = 6;
 const STRAIGHT_REACH = 3;
 const BLEND_REACH = 16;
-const MOUTH_CLEARANCE_CELLS = 2;
-const SIDE_CLEARANCE = 2;
-const SIDE_FADE = 3;
+const SIDE_CLEARANCE_CELLS = 2;
+const SIDE_FADE = 5;
 const SHELTER_REACH = 3;
 const LARGEST_CAVE_COUNT = 255;
 
@@ -36,10 +35,9 @@ function channelDepth(frame: OutletFrame, halfWidth: Node<"float">): Node<"float
   return min(min(halfWidth.sub(abs(frame.across)), frame.along.add(INSIDE_REACH)), CHANNEL_DEPTH);
 }
 
-function outletShare(frame: OutletFrame, halfWidth: Node<"float">, mouthClearance: number): Node<"float"> {
+function outletShare(frame: OutletFrame, halfWidth: Node<"float">, clearance: number): Node<"float"> {
   const along = smoothstep(BLEND_REACH, STRAIGHT_REACH, frame.along);
-  const clearance = halfWidth.add(mix(mouthClearance, SIDE_CLEARANCE, smoothstep(0, STRAIGHT_REACH, frame.along)));
-  const across = smoothstep(clearance.add(SIDE_FADE), clearance, abs(frame.across));
+  const across = smoothstep(halfWidth.add(clearance + SIDE_FADE), halfWidth.add(clearance), abs(frame.across));
 
   return along.mul(across);
 }
@@ -67,30 +65,23 @@ export class CaveOutlets {
   rebuild(springs: readonly Spring[]): void {
     const grid = this.#grid;
     const caves = springs.filter(isCave).slice(0, LARGEST_CAVE_COUNT);
-    const mouthClearance = grid.cellSize * MOUTH_CLEARANCE_CELLS;
+
+    const sideClearance = grid.cellSize * SIDE_CLEARANCE_CELLS;
 
     this.#cellData.fill(0);
     this.#mouthData.fill(0);
 
     for (const [index, cave] of caves.entries()) {
       const slot = index + 1;
-      const reach = cave.radius + SIDE_CLEARANCE + SIDE_FADE + grid.cellSize * Math.SQRT1_2;
-      const mouthReach = reach - SIDE_CLEARANCE + mouthClearance;
+      const reach = cave.radius + sideClearance + SIDE_FADE + grid.cellSize * Math.SQRT1_2;
 
       const back: [number, number] = [cave.x - cave.directionX * INSIDE_REACH, cave.z - cave.directionZ * INSIDE_REACH];
-      const head: [number, number] = [
-        cave.x + cave.directionX * STRAIGHT_REACH,
-        cave.z + cave.directionZ * STRAIGHT_REACH,
-      ];
       const front: [number, number] = [cave.x + cave.directionX * BLEND_REACH, cave.z + cave.directionZ * BLEND_REACH];
 
       this.#mouthData.set([cave.x, cave.z, Math.atan2(cave.directionZ, cave.directionX), cave.radius], slot * 4);
 
-      for (const cell of grid.cellsInRadius(cave.x, cave.z, BLEND_REACH + mouthReach)) {
-        const x = grid.cellCenterX(cell);
-        const z = grid.cellCenterZ(cell);
-
-        if (distanceToSegment(x, z, back, front) <= reach || distanceToSegment(x, z, back, head) <= mouthReach) {
+      for (const cell of grid.cellsInRadius(cave.x, cave.z, BLEND_REACH + reach)) {
+        if (distanceToSegment(grid.cellCenterX(cell), grid.cellCenterZ(cell), back, front) <= reach) {
           this.#cellData[cell] = slot;
         }
       }
@@ -103,7 +94,6 @@ export class CaveOutlets {
   outletAt(point: Node<"vec2">): CaveOutlet {
     const grid = this.#grid;
     const last = grid.cellsPerSide - 1;
-    const mouthClearance = grid.cellSize * MOUTH_CLEARANCE_CELLS;
 
     const cell = clamp(point.add(grid.halfSize).div(grid.cellSize).floor(), vec2(0, 0), vec2(last, last));
     const slot = textureLoad(this.cells, ivec2(cell)).x;
@@ -118,7 +108,7 @@ export class CaveOutlets {
       along: dot(offset, direction),
     };
 
-    const share = outletShare(frame, halfWidth, mouthClearance).mul(step(0.5, slot));
+    const share = outletShare(frame, halfWidth, grid.cellSize * SIDE_CLEARANCE_CELLS).mul(step(0.5, slot));
 
     return {
       depth: channelDepth(frame, halfWidth),
