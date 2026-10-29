@@ -123,10 +123,8 @@ function rage(tornado: Tornado, center: Waypoint, seconds: number, services: Pow
     whirl(person.mover, center, radius, force, services);
   }
 
-  for (const animal of fauna.animals.filter((candidate) => candidate.isAlive)) {
-    if (Math.hypot(animal.mover.x - center.x, animal.mover.z - center.z) < radius) {
-      whirl(animal.mover, center, radius, force, services);
-    }
+  for (const animal of fauna.livingWithin(center.x, center.z, radius)) {
+    whirl(animal.mover, center, radius, force, services);
   }
 
   people.damageArea(center.x, center.z, core, PEOPLE_DAMAGE_PER_SECOND * force, "tornado");

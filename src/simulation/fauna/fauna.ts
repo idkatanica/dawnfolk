@@ -322,14 +322,20 @@ export class FaunaSystem {
     return nearest;
   }
 
+  livingWithin(x: number, z: number, radius: number): Animal[] {
+    return this.#animals.filter(
+      (animal) => animal.isAlive && Math.hypot(animal.mover.x - x, animal.mover.z - z) < radius
+    );
+  }
+
   scare(x: number, z: number, radius: number): void {
-    for (const animal of this.#animalsWithin(x, z, radius)) {
+    for (const animal of this.livingWithin(x, z, radius)) {
       startleAnimal(animal, x, z, 1);
     }
   }
 
   damageArea(x: number, z: number, radius: number, damage: number, cause: AnimalDeathCause): void {
-    for (const animal of this.#animalsWithin(x, z, radius)) {
+    for (const animal of this.livingWithin(x, z, radius)) {
       const distance = Math.hypot(animal.mover.x - x, animal.mover.z - z);
 
       animal.health -= damage * (1 - distance / radius);
@@ -546,12 +552,6 @@ export class FaunaSystem {
     }
 
     return kindForBiome(this.#world.terrain.biome[cell], random);
-  }
-
-  #animalsWithin(x: number, z: number, radius: number): Animal[] {
-    return this.#animals.filter(
-      (animal) => animal.isAlive && Math.hypot(animal.mover.x - x, animal.mover.z - z) < radius
-    );
   }
 
   #steerHerd(herd: Herd, tick: FaunaTick): void {
