@@ -192,12 +192,21 @@ function latticeCrossings(grid: WorldGrid, radii: Float32Array): number[] {
 }
 
 function traceCoast(grid: WorldGrid, radii: Float32Array): CoastPoint[] {
-  const angles = [...latticeCrossings(grid, radii), ...Array.from(radii, (_, index) => coastAngle(index))].sort(
-    (first, second) => first - second
-  );
-  const distinct = angles.filter((angle, index) => index === 0 || angle - angles[index - 1] > SAME_ANGLE);
+  const angles = [
+    ...latticeCrossings(grid, radii),
+    ...Array.from(radii, (_, index) => {
+      return coastAngle(index);
+    }),
+  ].sort((first, second) => {
+    return first - second;
+  });
+  const distinct = angles.filter((angle, index) => {
+    return index === 0 || angle - angles[index - 1] > SAME_ANGLE;
+  });
 
-  return distinct.map((angle) => ({ angle, radius: radiusAt(radii, angle) }));
+  return distinct.map((angle) => {
+    return { angle, radius: radiusAt(radii, angle) };
+  });
 }
 
 export class IslandOutline {

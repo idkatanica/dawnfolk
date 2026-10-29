@@ -243,7 +243,9 @@ function basinDepths(inputs: WetlandInputs): Float32Array {
   const radius = Math.max(1, Math.round(BASIN_RADIUS / grid.cellSize / 2));
   const surroundings = boxBlur(grid, boxBlur(grid, heights, radius), radius);
 
-  return surroundings.map((surrounding, cell) => surrounding - heights[cell]);
+  return surroundings.map((surrounding, cell) => {
+    return surrounding - heights[cell];
+  });
 }
 
 export function measureWetness(inputs: WetlandInputs, slopes: Float64Array): Float32Array {

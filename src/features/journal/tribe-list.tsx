@@ -19,8 +19,12 @@ interface StockHighlight {
 function highlights(tribe: TribeSummary): StockHighlight[] {
   const { stock } = tribe;
 
-  const food = FOOD_KINDS.reduce((total, kind) => total + stock[kind], 0);
-  const metal = SHOWN_METALS.find((kind) => stock[kind] >= 1);
+  const food = FOOD_KINDS.reduce((total, kind) => {
+    return total + stock[kind];
+  }, 0);
+  const metal = SHOWN_METALS.find((kind) => {
+    return stock[kind] >= 1;
+  });
 
   const shown: StockHighlight[] = [
     { amount: food, icon: RESOURCE_ICONS.grain, name: "Food" },
@@ -51,15 +55,17 @@ function MigrationMark({ tribe }: { readonly tribe: TribeSummary }) {
 function StockLine({ tribe }: { readonly tribe: TribeSummary }) {
   return (
     <span className="text-ink-muted flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs">
-      {highlights(tribe).map((highlight) => (
-        <span className="flex items-center gap-1 tabular-nums" key={highlight.name} title={highlight.name}>
-          <GameIcon name={highlight.icon} size={18} />
+      {highlights(tribe).map((highlight) => {
+        return (
+          <span className="flex items-center gap-1 tabular-nums" key={highlight.name} title={highlight.name}>
+            <GameIcon name={highlight.icon} size={18} />
 
-          <span className="sr-only">{highlight.name}</span>
+            <span className="sr-only">{highlight.name}</span>
 
-          <span>{Math.round(highlight.amount)}</span>
-        </span>
-      ))}
+            <span>{Math.round(highlight.amount)}</span>
+          </span>
+        );
+      })}
     </span>
   );
 }
@@ -89,7 +95,9 @@ function TribeCard({ tribe }: { readonly tribe: TribeSummary }) {
 }
 
 export function TribeList() {
-  const tribes = useWorldStore((state) => state.snapshot?.tribes);
+  const tribes = useWorldStore((state) => {
+    return state.snapshot?.tribes;
+  });
 
   if (tribes === undefined || tribes.length === 0) {
     return <p className="text-ink-muted p-3 text-sm">No tribes live on the island. Bring one with the Tribe power.</p>;
@@ -97,9 +105,9 @@ export function TribeList() {
 
   return (
     <ul className="flex flex-col gap-0.5">
-      {tribes.map((tribe) => (
-        <TribeCard key={tribe.id} tribe={tribe} />
-      ))}
+      {tribes.map((tribe) => {
+        return <TribeCard key={tribe.id} tribe={tribe} />;
+      })}
     </ul>
   );
 }

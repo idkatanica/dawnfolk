@@ -62,7 +62,9 @@ const WEEPING: TreeStructure = { ...TREE, foliage: [WEEPING_CROWN] };
 
 const FORKED: TreeStructure = {
   ...TREE,
-  branches: TREE.branches.map((branch) => (branch.depth === 0 ? { ...branch, isForked: true } : branch)),
+  branches: TREE.branches.map((branch) => {
+    return branch.depth === 0 ? { ...branch, isForked: true } : branch;
+  }),
 };
 
 const FROND_TREE: TreeStructure = {
@@ -89,9 +91,11 @@ function heightOf(mesh: MeshData, vertex: number): number {
 }
 
 function foliageOf(mesh: MeshData): number[] {
-  return Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex).filter(
-    (vertex) => mesh.channels.slot[vertex] === MaterialSlot.Leaf
-  );
+  return Array.from({ length: vertexCount(mesh) }, (_, vertex) => {
+    return vertex;
+  }).filter((vertex) => {
+    return mesh.channels.slot[vertex] === MaterialSlot.Leaf;
+  });
 }
 
 describe("tree mesher", () => {
@@ -116,9 +120,13 @@ describe("tree mesher", () => {
     const leaves = foliageOf(mesh);
 
     expect(loosePieces(mesh)).toEqual([]);
-    expect(Math.min(...leaves.map((vertex) => heightOf(mesh, vertex)))).toBeLessThan(
-      WEEPING_CROWN.center[1] - WEEPING_CROWN.radius * WEEPING_CROWN.squash
-    );
+    expect(
+      Math.min(
+        ...leaves.map((vertex) => {
+          return heightOf(mesh, vertex);
+        })
+      )
+    ).toBeLessThan(WEEPING_CROWN.center[1] - WEEPING_CROWN.radius * WEEPING_CROWN.squash);
   });
 
   it.each(["high", "medium"] as const)(
@@ -127,12 +135,12 @@ describe("tree mesher", () => {
       const mesh = meshTree(WEEPING, LOOK, level);
       const leaves = foliageOf(mesh);
 
-      const top = leaves.reduce((highest, vertex) =>
-        heightOf(mesh, vertex) > heightOf(mesh, highest) ? vertex : highest
-      );
-      const hem = leaves.reduce((lowest, vertex) =>
-        heightOf(mesh, vertex) < heightOf(mesh, lowest) ? vertex : lowest
-      );
+      const top = leaves.reduce((highest, vertex) => {
+        return heightOf(mesh, vertex) > heightOf(mesh, highest) ? vertex : highest;
+      });
+      const hem = leaves.reduce((lowest, vertex) => {
+        return heightOf(mesh, vertex) < heightOf(mesh, lowest) ? vertex : lowest;
+      });
 
       expect(mesh.channels.sway[top]).toBeCloseTo(plantSway(heightOf(mesh, top), TREE.height), 5);
       expect(mesh.channels.sway[hem]).toBeCloseTo(1, 5);
@@ -142,21 +150,37 @@ describe("tree mesher", () => {
   it.each(["high", "medium"] as const)("rounds off the top of a forking trunk at %s detail", (level) => {
     const mesh = meshTree({ ...FORKED, foliage: [] }, LOOK, level);
 
-    const wood = Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex).filter(
-      (vertex) => Math.hypot(mesh.positions[vertex * 3], mesh.positions[vertex * 3 + 2]) < 0.25
-    );
+    const wood = Array.from({ length: vertexCount(mesh) }, (_, vertex) => {
+      return vertex;
+    }).filter((vertex) => {
+      return Math.hypot(mesh.positions[vertex * 3], mesh.positions[vertex * 3 + 2]) < 0.25;
+    });
 
-    expect(Math.max(...wood.map((vertex) => heightOf(mesh, vertex)))).toBeGreaterThan(7.15);
+    expect(
+      Math.max(
+        ...wood.map((vertex) => {
+          return heightOf(mesh, vertex);
+        })
+      )
+    ).toBeGreaterThan(7.15);
   });
 
   it("carries the trunk on into the crown at low detail", () => {
     const mesh = meshTree(TREE, LOOK, "low");
 
-    const wood = Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex).filter(
-      (vertex) => mesh.channels.slot[vertex] === MaterialSlot.Bark
-    );
+    const wood = Array.from({ length: vertexCount(mesh) }, (_, vertex) => {
+      return vertex;
+    }).filter((vertex) => {
+      return mesh.channels.slot[vertex] === MaterialSlot.Bark;
+    });
 
-    expect(Math.max(...wood.map((vertex) => heightOf(mesh, vertex)))).toBeGreaterThan(7.5);
+    expect(
+      Math.max(
+        ...wood.map((vertex) => {
+          return heightOf(mesh, vertex);
+        })
+      )
+    ).toBeGreaterThan(7.5);
     expect(loosePieces(mesh)).toEqual([]);
   });
 
@@ -169,9 +193,15 @@ describe("tree mesher", () => {
   it("shades a frond from above and below", () => {
     const mesh = meshTree(FROND_TREE, LOOK, "high");
 
-    const leafNormals = Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex)
-      .filter((vertex) => mesh.channels.slot[vertex] === MaterialSlot.Leaf && mesh.positions[vertex * 3] > 1)
-      .map((vertex) => mesh.normals[vertex * 3 + 1]);
+    const leafNormals = Array.from({ length: vertexCount(mesh) }, (_, vertex) => {
+      return vertex;
+    })
+      .filter((vertex) => {
+        return mesh.channels.slot[vertex] === MaterialSlot.Leaf && mesh.positions[vertex * 3] > 1;
+      })
+      .map((vertex) => {
+        return mesh.normals[vertex * 3 + 1];
+      });
 
     expect(Math.max(...leafNormals)).toBeGreaterThan(0.5);
     expect(Math.min(...leafNormals)).toBeLessThan(-0.5);

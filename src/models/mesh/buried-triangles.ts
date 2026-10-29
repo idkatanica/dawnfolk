@@ -120,7 +120,9 @@ function crossings(packed: Float64Array, point: Triple): number {
 function isWithinBounds(solid: MeshData, point: Triple): boolean {
   const { maximum, minimum } = solid.bounds;
 
-  return point.every((value, axis) => value > minimum[axis] && value < maximum[axis]);
+  return point.every((value, axis) => {
+    return value > minimum[axis] && value < maximum[axis];
+  });
 }
 
 export function isInsideSolid(solid: MeshData, point: Triple): boolean {
@@ -128,7 +130,9 @@ export function isInsideSolid(solid: MeshData, point: Triple): boolean {
     return false;
   }
 
-  return packedTriangles(solid).every((packed) => crossings(packed, point) % 2 === 1);
+  return packedTriangles(solid).every((packed) => {
+    return crossings(packed, point) % 2 === 1;
+  });
 }
 
 function liftedVertex(mesh: MeshData, vertex: number, margin: number): Triple {
@@ -152,34 +156,52 @@ function middleOf(corners: readonly Triple[]): Triple {
 }
 
 function isDeepInside(solid: MeshData, points: readonly Triple[]): boolean {
-  return points.every((point) => isInsideSolid(solid, point));
+  return points.every((point) => {
+    return isInsideSolid(solid, point);
+  });
 }
 
 function buriedVertices(mesh: MeshData, solid: MeshData, margin: number): Uint8Array {
-  return Uint8Array.from({ length: vertexCount(mesh) }, (_, vertex) =>
-    isDeepInside(solid, [liftedVertex(mesh, vertex, 0), liftedVertex(mesh, vertex, margin)]) ? 1 : 0
-  );
+  return Uint8Array.from({ length: vertexCount(mesh) }, (_, vertex) => {
+    return isDeepInside(solid, [liftedVertex(mesh, vertex, 0), liftedVertex(mesh, vertex, margin)]) ? 1 : 0;
+  });
 }
 
 function isBuried(test: BuriedTest, triangle: number): boolean {
   const { buried, margin, mesh, solids } = test;
 
-  const vertices = [0, 1, 2].map((corner) => mesh.indices[triangle * CORNERS + corner]);
+  const vertices = [0, 1, 2].map((corner) => {
+    return mesh.indices[triangle * CORNERS + corner];
+  });
 
   return solids.some((solid, index) => {
-    if (!vertices.every((vertex) => buried[index][vertex] === 1)) {
+    if (
+      !vertices.every((vertex) => {
+        return buried[index][vertex] === 1;
+      })
+    ) {
       return false;
     }
 
     return isDeepInside(solid, [
-      middleOf(vertices.map((vertex) => liftedVertex(mesh, vertex, 0))),
-      middleOf(vertices.map((vertex) => liftedVertex(mesh, vertex, margin))),
+      middleOf(
+        vertices.map((vertex) => {
+          return liftedVertex(mesh, vertex, 0);
+        })
+      ),
+      middleOf(
+        vertices.map((vertex) => {
+          return liftedVertex(mesh, vertex, margin);
+        })
+      ),
     ]);
   });
 }
 
 function pickedChannel(mesh: MeshData, channel: VertexChannel, order: readonly number[]): Float32Array {
-  return Float32Array.from(order, (vertex) => mesh.channels[channel][vertex]);
+  return Float32Array.from(order, (vertex) => {
+    return mesh.channels[channel][vertex];
+  });
 }
 
 function keptTriangles(mesh: MeshData, keeps: (triangle: number) => boolean): MeshData {
@@ -214,7 +236,9 @@ function keptTriangles(mesh: MeshData, keeps: (triangle: number) => boolean): Me
 
   return {
     bounds: boundsOf(positions),
-    channels: channelRecord((channel) => pickedChannel(mesh, channel, order)),
+    channels: channelRecord((channel) => {
+      return pickedChannel(mesh, channel, order);
+    }),
     indices: Uint32Array.from(indices),
     normals,
     positions,
@@ -259,7 +283,9 @@ function rootOf(parents: Int32Array, vertex: number): number {
 export function shellsOf(mesh: MeshData): MeshData[] {
   const { indices } = mesh;
 
-  const parents = Int32Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex);
+  const parents = Int32Array.from({ length: vertexCount(mesh) }, (_, vertex) => {
+    return vertex;
+  });
   const shells = new Map<number, Set<number>>();
 
   for (let offset = 0; offset < indices.length; offset += CORNERS) {
@@ -280,15 +306,19 @@ export function shellsOf(mesh: MeshData): MeshData[] {
     }
   }
 
-  return [...shells.values()].map((triangles) => keptTriangles(mesh, (triangle) => triangles.has(triangle)));
+  return [...shells.values()].map((triangles) => {
+    return keptTriangles(mesh, (triangle) => {
+      return triangles.has(triangle);
+    });
+  });
 }
 
 function overlaps(mesh: MeshData, solid: MeshData): boolean {
   const { maximum, minimum } = mesh.bounds;
 
-  return [0, 1, 2].every(
-    (axis) => maximum[axis] > solid.bounds.minimum[axis] && minimum[axis] < solid.bounds.maximum[axis]
-  );
+  return [0, 1, 2].every((axis) => {
+    return maximum[axis] > solid.bounds.minimum[axis] && minimum[axis] < solid.bounds.maximum[axis];
+  });
 }
 
 function isClosedSolid(solid: MeshData): boolean {
@@ -306,28 +336,36 @@ function isClosedSolid(solid: MeshData): boolean {
 }
 
 export function withoutBuriedTriangles(mesh: MeshData, solids: readonly MeshData[], margin: number): MeshData {
-  const nearSolids = solids.filter((solid) => overlaps(mesh, solid) && isClosedSolid(solid));
+  const nearSolids = solids.filter((solid) => {
+    return overlaps(mesh, solid) && isClosedSolid(solid);
+  });
 
   if (nearSolids.length === 0) {
     return mesh;
   }
 
   const test: BuriedTest = {
-    buried: nearSolids.map((solid) => buriedVertices(mesh, solid, margin)),
+    buried: nearSolids.map((solid) => {
+      return buriedVertices(mesh, solid, margin);
+    }),
     margin,
     mesh,
     solids: nearSolids,
   };
 
-  return keptTriangles(mesh, (triangle) => !isBuried(test, triangle));
+  return keptTriangles(mesh, (triangle) => {
+    return !isBuried(test, triangle);
+  });
 }
 
 export function withoutBuriedOverlaps(shells: readonly MeshData[], margin: number): MeshData[] {
-  return shells.map((shell, index) =>
-    withoutBuriedTriangles(
+  return shells.map((shell, index) => {
+    return withoutBuriedTriangles(
       shell,
-      shells.filter((_other, otherIndex) => otherIndex !== index),
+      shells.filter((_other, otherIndex) => {
+        return otherIndex !== index;
+      }),
       margin
-    )
-  );
+    );
+  });
 }

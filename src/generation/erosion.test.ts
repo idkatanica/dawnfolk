@@ -27,7 +27,9 @@ function steepestSlope(heights: Float32Array, size: number): number {
 }
 
 function sumOf(heights: Float32Array): number {
-  return heights.reduce((total, height) => total + height, 0);
+  return heights.reduce((total, height) => {
+    return total + height;
+  }, 0);
 }
 
 function cone(size: number, summit: number): Float32Array {
@@ -63,14 +65,20 @@ describe("slope limit", () => {
   it("keeps every neighbor drop under the limit and never raises the land", () => {
     const size = 40;
     const random = createRandom(4);
-    const original = Float32Array.from({ length: size * size }, () => random.between(0, 400));
+    const original = Float32Array.from({ length: size * size }, () => {
+      return random.between(0, 400);
+    });
 
     const heights = Float32Array.from(original);
 
     limitSlopes(heights, size, CELL_SIZE, 1.2);
 
     expect(steepestSlope(heights, size)).toBeLessThan(1.2 + 1e-4);
-    expect(heights.every((height, cell) => height <= original[cell])).toBe(true);
+    expect(
+      heights.every((height, cell) => {
+        return height <= original[cell];
+      })
+    ).toBe(true);
   });
 });
 
@@ -104,10 +112,9 @@ describe("erosion across scales", () => {
   it("leaves fully resistant rock untouched", () => {
     const untouched = cone(size, 500);
 
-    const largestChange = erode(1).reduce(
-      (largest, height, cell) => Math.max(largest, Math.abs(height - untouched[cell])),
-      0
-    );
+    const largestChange = erode(1).reduce((largest, height, cell) => {
+      return Math.max(largest, Math.abs(height - untouched[cell]));
+    }, 0);
 
     expect(largestChange).toBeLessThan(1e-3);
   });

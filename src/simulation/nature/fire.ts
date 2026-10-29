@@ -158,8 +158,12 @@ export class FireSystem {
       seconds,
     };
 
-    this.#burning.retain((cell) => this.#burnCell(cell, tick));
-    this.#heated.retain((cell) => this.#heatCell(cell, tick));
+    this.#burning.retain((cell) => {
+      return this.#burnCell(cell, tick);
+    });
+    this.#heated.retain((cell) => {
+      return this.#heatCell(cell, tick);
+    });
 
     return tick.emberCells;
   }

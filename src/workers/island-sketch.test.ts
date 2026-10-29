@@ -10,7 +10,9 @@ function sketchOf(cellsPerSide: number): IslandSketch {
     cellsPerSide,
     coastDistance: new Float32Array(count).fill(1),
     ground: null,
-    height: Float32Array.from({ length: count }, (_, cell) => cell),
+    height: Float32Array.from({ length: count }, (_, cell) => {
+      return cell;
+    }),
     waterSurface: null,
   };
 }

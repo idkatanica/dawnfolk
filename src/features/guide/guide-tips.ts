@@ -92,7 +92,9 @@ function withDone(done: readonly GuideTipId[], tip: GuideTipId | null): readonly
 }
 
 function hasFinishedIntro(progress: GuideProgress): boolean {
-  return INTRO_TIPS.every((tip) => progress.done.includes(tip));
+  return INTRO_TIPS.every((tip) => {
+    return progress.done.includes(tip);
+  });
 }
 
 export function isGuideTipId(value: string): value is GuideTipId {
@@ -108,7 +110,9 @@ export function currentTip(progress: GuideProgress): GuideTipId | null {
     return progress.shown;
   }
 
-  const next = INTRO_TIPS.find((tip) => !progress.done.includes(tip));
+  const next = INTRO_TIPS.find((tip) => {
+    return !progress.done.includes(tip);
+  });
 
   return next === undefined ? null : next;
 }

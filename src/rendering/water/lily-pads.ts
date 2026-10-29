@@ -151,7 +151,9 @@ function flowerShape(): LilyShape {
 
 function createGeometry(shape: LilyShape, lilies: number[]): InstancedBufferGeometry {
   const geometry = new InstancedBufferGeometry();
-  const normals = shape.positions.map((_value, index) => (index % 3 === 1 ? 1 : 0));
+  const normals = shape.positions.map((_value, index) => {
+    return index % 3 === 1 ? 1 : 0;
+  });
 
   geometry.setAttribute("position", new Float32BufferAttribute(shape.positions, 3));
   geometry.setAttribute("normal", new Float32BufferAttribute(normals, 3));
@@ -283,13 +285,13 @@ function createLilyMaterial(
   const cosine = cos(turn);
   const sine = sin(turn);
 
-  material.positionNode = Fn(() =>
-    vec3(
+  material.positionNode = Fn(() => {
+    return vec3(
       point.x.add(local.x.mul(cosine)).add(local.z.mul(sine)),
       level.add(local.y),
       point.y.add(local.z.mul(cosine)).sub(local.x.mul(sine))
-    )
-  )();
+    );
+  })();
 
   const tint = smoothstep(0.2, 1, positionGeometry.xz.length()).mul(0.4);
   const petal = select(lily.w.lessThan(0), PINK_PETAL, WHITE_PETAL);

@@ -21,7 +21,9 @@ describe("world rules section", () => {
     const screen = await render(<WorldRulesSection />);
 
     await Promise.all(
-      RULE_GROUP_NAMES.map((name) => expect.element(screen.getByRole("group", { name })).toBeVisible())
+      RULE_GROUP_NAMES.map((name) => {
+        return expect.element(screen.getByRole("group", { name })).toBeVisible();
+      })
     );
   });
 

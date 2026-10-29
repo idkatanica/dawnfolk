@@ -10,7 +10,11 @@ import { BuildingSystem } from "./buildings.ts";
 const HUT_FOOTPRINT = 4.3;
 
 function slopedWorld(slope: number): WorldState {
-  return createTestWorld({ heightAt: (x) => 100 + x * slope });
+  return createTestWorld({
+    heightAt: (x) => {
+      return 100 + x * slope;
+    },
+  });
 }
 
 function cornerHeights(world: WorldState, x: number, z: number, reach: number): number[] {
@@ -20,7 +24,9 @@ function cornerHeights(world: WorldState, x: number, z: number, reach: number): 
     [reach, -reach],
     [-reach, reach],
     [-reach, -reach],
-  ].map(([offsetX, offsetZ]) => world.heightAt(x + offsetX, z + offsetZ));
+  ].map(([offsetX, offsetZ]) => {
+    return world.heightAt(x + offsetX, z + offsetZ);
+  });
 }
 
 function spread(heights: readonly number[]): number {
@@ -61,7 +67,9 @@ describe("building pads", () => {
     levelPad(world, pad);
 
     const reach = HUT_FOOTPRINT + world.grid.cellSize;
-    const changed = [...original.keys()].filter((cell) => original[cell] !== world.terrain.height[cell]);
+    const changed = [...original.keys()].filter((cell) => {
+      return original[cell] !== world.terrain.height[cell];
+    });
 
     expect(changed.length).toBeGreaterThan(0);
 

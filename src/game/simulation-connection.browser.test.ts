@@ -1,5 +1,6 @@
 import { describe, expect, it, onTestFinished } from "vitest";
 import type { GenerationStage } from "../generation/generation-options.ts";
+import { ignore } from "../shared/ignore.ts";
 import { WorkerSimulationConnection } from "./simulation-connection.ts";
 
 const SMALL_WORLD = {
@@ -38,9 +39,9 @@ describe("worker simulation connection", () => {
       connection.dispose();
     });
 
-    await connection.createWorld(SMALL_WORLD, () => undefined);
+    await connection.createWorld(SMALL_WORLD, ignore);
     connection.send({ isPaused: true, type: "setPaused" });
-    await connection.createWorld(SMALL_WORLD, () => undefined);
+    await connection.createWorld(SMALL_WORLD, ignore);
 
     const frame = await connection.advance(0.2);
 

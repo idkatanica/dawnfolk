@@ -51,10 +51,16 @@ function placeLabels(engine: EngineHandle, layer: HTMLElement): void {
   layer.toggleAttribute("data-far", engine.camera.state.distance > FAR_DISTANCE);
 
   const placed = placeVisibleLabels(engine, layer);
-  const priority = placed.filter((entry) => entry.isPriority);
+  const priority = placed.filter((entry) => {
+    return entry.isPriority;
+  });
 
   for (const entry of placed) {
-    const isCrowded = !entry.isPriority && priority.some((other) => isCrowding(other.placement, entry.placement));
+    const isCrowded =
+      !entry.isPriority &&
+      priority.some((other) => {
+        return isCrowding(other.placement, entry.placement);
+      });
 
     if (isCrowded) {
       hideLabel(entry.label);
@@ -75,7 +81,12 @@ function viewOf(engine: EngineHandle): number[] {
 }
 
 function isSameView(first: readonly number[], second: readonly number[]): boolean {
-  return first.length === second.length && first.every((value, index) => value === second[index]);
+  return (
+    first.length === second.length &&
+    first.every((value, index) => {
+      return value === second[index];
+    })
+  );
 }
 
 function keepLabelsPlaced(engine: EngineHandle, layer: HTMLElement): () => void {

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { GenerationProgress } from "../generation/generation-options.ts";
+import { ignore } from "../shared/ignore.ts";
 import { Simulation } from "../simulation/simulation.ts";
 import { createVegetatedWorld } from "../simulation/testing/test-world.ts";
 import { createSimulationWorkerApi } from "../workers/simulation-worker-api.ts";
@@ -216,7 +217,7 @@ describe("failures and closing", () => {
 
     const statuses: SessionStatus[] = [];
     const failure = new Error("The worker crashed");
-    const logError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const logError = vi.spyOn(console, "error").mockImplementation(ignore);
 
     const advance = vi.spyOn(connection, "advance").mockRejectedValueOnce(failure);
     const dispose = vi.spyOn(connection, "dispose");

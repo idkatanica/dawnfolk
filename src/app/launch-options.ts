@@ -11,9 +11,13 @@ const WORLD_PARAMETER = "world";
 
 const cameraSchema = z
   .string()
-  .transform((text) => text.split(",").map(Number))
+  .transform((text) => {
+    return text.split(",").map(Number);
+  })
   .pipe(z.tuple([z.number(), z.number(), z.number().positive(), z.number(), z.number()]))
-  .transform(([targetX, targetZ, distance, pitch, yaw]) => ({ distance, pitch, targetX, targetZ, yaw }));
+  .transform(([targetX, targetZ, distance, pitch, yaw]) => {
+    return { distance, pitch, targetX, targetZ, yaw };
+  });
 
 const launchSchema = z.object({
   camera: cameraSchema.optional(),
@@ -71,9 +75,17 @@ function toLaunchOptions(parameters: LaunchParameters): LaunchOptions {
 }
 
 function withoutInvalid(parameters: Record<string, string>, issues: readonly ParameterIssue[]): Record<string, string> {
-  const invalidNames = new Set(issues.map((issue) => String(issue.path[0])));
+  const invalidNames = new Set(
+    issues.map((issue) => {
+      return String(issue.path[0]);
+    })
+  );
 
-  return Object.fromEntries(Object.entries(parameters).filter(([name]) => !invalidNames.has(name)));
+  return Object.fromEntries(
+    Object.entries(parameters).filter(([name]) => {
+      return !invalidNames.has(name);
+    })
+  );
 }
 
 export function createWorldId(): string {

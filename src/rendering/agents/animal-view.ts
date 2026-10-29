@@ -84,7 +84,9 @@ function measureKindStrides(kind: AnimalKind): Map<AnimalPose, number> {
     const stride = measureStride({
       pose: new Pose(species.skeleton.bones.length),
       poser: new SkeletonPoser(species.skeleton),
-      sample: (target, phase) => poseAnimal(kind, target, clip, phase, { variation: 0.5 }),
+      sample: (target, phase) => {
+        poseAnimal(kind, target, clip, phase, { variation: 0.5 });
+      },
       scales,
       skeleton: species.skeleton,
     });

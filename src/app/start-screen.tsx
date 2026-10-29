@@ -8,6 +8,7 @@ import { NameField, SeedField, ShapeChoice } from "../features/new-world/world-f
 import { ProjectLinks } from "../features/project/project-links.tsx";
 import { SavedWorldList } from "../features/saves/saved-world-list.tsx";
 import { useSavesStore } from "../features/saves/saves-store.ts";
+import { ignore } from "../shared/ignore.ts";
 import { loadGameEngine, loadHud } from "./engine-launcher.ts";
 import { useLaunchStore } from "./launch-store.ts";
 import { StartBackdrop } from "./start-backdrop.tsx";
@@ -23,11 +24,17 @@ interface SubviewProps {
 }
 
 function useTitleCard() {
-  const worlds = useSavesStore((state) => state.worlds);
-  const continueWorld = useLaunchStore((state) => state.continueWorld);
+  const worlds = useSavesStore((state) => {
+    return state.worlds;
+  });
+  const continueWorld = useLaunchStore((state) => {
+    return state.continueWorld;
+  });
   const [view, setView] = useState<CardView>("home");
 
-  const latest = worlds.find((world) => world.isLoadable);
+  const latest = worlds.find((world) => {
+    return world.isLoadable;
+  });
 
   function handleBack(): void {
     setView("home");
@@ -80,8 +87,12 @@ function Subview({ children, onBack, title }: SubviewProps) {
 }
 
 function NewWorldForm() {
-  const launch = useLaunchStore((state) => state.launch);
-  const createWorld = useLaunchStore((state) => state.createWorld);
+  const launch = useLaunchStore((state) => {
+    return state.launch;
+  });
+  const createWorld = useLaunchStore((state) => {
+    return state.createWorld;
+  });
   const draft = useWorldDraft(launch, createWorld);
 
   return (
@@ -142,13 +153,15 @@ function TitleCard() {
 }
 
 export function StartScreen() {
-  const refresh = useSavesStore((state) => state.refresh);
+  const refresh = useSavesStore((state) => {
+    return state.refresh;
+  });
 
   useEffect(() => {
-    refresh().catch(() => undefined);
-    Promise.all([loadGameEngine(), loadHud()]).catch((error: unknown) =>
-      console.warn("The game could not be loaded ahead", error)
-    );
+    refresh().catch(ignore);
+    Promise.all([loadGameEngine(), loadHud()]).catch((error: unknown) => {
+      console.warn("The game could not be loaded ahead", error);
+    });
   }, [refresh]);
 
   return (

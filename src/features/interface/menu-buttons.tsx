@@ -8,9 +8,15 @@ import { useFullscreen } from "./use-fullscreen.ts";
 
 function useMenuActions() {
   const { isJournalOpen, toggleJournal } = useSidePanel();
-  const isMapOpen = useInterfaceStore((state) => state.isMapOpen);
-  const toggleMap = useInterfaceStore((state) => state.toggleMap);
-  const openSettings = useInterfaceStore((state) => state.openSettings);
+  const isMapOpen = useInterfaceStore((state) => {
+    return state.isMapOpen;
+  });
+  const toggleMap = useInterfaceStore((state) => {
+    return state.toggleMap;
+  });
+  const openSettings = useInterfaceStore((state) => {
+    return state.openSettings;
+  });
 
   return { isJournalOpen, isMapOpen, openSettings, toggleJournal, toggleMap };
 }

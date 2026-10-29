@@ -175,6 +175,10 @@ describe("small game", () => {
 
     expect(hare.isAlive).toBe(false);
     expect(carriedAmount(tick.person, "meat") + tribe.stock.meat - meatBefore).toBe(ANIMALS.hare.food);
-    expect(harness.chronicle.takeEntries().filter((entry) => entry.category === "hunt")).toEqual([]);
+    expect(
+      harness.chronicle.takeEntries().filter((entry) => {
+        return entry.category === "hunt";
+      })
+    ).toEqual([]);
   });
 });

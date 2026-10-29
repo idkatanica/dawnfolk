@@ -98,7 +98,9 @@ interface EraRolls {
 }
 
 function choose<Value>(random: RandomSource, choices: readonly WeightedChoice<Value>[]): Value {
-  const total = choices.reduce((sum, choice) => sum + choice.weight, 0);
+  const total = choices.reduce((sum, choice) => {
+    return sum + choice.weight;
+  }, 0);
 
   let remaining = random.next() * total;
 

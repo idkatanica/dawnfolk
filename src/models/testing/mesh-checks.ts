@@ -22,7 +22,9 @@ const ENCLOSING_DIRECTIONS: readonly Vector3[] = [
   [-1, 1, -1],
   [1, -1, -1],
   [-1, -1, -1],
-].map((direction) => new Vector3(...direction).normalize());
+].map((direction) => {
+  return new Vector3(...direction).normalize();
+});
 
 interface IndexedGeometry {
   readonly indices: Uint32Array;
@@ -43,11 +45,19 @@ function geometryProblems(geometry: IndexedGeometry, count: number): string[] {
     problems.push("index count is not a multiple of three");
   }
 
-  if (geometry.indices.some((index) => index >= count)) {
+  if (
+    geometry.indices.some((index) => {
+      return index >= count;
+    })
+  ) {
     problems.push("an index points past the last vertex");
   }
 
-  if (geometry.positions.some((value) => !Number.isFinite(value))) {
+  if (
+    geometry.positions.some((value) => {
+      return !Number.isFinite(value);
+    })
+  ) {
     problems.push("a position is not finite");
   }
 
@@ -73,7 +83,11 @@ export function shapeProblems(shape: Shape): string[] {
     problems.push("surface parameters do not match the vertex count");
   }
 
-  if ([...shape.along, ...shape.around].some((value) => value < 0 || value > 1)) {
+  if (
+    [...shape.along, ...shape.around].some((value) => {
+      return value < 0 || value > 1;
+    })
+  ) {
     problems.push("a surface parameter is outside 0..1");
   }
 
@@ -90,7 +104,11 @@ export function meshProblems(mesh: MeshData): string[] {
       problems.push(`channel ${channel} does not match the vertex count`);
     }
 
-    if (mesh.channels[channel].some((value) => !Number.isFinite(value))) {
+    if (
+      mesh.channels[channel].some((value) => {
+        return !Number.isFinite(value);
+      })
+    ) {
       problems.push(`channel ${channel} has a value that is not finite`);
     }
   }
@@ -130,7 +148,9 @@ function edgeUses(mesh: MeshData): Map<string, EdgeUse> {
 }
 
 function openEdges(mesh: MeshData): EdgeUse[] {
-  return [...edgeUses(mesh).values()].filter((use) => use.count % 2 === 1);
+  return [...edgeUses(mesh).values()].filter((use) => {
+    return use.count % 2 === 1;
+  });
 }
 
 export function openEdgeCount(mesh: MeshData): number {
@@ -138,7 +158,9 @@ export function openEdgeCount(mesh: MeshData): number {
 }
 
 export function highestOpenEdge(mesh: MeshData): number {
-  return openEdges(mesh).reduce((highest, edge) => Math.max(highest, edge.height), Number.NEGATIVE_INFINITY);
+  return openEdges(mesh).reduce((highest, edge) => {
+    return Math.max(highest, edge.height);
+  }, Number.NEGATIVE_INFINITY);
 }
 
 function isEnclosed(mesh: MeshData, point: Vector3): boolean {
@@ -151,12 +173,18 @@ function isEnclosed(mesh: MeshData, point: Vector3): boolean {
 
 export function highestExposedOpenEdge(mesh: MeshData): number {
   return openEdges(mesh)
-    .filter((edge) => !isEnclosed(mesh, edge.middle))
-    .reduce((highest, edge) => Math.max(highest, edge.height), Number.NEGATIVE_INFINITY);
+    .filter((edge) => {
+      return !isEnclosed(mesh, edge.middle);
+    })
+    .reduce((highest, edge) => {
+      return Math.max(highest, edge.height);
+    }, Number.NEGATIVE_INFINITY);
 }
 
 export function thinnestPiece(mesh: MeshData, pieces: readonly MeshPiece[]): number {
-  return pieces.reduce((thinnest, piece) => Math.min(thinnest, pieceThickness(mesh, piece)), Number.POSITIVE_INFINITY);
+  return pieces.reduce((thinnest, piece) => {
+    return Math.min(thinnest, pieceThickness(mesh, piece));
+  }, Number.POSITIVE_INFINITY);
 }
 
 function pieceThickness(mesh: MeshData, piece: MeshPiece): number {
@@ -164,7 +192,9 @@ function pieceThickness(mesh: MeshData, piece: MeshPiece): number {
   let area = 0;
 
   for (const triangle of piece.triangles) {
-    const [first, second, third] = [0, 1, 2].map((corner) => mesh.indices[triangle * 3 + corner] * 3);
+    const [first, second, third] = [0, 1, 2].map((corner) => {
+      return mesh.indices[triangle * 3 + corner] * 3;
+    });
 
     const firstPoint = new Vector3().fromArray(mesh.positions, first);
     const secondPoint = new Vector3().fromArray(mesh.positions, second);

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { GameSession } from "../../game/game-session.ts";
+import { ignore } from "../../shared/ignore.ts";
 import { deleteSavedWorld, listSavedWorlds, type SavedWorldListing } from "./save-database.ts";
 import { type SavedWorldIdentity, type SaveOutcome, WorldSaver } from "./world-saver.ts";
 
@@ -16,35 +17,37 @@ interface SavesStore {
   readonly worlds: readonly SavedWorldListing[];
 }
 
-export const useSavesStore = create<SavesStore>()((set, get) => ({
-  hasFailed: false,
-  isSaving: false,
-  lastSavedAt: null,
-  refresh: async () => {
-    const worlds = await listSavedWorlds();
+export const useSavesStore = create<SavesStore>()((set, get) => {
+  return {
+    hasFailed: false,
+    isSaving: false,
+    lastSavedAt: null,
+    refresh: async () => {
+      const worlds = await listSavedWorlds();
 
-    set({ worlds });
-  },
-  remove: async (id) => {
-    await deleteSavedWorld(id);
-    await get().refresh();
-  },
-  saveNow: async () => {
-    const { saver } = get();
+      set({ worlds });
+    },
+    remove: async (id) => {
+      await deleteSavedWorld(id);
+      await get().refresh();
+    },
+    saveNow: async () => {
+      const { saver } = get();
 
-    if (saver === null) {
-      return "unchanged";
-    }
+      if (saver === null) {
+        return "unchanged";
+      }
 
-    const outcome = await saver.saveSoon();
+      const outcome = await saver.saveSoon();
 
-    set({ hasFailed: outcome === "failed" });
+      set({ hasFailed: outcome === "failed" });
 
-    return outcome;
-  },
-  saver: null,
-  worlds: [],
-}));
+      return outcome;
+    },
+    saver: null,
+    worlds: [],
+  };
+});
 
 export function saveBeforeLeaving(leave: () => void): void {
   const { saver } = useSavesStore.getState();
@@ -66,17 +69,21 @@ function reportOutcome(outcome: SaveOutcome): void {
 
 export function connectAutosave(session: GameSession, identity: SavedWorldIdentity): () => void {
   const saver = new WorldSaver(session, identity, {
-    onSaved: (savedAt) => useSavesStore.setState({ hasFailed: false, lastSavedAt: savedAt }),
-    onSaving: (isSaving) => useSavesStore.setState({ isSaving }),
+    onSaved: (savedAt) => {
+      useSavesStore.setState({ hasFailed: false, lastSavedAt: savedAt });
+    },
+    onSaving: (isSaving) => {
+      useSavesStore.setState({ isSaving });
+    },
   });
 
   function autosave(): void {
-    saver.save().then(reportOutcome, () => undefined);
+    saver.save().then(reportOutcome, ignore);
   }
 
   function saveWhenHidden(): void {
     if (document.visibilityState === "hidden") {
-      saver.saveSoon().then(reportOutcome, () => undefined);
+      saver.saveSoon().then(reportOutcome, ignore);
     }
   }
 

@@ -19,7 +19,9 @@ test.describe("the start screen", () => {
   });
 
   it("says the island could not rise when the interface fails to load", async ({ page }) => {
-    await page.route(HUD_CHUNK, (route) => route.abort());
+    await page.route(HUD_CHUNK, (route) => {
+      return route.abort();
+    });
     await page.goto("/?seed=7&quality=low&paused=1");
 
     await expect(page.getByRole("alert")).toContainText("The island could not rise");

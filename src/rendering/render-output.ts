@@ -11,6 +11,7 @@ import {
   type Scene,
   type WebGPURenderer,
 } from "three/webgpu";
+import { ignore } from "../shared/ignore.ts";
 import { createOutlineControls, OUTLINE_TARGET, outlinedColor, sceneTargets } from "./outlines.ts";
 import type { RenderQuality } from "./render-quality.ts";
 
@@ -35,7 +36,12 @@ function withBloom(color: Node<"vec4">): FinishedColor {
   const fromCenter = screenUV.sub(0.5);
   const vignette = float(1).sub(dot(fromCenter, fromCenter).mul(VIGNETTE_STRENGTH));
 
-  return { color: vec4(color.add(glow).rgb.mul(vignette), 1), dispose: () => glow.dispose() };
+  return {
+    color: vec4(color.add(glow).rgb.mul(vignette), 1),
+    dispose: () => {
+      glow.dispose();
+    },
+  };
 }
 
 function finish(color: Node<"vec4">, quality: RenderQuality): FinishedColor {
@@ -43,7 +49,7 @@ function finish(color: Node<"vec4">, quality: RenderQuality): FinishedColor {
     return withBloom(color);
   }
 
-  return { color, dispose: () => undefined };
+  return { color, dispose: ignore };
 }
 
 export function createRenderOutput(

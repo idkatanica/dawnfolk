@@ -37,7 +37,13 @@ describe.each(["round", "square"] as const)("monuments on a %s island", (shape) 
 
     expect(monuments.length).toBeGreaterThanOrEqual(4);
     expect(monuments.length).toBeLessThanOrEqual(8);
-    expect(new Set(monuments.map((monument) => monument.kind)).size).toBeGreaterThanOrEqual(4);
+    expect(
+      new Set(
+        monuments.map((monument) => {
+          return monument.kind;
+        })
+      ).size
+    ).toBeGreaterThanOrEqual(4);
   });
 
   test("sets them on dry, level ground away from water and the coast", () => {
@@ -49,11 +55,15 @@ describe.each(["round", "square"] as const)("monuments on a %s island", (shape) 
       const cells = [...monument.cells, ...grid.cellsInRadius(monument.x, monument.z, DRY_REACH)];
 
       expect(
-        monument.cells.every((cell) => canStandOn(terrain, grid, cell, MONUMENT_SLOPE)),
+        monument.cells.every((cell) => {
+          return canStandOn(terrain, grid, cell, MONUMENT_SLOPE);
+        }),
         monument.name
       ).toBe(true);
       expect(
-        cells.some((cell) => isWaterCell(terrain, cell)),
+        cells.some((cell) => {
+          return isWaterCell(terrain, cell);
+        }),
         monument.name
       ).toBe(false);
     }
@@ -62,7 +72,9 @@ describe.each(["round", "square"] as const)("monuments on a %s island", (shape) 
   test("gives each a name of its kind, and no name twice", () => {
     const { monuments } = worldOf(shape);
 
-    const names = monuments.map((monument) => monument.name);
+    const names = monuments.map((monument) => {
+      return monument.name;
+    });
 
     expect(new Set(names).size).toBe(names.length);
 

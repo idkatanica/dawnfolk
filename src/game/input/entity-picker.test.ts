@@ -84,11 +84,17 @@ function pickAt(heightAt: HeightField, ...positions: readonly (readonly [number,
 
 describe("entity picker", () => {
   it("picks the person under the pointer", () => {
-    expect(pickAt(() => 0, [0, 0])).toEqual({ id: 1, kind: "person" });
+    expect(
+      pickAt(() => {
+        return 0;
+      }, [0, 0])
+    ).toEqual({ id: 1, kind: "person" });
   });
 
   it("falls back to the ground when nobody is near the pointer", () => {
-    const selection = pickAt(() => 0, [300, 0]);
+    const selection = pickAt(() => {
+      return 0;
+    }, [300, 0]);
 
     expect(selection).toMatchObject({ kind: "cell" });
   });
@@ -101,7 +107,9 @@ describe("entity picker", () => {
     const camera = cameraLookingAt(0, 0);
     const frame = frameWithPeople([0, 900]);
 
-    const picker = new EntityPicker(camera, () => 0);
+    const picker = new EntityPicker(camera, () => {
+      return 0;
+    });
 
     expect(picker.pick(frame, CENTER, VIEWPORT, new Vector3(0, 0, 0))).toMatchObject({ kind: "cell" });
   });

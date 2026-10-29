@@ -61,14 +61,20 @@ interface Pad {
 
 function ribbed(ribs: number, depth = RIB_DEPTH): (around: number) => number {
   if (ribs === 0) {
-    return () => 1;
+    return () => {
+      return 1;
+    };
   }
 
-  return (around) => 1 + depth * Math.abs(Math.cos(around * Math.PI * ribs));
+  return (around) => {
+    return 1 + depth * Math.abs(Math.cos(around * Math.PI * ribs));
+  };
 }
 
 function stemShade(top: number): (point: SurfacePoint) => number {
-  return (point) => 0.72 + 0.3 * smoothstep(0, Math.min(1.5, top), point.position.y);
+  return (point) => {
+    return 0.72 + 0.3 * smoothstep(0, Math.min(1.5, top), point.position.y);
+  };
 }
 
 function columnSections(column: Column, ribs: number): LoftSection[] {
@@ -288,7 +294,9 @@ function addPricklyPear(builder: MeshBuilder, random: RandomSource, detail: Cact
     const grown = tips.splice(0).flatMap((parent) => {
       const count = random.chance(0.4) ? 2 : 1;
 
-      return Array.from({ length: count }, () => childPad(parent, random));
+      return Array.from({ length: count }, () => {
+        return childPad(parent, random);
+      });
     });
 
     pads.push(...grown);

@@ -80,7 +80,12 @@ export function foundNeighboringTribes(harness: SocietyHarness, distance: number
 }
 
 export function standStill(): Job {
-  const job: Job = { kind: "idle", update: () => job };
+  const job: Job = {
+    kind: "idle",
+    update: () => {
+      return job;
+    },
+  };
 
   return job;
 }
@@ -109,5 +114,7 @@ export function enclosure(kind: "palisade" | "stoneWall", tribe: Tribe, extent: 
 }
 
 export function chronicleTexts(harness: SocietyHarness): string[] {
-  return harness.chronicle.takeEntries().map((entry) => `${entry.category}: ${entry.text}`);
+  return harness.chronicle.takeEntries().map((entry) => {
+    return `${entry.category}: ${entry.text}`;
+  });
 }

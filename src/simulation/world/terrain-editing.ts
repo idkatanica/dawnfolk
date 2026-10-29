@@ -76,20 +76,23 @@ export function brushFalloff(distance: number, radius: number): number {
 function editableCells(world: WorldState, area: CircleArea): AreaCell[] {
   const lastEditable = world.grid.cellsPerSide - UNEDITABLE_RIM;
 
-  return cellsInArea(world, area).filter(
-    (areaCell) =>
+  return cellsInArea(world, area).filter((areaCell) => {
+    return (
       areaCell.column >= UNEDITABLE_RIM &&
       areaCell.row >= UNEDITABLE_RIM &&
       areaCell.column < lastEditable &&
       areaCell.row < lastEditable
-  );
+    );
+  });
 }
 
 export function raiseTerrain(
   world: WorldState,
   area: CircleArea,
   amount: number,
-  profile = (distance: number) => brushFalloff(distance, area.radius)
+  profile = (distance: number) => {
+    return brushFalloff(distance, area.radius);
+  }
 ): void {
   for (const areaCell of editableCells(world, area)) {
     const { cell } = areaCell;
@@ -115,7 +118,9 @@ function coneProfile(cone: Cone, distance: number): number {
 }
 
 export function swellCone(world: WorldState, cone: Cone, amount: number): void {
-  raiseTerrain(world, cone, amount, (distance) => coneProfile(cone, distance));
+  raiseTerrain(world, cone, amount, (distance) => {
+    return coneProfile(cone, distance);
+  });
 }
 
 function firmUpDriedLakebed(world: WorldState, cell: number, amount: number): void {
@@ -199,7 +204,9 @@ function distanceFromCenter(area: CircleArea, point: RiverPoint): number {
 }
 
 function firstCapturedPoint(river: River, crater: CircleArea): number {
-  return river.points.findIndex((point) => distanceFromCenter(crater, point) < crater.radius * CAPTURED_RIVER_REACH);
+  return river.points.findIndex((point) => {
+    return distanceFromCenter(crater, point) < crater.radius * CAPTURED_RIVER_REACH;
+  });
 }
 
 function opennessAt(breach: ReadonlyMap<number, number>, cell: number): number {

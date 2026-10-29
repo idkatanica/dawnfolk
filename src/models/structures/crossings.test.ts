@@ -23,7 +23,11 @@ const MODELS: readonly (readonly [string, (level: CrossingDetailLevel) => MeshDa
 ];
 
 function averageTriangles(meshes: readonly MeshData[]): number {
-  return meshes.reduce((sum, mesh) => sum + triangleCount(mesh), 0) / meshes.length;
+  return (
+    meshes.reduce((sum, mesh) => {
+      return sum + triangleCount(mesh);
+    }, 0) / meshes.length
+  );
 }
 
 function lowestNear(mesh: MeshData, along: number, reach: number): number {
@@ -131,7 +135,11 @@ describe("fallen logs", () => {
   });
 
   it("picks the closest length and both shapes of a log", () => {
-    const variants = new Set([0.1, 0.2, 0.6, 0.7].map((seed) => fallenLogVariant(19, seed)));
+    const variants = new Set(
+      [0.1, 0.2, 0.6, 0.7].map((seed) => {
+        return fallenLogVariant(19, seed);
+      })
+    );
 
     expect(variants.size).toBe(2);
     expect(fallenLogVariant(28, 0.1) % FALLEN_LOG_LENGTHS.length).toBe(1);

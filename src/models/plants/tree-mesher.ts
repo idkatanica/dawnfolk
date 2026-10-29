@@ -111,9 +111,15 @@ export function plantSway(height: number, plantHeight: number): number {
 
 function woodStyle(height: number, look: TreeLook, depth: number): VertexStyle {
   return {
-    shade: (point) => 0.68 + 0.32 * smoothstep(0, height * 0.25, point.position.y),
-    slot: (point) => barkSlot(point, look, depth),
-    sway: (point) => plantSway(point.position.y, height),
+    shade: (point) => {
+      return 0.68 + 0.32 * smoothstep(0, height * 0.25, point.position.y);
+    },
+    slot: (point) => {
+      return barkSlot(point, look, depth);
+    },
+    sway: (point) => {
+      return plantSway(point.position.y, height);
+    },
   };
 }
 
@@ -131,7 +137,9 @@ function barkSlot(point: SurfacePoint, look: TreeLook, depth: number): number {
 
 function crownCenter(structure: TreeStructure): Vector3 {
   const centers = structure.foliage.map(foliageCenter);
-  const sum = centers.reduce((total, center) => total.add(center), new Vector3());
+  const sum = centers.reduce((total, center) => {
+    return total.add(center);
+  }, new Vector3());
 
   return sum.multiplyScalar(1 / Math.max(1, centers.length));
 }
@@ -165,7 +173,9 @@ export function foliageStyle(
       return clamp(0.5 + 0.38 * facing + lift + tint, 0.3, 1.15);
     },
     slot: look.foliage,
-    sway: (point) => plantSway(point.position.y, structure.height),
+    sway: (point) => {
+      return plantSway(point.position.y, structure.height);
+    },
   };
 }
 
@@ -344,9 +354,9 @@ function skirtShape(skirt: FoliageSkirt, detail: SkirtDetail, isCovered: boolean
 }
 
 function isCoveredSkirt(skirt: FoliageSkirt, structure: TreeStructure): boolean {
-  return structure.foliage.some(
-    (other) => other.kind === "skirt" && other.bottom > skirt.bottom && other.bottom < skirt.top
-  );
+  return structure.foliage.some((other) => {
+    return other.kind === "skirt" && other.bottom > skirt.bottom && other.bottom < skirt.top;
+  });
 }
 
 function addSkirt(
@@ -486,7 +496,9 @@ function addFrond(
   builder.add(ribbon(points), {
     style: {
       ...foliageStyle(structure, look, frond.tint, crown),
-      sway: (point) => lerp(rootSway, 1, point.along),
+      sway: (point) => {
+        return lerp(rootSway, 1, point.along);
+      },
     },
   });
 }
@@ -526,31 +538,40 @@ function mergeClosest(blobs: MergedBlob[]): MergedBlob[] {
     weight,
   };
 
-  return [...blobs.filter((_blob, index) => index !== bestFirst && index !== bestSecond), merged];
+  return [
+    ...blobs.filter((_blob, index) => {
+      return index !== bestFirst && index !== bestSecond;
+    }),
+    merged,
+  ];
 }
 
 function mergedBlobs(blobs: readonly FoliageBlob[], target: number): FoliageBlob[] {
-  let merged: MergedBlob[] = blobs.map((foliage) => ({
-    center: new Vector3(...foliage.center),
-    drape: foliage.drape === undefined ? 0 : foliage.drape,
-    radius: foliage.radius,
-    squash: foliage.squash,
-    tint: foliage.tint,
-    weight: foliage.radius ** 3,
-  }));
+  let merged: MergedBlob[] = blobs.map((foliage) => {
+    return {
+      center: new Vector3(...foliage.center),
+      drape: foliage.drape === undefined ? 0 : foliage.drape,
+      radius: foliage.radius,
+      squash: foliage.squash,
+      tint: foliage.tint,
+      weight: foliage.radius ** 3,
+    };
+  });
 
   while (merged.length > target) {
     merged = mergeClosest(merged);
   }
 
-  return merged.map((foliage) => ({
-    center: foliage.center.toArray(),
-    drape: foliage.drape,
-    kind: "blob",
-    radius: foliage.radius,
-    squash: foliage.squash,
-    tint: foliage.tint,
-  }));
+  return merged.map((foliage) => {
+    return {
+      center: foliage.center.toArray(),
+      drape: foliage.drape,
+      kind: "blob",
+      radius: foliage.radius,
+      squash: foliage.squash,
+      tint: foliage.tint,
+    };
+  });
 }
 
 function crownEnvelope(structure: TreeStructure): FoliageBlob {
@@ -581,8 +602,12 @@ function foliageReach(foliage: Foliage): Reach {
     const points = foliage.points.map(toVector);
 
     return {
-      maximum: points.reduce((maximum, point) => maximum.max(point), points[0].clone()),
-      minimum: points.reduce((minimum, point) => minimum.min(point), points[0].clone()),
+      maximum: points.reduce((maximum, point) => {
+        return maximum.max(point);
+      }, points[0].clone()),
+      minimum: points.reduce((minimum, point) => {
+        return minimum.min(point);
+      }, points[0].clone()),
     };
   }
 
@@ -616,14 +641,20 @@ function lowCrownCenter(structure: TreeStructure): Vector3 | null {
 }
 
 function lowCone(structure: TreeStructure): LowCone | null {
-  const skirts = structure.foliage.filter((foliage) => foliage.kind === "skirt");
+  const skirts = structure.foliage.filter((foliage) => {
+    return foliage.kind === "skirt";
+  });
 
   if (skirts.length === 0) {
     return null;
   }
 
-  const widest = skirts.reduce((best, skirt) => (skirt.radius > best.radius ? skirt : best));
-  const top = skirts.reduce((highest, skirt) => Math.max(highest, skirt.top), 0);
+  const widest = skirts.reduce((best, skirt) => {
+    return skirt.radius > best.radius ? skirt : best;
+  });
+  const top = skirts.reduce((highest, skirt) => {
+    return Math.max(highest, skirt.top);
+  }, 0);
 
   return { bottom: widest.bottom - widest.droop * 0.5, center: widest.center, radius: widest.radius * 1.02, top };
 }
@@ -672,7 +703,9 @@ function needsCrownStem(
   envelope: FoliageBlob,
   level: PlantDetailLevel
 ): boolean {
-  const hasTrunk = structure.branches.some((branch) => branch.depth === 0);
+  const hasTrunk = structure.branches.some((branch) => {
+    return branch.depth === 0;
+  });
 
   if (hasTrunk && envelope.center[1] > root.y) {
     return false;
@@ -688,14 +721,18 @@ function groundedEnvelope(envelope: FoliageBlob): FoliageBlob {
 }
 
 function stemRoot(structure: TreeStructure): TubePoint | null {
-  const trunk = structure.branches.find((branch) => branch.depth === 0);
+  const trunk = structure.branches.find((branch) => {
+    return branch.depth === 0;
+  });
   const top = trunk?.points.at(-1);
 
   if (top !== undefined) {
     return top;
   }
 
-  const bases = structure.branches.flatMap((branch) => branch.points.slice(0, 1));
+  const bases = structure.branches.flatMap((branch) => {
+    return branch.points.slice(0, 1);
+  });
 
   if (bases.length === 0) {
     return null;
@@ -704,10 +741,22 @@ function stemRoot(structure: TreeStructure): TubePoint | null {
   const share = 1 / bases.length;
 
   return {
-    radius: Math.hypot(...bases.map((base) => base.radius)),
-    x: bases.reduce((sum, base) => sum + base.x * share, 0),
-    y: Math.min(...bases.map((base) => base.y)),
-    z: bases.reduce((sum, base) => sum + base.z * share, 0),
+    radius: Math.hypot(
+      ...bases.map((base) => {
+        return base.radius;
+      })
+    ),
+    x: bases.reduce((sum, base) => {
+      return sum + base.x * share;
+    }, 0),
+    y: Math.min(
+      ...bases.map((base) => {
+        return base.y;
+      })
+    ),
+    z: bases.reduce((sum, base) => {
+      return sum + base.z * share;
+    }, 0),
   };
 }
 
@@ -740,7 +789,9 @@ function addFoliage(builder: MeshBuilder, structure: TreeStructure, look: TreeLo
     return;
   }
 
-  const blobs = structure.foliage.filter((foliage) => foliage.kind === "blob");
+  const blobs = structure.foliage.filter((foliage) => {
+    return foliage.kind === "blob";
+  });
   const visibleBlobs = mergedBlobs(blobs, BLOB_LIMITS[level]);
   const crown = crownCenter(structure);
 

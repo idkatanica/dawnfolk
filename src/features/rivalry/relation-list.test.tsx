@@ -47,7 +47,11 @@ describe("relation list", () => {
 
     const rows = screen.getByRole("listitem").elements();
 
-    expect(rows.map((row) => row.textContent)).toEqual([
+    expect(
+      rows.map((row) => {
+        return row.textContent;
+      })
+    ).toEqual([
       "Bear Clan · Wolf ClanFeud for 3 d · 2 fallenHostile",
       "Wolf Clan · Elk ClanTruceNeutral",
       "Bear Clan · Elk ClanKinFriendly",

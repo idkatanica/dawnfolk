@@ -14,7 +14,9 @@ import {
 import { useWorldStore } from "../world/world-store.ts";
 import { FIELD_GRID, SettingsGroup } from "./settings-group.tsx";
 
-const SEASON_OPTIONS = SEASONS.map((season, index) => ({ label: season, value: String(index) }));
+const SEASON_OPTIONS = SEASONS.map((season, index) => {
+  return { label: season, value: String(index) };
+});
 
 function useTimeSettings() {
   const send = useSendCommand();
@@ -109,7 +111,9 @@ function TimeSettings({ calendar }: { readonly calendar: CalendarView }) {
 }
 
 export function TimeSection() {
-  const calendar = useWorldStore((state) => state.snapshot?.calendar);
+  const calendar = useWorldStore((state) => {
+    return state.snapshot?.calendar;
+  });
 
   if (calendar === undefined) {
     return null;

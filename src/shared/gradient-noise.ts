@@ -63,7 +63,9 @@ export class GradientNoise {
 
   constructor(random: RandomSource) {
     this.#permutation = shuffledTable(random);
-    this.#gradientIndices = this.#permutation.map((entry) => entry % GRADIENTS_X.length);
+    this.#gradientIndices = this.#permutation.map((entry) => {
+      return entry % GRADIENTS_X.length;
+    });
   }
 
   sample(x: number, z: number, result: NoiseGradient): NoiseGradient {

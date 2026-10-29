@@ -270,7 +270,9 @@ function addTent(context: StructureContext): void {
   builder.add(lathe(profile, sides), {
     style: {
       buildOrder: rising(0.4, 1, 0, TENT_HEIGHT),
-      shade: (point) => 0.75 + 0.25 * smoothstep(0, 1.5, point.position.y),
+      shade: (point) => {
+        return 0.75 + 0.25 * smoothstep(0, 1.5, point.position.y);
+      },
       slot: tentSlot,
     },
     transform: transformOf({ rotation: [0, -firstPole, 0] }),
@@ -343,13 +345,17 @@ function addHut(context: StructureContext): void {
         {
           radiusX: HUT_RADIUS + 0.12,
           radiusZ: HUT_RADIUS + 0.12,
-          ripple: (around) => 1 + 0.025 * Math.sin(around * 70),
+          ripple: (around) => {
+            return 1 + 0.025 * Math.sin(around * 70);
+          },
           y: 0,
         },
         {
           radiusX: HUT_RADIUS + 0.06,
           radiusZ: HUT_RADIUS + 0.06,
-          ripple: (around) => 1 + 0.02 * Math.sin(around * 55),
+          ripple: (around) => {
+            return 1 + 0.02 * Math.sin(around * 55);
+          },
           y: 0.5,
         },
         { radiusX: HUT_RADIUS, radiusZ: HUT_RADIUS, y: 0.55 },
@@ -360,9 +366,15 @@ function addHut(context: StructureContext): void {
     ),
     {
       style: {
-        buildOrder: (point) => 0.05 + 0.45 * saturate(point.position.y / 1.75),
-        shade: (point) => 0.7 + 0.3 * smoothstep(0, 1.6, point.position.y),
-        slot: (point) => (point.position.y < 0.52 ? MaterialSlot.Stone : MaterialSlot.Daub),
+        buildOrder: (point) => {
+          return 0.05 + 0.45 * saturate(point.position.y / 1.75);
+        },
+        shade: (point) => {
+          return 0.7 + 0.3 * smoothstep(0, 1.6, point.position.y);
+        },
+        slot: (point) => {
+          return point.position.y < 0.52 ? MaterialSlot.Stone : MaterialSlot.Daub;
+        },
       },
     }
   );
@@ -373,12 +385,16 @@ function addHut(context: StructureContext): void {
     const bottom = 1.55 + tier * 0.55;
     const radius = (HUT_RADIUS + 0.55) * (1 - tier * 0.28);
 
-    const thatch = thatchSections(bottom, 3.7, radius, (around) => 1 + 0.03 * Math.sin(around * segments * 3));
+    const thatch = thatchSections(bottom, 3.7, radius, (around) => {
+      return 1 + 0.03 * Math.sin(around * segments * 3);
+    });
 
     builder.add(loft(thatch, segments), {
       style: {
         buildOrder: 0.55 + tier * 0.15,
-        shade: (point) => 0.72 + 0.28 * smoothstep(bottom, 3.7, point.position.y),
+        shade: (point) => {
+          return 0.72 + 0.28 * smoothstep(bottom, 3.7, point.position.y);
+        },
         slot: MaterialSlot.Thatch,
       },
     });
@@ -424,8 +440,12 @@ function addStorehouse(context: StructureContext): void {
   });
   builder.add(box(2.2, 1.1, 1.8), {
     style: {
-      buildOrder: (point) => 0.4 + 0.3 * saturate((point.position.y - 1.1) / 1.1),
-      shade: (point) => 0.75 + 0.25 * smoothstep(1.1, 2.2, point.position.y),
+      buildOrder: (point) => {
+        return 0.4 + 0.3 * saturate((point.position.y - 1.1) / 1.1);
+      },
+      shade: (point) => {
+        return 0.75 + 0.25 * smoothstep(1.1, 2.2, point.position.y);
+      },
       slot: MaterialSlot.Daub,
     },
     transform: transformOf({ position: [0, 1.7, 0] }),
@@ -598,7 +618,9 @@ function addTotem(context: StructureContext): void {
 
   builder.add(log, {
     style: {
-      buildOrder: (point) => headOrder(headOf(point.position.y)),
+      buildOrder: (point) => {
+        return headOrder(headOf(point.position.y));
+      },
       slot: (point) => {
         const head = headOf(point.position.y);
 
@@ -622,7 +644,9 @@ function addTotem(context: StructureContext): void {
     builder.add(box(1.2, 0.34, 0.08), {
       style: {
         buildOrder: 0.95,
-        slot: (point) => (Math.abs(point.position.x) > 0.55 ? MaterialSlot.Accent : MaterialSlot.Wood),
+        slot: (point) => {
+          return Math.abs(point.position.x) > 0.55 ? MaterialSlot.Accent : MaterialSlot.Wood;
+        },
       },
       transform: transformOf({ position: [side * 0.62, TOTEM_TOP - 0.2, 0], rotation: [0, 0, side * 0.22] }),
     });

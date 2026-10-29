@@ -9,13 +9,17 @@ describe("powers", () => {
 
   it("gives every parameter a label and a sane range", () => {
     for (const powerId of POWER_ORDER) {
-      const metadata = describeParameters(POWERS[powerId].parameters).map((field) => field.metadata);
+      const metadata = describeParameters(POWERS[powerId].parameters).map((field) => {
+        return field.metadata;
+      });
 
       for (const field of metadata) {
         expect(field.label.length).toBeGreaterThan(0);
       }
 
-      for (const range of metadata.filter((field) => field.kind === "range")) {
+      for (const range of metadata.filter((field) => {
+        return field.kind === "range";
+      })) {
         expect(range.minimum).toBeLessThan(range.maximum);
         expect(range.defaultValue).toBeGreaterThanOrEqual(range.minimum);
         expect(range.defaultValue).toBeLessThanOrEqual(range.maximum);

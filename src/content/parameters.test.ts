@@ -51,7 +51,11 @@ describe("parameter schemas", () => {
   it("describe fields for the interface in schema order", () => {
     const fields = describeParameters(z.object({ material, radius, spreadsEmbers }));
 
-    expect(fields.map((field) => field.key)).toEqual(["material", "radius", "spreadsEmbers"]);
+    expect(
+      fields.map((field) => {
+        return field.key;
+      })
+    ).toEqual(["material", "radius", "spreadsEmbers"]);
     expect(fields[0]?.metadata).toMatchObject({ kind: "choice", options: [{ value: "sand" }, { value: "rock" }] });
     expect(fields[1]?.metadata).toMatchObject({ kind: "range", label: "Radius", maximum: 150, minimum: 5 });
     expect(fields[2]?.metadata).toMatchObject({ kind: "toggle", label: "Embers" });
@@ -65,7 +69,11 @@ describe("parameter schemas", () => {
     const [group] = describeParameterGroups(schema);
 
     expect(group?.metadata.label).toBe("Brush");
-    expect(group?.fields.map((field) => field.key)).toEqual(["radius"]);
+    expect(
+      group?.fields.map((field) => {
+        return field.key;
+      })
+    ).toEqual(["radius"]);
     expect(schema.parse({})).toEqual({ brush: { radius: 25 } });
   });
 });

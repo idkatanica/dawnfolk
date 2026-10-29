@@ -41,10 +41,14 @@ export const useLaunchStore = create<LaunchStore>()((set, get) => {
       set({ isChoosingWorld: true });
     },
     continueWorld: launchWorld,
-    createWorld: (choice) => launchWorld(createWorldId(), choice),
+    createWorld: (choice) => {
+      launchWorld(createWorldId(), choice);
+    },
     isChoosingWorld: !choosesWorld(window.location.search),
     launch: readLaunchOptions(window.location.search),
-    relaunch: (changes) => launchWorld(get().worldId, changes),
+    relaunch: (changes) => {
+      launchWorld(get().worldId, changes);
+    },
     worldId: initialWorldId(),
   };
 });

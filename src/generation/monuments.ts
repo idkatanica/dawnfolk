@@ -300,18 +300,20 @@ function placePieces(layout: Layout, site: Site): PlacedPiece[] {
   const cosine = Math.cos(site.angle);
   const sine = Math.sin(site.angle);
 
-  return layout.pieces.map((piece) => ({
-    placement: {
-      bornDay: INITIAL_PLANT_DAY,
-      height: piece.height,
-      rotation: piece.rotation + site.angle,
-      seed: piece.seed,
-      species: piece.species,
-      x: site.x + piece.offsetX * cosine + piece.offsetZ * sine,
-      z: site.z - piece.offsetX * sine + piece.offsetZ * cosine,
-    },
-    reach: plantSpeciesDefinition(piece.species).radiusPerMeter * piece.height,
-  }));
+  return layout.pieces.map((piece) => {
+    return {
+      placement: {
+        bornDay: INITIAL_PLANT_DAY,
+        height: piece.height,
+        rotation: piece.rotation + site.angle,
+        seed: piece.seed,
+        species: piece.species,
+        x: site.x + piece.offsetX * cosine + piece.offsetZ * sine,
+        z: site.z - piece.offsetX * sine + piece.offsetZ * cosine,
+      },
+      reach: plantSpeciesDefinition(piece.species).radiusPerMeter * piece.height,
+    };
+  });
 }
 
 function footprint(grid: WorldGrid, layout: Layout, site: Site, pieces: readonly PlacedPiece[]): number[] {
@@ -330,32 +332,37 @@ function footprint(grid: WorldGrid, layout: Layout, site: Site, pieces: readonly
     }
   }
 
-  return [...cells].sort((first, second) => first - second);
+  return [...cells].sort((first, second) => {
+    return first - second;
+  });
 }
 
 function siteReach(site: Site, pieces: readonly PlacedPiece[]): number {
-  return pieces.reduce(
-    (widest, { placement, reach }) => Math.max(widest, Math.hypot(placement.x - site.x, placement.z - site.z) + reach),
-    0
-  );
+  return pieces.reduce((widest, { placement, reach }) => {
+    return Math.max(widest, Math.hypot(placement.x - site.x, placement.z - site.z) + reach);
+  }, 0);
 }
 
 function isDry(planner: Planner, site: Site, reach: number): boolean {
   const { grid, terrain } = planner;
 
-  return grid.cellsInRadius(site.x, site.z, reach + DRY_REACH).every((cell) => !isWaterCell(terrain, cell));
+  return grid.cellsInRadius(site.x, site.z, reach + DRY_REACH).every((cell) => {
+    return !isWaterCell(terrain, cell);
+  });
 }
 
 function isFootingSound(planner: Planner, cells: readonly number[], pieces: readonly PlacedPiece[]): boolean {
   const { grid, terrain } = planner;
 
-  const isGroundLevel = cells.every((cell) => canStandOn(terrain, grid, cell, MONUMENT_SLOPE));
+  const isGroundLevel = cells.every((cell) => {
+    return canStandOn(terrain, grid, cell, MONUMENT_SLOPE);
+  });
 
   return (
     isGroundLevel &&
-    pieces.every(({ placement }) =>
-      hasRoomFromCoast(terrain.coastDistance, grid, placement.x, placement.z, COAST_CLEARANCE)
-    )
+    pieces.every(({ placement }) => {
+      return hasRoomFromCoast(terrain.coastDistance, grid, placement.x, placement.z, COAST_CLEARANCE);
+    })
   );
 }
 
@@ -382,7 +389,10 @@ function settingScore(planner: Planner, kind: MonumentKind, site: Site, cells: r
   const { grid, terrain } = planner;
 
   const cell = grid.cellAt(site.x, site.z);
-  const meanSlope = cells.reduce((total, other) => total + slopeAt(terrain.height, grid, other), 0) / cells.length;
+  const meanSlope =
+    cells.reduce((total, other) => {
+      return total + slopeAt(terrain.height, grid, other);
+    }, 0) / cells.length;
   const flatness = (MONUMENT_SLOPE - meanSlope) * 6;
 
   switch (MONUMENTS[kind].setting) {
@@ -396,14 +406,18 @@ function settingScore(planner: Planner, kind: MonumentKind, site: Site, cells: r
 }
 
 function isSpaced(planner: Planner, site: Site): boolean {
-  return planner.placed.every((other) => Math.hypot(other.x - site.x, other.z - site.z) > SPACING);
+  return planner.placed.every((other) => {
+    return Math.hypot(other.x - site.x, other.z - site.z) > SPACING;
+  });
 }
 
 function judge(planner: Planner, kind: MonumentKind, layout: Layout, site: Site): Choice | null {
   const { grid, terrain } = planner;
 
   const cell = grid.cellAt(site.x, site.z);
-  const isFittingLand = MONUMENTS[kind].biomes.some((biome) => biome === terrain.biome[cell]);
+  const isFittingLand = MONUMENTS[kind].biomes.some((biome) => {
+    return biome === terrain.biome[cell];
+  });
 
   if (!(isFittingLand && canStandOn(terrain, grid, cell, MONUMENT_SLOPE))) {
     return null;
@@ -457,7 +471,9 @@ export function planMonuments(grid: WorldGrid, terrain: TerrainData, seed: numbe
   const planner: Planner = { grid, placed: [], terrain };
   const pieces: PlantPlacement[] = [];
 
-  const extras = Array.from({ length: EXTRA_MONUMENTS }, () => random.pick(EXTRA_KINDS));
+  const extras = Array.from({ length: EXTRA_MONUMENTS }, () => {
+    return random.pick(EXTRA_KINDS);
+  });
   const namesUsed = new Set<string>();
 
   for (const kind of [...MONUMENT_KINDS, ...extras]) {
@@ -482,7 +498,11 @@ export function planMonuments(grid: WorldGrid, terrain: TerrainData, seed: numbe
       x: choice.site.x,
       z: choice.site.z,
     });
-    pieces.push(...choice.pieces.map((piece) => piece.placement));
+    pieces.push(
+      ...choice.pieces.map((piece) => {
+        return piece.placement;
+      })
+    );
   }
 
   return { monuments: planner.placed, pieces };

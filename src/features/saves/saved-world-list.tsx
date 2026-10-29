@@ -4,6 +4,7 @@ import { useLaunchStore } from "../../app/launch-store.ts";
 import { IconButton, TextButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
 import { FOCUS_RING } from "../../design/styles.ts";
+import { ignore } from "../../shared/ignore.ts";
 import type { SavedWorldListing } from "./save-database.ts";
 import { describePeople, formatSavedAt } from "./saved-time.ts";
 import { useSavesStore } from "./saves-store.ts";
@@ -27,8 +28,12 @@ function worldDetails(world: SavedWorldListing, now: number): string {
 }
 
 function useSavedWorldRow(world: SavedWorldListing) {
-  const continueWorld = useLaunchStore((state) => state.continueWorld);
-  const remove = useSavesStore((state) => state.remove);
+  const continueWorld = useLaunchStore((state) => {
+    return state.continueWorld;
+  });
+  const remove = useSavesStore((state) => {
+    return state.remove;
+  });
   const [isConfirming, setIsConfirming] = useState(false);
 
   function handleDelete(): void {
@@ -40,7 +45,7 @@ function useSavedWorldRow(world: SavedWorldListing) {
   }
 
   function handleConfirmDelete(): void {
-    remove(world.id).catch(() => undefined);
+    remove(world.id).catch(ignore);
   }
 
   function handleOpen(): void {
@@ -101,16 +106,20 @@ function SavedWorldRow({ now, world }: SavedWorldRowProps) {
 }
 
 export function SavedWorldList() {
-  const worlds = useSavesStore((state) => state.worlds);
+  const worlds = useSavesStore((state) => {
+    return state.worlds;
+  });
   const now = useNow(CLOCK_MILLISECONDS);
 
   return (
     <ul aria-label="Your worlds" className="flex max-h-80 flex-col gap-0.5 overflow-y-auto">
-      {worlds.map((world) => (
-        <li key={world.id}>
-          <SavedWorldRow now={now} world={world} />
-        </li>
-      ))}
+      {worlds.map((world) => {
+        return (
+          <li key={world.id}>
+            <SavedWorldRow now={now} world={world} />
+          </li>
+        );
+      })}
     </ul>
   );
 }

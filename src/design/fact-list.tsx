@@ -18,9 +18,9 @@ function FactRow({ fact }: { readonly fact: Fact }) {
 export function FactList({ facts }: { readonly facts: readonly Fact[] }) {
   return (
     <dl className="divide-line divide-y">
-      {facts.map((fact) => (
-        <FactRow fact={fact} key={fact.label} />
-      ))}
+      {facts.map((fact) => {
+        return <FactRow fact={fact} key={fact.label} />;
+      })}
     </dl>
   );
 }

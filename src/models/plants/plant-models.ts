@@ -115,13 +115,19 @@ const TREE_LOOKS: Readonly<Partial<Record<PlantSpeciesIndex, TreeLook>>> = {
 function withoutBuriedFoliage(tree: MeshData, berries: readonly MeshData[], look: TreeLook): MeshData {
   const shells = shellsOf(tree);
 
-  const foliage = shells.filter((shell) => shell.channels.slot[0] === look.foliage && isClosed(shell));
-  const wood = shells.filter((shell) => !foliage.includes(shell));
+  const foliage = shells.filter((shell) => {
+    return shell.channels.slot[0] === look.foliage && isClosed(shell);
+  });
+  const wood = shells.filter((shell) => {
+    return !foliage.includes(shell);
+  });
 
   return mergeMeshes([
     ...wood,
     ...withoutBuriedOverlaps(foliage, BURIED_MARGIN),
-    ...berries.map((berry) => withoutBuriedTriangles(berry, foliage, BURIED_MARGIN)),
+    ...berries.map((berry) => {
+      return withoutBuriedTriangles(berry, foliage, BURIED_MARGIN);
+    }),
   ]);
 }
 
@@ -178,7 +184,9 @@ export function farVariantOf(species: PlantSpeciesIndex, variant: number): numbe
 }
 
 export function buildPlantVariants(species: PlantSpeciesIndex, level: PlantDetailLevel): MeshData[] {
-  return Array.from({ length: plantVariantCount(species) }, (_, variant) => buildPlantVariant(species, variant, level));
+  return Array.from({ length: plantVariantCount(species) }, (_, variant) => {
+    return buildPlantVariant(species, variant, level);
+  });
 }
 
 export function canonicalHeight(species: PlantSpeciesIndex): number {
@@ -200,5 +208,7 @@ function baseRadius(mesh: MeshData): number {
 }
 
 export function footprintRadius(species: PlantSpeciesIndex): number {
-  return buildPlantVariants(species, "low").reduce((widest, mesh) => Math.max(widest, baseRadius(mesh)), 0);
+  return buildPlantVariants(species, "low").reduce((widest, mesh) => {
+    return Math.max(widest, baseRadius(mesh));
+  }, 0);
 }

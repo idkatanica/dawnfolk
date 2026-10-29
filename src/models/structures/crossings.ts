@@ -54,7 +54,9 @@ interface LogShape {
 function stoneSlot(seed: number): (point: SurfacePoint) => MaterialSlotIndex {
   const weathered = weatheredSlot({ base: MaterialSlot.Stone, frost: 0, lichen: 0.26, moss: 0, seed });
 
-  return (point) => (point.normal.y > WORN_TOP ? MaterialSlot.PaleStone : weathered(point));
+  return (point) => {
+    return point.normal.y > WORN_TOP ? MaterialSlot.PaleStone : weathered(point);
+  };
 }
 
 function steppingStone(variant: number, level: CrossingDetailLevel): MeshData {
@@ -93,7 +95,9 @@ function steppingStone(variant: number, level: CrossingDetailLevel): MeshData {
 }
 
 export function buildSteppingStones(level: CrossingDetailLevel): MeshData[] {
-  return Array.from({ length: STEPPING_STONE_VARIANTS }, (_, variant) => steppingStone(variant, level));
+  return Array.from({ length: STEPPING_STONE_VARIANTS }, (_, variant) => {
+    return steppingStone(variant, level);
+  });
 }
 
 function taperedRadius(log: LogShape, along: number): number {
@@ -210,8 +214,12 @@ function addRootPlate(builder: MeshBuilder, log: LogShape, level: CrossingDetail
 
   builder.add(facetShape(plate), {
     style: {
-      shade: (point) => 0.7 + 0.2 * smoothstep(-0.5, 0.8, point.normal.y),
-      slot: (point) => (point.normal.x < -0.35 ? MaterialSlot.Daub : MaterialSlot.Bark),
+      shade: (point) => {
+        return 0.7 + 0.2 * smoothstep(-0.5, 0.8, point.normal.y);
+      },
+      slot: (point) => {
+        return point.normal.x < -0.35 ? MaterialSlot.Daub : MaterialSlot.Bark;
+      },
     },
     transform: transformOf({ position: [-thickness * 0.35, FALLEN_LOG_ROOT_RADIUS * 0.9, 0] }),
   });
@@ -256,7 +264,9 @@ function fallenLog(variant: number, level: CrossingDetailLevel): MeshData {
 }
 
 export function buildFallenLogs(level: CrossingDetailLevel): MeshData[] {
-  return Array.from({ length: FALLEN_LOG_VARIANTS }, (_, variant) => fallenLog(variant, level));
+  return Array.from({ length: FALLEN_LOG_VARIANTS }, (_, variant) => {
+    return fallenLog(variant, level);
+  });
 }
 
 export function fallenLogVariant(length: number, seed: number): number {

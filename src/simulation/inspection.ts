@@ -252,7 +252,9 @@ function inspectCell(x: number, z: number, sources: InspectionSources): CellInsp
 }
 
 function inspectTribe(id: number, sources: InspectionSources): TribeInspection | null {
-  const summary = sources.tribes.find((tribe) => tribe.id === id);
+  const summary = sources.tribes.find((tribe) => {
+    return tribe.id === id;
+  });
 
   if (summary === undefined) {
     return null;

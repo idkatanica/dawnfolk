@@ -56,7 +56,9 @@ function traceMark(
 function isSameFootprint(first: readonly GroundPoint[], second: readonly GroundPoint[]): boolean {
   return (
     first.length === second.length &&
-    first.every((point, index) => point.x === second[index]?.x && point.z === second[index]?.z)
+    first.every((point, index) => {
+      return point.x === second[index]?.x && point.z === second[index]?.z;
+    })
   );
 }
 
@@ -79,7 +81,9 @@ export class MinimapPainter {
   }
 
   start(): void {
-    this.#frameRequest = requestAnimationFrame((time) => this.#loop(time));
+    this.#frameRequest = requestAnimationFrame((time) => {
+      this.#loop(time);
+    });
   }
 
   stop(): void {
@@ -88,7 +92,9 @@ export class MinimapPainter {
 
   #loop(time: number): void {
     this.#draw(time);
-    this.#frameRequest = requestAnimationFrame((next) => this.#loop(next));
+    this.#frameRequest = requestAnimationFrame((next) => {
+      this.#loop(next);
+    });
   }
 
   #draw(time: number): void {

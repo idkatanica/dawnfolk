@@ -16,7 +16,9 @@ describe("fishing", () => {
       }
     }
 
-    const angles = Array.from({ length: 8 }, (_, index) => (index / 8) * FULL_TURN);
+    const angles = Array.from({ length: 8 }, (_, index) => {
+      return (index / 8) * FULL_TURN;
+    });
 
     for (let attempt = 0; attempt < 100; attempt += 1) {
       const spot = nearestShore(harness.world, { x: 0, z: 0 }, 200, harness.random);
@@ -25,9 +27,9 @@ describe("fishing", () => {
         throw new Error("Expected a fishing spot");
       }
 
-      const wetSamples = angles.filter((angle) =>
-        harness.world.isWaterAt(spot.x + Math.cos(angle) * 1.2, spot.z + Math.sin(angle) * 1.2)
-      );
+      const wetSamples = angles.filter((angle) => {
+        return harness.world.isWaterAt(spot.x + Math.cos(angle) * 1.2, spot.z + Math.sin(angle) * 1.2);
+      });
 
       expect(wetSamples).toEqual([]);
     }
@@ -49,11 +51,15 @@ describe("staying dry", () => {
 
     floodCells(harness.world, pond, 2);
 
-    const spots = Array.from({ length: 200 }, () =>
-      nearestShore(harness.world, { x: -25, z: -25 }, 15, harness.random)
-    );
+    const spots = Array.from({ length: 200 }, () => {
+      return nearestShore(harness.world, { x: -25, z: -25 }, 15, harness.random);
+    });
 
-    expect(spots.filter((spot) => spot !== null).length).toBeGreaterThan(5);
+    expect(
+      spots.filter((spot) => {
+        return spot !== null;
+      }).length
+    ).toBeGreaterThan(5);
 
     for (const spot of spots) {
       if (spot === null) {

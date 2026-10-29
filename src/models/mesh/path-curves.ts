@@ -6,7 +6,11 @@ const SHORTEST_KNOT = 1e-6;
 type Vector = readonly number[];
 
 function knotStep(from: Vector, to: Vector): number {
-  const distance = Math.hypot(...from.map((value, index) => to[index] - value));
+  const distance = Math.hypot(
+    ...from.map((value, index) => {
+      return to[index] - value;
+    })
+  );
 
   return Math.max(distance ** CENTRIPETAL, SHORTEST_KNOT);
 }
@@ -14,7 +18,9 @@ function knotStep(from: Vector, to: Vector): number {
 function blend(from: Vector, to: Vector, start: number, end: number, time: number): number[] {
   const share = (time - start) / (end - start);
 
-  return from.map((value, index) => value + (to[index] - value) * share);
+  return from.map((value, index) => {
+    return value + (to[index] - value) * share;
+  });
 }
 
 function extended(vectors: readonly Vector[], index: number): Vector {
@@ -86,9 +92,13 @@ export function curveTube(points: readonly TubePoint[], steps: number): TubePoin
     return [...points];
   }
 
-  const vectors = points.map(({ radius, x, y, z }) => [x, y, z, radius]);
+  const vectors = points.map(({ radius, x, y, z }) => {
+    return [x, y, z, radius];
+  });
 
-  return curveVectors(vectors, steps, [3]).map(([x, y, z, radius]) => ({ radius, x, y, z }));
+  return curveVectors(vectors, steps, [3]).map(([x, y, z, radius]) => {
+    return { radius, x, y, z };
+  });
 }
 
 export function curveSections(sections: readonly LoftSection[], steps: number): LoftSection[] {
@@ -96,21 +106,19 @@ export function curveSections(sections: readonly LoftSection[], steps: number): 
     return [...sections];
   }
 
-  const vectors = sections.map(({ centerX = 0, centerZ = 0, radiusX, radiusZ, y }) => [
-    centerX,
-    y,
-    centerZ,
-    radiusX,
-    radiusZ,
-  ]);
+  const vectors = sections.map(({ centerX = 0, centerZ = 0, radiusX, radiusZ, y }) => {
+    return [centerX, y, centerZ, radiusX, radiusZ];
+  });
 
-  return curveVectors(vectors, steps, [3, 4]).map(([centerX, y, centerZ, radiusX, radiusZ]) => ({
-    centerX,
-    centerZ,
-    radiusX,
-    radiusZ,
-    y,
-  }));
+  return curveVectors(vectors, steps, [3, 4]).map(([centerX, y, centerZ, radiusX, radiusZ]) => {
+    return {
+      centerX,
+      centerZ,
+      radiusX,
+      radiusZ,
+      y,
+    };
+  });
 }
 
 export function curveBodySections(sections: readonly BodySection[], steps: number): BodySection[] {
@@ -118,19 +126,17 @@ export function curveBodySections(sections: readonly BodySection[], steps: numbe
     return [...sections];
   }
 
-  const vectors = sections.map(({ centerX = 0, centerY, halfHeight, halfWidth, z }) => [
-    centerX,
-    centerY,
-    z,
-    halfHeight,
-    halfWidth,
-  ]);
+  const vectors = sections.map(({ centerX = 0, centerY, halfHeight, halfWidth, z }) => {
+    return [centerX, centerY, z, halfHeight, halfWidth];
+  });
 
-  return curveVectors(vectors, steps, [3, 4]).map(([centerX, centerY, z, halfHeight, halfWidth]) => ({
-    centerX,
-    centerY,
-    halfHeight,
-    halfWidth,
-    z,
-  }));
+  return curveVectors(vectors, steps, [3, 4]).map(([centerX, centerY, z, halfHeight, halfWidth]) => {
+    return {
+      centerX,
+      centerY,
+      halfHeight,
+      halfWidth,
+      z,
+    };
+  });
 }

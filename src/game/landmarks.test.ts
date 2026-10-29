@@ -34,17 +34,33 @@ describe("findLandmarks", () => {
 
   it("names only the three largest lakes", () => {
     const landmarks = findLandmarks(sourceWith([lake(1, 80), lake(2, 400), lake(3, 20), lake(4, 150), lake(5, 90)]));
-    const lakes = landmarks.filter((landmark) => landmark.kind === "lake");
+    const lakes = landmarks.filter((landmark) => {
+      return landmark.kind === "lake";
+    });
 
-    expect(lakes.map((landmark) => landmark.id)).toEqual(["lake-2", "lake-4", "lake-5"]);
+    expect(
+      lakes.map((landmark) => {
+        return landmark.id;
+      })
+    ).toEqual(["lake-2", "lake-4", "lake-5"]);
   });
 
   it("gives every lake its own name", () => {
     const landmarks = findLandmarks(sourceWith([lake(1, 300), lake(2, 200), lake(3, 100)]));
-    const names = landmarks.filter((landmark) => landmark.kind === "lake").map((landmark) => landmark.name);
+    const names = landmarks
+      .filter((landmark) => {
+        return landmark.kind === "lake";
+      })
+      .map((landmark) => {
+        return landmark.name;
+      });
 
     expect(new Set(names).size).toBe(3);
-    expect(names.every((name) => LAKE_NAMES.includes(name))).toBe(true);
+    expect(
+      names.every((name) => {
+        return LAKE_NAMES.includes(name);
+      })
+    ).toBe(true);
   });
 
   it("keeps the same names for the same seed", () => {

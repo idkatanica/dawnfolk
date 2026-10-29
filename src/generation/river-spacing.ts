@@ -99,7 +99,11 @@ function nearestRiver(
 function hasRiverWithin(spacing: Spacing, cell: number, meters: number, allowedOwner: number): boolean {
   const { owners } = spacing;
 
-  return nearestRiver(spacing, cell, meters, (other) => owners[other] !== allowedOwner) !== null;
+  return (
+    nearestRiver(spacing, cell, meters, (other) => {
+      return owners[other] !== allowedOwner;
+    }) !== null
+  );
 }
 
 function anyRiver(): boolean {
@@ -137,7 +141,9 @@ function endAtCoast(spacing: Spacing, chain: RiverChain): RiverChain {
     return chain;
   }
 
-  const mouth = chain.cells.findIndex((cell) => grid.isOnEdge(cell) || touchesOffIsland(grid, coastDistance, cell));
+  const mouth = chain.cells.findIndex((cell) => {
+    return grid.isOnEdge(cell) || touchesOffIsland(grid, coastDistance, cell);
+  });
 
   if (mouth < 0) {
     return chain;
@@ -178,7 +184,9 @@ function junctionFor(spacing: Spacing, cell: number): number {
     return NO_CELL;
   }
 
-  const lower = nearestRiver(spacing, cell, spacing.reach, (other) => heights[other] <= heights[cell]);
+  const lower = nearestRiver(spacing, cell, spacing.reach, (other) => {
+    return heights[other] <= heights[cell];
+  });
 
   if (lower === null || lower.distance >= spacingBetween(spacing, cell, lower.cell)) {
     return NO_CELL;

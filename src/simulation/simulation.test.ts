@@ -2,6 +2,7 @@ import { describe, expect, it, it as test, vi } from "vitest";
 import type { TechnologyId } from "../content/technologies.ts";
 import { DEFAULT_GENERATION_OPTIONS } from "../generation/generation-options.ts";
 import { generateWorld } from "../generation/world-generator.ts";
+import { ignore } from "../shared/ignore.ts";
 import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../world/agent-buffers.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import { isHopping } from "./agents/hops.ts";
@@ -89,7 +90,9 @@ function restored(snapshot: SimulationSnapshot): Simulation {
 function plantsByCell(simulation: Simulation): number[][] {
   const { grid, vegetation } = simulation.world;
 
-  return Array.from({ length: grid.cellCount }, (_, cell) => vegetation.plantsInCell(cell));
+  return Array.from({ length: grid.cellCount }, (_, cell) => {
+    return vegetation.plantsInCell(cell);
+  });
 }
 
 function populatedIsland(shape: IslandShapeKind): Simulation {
@@ -111,10 +114,16 @@ function populatedIsland(shape: IslandShapeKind): Simulation {
 }
 
 function walkers(simulation: Simulation): Walker[] {
-  const people = simulation.society.people.filter((person) => person.isAlive);
-  const animals = simulation.fauna.animals.filter((animal) => animal.isAlive);
+  const people = simulation.society.people.filter((person) => {
+    return person.isAlive;
+  });
+  const animals = simulation.fauna.animals.filter((animal) => {
+    return animal.isAlive;
+  });
 
-  return [...people, ...animals].map(({ id, mover }) => ({ id, isHopping: isHopping(mover), x: mover.x, z: mover.z }));
+  return [...people, ...animals].map(({ id, mover }) => {
+    return { id, isHopping: isHopping(mover), x: mover.x, z: mover.z };
+  });
 }
 
 function isInOpenWater(simulation: Simulation, walker: Walker): boolean {
@@ -188,7 +197,7 @@ describe("time", () => {
 
 describe("commands", () => {
   it("ignores and reports malformed commands", () => {
-    const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warning = vi.spyOn(console, "warn").mockImplementation(ignore);
     const simulation = createSimulation();
 
     simulation.execute({ speed: 900, type: "setSpeed" });
@@ -264,11 +273,21 @@ describe("powers", () => {
 
     const launch = simulation.advance(0.2);
 
-    const later = Array.from({ length: 20 }, () => simulation.advance(0.05));
+    const later = Array.from({ length: 20 }, () => {
+      return simulation.advance(0.05);
+    });
 
-    const laterEffects = later.flatMap((frame) => frame.effects.map((effect) => effect.kind));
+    const laterEffects = later.flatMap((frame) => {
+      return frame.effects.map((effect) => {
+        return effect.kind;
+      });
+    });
 
-    expect(launch.effects.map((effect) => effect.kind)).toEqual(["meteor"]);
+    expect(
+      launch.effects.map((effect) => {
+        return effect.kind;
+      })
+    ).toEqual(["meteor"]);
     expect(laterEffects).toContain("explosion");
     expect(simulation.world.terrain.height[simulation.world.grid.cellAt(0, 0)]).toBeLessThan(80);
   });
@@ -370,9 +389,15 @@ describe("frames", () => {
     floodStrip(simulation.world, 20, 1.5);
     simulation.execute({ parameters: { radius: 80, strength: 100 }, powerId: "lower", type: "usePower", x: 0, z: 0 });
 
-    const frames = Array.from({ length: 20 }, () => simulation.advance(0.1));
+    const frames = Array.from({ length: 20 }, () => {
+      return simulation.advance(0.1);
+    });
 
-    expect(frames.some((frame) => frame.water !== null)).toBe(true);
+    expect(
+      frames.some((frame) => {
+        return frame.water !== null;
+      })
+    ).toBe(true);
   });
 });
 
@@ -462,12 +487,24 @@ describe("world snapshots", () => {
 
     const copy = restored(snapshot);
 
-    const tribeIds = copy.society.tribes().map((tribe) => tribe.id);
+    const tribeIds = copy.society.tribes().map((tribe) => {
+      return tribe.id;
+    });
 
-    expect(tribeIds).toEqual(original.society.tribes().map((tribe) => tribe.id));
+    expect(tribeIds).toEqual(
+      original.society.tribes().map((tribe) => {
+        return tribe.id;
+      })
+    );
     expect(copy.society.population).toBe(original.society.population);
-    expect(copy.buildings.all.map((building) => building.id)).toEqual(
-      original.buildings.all.map((building) => building.id)
+    expect(
+      copy.buildings.all.map((building) => {
+        return building.id;
+      })
+    ).toEqual(
+      original.buildings.all.map((building) => {
+        return building.id;
+      })
     );
     expect(copy.world.vegetation.aliveCount).toBe(original.world.vegetation.aliveCount);
     expect(plantsByCell(copy)).toStrictEqual(plantsByCell(original));
@@ -480,7 +517,9 @@ describe("world snapshots", () => {
     expect(copy.society.tribes().length).toBeGreaterThan(0);
     expect(copy.calendar.day).toBeGreaterThan(original.calendar.day);
 
-    for (const tribe of copy.society.tribes().filter((survivor) => tribeIds.includes(survivor.id))) {
+    for (const tribe of copy.society.tribes().filter((survivor) => {
+      return tribeIds.includes(survivor.id);
+    })) {
       expect(tribe.technologies.has("fire")).toBe(true);
     }
   });
@@ -497,7 +536,15 @@ describe("world snapshots", () => {
     expect(initial.vegetation.count).toBe(original.world.vegetation.count);
     expect(initial.frame.buildings).toHaveLength(original.buildings.all.length);
     expect(initial.frame.personCount).toBe(original.society.people.length);
-    expect(initial.frame.tribes.map((tribe) => tribe.id)).toEqual(original.society.tribes().map((tribe) => tribe.id));
+    expect(
+      initial.frame.tribes.map((tribe) => {
+        return tribe.id;
+      })
+    ).toEqual(
+      original.society.tribes().map((tribe) => {
+        return tribe.id;
+      })
+    );
   });
 
   it("drops jobs and claims that cannot be saved", () => {
@@ -505,8 +552,16 @@ describe("world snapshots", () => {
 
     const snapshot = snapshotOf(original);
 
-    expect(snapshot.society.people.every((person) => person.job === null)).toBe(true);
-    expect(snapshot.society.tribes.every((tribe) => tribe.claimedPlants.size === 0)).toBe(true);
+    expect(
+      snapshot.society.people.every((person) => {
+        return person.job === null;
+      })
+    ).toBe(true);
+    expect(
+      snapshot.society.tribes.every((tribe) => {
+        return tribe.claimedPlants.size === 0;
+      })
+    ).toBe(true);
   });
 
   it("refuses to save while the land is still settling", () => {
@@ -527,7 +582,9 @@ describe.each(["round", "square"] as const)("a long day on a %s island", (shape)
     expect(longestSpellInWater(simulation, RUN_SECONDS)).toBeLessThan(LONGEST_SPELL_IN_WATER);
     expect(simulation.society.population).toBeGreaterThan(14);
 
-    const person = simulation.society.people.find((candidate) => candidate.isAlive);
+    const person = simulation.society.people.find((candidate) => {
+      return candidate.isAlive;
+    });
 
     if (person === undefined) {
       throw new Error("Expected someone on the island");
@@ -538,10 +595,18 @@ describe.each(["round", "square"] as const)("a long day on a %s island", (shape)
     floodCells(world, world.grid.cellsInRadius(person.mover.x, person.mover.z, FLOOD_RADIUS), FLOOD_DEPTH);
     simulation.navigation.rebuild();
 
-    expect(walkers(simulation).some((walker) => isInOpenWater(simulation, walker))).toBe(true);
+    expect(
+      walkers(simulation).some((walker) => {
+        return isInOpenWater(simulation, walker);
+      })
+    ).toBe(true);
 
     simulation.runTicks(SECONDS_TO_SWIM_OUT / TICK_SECONDS);
 
-    expect(walkers(simulation).filter((walker) => isInOpenWater(simulation, walker))).toEqual([]);
+    expect(
+      walkers(simulation).filter((walker) => {
+        return isInOpenWater(simulation, walker);
+      })
+    ).toEqual([]);
   });
 });

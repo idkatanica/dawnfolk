@@ -6,7 +6,13 @@ const HALF_SIZE = 2560;
 const REACH = 10_000;
 
 function createCamera(): GodCamera {
-  return new GodCamera(new PerspectiveCamera(50, 1.6, 1, 50_000), () => 0, HALF_SIZE);
+  return new GodCamera(
+    new PerspectiveCamera(50, 1.6, 1, 50_000),
+    () => {
+      return 0;
+    },
+    HALF_SIZE
+  );
 }
 
 describe("god camera", () => {
@@ -17,8 +23,14 @@ describe("god camera", () => {
 
     const footprint = camera.groundFootprint(REACH);
 
-    const centerX = footprint.reduce((sum, point) => sum + point.x, 0) / footprint.length;
-    const centerZ = footprint.reduce((sum, point) => sum + point.z, 0) / footprint.length;
+    const centerX =
+      footprint.reduce((sum, point) => {
+        return sum + point.x;
+      }, 0) / footprint.length;
+    const centerZ =
+      footprint.reduce((sum, point) => {
+        return sum + point.z;
+      }, 0) / footprint.length;
 
     expect(footprint).toHaveLength(4);
     expect(centerX).toBeCloseTo(300, -1);
@@ -32,8 +44,16 @@ describe("god camera", () => {
 
     const footprint = camera.groundFootprint(REACH);
 
-    const nearest = Math.max(...footprint.map((point) => point.z));
-    const farthest = Math.min(...footprint.map((point) => point.z));
+    const nearest = Math.max(
+      ...footprint.map((point) => {
+        return point.z;
+      })
+    );
+    const farthest = Math.min(
+      ...footprint.map((point) => {
+        return point.z;
+      })
+    );
 
     expect(nearest).toBeGreaterThan(0);
     expect(farthest).toBeLessThan(-REACH / 2);
@@ -44,7 +64,9 @@ describe("god camera", () => {
 
     let target: GroundPoint | null = { x: 120, z: -80 };
 
-    camera.follow(() => target);
+    camera.follow(() => {
+      return target;
+    });
     camera.update(1);
 
     expect(camera.isFollowing).toBe(true);
@@ -56,13 +78,30 @@ describe("god camera", () => {
   });
 
   it.each([
-    { move: (camera: GodCamera) => camera.flyTo({ targetX: 300, targetZ: 300 }), name: "flying" },
-    { move: (camera: GodCamera) => camera.pan(40, 20, 900), name: "panning" },
-    { move: (camera: GodCamera) => camera.moveBy(30, 10), name: "moving" },
+    {
+      move: (camera: GodCamera) => {
+        camera.flyTo({ targetX: 300, targetZ: 300 });
+      },
+      name: "flying",
+    },
+    {
+      move: (camera: GodCamera) => {
+        camera.pan(40, 20, 900);
+      },
+      name: "panning",
+    },
+    {
+      move: (camera: GodCamera) => {
+        camera.moveBy(30, 10);
+      },
+      name: "moving",
+    },
   ])("stops following when $name somewhere else", ({ move }) => {
     const camera = createCamera();
 
-    camera.follow(() => ({ x: 0, z: 0 }));
+    camera.follow(() => {
+      return { x: 0, z: 0 };
+    });
     move(camera);
 
     expect(camera.isFollowing).toBe(false);

@@ -167,7 +167,9 @@ function addEars(builder: MeshBuilder, detail: AnimalDetail): void {
   const ear = tube(alongPath(EAR, detail), { radialSegments: segmentsUpTo(detail, 6) });
   const style: VertexStyle = {
     ...rigidStyle(EARS_BONE),
-    slot: (point) => (point.position.y > EAR_TIP_HEIGHT ? MaterialSlot.Hoof : MaterialSlot.Coat),
+    slot: (point) => {
+      return point.position.y > EAR_TIP_HEIGHT ? MaterialSlot.Hoof : MaterialSlot.Coat;
+    },
   };
 
   for (const side of SIDES) {
@@ -189,8 +191,9 @@ function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
     seam: HEAD_SEAM,
     style: {
       ...rigidStyle(QuadrupedBone.Head),
-      slot: (point) =>
-        point.position.y < 0.3 && point.position.z > MUZZLE_DEPTH ? MaterialSlot.CoatLight : MaterialSlot.Coat,
+      slot: (point) => {
+        return point.position.y < 0.3 && point.position.z > MUZZLE_DEPTH ? MaterialSlot.CoatLight : MaterialSlot.Coat;
+      },
     },
   });
   addMuzzleFace(builder, shape, detail, {

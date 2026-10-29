@@ -193,7 +193,9 @@ function isMostlyWater(blast: Blast, services: PowerServices): boolean {
 
   const core = cellsInArea(world, { ...blast, radius: blast.radius * CRATER_CORE });
 
-  const wet = core.filter(({ cell }) => world.isWater(cell)).length;
+  const wet = core.filter(({ cell }) => {
+    return world.isWater(cell);
+  }).length;
 
   return wet > core.length * WATERY_CORE;
 }
@@ -243,7 +245,9 @@ function flatten(cell: number, blast: Blast, remoteness: number, services: Power
   const { environment, world } = services;
   const { vegetation } = world;
 
-  for (const plant of vegetation.plantsInCell(cell).filter((index) => vegetation.isAlive(index))) {
+  for (const plant of vegetation.plantsInCell(cell).filter((index) => {
+    return vegetation.isAlive(index);
+  })) {
     const { form } = plantSpeciesDefinition(vegetation.species[plant]);
 
     if (isTreeSpecies(vegetation.species[plant])) {
@@ -390,7 +394,9 @@ function toppleTrees(cell: number, services: PowerServices): void {
   const { environment, world } = services;
   const { vegetation } = world;
 
-  for (const plant of vegetation.plantsInCell(cell).filter((index) => vegetation.isAlive(index))) {
+  for (const plant of vegetation.plantsInCell(cell).filter((index) => {
+    return vegetation.isAlive(index);
+  })) {
     if (isTreeSpecies(vegetation.species[plant])) {
       world.fellPlant(plant, environment.day, hashToUnit(vegetation.seed[plant] * 31, cell) * FULL_TURN);
       world.markDisturbed(cell, environment.day);

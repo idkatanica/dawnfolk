@@ -42,9 +42,9 @@ function agentGrab<Agent extends HeldAgent>(keeper: AgentKeeper<Agent>): GrabHan
       return origin;
     }
 
-    const spot = nearestSpotWhere(context.world, origin, PUT_BACK_RADIUS, ({ grid }, cell) =>
-      keeper.canStand(context, agent, grid.cellCenterX(cell), grid.cellCenterZ(cell))
-    );
+    const spot = nearestSpotWhere(context.world, origin, PUT_BACK_RADIUS, ({ grid }, cell) => {
+      return keeper.canStand(context, agent, grid.cellCenterX(cell), grid.cellCenterZ(cell));
+    });
 
     return spot === null ? origin : spot;
   }
@@ -99,17 +99,33 @@ function agentGrab<Agent extends HeldAgent>(keeper: AgentKeeper<Agent>): GrabHan
 }
 
 const personGrab = agentGrab<Person>({
-  canStand: ({ world }, _person, x, z) => world.isWalkableAt(x, z),
-  find: ({ people }, id) => people.findPerson(id),
-  hold: ({ people }, person) => people.hold(person),
-  setDown: ({ people }, person, x, z) => people.setDown(person, x, z),
+  canStand: ({ world }, _person, x, z) => {
+    return world.isWalkableAt(x, z);
+  },
+  find: ({ people }, id) => {
+    return people.findPerson(id);
+  },
+  hold: ({ people }, person) => {
+    return people.hold(person);
+  },
+  setDown: ({ people }, person, x, z) => {
+    return people.setDown(person, x, z);
+  },
 });
 
 const animalGrab = agentGrab<Animal>({
-  canStand: ({ fauna }, animal, x, z) => fauna.canStand(animal.kind, x, z),
-  find: ({ fauna }, id) => fauna.findAnimal(id),
-  hold: ({ fauna }, animal) => fauna.hold(animal),
-  setDown: ({ fauna }, animal, x, z) => fauna.setDown(animal, x, z),
+  canStand: ({ fauna }, animal, x, z) => {
+    return fauna.canStand(animal.kind, x, z);
+  },
+  find: ({ fauna }, id) => {
+    return fauna.findAnimal(id);
+  },
+  hold: ({ fauna }, animal) => {
+    return fauna.hold(animal);
+  },
+  setDown: ({ fauna }, animal, x, z) => {
+    return fauna.setDown(animal, x, z);
+  },
 });
 
 function canReturnPlant(world: WorldState, id: number, origin: Waypoint): boolean {
@@ -127,13 +143,12 @@ function canReturnPlant(world: WorldState, id: number, origin: Waypoint): boolea
     return false;
   }
 
-  return vegetation
-    .plantsInCell(cell)
-    .every(
-      (plant) =>
-        !vegetation.isAlive(plant) ||
-        Math.hypot(vegetation.x[plant] - origin.x, vegetation.z[plant] - origin.z) >= PUT_BACK_CLEARANCE
+  return vegetation.plantsInCell(cell).every((plant) => {
+    return (
+      !vegetation.isAlive(plant) ||
+      Math.hypot(vegetation.x[plant] - origin.x, vegetation.z[plant] - origin.z) >= PUT_BACK_CLEARANCE
     );
+  });
 }
 
 const plantGrab: GrabHandler = {

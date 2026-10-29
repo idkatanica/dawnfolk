@@ -131,6 +131,10 @@ describe("shores", () => {
 
     terrain.waterSurface[grid.index(3, 1)] = 100;
 
-    expect([0, 1, 2, 3].map((row) => shoreRow(terrain, row))).toEqual(["..~~", "..~~", "..~~", "...."]);
+    expect(
+      [0, 1, 2, 3].map((row) => {
+        return shoreRow(terrain, row);
+      })
+    ).toEqual(["..~~", "..~~", "..~~", "...."]);
   });
 });

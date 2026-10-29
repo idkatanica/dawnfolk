@@ -2,6 +2,7 @@ import { LayoutGrid } from "lucide-react";
 import { useEffect } from "react";
 import { useLaunchStore } from "../../app/launch-store.ts";
 import { TextButton } from "../../design/buttons.tsx";
+import { ignore } from "../../shared/ignore.ts";
 import { SettingsGroup } from "../settings/settings-group.tsx";
 import { formatSavedAt } from "./saved-time.ts";
 import { useSavesStore } from "./saves-store.ts";
@@ -12,9 +13,17 @@ const CLOCK_MILLISECONDS = 15_000;
 const AUTOSAVE_NOTE = "The world saves itself every minute.";
 
 function useLastSave(): number | null {
-  const worldId = useLaunchStore((state) => state.worldId);
-  const lastSavedAt = useSavesStore((state) => state.lastSavedAt);
-  const listed = useSavesStore((state) => state.worlds.find((world) => world.id === worldId));
+  const worldId = useLaunchStore((state) => {
+    return state.worldId;
+  });
+  const lastSavedAt = useSavesStore((state) => {
+    return state.lastSavedAt;
+  });
+  const listed = useSavesStore((state) => {
+    return state.worlds.find((world) => {
+      return world.id === worldId;
+    });
+  });
 
   if (lastSavedAt !== null) {
     return lastSavedAt;
@@ -24,8 +33,12 @@ function useLastSave(): number | null {
 }
 
 function useSaveDescription(): string {
-  const hasFailed = useSavesStore((state) => state.hasFailed);
-  const isSaving = useSavesStore((state) => state.isSaving);
+  const hasFailed = useSavesStore((state) => {
+    return state.hasFailed;
+  });
+  const isSaving = useSavesStore((state) => {
+    return state.isSaving;
+  });
   const lastSave = useLastSave();
   const now = useNow(CLOCK_MILLISECONDS);
 
@@ -45,18 +58,26 @@ function useSaveDescription(): string {
 }
 
 function useSavesGroup() {
-  const isSaving = useSavesStore((state) => state.isSaving);
-  const saveNow = useSavesStore((state) => state.saveNow);
-  const refresh = useSavesStore((state) => state.refresh);
-  const chooseWorld = useLaunchStore((state) => state.chooseWorld);
+  const isSaving = useSavesStore((state) => {
+    return state.isSaving;
+  });
+  const saveNow = useSavesStore((state) => {
+    return state.saveNow;
+  });
+  const refresh = useSavesStore((state) => {
+    return state.refresh;
+  });
+  const chooseWorld = useLaunchStore((state) => {
+    return state.chooseWorld;
+  });
   const leaveWorld = useLeaveWorld();
 
   useEffect(() => {
-    refresh().catch(() => undefined);
+    refresh().catch(ignore);
   }, [refresh]);
 
   function handleSave(): void {
-    saveNow().catch(() => undefined);
+    saveNow().catch(ignore);
   }
 
   function handleAllWorlds(): void {

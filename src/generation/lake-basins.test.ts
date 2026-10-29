@@ -10,7 +10,9 @@ const dryness = new Float32Array(grid.cellCount);
 const coastDistance = landEverywhere(grid.cellCount);
 
 function gentleValley(): Float32Array {
-  return shapeTerrain(grid, (x, z) => 200 - 0.03 * z + 0.12 * Math.abs(x));
+  return shapeTerrain(grid, (x, z) => {
+    return 200 - 0.03 * z + 0.12 * Math.abs(x);
+  });
 }
 
 function boundaryDistance(cell: number): number {
@@ -51,14 +53,20 @@ describe("river lakes", () => {
 
 describe("sink filling", () => {
   it("fills pits too small to hold a lake", () => {
-    const heights = shapeTerrain(grid, (x, z) => 100 + 0.02 * z + 0.01 * x);
+    const heights = shapeTerrain(grid, (x, z) => {
+      return 100 + 0.02 * z + 0.01 * x;
+    });
 
     heights[grid.cellAt(5, 5)] -= 3;
     fillSinks(heights, grid, dryness, coastDistance);
 
     const { network } = analyzeDrainage(heights, grid, dryness, coastDistance);
 
-    expect(network.filled.every((level, cell) => level - heights[cell] < 0.01)).toBe(true);
+    expect(
+      network.filled.every((level, cell) => {
+        return level - heights[cell] < 0.01;
+      })
+    ).toBe(true);
   });
 
   it("leaves lake basins to fill with water", () => {

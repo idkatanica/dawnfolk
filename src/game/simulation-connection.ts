@@ -1,6 +1,7 @@
 import { proxy, type Remote, transfer, wrap } from "comlink";
 import type { GenerationProgress, WorldRequest } from "../generation/generation-options.ts";
 import { buffersWithin } from "../shared/buffers.ts";
+import { ignore } from "../shared/ignore.ts";
 import type { SimulationCommand } from "../simulation/commands.ts";
 import type { InitialWorld, SimulationFrame } from "../simulation/frame.ts";
 import type { SavedWorldState } from "../simulation/saved-world.ts";
@@ -26,7 +27,7 @@ function failureOf(worker: Worker): Promise<never> {
     );
   });
 
-  failure.catch(() => undefined);
+  failure.catch(ignore);
 
   return failure;
 }

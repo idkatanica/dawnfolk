@@ -41,11 +41,21 @@ export class SkeletonPoser {
 
   constructor(skeleton: Skeleton) {
     this.#skeleton = skeleton;
-    this.#restJoints = skeleton.bones.map((bone) => new Vector3(...bone.joint));
-    this.#isLimb = skeleton.bones.map((bone) => bone.order === "limb");
-    this.#offsets = skeleton.bones.map((bone, index) => this.#restOffset(bone.parent, index));
-    this.#world = skeleton.bones.map(() => new Matrix4());
-    this.#skin = skeleton.bones.map(() => new Matrix4());
+    this.#restJoints = skeleton.bones.map((bone) => {
+      return new Vector3(...bone.joint);
+    });
+    this.#isLimb = skeleton.bones.map((bone) => {
+      return bone.order === "limb";
+    });
+    this.#offsets = skeleton.bones.map((bone, index) => {
+      return this.#restOffset(bone.parent, index);
+    });
+    this.#world = skeleton.bones.map(() => {
+      return new Matrix4();
+    });
+    this.#skin = skeleton.bones.map(() => {
+      return new Matrix4();
+    });
   }
 
   pose(pose: Pose, scales: Float32Array): void {

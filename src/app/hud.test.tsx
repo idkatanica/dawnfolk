@@ -9,7 +9,11 @@ import { Hud } from "./hud.tsx";
 const CLAN_NAMES = ["Bear", "Wolf", "Lynx", "Heron", "Otter", "Fox", "Elk", "Crane"];
 
 function showManyTribes(): void {
-  showWorld({ tribes: CLAN_NAMES.map((name, index) => createTribe({ id: index + 1, name: `${name} Clan` })) });
+  showWorld({
+    tribes: CLAN_NAMES.map((name, index) => {
+      return createTribe({ id: index + 1, name: `${name} Clan` });
+    }),
+  });
 }
 
 function islandAround(element: Element): HTMLElement {
@@ -23,7 +27,9 @@ function islandAround(element: Element): HTMLElement {
 }
 
 function shownIslands(): HTMLElement[] {
-  return [...document.querySelectorAll<HTMLElement>(".island")].filter((island) => island.getClientRects().length > 0);
+  return [...document.querySelectorAll<HTMLElement>(".island")].filter((island) => {
+    return island.getClientRects().length > 0;
+  });
 }
 
 function overlaps(first: DOMRect, second: DOMRect): boolean {

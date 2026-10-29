@@ -109,9 +109,13 @@ export class ArrowFlights {
       flight.remainingSeconds -= seconds;
     }
 
-    const landed = this.#flights.filter((flight) => flight.remainingSeconds <= 0);
+    const landed = this.#flights.filter((flight) => {
+      return flight.remainingSeconds <= 0;
+    });
 
-    this.#flights = this.#flights.filter((flight) => flight.remainingSeconds > 0);
+    this.#flights = this.#flights.filter((flight) => {
+      return flight.remainingSeconds > 0;
+    });
 
     for (const flight of landed) {
       land(flight, battleground, context);

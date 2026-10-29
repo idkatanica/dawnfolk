@@ -57,9 +57,9 @@ export function nearestFoeAmong(tick: PersonTick, candidates: readonly Person[],
 export function nearbyFighters(tick: PersonTick, tribeId: number, radius: number): Person[] {
   const { mover } = tick.person;
 
-  return tick.context.people
-    .livingWithin(mover.x, mover.z, radius)
-    .filter((person) => person.tribeId === tribeId && isStandingFighter(person));
+  return tick.context.people.livingWithin(mover.x, mover.z, radius).filter((person) => {
+    return person.tribeId === tribeId && isStandingFighter(person);
+  });
 }
 
 export function assailantOf(tick: PersonTick, tribeId: number): Person | null {

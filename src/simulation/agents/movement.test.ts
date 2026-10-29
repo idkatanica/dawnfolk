@@ -52,7 +52,11 @@ function walk(mover: Mover, world: WorldState, seconds: number, speed = 3): bool
 }
 
 function createBowlLake(): WorldState {
-  const world = createTestWorld({ heightAt: (x, z) => 98 + Math.hypot(x, z) * 0.05 });
+  const world = createTestWorld({
+    heightAt: (x, z) => {
+      return 98 + Math.hypot(x, z) * 0.05;
+    },
+  });
 
   for (const cell of world.grid.cellsInRadius(0, 0, 70)) {
     world.terrain.waterSurface[cell] = 101;
@@ -376,7 +380,11 @@ describe("routes", () => {
 
       setDestination(mover, destination, navigation);
 
-      expect(mover.path.every((waypoint) => world.isWalkableAt(waypoint.x, waypoint.z))).toBe(true);
+      expect(
+        mover.path.every((waypoint) => {
+          return world.isWalkableAt(waypoint.x, waypoint.z);
+        })
+      ).toBe(true);
       expect(world.isWalkableAt(mover.goalX, mover.goalZ)).toBe(true);
     }
   });
@@ -389,7 +397,11 @@ describe("routes", () => {
     setDestination(mover, { x: 10, z: 5 }, new NavigationGrid(world));
 
     expect(world.isWalkableAt(mover.goalX, mover.goalZ)).toBe(true);
-    expect(mover.path.every((waypoint) => world.isWalkableAt(waypoint.x, waypoint.z))).toBe(true);
+    expect(
+      mover.path.every((waypoint) => {
+        return world.isWalkableAt(waypoint.x, waypoint.z);
+      })
+    ).toBe(true);
   });
 });
 
@@ -479,7 +491,11 @@ describe("crossings", () => {
     expect(hops).toBe(1);
     expect(wetTicks).toBe(0);
     expect(hopLength).toBeGreaterThan(20);
-    expect(along.every((x, index) => index === 0 || x > along[index - 1])).toBe(true);
+    expect(
+      along.every((x, index) => {
+        return index === 0 || x > along[index - 1];
+      })
+    ).toBe(true);
     expect(
       Math.abs(crossingTicks - hopLength / (hopSpeed * STEP_SECONDS * Math.cos(Math.atan2(50, 150))))
     ).toBeLessThan(3);

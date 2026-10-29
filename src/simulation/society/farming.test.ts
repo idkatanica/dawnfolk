@@ -104,6 +104,10 @@ describe("staying dry", () => {
     harness.world.terrain.waterSurface[drowned] = harness.world.terrain.height[drowned] + 2;
     harness.step();
 
-    expect(tribe.fields.map((field) => field.cell)).toEqual([dry]);
+    expect(
+      tribe.fields.map((field) => {
+        return field.cell;
+      })
+    ).toEqual([dry]);
   });
 });

@@ -119,7 +119,9 @@ function settleFall(animal: Animal): void {
 function kindForBiome(biome: number, random: RandomSource): AnimalKind | null {
   const kinds = animalsAt(biome);
 
-  const total = kinds.reduce((sum, kind) => sum + ANIMALS[kind].abundance, 0);
+  const total = kinds.reduce((sum, kind) => {
+    return sum + ANIMALS[kind].abundance;
+  }, 0);
 
   let remaining = random.next() * total;
 
@@ -145,7 +147,9 @@ function litterSize(range: readonly [number, number], random: RandomSource): num
 }
 
 function isFavoriteBiome(kind: AnimalKind, biome: number): boolean {
-  return ANIMALS[kind].favoriteBiomes.some((favorite) => favorite === biome);
+  return ANIMALS[kind].favoriteBiomes.some((favorite) => {
+    return favorite === biome;
+  });
 }
 
 function phaseRate(kind: AnimalKind): number {
@@ -184,9 +188,17 @@ export class FaunaSystem {
       chaseRandom: createRandom(world.seed * 59 + 23),
       navigation,
       prey: {
-        find: (id) => this.findAnimal(id),
-        kill: (animal) => this.kill(animal, "prey"),
-        nearest: (x, z, radius) => this.nearestAnimal(x, z, radius, (animal) => ANIMALS[animal.kind].isSmallGame),
+        find: (id) => {
+          return this.findAnimal(id);
+        },
+        kill: (animal) => {
+          this.kill(animal, "prey");
+        },
+        nearest: (x, z, radius) => {
+          return this.nearestAnimal(x, z, radius, (animal) => {
+            return ANIMALS[animal.kind].isSmallGame;
+          });
+        },
       },
       random: createRandom(world.seed * 31 + 7),
       world,
@@ -203,7 +215,9 @@ export class FaunaSystem {
 
   snapshot(): FaunaSnapshot {
     return {
-      animals: this.#animals.map((animal) => structuredClone({ ...animal, mover: savedMover(animal.mover, true) })),
+      animals: this.#animals.map((animal) => {
+        return structuredClone({ ...animal, mover: savedMover(animal.mover, true) });
+      }),
       herds: structuredClone(this.#herds),
       instincts: this.#instincts.snapshot(),
       smallGameRandom: this.#smallGameRandom.state(),
@@ -326,9 +340,9 @@ export class FaunaSystem {
   }
 
   livingWithin(x: number, z: number, radius: number): Animal[] {
-    return this.#animals.filter(
-      (animal) => animal.isAlive && Math.hypot(animal.mover.x - x, animal.mover.z - z) < radius
-    );
+    return this.#animals.filter((animal) => {
+      return animal.isAlive && Math.hypot(animal.mover.x - x, animal.mover.z - z) < radius;
+    });
   }
 
   scare(x: number, z: number, radius: number): void {
@@ -378,7 +392,9 @@ export class FaunaSystem {
   }
 
   menaceNear(x: number, z: number, radius: number): Animal | null {
-    return this.nearestAnimal(x, z, radius + MENACE_SEARCH_PADDING, (animal) => this.isMenacing(animal));
+    return this.nearestAnimal(x, z, radius + MENACE_SEARCH_PADDING, (animal) => {
+      return this.isMenacing(animal);
+    });
   }
 
   isMenacing(animal: Animal): boolean {
@@ -425,12 +441,16 @@ export class FaunaSystem {
     const herd = this.#herdsById.get(animal.herdId);
 
     if (herd !== undefined) {
-      herd.memberIds = herd.memberIds.filter((memberId) => memberId !== animal.id);
+      herd.memberIds = herd.memberIds.filter((memberId) => {
+        return memberId !== animal.id;
+      });
     }
   }
 
   update(tick: FaunaTick): void {
-    this.#predators = this.#animals.filter((animal) => animal.isAlive && animal.kind === "wolf");
+    this.#predators = this.#animals.filter((animal) => {
+      return animal.isAlive && animal.kind === "wolf";
+    });
 
     for (const herd of this.#herds) {
       this.#steerHerd(herd, tick);
@@ -510,7 +530,11 @@ export class FaunaSystem {
       return true;
     }
 
-    return ANIMALS[kind].edgeBiomes.some((edge) => edge === biome) && this.#bordersFavorite(kind, cell);
+    return (
+      ANIMALS[kind].edgeBiomes.some((edge) => {
+        return edge === biome;
+      }) && this.#bordersFavorite(kind, cell)
+    );
   }
 
   #bordersFavorite(kind: AnimalKind, cell: number): boolean {
@@ -539,9 +563,9 @@ export class FaunaSystem {
       return null;
     }
 
-    const kind = ANIMAL_KINDS.find(
-      (candidate) => ANIMALS[candidate].isSmallGame && this.#isHomeGround(candidate, cell)
-    );
+    const kind = ANIMAL_KINDS.find((candidate) => {
+      return ANIMALS[candidate].isSmallGame && this.#isHomeGround(candidate, cell);
+    });
 
     if (kind === undefined || !this.canStand(kind, x, z)) {
       return null;
@@ -688,7 +712,13 @@ export class FaunaSystem {
   }
 
   #membersOf(herd: Herd): Animal[] {
-    return herd.memberIds.map((id) => this.findAnimal(id)).filter((member) => member !== null);
+    return herd.memberIds
+      .map((id) => {
+        return this.findAnimal(id);
+      })
+      .filter((member) => {
+        return member !== null;
+      });
   }
 
   #updateAnimal(animal: Animal, tick: FaunaTick): void {
@@ -938,7 +968,9 @@ export class FaunaSystem {
 
   #disperse(days: number): void {
     const random = this.#smallGameRandom;
-    const groups = this.#herds.filter((herd) => ANIMALS[herd.kind].isSmallGame);
+    const groups = this.#herds.filter((herd) => {
+      return ANIMALS[herd.kind].isSmallGame;
+    });
     const limit = Math.round(MOST_SMALL_GAME_GROUPS_PER_SQUARE_KILOMETER * this.#world.grid.squareKilometers);
 
     let groupCount = groups.length;
@@ -964,7 +996,9 @@ export class FaunaSystem {
     }
 
     const grown = this.#membersOf(herd)
-      .filter((member) => member !== leader && member.youth <= ADULT_YOUTH)
+      .filter((member) => {
+        return member !== leader && member.youth <= ADULT_YOUTH;
+      })
       .slice(-DISPERSING_MEMBERS);
 
     if (grown.length < DISPERSING_MEMBERS) {
@@ -982,11 +1016,15 @@ export class FaunaSystem {
       goalZ: home.z,
       id: this.#identifiers.next(),
       kind: herd.kind,
-      memberIds: grown.map((member) => member.id),
+      memberIds: grown.map((member) => {
+        return member.id;
+      }),
       retargetSeconds: random.between(25, 65),
     };
 
-    herd.memberIds = herd.memberIds.filter((id) => !group.memberIds.includes(id));
+    herd.memberIds = herd.memberIds.filter((id) => {
+      return !group.memberIds.includes(id);
+    });
 
     for (const member of grown) {
       member.herdId = group.id;
@@ -1012,9 +1050,9 @@ export class FaunaSystem {
   }
 
   #removeRemains(seconds: number): void {
-    const hasExpired = this.#animals.some(
-      (animal) => !animal.isAlive && animal.deathSeconds + seconds > CORPSE_SECONDS
-    );
+    const hasExpired = this.#animals.some((animal) => {
+      return !animal.isAlive && animal.deathSeconds + seconds > CORPSE_SECONDS;
+    });
 
     if (!hasExpired) {
       return;
@@ -1033,7 +1071,11 @@ export class FaunaSystem {
       }
     }
 
-    this.#animals = this.#animals.filter((animal) => animal.isAlive || animal.deathSeconds <= CORPSE_SECONDS);
-    this.#herds = this.#herds.filter((herd) => herd.memberIds.length > 0);
+    this.#animals = this.#animals.filter((animal) => {
+      return animal.isAlive || animal.deathSeconds <= CORPSE_SECONDS;
+    });
+    this.#herds = this.#herds.filter((herd) => {
+      return herd.memberIds.length > 0;
+    });
   }
 }

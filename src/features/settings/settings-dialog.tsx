@@ -29,7 +29,9 @@ const SECTIONS: readonly SettingsSection[] = [
 ];
 
 function isSettingsTab(value: unknown): value is SettingsTab {
-  return SECTIONS.some((section) => section.value === value);
+  return SECTIONS.some((section) => {
+    return section.value === value;
+  });
 }
 
 function SectionTab({ section }: { readonly section: SettingsSection }) {
@@ -51,11 +53,21 @@ function SectionPanel({ section }: { readonly section: SettingsSection }) {
 }
 
 function useSettingsDialog() {
-  const isSettingsOpen = useInterfaceStore((state) => state.isSettingsOpen);
-  const setSettingsOpen = useInterfaceStore((state) => state.setSettingsOpen);
-  const settingsTab = useInterfaceStore((state) => state.settingsTab);
-  const setSettingsTab = useInterfaceStore((state) => state.setSettingsTab);
-  const worldName = useLaunchStore((state) => state.launch.name);
+  const isSettingsOpen = useInterfaceStore((state) => {
+    return state.isSettingsOpen;
+  });
+  const setSettingsOpen = useInterfaceStore((state) => {
+    return state.setSettingsOpen;
+  });
+  const settingsTab = useInterfaceStore((state) => {
+    return state.settingsTab;
+  });
+  const setSettingsTab = useInterfaceStore((state) => {
+    return state.setSettingsTab;
+  });
+  const worldName = useLaunchStore((state) => {
+    return state.launch.name;
+  });
 
   function handleTabChange(value: unknown): void {
     if (isSettingsTab(value)) {
@@ -99,16 +111,16 @@ export function SettingsDialog() {
                 </div>
 
                 <Tabs.List aria-label="Settings sections" className={cn(SEGMENT_TRACK, "mx-5 mb-3 sm:mx-6")}>
-                  {SECTIONS.map((section) => (
-                    <SectionTab key={section.value} section={section} />
-                  ))}
+                  {SECTIONS.map((section) => {
+                    return <SectionTab key={section.value} section={section} />;
+                  })}
                 </Tabs.List>
 
                 <ScrollArea.Root className="flex min-h-0 flex-auto flex-col">
                   <ScrollArea.Viewport className="scroll-fade relative min-h-0 flex-auto overscroll-contain px-5 pt-2 pb-5 outline-none sm:px-6">
-                    {SECTIONS.map((section) => (
-                      <SectionPanel key={section.value} section={section} />
-                    ))}
+                    {SECTIONS.map((section) => {
+                      return <SectionPanel key={section.value} section={section} />;
+                    })}
                   </ScrollArea.Viewport>
 
                   <ScrollArea.Scrollbar className="mr-1 mb-4 w-1 rounded-full opacity-0 transition-opacity data-hovering:opacity-100 data-scrolling:opacity-100">

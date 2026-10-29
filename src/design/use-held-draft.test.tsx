@@ -20,7 +20,9 @@ describe("held draft", () => {
   });
 
   it("shows the confirmed value until something is held", async () => {
-    const { result } = await renderHook(() => useHeldDraft(4));
+    const { result } = await renderHook(() => {
+      return useHeldDraft(4);
+    });
 
     expect(result.current[0]).toBe(4);
   });
@@ -30,7 +32,9 @@ describe("held draft", () => {
       initialProps: { confirmed: 4 },
     });
 
-    await act(() => result.current[1](9));
+    await act(() => {
+      result.current[1](9);
+    });
 
     expect(result.current[0]).toBe(9);
   });
@@ -40,23 +44,37 @@ describe("held draft", () => {
       initialProps: { confirmed: 4 },
     });
 
-    await act(() => result.current[1](9));
+    await act(() => {
+      result.current[1](9);
+    });
     await rerender({ confirmed: 8 });
 
     expect(result.current[0]).toBe(9);
 
-    await act(() => vi.advanceTimersByTime(800));
+    await act(() => {
+      return vi.advanceTimersByTime(800);
+    });
 
     expect(result.current[0]).toBe(8);
   });
 
   it("keeps holding while new values keep coming", async () => {
-    const { act, result } = await renderHook(() => useHeldDraft(4));
+    const { act, result } = await renderHook(() => {
+      return useHeldDraft(4);
+    });
 
-    await act(() => result.current[1](5));
-    await act(() => vi.advanceTimersByTime(500));
-    await act(() => result.current[1](6));
-    await act(() => vi.advanceTimersByTime(500));
+    await act(() => {
+      result.current[1](5);
+    });
+    await act(() => {
+      return vi.advanceTimersByTime(500);
+    });
+    await act(() => {
+      result.current[1](6);
+    });
+    await act(() => {
+      return vi.advanceTimersByTime(500);
+    });
 
     expect(result.current[0]).toBe(6);
   });

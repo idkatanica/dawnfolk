@@ -10,9 +10,13 @@ const NOTICE_SECONDS = 7;
 
 function useDismissLater(noticeId: number): void {
   useEffect(() => {
-    const timer = window.setTimeout(() => dismissNotice(noticeId), NOTICE_SECONDS * 1000);
+    const timer = window.setTimeout(() => {
+      dismissNotice(noticeId);
+    }, NOTICE_SECONDS * 1000);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [noticeId]);
 }
 
@@ -42,13 +46,15 @@ function NoticeItem({ notice }: { readonly notice: WorldNotice }) {
 }
 
 export function NoticeFeed({ className }: { readonly className?: string | undefined }) {
-  const notices = useWorldStore((state) => state.notices);
+  const notices = useWorldStore((state) => {
+    return state.notices;
+  });
 
   return (
     <ol aria-live="polite" className={cn("flex flex-col items-center gap-2", className)}>
-      {notices.map((notice) => (
-        <NoticeItem key={notice.id} notice={notice} />
-      ))}
+      {notices.map((notice) => {
+        return <NoticeItem key={notice.id} notice={notice} />;
+      })}
     </ol>
   );
 }

@@ -95,10 +95,16 @@ describe("land", () => {
 
     simulation.endStroke();
 
-    const planted = Array.from({ length: vegetation.count - before }, (_, index) => vegetation.cell[before + index]);
+    const planted = Array.from({ length: vegetation.count - before }, (_, index) => {
+      return vegetation.cell[before + index];
+    });
 
     expect(planted.length).toBeGreaterThan(20);
-    expect(planted.filter((cell) => simulation.world.isObstructed(cell))).toEqual([]);
+    expect(
+      planted.filter((cell) => {
+        return simulation.world.isObstructed(cell);
+      })
+    ).toEqual([]);
   });
 
   it("forest suited to a hot climate grows acacias and palms", () => {
@@ -113,9 +119,15 @@ describe("land", () => {
       simulation.advance(0.05);
     }
 
-    const planted = Array.from({ length: vegetation.count - before }, (_, index) => vegetation.species[before + index]);
+    const planted = Array.from({ length: vegetation.count - before }, (_, index) => {
+      return vegetation.species[before + index];
+    });
 
     expect(planted.length).toBeGreaterThan(20);
-    expect(planted.every((species) => species === PlantSpecies.Acacia || species === PlantSpecies.Palm)).toBe(true);
+    expect(
+      planted.every((species) => {
+        return species === PlantSpecies.Acacia || species === PlantSpecies.Palm;
+      })
+    ).toBe(true);
   });
 });

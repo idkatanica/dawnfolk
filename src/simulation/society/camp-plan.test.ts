@@ -24,7 +24,9 @@ describe("building plans", () => {
 
     const draw = vi.spyOn(harness.random, "next");
 
-    const kinds = buildingPlans(tribe, harness.context).map((plan) => plan.kind);
+    const kinds = buildingPlans(tribe, harness.context).map((plan) => {
+      return plan.kind;
+    });
 
     expect(tribe.fields).toHaveLength(0);
     expect(kinds).toContain("palisade");

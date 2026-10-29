@@ -143,7 +143,9 @@ function uproot(center: Waypoint, core: number, force: number, services: PowerSe
       continue;
     }
 
-    for (const plant of vegetation.plantsInCell(cell).filter((index) => vegetation.isAlive(index))) {
+    for (const plant of vegetation.plantsInCell(cell).filter((index) => {
+      return vegetation.isAlive(index);
+    })) {
       if (isTreeSpecies(vegetation.species[plant])) {
         world.fellPlant(plant, environment.day, swirlAngle(plant, center, world));
       } else if (isShrubSpecies(vegetation.species[plant])) {

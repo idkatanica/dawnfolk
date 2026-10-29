@@ -73,7 +73,9 @@ function isPatchVisible(patch: Patch, frustum: Frustum): boolean {
 }
 
 function patchLevelFor(distance: number, detail: number): number {
-  const index = PATCH_LEVEL_DISTANCES.findIndex((limit) => distance < limit * detail);
+  const index = PATCH_LEVEL_DISTANCES.findIndex((limit) => {
+    return distance < limit * detail;
+  });
 
   if (index === -1) {
     return PATCH_STEPS.length - 1;
@@ -99,10 +101,16 @@ export class PatchGrid {
 
     this.#grid = grid;
     this.#measure = measure;
-    this.#levels = options.materials.map((material) =>
-      PATCH_STEPS.map((step) => this.#createLevel(step, material, patchCount * piecesPerPatch, options))
-    );
-    this.#counts = this.#levels.map((levels) => levels.map(() => 0));
+    this.#levels = options.materials.map((material) => {
+      return PATCH_STEPS.map((step) => {
+        return this.#createLevel(step, material, patchCount * piecesPerPatch, options);
+      });
+    });
+    this.#counts = this.#levels.map((levels) => {
+      return levels.map(() => {
+        return 0;
+      });
+    });
     this.#chosenLevels = new Int8Array(patchCount).fill(NO_LEVEL);
     this.#previousLevels = new Int8Array(patchCount).fill(NO_LEVEL);
 
@@ -148,7 +156,9 @@ export class PatchGrid {
       }
     }
 
-    const hasChanged = this.#chosenLevels.some((level, index) => level !== this.#previousLevels[index]);
+    const hasChanged = this.#chosenLevels.some((level, index) => {
+      return level !== this.#previousLevels[index];
+    });
 
     for (const [material, levels] of this.#levels.entries()) {
       for (const [index, level] of levels.entries()) {

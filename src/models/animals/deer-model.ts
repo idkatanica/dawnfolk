@@ -200,8 +200,9 @@ export function addDeerBody(builder: MeshBuilder, detail: AnimalDetail): void {
       seam: NECK_SEAM,
       style: {
         ...neckStyle(DEER_FRAME, 0.09),
-        slot: (point) =>
-          point.position.z > 0.62 && point.position.y < 1.45 ? MaterialSlot.CoatLight : MaterialSlot.Coat,
+        slot: (point) => {
+          return point.position.z > 0.62 && point.position.y < 1.45 ? MaterialSlot.CoatLight : MaterialSlot.Coat;
+        },
       },
       transform: transformOf({ scale: [0.82, 1, 1] }),
     }
@@ -247,7 +248,9 @@ function addAntlers(builder: MeshBuilder, detail: AnimalDetail, scale: number): 
   const style = { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Antler };
   const beam = antlerBeam(scale);
   const beamShape = tube(beam, { radialSegments: segmentsAtLeast(detail, 4, detail.segments - 3) });
-  const tines = ANTLER_TINES.map((tine) => tube(antlerTine(beam, tine, scale), { radialSegments: 4 }));
+  const tines = ANTLER_TINES.map((tine) => {
+    return tube(antlerTine(beam, tine, scale), { radialSegments: 4 });
+  });
 
   for (const side of SIDES) {
     const mirror = sideMirror(side);

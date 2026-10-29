@@ -118,7 +118,9 @@ function addLonghouseWalls(context: StructureContext): void {
     [0, LONGHOUSE_FOOTING - 0.05 + wallHeight / 2, 0],
     {
       buildOrder: rising(0.15, 0.42, LONGHOUSE_FOOTING, LONGHOUSE_WALL_TOP),
-      shade: (point) => 0.74 + 0.26 * smoothstep(0, 2.2, point.position.y),
+      shade: (point) => {
+        return 0.74 + 0.26 * smoothstep(0, 2.2, point.position.y);
+      },
       slot: MaterialSlot.Daub,
     }
   );
@@ -194,7 +196,9 @@ function addLonghouseRoof(context: StructureContext): void {
     span: LONGHOUSE_EAVE_REACH * 2,
     style: {
       buildOrder: rising(0.55, 0.9, LONGHOUSE_EAVE - 0.3, LONGHOUSE_RIDGE),
-      shade: (point) => 0.72 + 0.28 * smoothstep(LONGHOUSE_EAVE, LONGHOUSE_RIDGE, point.position.y),
+      shade: (point) => {
+        return 0.72 + 0.28 * smoothstep(LONGHOUSE_EAVE, LONGHOUSE_RIDGE, point.position.y);
+      },
       slot: MaterialSlot.Thatch,
     },
     thickness: LONGHOUSE_ROOF_THICKNESS,
@@ -229,9 +233,9 @@ function overlapsOpening(
   bottom: number,
   top: number
 ): boolean {
-  return openings.some(
-    (opening) => left < opening.right && right > opening.left && bottom < opening.top && top > opening.bottom
-  );
+  return openings.some((opening) => {
+    return left < opening.right && right > opening.left && bottom < opening.top && top > opening.bottom;
+  });
 }
 
 function addCladdingStone(
@@ -343,7 +347,9 @@ function addHouseRoof(context: StructureContext): void {
     span: HOUSE_EAVE_REACH * 2,
     style: {
       buildOrder: rising(0.6, 0.9, HOUSE_EAVE - 0.3, HOUSE_RIDGE),
-      shade: (point) => 0.74 + 0.26 * smoothstep(HOUSE_EAVE, HOUSE_RIDGE, point.position.y),
+      shade: (point) => {
+        return 0.74 + 0.26 * smoothstep(HOUSE_EAVE, HOUSE_RIDGE, point.position.y);
+      },
       slot: MaterialSlot.Thatch,
     },
     thickness: 0.4,

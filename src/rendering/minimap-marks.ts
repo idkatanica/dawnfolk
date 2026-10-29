@@ -71,7 +71,11 @@ export function herdMarks(frame: AnimalBuffer): MinimapMark[] {
 export function personMarks(frame: PersonBuffer): MinimapMark[] {
   const { people } = frame;
 
-  const tribeColors = new Map(frame.tribes.map((tribe) => [tribe.id, tribe.color]));
+  const tribeColors = new Map(
+    frame.tribes.map((tribe) => {
+      return [tribe.id, tribe.color];
+    })
+  );
   const marks: MinimapMark[] = [];
 
   for (let person = 0; person < frame.personCount; person += 1) {

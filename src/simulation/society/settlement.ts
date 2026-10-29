@@ -123,7 +123,9 @@ function waterScore(world: WorldState, point: Waypoint): number {
 }
 
 function isBesideWater(world: WorldState, point: Waypoint): boolean {
-  return world.grid.cellsInRadius(point.x, point.z, TOO_CLOSE_TO_WATER).some((cell) => world.isWater(cell));
+  return world.grid.cellsInRadius(point.x, point.z, TOO_CLOSE_TO_WATER).some((cell) => {
+    return world.isWater(cell);
+  });
 }
 
 function surveySurroundings(world: WorldState, center: number): Surroundings {
@@ -238,9 +240,9 @@ export function siteSearchNear(origin: Waypoint, radius: number, excluded: Tribe
 }
 
 export function updateMigration(tribe: Tribe, members: readonly Person[], context: SocietyContext): void {
-  const arrived = members.filter(
-    (person) => Math.hypot(person.mover.x - tribe.campX, person.mover.z - tribe.campZ) < SETTLED_DISTANCE
-  );
+  const arrived = members.filter((person) => {
+    return Math.hypot(person.mover.x - tribe.campX, person.mover.z - tribe.campZ) < SETTLED_DISTANCE;
+  });
 
   const isLongOverdue = context.environment.day - tribe.migrationStartDay > LONGEST_MIGRATION_DAYS;
 
@@ -261,14 +263,21 @@ function settleWhereTheyStand(tribe: Tribe, members: readonly Person[]): void {
     return;
   }
 
-  const centerX = members.reduce((sum, person) => sum + person.mover.x, 0) / members.length;
-  const centerZ = members.reduce((sum, person) => sum + person.mover.z, 0) / members.length;
+  const centerX =
+    members.reduce((sum, person) => {
+      return sum + person.mover.x;
+    }, 0) / members.length;
+  const centerZ =
+    members.reduce((sum, person) => {
+      return sum + person.mover.z;
+    }, 0) / members.length;
 
-  const [nearest] = [...members].sort(
-    (first, second) =>
+  const [nearest] = [...members].sort((first, second) => {
+    return (
       Math.hypot(first.mover.x - centerX, first.mover.z - centerZ) -
       Math.hypot(second.mover.x - centerX, second.mover.z - centerZ)
-  );
+    );
+  });
 
   if (Math.hypot(nearest.mover.x - tribe.campX, nearest.mover.z - tribe.campZ) < SETTLED_DISTANCE) {
     return;
@@ -389,16 +398,32 @@ function canSplit(tribe: Tribe, members: readonly Person[], context: SocietyCont
     return false;
   }
 
-  return members.filter((person) => !isChild(person)).length >= SPLIT_ADULTS;
+  return (
+    members.filter((person) => {
+      return !isChild(person);
+    }).length >= SPLIT_ADULTS
+  );
 }
 
 function chooseSettlers(members: readonly Person[]): Person[] {
   const youngAdults = members
-    .filter((person) => !isChild(person) && person.age < YOUNG_ADULT_AGE)
-    .sort((first, second) => first.age - second.age);
+    .filter((person) => {
+      return !isChild(person) && person.age < YOUNG_ADULT_AGE;
+    })
+    .sort((first, second) => {
+      return first.age - second.age;
+    });
 
-  const women = youngAdults.filter((person) => person.isFemale).slice(0, 2);
-  const men = youngAdults.filter((person) => !person.isFemale).slice(0, 2);
+  const women = youngAdults
+    .filter((person) => {
+      return person.isFemale;
+    })
+    .slice(0, 2);
+  const men = youngAdults
+    .filter((person) => {
+      return !person.isFemale;
+    })
+    .slice(0, 2);
 
   if (women.length === 0 || men.length === 0) {
     return [];

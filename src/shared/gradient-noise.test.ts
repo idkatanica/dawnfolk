@@ -9,7 +9,9 @@ function sampleAt(noise: GradientNoise, x: number, z: number): NoiseGradient {
 }
 
 function samplePoints(count: number): [number, number][] {
-  return Array.from({ length: count }, (_, index) => [Math.sin(index * 12.9898) * 37, Math.cos(index * 78.233) * 37]);
+  return Array.from({ length: count }, (_, index) => {
+    return [Math.sin(index * 12.9898) * 37, Math.cos(index * 78.233) * 37];
+  });
 }
 
 function averageSteepness(sample: (x: number, z: number) => number): number {
@@ -42,7 +44,9 @@ describe("gradient noise", () => {
     const again = new GradientNoise(createRandom(5));
     const other = new GradientNoise(createRandom(6));
 
-    const values = samplePoints(500).map(([x, z]) => sampleAt(noise, x, z).value);
+    const values = samplePoints(500).map(([x, z]) => {
+      return sampleAt(noise, x, z).value;
+    });
 
     expect(Math.min(...values)).toBeGreaterThanOrEqual(-1);
     expect(Math.max(...values)).toBeLessThanOrEqual(1);
@@ -54,8 +58,12 @@ describe("gradient noise", () => {
     const noise = new GradientNoise(createRandom(9));
     const ridges: ErodedRidgedOptions = { damping: 0, gain: 0.5, octaves: 6, rounding: 0.02, slopeScale: 1 };
 
-    const sharp = averageSteepness((x, z) => noise.erodedRidged(x, z, ridges));
-    const eroded = averageSteepness((x, z) => noise.erodedRidged(x, z, { ...ridges, damping: 8 }));
+    const sharp = averageSteepness((x, z) => {
+      return noise.erodedRidged(x, z, ridges);
+    });
+    const eroded = averageSteepness((x, z) => {
+      return noise.erodedRidged(x, z, { ...ridges, damping: 8 });
+    });
 
     expect(eroded).toBeLessThan(sharp * 0.8);
   });

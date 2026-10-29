@@ -18,7 +18,11 @@ describe("path curves", () => {
     const curved = curveTube(BENT, 2);
 
     expect(curved).toHaveLength(BENT.length * 2 - 1);
-    expect(curved.filter((_, index) => index % 2 === 0)).toEqual(BENT);
+    expect(
+      curved.filter((_, index) => {
+        return index % 2 === 0;
+      })
+    ).toEqual(BENT);
   });
 
   it("keeps each new point between its neighbors along the path", () => {
@@ -36,7 +40,11 @@ describe("path curves", () => {
   it("never pinches a ring next to a pole", () => {
     const curved = curveTube(BENT, 3);
 
-    expect(curved.slice(1).every((point) => point.radius > 0)).toBe(true);
+    expect(
+      curved.slice(1).every((point) => {
+        return point.radius > 0;
+      })
+    ).toBe(true);
   });
 
   it("curves loft and body sections through their own sections", () => {
@@ -57,8 +65,16 @@ describe("path curves", () => {
       2
     );
 
-    expect(sections.map((section) => section.y)).toEqual([0, expect.any(Number), 0.05, expect.any(Number), 0.2]);
-    expect(bodies.map((section) => section.z)).toEqual([-0.5, expect.any(Number), -0.3, expect.any(Number), 0.2]);
+    expect(
+      sections.map((section) => {
+        return section.y;
+      })
+    ).toEqual([0, expect.any(Number), 0.05, expect.any(Number), 0.2]);
+    expect(
+      bodies.map((section) => {
+        return section.z;
+      })
+    ).toEqual([-0.5, expect.any(Number), -0.3, expect.any(Number), 0.2]);
     expect(sections[1].radiusX).toBeGreaterThan(0);
     expect(bodies[1].halfHeight).toBeGreaterThan(0);
   });

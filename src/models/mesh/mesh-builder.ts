@@ -46,7 +46,9 @@ export function resolveChannel(value: ChannelValue | undefined, fallback: number
 
 export class MeshBuilder {
   readonly #baseStyle: VertexStyle;
-  readonly #channels = channelRecord(() => new GrowableFloatArray());
+  readonly #channels = channelRecord(() => {
+    return new GrowableFloatArray();
+  });
   readonly #indices = new GrowableIndexArray();
   readonly #normals = new GrowableFloatArray();
   readonly #positions = new GrowableFloatArray();
@@ -134,7 +136,9 @@ export class MeshBuilder {
 
     return {
       bounds: boundsOf(positions),
-      channels: channelRecord((channel) => this.#channels[channel].toArray()),
+      channels: channelRecord((channel) => {
+        return this.#channels[channel].toArray();
+      }),
       indices,
       normals,
       positions,
@@ -170,11 +174,13 @@ export class MeshBuilder {
       combinedIndices[indices.length + index] = references.indices[index] + ownVertices;
     }
 
-    const shifted = this.#referenceSeams.map((seam) => ({
-      ...seam,
-      firstTriangle: seam.firstTriangle + ownTriangles,
-      firstVertex: seam.firstVertex + ownVertices,
-    }));
+    const shifted = this.#referenceSeams.map((seam) => {
+      return {
+        ...seam,
+        firstTriangle: seam.firstTriangle + ownTriangles,
+        firstVertex: seam.firstVertex + ownVertices,
+      };
+    });
 
     blendSeamNormals({ indices: combinedIndices, normals: combinedNormals, positions: combinedPositions }, [
       ...this.#seams,

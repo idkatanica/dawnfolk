@@ -6,7 +6,9 @@ import { carveValleys } from "./valleys.ts";
 
 function lakeLevels(heights: Float32Array, grid: WorldGrid): number[] {
   return analyzeDrainage(heights, grid, new Float32Array(grid.cellCount), landEverywhere(grid.cellCount)).lakes.map(
-    (lake) => lake.level
+    (lake) => {
+      return lake.level;
+    }
   );
 }
 
@@ -26,7 +28,9 @@ describe("river valleys", () => {
   });
 
   it("rises from the river to the untouched land", () => {
-    const profile = [-5, -25, -45, -65, -85, -150].map((x) => carved[grid.cellAt(x, -400)]);
+    const profile = [-5, -25, -45, -65, -85, -150].map((x) => {
+      return carved[grid.cellAt(x, -400)];
+    });
 
     for (let step = 1; step < profile.length; step += 1) {
       expect(profile[step]).toBeGreaterThanOrEqual(profile[step - 1]);

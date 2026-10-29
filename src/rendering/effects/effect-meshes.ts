@@ -80,7 +80,9 @@ function createRibbonMaterial(brightnesses: PerObjectValues): MeshBasicNodeMater
 
   blendAsGlow(material);
 
-  const brightness = uniform(1).onObjectUpdate(({ object }) => brightnesses.read(object));
+  const brightness = uniform(1).onObjectUpdate(({ object }) => {
+    return brightnesses.read(object);
+  });
   const tangent = attribute("ribbonTangent", "vec3");
   const side = attribute("ribbonSide", "float");
   const width = attribute("ribbonWidth", "float");
@@ -98,7 +100,9 @@ function createRibbonMaterial(brightnesses: PerObjectValues): MeshBasicNodeMater
 
 function createFireballMaterial(heats: PerObjectValues): MeshBasicNodeMaterial {
   const material = new MeshBasicNodeMaterial({ depthWrite: false, transparent: true });
-  const heat = uniform(1).onObjectUpdate(({ object }) => heats.read(object));
+  const heat = uniform(1).onObjectUpdate(({ object }) => {
+    return heats.read(object);
+  });
   const noise = mx_noise_float(positionLocal.mul(2.4).add(vec3(0, time.mul(-1.5), 0)));
 
   material.positionNode = positionLocal.mul(noise.mul(0.22).add(1));

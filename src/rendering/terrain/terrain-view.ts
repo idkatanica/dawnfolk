@@ -59,7 +59,13 @@ export class TerrainView {
     const inland = createTerrainMaterial({ ...options, shouldCutAtCoast: false });
 
     this.#levels = new Int8Array(textures.patchesPerSide ** 2);
-    this.#inland = this.#createGrid((region) => this.#measureInland(region), [inland], PATCH_CELLS);
+    this.#inland = this.#createGrid(
+      (region) => {
+        return this.#measureInland(region);
+      },
+      [inland],
+      PATCH_CELLS
+    );
 
     if (textures.outline.coast === null) {
       this.#materials = [inland];
@@ -69,7 +75,13 @@ export class TerrainView {
     }
 
     this.#materials = [inland, createTerrainMaterial({ ...options, shouldCutAtCoast: true })];
-    this.#coast = this.#createGrid((region) => this.#measureCoast(region), this.#materials, COAST_PIECE_CELLS);
+    this.#coast = this.#createGrid(
+      (region) => {
+        return this.#measureCoast(region);
+      },
+      this.#materials,
+      COAST_PIECE_CELLS
+    );
   }
 
   get patchLevels(): Readonly<Int8Array> {

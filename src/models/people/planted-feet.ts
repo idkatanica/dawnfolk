@@ -44,8 +44,12 @@ function legChain(side: Side): LegChain {
   return {
     ankle: between(knee, ankle),
     contacts: HUMAN_SKELETON.footContacts
-      .filter((contact) => contact.bone === foot)
-      .map((contact) => between(ankle, contact.position)),
+      .filter((contact) => {
+        return contact.bone === foot;
+      })
+      .map((contact) => {
+        return between(ankle, contact.position);
+      }),
     hip: between(HumanJoint.Pelvis, hip),
     knee: between(hip, knee),
   };

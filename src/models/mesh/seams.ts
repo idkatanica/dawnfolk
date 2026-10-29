@@ -439,7 +439,9 @@ function applyBlends(normals: Float32Array, blends: ReadonlyMap<number, Blend>):
 }
 
 export function blendSeamNormals(geometry: SeamGeometry, surfaces: readonly SeamSurface[]): void {
-  const prepared = surfaces.map((surface) => prepareSurface(geometry, surface));
+  const prepared = surfaces.map((surface) => {
+    return prepareSurface(geometry, surface);
+  });
   const blends = new Map<number, Blend>();
   const hidden = new Set<number>();
 

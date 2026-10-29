@@ -248,7 +248,9 @@ function earShape(detail: AnimalDetail): Shape {
     transformOf({ scale: EAR_SIZE })
   );
 
-  return deformShape(flap, (vertex) => [0, -(vertex.x * vertex.x + vertex.z * vertex.z) / (2 * HEAD_CURVATURE), 0]);
+  return deformShape(flap, (vertex) => {
+    return [0, -(vertex.x * vertex.x + vertex.z * vertex.z) / (2 * HEAD_CURVATURE), 0];
+  });
 }
 
 function addFace(builder: MeshBuilder, head: Shape, detail: AnimalDetail): void {

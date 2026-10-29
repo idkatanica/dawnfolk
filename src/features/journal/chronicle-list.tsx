@@ -24,7 +24,9 @@ function ChronicleItem({ entry }: { readonly entry: ChronicleEntry }) {
 }
 
 export function ChronicleList() {
-  const chronicle = useWorldStore((state) => state.chronicle);
+  const chronicle = useWorldStore((state) => {
+    return state.chronicle;
+  });
 
   const latest = chronicle.slice(-SHOWN_ENTRIES).toReversed();
 
@@ -34,9 +36,9 @@ export function ChronicleList() {
 
   return (
     <ol>
-      {latest.map((entry) => (
-        <ChronicleItem entry={entry} key={entry.id} />
-      ))}
+      {latest.map((entry) => {
+        return <ChronicleItem entry={entry} key={entry.id} />;
+      })}
     </ol>
   );
 }

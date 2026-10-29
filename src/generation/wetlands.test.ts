@@ -11,7 +11,9 @@ const LAKE_LEVEL = 100.5;
 
 function wetnessOf(seed: number, desert = 0): Float32Array {
   const world = lakeWorld(seed, desert);
-  const slopes = Float64Array.from({ length: grid.cellCount }, (_, cell) => slopeAt(world.heights, grid, cell));
+  const slopes = Float64Array.from({ length: grid.cellCount }, (_, cell) => {
+    return slopeAt(world.heights, grid, cell);
+  });
 
   return measureWetness(world, slopes);
 }
@@ -48,7 +50,9 @@ function lakeWorld(seed: number, desert = 0) {
 }
 
 function shoreCells(side: number): number[] {
-  return Array.from({ length: grid.cellCount }, (_, cell) => cell).filter((cell) => {
+  return Array.from({ length: grid.cellCount }, (_, cell) => {
+    return cell;
+  }).filter((cell) => {
     const x = grid.cellCenterX(cell);
     const distance = Math.hypot(x, grid.cellCenterZ(cell)) - LAKE_RADIUS;
 
@@ -59,7 +63,9 @@ function shoreCells(side: number): number[] {
 function blobs(cells: readonly number[]): (cell: number) => boolean {
   const members = new Set(cells);
 
-  return (cell) => members.has(cell);
+  return (cell) => {
+    return members.has(cell);
+  };
 }
 
 function square(column: number, row: number, size: number): number[] {
@@ -81,17 +87,27 @@ describe("wetlands", () => {
     const soaked = seeds.map((seed) => {
       const wetness = wetnessOf(seed);
 
-      expect(shoreCells(1).every((cell) => !isWetland(wetness[cell]))).toBe(true);
+      expect(
+        shoreCells(1).every((cell) => {
+          return !isWetland(wetness[cell]);
+        })
+      ).toBe(true);
       expect(wetness[grid.cellAt(0, 0)]).toBe(0);
 
-      return shoreCells(-1).filter((cell) => isWetland(wetness[cell])).length;
+      return shoreCells(-1).filter((cell) => {
+        return isWetland(wetness[cell]);
+      }).length;
     });
 
     expect(Math.max(...soaked)).toBeGreaterThan(shoreCells(-1).length / 4);
   });
 
   it("finds no wetland in a desert", () => {
-    expect(wetnessOf(1, 0.6).every((wetness) => wetness === 0)).toBe(true);
+    expect(
+      wetnessOf(1, 0.6).every((wetness) => {
+        return wetness === 0;
+      })
+    ).toBe(true);
   });
 
   it("comes out the same for the same seed", () => {
@@ -102,7 +118,11 @@ describe("wetlands", () => {
     const speck = square(10, 10, 3);
     const marsh = square(40, 40, 10);
 
-    expect(findSmallAreas(grid, blobs([...speck, ...marsh])).sort((first, second) => first - second)).toEqual(speck);
+    expect(
+      findSmallAreas(grid, blobs([...speck, ...marsh])).sort((first, second) => {
+        return first - second;
+      })
+    ).toEqual(speck);
   });
 
   it("sinks pools only inside a swamp, never at its edge", () => {

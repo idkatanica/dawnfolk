@@ -6,7 +6,9 @@ describe("project links", () => {
   it("links to the repository with its stars and to sponsorship", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => Promise.resolve(Response.json({ stargazers_count: 1234 })))
+      vi.fn(() => {
+        return Promise.resolve(Response.json({ stargazers_count: 1234 }));
+      })
     );
 
     const screen = await render(<ProjectLinks />);

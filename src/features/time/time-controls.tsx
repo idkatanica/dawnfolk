@@ -10,8 +10,12 @@ import { useWorldStore } from "../world/world-store.ts";
 
 function useTimeControls() {
   const send = useSendCommand();
-  const isPaused = useWorldStore((state) => state.snapshot?.isPaused === true);
-  const speed = useWorldStore((state) => state.snapshot?.speed);
+  const isPaused = useWorldStore((state) => {
+    return state.snapshot?.isPaused === true;
+  });
+  const speed = useWorldStore((state) => {
+    return state.snapshot?.speed;
+  });
 
   function handlePauseToggle(): void {
     send({ isPaused: !isPaused, type: "setPaused" });
@@ -69,9 +73,9 @@ export function TimeControls() {
         onValueChange={handleSpeedChange}
         value={pressedSpeeds}
       >
-        {SIMULATION_SPEEDS.map((option) => (
-          <SpeedOption key={option} speed={option} />
-        ))}
+        {SIMULATION_SPEEDS.map((option) => {
+          return <SpeedOption key={option} speed={option} />;
+        })}
       </ToggleGroup>
     </div>
   );

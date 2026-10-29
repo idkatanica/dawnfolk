@@ -10,9 +10,9 @@ import { ChronicleList } from "./chronicle-list.tsx";
 const SHOWN_ENTRIES = 120;
 
 function createEntries(count: number) {
-  return Array.from({ length: count }, (_, index) =>
-    createChronicleEntry({ day: index / 4, id: index + 1, text: `Event ${index + 1}` })
-  );
+  return Array.from({ length: count }, (_, index) => {
+    return createChronicleEntry({ day: index / 4, id: index + 1, text: `Event ${index + 1}` });
+  });
 }
 
 describe("chronicle list", () => {

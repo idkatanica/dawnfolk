@@ -34,7 +34,11 @@ describe("life", () => {
 
     simulation.usePower("hare", 200, 0, {});
 
-    expect(simulation.fauna.animals.map((animal) => animal.kind)).toEqual(["hare", "hare", "hare"]);
+    expect(
+      simulation.fauna.animals.map((animal) => {
+        return animal.kind;
+      })
+    ).toEqual(["hare", "hare", "hare"]);
   });
 
   it("abundance fills bushes and feeds the nearest tribe", () => {
@@ -78,7 +82,11 @@ describe("life", () => {
 
     simulation.usePower("healing", tribe.campX, tribe.campZ, { radius: 200 });
 
-    expect(simulation.society.people.every((person) => person.health === 1 && person.hunger <= 0.2)).toBe(true);
+    expect(
+      simulation.society.people.every((person) => {
+        return person.health === 1 && person.hunger <= 0.2;
+      })
+    ).toBe(true);
   });
 
   it("explains when healing finds nobody", () => {

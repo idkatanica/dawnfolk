@@ -9,7 +9,9 @@ interface GameViewProps {
 }
 
 export function GameView({ launch, worldId }: GameViewProps) {
-  const setStatus = useEngineStore((state) => state.setStatus);
+  const setStatus = useEngineStore((state) => {
+    return state.setStatus;
+  });
   const containerReference = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -21,7 +23,9 @@ export function GameView({ launch, worldId }: GameViewProps) {
 
     const launcher = new EngineLauncher(container, launch, worldId, setStatus);
 
-    return () => launcher.cancel();
+    return () => {
+      launcher.cancel();
+    };
   }, [launch, setStatus, worldId]);
 
   return <div className="absolute inset-0" ref={containerReference} />;

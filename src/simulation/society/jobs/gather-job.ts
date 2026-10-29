@@ -49,7 +49,9 @@ function gatheringArea(tick: PersonTick): SearchArea {
 function nearestReachableBush(tick: PersonTick, area: SearchArea): number | null {
   return nearestPlant(tick.context.world, {
     ...area,
-    accepts: (plant) => isRipeBush(tick, plant) && canWorkAtPlant(tick, plant, GATHERING_REACH),
+    accepts: (plant) => {
+      return isRipeBush(tick, plant) && canWorkAtPlant(tick, plant, GATHERING_REACH);
+    },
   });
 }
 

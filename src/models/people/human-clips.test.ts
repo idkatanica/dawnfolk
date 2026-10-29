@@ -26,16 +26,16 @@ const STANDING_WORK: readonly PersonPose[] = [
   "block",
   "flinch",
 ];
-const KNEE_CONTACT = HUMAN_SKELETON.allContacts.find(
-  (contact) => contact.bone === HumanBone.ShinRight && contact.position[1] > 0.4
-);
+const KNEE_CONTACT = HUMAN_SKELETON.allContacts.find((contact) => {
+  return contact.bone === HumanBone.ShinRight && contact.position[1] > 0.4;
+});
 
 function footHeights(poser: SkeletonPoser): number[] {
   const point = new Vector3();
 
-  return HUMAN_SKELETON.footContacts.map(
-    (contact) => poser.skinPoint(contact.bone, point.set(...contact.position), point).y
-  );
+  return HUMAN_SKELETON.footContacts.map((contact) => {
+    return poser.skinPoint(contact.bone, point.set(...contact.position), point).y;
+  });
 }
 
 function lowestFoot(poser: SkeletonPoser): number {
@@ -50,7 +50,9 @@ function strideOf(clip: PersonPose, context: HumanClipContext): number {
   return measureStride({
     pose: new Pose(HUMAN_SKELETON.bones.length),
     poser: new SkeletonPoser(HUMAN_SKELETON),
-    sample: (pose, phase) => applyHumanClip(pose, clip, phase, context),
+    sample: (pose, phase) => {
+      applyHumanClip(pose, clip, phase, context);
+    },
     scales: uniformScales(HUMAN_SKELETON),
     skeleton: HUMAN_SKELETON,
   });
@@ -65,7 +67,11 @@ describe("human clips", () => {
         for (const phase of [0, 0.13, 0.5, 0.77, 3.2]) {
           applyHumanClip(pose, clip, phase, { ...ADULT, carried });
 
-          expect([...pose.angles].every((angle) => Number.isFinite(angle))).toBe(true);
+          expect(
+            [...pose.angles].every((angle) => {
+              return Number.isFinite(angle);
+            })
+          ).toBe(true);
           expect(Number.isFinite(pose.height)).toBe(true);
         }
       }

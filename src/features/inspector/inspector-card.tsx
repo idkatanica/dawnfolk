@@ -6,6 +6,7 @@ import { IconButton, TextButton } from "../../design/buttons.tsx";
 import { GameIcon } from "../../design/game-icon.tsx";
 import type { GameIconName } from "../../design/game-icon-sources.ts";
 import { ScrollPanel } from "../../design/scroll-panel.tsx";
+import { ignore } from "../../shared/ignore.ts";
 import type { Inspection, PersonInspection } from "../../simulation/inspection.ts";
 import { AnimalDetails, BuildingDetails, CellDetails, PersonDetails, TribeDetails } from "./inspector-details.tsx";
 
@@ -72,7 +73,7 @@ function useFollowing() {
 
   function subscribe(onChange: () => void): () => void {
     if (engine === null) {
-      return () => undefined;
+      return ignore;
     }
 
     return engine.subscribeToRenders(onChange);

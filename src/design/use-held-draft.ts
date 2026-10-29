@@ -14,9 +14,13 @@ export function useHeldDraft<Value>(confirmed: Value): readonly [Value, (value: 
       return;
     }
 
-    const timer = window.setTimeout(() => setDraft(null), HOLD_MILLISECONDS);
+    const timer = window.setTimeout(() => {
+      setDraft(null);
+    }, HOLD_MILLISECONDS);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [draft]);
 
   function hold(value: Value): void {

@@ -19,7 +19,11 @@ describe("ore and clay deposits", () => {
   }, 60_000);
 
   it("include every kind of ore and clay", () => {
-    const kinds = new Set(world.deposits.map((deposit) => deposit.kind));
+    const kinds = new Set(
+      world.deposits.map((deposit) => {
+        return deposit.kind;
+      })
+    );
 
     expect([...kinds].sort()).toEqual([...DEPOSIT_KINDS].sort());
   });
@@ -39,20 +43,32 @@ describe("ore and clay deposits", () => {
     const { height } = world.terrain;
 
     function steepestOf(deposit: Deposit): number {
-      return Math.max(...deposit.cells.map((cell) => slopeAt(height, grid, cell)));
+      return Math.max(
+        ...deposit.cells.map((cell) => {
+          return slopeAt(height, grid, cell);
+        })
+      );
     }
 
-    for (const clay of world.deposits.filter((deposit) => deposit.kind === "clay")) {
+    for (const clay of world.deposits.filter((deposit) => {
+      return deposit.kind === "clay";
+    })) {
       expect(steepestOf(clay)).toBeLessThanOrEqual(0.25);
     }
 
-    for (const ore of world.deposits.filter((deposit) => deposit.kind !== "clay")) {
+    for (const ore of world.deposits.filter((deposit) => {
+      return deposit.kind !== "clay";
+    })) {
       expect(steepestOf(ore)).toBeLessThanOrEqual(0.72);
     }
   });
 
   it("keep their veins off springs", () => {
-    const springGround = new Set(world.water.springs.flatMap((spring) => spring.cells));
+    const springGround = new Set(
+      world.water.springs.flatMap((spring) => {
+        return spring.cells;
+      })
+    );
 
     expect(springGround.size).toBeGreaterThan(0);
 
@@ -64,12 +80,18 @@ describe("ore and clay deposits", () => {
   });
 
   it("leave no trees standing on the veins", () => {
-    const veins = new Set(world.deposits.flatMap((deposit) => deposit.cells));
+    const veins = new Set(
+      world.deposits.flatMap((deposit) => {
+        return deposit.cells;
+      })
+    );
     const { vegetation } = world;
 
-    const trees = Array.from({ length: vegetation.count }, (_, plant) => plant).filter(
-      (plant) => vegetation.isAlive(plant) && isTreeSpecies(vegetation.species[plant])
-    );
+    const trees = Array.from({ length: vegetation.count }, (_, plant) => {
+      return plant;
+    }).filter((plant) => {
+      return vegetation.isAlive(plant) && isTreeSpecies(vegetation.species[plant]);
+    });
 
     for (const tree of trees) {
       expect(veins.has(grid.cellAt(vegetation.x[tree], vegetation.z[tree]))).toBe(false);

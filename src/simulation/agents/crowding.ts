@@ -3,7 +3,11 @@ import type { WorldState } from "../world/world-state.ts";
 import { isInOpenWater } from "./hops.ts";
 import { hasArrived, type Mover } from "./movement.ts";
 
-const LARGEST_BODY_RADIUS = Math.max(...ANIMAL_KINDS.map((kind) => ANIMALS[kind].bodyRadius));
+const LARGEST_BODY_RADIUS = Math.max(
+  ...ANIMAL_KINDS.map((kind) => {
+    return ANIMALS[kind].bodyRadius;
+  })
+);
 const SOFTNESS = 0.5;
 const GOAL_MARGIN = 1;
 const CROWD_FRUSTRATION = 0.5;
@@ -43,7 +47,9 @@ export function keepApart(movers: readonly Mover[], world: WorldState, seconds: 
     }
   }
 
-  const pushes = movers.filter(mayBePushed).map((mover) => pushAway(mover, crowd, world));
+  const pushes = movers.filter(mayBePushed).map((mover) => {
+    return pushAway(mover, crowd, world);
+  });
 
   for (const push of pushes) {
     nudge(push, world, seconds);

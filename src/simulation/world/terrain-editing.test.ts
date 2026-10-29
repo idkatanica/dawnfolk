@@ -26,7 +26,11 @@ describe("brush areas", () => {
     const cells = cellsInArea(world, { radius: 15, x: 5, z: 5 });
 
     expect(cells.length).toBeGreaterThan(5);
-    expect(cells.every((areaCell) => areaCell.distance <= 15)).toBe(true);
+    expect(
+      cells.every((areaCell) => {
+        return areaCell.distance <= 15;
+      })
+    ).toBe(true);
   });
 
   it("fades from full strength at the center to nothing at the edge", () => {
@@ -61,7 +65,11 @@ describe("terrain editing", () => {
   });
 
   it("flattens towards the target height", () => {
-    const world = createTestWorld({ heightAt: (x) => 100 + x });
+    const world = createTestWorld({
+      heightAt: (x) => {
+        return 100 + x;
+      },
+    });
 
     for (let stroke = 0; stroke < 20; stroke += 1) {
       flattenTerrain(world, BRUSH, 105, 0.5);
@@ -104,7 +112,9 @@ describe("terrain editing", () => {
 
     shakeTerrain(world, BRUSH, 1, createRandom(4));
 
-    const heights = cellsInArea(world, BRUSH).map((areaCell) => world.terrain.height[areaCell.cell]);
+    const heights = cellsInArea(world, BRUSH).map((areaCell) => {
+      return world.terrain.height[areaCell.cell];
+    });
 
     expect(Math.max(...heights) - Math.min(...heights)).toBeGreaterThan(1);
   });

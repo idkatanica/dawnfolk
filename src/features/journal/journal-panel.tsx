@@ -15,12 +15,18 @@ const TABS: readonly { readonly label: string; readonly value: JournalTab }[] = 
 ];
 
 function isJournalTab(value: unknown): value is JournalTab {
-  return TABS.some((tab) => tab.value === value);
+  return TABS.some((tab) => {
+    return tab.value === value;
+  });
 }
 
 function useJournalTab() {
-  const journalTab = useInterfaceStore((state) => state.journalTab);
-  const setJournalTab = useInterfaceStore((state) => state.setJournalTab);
+  const journalTab = useInterfaceStore((state) => {
+    return state.journalTab;
+  });
+  const setJournalTab = useInterfaceStore((state) => {
+    return state.setJournalTab;
+  });
 
   function handleTabChange(value: unknown): void {
     if (isJournalTab(value)) {
@@ -59,9 +65,9 @@ export function JournalPanel() {
   return (
     <Tabs.Root className="flex min-h-0 flex-1 flex-col gap-2" onValueChange={handleTabChange} value={journalTab}>
       <Tabs.List aria-label="Journal" className="bg-ink/8 flex gap-1 rounded-full p-1">
-        {TABS.map((tab) => (
-          <JournalTabButton key={tab.value} label={tab.label} value={tab.value} />
-        ))}
+        {TABS.map((tab) => {
+          return <JournalTabButton key={tab.value} label={tab.label} value={tab.value} />;
+        })}
       </Tabs.List>
 
       <ScrollingPanel value="tribes">

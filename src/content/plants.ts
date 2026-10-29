@@ -450,6 +450,10 @@ export function canGrowAt(rule: PlantingRule, temperature: number): boolean {
 
 export function regrowingSpecies(biome: BiomeIndex, temperature: number): readonly PlantSpeciesIndex[] {
   return PLANTING_RULES[biome]
-    .filter((rule) => isLivingTreeSpecies(rule.species) && canGrowAt(rule, temperature))
-    .map((rule) => rule.species);
+    .filter((rule) => {
+      return isLivingTreeSpecies(rule.species) && canGrowAt(rule, temperature);
+    })
+    .map((rule) => {
+      return rule.species;
+    });
 }

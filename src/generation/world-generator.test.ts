@@ -68,33 +68,52 @@ function testWorld(seed: number, shape: IslandShapeKind = "round"): GeneratedWor
 }
 
 function slopesOf(terrain: TerrainData, grid: WorldGrid): number[] {
-  return Array.from({ length: grid.cellCount }, (_, cell) => slopeAt(terrain.height, grid, cell));
+  return Array.from({ length: grid.cellCount }, (_, cell) => {
+    return slopeAt(terrain.height, grid, cell);
+  });
 }
 
 function shareAbove(values: readonly number[], limit: number): number {
-  return values.filter((value) => value > limit).length / values.length;
+  return (
+    values.filter((value) => {
+      return value > limit;
+    }).length / values.length
+  );
 }
 
 function edgeSides(grid: WorldGrid): number[][] {
   const last = grid.cellsPerSide - 1;
-  const positions = Array.from({ length: grid.cellsPerSide }, (_, position) => position);
+  const positions = Array.from({ length: grid.cellsPerSide }, (_, position) => {
+    return position;
+  });
 
   return [
-    positions.map((position) => grid.index(position, 0)),
-    positions.map((position) => grid.index(position, last)),
-    positions.map((position) => grid.index(0, position)),
-    positions.map((position) => grid.index(last, position)),
+    positions.map((position) => {
+      return grid.index(position, 0);
+    }),
+    positions.map((position) => {
+      return grid.index(position, last);
+    }),
+    positions.map((position) => {
+      return grid.index(0, position);
+    }),
+    positions.map((position) => {
+      return grid.index(last, position);
+    }),
   ];
 }
 
 function coastCells(terrain: TerrainData, grid: WorldGrid): number[] {
-  return Array.from({ length: grid.cellCount }, (_, cell) => cell).filter(
-    (cell) =>
+  return Array.from({ length: grid.cellCount }, (_, cell) => {
+    return cell;
+  }).filter((cell) => {
+    return (
       isOnIsland(terrain.coastDistance, cell) &&
-      grid
-        .cellsInRadius(grid.cellCenterX(cell), grid.cellCenterZ(cell), grid.cellSize * 1.5)
-        .some((neighbor) => !isOnIsland(terrain.coastDistance, neighbor))
-  );
+      grid.cellsInRadius(grid.cellCenterX(cell), grid.cellCenterZ(cell), grid.cellSize * 1.5).some((neighbor) => {
+        return !isOnIsland(terrain.coastDistance, neighbor);
+      })
+    );
+  });
 }
 
 function largestStepAlong(heights: Float32Array, cells: readonly number[]): number {
@@ -115,9 +134,9 @@ function cellsAround(grid: WorldGrid, cell: number, innerRadius: number, outerRa
   const x = grid.cellCenterX(cell);
   const z = grid.cellCenterZ(cell);
 
-  return grid
-    .cellsInRadius(x, z, outerRadius)
-    .filter((other) => Math.hypot(grid.cellCenterX(other) - x, grid.cellCenterZ(other) - z) >= innerRadius);
+  return grid.cellsInRadius(x, z, outerRadius).filter((other) => {
+    return Math.hypot(grid.cellCenterX(other) - x, grid.cellCenterZ(other) - z) >= innerRadius;
+  });
 }
 
 function misplacedPlants(generated: GeneratedWorld): string[] {
@@ -258,9 +277,9 @@ function isWooded(terrain: TerrainData, cell: number): boolean {
 }
 
 function nearWater(terrain: TerrainData, grid: WorldGrid, cell: number, radius: number): boolean {
-  return grid
-    .cellsInRadius(grid.cellCenterX(cell), grid.cellCenterZ(cell), radius)
-    .some((other) => hasWater(terrain.waterSurface[other], terrain.height[other]));
+  return grid.cellsInRadius(grid.cellCenterX(cell), grid.cellCenterZ(cell), radius).some((other) => {
+    return hasWater(terrain.waterSurface[other], terrain.height[other]);
+  });
 }
 
 function median(values: readonly number[]): number {
@@ -268,7 +287,9 @@ function median(values: readonly number[]): number {
 }
 
 function quantile(values: readonly number[], share: number): number {
-  const sorted = [...values].sort((first, second) => first - second);
+  const sorted = [...values].sort((first, second) => {
+    return first - second;
+  });
 
   return sorted[Math.floor(sorted.length * share)];
 }
@@ -374,8 +395,12 @@ function riverFaults(generated: GeneratedWorld): string[] {
 function isCoastTaken(terrain: TerrainData, grid: WorldGrid, cell: number): boolean {
   return grid
     .cellsInRadius(grid.cellCenterX(cell), grid.cellCenterZ(cell), grid.cellSize * 1.5)
-    .filter((neighbor) => !isOnIsland(terrain.coastDistance, neighbor))
-    .every((neighbor) => terrain.waterSurface[neighbor] !== NO_WATER);
+    .filter((neighbor) => {
+      return !isOnIsland(terrain.coastDistance, neighbor);
+    })
+    .every((neighbor) => {
+      return terrain.waterSurface[neighbor] !== NO_WATER;
+    });
 }
 
 function reachesPastCoast(generated: GeneratedWorld, grid: WorldGrid, mouth: number): boolean {
@@ -394,7 +419,9 @@ function mouthFaults(generated: GeneratedWorld): string[] {
   const grid = new WorldGrid(generated.dimensions);
   const faults: string[] = [];
 
-  for (const river of generated.water.rivers.filter((candidate) => candidate.reachesEdge)) {
+  for (const river of generated.water.rivers.filter((candidate) => {
+    return candidate.reachesEdge;
+  })) {
     const mouth = riverPathCells(grid, river).at(-1);
     const end = river.points.at(-1);
 
@@ -403,7 +430,9 @@ function mouthFaults(generated: GeneratedWorld): string[] {
     }
 
     const isPastCoast = reachesPastCoast(generated, grid, mouth);
-    const waterfall = generated.water.waterfalls.find((candidate) => candidate.x === end.x && candidate.z === end.z);
+    const waterfall = generated.water.waterfalls.find((candidate) => {
+      return candidate.x === end.x && candidate.z === end.z;
+    });
 
     if (!isPastCoast) {
       faults.push(`river ${river.id} ends inland at ${grid.cellCenterX(mouth)}, ${grid.cellCenterZ(mouth)}`);
@@ -420,7 +449,9 @@ function mouthFaults(generated: GeneratedWorld): string[] {
 function isFedByLake(generated: GeneratedWorld, grid: WorldGrid, river: River): boolean {
   const [head] = river.points;
 
-  return grid.cellsInRadius(head.x, head.z, grid.cellSize * 2.5).some((cell) => isLakeWater(generated.terrain, cell));
+  return grid.cellsInRadius(head.x, head.z, grid.cellSize * 2.5).some((cell) => {
+    return isLakeWater(generated.terrain, cell);
+  });
 }
 
 function headFaults(generated: GeneratedWorld): string[] {
@@ -428,9 +459,13 @@ function headFaults(generated: GeneratedWorld): string[] {
   const faults: string[] = [];
 
   for (const river of generated.water.rivers) {
-    const spring = generated.water.springs.find((candidate) => candidate.river === river.id);
+    const spring = generated.water.springs.find((candidate) => {
+      return candidate.river === river.id;
+    });
     const [head] = river.points;
-    const ahead = river.points.find((point) => Math.hypot(point.x - head.x, point.z - head.z) >= 25);
+    const ahead = river.points.find((point) => {
+      return Math.hypot(point.x - head.x, point.z - head.z) >= 25;
+    });
 
     if (spring === undefined) {
       if (!isFedByLake(generated, grid, river)) {
@@ -474,7 +509,9 @@ function isNear(point: RiverPoint, other: RiverPoint, reach: number): boolean {
 function joinsRiver(tributary: River, main: River, reach: number): boolean {
   const end = riverEnd(tributary);
 
-  return main.points.some((point) => isNear(point, end, reach));
+  return main.points.some((point) => {
+    return isNear(point, end, reach);
+  });
 }
 
 function confluencesOf(rivers: readonly River[], first: River, second: River, reach: number): RiverPoint[] {
@@ -534,7 +571,9 @@ function closestDistinctRivers(generated: GeneratedWorld): number {
       const confluences = confluencesOf(rivers, first, second, cellSize * JUNCTION_CELLS);
 
       function isApart(point: RiverPoint): boolean {
-        return confluences.every((confluence) => !isNear(point, confluence, CONFLUENCE_REACH));
+        return confluences.every((confluence) => {
+          return !isNear(point, confluence, CONFLUENCE_REACH);
+        });
       }
 
       const firstPoints = first.points.filter(isApart);
@@ -560,7 +599,9 @@ function closestDistinctRivers(generated: GeneratedWorld): number {
 }
 
 function resampledRiver(river: River): { x: number; z: number }[] {
-  const samples = river.points.slice(0, 1).map((point) => ({ x: point.x, z: point.z }));
+  const samples = river.points.slice(0, 1).map((point) => {
+    return { x: point.x, z: point.z };
+  });
 
   let carried = 0;
 
@@ -595,23 +636,29 @@ function straightSamples(samples: readonly { x: number; z: number }[]): number {
     const chordZ = end.z - start.z;
     const chord = Math.hypot(chordX, chordZ);
 
-    const deviations = samples
-      .slice(first, first + window + 1)
-      .map((sample) => Math.abs((sample.x - start.x) * chordZ - (sample.z - start.z) * chordX) / chord);
+    const deviations = samples.slice(first, first + window + 1).map((sample) => {
+      return Math.abs((sample.x - start.x) * chordZ - (sample.z - start.z) * chordX) / chord;
+    });
 
     if (Math.max(...deviations) < STRAIGHT_DEVIATION) {
       isStraight.fill(1, first, first + window + 1);
     }
   }
 
-  return isStraight.reduce((total, flag) => total + flag, 0);
+  return isStraight.reduce((total, flag) => {
+    return total + flag;
+  }, 0);
 }
 
 function straightRiverShare(generated: GeneratedWorld): number {
   const rivers = generated.water.rivers.map(resampledRiver);
 
-  const total = rivers.reduce((sum, samples) => sum + samples.length, 0);
-  const straight = rivers.reduce((sum, samples) => sum + straightSamples(samples), 0);
+  const total = rivers.reduce((sum, samples) => {
+    return sum + samples.length;
+  }, 0);
+  const straight = rivers.reduce((sum, samples) => {
+    return sum + straightSamples(samples);
+  }, 0);
 
   return straight / total;
 }
@@ -620,7 +667,11 @@ function distanceToWaterfall(generated: GeneratedWorld, grid: WorldGrid, cell: n
   const x = grid.cellCenterX(cell);
   const z = grid.cellCenterZ(cell);
 
-  return Math.min(...generated.water.waterfalls.map((waterfall) => Math.hypot(waterfall.x - x, waterfall.z - z)));
+  return Math.min(
+    ...generated.water.waterfalls.map((waterfall) => {
+      return Math.hypot(waterfall.x - x, waterfall.z - z);
+    })
+  );
 }
 
 beforeAll(() => {
@@ -664,7 +715,9 @@ describe("world generation", () => {
   });
 
   it("raises mountains and a lake on the round island too", () => {
-    const heights = world.terrain.height.filter((_, cell) => isOnIsland(world.terrain.coastDistance, cell));
+    const heights = world.terrain.height.filter((_, cell) => {
+      return isOnIsland(world.terrain.coastDistance, cell);
+    });
 
     expect(Math.max(...heights)).toBeGreaterThan(900);
     expect(Math.min(...heights)).toBeLessThan(200);
@@ -672,7 +725,11 @@ describe("world generation", () => {
   });
 
   it("keeps the square island whole to its edges", () => {
-    expect(squareWorld.terrain.coastDistance.every((distance) => distance > 0)).toBe(true);
+    expect(
+      squareWorld.terrain.coastDistance.every((distance) => {
+        return distance > 0;
+      })
+    ).toBe(true);
   });
 
   it("covers lake cells with water at the lake level", () => {
@@ -696,7 +753,9 @@ describe("world generation", () => {
     expect(world.water.rivers.length).toBeGreaterThan(0);
 
     for (const river of world.water.rivers) {
-      const surfaces = river.points.map((point) => point.surface);
+      const surfaces = river.points.map((point) => {
+        return point.surface;
+      });
 
       for (let pointIndex = 1; pointIndex < surfaces.length; pointIndex += 1) {
         expect(surfaces[pointIndex]).toBeLessThanOrEqual(surfaces[pointIndex - 1] + 1e-3);
@@ -741,7 +800,9 @@ describe("world generation", () => {
 
   it("digs ponds as still water at the level of the river head and keeps plants off every spring", () => {
     const grid = new WorldGrid(TEST_DIMENSIONS);
-    const ponds = world.water.springs.filter((spring) => spring.kind === "pond");
+    const ponds = world.water.springs.filter((spring) => {
+      return spring.kind === "pond";
+    });
 
     expect(ponds.length).toBeGreaterThan(0);
 
@@ -753,7 +814,11 @@ describe("world generation", () => {
       expect(world.terrain.riverStrength[cell]).toBe(0);
     }
 
-    const springGround = new Set(world.water.springs.flatMap((spring) => spring.cells));
+    const springGround = new Set(
+      world.water.springs.flatMap((spring) => {
+        return spring.cells;
+      })
+    );
 
     for (let plant = 0; plant < world.vegetation.count; plant += 1) {
       expect(springGround.has(grid.cellAt(world.vegetation.x[plant], world.vegetation.z[plant]))).toBe(false);
@@ -761,7 +826,9 @@ describe("world generation", () => {
   });
 
   it("lets rivers leave the island as waterfalls", () => {
-    const edgeRivers = world.water.rivers.filter((river) => river.reachesEdge);
+    const edgeRivers = world.water.rivers.filter((river) => {
+      return river.reachesEdge;
+    });
 
     expect(world.water.waterfalls).toHaveLength(edgeRivers.length);
 
@@ -810,9 +877,11 @@ describe("world generation", () => {
       expect(isOnIsland(world.terrain.coastDistance, cell)).toBe(true);
     }
 
-    const fallingWater = Array.from({ length: grid.cellCount }, (_, cell) => cell).filter(
-      (cell) => !isOnIsland(world.terrain.coastDistance, cell) && world.terrain.waterSurface[cell] !== NO_WATER
-    );
+    const fallingWater = Array.from({ length: grid.cellCount }, (_, cell) => {
+      return cell;
+    }).filter((cell) => {
+      return !isOnIsland(world.terrain.coastDistance, cell) && world.terrain.waterSurface[cell] !== NO_WATER;
+    });
 
     for (const cell of fallingWater) {
       expect(distanceToWaterfall(world, grid, cell)).toBeLessThan(grid.cellSize * 2);
@@ -822,9 +891,11 @@ describe("world generation", () => {
   it("classifies water cells as water and plants nothing in them", () => {
     const grid = new WorldGrid(TEST_DIMENSIONS);
 
-    const waterCells = Array.from({ length: grid.cellCount }, (_, cell) => cell).filter((cell) =>
-      hasWater(world.terrain.waterSurface[cell], world.terrain.height[cell])
-    );
+    const waterCells = Array.from({ length: grid.cellCount }, (_, cell) => {
+      return cell;
+    }).filter((cell) => {
+      return hasWater(world.terrain.waterSurface[cell], world.terrain.height[cell]);
+    });
 
     for (const cell of waterCells) {
       expect(world.terrain.biome[cell]).toBe(Biome.Water);
@@ -840,7 +911,11 @@ describe("world generation", () => {
   it("keeps the square island rim at a moderate height", () => {
     const grid = new WorldGrid(TEST_DIMENSIONS);
 
-    const rim = edgeSides(grid).flatMap((side) => side.map((cell) => squareWorld.terrain.height[cell]));
+    const rim = edgeSides(grid).flatMap((side) => {
+      return side.map((cell) => {
+        return squareWorld.terrain.height[cell];
+      });
+    });
 
     expect(Math.min(...rim)).toBeGreaterThan(120);
     expect(Math.max(...rim)).toBeLessThan(400);
@@ -849,7 +924,9 @@ describe("world generation", () => {
   it("eases the round island down to a low shore", () => {
     const grid = new WorldGrid(TEST_DIMENSIONS);
 
-    const shore = coastCells(world.terrain, grid).map((cell) => world.terrain.height[cell]);
+    const shore = coastCells(world.terrain, grid).map((cell) => {
+      return world.terrain.height[cell];
+    });
 
     expect(Math.min(...shore)).toBeGreaterThan(30);
     expect(Math.max(...shore)).toBeLessThan(300);
@@ -858,7 +935,14 @@ describe("world generation", () => {
   it("keeps slopes realistic, with few cliffs", () => {
     const slopes = slopesOf(world.terrain, new WorldGrid(TEST_DIMENSIONS));
 
-    const meanSlope = (Math.atan(slopes.reduce((total, slope) => total + slope, 0) / slopes.length) * 180) / Math.PI;
+    const meanSlope =
+      (Math.atan(
+        slopes.reduce((total, slope) => {
+          return total + slope;
+        }, 0) / slopes.length
+      ) *
+        180) /
+      Math.PI;
 
     expect(meanSlope).toBeGreaterThan(14);
     expect(meanSlope).toBeLessThan(24);
@@ -877,13 +961,17 @@ describe("world generation", () => {
         continue;
       }
 
-      const land = cellsAround(grid, cell, 60, 100).filter(
-        (other) => !hasWater(terrain.waterSurface[other], terrain.height[other])
-      );
+      const land = cellsAround(grid, cell, 60, 100).filter((other) => {
+        return !hasWater(terrain.waterSurface[other], terrain.height[other]);
+      });
 
       if (land.length > 0) {
         depths.push(
-          land.reduce((total, other) => total + terrain.height[other], 0) / land.length - terrain.waterSurface[cell]
+          land.reduce((total, other) => {
+            return total + terrain.height[other];
+          }, 0) /
+            land.length -
+            terrain.waterSurface[cell]
         );
       }
     }
@@ -916,14 +1004,18 @@ describe("world generation", () => {
       }
     }
 
-    const sandy = [...banks].filter((bank) => terrain.ground[bank] === Ground.Sand);
+    const sandy = [...banks].filter((bank) => {
+      return terrain.ground[bank] === Ground.Sand;
+    });
 
     expect(banks.size).toBeGreaterThan(50);
     expect(sandy.length / banks.size).toBeGreaterThan(0.8);
 
-    const trees = Array.from({ length: vegetation.count }, (_, plant) => plant).filter((plant) =>
-      isTreeSpecies(vegetation.species[plant])
-    );
+    const trees = Array.from({ length: vegetation.count }, (_, plant) => {
+      return plant;
+    }).filter((plant) => {
+      return isTreeSpecies(vegetation.species[plant]);
+    });
 
     for (const tree of trees) {
       expect(terrain.ground[grid.cellAt(vegetation.x[tree], vegetation.z[tree])]).not.toBe(Ground.Sand);
@@ -938,22 +1030,46 @@ describe("world generation", () => {
     const { terrain } = world;
 
     const grid = new WorldGrid(TEST_DIMENSIONS);
-    const wooded = Array.from({ length: grid.cellCount }, (_, cell) => cell).filter((cell) => isWooded(terrain, cell));
+    const wooded = Array.from({ length: grid.cellCount }, (_, cell) => {
+      return cell;
+    }).filter((cell) => {
+      return isWooded(terrain, cell);
+    });
 
-    const densities = wooded.map((cell) => terrain.woodland[cell]);
-    const mean = densities.reduce((total, density) => total + density, 0) / densities.length;
+    const densities = wooded.map((cell) => {
+      return terrain.woodland[cell];
+    });
+    const mean =
+      densities.reduce((total, density) => {
+        return total + density;
+      }, 0) / densities.length;
 
-    const banks = wooded.filter((cell) => nearWater(terrain, grid, cell, 50));
-    const bankMean = banks.reduce((total, cell) => total + terrain.woodland[cell], 0) / banks.length;
+    const banks = wooded.filter((cell) => {
+      return nearWater(terrain, grid, cell, 50);
+    });
+    const bankMean =
+      banks.reduce((total, cell) => {
+        return total + terrain.woodland[cell];
+      }, 0) / banks.length;
 
     expect(wooded.length).toBeGreaterThan(1000);
     expect(mean).toBeGreaterThan(0.5);
     expect(mean).toBeLessThan(0.85);
-    expect(densities.filter((density) => density < 0.05).length / densities.length).toBeGreaterThan(0.03);
-    expect(densities.filter((density) => density > 0.85).length / densities.length).toBeGreaterThan(0.2);
+    expect(
+      densities.filter((density) => {
+        return density < 0.05;
+      }).length / densities.length
+    ).toBeGreaterThan(0.03);
+    expect(
+      densities.filter((density) => {
+        return density > 0.85;
+      }).length / densities.length
+    ).toBeGreaterThan(0.2);
     expect(bankMean).toBeLessThan(mean * 0.7);
 
-    for (const cell of wooded.filter((woodedCell) => terrain.woodland[woodedCell] < 0.3)) {
+    for (const cell of wooded.filter((woodedCell) => {
+      return terrain.woodland[woodedCell] < 0.3;
+    })) {
       expect(terrain.ground[cell]).not.toBe(Ground.Forest);
     }
   });
@@ -982,11 +1098,25 @@ describe.each(ISLAND_SHAPES)("a %s world generated twice from one seed", (shape)
   test("comes out the same in every stage", () => {
     const options = { dimensions: DETERMINISM_DIMENSIONS, erosionStrength: 1, shape };
 
-    const firsts = DETERMINISM_SEEDS.map((seed) => generateWorld(seed, options));
+    const firsts = DETERMINISM_SEEDS.map((seed) => {
+      return generateWorld(seed, options);
+    });
 
-    expect(firsts.some((first) => first.crossings.length > 0)).toBe(true);
-    expect(firsts.some((first) => first.deposits.length > 0)).toBe(true);
-    expect(firsts.some((first) => first.monuments.length > 0)).toBe(true);
+    expect(
+      firsts.some((first) => {
+        return first.crossings.length > 0;
+      })
+    ).toBe(true);
+    expect(
+      firsts.some((first) => {
+        return first.deposits.length > 0;
+      })
+    ).toBe(true);
+    expect(
+      firsts.some((first) => {
+        return first.monuments.length > 0;
+      })
+    ).toBe(true);
 
     for (const [index, seed] of DETERMINISM_SEEDS.entries()) {
       const again = generateWorld(seed, options);
@@ -1012,7 +1142,9 @@ describe("full-size island rim", () => {
     const { height } = fullSquare.terrain;
 
     for (const side of edgeSides(grid)) {
-      const heights = side.map((cell) => height[cell]);
+      const heights = side.map((cell) => {
+        return height[cell];
+      });
 
       expect(Math.min(...heights)).toBeGreaterThan(120);
       expect(Math.max(...heights)).toBeLessThan(400);
@@ -1021,9 +1153,9 @@ describe("full-size island rim", () => {
   });
 
   it("meets the round coast at a moderate height", () => {
-    const shore = coastCells(fullSize.terrain, new WorldGrid(fullSize.dimensions)).map(
-      (cell) => fullSize.terrain.height[cell]
-    );
+    const shore = coastCells(fullSize.terrain, new WorldGrid(fullSize.dimensions)).map((cell) => {
+      return fullSize.terrain.height[cell];
+    });
 
     expect(Math.min(...shore)).toBeGreaterThan(100);
     expect(Math.max(...shore)).toBeLessThan(300);
@@ -1058,7 +1190,11 @@ describe("full-size island rim", () => {
 
   it("starts every full-size river at a pond or a cave on both shapes", () => {
     for (const generated of [fullSize, fullSquare]) {
-      const kinds = new Set(generated.water.springs.map((spring) => spring.kind));
+      const kinds = new Set(
+        generated.water.springs.map((spring) => {
+          return spring.kind;
+        })
+      );
 
       expect(headFaults(generated)).toEqual([]);
       expect([...kinds].sort()).toEqual([...SPRING_KINDS].sort());

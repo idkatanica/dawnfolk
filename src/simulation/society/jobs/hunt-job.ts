@@ -68,8 +68,12 @@ function chooseGame(tick: PersonTick): Animal | null {
     );
   }
 
-  const game = fauna.nearestAnimal(campX, campZ, HUNTING_RANGE, (candidate) => isHuntable(candidate, false));
-  const smallGame = fauna.nearestAnimal(campX, campZ, SMALL_GAME_RANGE, (candidate) => isHuntable(candidate, true));
+  const game = fauna.nearestAnimal(campX, campZ, HUNTING_RANGE, (candidate) => {
+    return isHuntable(candidate, false);
+  });
+  const smallGame = fauna.nearestAnimal(campX, campZ, SMALL_GAME_RANGE, (candidate) => {
+    return isHuntable(candidate, true);
+  });
 
   if (game === null || smallGame === null) {
     return game === null ? smallGame : game;
@@ -118,12 +122,9 @@ function hitChance(tick: PersonTick, animal: Animal, weapon: Weapon): number {
     return definition.hitChance + bonus;
   }
 
-  const helpers = tick.context.people.countNear(
-    animal.mover.x,
-    animal.mover.z,
-    HELPER_RANGE,
-    (person) => person.tribeId === tick.tribe.id && person.job?.kind === "hunt"
-  );
+  const helpers = tick.context.people.countNear(animal.mover.x, animal.mover.z, HELPER_RANGE, (person) => {
+    return person.tribeId === tick.tribe.id && person.job?.kind === "hunt";
+  });
 
   return definition.hitChance + bonus + HELPER_HIT_BONUS * helpers;
 }

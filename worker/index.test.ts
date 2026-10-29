@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import worker, { homeAddressOf } from "./index.ts";
 
 function assetsReturning(body: string) {
-  return { fetch: vi.fn(() => Promise.resolve(new Response(body))) };
+  return {
+    fetch: vi.fn(() => {
+      return Promise.resolve(new Response(body));
+    }),
+  };
 }
 
 describe("worker", () => {

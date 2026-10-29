@@ -43,7 +43,9 @@ export function planConstruction(tribe: Tribe, context: SocietyContext): void {
   const plans = buildingPlans(tribe, context);
 
   const goal = savingGoals(tribe, plans, context).at(0);
-  const plan = plans.find((candidate) => canAfford(tribe, candidate.kind));
+  const plan = plans.find((candidate) => {
+    return canAfford(tribe, candidate.kind);
+  });
 
   if (plan === undefined) {
     if (goal !== undefined) {
@@ -93,7 +95,9 @@ function isStalled(tribe: Tribe, kind: BuildingKind, day: number): boolean {
 }
 
 function savingGoals(tribe: Tribe, plans: readonly BuildingPlan[], context: SocietyContext): BuildingPlan[] {
-  return plans.filter((plan) => !isStalled(tribe, plan.kind, context.environment.day));
+  return plans.filter((plan) => {
+    return !isStalled(tribe, plan.kind, context.environment.day);
+  });
 }
 
 export function constructionNeeds(tribe: Tribe, context: SocietyContext): ResourceAmounts {
@@ -183,13 +187,14 @@ function isBuildable(spot: Waypoint, kind: BuildingKind, context: SocietyContext
 
   const covered = footprintCells(world.grid, spot.x, spot.z, footprint);
 
-  const isFirmGround = covered.every(
-    (footprintCell) =>
+  const isFirmGround = covered.every((footprintCell) => {
+    return (
       world.isWalkable(footprintCell) &&
       !world.isPool(footprintCell) &&
       world.slope(footprintCell) <= steepestSlope &&
       world.occupancy[footprintCell] === NO_BUILDING
-  );
+    );
+  });
 
   return isFirmGround && isClearOfOthers(spot, kind, context);
 }
@@ -354,8 +359,12 @@ export function handleBuildingLoss(tribe: Tribe, loss: BuildingLoss, context: So
   buildings.constructionSiteId = clearedId(buildings.constructionSiteId, building);
   buildings.storehouseId = clearedId(buildings.storehouseId, building);
   buildings.totemId = clearedId(buildings.totemId, building);
-  buildings.shelterIds = buildings.shelterIds.filter((shelterId) => shelterId !== building.id);
-  buildings.structureIds = buildings.structureIds.filter((structureId) => structureId !== building.id);
+  buildings.shelterIds = buildings.shelterIds.filter((shelterId) => {
+    return shelterId !== building.id;
+  });
+  buildings.structureIds = buildings.structureIds.filter((structureId) => {
+    return structureId !== building.id;
+  });
 
   const replaced = context.buildings.find(building.replacesId);
 

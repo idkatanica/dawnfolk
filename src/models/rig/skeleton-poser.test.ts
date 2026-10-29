@@ -13,14 +13,16 @@ function lowestFoot(poser: SkeletonPoser): number {
   const point = new Vector3();
 
   return Math.min(
-    ...HUMAN_SKELETON.footContacts.map(
-      (contact) => poser.skinPoint(contact.bone, point.set(...contact.position), point).y
-    )
+    ...HUMAN_SKELETON.footContacts.map((contact) => {
+      return poser.skinPoint(contact.bone, point.set(...contact.position), point).y;
+    })
   );
 }
 
 function scaledTo(factor: number): Float32Array {
-  return uniformScales(HUMAN_SKELETON).map((scale) => scale * factor);
+  return uniformScales(HUMAN_SKELETON).map((scale) => {
+    return scale * factor;
+  });
 }
 
 describe("skeleton poser", () => {
@@ -34,7 +36,11 @@ describe("skeleton poser", () => {
     for (let bone = 0; bone < HUMAN_SKELETON.bones.length; bone += 1) {
       const rows = palette.subarray(bone * PALETTE_FLOATS_PER_BONE, (bone + 1) * PALETTE_FLOATS_PER_BONE);
 
-      expect([...rows].map((value) => Math.round(value * 1e5) / 1e5 + 0)).toEqual(IDENTITY_ROWS);
+      expect(
+        [...rows].map((value) => {
+          return Math.round(value * 1e5) / 1e5 + 0;
+        })
+      ).toEqual(IDENTITY_ROWS);
     }
   });
 

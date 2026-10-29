@@ -116,9 +116,9 @@ function clayWanted(tick: PersonTick, construction: ResourceAmounts): number {
 function oreOnTheWay(tick: PersonTick, kind: DepositKind): number {
   const { resource } = DEPOSITS[kind];
 
-  return tick.context.people
-    .membersOf(tick.tribe)
-    .reduce((total, person) => total + carriedAmount(person, resource) + (person.job?.kind === "mine" ? 1 : 0), 0);
+  return tick.context.people.membersOf(tick.tribe).reduce((total, person) => {
+    return total + carriedAmount(person, resource) + (person.job?.kind === "mine" ? 1 : 0);
+  }, 0);
 }
 
 function oreNeed(tick: PersonTick, kind: DepositKind): number {

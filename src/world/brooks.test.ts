@@ -91,6 +91,10 @@ describe("brooks", () => {
     const targets = hopTargets(grid, grid.cellAt(-5, 5), passageOf);
 
     expect(targets.length).toBeGreaterThan(0);
-    expect(targets.every((target) => grid.cellCenterX(target) > 20)).toBe(true);
+    expect(
+      targets.every((target) => {
+        return grid.cellCenterX(target) > 20;
+      })
+    ).toBe(true);
   });
 });

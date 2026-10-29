@@ -32,7 +32,9 @@ const DEFAULT_TEST_WORLD: TestWorldOptions = {
   deposits: [],
   dimensions: { cellSize: 10, cellsPerSide: 64 },
   ground: Ground.Meadow,
-  heightAt: () => 100,
+  heightAt: () => {
+    return 100;
+  },
   monuments: [],
 };
 
@@ -103,7 +105,9 @@ export function fordAcross(fromX: number, toX: number, z: number): Ford {
 export function floodStrip(world: WorldState, halfWidth: number, depth: number): void {
   const { grid } = world;
 
-  const cells = grid.cellsInRadius(0, 0, grid.worldSize).filter((cell) => Math.abs(grid.cellCenterX(cell)) < halfWidth);
+  const cells = grid.cellsInRadius(0, 0, grid.worldSize).filter((cell) => {
+    return Math.abs(grid.cellCenterX(cell)) < halfWidth;
+  });
 
   floodCells(world, cells, depth);
 }
@@ -163,5 +167,7 @@ export function depositAround(grid: WorldGrid, kind: DepositKind, x: number, z: 
 }
 
 export function livingCount(fauna: FaunaSystem): number {
-  return fauna.animals.filter((animal) => animal.isAlive).length;
+  return fauna.animals.filter((animal) => {
+    return animal.isAlive;
+  }).length;
 }

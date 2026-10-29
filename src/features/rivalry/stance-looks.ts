@@ -72,7 +72,9 @@ export function relationNote(relation: RelationView): string | null {
 }
 
 export function raidOf(rivalry: RivalryView, tribeId: number): RaidView | null {
-  const raid = rivalry.raids.find((candidate) => candidate.attackerId === tribeId || candidate.defenderId === tribeId);
+  const raid = rivalry.raids.find((candidate) => {
+    return candidate.attackerId === tribeId || candidate.defenderId === tribeId;
+  });
 
   if (raid === undefined) {
     return null;
@@ -82,5 +84,7 @@ export function raidOf(rivalry: RivalryView, tribeId: number): RaidView | null {
 }
 
 export function isFeuding(rivalry: RivalryView, tribeId: number): boolean {
-  return rivalry.relations.some((relation) => relation.stance === "hostile" && isRelationOf(relation, tribeId));
+  return rivalry.relations.some((relation) => {
+    return relation.stance === "hostile" && isRelationOf(relation, tribeId);
+  });
 }

@@ -46,15 +46,23 @@ function initialKind(): PowerCategory {
 }
 
 function useSuggestedPower(): PowerId | null {
-  const suggested = useGuideStore((state) => suggestedPowerId(state.progress));
-  const selected = usePowerStore((state) => state.selectedPowerId);
+  const suggested = useGuideStore((state) => {
+    return suggestedPowerId(state.progress);
+  });
+  const selected = usePowerStore((state) => {
+    return state.selectedPowerId;
+  });
 
   return suggested === selected ? null : suggested;
 }
 
 function usePowerSelection(powerId: PowerId) {
-  const isSelected = usePowerStore((state) => state.selectedPowerId === powerId);
-  const selectPower = usePowerStore((state) => state.selectPower);
+  const isSelected = usePowerStore((state) => {
+    return state.selectedPowerId === powerId;
+  });
+  const selectPower = usePowerStore((state) => {
+    return state.selectPower;
+  });
   const isSuggested = useSuggestedPower() === powerId;
 
   function handleToggle(): void {
@@ -65,8 +73,12 @@ function usePowerSelection(powerId: PowerId) {
 }
 
 function useClearPower() {
-  const isSelecting = usePowerStore((state) => state.selectedPowerId === null && !state.isHandSelected);
-  const selectPower = usePowerStore((state) => state.selectPower);
+  const isSelecting = usePowerStore((state) => {
+    return state.selectedPowerId === null && !state.isHandSelected;
+  });
+  const selectPower = usePowerStore((state) => {
+    return state.selectPower;
+  });
 
   function handleClear(): void {
     selectPower(null);
@@ -76,8 +88,12 @@ function useClearPower() {
 }
 
 function useHand() {
-  const isHandSelected = usePowerStore((state) => state.isHandSelected);
-  const selectHand = usePowerStore((state) => state.selectHand);
+  const isHandSelected = usePowerStore((state) => {
+    return state.isHandSelected;
+  });
+  const selectHand = usePowerStore((state) => {
+    return state.selectHand;
+  });
 
   function handleSelect(): void {
     selectHand();
@@ -123,7 +139,9 @@ function useWheelScrollsSideways(rowReference: RefObject<HTMLDivElement | null>)
 
     row.addEventListener("wheel", handleWheel, { passive: false });
 
-    return () => row.removeEventListener("wheel", handleWheel);
+    return () => {
+      row.removeEventListener("wheel", handleWheel);
+    };
   }, [rowReference]);
 }
 
@@ -214,9 +232,17 @@ function KindTab({ chosenKind, kind, name, onKindChange }: KindTabProps) {
 function KindTabs({ chosenKind, onKindChange }: KindChoice) {
   return (
     <Toolbar.Group aria-label="Kinds" className={cn(SEGMENT_TRACK, "mr-1 shrink-0 p-1")}>
-      {POWER_CATEGORIES.map((entry) => (
-        <KindTab chosenKind={chosenKind} key={entry.id} kind={entry.id} name={entry.name} onKindChange={onKindChange} />
-      ))}
+      {POWER_CATEGORIES.map((entry) => {
+        return (
+          <KindTab
+            chosenKind={chosenKind}
+            key={entry.id}
+            kind={entry.id}
+            name={entry.name}
+            onKindChange={onKindChange}
+          />
+        );
+      })}
     </Toolbar.Group>
   );
 }
@@ -242,9 +268,9 @@ export function PowerDock({ className }: { readonly className?: string | undefin
 
         <KindTabs chosenKind={kind} onKindChange={setKind} />
 
-        {powersInCategory(kind).map((powerId) => (
-          <PowerTile key={powerId} powerId={powerId} />
-        ))}
+        {powersInCategory(kind).map((powerId) => {
+          return <PowerTile key={powerId} powerId={powerId} />;
+        })}
       </Toolbar.Root>
     </Island>
   );

@@ -55,14 +55,26 @@ function createRig(canBegin: () => boolean = isAlwaysTrue, leading: ToolSpy | nu
   document.body.append(canvas);
 
   const perspective = new PerspectiveCamera(45, CANVAS_WIDTH / CANVAS_HEIGHT, 1, 40_000);
-  const camera = new GodCamera(perspective, () => 0, WORLD_HALF_SIZE);
+  const camera = new GodCamera(
+    perspective,
+    () => {
+      return 0;
+    },
+    WORLD_HALF_SIZE
+  );
 
   camera.jumpTo({ distance: 600, targetX: 0, targetZ: 0 });
   settle(camera);
 
   const tool = createTool(canBegin, isAlwaysTrue);
   const tools = leading === null ? [tool] : [leading, tool];
-  const picker = new GroundPicker(perspective, () => 0, WORLD_HALF_SIZE);
+  const picker = new GroundPicker(
+    perspective,
+    () => {
+      return 0;
+    },
+    WORLD_HALF_SIZE
+  );
   const rig = { camera, canvas, controls: new PointerControls(canvas, camera, picker, tools, tool), tool };
 
   rigs.push(rig);
@@ -203,7 +215,11 @@ describe("pointer controls", () => {
     expect(rig.tool.begin).toHaveBeenCalledTimes(1);
     expect(rig.tool.move).toHaveBeenCalled();
     expect(rig.tool.end).toHaveBeenCalledTimes(1);
-    expect([inactive.begin, inactive.move, inactive.end].map((spy) => spy.mock.calls.length)).toEqual([0, 0, 0]);
+    expect(
+      [inactive.begin, inactive.move, inactive.end].map((spy) => {
+        return spy.mock.calls.length;
+      })
+    ).toEqual([0, 0, 0]);
   });
 
   it("leaves a later tool alone while an earlier one is active", () => {
@@ -216,7 +232,11 @@ describe("pointer controls", () => {
 
     expect(leading.begin).toHaveBeenCalledTimes(1);
     expect(leading.end).toHaveBeenCalledTimes(1);
-    expect([rig.tool.begin, rig.tool.move, rig.tool.end].map((spy) => spy.mock.calls.length)).toEqual([0, 0, 0]);
+    expect(
+      [rig.tool.begin, rig.tool.move, rig.tool.end].map((spy) => {
+        return spy.mock.calls.length;
+      })
+    ).toEqual([0, 0, 0]);
   });
 
   it("pans when the tool has nothing to take under the pointer", () => {

@@ -196,7 +196,9 @@ function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
     seam: HEAD_SEAM,
     style: {
       ...head,
-      slot: (point) => (point.position.y < 0.99 && point.position.z > 0.7 ? MaterialSlot.CoatLight : MaterialSlot.Coat),
+      slot: (point) => {
+        return point.position.y < 0.99 && point.position.z > 0.7 ? MaterialSlot.CoatLight : MaterialSlot.Coat;
+      },
     },
   });
   addMuzzleFace(builder, shape, detail, {
@@ -243,7 +245,9 @@ export function addWolfBody(builder: MeshBuilder, detail: AnimalDetail): void {
     seam: TAIL_SEAM,
     style: {
       ...tailStyle(WOLF_FRAME, 0.05),
-      slot: (point) => (point.position.y < 0.5 ? MaterialSlot.CoatLight : MaterialSlot.Coat),
+      slot: (point) => {
+        return point.position.y < 0.5 ? MaterialSlot.CoatLight : MaterialSlot.Coat;
+      },
     },
   });
 }
@@ -267,7 +271,9 @@ export function addRuff(builder: MeshBuilder, detail: AnimalDetail): void {
     seam: RUFF_SEAM,
     style: {
       ...neckStyle(WOLF_FRAME, 0.09),
-      slot: (point) => (point.position.z > 0.5 && point.position.y < 0.86 ? MaterialSlot.CoatLight : MaterialSlot.Coat),
+      slot: (point) => {
+        return point.position.z > 0.5 && point.position.y < 0.86 ? MaterialSlot.CoatLight : MaterialSlot.Coat;
+      },
     },
   });
   builder.addSeamReference(bodyShape(detail));

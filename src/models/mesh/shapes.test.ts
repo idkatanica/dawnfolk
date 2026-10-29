@@ -126,7 +126,15 @@ describe("closed shapes", () => {
       [
         { radiusX: 0, radiusZ: 0, y: 0 },
         { radiusX: 0.3, radiusZ: 0.2, y: 0.1 },
-        { centerZ: 0.05, radiusX: 0.4, radiusZ: 0.25, ripple: (around) => 1 + 0.1 * Math.sin(around * 40), y: 0.6 },
+        {
+          centerZ: 0.05,
+          radiusX: 0.4,
+          radiusZ: 0.25,
+          ripple: (around) => {
+            return 1 + 0.1 * Math.sin(around * 40);
+          },
+          y: 0.6,
+        },
         { radiusX: 0, radiusZ: 0, y: 0.8 },
       ],
       16

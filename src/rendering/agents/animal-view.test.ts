@@ -10,7 +10,9 @@ import { ANIMAL_POSES } from "../../world/agent-poses.ts";
 import { ANIMAL_BOUNDING_LIFT, ANIMAL_BOUNDING_RADIUS } from "./animal-view.ts";
 
 const SAMPLED_SEEDS = 200;
-const PHASES = Array.from({ length: 20 }, (_, index) => index / 20);
+const PHASES = Array.from({ length: 20 }, (_, index) => {
+  return index / 20;
+});
 const VARIATIONS = [0, 0.5, 1];
 
 function largestAdult(kind: AnimalKind): AnimalAppearance {

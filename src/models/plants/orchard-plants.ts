@@ -513,7 +513,11 @@ function fruitMeshes(plant: MeshData, placement: FruitPlacement): MeshData[] {
   const random = createRandom(placement.seed);
   const shape = fruitShape(look, placement.detail);
   const lift = fruitLift(look);
-  const style: VertexStyle = { sway: (point) => plantSway(point.position.y, placement.height) };
+  const style: VertexStyle = {
+    sway: (point) => {
+      return plantSway(point.position.y, placement.height);
+    },
+  };
   const fruits: MeshData[] = [];
 
   function isFoliage(triangle: number): boolean {
@@ -553,9 +557,13 @@ function fruitMeshes(plant: MeshData, placement: FruitPlacement): MeshData[] {
 
 function stemStyle(structure: BushStructure): VertexStyle {
   return {
-    shade: (point) => 0.7 + 0.3 * smoothstep(0, structure.height * 0.4, point.position.y),
+    shade: (point) => {
+      return 0.7 + 0.3 * smoothstep(0, structure.height * 0.4, point.position.y);
+    },
     slot: MaterialSlot.Wood,
-    sway: (point) => plantSway(point.position.y, structure.height),
+    sway: (point) => {
+      return plantSway(point.position.y, structure.height);
+    },
   };
 }
 
@@ -611,7 +619,9 @@ function distantBush(structure: BushStructure): MeshData {
 
 function stemPoints(stem: readonly TubePoint[], level: PlantDetailLevel): TubePoint[] {
   if (level === "high") {
-    return stem.map((point) => ({ ...point, radius: point.radius * STEM_WIDENING }));
+    return stem.map((point) => {
+      return { ...point, radius: point.radius * STEM_WIDENING };
+    });
   }
 
   return thinned(stem);
@@ -640,7 +650,9 @@ function bushLeaf(structure: BushStructure, leaf: BushLeaf, level: PlantDetailLe
 }
 
 function othersThan<Item>(items: readonly Item[], skipped: number): Item[] {
-  return items.filter((_, index) => index !== skipped);
+  return items.filter((_, index) => {
+    return index !== skipped;
+  });
 }
 
 function fruitDetail(level: PlantDetailLevel): FruitDetail | null {
@@ -670,8 +682,12 @@ function meshFruitTree(species: FruitTreeSpecies, seed: number, level: PlantDeta
   }
 
   const hosts = structure.foliage
-    .filter((foliage): foliage is FoliageBlob => foliage.kind === "blob")
-    .map((foliage) => ({ center: new Vector3(...foliage.center), squash: foliage.squash }));
+    .filter((foliage): foliage is FoliageBlob => {
+      return foliage.kind === "blob";
+    })
+    .map((foliage) => {
+      return { center: new Vector3(...foliage.center), squash: foliage.squash };
+    });
 
   const fruit = fruitMeshes(tree, {
     detail,
@@ -694,7 +710,9 @@ function meshBerryBush(species: BushSpecies, seed: number, level: PlantDetailLev
   }
 
   const stems = bushStems(structure, level);
-  const leaves = structure.leaves.map((leaf) => bushLeaf(structure, leaf, level));
+  const leaves = structure.leaves.map((leaf) => {
+    return bushLeaf(structure, leaf, level);
+  });
 
   const berries = fruitMeshes(mergeMeshes([stems, ...leaves]), {
     detail,
@@ -704,9 +722,9 @@ function meshBerryBush(species: BushSpecies, seed: number, level: PlantDetailLev
     seed: seed + 1,
   });
 
-  const shownBerries = berries.map((berry, index) =>
-    withoutBuriedTriangles(berry, [...leaves, ...othersThan(berries, index)], BURIED_MARGIN)
-  );
+  const shownBerries = berries.map((berry, index) => {
+    return withoutBuriedTriangles(berry, [...leaves, ...othersThan(berries, index)], BURIED_MARGIN);
+  });
 
   return mergeMeshes([stems, ...withoutBuriedOverlaps(leaves, BURIED_MARGIN), ...shownBerries]);
 }

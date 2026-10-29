@@ -18,9 +18,15 @@ const USAGE_HINTS = {
 } as const;
 
 function usePowerParameters(powerId: PowerId) {
-  const parameters = usePowerStore((state) => state.parameters);
-  const setParameter = usePowerStore((state) => state.setParameter);
-  const resetParameters = usePowerStore((state) => state.resetParameters);
+  const parameters = usePowerStore((state) => {
+    return state.parameters;
+  });
+  const setParameter = usePowerStore((state) => {
+    return state.setParameter;
+  });
+  const resetParameters = usePowerStore((state) => {
+    return state.resetParameters;
+  });
 
   const values = parametersOf(parameters, powerId);
 
@@ -40,7 +46,9 @@ function useFieldDisclosure() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   function handleFieldsToggle(): void {
-    setIsExpanded((wasExpanded) => !wasExpanded);
+    setIsExpanded((wasExpanded) => {
+      return !wasExpanded;
+    });
   }
 
   return { areFieldsShown: !isCompact || isExpanded, handleFieldsToggle, isCompact };
@@ -83,14 +91,16 @@ function PowerSettingsContent({ powerId }: { readonly powerId: PowerId }) {
       {areFieldsShown ? (
         <ScrollPanel className="-mx-1 px-1">
           <div className={cn("grid gap-3", { "@sm:grid-cols-2": fields.length > 1 })}>
-            {fields.map((field) => (
-              <ParameterControl
-                field={field}
-                key={field.key}
-                onChange={handleParameterChange}
-                value={values[field.key]}
-              />
-            ))}
+            {fields.map((field) => {
+              return (
+                <ParameterControl
+                  field={field}
+                  key={field.key}
+                  onChange={handleParameterChange}
+                  value={values[field.key]}
+                />
+              );
+            })}
           </div>
         </ScrollPanel>
       ) : null}
@@ -99,7 +109,9 @@ function PowerSettingsContent({ powerId }: { readonly powerId: PowerId }) {
 }
 
 export function PowerSettings({ className }: { readonly className?: string | undefined }) {
-  const powerId = usePowerStore((state) => state.selectedPowerId);
+  const powerId = usePowerStore((state) => {
+    return state.selectedPowerId;
+  });
 
   if (powerId === null) {
     return null;

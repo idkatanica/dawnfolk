@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { WorldMirror } from "../../game/world-mirror.ts";
+import { ignore } from "../../shared/ignore.ts";
 import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
 import { sampleHeight } from "../../world/terrain-sampling.ts";
@@ -13,7 +14,7 @@ const round = new WorldMirror(
   Simulation.generate(
     5,
     { dimensions: { cellSize: 20, cellsPerSide: 96 }, erosionStrength: 0.4, shape: "round" },
-    () => undefined
+    ignore
   ).initialWorld(),
   0
 );
@@ -133,8 +134,12 @@ describe("island base geometry", () => {
     const rim = rimPoints(round);
 
     const segments = rim
-      .map((start, index) => [start, rim[(index + 1) % rim.length]] as const)
-      .filter(([start, end]) => Math.hypot(end[0] - start[0], end[1] - start[1]) > NUDGE * 2);
+      .map((start, index) => {
+        return [start, rim[(index + 1) % rim.length]] as const;
+      })
+      .filter(([start, end]) => {
+        return Math.hypot(end[0] - start[0], end[1] - start[1]) > NUDGE * 2;
+      });
 
     for (const [start, end] of segments) {
       expect(latticeLines(round, end, start)).toEqual(latticeLines(round, start, end));

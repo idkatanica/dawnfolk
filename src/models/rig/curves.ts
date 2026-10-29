@@ -48,7 +48,9 @@ export function keyframes(phase: number, keys: readonly Keyframe[]): number {
   }
 
   const time = fractionalPart(phase);
-  const nextIndex = keys.findIndex(([keyTime]) => keyTime > time);
+  const nextIndex = keys.findIndex(([keyTime]) => {
+    return keyTime > time;
+  });
 
   if (nextIndex > 0) {
     const [previousTime, previousValue] = keys[nextIndex - 1];

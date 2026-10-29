@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ANIMALS } from "../../content/animals.ts";
 import { Biome } from "../../content/biomes.ts";
 import { DEFAULT_WORLD_RULES } from "../../content/world-rules.ts";
+import { ignore } from "../../shared/ignore.ts";
 import { createRandom } from "../../shared/random.ts";
 import { NavigationGrid, type Waypoint } from "../agents/navigation.ts";
 import { IdentifierSource } from "../identifiers.ts";
@@ -12,12 +13,26 @@ import { type Animal, FaunaSystem, type FaunaThreats, type FaunaTick } from "./f
 
 const DIMENSIONS = { cellSize: 10, cellsPerSide: 96 };
 const NO_PEOPLE: PeopleSense = {
-  findQuarry: () => null,
-  locate: () => null,
-  nearest: () => null,
-  wound: () => undefined,
+  findQuarry: () => {
+    return null;
+  },
+  locate: () => {
+    return null;
+  },
+  nearest: () => {
+    return null;
+  },
+  wound: ignore,
 };
-const NO_THREATS: FaunaThreats = { dangerNear: () => null, hunterNear: () => null, people: NO_PEOPLE };
+const NO_THREATS: FaunaThreats = {
+  dangerNear: () => {
+    return null;
+  },
+  hunterNear: () => {
+    return null;
+  },
+  people: NO_PEOPLE,
+};
 const SUMMER = 1.6;
 const SPRING = 0.5;
 const WINTER = 3.5;
@@ -63,7 +78,9 @@ function slopedFauna() {
     createTestWorld({
       biome: Biome.Alpine,
       dimensions: DIMENSIONS,
-      heightAt: (x) => 100 + x * 0.5,
+      heightAt: (x) => {
+        return 100 + x * 0.5;
+      },
     })
   );
 }
@@ -81,7 +98,9 @@ function edgedFauna() {
 }
 
 function hares(fauna: FaunaSystem): Animal[] {
-  return fauna.animals.filter((animal) => animal.kind === "hare");
+  return fauna.animals.filter((animal) => {
+    return animal.kind === "hare";
+  });
 }
 
 describe("herds", () => {
@@ -100,7 +119,11 @@ describe("herds", () => {
     const created = fauna.populate(4, createRandom(2));
 
     expect(created).toBe(4);
-    expect(fauna.herds.every((herd) => ANIMALS[herd.kind].favoriteBiomes.includes(Biome.Forest))).toBe(true);
+    expect(
+      fauna.herds.every((herd) => {
+        return ANIMALS[herd.kind].favoriteBiomes.includes(Biome.Forest);
+      })
+    ).toBe(true);
   });
 
   it("wander to new pastures over time", () => {
@@ -108,11 +131,15 @@ describe("herds", () => {
 
     fauna.spawnHerd("deer", 0, 0, 3, createRandom(1));
 
-    const startX = fauna.animals.map((animal) => animal.mover.x);
+    const startX = fauna.animals.map((animal) => {
+      return animal.mover.x;
+    });
 
     runFor(fauna, 200);
 
-    const moved = fauna.animals.some((animal, index) => Math.abs(animal.mover.x - startX[index]) > 20);
+    const moved = fauna.animals.some((animal, index) => {
+      return Math.abs(animal.mover.x - startX[index]) > 20;
+    });
 
     expect(moved).toBe(true);
   });
@@ -128,7 +155,17 @@ describe("animals", () => {
 
     const danger: Waypoint = { x: deer.mover.x - 30, z: deer.mover.z };
 
-    runFor(fauna, 3, { threats: { dangerNear: () => danger, hunterNear: () => null, people: NO_PEOPLE } });
+    runFor(fauna, 3, {
+      threats: {
+        dangerNear: () => {
+          return danger;
+        },
+        hunterNear: () => {
+          return null;
+        },
+        people: NO_PEOPLE,
+      },
+    });
 
     expect(deer.pose).toBe("run");
     expect(deer.mover.x - danger.x).toBeGreaterThan(40);
@@ -141,7 +178,11 @@ describe("animals", () => {
     fauna.damageArea(0, 0, 100, 10, "blast");
 
     expect(livingCount(fauna)).toBe(0);
-    expect(fauna.animals.map((animal) => animal.causeOfDeath)).toEqual(["blast", "blast", "blast"]);
+    expect(
+      fauna.animals.map((animal) => {
+        return animal.causeOfDeath;
+      })
+    ).toEqual(["blast", "blast", "blast"]);
 
     runFor(fauna, 35);
 
@@ -157,11 +198,19 @@ describe("animals", () => {
     floodCells(world, world.grid.cellsInRadius(0, 0, 50), 1.6);
     navigation.rebuild();
 
-    expect(fauna.animals.every((animal) => world.isWaterAt(animal.mover.x, animal.mover.z))).toBe(true);
+    expect(
+      fauna.animals.every((animal) => {
+        return world.isWaterAt(animal.mover.x, animal.mover.z);
+      })
+    ).toBe(true);
 
     runFor(fauna, 60);
 
-    expect(fauna.animals.filter((animal) => world.isWaterAt(animal.mover.x, animal.mover.z))).toEqual([]);
+    expect(
+      fauna.animals.filter((animal) => {
+        return world.isWaterAt(animal.mover.x, animal.mover.z);
+      })
+    ).toEqual([]);
   });
 
   it("burn when standing in flames", () => {
@@ -171,7 +220,11 @@ describe("animals", () => {
     world.fields.fire.fill(0.8);
     runFor(fauna, 5);
 
-    expect(fauna.animals.map((animal) => animal.causeOfDeath)).toEqual(["fire"]);
+    expect(
+      fauna.animals.map((animal) => {
+        return animal.causeOfDeath;
+      })
+    ).toEqual(["fire"]);
   });
 
   it("are born in spring", () => {
@@ -204,12 +257,24 @@ describe("kinds of animals", () => {
     const { fauna } = createFauna(createTestWorld({ biome: Biome.Alpine, dimensions: DIMENSIONS }));
 
     expect(fauna.populate(3, createRandom(2))).toBe(3);
-    expect(fauna.herds.every((herd) => herd.kind === "ibex")).toBe(true);
+    expect(
+      fauna.herds.every((herd) => {
+        return herd.kind === "ibex";
+      })
+    ).toBe(true);
   });
 
   it("send a chased ibex bounding uphill while a deer runs straight away", () => {
     const danger: Waypoint = { x: 0, z: 40 };
-    const threats: FaunaThreats = { dangerNear: () => danger, hunterNear: () => null, people: NO_PEOPLE };
+    const threats: FaunaThreats = {
+      dangerNear: () => {
+        return danger;
+      },
+      hunterNear: () => {
+        return null;
+      },
+      people: NO_PEOPLE,
+    };
 
     const climbers = slopedFauna();
     const runners = slopedFauna();
@@ -235,11 +300,17 @@ describe("kinds of animals", () => {
 
     const random = createRandom(1);
 
-    const herds = [-160, -80, 0, 80, 160].map((z) => spawned(fauna.spawnHerd("ibex", -100, z, 2, random)));
+    const herds = [-160, -80, 0, 80, 160].map((z) => {
+      return spawned(fauna.spawnHerd("ibex", -100, z, 2, random));
+    });
 
     runFor(fauna, 1);
 
-    expect(herds.every((herd) => herd.goalX > -60)).toBe(true);
+    expect(
+      herds.every((herd) => {
+        return herd.goalX > -60;
+      })
+    ).toBe(true);
   });
 
   it("let wolf packs roam much farther than deer herds", () => {
@@ -260,7 +331,11 @@ describe("hares", () => {
 
     fauna.populate(6, createRandom(2));
 
-    expect(fauna.herds.some((herd) => herd.kind === "hare")).toBe(false);
+    expect(
+      fauna.herds.some((herd) => {
+        return herd.kind === "hare";
+      })
+    ).toBe(false);
   });
 
   it("settle on meadows and the forest edge but never by the water", () => {
@@ -318,8 +393,16 @@ describe("hares", () => {
     fauna.spawnHerd("deer", 100, 0, 2, createRandom(1));
     runFor(fauna, 8, { days: 0.5, season: WINTER });
 
-    expect(hares(fauna).map((hare) => hare.causeOfDeath)).toEqual(["age", "age", "age"]);
-    expect(fauna.animals.filter((animal) => animal.kind === "deer" && animal.isAlive)).toHaveLength(2);
+    expect(
+      hares(fauna).map((hare) => {
+        return hare.causeOfDeath;
+      })
+    ).toEqual(["age", "age", "age"]);
+    expect(
+      fauna.animals.filter((animal) => {
+        return animal.kind === "deer" && animal.isAlive;
+      })
+    ).toHaveLength(2);
   });
 
   it("bolt from a wolf before it is close", () => {
@@ -344,14 +427,25 @@ describe("hares", () => {
 
     const tick = tickOf();
 
-    for (let step = 0; step < 3000 && !hares(fauna).some((hare) => !hare.isAlive); step += 1) {
+    for (
+      let step = 0;
+      step < 3000 &&
+      !hares(fauna).some((hare) => {
+        return !hare.isAlive;
+      });
+      step += 1
+    ) {
       fauna.update(tick);
     }
 
     expect(
       hares(fauna)
-        .filter((hare) => !hare.isAlive)
-        .map((hare) => hare.causeOfDeath)
+        .filter((hare) => {
+          return !hare.isAlive;
+        })
+        .map((hare) => {
+          return hare.causeOfDeath;
+        })
     ).toEqual(["prey"]);
   });
 
@@ -362,6 +456,10 @@ describe("hares", () => {
     fauna.spawnHerd("hare", 40, 0, 3, createRandom(1));
     runFor(fauna, 240, { rules: TAME });
 
-    expect(hares(fauna).every((hare) => hare.isAlive)).toBe(true);
+    expect(
+      hares(fauna).every((hare) => {
+        return hare.isAlive;
+      })
+    ).toBe(true);
   });
 });

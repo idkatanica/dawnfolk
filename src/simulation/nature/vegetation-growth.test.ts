@@ -66,7 +66,9 @@ describe("berries", () => {
     const world = createTestWorld();
     const { vegetation } = world;
 
-    const oaks = [10, 20, 30].map((column) => plantInCell(world, world.grid.index(column, 30), PlantSpecies.Oak));
+    const oaks = [10, 20, 30].map((column) => {
+      return plantInCell(world, world.grid.index(column, 30), PlantSpecies.Oak);
+    });
     const firstBush = plantInCell(world, world.grid.index(40, 30), PlantSpecies.Bush);
 
     vegetation.remove(oaks[0]);
@@ -74,7 +76,9 @@ describe("berries", () => {
 
     const bushes = [
       firstBush,
-      ...[50, 60].map((column) => plantInCell(world, world.grid.index(column, 30), PlantSpecies.Bush)),
+      ...[50, 60].map((column) => {
+        return plantInCell(world, world.grid.index(column, 30), PlantSpecies.Bush);
+      }),
     ];
 
     for (const bush of bushes) {
@@ -85,9 +89,17 @@ describe("berries", () => {
     growFor(world, { days: 0.4, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 0 } }) });
 
     expect(vegetation.takeChanges()?.indices).toEqual(
-      Int32Array.from([...bushes].sort((first, second) => first - second))
+      Int32Array.from(
+        [...bushes].sort((first, second) => {
+          return first - second;
+        })
+      )
     );
-    expect(bushes).not.toEqual([...bushes].sort((first, second) => first - second));
+    expect(bushes).not.toEqual(
+      [...bushes].sort((first, second) => {
+        return first - second;
+      })
+    );
   });
 
   it("disappear in winter", () => {
@@ -145,9 +157,9 @@ describe("regrowth", () => {
 
     growFor(world, { days: 128, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
 
-    const slopes = Array.from({ length: world.vegetation.count }, (_, plant) =>
-      world.slope(world.vegetation.cell[plant])
-    );
+    const slopes = Array.from({ length: world.vegetation.count }, (_, plant) => {
+      return world.slope(world.vegetation.cell[plant]);
+    });
 
     expect(world.vegetation.aliveCount).toBeGreaterThan(400);
     expect(Math.max(...slopes)).toBeGreaterThan(0.6);
@@ -164,10 +176,16 @@ describe("regrowth", () => {
 
     growFor(world, { days: 192, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
 
-    const columns = Array.from({ length: vegetation.count }, (_, plant) => grid.columnOf(vegetation.cell[plant]));
+    const columns = Array.from({ length: vegetation.count }, (_, plant) => {
+      return grid.columnOf(vegetation.cell[plant]);
+    });
     const thinCells = grid.cellCount / 2;
 
-    expect(columns.every((column) => column >= grid.cellsPerSide / 2)).toBe(true);
+    expect(
+      columns.every((column) => {
+        return column >= grid.cellsPerSide / 2;
+      })
+    ).toBe(true);
     expect(vegetation.aliveCount).toBeGreaterThan(thinCells * 0.3);
     expect(vegetation.aliveCount).toBeLessThan(thinCells * 0.65);
   });
@@ -179,9 +197,11 @@ describe("regrowth", () => {
 
     growFor(world, { days: 128, rules: worldRulesSchema.parse({ nature: { forestRegrowth: 3 } }) });
 
-    const onRuin = Array.from({ length: world.vegetation.count }, (_, plant) => world.vegetation.cell[plant]).filter(
-      (cell) => world.isObstructed(cell)
-    );
+    const onRuin = Array.from({ length: world.vegetation.count }, (_, plant) => {
+      return world.vegetation.cell[plant];
+    }).filter((cell) => {
+      return world.isObstructed(cell);
+    });
 
     expect(world.vegetation.aliveCount).toBeGreaterThan(400);
     expect(onRuin).toEqual([]);

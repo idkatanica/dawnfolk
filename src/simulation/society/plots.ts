@@ -45,7 +45,9 @@ const LAYOUTS: Readonly<Record<PlotKind, PlotLayout>> = {
 };
 
 function plotWanted(tribe: Tribe): PlotKind | null {
-  const kinds = tribe.plots.map((plot) => plot.kind);
+  const kinds = tribe.plots.map((plot) => {
+    return plot.kind;
+  });
 
   if (knows(tribe, "orchards") && !kinds.includes("orchard")) {
     return "orchard";
@@ -188,7 +190,9 @@ function isSpotEmpty(spot: PlotSpot, world: WorldState): boolean {
 
 export function emptySpot(tribe: Tribe, world: WorldState): PlotSpot | null {
   for (const plot of tribe.plots) {
-    const spot = plot.spots.find((candidate) => isSpotEmpty(candidate, world));
+    const spot = plot.spots.find((candidate) => {
+      return isSpotEmpty(candidate, world);
+    });
 
     if (spot !== undefined) {
       return spot;
@@ -221,7 +225,9 @@ function matureHeight(spot: PlotSpot): number {
 }
 
 function plotOfSpot(tribe: Tribe, spot: PlotSpot): Plot | null {
-  const plot = tribe.plots.find((candidate) => candidate.spots.includes(spot));
+  const plot = tribe.plots.find((candidate) => {
+    return candidate.spots.includes(spot);
+  });
 
   if (plot === undefined) {
     return null;
@@ -263,7 +269,9 @@ export function isProtectedPlant(tribe: Tribe, plant: number, species: number, d
   }
 
   for (const plot of tribe.plots) {
-    const spot = plot.spots.find((candidate) => candidate.plant === plant);
+    const spot = plot.spots.find((candidate) => {
+      return candidate.plant === plant;
+    });
 
     if (spot !== undefined) {
       return plot.kind === "orchard" || plotAge(spot, plot.kind, day) < 1;
@@ -351,6 +359,15 @@ export function ripestFruitTree(tribe: Tribe, world: WorldState): number | null 
 
 export function plantedCount(tribe: Tribe, world: WorldState, kind: PlotKind): number {
   return tribe.plots
-    .filter((plot) => plot.kind === kind)
-    .reduce((count, plot) => count + plot.spots.filter((spot) => !isSpotEmpty(spot, world)).length, 0);
+    .filter((plot) => {
+      return plot.kind === kind;
+    })
+    .reduce((count, plot) => {
+      return (
+        count +
+        plot.spots.filter((spot) => {
+          return !isSpotEmpty(spot, world);
+        }).length
+      );
+    }, 0);
 }

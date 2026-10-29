@@ -3,7 +3,9 @@ import { useSyncExternalStore } from "react";
 function subscribe(onChange: () => void): () => void {
   document.addEventListener("fullscreenchange", onChange);
 
-  return () => document.removeEventListener("fullscreenchange", onChange);
+  return () => {
+    document.removeEventListener("fullscreenchange", onChange);
+  };
 }
 
 function isFullscreenNow(): boolean {
@@ -19,10 +21,14 @@ function switchFullscreen(): Promise<void> {
 }
 
 export function useFullscreen() {
-  const isFullscreen = useSyncExternalStore(subscribe, isFullscreenNow, () => false);
+  const isFullscreen = useSyncExternalStore(subscribe, isFullscreenNow, () => {
+    return false;
+  });
 
   function toggleFullscreen(): void {
-    switchFullscreen().catch((error: unknown) => console.warn("Full screen is not available here", error));
+    switchFullscreen().catch((error: unknown) => {
+      console.warn("Full screen is not available here", error);
+    });
   }
 
   return { canGoFullscreen: document.fullscreenEnabled, isFullscreen, toggleFullscreen };

@@ -158,8 +158,12 @@ export class WorldRenderer {
 
     this.#effects = new EffectView({
       axes: this.#axes,
-      createRing: () => new GroundRing(this.#textures, mirror.grid),
-      heightAt: (x, z) => mirror.heightAt(x, z),
+      createRing: () => {
+        return new GroundRing(this.#textures, mirror.grid);
+      },
+      heightAt: (x, z) => {
+        return mirror.heightAt(x, z);
+      },
       shake: onShake,
     });
 

@@ -19,7 +19,9 @@ const AUTOMATIC = "automatic";
 
 const WEATHER_OPTIONS = [
   { label: "Changes by itself", value: AUTOMATIC },
-  ...WEATHER_KINDS.map((kind) => ({ label: WEATHER[kind].name, value: kind })),
+  ...WEATHER_KINDS.map((kind) => {
+    return { label: WEATHER[kind].name, value: kind };
+  }),
 ];
 
 const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"] as const;
@@ -41,7 +43,12 @@ function compassName(degrees: number): string {
 }
 
 function isWeatherChoice(value: string): value is WeatherKind | typeof AUTOMATIC {
-  return value === AUTOMATIC || WEATHER_KINDS.some((kind) => kind === value);
+  return (
+    value === AUTOMATIC ||
+    WEATHER_KINDS.some((kind) => {
+      return kind === value;
+    })
+  );
 }
 
 function useWeatherSettings(weather: WeatherView) {
@@ -136,7 +143,9 @@ function WeatherSettings({ weather }: { readonly weather: WeatherView }) {
 }
 
 export function WeatherSection() {
-  const weather = useWorldStore((state) => state.snapshot?.weather);
+  const weather = useWorldStore((state) => {
+    return state.snapshot?.weather;
+  });
 
   if (weather === undefined) {
     return null;

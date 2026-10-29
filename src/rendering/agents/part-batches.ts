@@ -22,11 +22,24 @@ export class PartBatches {
   readonly #shadowBatches: readonly (BatchRow | null)[];
 
   constructor(levels: readonly PartLevel[], material: Material) {
-    this.#batches = levels.map((level) => level.parts.map((part) => this.#createBatch(part, material, false)));
-    this.#shadowBatches = levels.map((level) => this.#createShadowBatches(level, material));
-    this.#all = [...this.#batches, ...this.#shadowBatches.filter((row) => row !== null)]
+    this.#batches = levels.map((level) => {
+      return level.parts.map((part) => {
+        return this.#createBatch(part, material, false);
+      });
+    });
+    this.#shadowBatches = levels.map((level) => {
+      return this.#createShadowBatches(level, material);
+    });
+    this.#all = [
+      ...this.#batches,
+      ...this.#shadowBatches.filter((row) => {
+        return row !== null;
+      }),
+    ]
       .flat()
-      .filter((batch) => batch !== null);
+      .filter((batch) => {
+        return batch !== null;
+      });
   }
 
   begin(): void {
@@ -58,7 +71,9 @@ export class PartBatches {
       return null;
     }
 
-    return level.shadowParts.map((part) => this.#createBatch(part, material, true));
+    return level.shadowParts.map((part) => {
+      return this.#createBatch(part, material, true);
+    });
   }
 
   #createBatch(part: MeshData, material: Material, isShadowOnly: boolean): InstanceBatch | null {

@@ -4,7 +4,9 @@ import { colorChannels, colorFromPalette, mixColors, packColor, parseHexColor, s
 describe("colors", () => {
   it("reads #rrggbb text", () => {
     expect(parseHexColor("#c8553d")).toBe(0xc8_55_3d);
-    expect(() => parseHexColor("red")).toThrow(RangeError);
+    expect(() => {
+      return parseHexColor("red");
+    }).toThrow(RangeError);
   });
 
   it("splits and packs channels without losing precision", () => {

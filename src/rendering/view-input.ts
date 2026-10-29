@@ -24,7 +24,9 @@ export function assignSphereLevels(
     const distance = Math.max(0, camera.position.distanceTo(item.bounds.center) - item.bounds.radius);
 
     const level = frustum.intersectsSphere(item.bounds)
-      ? limits.findIndex((limit) => distance < limit * detail)
+      ? limits.findIndex((limit) => {
+          return distance < limit * detail;
+        })
       : HIDDEN_LEVEL;
 
     if (level !== item.level) {

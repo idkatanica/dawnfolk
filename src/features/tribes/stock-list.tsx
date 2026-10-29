@@ -12,13 +12,17 @@ const GROUP_NAMES: Readonly<Record<ResourceGroup, string>> = {
 };
 
 function StockGroup({ group, stock }: { readonly group: ResourceGroup; readonly stock: StockView }) {
-  const kinds = resourcesInGroup(group).filter((kind) => Math.round(stock[kind]) > 0);
+  const kinds = resourcesInGroup(group).filter((kind) => {
+    return Math.round(stock[kind]) > 0;
+  });
 
   if (kinds.length === 0) {
     return null;
   }
 
-  const total = kinds.reduce((sum, kind) => sum + stock[kind], 0);
+  const total = kinds.reduce((sum, kind) => {
+    return sum + stock[kind];
+  }, 0);
 
   return (
     <section aria-label={GROUP_NAMES[group]} className="flex flex-col gap-1">
@@ -48,9 +52,11 @@ function StockGroup({ group, stock }: { readonly group: ResourceGroup; readonly 
 }
 
 export function StockList({ stock }: { readonly stock: StockView }) {
-  const hasAnything = RESOURCE_GROUPS.some((group) =>
-    resourcesInGroup(group).some((kind) => Math.round(stock[kind]) > 0)
-  );
+  const hasAnything = RESOURCE_GROUPS.some((group) => {
+    return resourcesInGroup(group).some((kind) => {
+      return Math.round(stock[kind]) > 0;
+    });
+  });
 
   if (!hasAnything) {
     return <p className="text-ink-muted text-xs">The stores are empty.</p>;
@@ -58,9 +64,9 @@ export function StockList({ stock }: { readonly stock: StockView }) {
 
   return (
     <div className="flex flex-col gap-2.5">
-      {RESOURCE_GROUPS.map((group) => (
-        <StockGroup group={group} key={group} stock={stock} />
-      ))}
+      {RESOURCE_GROUPS.map((group) => {
+        return <StockGroup group={group} key={group} stock={stock} />;
+      })}
     </div>
   );
 }

@@ -44,13 +44,17 @@ function createFeed({ chronicle = [], frame = createFrame() }: FeedOptions = {})
     get frame() {
       return latest;
     },
-    listenerCount: () => listeners.size,
+    listenerCount: () => {
+      return listeners.size;
+    },
     subscribe,
   };
 }
 
 function noticeTexts(): string[] {
-  return useWorldStore.getState().notices.map((notice) => notice.text);
+  return useWorldStore.getState().notices.map((notice) => {
+    return notice.text;
+  });
 }
 
 describe("world store", () => {
@@ -196,7 +200,9 @@ describe("world store", () => {
     connectWorldStore(feed);
     feed.emit(createFrame({ chronicle }));
 
-    const announced = useWorldStore.getState().notices.map((notice) => [notice.category, notice.text]);
+    const announced = useWorldStore.getState().notices.map((notice) => {
+      return [notice.category, notice.text];
+    });
 
     expect(announced).toEqual([
       ["arrival", "The Bear Clan arrives."],
@@ -219,12 +225,11 @@ describe("world store", () => {
     connectWorldStore(feed);
     feed.emit(createFrame({ chronicle }));
 
-    expect(useWorldStore.getState().notices.map((notice) => notice.category)).toEqual([
-      "feud",
-      "raid",
-      "peace",
-      "beast",
-    ]);
+    expect(
+      useWorldStore.getState().notices.map((notice) => {
+        return notice.category;
+      })
+    ).toEqual(["feud", "raid", "peace", "beast"]);
   });
 
   it("puts plain notices before the announced chronicle entries of the same frame", () => {
@@ -254,7 +259,9 @@ describe("world store", () => {
     connectWorldStore(feed);
     feed.emit(createFrame({ notices: ["First", "Second", "Third"] }));
 
-    const noticeIds = useWorldStore.getState().notices.map((notice) => notice.id);
+    const noticeIds = useWorldStore.getState().notices.map((notice) => {
+      return notice.id;
+    });
 
     expect(new Set(noticeIds).size).toBe(noticeIds.length);
   });

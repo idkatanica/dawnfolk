@@ -13,7 +13,9 @@ export function widestReach(mesh: MeshData): number {
 }
 
 export function soundnessProblems(mesh: MeshData): string[] {
-  const detached = loosePieces(mesh).map((piece) => `detached ${piece}`);
+  const detached = loosePieces(mesh).map((piece) => {
+    return `detached ${piece}`;
+  });
   const openEdge = highestOpenEdge(mesh);
   const openEdges = openEdge < 0.05 ? [] : [`open edge at ${openEdge.toFixed(2)}`];
 
@@ -33,7 +35,11 @@ export function orderProblems(mesh: MeshData): string[] {
     problems.push("nothing is left for the end of the build");
   }
 
-  if (!orders.every((order) => order >= 0 && order <= 1)) {
+  if (
+    !orders.every((order) => {
+      return order >= 0 && order <= 1;
+    })
+  ) {
     problems.push("a build order is outside 0..1");
   }
 

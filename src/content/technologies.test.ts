@@ -11,11 +11,19 @@ describe("technologies", () => {
       order.push(next.id);
     }
 
-    expect(order).toEqual(TECHNOLOGIES.map((technology) => technology.id));
+    expect(order).toEqual(
+      TECHNOLOGIES.map((technology) => {
+        return technology.id;
+      })
+    );
   });
 
   it("ask for ore before the metal ages", () => {
-    const needs = TECHNOLOGIES.filter((technology) => technology.needs !== null).map((technology) => technology.id);
+    const needs = TECHNOLOGIES.filter((technology) => {
+      return technology.needs !== null;
+    }).map((technology) => {
+      return technology.id;
+    });
 
     expect(needs).toEqual(["copper", "bronze", "iron"]);
   });

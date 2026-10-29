@@ -19,9 +19,14 @@ const MAXIMUM_SPEED = Math.max(...SIMULATION_SPEEDS);
 
 const coordinate = z.number();
 
-const powerIdSchema = z.custom<PowerId>((value) => typeof value === "string" && isPowerId(value), {
-  message: "Unknown power",
-});
+const powerIdSchema = z.custom<PowerId>(
+  (value) => {
+    return typeof value === "string" && isPowerId(value);
+  },
+  {
+    message: "Unknown power",
+  }
+);
 
 const parametersSchema = z.record(z.string(), z.unknown());
 

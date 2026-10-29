@@ -20,11 +20,14 @@ export function findTree(tick: PersonTick): ChopJob | null {
   const { day } = tick.context.environment;
 
   const tree = nearestPlant(world, {
-    accepts: (plant) =>
-      isFreePlant(tick, plant) &&
-      isTreeSpecies(vegetation.species[plant]) &&
-      !isProtectedPlant(tribe, plant, vegetation.species[plant], day) &&
-      canWorkAtPlant(tick, plant, AXE_REACH),
+    accepts: (plant) => {
+      return (
+        isFreePlant(tick, plant) &&
+        isTreeSpecies(vegetation.species[plant]) &&
+        !isProtectedPlant(tribe, plant, vegetation.species[plant], day) &&
+        canWorkAtPlant(tick, plant, AXE_REACH)
+      );
+    },
     radius: SEARCH_RADIUS,
     x: (tribe.campX + person.mover.x) / 2,
     z: (tribe.campZ + person.mover.z) / 2,

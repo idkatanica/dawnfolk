@@ -42,10 +42,9 @@ describe("water recomputation", () => {
     recomputation.recompute();
     recomputation.recompute();
 
-    const largestChange = heightsBefore.reduce(
-      (largest, height, cell) => Math.max(largest, Math.abs(height - world.terrain.height[cell])),
-      0
-    );
+    const largestChange = heightsBefore.reduce((largest, height, cell) => {
+      return Math.max(largest, Math.abs(height - world.terrain.height[cell]));
+    }, 0);
 
     expect(largestChange).toBeLessThan(0.01);
     expect(world.water.lakes).toHaveLength(lakesBefore);
@@ -57,7 +56,11 @@ describe("water recomputation", () => {
     raiseTerrain(world, { radius: 300, x: 0, z: 0 }, 20);
     recomputation.recompute();
 
-    const reserved = new Set(world.water.springs.flatMap((spring) => spring.cells));
+    const reserved = new Set(
+      world.water.springs.flatMap((spring) => {
+        return spring.cells;
+      })
+    );
 
     expect(world.water.springs.length).toBeGreaterThan(0);
 
@@ -65,9 +68,11 @@ describe("water recomputation", () => {
       expect(world.water.rivers[spring.river]).toBeDefined();
     }
 
-    const springGround = Array.from({ length: world.grid.cellCount }, (_, cell) => cell).filter(
-      (cell) => world.occupancy[cell] === SPRING_GROUND
-    );
+    const springGround = Array.from({ length: world.grid.cellCount }, (_, cell) => {
+      return cell;
+    }).filter((cell) => {
+      return world.occupancy[cell] === SPRING_GROUND;
+    });
 
     for (const cell of springGround) {
       expect(reserved.has(cell)).toBe(true);
@@ -102,14 +107,26 @@ describe("water recomputation", () => {
     }
 
     expect(recomputation.recompute()).toBe("features");
-    expect(spring.cells.map((cell) => world.occupancy[cell])).toEqual(spring.cells.map(() => SPRING_GROUND));
+    expect(
+      spring.cells.map((cell) => {
+        return world.occupancy[cell];
+      })
+    ).toEqual(
+      spring.cells.map(() => {
+        return SPRING_GROUND;
+      })
+    );
   });
 
   it("clears rocks from the cells the water covers and leaves them on its dry banks", () => {
     const recomputation = new WaterRecomputation(world);
     const { grid } = world;
 
-    const wetCells = Array.from({ length: grid.cellCount }, (_, cell) => cell).filter((cell) => world.isWater(cell));
+    const wetCells = Array.from({ length: grid.cellCount }, (_, cell) => {
+      return cell;
+    }).filter((cell) => {
+      return world.isWater(cell);
+    });
 
     for (const cell of wetCells.slice(0, 40)) {
       world.plant({
@@ -125,12 +142,15 @@ describe("water recomputation", () => {
 
     recomputation.recompute();
 
-    const wetBoulders = Array.from({ length: world.vegetation.count }, (_, plant) => plant).filter(
-      (plant) =>
+    const wetBoulders = Array.from({ length: world.vegetation.count }, (_, plant) => {
+      return plant;
+    }).filter((plant) => {
+      return (
         world.vegetation.species[plant] === PlantSpecies.Boulder &&
         world.vegetation.state[plant] === PlantState.Alive &&
         world.isWater(world.vegetation.cell[plant])
-    );
+      );
+    });
 
     expect(wetCells.length).toBeGreaterThan(40);
     expect(wetBoulders).toEqual([]);
@@ -209,7 +229,13 @@ describe("crossings after the water is worked out again", () => {
   }
 
   function idsOf(crossings: readonly Crossing[]): number[] {
-    return crossings.map((crossing) => crossing.id).sort((first, second) => first - second);
+    return crossings
+      .map((crossing) => {
+        return crossing.id;
+      })
+      .sort((first, second) => {
+        return first - second;
+      });
   }
 
   it("keeps every crossing where the land stayed the same", { timeout: 60_000 }, () => {
@@ -220,8 +246,14 @@ describe("crossings after the water is worked out again", () => {
     new WaterRecomputation(state).recompute();
 
     expect(idsOf(state.crossings)).toEqual(idsOf(before));
-    expect(state.crossings.map((crossing) => crossingLength(crossing))).toEqual(
-      before.map((crossing) => expect.closeTo(crossingLength(crossing), 6))
+    expect(
+      state.crossings.map((crossing) => {
+        return crossingLength(crossing);
+      })
+    ).toEqual(
+      before.map((crossing) => {
+        return expect.closeTo(crossingLength(crossing), 6);
+      })
     );
   });
 
@@ -237,9 +269,17 @@ describe("crossings after the water is worked out again", () => {
     raiseTerrain(state, { radius: 90, x: (buried.startX + buried.endX) / 2, z: (buried.startZ + buried.endZ) / 2 }, 40);
     new WaterRecomputation(state).recompute();
 
-    const remaining = new Set(state.crossings.map((crossing) => crossing.id));
+    const remaining = new Set(
+      state.crossings.map((crossing) => {
+        return crossing.id;
+      })
+    );
 
     expect(remaining.has(buried.id)).toBe(false);
-    expect(others.filter((crossing) => remaining.has(crossing.id)).length).toBeGreaterThan(others.length * 0.8);
+    expect(
+      others.filter((crossing) => {
+        return remaining.has(crossing.id);
+      }).length
+    ).toBeGreaterThan(others.length * 0.8);
   });
 });

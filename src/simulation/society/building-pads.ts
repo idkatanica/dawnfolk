@@ -39,20 +39,22 @@ function canReshape(world: WorldState, cell: number): boolean {
 function isPondShore(world: WorldState, cell: number): boolean {
   const { grid } = world;
 
-  return world.water.springs.some(
-    (spring) =>
+  return world.water.springs.some((spring) => {
+    return (
       spring.kind === "pond" &&
       Math.hypot(grid.cellCenterX(cell) - spring.x, grid.cellCenterZ(cell) - spring.z) <
         pondShoreReach(spring) + grid.cellSize
-  );
+    );
+  });
 }
 
 function isHeldByOther(grid: WorldGrid, cell: number, buildings: readonly Building[]): boolean {
-  return buildings.some(
-    (building) =>
+  return buildings.some((building) => {
+    return (
       !isEnclosure(building.kind) &&
       distanceToCell(grid, cell, building.x, building.z, grid.cellSize) < BUILDINGS[building.kind].footprint
-  );
+    );
+  });
 }
 
 function lowestAround(world: WorldState, cells: readonly number[]): number {
@@ -93,21 +95,37 @@ export function planPad(
 ): BuildingPad | null {
   const cells = groundUnderFootprint(world.grid, spot, BUILDINGS[kind].footprint);
 
-  if (cells.length === 0 || !cells.every((cell) => canReshape(world, cell))) {
+  if (
+    cells.length === 0 ||
+    !cells.every((cell) => {
+      return canReshape(world, cell);
+    })
+  ) {
     return null;
   }
 
-  const heights = cells.map((cell) => world.terrain.height[cell]);
-  const level = heights.reduce((total, height) => total + height, 0) / heights.length;
+  const heights = cells.map((cell) => {
+    return world.terrain.height[cell];
+  });
+  const level =
+    heights.reduce((total, height) => {
+      return total + height;
+    }, 0) / heights.length;
 
   if (lowestAround(world, cells) > level + POOLING_DEPTH) {
     return null;
   }
 
   return {
-    cells: cells.filter((cell) => !isHeldByOther(world.grid, cell, buildings)),
+    cells: cells.filter((cell) => {
+      return !isHeldByOther(world.grid, cell, buildings);
+    }),
     level,
-    unevenness: Math.max(...heights.map((height) => Math.abs(height - level))),
+    unevenness: Math.max(
+      ...heights.map((height) => {
+        return Math.abs(height - level);
+      })
+    ),
   };
 }
 

@@ -36,7 +36,9 @@ function stringOr(value: ParameterValue | undefined, fallback: string): string {
 }
 
 function useParameterChange(key: string, onChange: ParameterControlProps["onChange"]) {
-  return (next: ParameterValue) => onChange(key, next);
+  return (next: ParameterValue) => {
+    onChange(key, next);
+  };
 }
 
 export function ParameterControl({ field, onChange, value }: ParameterControlProps) {

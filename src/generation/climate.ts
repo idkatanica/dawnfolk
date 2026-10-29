@@ -212,7 +212,9 @@ function northFacing(gradientZ: number, slope: number): number {
 }
 
 function measureSlopes(grid: WorldGrid, heights: Float32Array, slopes: Float64Array): Slopes {
-  const north = slopes.map((slope, cell) => northFacing(gradientZAt(heights, grid, cell), slope));
+  const north = slopes.map((slope, cell) => {
+    return northFacing(gradientZAt(heights, grid, cell), slope);
+  });
 
   return { north: Float32Array.from(north), slope: Float32Array.from(slopes) };
 }
@@ -313,7 +315,9 @@ export function buildClimate(inputs: WetlandInputs): ClimateResult {
 
   const noise = createNoiseSampler(createRandom(inputs.seed * 13 + 5));
   const waterDistance = distanceToWater(grid, waterSurface, heights);
-  const exactSlopes = Float64Array.from({ length: grid.cellCount }, (_, cell) => slopeAt(heights, grid, cell));
+  const exactSlopes = Float64Array.from({ length: grid.cellCount }, (_, cell) => {
+    return slopeAt(heights, grid, cell);
+  });
   const slopes = measureSlopes(grid, heights, exactSlopes);
   const riverBanks = findRiverBanks(inputs, slopes.slope);
   const wetness = measureWetness(inputs, exactSlopes);
@@ -387,12 +391,16 @@ export function buildClimate(inputs: WetlandInputs): ClimateResult {
 function shapeSwamps(inputs: WetlandInputs, result: ClimateResult, wetness: Float32Array, drained: DrainedLand): void {
   const { grid, seed } = inputs;
 
-  for (const cell of findSmallAreas(grid, (candidate) => result.biome[candidate] === Biome.Swamp)) {
+  for (const cell of findSmallAreas(grid, (candidate) => {
+    return result.biome[candidate] === Biome.Swamp;
+  })) {
     result.biome[cell] = drained.biome[cell];
     result.ground[cell] = drained.ground[cell];
   }
 
-  for (const cell of findPools(grid, seed, wetness, (candidate) => result.biome[candidate] === Biome.Swamp)) {
+  for (const cell of findPools(grid, seed, wetness, (candidate) => {
+    return result.biome[candidate] === Biome.Swamp;
+  })) {
     result.ground[cell] = Ground.Bog;
   }
 }

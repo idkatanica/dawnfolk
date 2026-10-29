@@ -102,7 +102,9 @@ function StoppedMessage({ message }: { readonly message: string }) {
 }
 
 function StatusMessage({ status }: { readonly status: Exclude<EngineStatus, { kind: "ready" }> }) {
-  const { name, seed } = useLaunchStore((state) => state.launch);
+  const { name, seed } = useLaunchStore((state) => {
+    return state.launch;
+  });
 
   switch (status.kind) {
     case "failed":
@@ -117,7 +119,9 @@ function StatusMessage({ status }: { readonly status: Exclude<EngineStatus, { ki
 }
 
 export function LoadingScreen() {
-  const status = useEngineStore((state) => state.status);
+  const status = useEngineStore((state) => {
+    return state.status;
+  });
 
   if (status.kind === "ready") {
     return null;

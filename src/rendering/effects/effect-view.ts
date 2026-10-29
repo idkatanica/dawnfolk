@@ -55,11 +55,17 @@ export class EffectView {
         this.#flash = Math.max(this.#flash, amount);
       },
       heightAt: options.heightAt,
-      light: (position, color, intensity) => this.#lightUp(position, color, intensity),
+      light: (position, color, intensity) => {
+        this.#lightUp(position, color, intensity);
+      },
       meshes: this.#meshes,
-      releaseRing: (ring) => this.#releaseRing(ring),
+      releaseRing: (ring) => {
+        this.#releaseRing(ring);
+      },
       shake: options.shake,
-      takeRing: () => this.#takeRing(),
+      takeRing: () => {
+        return this.#takeRing();
+      },
     };
 
     this.group.add(this.#sinks.dust.mesh, this.#sinks.glow.mesh, this.#light);

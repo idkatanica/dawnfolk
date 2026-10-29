@@ -36,7 +36,9 @@ export class FrameBuilder {
     return {
       animalCount: fauna.animals.length,
       animals: packAnimals(fauna.animals),
-      buildings: buildings.all.map((building) => describeBuilding(building, world)),
+      buildings: buildings.all.map((building) => {
+        return describeBuilding(building, world);
+      }),
       burningCells,
       burningIntensity: packBurningCells(world, burningCells),
       calendar: simulation.calendar.view(),
@@ -50,7 +52,9 @@ export class FrameBuilder {
       isPaused: simulation.isPaused,
       lava: packLava(volcanoes.takeLava()),
       notices: simulation.takeNotices(),
-      people: packPeople(society.people, (id) => society.findTribe(id)),
+      people: packPeople(society.people, (id) => {
+        return society.findTribe(id);
+      }),
       personCount: society.people.length,
       rivalry: simulation.rivalry.view(simulation.calendar.day),
       rules: simulation.rules,
@@ -144,6 +148,8 @@ export class FrameBuilder {
     const tribes = society.tribes();
     const members = society.membersOfEach(tribes);
 
-    return tribes.map((tribe, position) => describeTribe(tribe, members[position], { buildings, world }));
+    return tribes.map((tribe, position) => {
+      return describeTribe(tribe, members[position], { buildings, world });
+    });
   }
 }

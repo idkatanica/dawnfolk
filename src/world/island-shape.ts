@@ -17,7 +17,9 @@ export interface IslandShape {
 }
 
 const SQUARE_SHAPE: IslandShape = {
-  coastDistanceAt: (x, z) => 1 - Math.max(Math.abs(x), Math.abs(z)),
+  coastDistanceAt: (x, z) => {
+    return 1 - Math.max(Math.abs(x), Math.abs(z));
+  },
   kind: "square",
 };
 
@@ -47,7 +49,9 @@ function roundShape(seed: number): IslandShape {
 }
 
 export function isIslandShapeKind(value: string): value is IslandShapeKind {
-  return ISLAND_SHAPES.some((shape) => shape === value);
+  return ISLAND_SHAPES.some((shape) => {
+    return shape === value;
+  });
 }
 
 export function createIslandShape(kind: IslandShapeKind, seed: number): IslandShape {

@@ -39,7 +39,9 @@ function ruleValue(rules: RuleValues, groupKey: string, fieldKey: string): Param
 
 function useWorldRules() {
   const send = useSendCommand();
-  const confirmedRules = useWorldStore((state) => state.snapshot?.rules);
+  const confirmedRules = useWorldStore((state) => {
+    return state.snapshot?.rules;
+  });
   const [rules, holdRules] = useHeldDraft(confirmedRules);
 
   function applyRules(next: WorldRules): void {
@@ -65,7 +67,9 @@ function useWorldRules() {
 }
 
 function useRuleChange(groupKey: string, onChange: RuleChange) {
-  return (key: string, value: ParameterValue) => onChange(groupKey, key, value);
+  return (key: string, value: ParameterValue) => {
+    onChange(groupKey, key, value);
+  };
 }
 
 function RuleControl({ field, group, onChange, rules }: RuleControlProps) {
@@ -82,9 +86,9 @@ function RuleGroup({ group, onChange, rules }: RuleGroupProps) {
       <GroupHeading description={group.metadata.description} title={group.metadata.label} />
 
       <div className={FIELD_GRID}>
-        {group.fields.map((field) => (
-          <RuleControl field={field} group={group} key={field.key} onChange={onChange} rules={rules} />
-        ))}
+        {group.fields.map((field) => {
+          return <RuleControl field={field} group={group} key={field.key} onChange={onChange} rules={rules} />;
+        })}
       </div>
     </fieldset>
   );
@@ -107,9 +111,9 @@ export function WorldRulesSection() {
         </TextButton>
       </div>
 
-      {RULE_GROUPS.map((group) => (
-        <RuleGroup group={group} key={group.key} onChange={handleRuleChange} rules={rules} />
-      ))}
+      {RULE_GROUPS.map((group) => {
+        return <RuleGroup group={group} key={group.key} onChange={handleRuleChange} rules={rules} />;
+      })}
     </>
   );
 }

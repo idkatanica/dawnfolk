@@ -18,9 +18,11 @@ const HEAD_SLOTS = {
 } as const;
 
 function headsOf(mesh: MeshData): number[] {
-  return Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex).filter(
-    (vertex) => mesh.channels.part[vertex] === CROP_HEAD_PART
-  );
+  return Array.from({ length: vertexCount(mesh) }, (_, vertex) => {
+    return vertex;
+  }).filter((vertex) => {
+    return mesh.channels.part[vertex] === CROP_HEAD_PART;
+  });
 }
 
 describe.each(CROP_KINDS)("%s clump", (kind) => {
@@ -47,7 +49,11 @@ describe.each(CROP_KINDS)("%s clump", (kind) => {
       const heads = headsOf(mesh);
 
       expect(heads.length).toBeGreaterThan(0);
-      expect(heads.every((vertex) => mesh.channels.slot[vertex] === HEAD_SLOTS[kind])).toBe(true);
+      expect(
+        heads.every((vertex) => {
+          return mesh.channels.slot[vertex] === HEAD_SLOTS[kind];
+        })
+      ).toBe(true);
     }
   });
 
@@ -65,6 +71,10 @@ describe("field fence", () => {
     expect(fence.bounds.minimum[1]).toBeLessThan(0);
     expect(fence.bounds.minimum[0]).toBeLessThan(0);
     expect(fence.bounds.maximum[0]).toBeGreaterThan(FENCE_LENGTH);
-    expect(fence.channels.slot.every((slot) => slot === MaterialSlot.Wood)).toBe(true);
+    expect(
+      fence.channels.slot.every((slot) => {
+        return slot === MaterialSlot.Wood;
+      })
+    ).toBe(true);
   });
 });

@@ -78,7 +78,9 @@ export function nearestWalkableSpot(world: WorldState, point: Waypoint, searchRa
     return point;
   }
 
-  const spot = nearestSpotWhere(world, point, searchRadius, (ground, cell) => ground.isWalkable(cell));
+  const spot = nearestSpotWhere(world, point, searchRadius, (ground, cell) => {
+    return ground.isWalkable(cell);
+  });
 
   return spot === null ? point : spot;
 }

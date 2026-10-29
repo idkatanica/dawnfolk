@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { LARGEST_SEED } from "../features/new-world/seeds.ts";
+import { ignore } from "../shared/ignore.ts";
 import { choosesWorld, readLaunchOptions } from "./launch-options.ts";
 import { storeQuality } from "./preferences.ts";
 
 function silenceWarnings() {
-  return vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  return vi.spyOn(console, "warn").mockImplementation(ignore);
 }
 
 describe("launch options", () => {

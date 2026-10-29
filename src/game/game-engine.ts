@@ -113,41 +113,67 @@ export class GameEngine implements EngineHandle {
     this.#world = new WorldRenderer({
       camera: perspective,
       mirror,
-      onShake: (amount, x, z) => this.#shake(amount, x, z),
+      onShake: (amount, x, z) => {
+        this.#shake(amount, x, z);
+      },
       quality: RENDER_QUALITY[parts.quality],
       renderer: parts.renderer,
     });
     this.#entityPicker = new EntityPicker(perspective, heightAt);
     this.#labels = new LabelProjector(
       perspective,
-      { heightAt, surfaceAt: (x, z) => mirror.surfaceAt(x, z) },
+      {
+        heightAt,
+        surfaceAt: (x, z) => {
+          return mirror.surfaceAt(x, z);
+        },
+      },
       mirror.grid.halfSize
     );
 
     const groundPicker = new GroundPicker(perspective, heightAt, mirror.grid.halfSize);
 
-    this.powers = new PowerTool((command) => this.session.send(command), {
-      hide: () => this.#world.cursor.hide(),
-      show: (point, radius, isPressed) => this.#showCursor(point, radius, isPressed),
-    });
+    this.powers = new PowerTool(
+      (command) => {
+        this.session.send(command);
+      },
+      {
+        hide: () => {
+          this.#world.cursor.hide();
+        },
+        show: (point, radius, isPressed) => {
+          this.#showCursor(point, radius, isPressed);
+        },
+      }
+    );
 
     this.hand = new HandTool((command) => {
       this.session.send(command);
     }, this.#pickGrabbable.bind(this));
 
     this.#pointer = new PointerControls(parts.canvas, this.camera, groundPicker, [this.hand, this.powers], {
-      tap: (point, screen) => this.#selectAt(point, screen),
+      tap: (point, screen) => {
+        return this.#selectAt(point, screen);
+      },
     });
     this.#keyboard = new KeyboardControls(window, this.camera);
-    this.#resizeObserver = new ResizeObserver(() => this.#resize());
+    this.#resizeObserver = new ResizeObserver(() => {
+      this.#resize();
+    });
     this.#resizeObserver.observe(parts.canvas);
     this.#resize();
 
     for (const type of ACTIVITY_EVENTS) {
-      window.addEventListener(type, () => this.#pacer.markActivity(performance.now()), {
-        passive: true,
-        signal: this.#activity.signal,
-      });
+      window.addEventListener(
+        type,
+        () => {
+          this.#pacer.markActivity(performance.now());
+        },
+        {
+          passive: true,
+          signal: this.#activity.signal,
+        }
+      );
     }
   }
 
@@ -192,7 +218,9 @@ export class GameEngine implements EngineHandle {
 
   followSelection(): void {
     this.camera.setDistance(Math.min(this.camera.state.distance, FOLLOW_DISTANCE));
-    this.camera.follow(() => this.#selectedPosition());
+    this.camera.follow(() => {
+      return this.#selectedPosition();
+    });
   }
 
   stopFollowing(): void {
@@ -222,7 +250,9 @@ export class GameEngine implements EngineHandle {
   }
 
   run(): void {
-    this.#renderer.setAnimationLoop((time) => this.#frame(time));
+    this.#renderer.setAnimationLoop((time) => {
+      this.#frame(time);
+    });
   }
 
   stop(): void {

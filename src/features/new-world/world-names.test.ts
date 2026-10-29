@@ -11,7 +11,11 @@ describe("world names", () => {
   });
 
   it("gives neighboring seeds different single-word names", () => {
-    const names = new Set(Array.from({ length: 50 }, (_, seed) => worldNameFor(seed + 1)));
+    const names = new Set(
+      Array.from({ length: 50 }, (_, seed) => {
+        return worldNameFor(seed + 1);
+      })
+    );
 
     expect(names.size).toBe(50);
 

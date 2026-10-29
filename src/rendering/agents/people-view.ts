@@ -77,21 +77,29 @@ interface PersonVisual {
 }
 
 function activityTable(): readonly (readonly (readonly (readonly number[])[])[])[] {
-  return PERSON_POSES.map((pose) =>
-    CARRIED_ITEMS.map((carried) =>
-      WEAPON_CHOICES.map((weapon) => activityParts(pose, carried, weapon).map((part) => humanPartIndex(part)))
-    )
-  );
+  return PERSON_POSES.map((pose) => {
+    return CARRIED_ITEMS.map((carried) => {
+      return WEAPON_CHOICES.map((weapon) => {
+        return activityParts(pose, carried, weapon).map((part) => {
+          return humanPartIndex(part);
+        });
+      });
+    });
+  });
 }
 
 function gearColors(): readonly Color[] {
-  return TOOL_MATERIALS.map((material) => new Color(GEAR_COLORS[material]));
+  return TOOL_MATERIALS.map((material) => {
+    return new Color(GEAR_COLORS[material]);
+  });
 }
 
 function colorsOf(appearance: PersonAppearance): Color[] {
   const { colors } = appearance;
 
-  return [colors.skin, colors.hair, colors.fur, colors.hide, colors.accent].map((hex) => new Color(hex));
+  return [colors.skin, colors.hair, colors.fur, colors.hide, colors.accent].map((hex) => {
+    return new Color(hex);
+  });
 }
 
 export class PeopleView {
@@ -302,7 +310,9 @@ export class PeopleView {
 
     const visual: PersonVisual = {
       appearance,
-      baseParts: appearanceParts(appearance).map((part) => humanPartIndex(part)),
+      baseParts: appearanceParts(appearance).map((part) => {
+        return humanPartIndex(part);
+      }),
       colors: colorsOf(appearance),
       era,
       motion:

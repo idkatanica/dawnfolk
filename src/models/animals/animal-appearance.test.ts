@@ -11,37 +11,73 @@ describe("animal appearance", () => {
   });
 
   it.each(ANIMAL_KINDS)("varies the coat and size of every %s", (kind) => {
-    const herd = Array.from({ length: 12 }, (_, index) => animalAppearance({ kind, seed: index / 12, youth: 0 }));
+    const herd = Array.from({ length: 12 }, (_, index) => {
+      return animalAppearance({ kind, seed: index / 12, youth: 0 });
+    });
 
-    expect(new Set(herd.map((animal) => animal.coat)).size).toBeGreaterThan(6);
-    expect(Math.max(...herd.map((animal) => animal.size))).toBeGreaterThan(
-      Math.min(...herd.map((animal) => animal.size))
+    expect(
+      new Set(
+        herd.map((animal) => {
+          return animal.coat;
+        })
+      ).size
+    ).toBeGreaterThan(6);
+    expect(
+      Math.max(
+        ...herd.map((animal) => {
+          return animal.size;
+        })
+      )
+    ).toBeGreaterThan(
+      Math.min(
+        ...herd.map((animal) => {
+          return animal.size;
+        })
+      )
     );
   });
 
   it("gives ibex bucks long curved horns, does short ones and kids none", () => {
-    const adults = Array.from({ length: 40 }, (_, index) =>
-      animalAppearance({ kind: "ibex", seed: index / 40, youth: 0 })
-    );
+    const adults = Array.from({ length: 40 }, (_, index) => {
+      return animalAppearance({ kind: "ibex", seed: index / 40, youth: 0 });
+    });
     const kid = animalAppearance({ kind: "ibex", seed: 0.3, youth: 1 });
 
-    const visible = adults.map((ibex) => visibleAnimalParts("ibex", ibex));
+    const visible = adults.map((ibex) => {
+      return visibleAnimalParts("ibex", ibex);
+    });
 
-    expect(visible.filter((parts) => parts.includes(2)).length).toBeGreaterThan(5);
-    expect(visible.filter((parts) => parts.includes(1)).length).toBeGreaterThan(5);
+    expect(
+      visible.filter((parts) => {
+        return parts.includes(2);
+      }).length
+    ).toBeGreaterThan(5);
+    expect(
+      visible.filter((parts) => {
+        return parts.includes(1);
+      }).length
+    ).toBeGreaterThan(5);
     expect(visibleAnimalParts("ibex", kid)).not.toContain(1);
   });
 
   it("gives grown wolves a thick ruff now and then but never a pup", () => {
-    const adults = Array.from({ length: 40 }, (_, index) =>
-      animalAppearance({ kind: "wolf", seed: index / 40, youth: 0 })
-    );
-    const pups = Array.from({ length: 10 }, (_, index) =>
-      animalAppearance({ kind: "wolf", seed: index / 10, youth: 0.8 })
-    );
+    const adults = Array.from({ length: 40 }, (_, index) => {
+      return animalAppearance({ kind: "wolf", seed: index / 40, youth: 0 });
+    });
+    const pups = Array.from({ length: 10 }, (_, index) => {
+      return animalAppearance({ kind: "wolf", seed: index / 10, youth: 0.8 });
+    });
 
-    expect(adults.filter((wolf) => wolf.hasRuff).length).toBeGreaterThan(10);
-    expect(pups.some((wolf) => wolf.hasRuff)).toBe(false);
+    expect(
+      adults.filter((wolf) => {
+        return wolf.hasRuff;
+      }).length
+    ).toBeGreaterThan(10);
+    expect(
+      pups.some((wolf) => {
+        return wolf.hasRuff;
+      })
+    ).toBe(false);
   });
 
   it("gives fawns spots and no antlers", () => {
@@ -57,11 +93,13 @@ describe("animal appearance", () => {
   });
 
   it("grows antlers on some adult deer only", () => {
-    const adults = Array.from({ length: 40 }, (_, index) =>
-      animalAppearance({ kind: "deer", seed: index / 40, youth: 0 })
-    );
+    const adults = Array.from({ length: 40 }, (_, index) => {
+      return animalAppearance({ kind: "deer", seed: index / 40, youth: 0 });
+    });
 
-    const stags = adults.filter((deer) => deer.hasAntlers).length;
+    const stags = adults.filter((deer) => {
+      return deer.hasAntlers;
+    }).length;
 
     expect(stags).toBeGreaterThan(5);
     expect(stags).toBeLessThan(35);

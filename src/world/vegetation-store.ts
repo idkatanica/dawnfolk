@@ -436,8 +436,12 @@ export class VegetationStore implements VegetationChannels {
       ...this.exportBuffers(),
       aliveCount: this.#aliveCount,
       burntDay: this.#burntDay.slice(0, count),
-      burntQueueDays: Float64Array.from(queue, (burnt) => burnt.day),
-      burntQueuePlants: Int32Array.from(queue, (burnt) => burnt.index),
+      burntQueueDays: Float64Array.from(queue, (burnt) => {
+        return burnt.day;
+      }),
+      burntQueuePlants: Int32Array.from(queue, (burnt) => {
+        return burnt.index;
+      }),
       cell: this.cell.slice(0, count),
       freeSlots: Int32Array.from(this.#freeSlots),
       nextInCell: this.#nextInCell.slice(0, count),

@@ -3,7 +3,9 @@ import type { SimulationCommand } from "../simulation/commands.ts";
 import { useEngineStore } from "./engine-store.ts";
 
 export function useEngine(): EngineHandle | null {
-  return useEngineStore((state) => (state.status.kind === "ready" ? state.status.engine : null));
+  return useEngineStore((state) => {
+    return state.status.kind === "ready" ? state.status.engine : null;
+  });
 }
 
 export function useSendCommand(): (command: SimulationCommand) => void {

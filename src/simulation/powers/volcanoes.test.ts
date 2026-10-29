@@ -21,7 +21,9 @@ function floodRiver(simulation: Simulation): void {
 
   floodCells(
     simulation.world,
-    grid.cellsInRadius(0, 0, grid.worldSize).filter((cell) => grid.cellCenterX(cell) > RIVER_START),
+    grid.cellsInRadius(0, 0, grid.worldSize).filter((cell) => {
+      return grid.cellCenterX(cell) > RIVER_START;
+    }),
     1
   );
 }
@@ -30,7 +32,9 @@ function createSimulation({ hasRiver }: VolcanoWorld): Simulation {
   const simulation = new Simulation(
     createVegetatedWorld({
       dimensions: { cellSize: 10, cellsPerSide: 96 },
-      heightAt: (x) => BASE_HEIGHT - x * FALL_PER_METER,
+      heightAt: (x) => {
+        return BASE_HEIGHT - x * FALL_PER_METER;
+      },
     })
   );
 
@@ -80,18 +84,27 @@ function warnOfLava(simulation: Simulation): LavaWarnings {
   const zones = simulation.hazards.snapshot();
   const { grid } = simulation.world;
 
-  const hotCells = [...onlyVolcano(simulation).lava].filter(([, heat]) => heat > 0.3).map(([cell]) => cell);
+  const hotCells = [...onlyVolcano(simulation).lava]
+    .filter(([, heat]) => {
+      return heat > 0.3;
+    })
+    .map(([cell]) => {
+      return cell;
+    });
 
   function isWarned(cell: number): boolean {
-    return zones.some(
-      (zone) => Math.hypot(zone.x - grid.cellCenterX(cell), zone.z - grid.cellCenterZ(cell)) < zone.radius
-    );
+    return zones.some((zone) => {
+      return Math.hypot(zone.x - grid.cellCenterX(cell), zone.z - grid.cellCenterZ(cell)) < zone.radius;
+    });
   }
 
   return {
-    farHotCells: hotCells.filter((cell) => Math.hypot(grid.cellCenterX(cell), grid.cellCenterZ(cell)) > RADIUS * 1.5)
-      .length,
-    unwarnedHotCells: hotCells.filter((cell) => !isWarned(cell)).length,
+    farHotCells: hotCells.filter((cell) => {
+      return Math.hypot(grid.cellCenterX(cell), grid.cellCenterZ(cell)) > RADIUS * 1.5;
+    }).length,
+    unwarnedHotCells: hotCells.filter((cell) => {
+      return !isWarned(cell);
+    }).length,
   };
 }
 
@@ -160,7 +173,11 @@ describe("volcanoes", () => {
 
     expect(simulation.fire.burningCount).toBeGreaterThan(0);
     expect(simulation.embers.flying.length).toBeGreaterThan(0);
-    expect([...volcano.lava.keys()].every((cell) => terrain.ground[cell] === Ground.Basalt)).toBe(true);
+    expect(
+      [...volcano.lava.keys()].every((cell) => {
+        return terrain.ground[cell] === Ground.Basalt;
+      })
+    ).toBe(true);
     expect(simulation.advance(0).lava).toBeNull();
 
     simulation.step();
@@ -178,11 +195,21 @@ describe("volcanoes", () => {
     runFor(simulation, 60);
 
     const volcano = onlyVolcano(simulation);
-    const quenched = volcano.tongues.filter((tongue) => tongue.quenchedCell >= 0);
+    const quenched = volcano.tongues.filter((tongue) => {
+      return tongue.quenchedCell >= 0;
+    });
 
     expect(quenched.length).toBeGreaterThan(0);
-    expect(quenched.every((tongue) => world.isWater(tongue.quenchedCell))).toBe(true);
-    expect([...volcano.lava.keys()].some((cell) => world.isWater(cell))).toBe(false);
+    expect(
+      quenched.every((tongue) => {
+        return world.isWater(tongue.quenchedCell);
+      })
+    ).toBe(true);
+    expect(
+      [...volcano.lava.keys()].some((cell) => {
+        return world.isWater(cell);
+      })
+    ).toBe(false);
     expect(simulation.advance(0).volcanoes[0].steam.length).toBeGreaterThan(0);
   });
 
@@ -196,14 +223,28 @@ describe("volcanoes", () => {
 
     const lastLava = runFor(simulation, 30 + COOLING_SECONDS * 1.4);
 
-    const ashCells = world.grid.cellsInRadius(0, 0, RADIUS).filter((cell) => world.terrain.ground[cell] === Ground.Ash);
+    const ashCells = world.grid.cellsInRadius(0, 0, RADIUS).filter((cell) => {
+      return world.terrain.ground[cell] === Ground.Ash;
+    });
 
     expect(simulation.volcanoes.all).toHaveLength(0);
     expect(lastLava?.cells).toHaveLength(0);
-    expect(lavaCells.every((cell) => world.terrain.ground[cell] === Ground.Basalt)).toBe(true);
-    expect(lavaCells.some((cell) => world.recovering.has(cell))).toBe(false);
+    expect(
+      lavaCells.every((cell) => {
+        return world.terrain.ground[cell] === Ground.Basalt;
+      })
+    ).toBe(true);
+    expect(
+      lavaCells.some((cell) => {
+        return world.recovering.has(cell);
+      })
+    ).toBe(false);
     expect(ashCells.length).toBeGreaterThan(50);
-    expect(ashCells.every((cell) => world.recovering.has(cell))).toBe(true);
+    expect(
+      ashCells.every((cell) => {
+        return world.recovering.has(cell);
+      })
+    ).toBe(true);
   });
 
   it("kills people and animals that stand in hot lava", () => {

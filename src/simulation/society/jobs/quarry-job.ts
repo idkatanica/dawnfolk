@@ -21,10 +21,13 @@ export function findStone(tick: PersonTick): Job | null {
   const { world } = tick.context;
 
   const boulder = nearestPlant(world, {
-    accepts: (plant) =>
-      isRockSpecies(world.vegetation.species[plant]) &&
-      isFreePlant(tick, plant) &&
-      canWorkAtPlant(tick, plant, PICK_REACH),
+    accepts: (plant) => {
+      return (
+        isRockSpecies(world.vegetation.species[plant]) &&
+        isFreePlant(tick, plant) &&
+        canWorkAtPlant(tick, plant, PICK_REACH)
+      );
+    },
     radius: BOULDER_SEARCH_RADIUS,
     x: person.mover.x,
     z: person.mover.z,

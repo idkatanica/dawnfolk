@@ -100,13 +100,55 @@ export class PointerControls {
 
     const options = { signal: this.#abort.signal };
 
-    canvas.addEventListener("pointerdown", (event) => this.#down(event), options);
-    canvas.addEventListener("pointermove", (event) => this.#move(event), options);
-    canvas.addEventListener("pointerup", (event) => this.#up(event, true), options);
-    canvas.addEventListener("pointercancel", (event) => this.#up(event, false), options);
-    canvas.addEventListener("pointerleave", () => this.#hoverNothing(), options);
-    canvas.addEventListener("wheel", (event) => this.#wheel(event), { ...options, passive: false });
-    canvas.addEventListener("contextmenu", (event) => event.preventDefault(), options);
+    canvas.addEventListener(
+      "pointerdown",
+      (event) => {
+        return this.#down(event);
+      },
+      options
+    );
+    canvas.addEventListener(
+      "pointermove",
+      (event) => {
+        return this.#move(event);
+      },
+      options
+    );
+    canvas.addEventListener(
+      "pointerup",
+      (event) => {
+        return this.#up(event, true);
+      },
+      options
+    );
+    canvas.addEventListener(
+      "pointercancel",
+      (event) => {
+        return this.#up(event, false);
+      },
+      options
+    );
+    canvas.addEventListener(
+      "pointerleave",
+      () => {
+        return this.#hoverNothing();
+      },
+      options
+    );
+    canvas.addEventListener(
+      "wheel",
+      (event) => {
+        return this.#wheel(event);
+      },
+      { ...options, passive: false }
+    );
+    canvas.addEventListener(
+      "contextmenu",
+      (event) => {
+        return event.preventDefault();
+      },
+      options
+    );
   }
 
   dispose(): void {
@@ -165,7 +207,9 @@ export class PointerControls {
   #waitForSecondTouch(waiting: Extract<Gesture, { kind: "waiting" }>): void {
     this.#gesture = waiting;
     waiting.tool.hover(waiting.point);
-    this.#holdTimer = window.setTimeout(() => this.#commitTool(this.#onlyPointer()), TOUCH_HOLD_MILLISECONDS);
+    this.#holdTimer = window.setTimeout(() => {
+      return this.#commitTool(this.#onlyPointer());
+    }, TOUCH_HOLD_MILLISECONDS);
   }
 
   #onlyPointer(): TrackedPointer | null {

@@ -13,7 +13,13 @@ interface Rig {
 const rigs: Rig[] = [];
 
 function createRig(): Rig {
-  const camera = new GodCamera(new PerspectiveCamera(45, 1.5, 1, 40_000), () => 0, WORLD_HALF_SIZE);
+  const camera = new GodCamera(
+    new PerspectiveCamera(45, 1.5, 1, 40_000),
+    () => {
+      return 0;
+    },
+    WORLD_HALF_SIZE
+  );
 
   camera.jumpTo({ distance: 500, targetX: 0, targetZ: 0, yaw: 0 });
 
@@ -91,7 +97,9 @@ describe("keyboard controls", () => {
     const rig = createRig();
     const tabs = document.createElement("div");
 
-    tabs.addEventListener("keydown", (event) => event.preventDefault());
+    tabs.addEventListener("keydown", (event) => {
+      event.preventDefault();
+    });
     document.body.append(tabs);
     press(tabs, "ArrowRight");
     settle(rig);

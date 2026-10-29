@@ -69,7 +69,11 @@ export function sampleWaterSurface(terrain: SampledTerrain, grid: WorldGrid, x: 
     waterVertexLevel(terrain, grid, column + 1, row + 1),
   ];
 
-  if (corners.some((level) => level === NO_WATER)) {
+  if (
+    corners.some((level) => {
+      return level === NO_WATER;
+    })
+  ) {
     return NO_WATER;
   }
 

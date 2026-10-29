@@ -45,15 +45,25 @@ export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
       { build: addDeerBody, isShown: always, name: "body" },
       {
         build: addSmallAntlers,
-        isShown: (appearance) => appearance.hasAntlers && appearance.antlerSize <= 0.95,
+        isShown: (appearance) => {
+          return appearance.hasAntlers && appearance.antlerSize <= 0.95;
+        },
         name: "antlersSmall",
       },
       {
         build: addLargeAntlers,
-        isShown: (appearance) => appearance.hasAntlers && appearance.antlerSize > 0.95,
+        isShown: (appearance) => {
+          return appearance.hasAntlers && appearance.antlerSize > 0.95;
+        },
         name: "antlersLarge",
       },
-      { build: addFawnSpots, isShown: (appearance) => appearance.hasSpots, name: "spots" },
+      {
+        build: addFawnSpots,
+        isShown: (appearance) => {
+          return appearance.hasSpots;
+        },
+        name: "spots",
+      },
     ],
     skeleton: createQuadrupedSkeleton(DEER_FRAME),
   },
@@ -70,10 +80,18 @@ export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
       { build: addIbexBody, isShown: always, name: "body" },
       {
         build: addShortHorns,
-        isShown: (appearance) => appearance.hornLength > 0.2 && appearance.hornLength <= 0.8,
+        isShown: (appearance) => {
+          return appearance.hornLength > 0.2 && appearance.hornLength <= 0.8;
+        },
         name: "hornsShort",
       },
-      { build: addLongHorns, isShown: (appearance) => appearance.hornLength > 0.8, name: "hornsLong" },
+      {
+        build: addLongHorns,
+        isShown: (appearance) => {
+          return appearance.hornLength > 0.8;
+        },
+        name: "hornsLong",
+      },
     ],
     skeleton: createQuadrupedSkeleton(IBEX_FRAME),
   },
@@ -84,10 +102,18 @@ export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
       { build: addMammothBody, isShown: always, name: "body" },
       {
         build: addShortTusks,
-        isShown: (appearance) => appearance.tuskLength > 0.3 && appearance.tuskLength <= 0.8,
+        isShown: (appearance) => {
+          return appearance.tuskLength > 0.3 && appearance.tuskLength <= 0.8;
+        },
         name: "tusksShort",
       },
-      { build: addLongTusks, isShown: (appearance) => appearance.tuskLength > 0.8, name: "tusksLong" },
+      {
+        build: addLongTusks,
+        isShown: (appearance) => {
+          return appearance.tuskLength > 0.8;
+        },
+        name: "tusksLong",
+      },
     ],
     skeleton: createQuadrupedSkeleton(MAMMOTH_FRAME),
   },
@@ -96,7 +122,13 @@ export const ANIMAL_SPECIES: Readonly<Record<AnimalKind, AnimalSpecies>> = {
     gait: WOLF_GAIT,
     parts: [
       { build: addWolfBody, isShown: always, name: "body" },
-      { build: addRuff, isShown: (appearance) => appearance.hasRuff, name: "ruff" },
+      {
+        build: addRuff,
+        isShown: (appearance) => {
+          return appearance.hasRuff;
+        },
+        name: "ruff",
+      },
     ],
     skeleton: createQuadrupedSkeleton(WOLF_FRAME),
   },
@@ -137,7 +169,9 @@ export function buildAnimalParts(kind: AnimalKind, level: AnimalDetailLevel): Me
 }
 
 export function visibleAnimalParts(kind: AnimalKind, appearance: AnimalAppearance): number[] {
-  return ANIMAL_SPECIES[kind].parts.flatMap((part, index) => (part.isShown(appearance) ? [index] : []));
+  return ANIMAL_SPECIES[kind].parts.flatMap((part, index) => {
+    return part.isShown(appearance) ? [index] : [];
+  });
 }
 
 export function poseAnimal(

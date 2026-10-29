@@ -373,9 +373,9 @@ function layBar(ford: Ford, surroundings: FordSurroundings, span: WaterSpan): Ba
   const last = span.end + BAR_OVERHANG;
   const rows = Math.max(1, Math.ceil((last - first) / BAR_ROW_STEP));
 
-  return Array.from({ length: rows + 1 }, (_, row) =>
-    barRow(ford, surroundings, lerp(first, last, row / rows), row === 0 || row === rows)
-  );
+  return Array.from({ length: rows + 1 }, (_, row) => {
+    return barRow(ford, surroundings, lerp(first, last, row / rows), row === 0 || row === rows);
+  });
 }
 
 export function layFord(ford: Ford, surroundings: FordSurroundings): FordLayout {
@@ -387,10 +387,16 @@ export function layFord(ford: Ford, surroundings: FordSurroundings): FordLayout 
 
   const line = steppingLine(ford, span);
 
-  const steps = line.flatMap((step) => placeStep(ford, surroundings, span, step));
+  const steps = line.flatMap((step) => {
+    return placeStep(ford, surroundings, span, step);
+  });
   const sides = line
-    .map((step) => placeSideStone(ford, surroundings, span, step))
-    .filter((stone): stone is FordStone => stone !== null);
+    .map((step) => {
+      return placeSideStone(ford, surroundings, span, step);
+    })
+    .filter((stone): stone is FordStone => {
+      return stone !== null;
+    });
 
   return {
     bar: layBar(ford, surroundings, span),

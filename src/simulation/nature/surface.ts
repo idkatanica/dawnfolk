@@ -15,9 +15,13 @@ const WARM_GROUND_TEMPERATURE = 3;
 const COLD_GROWTH = 0.2;
 const RAIN_MELT = 0.004;
 const UNBUILT_MASK = -1;
-const GROUND_FUEL = Float64Array.from(GROUNDS, (ground) => ground.fuel);
+const GROUND_FUEL = Float64Array.from(GROUNDS, (ground) => {
+  return ground.fuel;
+});
 const STORED_GROUND_FUEL = Float32Array.from(GROUND_FUEL);
-const GROUND_REGROWTH = Float64Array.from(GROUNDS, (ground) => ground.regrowth);
+const GROUND_REGROWTH = Float64Array.from(GROUNDS, (ground) => {
+  return ground.regrowth;
+});
 const WATER_WETNESS_BITS = floatBits(1);
 
 export interface SurfaceConditions {

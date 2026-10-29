@@ -62,11 +62,15 @@ function isWetAlong(
 }
 
 function touchesWater(world: WorldState, from: Waypoint, path: readonly Waypoint[]): boolean {
-  return isWetAlong(from, path, 20, (x, z) => world.isWaterAt(x, z));
+  return isWetAlong(from, path, 20, (x, z) => {
+    return world.isWaterAt(x, z);
+  });
 }
 
 function wadesOutsideTheFord(world: WorldState, from: Waypoint, path: readonly Waypoint[]): boolean {
-  return isWetAlong(from, path, 200, (x, z) => world.isWaterAt(x, z) && world.crossingAt(x, z) === null);
+  return isWetAlong(from, path, 200, (x, z) => {
+    return world.isWaterAt(x, z) && world.crossingAt(x, z) === null;
+  });
 }
 
 function riverWithFord(): WorldState {
@@ -78,7 +82,9 @@ function riverWithFord(): WorldState {
 }
 
 function crossesSpring(world: WorldState, from: Waypoint, to: Waypoint): boolean {
-  return world.grid.someCellAlong(from.x, from.z, to.x, to.z, (cell) => world.occupancy[cell] === SPRING_GROUND);
+  return world.grid.someCellAlong(from.x, from.z, to.x, to.z, (cell) => {
+    return world.occupancy[cell] === SPRING_GROUND;
+  });
 }
 
 describe("navigation grid", () => {
@@ -139,7 +145,11 @@ describe("navigation grid", () => {
 
     expect(steps.length).toBeGreaterThan(2);
     expect(steps.length).toBeLessThan(8);
-    expect(steps.filter((step) => world.isWalkableAt(step.x, step.z))).toEqual([steps.at(-1)]);
+    expect(
+      steps.filter((step) => {
+        return world.isWalkableAt(step.x, step.z);
+      })
+    ).toEqual([steps.at(-1)]);
     expect(navigation.stepAshore(-300, 0)).toBeNull();
   });
 
@@ -193,7 +203,11 @@ describe("navigation grid", () => {
 
     raiseTerrain(world, { radius: 60, x: 100, z: 100 }, 30);
 
-    expect(world.grid.cellsInRadius(100, 100, 80).every((cell) => world.isWalkable(cell))).toBe(true);
+    expect(
+      world.grid.cellsInRadius(100, 100, 80).every((cell) => {
+        return world.isWalkable(cell);
+      })
+    ).toBe(true);
     expect(navigation.rebuildIfChanged()).toBe(true);
   });
 });
@@ -275,9 +289,11 @@ describe("crossings", () => {
 
     const path = expectPath(navigation.findPath(from, { x: -150, z: 5 }));
 
-    expect(path.every((waypoint, index) => navigation.isClear(index === 0 ? from : path[index - 1], waypoint))).toBe(
-      true
-    );
+    expect(
+      path.every((waypoint, index) => {
+        return navigation.isClear(index === 0 ? from : path[index - 1], waypoint);
+      })
+    ).toBe(true);
   });
 
   it("does not hop over spring ground", () => {
@@ -296,9 +312,11 @@ describe("crossings", () => {
 
     const path = expectPath(navigation.findPath(from, { x: 150, z: 100 }));
 
-    expect(path.some((waypoint, index) => crossesSpring(world, index === 0 ? from : path[index - 1], waypoint))).toBe(
-      false
-    );
+    expect(
+      path.some((waypoint, index) => {
+        return crossesSpring(world, index === 0 ? from : path[index - 1], waypoint);
+      })
+    ).toBe(false);
   });
 
   it("does not hop a river wider than a hop or flood water", () => {

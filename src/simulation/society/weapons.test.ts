@@ -67,7 +67,9 @@ describe("hunting with bows", () => {
       poses.add(tick.person.pose);
     }
 
-    const arrows = harness.context.effects.takeEffects().filter((effect) => effect.kind === "arrow");
+    const arrows = harness.context.effects.takeEffects().filter((effect) => {
+      return effect.kind === "arrow";
+    });
 
     expect(poses).toContain("shoot");
     expect(arrows.length).toBeGreaterThan(0);

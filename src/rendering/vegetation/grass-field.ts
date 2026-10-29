@@ -241,9 +241,13 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   const bladeNormal = normalize(vec3(facing.y.negate().mul(0.35), 1, facing.x.mul(0.35)).add(vec3(bend.x, 0, bend.y)));
   const tint = bladeRandom(17).mul(0.3).add(0.85);
 
-  material.positionNode = Fn(() =>
-    vec3(root.x.add(spread.x).add(offset.x), height.sub(ROOT_SINK).add(rise), root.y.add(spread.y).add(offset.y))
-  )();
+  material.positionNode = Fn(() => {
+    return vec3(
+      root.x.add(spread.x).add(offset.x),
+      height.sub(ROOT_SINK).add(rise),
+      root.y.add(spread.y).add(offset.y)
+    );
+  })();
 
   const shadedGround = ground.rgb.mul(mix(float(0.68), float(1.22), along)).mul(tint);
   const grassLeaf = mix(shadedGround, shadedGround.mul(vec3(1.08, 1.1, 0.82)), curve);

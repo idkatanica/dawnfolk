@@ -4,7 +4,13 @@ import { GroundPicker } from "./ground-picker.ts";
 
 describe("ground picker", () => {
   it("finds the point under the screen center on flat ground", () => {
-    const picker = new GroundPicker(cameraLookingAt(100, -50), () => 0, 2000);
+    const picker = new GroundPicker(
+      cameraLookingAt(100, -50),
+      () => {
+        return 0;
+      },
+      2000
+    );
 
     const hit = picker.pick(CENTER, VIEWPORT);
 
@@ -29,7 +35,13 @@ describe("ground picker", () => {
   });
 
   it("misses when the ray leaves the island", () => {
-    const picker = new GroundPicker(cameraLookingAt(0, 0), () => 0, 50);
+    const picker = new GroundPicker(
+      cameraLookingAt(0, 0),
+      () => {
+        return 0;
+      },
+      50
+    );
 
     expect(picker.pick({ x: 0, y: 0 }, VIEWPORT)).toBeNull();
   });

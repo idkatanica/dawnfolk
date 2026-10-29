@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { DEFAULT_WORLD_REQUEST } from "../../generation/generation-options.ts";
+import { ignore } from "../../shared/ignore.ts";
 import { SAVE_VERSION, type SavedWorldState } from "../../simulation/saved-world.ts";
 import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
@@ -15,9 +16,11 @@ import {
 const TEST_WORLD = { dimensions: { cellSize: 10, cellsPerSide: 64 } };
 
 function savedState(): SavedWorldState {
-  const api = createSimulationWorkerApi(() => new Simulation(createVegetatedWorld(TEST_WORLD)));
+  const api = createSimulationWorkerApi(() => {
+    return new Simulation(createVegetatedWorld(TEST_WORLD));
+  });
 
-  api.createWorld(DEFAULT_WORLD_REQUEST, () => undefined);
+  api.createWorld(DEFAULT_WORLD_REQUEST, ignore);
   api.advance(0.5, [{ parameters: {}, powerId: "tribe", type: "usePower", x: 0, z: 0 }]);
 
   const state = api.saveWorld();
@@ -45,7 +48,11 @@ function recordFor(id: string, state: SavedWorldState, changes: Partial<SavedWor
 afterEach(async () => {
   const worlds = await listSavedWorlds();
 
-  await Promise.all(worlds.map((world) => deleteSavedWorld(world.id)));
+  await Promise.all(
+    worlds.map((world) => {
+      return deleteSavedWorld(world.id);
+    })
+  );
 });
 
 describe("saved worlds", () => {
@@ -71,7 +78,11 @@ describe("saved worlds", () => {
     await writeSavedWorld(recordFor("older", state, { savedAt: 1000 }), state, []);
     await writeSavedWorld(recordFor("newer", state, { savedAt: 2000 }), state, []);
 
-    expect((await listSavedWorlds()).map((world) => world.id)).toEqual(["newer", "older"]);
+    expect(
+      (await listSavedWorlds()).map((world) => {
+        return world.id;
+      })
+    ).toEqual(["newer", "older"]);
   });
 
   it("deletes a world with its state", async () => {
@@ -107,11 +118,15 @@ describe("saved worlds", () => {
     }
 
     const api = createSimulationWorkerApi(
-      () => new Simulation(createVegetatedWorld(TEST_WORLD)),
-      () => new Simulation(createVegetatedWorld(TEST_WORLD))
+      () => {
+        return new Simulation(createVegetatedWorld(TEST_WORLD));
+      },
+      () => {
+        return new Simulation(createVegetatedWorld(TEST_WORLD));
+      }
     );
 
-    const world = api.loadWorld(stored.state, () => undefined);
+    const world = api.loadWorld(stored.state, ignore);
 
     expect(world.frame.tick).toBe(state.simulation.tick);
     expect(world.frame.personCount).toBe(state.simulation.society.people.length);

@@ -31,12 +31,19 @@ export class Nursery {
   }
 
   snapshot(): NurserySnapshot {
-    return { pendingDays: this.#pendingDays, seedlings: this.#seedlings.map((seedling) => ({ ...seedling })) };
+    return {
+      pendingDays: this.#pendingDays,
+      seedlings: this.#seedlings.map((seedling) => {
+        return { ...seedling };
+      }),
+    };
   }
 
   restore(snapshot: NurserySnapshot): void {
     this.#pendingDays = snapshot.pendingDays;
-    this.#seedlings = snapshot.seedlings.map((seedling) => ({ ...seedling }));
+    this.#seedlings = snapshot.seedlings.map((seedling) => {
+      return { ...seedling };
+    });
   }
 
   plant(placement: PlantPlacement, growingDays: number): void {
@@ -68,7 +75,9 @@ export class Nursery {
     const step = this.#pendingDays;
 
     this.#pendingDays = 0;
-    this.#seedlings = this.#seedlings.filter((seedling) => this.#growSeedling(seedling, step));
+    this.#seedlings = this.#seedlings.filter((seedling) => {
+      return this.#growSeedling(seedling, step);
+    });
   }
 
   #growSeedling(seedling: Seedling, days: number): boolean {

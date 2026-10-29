@@ -31,7 +31,11 @@ describe("skin weight chains", () => {
   });
 
   it("refuses chains whose bones and joints do not line up", () => {
-    expect(() => createChain([1, 2], [])).toThrow(RangeError);
-    expect(() => createChain([1, 2], [{ axis: [0, 0, 0], blend: 0.1, position: [0, 0, 0] }])).toThrow(RangeError);
+    expect(() => {
+      return createChain([1, 2], []);
+    }).toThrow(RangeError);
+    expect(() => {
+      return createChain([1, 2], [{ axis: [0, 0, 0], blend: 0.1, position: [0, 0, 0] }]);
+    }).toThrow(RangeError);
   });
 });

@@ -11,9 +11,9 @@ const LARGEST_CELLS_PER_SIDE = 4096;
 const MISSING_SPECIES = -1;
 const SPECIES_BY_NAME = new Map<string, number>(Object.entries(PlantSpecies));
 
-export const PLANT_SPECIES_NAMES: readonly string[] = [...SPECIES_BY_NAME.keys()].sort(
-  (first, second) => speciesNamed(first) - speciesNamed(second)
-);
+export const PLANT_SPECIES_NAMES: readonly string[] = [...SPECIES_BY_NAME.keys()].sort((first, second) => {
+  return speciesNamed(first) - speciesNamed(second);
+});
 
 const OLDER_SAVE_PLANT_SPECIES = [
   "Spruce",
@@ -105,13 +105,14 @@ const snapshotShapeSchema = z.looseObject({
   }),
 });
 
-const simulationSnapshotSchema = z.custom<SimulationSnapshot>(
-  (value) => snapshotShapeSchema.safeParse(value).success,
-  "The saved world is damaged"
-);
+const simulationSnapshotSchema = z.custom<SimulationSnapshot>((value) => {
+  return snapshotShapeSchema.safeParse(value).success;
+}, "The saved world is damaged");
 
 export const savedWorldStateSchema = z.object({
-  plantSpecies: z.array(z.string()).default(() => [...OLDER_SAVE_PLANT_SPECIES]),
+  plantSpecies: z.array(z.string()).default(() => {
+    return [...OLDER_SAVE_PLANT_SPECIES];
+  }),
   request: worldRequestSchema,
   simulation: simulationSnapshotSchema,
   summary: worldSummarySchema,
@@ -159,12 +160,18 @@ export function restoreSavedWorld(simulation: Simulation, state: SavedWorldState
   }
 
   vegetationGrowth.nursery.seedlings = vegetationGrowth.nursery.seedlings
-    .filter((seedling) => currentSpecies[seedling.species] !== MISSING_SPECIES)
-    .map((seedling) => ({ ...seedling, species: currentSpecies[seedling.species] }));
+    .filter((seedling) => {
+      return currentSpecies[seedling.species] !== MISSING_SPECIES;
+    })
+    .map((seedling) => {
+      return { ...seedling, species: currentSpecies[seedling.species] };
+    });
 
   for (const tribe of society.tribes) {
     for (const plot of tribe.plots) {
-      plot.spots = plot.spots.filter((spot) => currentSpecies[spot.species] !== MISSING_SPECIES);
+      plot.spots = plot.spots.filter((spot) => {
+        return currentSpecies[spot.species] !== MISSING_SPECIES;
+      });
 
       for (const spot of plot.spots) {
         spot.species = currentSpecies[spot.species];
@@ -183,7 +190,9 @@ export function summarizeWorld(simulation: Simulation): WorldSummary {
   const calendar = simulation.calendar.view();
   const tribes = simulation.society.tribes();
 
-  const eraIndex = tribes.reduce((highest, tribe) => Math.max(highest, tribe.eraIndex), 0);
+  const eraIndex = tribes.reduce((highest, tribe) => {
+    return Math.max(highest, tribe.eraIndex);
+  }, 0);
   const era = ERAS[eraIndex];
 
   return {

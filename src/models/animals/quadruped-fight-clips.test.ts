@@ -10,7 +10,9 @@ import { QUADRUPED_CLIPS } from "./quadruped-clips.ts";
 import { QuadrupedBone } from "./quadruped-skeleton.ts";
 
 const MUZZLE_REACH = 0.3;
-const FIGHTERS = ANIMAL_KINDS.filter((kind) => !ANIMALS[kind].isSmallGame);
+const FIGHTERS = ANIMAL_KINDS.filter((kind) => {
+  return !ANIMALS[kind].isSmallGame;
+});
 
 function posed(kind: AnimalKind, clip: AnimalPose, phase: number): SkeletonPoser {
   const species = ANIMAL_SPECIES[kind];

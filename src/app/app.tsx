@@ -7,12 +7,22 @@ import { useLaunchStore } from "./launch-store.ts";
 import { LoadingScreen } from "./loading-screen.tsx";
 import { StartScreen } from "./start-screen.tsx";
 
-const Hud = lazy(() => loadHud().then((module) => ({ default: module.Hud })));
+const Hud = lazy(() => {
+  return loadHud().then((module) => {
+    return { default: module.Hud };
+  });
+});
 
 function GameScreen() {
-  const launch = useLaunchStore((state) => state.launch);
-  const worldId = useLaunchStore((state) => state.worldId);
-  const isReady = useEngineStore((state) => state.status.kind === "ready");
+  const launch = useLaunchStore((state) => {
+    return state.launch;
+  });
+  const worldId = useLaunchStore((state) => {
+    return state.worldId;
+  });
+  const isReady = useEngineStore((state) => {
+    return state.status.kind === "ready";
+  });
 
   useEffect(() => {
     document.title = `${launch.name} · Dawnfolk`;
@@ -36,7 +46,9 @@ function GameScreen() {
 }
 
 export function App() {
-  const isChoosingWorld = useLaunchStore((state) => state.isChoosingWorld);
+  const isChoosingWorld = useLaunchStore((state) => {
+    return state.isChoosingWorld;
+  });
 
   return (
     <TooltipProvider>

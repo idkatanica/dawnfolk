@@ -45,9 +45,15 @@ interface WeatherUpdate {
 export function pickSeasonalWeather(season: number, random: RandomSource): WeatherKind {
   const seasonIndex = Math.floor(season) % SEASON_COUNT;
 
-  const odds = WEATHER_KINDS.map((kind) => WEATHER[kind].seasonalOdds[seasonIndex]);
+  const odds = WEATHER_KINDS.map((kind) => {
+    return WEATHER[kind].seasonalOdds[seasonIndex];
+  });
 
-  let remaining = random.next() * odds.reduce((total, chance) => total + chance, 0);
+  let remaining =
+    random.next() *
+    odds.reduce((total, chance) => {
+      return total + chance;
+    }, 0);
 
   for (const [index, kind] of WEATHER_KINDS.entries()) {
     remaining -= odds[index];

@@ -51,7 +51,9 @@ export function detail(context: StructureContext, high: number, low: number): nu
 }
 
 export function rising(from: number, to: number, bottom: number, top: number): (point: SurfacePoint) => number {
-  return (point) => lerp(from, to, saturate((point.position.y - bottom) / (top - bottom)));
+  return (point) => {
+    return lerp(from, to, saturate((point.position.y - bottom) / (top - bottom)));
+  };
 }
 
 export function thatchSections(
@@ -110,8 +112,12 @@ export function addStake(
 
   const shaftTop = y + height - tipHeight;
   const rings = bands
-    .filter((band) => band > y && band < shaftTop)
-    .map((band) => ({ radius: radius - (radius * 0.06 * (band - y)) / (shaftTop - y), y: band }));
+    .filter((band) => {
+      return band > y && band < shaftTop;
+    })
+    .map((band) => {
+      return { radius: radius - (radius * 0.06 * (band - y)) / (shaftTop - y), y: band };
+    });
 
   context.builder.add(
     lathe(
@@ -121,7 +127,9 @@ export function addStake(
     {
       style: {
         buildOrder: order,
-        shade: (point) => 0.82 + 0.18 * saturate(point.position.y / 3),
+        shade: (point) => {
+          return 0.82 + 0.18 * saturate(point.position.y / 3);
+        },
         slot: MaterialSlot.Wood,
       },
       transform: transformOf({ position: [x, 0, z] }),
@@ -167,7 +175,9 @@ export function moundShape(context: StructureContext, position: Triple, radius: 
     roughness: 0.22,
   });
 
-  const floored = deformShape(rock, (vertex) => [0, vertex.y < 0 ? -vertex.y : 0, 0]);
+  const floored = deformShape(rock, (vertex) => {
+    return [0, vertex.y < 0 ? -vertex.y : 0, 0];
+  });
 
   return transformShape(floored, transformOf({ position: [x, 0, z], scale: squash }));
 }
@@ -290,7 +300,9 @@ export function prism(outline: Outline, depth: number): Shape {
   const along: number[] = [];
   const indices: number[] = [];
 
-  const heights = outline.map(([, y]) => y);
+  const heights = outline.map(([, y]) => {
+    return y;
+  });
   const lowest = Math.min(...heights);
   const span = Math.max(Math.max(...heights) - lowest, 1e-5);
   const halfDepth = depth / 2;
@@ -304,7 +316,9 @@ export function prism(outline: Outline, depth: number): Shape {
   }
 
   for (const facing of [1, -1]) {
-    const corners = outline.map(([x, y]) => vertex(x, y, facing * halfDepth, [0, 0, facing]));
+    const corners = outline.map(([x, y]) => {
+      return vertex(x, y, facing * halfDepth, [0, 0, facing]);
+    });
 
     for (let corner = 1; corner < corners.length - 1; corner += 1) {
       if (facing > 0) {
@@ -347,7 +361,9 @@ export function scaledMesh(mesh: MeshData, factor: number): MeshData {
     return mesh;
   }
 
-  const positions = mesh.positions.map((value) => value * factor);
+  const positions = mesh.positions.map((value) => {
+    return value * factor;
+  });
 
   return { ...mesh, bounds: boundsOf(positions), positions };
 }

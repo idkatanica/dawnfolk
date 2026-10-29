@@ -293,19 +293,31 @@ export function describeBuilding(building: Building, world: WorldState): Buildin
 function buildingCounts(tribe: Tribe, sources: TribeSources): BuildingCount[] {
   const buildings = tribeBuildings(tribe, { buildings: sources.buildings });
 
-  return BUILDING_KINDS.map((kind) => ({
-    count: buildings.filter((building) => building.kind === kind && building.progress >= 1).length,
-    kind,
-    name: BUILDINGS[kind].name,
-  })).filter((entry) => entry.count > 0);
+  return BUILDING_KINDS.map((kind) => {
+    return {
+      count: buildings.filter((building) => {
+        return building.kind === kind && building.progress >= 1;
+      }).length,
+      kind,
+      name: BUILDINGS[kind].name,
+    };
+  }).filter((entry) => {
+    return entry.count > 0;
+  });
 }
 
 function cropCounts(tribe: Tribe): CropCount[] {
-  return CROP_KINDS.map((crop) => ({
-    count: tribe.fields.filter((field) => field.isSown && field.crop === crop).length,
-    crop,
-    name: CROPS[crop].name,
-  })).filter((entry) => entry.count > 0);
+  return CROP_KINDS.map((crop) => {
+    return {
+      count: tribe.fields.filter((field) => {
+        return field.isSown && field.crop === crop;
+      }).length,
+      crop,
+      name: CROPS[crop].name,
+    };
+  }).filter((entry) => {
+    return entry.count > 0;
+  });
 }
 
 function farmland(tribe: Tribe, world: WorldState): FarmlandView {
@@ -340,7 +352,9 @@ export function describeTribe(tribe: Tribe, members: readonly Person[], sources:
     buildings: buildingCounts(tribe, sources),
     campX: tribe.campX,
     campZ: tribe.campZ,
-    children: members.filter((person) => isChild(person)).length,
+    children: members.filter((person) => {
+      return isChild(person);
+    }).length,
     color: tribe.color,
     deaths: tribe.deaths,
     era: { count: ERA_COUNT, index: era.index, nextName: nextEraName(tribe) },
@@ -381,7 +395,9 @@ export function describeWeather(weather: WeatherSystem, environment: Environment
 }
 
 export function packBurningCells(world: WorldState, cells: Int32Array): Uint8Array {
-  return Uint8Array.from(cells, (cell) => toByte(world.fields.fire[cell]));
+  return Uint8Array.from(cells, (cell) => {
+    return toByte(world.fields.fire[cell]);
+  });
 }
 
 export function packLava(heats: ReadonlyMap<number, number> | null): LavaView | null {

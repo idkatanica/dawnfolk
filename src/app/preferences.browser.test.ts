@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { ignore } from "../shared/ignore.ts";
 import { storedLabelsShown, storedQuality, storeLabelsShown, storeQuality } from "./preferences.ts";
 
 const QUALITY_KEY = "dawnfolk.quality";
@@ -24,7 +25,7 @@ describe("saved preferences", () => {
   });
 
   it("ignores and reports a saved quality it does not know", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warn = vi.spyOn(console, "warn").mockImplementation(ignore);
 
     localStorage.setItem(QUALITY_KEY, "ultra");
 
@@ -46,7 +47,7 @@ describe("saved preferences", () => {
   });
 
   it("shows map labels when the saved setting is unknown", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const warn = vi.spyOn(console, "warn").mockImplementation(ignore);
 
     localStorage.setItem(LABELS_KEY, "sometimes");
 

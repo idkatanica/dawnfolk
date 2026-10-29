@@ -28,7 +28,9 @@ function answerRaid(tick: PersonTick): Job | null {
   let nearest: Person | null = null;
   let nearestDistance = Number.POSITIVE_INFINITY;
 
-  for (const raider of livingRaiders(raid, (id) => context.people.findPerson(id))) {
+  for (const raider of livingRaiders(raid, (id) => {
+    return context.people.findPerson(id);
+  })) {
     const distance = Math.hypot(raider.mover.x - person.mover.x, raider.mover.z - person.mover.z);
 
     if (distance < nearestDistance) {

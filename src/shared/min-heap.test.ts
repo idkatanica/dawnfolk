@@ -20,6 +20,8 @@ describe("min heap", () => {
   });
 
   it("refuses to pop when empty", () => {
-    expect(() => new MinHeap().pop()).toThrow(RangeError);
+    expect(() => {
+      return new MinHeap().pop();
+    }).toThrow(RangeError);
   });
 });

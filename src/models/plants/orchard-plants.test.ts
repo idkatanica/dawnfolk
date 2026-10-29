@@ -18,11 +18,15 @@ const FRUIT_SLOTS = [
 ] as const;
 
 function verticesOf(mesh: MeshData, accepts: (vertex: number) => boolean): number[] {
-  return Array.from({ length: vertexCount(mesh) }, (_, vertex) => vertex).filter(accepts);
+  return Array.from({ length: vertexCount(mesh) }, (_, vertex) => {
+    return vertex;
+  }).filter(accepts);
 }
 
 function fruitOf(mesh: MeshData): number[] {
-  return verticesOf(mesh, (vertex) => mesh.channels.part[vertex] === BERRY_PART);
+  return verticesOf(mesh, (vertex) => {
+    return mesh.channels.part[vertex] === BERRY_PART;
+  });
 }
 
 function widthOf(mesh: MeshData): number {
@@ -51,7 +55,11 @@ describe.each(FRUIT_SLOTS)("orchard species %i", (species, slot) => {
         const fruit = fruitOf(mesh);
 
         expect(fruit.length).toBeGreaterThan(0);
-        expect(fruit.every((vertex) => mesh.channels.slot[vertex] === slot)).toBe(true);
+        expect(
+          fruit.every((vertex) => {
+            return mesh.channels.slot[vertex] === slot;
+          })
+        ).toBe(true);
       }
     }
 
@@ -74,10 +82,16 @@ describe.each(FRUIT_SLOTS)("orchard species %i", (species, slot) => {
   test("dresses the crown in seasonal leaves", () => {
     const [mesh] = buildPlantVariants(species, "high");
 
-    const leaves = verticesOf(mesh, (vertex) => mesh.channels.slot[vertex] === MaterialSlot.Leaf);
+    const leaves = verticesOf(mesh, (vertex) => {
+      return mesh.channels.slot[vertex] === MaterialSlot.Leaf;
+    });
 
     expect(leaves.length).toBeGreaterThan(0);
-    expect(leaves.every((vertex) => mesh.channels.flutter[vertex] === FOLIAGE_FLUTTER)).toBe(true);
+    expect(
+      leaves.every((vertex) => {
+        return mesh.channels.flutter[vertex] === FOLIAGE_FLUTTER;
+      })
+    ).toBe(true);
   });
 
   test("spends fewer triangles further away", () => {

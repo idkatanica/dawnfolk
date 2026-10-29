@@ -69,7 +69,9 @@ export class MirroredVegetation implements VegetationChannels {
   }
 
   apply(patch: VegetationPatch): void {
-    const highestIndex = patch.indices.reduce((highest, index) => Math.max(highest, index), -1);
+    const highestIndex = patch.indices.reduce((highest, index) => {
+      return Math.max(highest, index);
+    }, -1);
 
     this.#ensureCapacity(highestIndex + 1);
 

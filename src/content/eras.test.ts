@@ -10,19 +10,32 @@ describe("eras", () => {
   });
 
   it("climb a ladder of eras, each opened by a technology learned after the previous one", () => {
-    const order = TECHNOLOGIES.map((technology) => technology.id);
-    const keys = ERAS.map((era) => era.unlockedBy).filter((technology) => technology !== null);
+    const order = TECHNOLOGIES.map((technology) => {
+      return technology.id;
+    });
+    const keys = ERAS.map((era) => {
+      return era.unlockedBy;
+    }).filter((technology) => {
+      return technology !== null;
+    });
 
-    expect(ERAS.map((era) => era.name)).toEqual([
-      "Wanderers",
-      "Stone Age",
-      "Neolithic",
-      "Copper Age",
-      "Bronze Age",
-      "Iron Age",
-    ]);
-    expect(keys.map((technology) => order.indexOf(technology))).toEqual(
-      keys.map((technology) => order.indexOf(technology)).sort((first, second) => first - second)
+    expect(
+      ERAS.map((era) => {
+        return era.name;
+      })
+    ).toEqual(["Wanderers", "Stone Age", "Neolithic", "Copper Age", "Bronze Age", "Iron Age"]);
+    expect(
+      keys.map((technology) => {
+        return order.indexOf(technology);
+      })
+    ).toEqual(
+      keys
+        .map((technology) => {
+          return order.indexOf(technology);
+        })
+        .sort((first, second) => {
+          return first - second;
+        })
     );
   });
 });

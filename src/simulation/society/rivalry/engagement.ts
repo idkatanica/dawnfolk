@@ -29,9 +29,9 @@ type EngagementState = "closing" | "striking";
 function isCrowded(tick: PersonTick): boolean {
   const { person } = tick;
 
-  return tick.context.people
-    .livingWithin(person.mover.x, person.mover.z, ELBOW_ROOM)
-    .some((neighbor) => neighbor.id < person.id);
+  return tick.context.people.livingWithin(person.mover.x, person.mover.z, ELBOW_ROOM).some((neighbor) => {
+    return neighbor.id < person.id;
+  });
 }
 
 function faceFoe(tick: PersonTick, foe: Foe): void {
