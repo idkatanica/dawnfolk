@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { ignore } from "../shared/ignore.ts";
 import { readCommand } from "./commands.ts";
 
 describe("reading commands", () => {
@@ -18,7 +17,7 @@ describe("reading commands", () => {
   });
 
   it("rejects a grab of an unknown kind or a broken id", () => {
-    vi.spyOn(console, "warn").mockImplementation(ignore);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
     expect(readCommand({ target: { id: 4, kind: "building" }, type: "grab" })).toBeNull();
     expect(readCommand({ target: { id: 1.5, kind: "animal" }, type: "grab" })).toBeNull();

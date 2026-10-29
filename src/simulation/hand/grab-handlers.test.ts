@@ -142,12 +142,6 @@ function advanceFor(simulation: Simulation, seconds: number): void {
 }
 
 describe("grab handlers", () => {
-  it("has a handler for every grabbable kind", () => {
-    for (const kind of GRABBABLE_KINDS) {
-      expect(GRAB_HANDLERS[kind]).toBeDefined();
-    }
-  });
-
   describe.each(GRABBABLE_KINDS)("a held %s", (kind) => {
     it("lifts, follows the pointer and is set down there", () => {
       const simulation = createSimulation();

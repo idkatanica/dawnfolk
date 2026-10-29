@@ -11,7 +11,7 @@ const WHEEL_ZOOM_RATE = 0.0015;
 const WHEEL_LINE_PIXELS = 16;
 
 export interface ToolGestures {
-  readonly begin: (point: Vector3, screen: ScreenPoint) => void;
+  readonly begin: (point: Vector3) => void;
   readonly canBegin: (point: Vector3, screen: ScreenPoint) => boolean;
   readonly cancel: () => void;
   readonly end: () => void;
@@ -44,7 +44,7 @@ type Gesture =
   | { readonly kind: "orbit" }
   | { readonly kind: "pan"; travel: number }
   | { readonly kind: "tool"; readonly tool: ToolGestures }
-  | { readonly kind: "waiting"; readonly point: Vector3; readonly screen: ScreenPoint; readonly tool: ToolGestures }
+  | { readonly kind: "waiting"; readonly point: Vector3; readonly tool: ToolGestures }
   | { angle: number; distance: number; readonly kind: "pinch"; middleX: number; middleY: number };
 
 function wheelPixels(event: WheelEvent, pageHeight: number): number {
@@ -104,13 +104,7 @@ export class PointerControls {
     canvas.addEventListener("pointermove", (event) => this.#move(event), options);
     canvas.addEventListener("pointerup", (event) => this.#up(event, true), options);
     canvas.addEventListener("pointercancel", (event) => this.#up(event, false), options);
-    canvas.addEventListener(
-      "pointerleave",
-      () => {
-        this.#hoverNothing();
-      },
-      options
-    );
+    canvas.addEventListener("pointerleave", () => this.#hoverNothing(), options);
     canvas.addEventListener("wheel", (event) => this.#wheel(event), { ...options, passive: false });
     canvas.addEventListener("contextmenu", (event) => event.preventDefault(), options);
   }
@@ -159,13 +153,13 @@ export class PointerControls {
     }
 
     if (event.pointerType === "touch") {
-      this.#waitForSecondTouch({ kind: "waiting", point, screen, tool });
+      this.#waitForSecondTouch({ kind: "waiting", point, tool });
 
       return;
     }
 
     this.#gesture = { kind: "tool", tool };
-    tool.begin(point, screen);
+    tool.begin(point);
   }
 
   #waitForSecondTouch(waiting: Extract<Gesture, { kind: "waiting" }>): void {
@@ -194,7 +188,7 @@ export class PointerControls {
     }
 
     this.#gesture = { kind: "tool", tool: gesture.tool };
-    gesture.tool.begin(gesture.point, gesture.screen);
+    gesture.tool.begin(gesture.point);
     this.#continueTool(gesture.tool, pointer);
   }
 

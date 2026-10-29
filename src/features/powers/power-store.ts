@@ -34,12 +34,8 @@ export const usePowerStore = create<PowerStore>()(
       resetParameters: (powerId) =>
         set((state) => ({ parameters: { ...state.parameters, [powerId]: defaultPowerParameters(powerId) } })),
       selectedPowerId: null,
-      selectHand: () => {
-        set({ isHandSelected: true, selectedPowerId: null });
-      },
-      selectPower: (powerId) => {
-        set({ isHandSelected: false, selectedPowerId: powerId });
-      },
+      selectHand: () => set({ isHandSelected: true, selectedPowerId: null }),
+      selectPower: (powerId) => set({ isHandSelected: false, selectedPowerId: powerId }),
       setParameter: (powerId, key, value) =>
         set((state) => {
           const current = parametersOf(state.parameters, powerId);

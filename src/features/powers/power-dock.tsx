@@ -11,7 +11,7 @@ import { WithTooltip } from "../../design/tooltip.tsx";
 import { useGuideStore } from "../guide/guide-store.ts";
 import { suggestedPowerId } from "../guide/guide-tips.ts";
 import { POWER_ICONS } from "./power-icons.tsx";
-import { type PowerStore, usePowerStore } from "./power-store.ts";
+import { usePowerStore } from "./power-store.ts";
 
 const SELECT_HINT = "Tap people, animals, buildings or land to see their details.";
 
@@ -45,14 +45,6 @@ function initialKind(): PowerCategory {
   return selectedPowerId === null ? "elements" : POWERS[selectedPowerId].category;
 }
 
-function isSelectingThings(state: PowerStore): boolean {
-  return state.selectedPowerId === null && !state.isHandSelected;
-}
-
-function isHoldingHandOut(state: PowerStore): boolean {
-  return state.isHandSelected;
-}
-
 function useSuggestedPower(): PowerId | null {
   const suggested = useGuideStore((state) => suggestedPowerId(state.progress));
   const selected = usePowerStore((state) => state.selectedPowerId);
@@ -73,7 +65,7 @@ function usePowerSelection(powerId: PowerId) {
 }
 
 function useClearPower() {
-  const isSelecting = usePowerStore(isSelectingThings);
+  const isSelecting = usePowerStore((state) => state.selectedPowerId === null && !state.isHandSelected);
   const selectPower = usePowerStore((state) => state.selectPower);
 
   function handleClear(): void {
@@ -84,10 +76,11 @@ function useClearPower() {
 }
 
 function useHand() {
-  const isHandSelected = usePowerStore(isHoldingHandOut);
+  const isHandSelected = usePowerStore((state) => state.isHandSelected);
+  const selectHand = usePowerStore((state) => state.selectHand);
 
   function handleSelect(): void {
-    usePowerStore.getState().selectHand();
+    selectHand();
   }
 
   return { handleSelect, isHandSelected };

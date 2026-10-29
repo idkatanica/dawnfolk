@@ -143,10 +143,10 @@ export class VegetationView {
   readonly weather = new PlantWeather();
   readonly #batches: readonly (readonly PlantBatch[])[];
   readonly #changedBuckets: readonly Set<number>[];
-  readonly #heldBatches = new Map<number, InstanceBatch>();
-  readonly #heldInstance = new Float32Array(FLOATS_PER_PLANT);
   readonly #chunkLevels: Int8Array;
   readonly #chunkShadows: Uint8Array;
+  readonly #heldBatches = new Map<number, InstanceBatch>();
+  readonly #heldInstance = new Float32Array(FLOATS_PER_PLANT);
   readonly #looks: readonly SpeciesLook[];
   readonly #mirror: WorldMirror;
   readonly #shadowProxies: readonly PlantBatch[];

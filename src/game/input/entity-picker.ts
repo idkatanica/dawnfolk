@@ -2,7 +2,7 @@ import { type PerspectiveCamera, Vector3 } from "three/webgpu";
 import { FIGURE_SCALE } from "../../models/people/human-proportions.ts";
 import type { Selection } from "../../simulation/commands.ts";
 import type { SimulationFrame } from "../../simulation/frame.ts";
-import { type GrabbableKind, type GrabTarget, isGrabbablePlant } from "../../simulation/hand/grab-target.ts";
+import { type GrabTarget, isGrabbablePlant } from "../../simulation/hand/grab-target.ts";
 import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
 import { PlantState, type VegetationBuffers } from "../../world/vegetation-store.ts";
 import type { HeightField, ScreenPoint, ViewportSize } from "./ground-picker.ts";
@@ -37,10 +37,6 @@ interface PointerPick {
   readonly viewport: ViewportSize;
 }
 
-type GrabFinders = {
-  readonly [Kind in GrabbableKind]: (scene: GrabScene, pointer: PointerPick) => Candidate<GrabTarget>[];
-};
-
 interface ScreenHit {
   readonly distance: number;
   readonly reach: number;
@@ -58,11 +54,6 @@ const ANIMALS: AgentLayout = { fields: AnimalField, kind: "animal", lift: ANIMAL
 
 export class EntityPicker {
   readonly #camera: PerspectiveCamera;
-  readonly #grabFinders: GrabFinders = {
-    animal: this.#grabbableAnimals.bind(this),
-    person: this.#grabbablePeople.bind(this),
-    plant: this.#grabbablePlants.bind(this),
-  };
   readonly #heightAt: HeightField;
   readonly #point = new Vector3();
   readonly #projected = new Vector3();
@@ -98,15 +89,15 @@ export class EntityPicker {
     viewport: ViewportSize,
     ground: Vector3 | null
   ): GrabTarget | null {
+    const { frame, vegetation } = scene;
+
     const pointer = { ground, screen, viewport };
 
-    const candidates: Candidate<GrabTarget>[] = [];
-
-    for (const finder of Object.values(this.#grabFinders)) {
-      candidates.push(...finder(scene, pointer));
-    }
-
-    return this.#nearest(ground, candidates);
+    return this.#nearest(ground, [
+      ...this.#agents(frame.animals, frame.animalCount, ANIMALS, pointer),
+      ...this.#agents(frame.people, frame.personCount, PEOPLE, pointer),
+      ...this.#grabbablePlants(vegetation, pointer),
+    ]);
   }
 
   #nearest<Target>(ground: Vector3 | null, candidates: readonly Candidate<Target>[]): Target | null {
@@ -155,14 +146,6 @@ export class EntityPicker {
     return candidates;
   }
 
-  #grabbableAnimals({ frame }: GrabScene, pointer: PointerPick): Candidate<GrabTarget>[] {
-    return this.#agents(frame.animals, frame.animalCount, ANIMALS, pointer);
-  }
-
-  #grabbablePeople({ frame }: GrabScene, pointer: PointerPick): Candidate<GrabTarget>[] {
-    return this.#agents(frame.people, frame.personCount, PEOPLE, pointer);
-  }
-
   #buildings(frame: SimulationFrame, pointer: PointerPick): Candidate<Selection>[] {
     const candidates: Candidate<Selection>[] = [];
 
@@ -182,7 +165,7 @@ export class EntityPicker {
     return candidates;
   }
 
-  #grabbablePlants({ vegetation }: GrabScene, pointer: PointerPick): Candidate<GrabTarget>[] {
+  #grabbablePlants(vegetation: GrabScene["vegetation"], pointer: PointerPick): Candidate<GrabTarget>[] {
     const { ground } = pointer;
 
     const candidates: Candidate<GrabTarget>[] = [];

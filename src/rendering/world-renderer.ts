@@ -434,15 +434,14 @@ export class WorldRenderer {
   }
 
   #markHeld(): void {
-    const { held } = this.#mirror.frame;
+    const mirror = this.#mirror;
+    const { held } = mirror.frame;
 
     if (held === null) {
       this.#heldRing.hide();
 
       return;
     }
-
-    const mirror = this.#mirror;
 
     const color = held.isPlaceable ? PLACEABLE_COLOR : BLOCKED_COLOR;
     const floor = mirror.isWaterAt(held.x, held.z) ? mirror.surfaceAt(held.x, held.z) : NO_FLOOR;
