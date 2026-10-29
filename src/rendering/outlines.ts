@@ -17,7 +17,7 @@ import {
   vec3,
   vec4,
 } from "three/tsl";
-import type { MeshStandardNodeMaterial, Node, TextureNode, UniformNode } from "three/webgpu";
+import type { MeshStandardNodeMaterial, MRTNode, Node, TextureNode, UniformNode } from "three/webgpu";
 
 export const OUTLINE_TARGET = "outline";
 
@@ -58,7 +58,7 @@ export function createOutlineControls(): OutlineControls {
   return { pixelRatio: uniform(1), strength: uniform(1) };
 }
 
-export function sceneTargets() {
+export function sceneTargets(): MRTNode {
   return mrt({ [OUTLINE_TARGET]: surfaceOf(false), output });
 }
 
