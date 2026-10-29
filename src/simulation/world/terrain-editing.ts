@@ -90,7 +90,9 @@ export function raiseTerrain(
   world: WorldState,
   area: CircleArea,
   amount: number,
-  profile = (distance: number) => brushFalloff(distance, area.radius)
+  profile = (distance: number) => {
+    return brushFalloff(distance, area.radius);
+  }
 ): void {
   for (const areaCell of editableCells(world, area)) {
     const { cell } = areaCell;
@@ -116,7 +118,9 @@ function coneProfile(cone: Cone, distance: number): number {
 }
 
 export function swellCone(world: WorldState, cone: Cone, amount: number): void {
-  raiseTerrain(world, cone, amount, (distance) => coneProfile(cone, distance));
+  raiseTerrain(world, cone, amount, (distance) => {
+    return coneProfile(cone, distance);
+  });
 }
 
 function firmUpDriedLakebed(world: WorldState, cell: number, amount: number): void {

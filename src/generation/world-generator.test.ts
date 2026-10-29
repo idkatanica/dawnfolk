@@ -599,7 +599,9 @@ function closestDistinctRivers(generated: GeneratedWorld): number {
 }
 
 function resampledRiver(river: River): { x: number; z: number }[] {
-  const samples = river.points.slice(0, 1).map((point) => ({ x: point.x, z: point.z }));
+  const samples = river.points.slice(0, 1).map((point) => {
+    return { x: point.x, z: point.z };
+  });
 
   let carried = 0;
 
@@ -634,23 +636,29 @@ function straightSamples(samples: readonly { x: number; z: number }[]): number {
     const chordZ = end.z - start.z;
     const chord = Math.hypot(chordX, chordZ);
 
-    const deviations = samples
-      .slice(first, first + window + 1)
-      .map((sample) => Math.abs((sample.x - start.x) * chordZ - (sample.z - start.z) * chordX) / chord);
+    const deviations = samples.slice(first, first + window + 1).map((sample) => {
+      return Math.abs((sample.x - start.x) * chordZ - (sample.z - start.z) * chordX) / chord;
+    });
 
     if (Math.max(...deviations) < STRAIGHT_DEVIATION) {
       isStraight.fill(1, first, first + window + 1);
     }
   }
 
-  return isStraight.reduce((total, flag) => total + flag, 0);
+  return isStraight.reduce((total, flag) => {
+    return total + flag;
+  }, 0);
 }
 
 function straightRiverShare(generated: GeneratedWorld): number {
   const rivers = generated.water.rivers.map(resampledRiver);
 
-  const total = rivers.reduce((sum, samples) => sum + samples.length, 0);
-  const straight = rivers.reduce((sum, samples) => sum + straightSamples(samples), 0);
+  const total = rivers.reduce((sum, samples) => {
+    return sum + samples.length;
+  }, 0);
+  const straight = rivers.reduce((sum, samples) => {
+    return sum + straightSamples(samples);
+  }, 0);
 
   return straight / total;
 }
@@ -1090,11 +1098,25 @@ describe.each(ISLAND_SHAPES)("a %s world generated twice from one seed", (shape)
   test("comes out the same in every stage", () => {
     const options = { dimensions: DETERMINISM_DIMENSIONS, erosionStrength: 1, shape };
 
-    const firsts = DETERMINISM_SEEDS.map((seed) => generateWorld(seed, options));
+    const firsts = DETERMINISM_SEEDS.map((seed) => {
+      return generateWorld(seed, options);
+    });
 
-    expect(firsts.some((first) => first.crossings.length > 0)).toBe(true);
-    expect(firsts.some((first) => first.deposits.length > 0)).toBe(true);
-    expect(firsts.some((first) => first.monuments.length > 0)).toBe(true);
+    expect(
+      firsts.some((first) => {
+        return first.crossings.length > 0;
+      })
+    ).toBe(true);
+    expect(
+      firsts.some((first) => {
+        return first.deposits.length > 0;
+      })
+    ).toBe(true);
+    expect(
+      firsts.some((first) => {
+        return first.monuments.length > 0;
+      })
+    ).toBe(true);
 
     for (const [index, seed] of DETERMINISM_SEEDS.entries()) {
       const again = generateWorld(seed, options);

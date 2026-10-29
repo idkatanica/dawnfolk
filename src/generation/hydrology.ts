@@ -595,7 +595,9 @@ export function chainFlows(network: DrainageNetwork, chains: readonly RiverChain
     }
   }
 
-  const inflows = chains.map((chain) => new Float64Array(chain.cells.length + 1));
+  const inflows = chains.map((chain) => {
+    return new Float64Array(chain.cells.length + 1);
+  });
   const flows: number[][] = [];
 
   for (let chainIndex = chains.length - 1; chainIndex >= 0; chainIndex -= 1) {
@@ -649,7 +651,9 @@ function buildRivers(land: RiverLand, chains: readonly RiverChain[]): River[] {
       continue;
     }
 
-    const points = cells.map((cell, index) => riverPointFor(land, cell, flows[chainIndex][index]));
+    const points = cells.map((cell, index) => {
+      return riverPointFor(land, cell, flows[chainIndex][index]);
+    });
     const lakeId = lakeAtMouth(basins.lakeIds, chain);
     const reachesEdge = chain.mouthReceiver === NO_CELL && chain.joinsCell === NO_CELL;
 

@@ -111,14 +111,27 @@ type CommandHandlers = {
 };
 
 const COMMAND_HANDLERS: CommandHandlers = {
-  beginStroke: (simulation, command) =>
-    simulation.beginStroke(command.powerId, command.x, command.z, command.parameters),
-  cancelGrab: (simulation) => simulation.cancelGrab(),
-  carry: (simulation, command) => simulation.carry(command.x, command.z),
-  drop: (simulation) => simulation.drop(),
-  endStroke: (simulation) => simulation.endStroke(),
-  grab: (simulation, command) => simulation.grab(command.target),
-  moveStroke: (simulation, command) => simulation.moveStroke(command.x, command.z),
+  beginStroke: (simulation, command) => {
+    return simulation.beginStroke(command.powerId, command.x, command.z, command.parameters);
+  },
+  cancelGrab: (simulation) => {
+    return simulation.cancelGrab();
+  },
+  carry: (simulation, command) => {
+    return simulation.carry(command.x, command.z);
+  },
+  drop: (simulation) => {
+    return simulation.drop();
+  },
+  endStroke: (simulation) => {
+    return simulation.endStroke();
+  },
+  grab: (simulation, command) => {
+    return simulation.grab(command.target);
+  },
+  moveStroke: (simulation, command) => {
+    return simulation.moveStroke(command.x, command.z);
+  },
   setDaySeconds: (simulation, command) => {
     simulation.calendar.daySeconds = command.seconds;
   },

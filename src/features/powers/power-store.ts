@@ -28,17 +28,25 @@ export interface PowerStore {
 
 export const usePowerStore = create<PowerStore>()(
   persist(
-    (set) => ({
-      isHandSelected: false,
-      parameters: {},
-      resetParameters: (powerId) =>
-        set((state) => ({ parameters: { ...state.parameters, [powerId]: defaultPowerParameters(powerId) } })),
-      selectedPowerId: null,
-      selectHand: () => set({ isHandSelected: true, selectedPowerId: null }),
-      selectPower: (powerId) => set({ isHandSelected: false, selectedPowerId: powerId }),
-      setParameter: (powerId, key, value) =>
-        set((state) => {
-          const current = parametersOf(state.parameters, powerId);
+    (set) => {
+      return {
+        isHandSelected: false,
+        parameters: {},
+        resetParameters: (powerId) => {
+          set((state) => {
+            return { parameters: { ...state.parameters, [powerId]: defaultPowerParameters(powerId) } };
+          });
+        },
+        selectedPowerId: null,
+        selectHand: () => {
+          set({ isHandSelected: true, selectedPowerId: null });
+        },
+        selectPower: (powerId) => {
+          set({ isHandSelected: false, selectedPowerId: powerId });
+        },
+        setParameter: (powerId, key, value) => {
+          set((state) => {
+            const current = parametersOf(state.parameters, powerId);
 
             return {
               parameters: {

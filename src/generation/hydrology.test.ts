@@ -63,7 +63,9 @@ function largestDeviation(points: readonly { x: number; z: number }[]): number {
   const chord = Math.max(1e-6, Math.hypot(chordX, chordZ));
 
   return Math.max(
-    ...points.map((point) => Math.abs((point.x - start.x) * chordZ - (point.z - start.z) * chordX) / chord)
+    ...points.map((point) => {
+      return Math.abs((point.x - start.x) * chordZ - (point.z - start.z) * chordX) / chord;
+    })
   );
 }
 
@@ -259,23 +261,39 @@ describe("river network", () => {
     const { rivers } = drainFlank();
 
     expect(rivers.length).toBeGreaterThan(1);
-    expect(rivers.filter((river) => river.reachesEdge)).toHaveLength(1);
+    expect(
+      rivers.filter((river) => {
+        return river.reachesEdge;
+      })
+    ).toHaveLength(1);
   });
 
   it("ends every joined stream on another river through a path without gaps", () => {
     const { grid, rivers } = drainFlank();
 
-    const joined = rivers.filter((river) => !river.reachesEdge);
+    const joined = rivers.filter((river) => {
+      return !river.reachesEdge;
+    });
 
     expect(joined.length).toBeGreaterThan(0);
 
     for (const river of joined) {
       const end = riverEnd(river);
-      const others = rivers.filter((other) => other !== river).flatMap((other) => other.points);
+      const others = rivers
+        .filter((other) => {
+          return other !== river;
+        })
+        .flatMap((other) => {
+          return other.points;
+        });
 
-      expect(Math.min(...others.map((point) => Math.hypot(point.x - end.x, point.z - end.z)))).toBeLessThanOrEqual(
-        grid.cellSize * Math.SQRT2
-      );
+      expect(
+        Math.min(
+          ...others.map((point) => {
+            return Math.hypot(point.x - end.x, point.z - end.z);
+          })
+        )
+      ).toBeLessThanOrEqual(grid.cellSize * Math.SQRT2);
 
       for (let index = 1; index < river.points.length; index += 1) {
         const step = Math.hypot(
@@ -294,12 +312,24 @@ describe("river network", () => {
   ])("keeps a stream from joining a river across %s between them", (_, divide) => {
     const { rivers } = drainFlank(divide);
 
-    const edgeRivers = rivers.filter((river) => river.reachesEdge);
+    const edgeRivers = rivers.filter((river) => {
+      return river.reachesEdge;
+    });
 
-    expect(edgeRivers.some((river) => river.points[0].x > 0)).toBe(true);
-    expect(edgeRivers.some((river) => river.points[0].x < 0)).toBe(true);
+    expect(
+      edgeRivers.some((river) => {
+        return river.points[0].x > 0;
+      })
+    ).toBe(true);
+    expect(
+      edgeRivers.some((river) => {
+        return river.points[0].x < 0;
+      })
+    ).toBe(true);
 
-    for (const river of rivers.filter((joined) => !joined.reachesEdge)) {
+    for (const river of rivers.filter((joined) => {
+      return !joined.reachesEdge;
+    })) {
       expect(Math.sign(riverEnd(river).x)).toBe(Math.sign(river.points[0].x));
     }
   });
@@ -307,7 +337,13 @@ describe("river network", () => {
   it("drops a stream that runs beside a river it can't join", () => {
     const { rivers } = drainFlank({ ridgeHeight: DIVIDING_RIDGE });
 
-    const mouths = rivers.filter((river) => river.reachesEdge).map((river) => riverEnd(river).x);
+    const mouths = rivers
+      .filter((river) => {
+        return river.reachesEdge;
+      })
+      .map((river) => {
+        return riverEnd(river).x;
+      });
 
     for (const [index, mouth] of mouths.entries()) {
       for (const other of mouths.slice(index + 1)) {
@@ -319,7 +355,9 @@ describe("river network", () => {
   it("gathers the water of an even slope into streams that bend off the grid lines", () => {
     const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 96 });
 
-    const heights = shapeTerrain(grid, (x, z) => 300 + 0.3 * (z * Math.cos(PLANE_ASPECT) + x * Math.sin(PLANE_ASPECT)));
+    const heights = shapeTerrain(grid, (x, z) => {
+      return 300 + 0.3 * (z * Math.cos(PLANE_ASPECT) + x * Math.sin(PLANE_ASPECT));
+    });
 
     const { rivers } = computeHydrology(
       heights,

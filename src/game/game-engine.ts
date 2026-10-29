@@ -152,7 +152,9 @@ export class GameEngine implements EngineHandle {
     }, this.#pickGrabbable.bind(this));
 
     this.#pointer = new PointerControls(parts.canvas, this.camera, groundPicker, [this.hand, this.powers], {
-      tap: (point, screen) => this.#selectAt(point, screen),
+      tap: (point, screen) => {
+        return this.#selectAt(point, screen);
+      },
     });
     this.#keyboard = new KeyboardControls(window, this.camera);
     this.#resizeObserver = new ResizeObserver(() => {

@@ -73,8 +73,12 @@ function usePowerSelection(powerId: PowerId) {
 }
 
 function useClearPower() {
-  const isSelecting = usePowerStore((state) => state.selectedPowerId === null && !state.isHandSelected);
-  const selectPower = usePowerStore((state) => state.selectPower);
+  const isSelecting = usePowerStore((state) => {
+    return state.selectedPowerId === null && !state.isHandSelected;
+  });
+  const selectPower = usePowerStore((state) => {
+    return state.selectPower;
+  });
 
   function handleClear(): void {
     selectPower(null);
@@ -84,8 +88,12 @@ function useClearPower() {
 }
 
 function useHand() {
-  const isHandSelected = usePowerStore((state) => state.isHandSelected);
-  const selectHand = usePowerStore((state) => state.selectHand);
+  const isHandSelected = usePowerStore((state) => {
+    return state.isHandSelected;
+  });
+  const selectHand = usePowerStore((state) => {
+    return state.selectHand;
+  });
 
   function handleSelect(): void {
     selectHand();

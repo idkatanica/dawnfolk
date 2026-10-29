@@ -26,7 +26,9 @@ function packedPlantCount(chunks: VegetationChunks): number {
 }
 
 function chunkOf(chunks: VegetationChunks, plant: number): number {
-  return chunks.chunks.findIndex((chunk) => chunk.plants.has(plant));
+  return chunks.chunks.findIndex((chunk) => {
+    return chunk.plants.has(plant);
+  });
 }
 
 function alivePlantCount(mirror: WorldMirror): number {
@@ -117,7 +119,9 @@ describe("vegetation chunks", () => {
     chunks.repackDirty();
 
     const origin = chunkOf(chunks, 0);
-    const destination = chunks.chunks.findIndex((chunk, index) => index !== origin && chunk.plants.size > 0);
+    const destination = chunks.chunks.findIndex((chunk, index) => {
+      return index !== origin && chunk.plants.size > 0;
+    });
     const destinationChunk = chunks.chunks[destination];
 
     if (origin < 0 || destinationChunk === undefined) {

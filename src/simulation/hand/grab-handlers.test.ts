@@ -416,7 +416,13 @@ describe("grab handlers", () => {
 
     expect(tick.person.job).toBeNull();
     expect(tribe.claimedPlants.has(tree)).toBe(false);
-    expect(tribe.plots.flatMap((plot) => plot.spots.map((spot) => spot.plant))).toEqual([NO_PLANT]);
+    expect(
+      tribe.plots.flatMap((plot) => {
+        return plot.spots.map((spot) => {
+          return spot.plant;
+        });
+      })
+    ).toEqual([NO_PLANT]);
   });
 
   it("calms an animal that was charging once it is lifted", () => {

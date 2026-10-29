@@ -135,9 +135,9 @@ function toppleTrees(volcano: Volcano, seconds: number, services: PowerServices)
       continue;
     }
 
-    for (const plant of vegetation
-      .plantsInCell(cell)
-      .filter((index) => vegetation.isAlive(index) && isTreeSpecies(vegetation.species[index]))) {
+    for (const plant of vegetation.plantsInCell(cell).filter((index) => {
+      return vegetation.isAlive(index) && isTreeSpecies(vegetation.species[index]);
+    })) {
       const outward = Math.atan2(vegetation.x[plant] - volcano.x, vegetation.z[plant] - volcano.z);
 
       world.fellPlant(plant, environment.day, outward);
@@ -274,7 +274,9 @@ function erupt(volcano: Volcano, seconds: number, services: PowerServices): void
   }
 
   hurlBombs(volcano, seconds, services);
-  services.world.recovering.retain((cell) => !volcano.lava.has(cell));
+  services.world.recovering.retain((cell) => {
+    return !volcano.lava.has(cell);
+  });
 }
 
 function advance(volcano: Volcano, tongue: LavaTongue, services: PowerServices): void {
@@ -529,19 +531,23 @@ export class VolcanoSystem {
       endanger(volcano, seconds, services);
     }
 
-    this.#volcanoes = this.#volcanoes.filter((volcano) => !isSpent(volcano));
+    this.#volcanoes = this.#volcanoes.filter((volcano) => {
+      return !isSpent(volcano);
+    });
     this.#lavaUpdate = this.#lava();
   }
 
   views(services: PowerServices): VolcanoView[] {
-    return this.#volcanoes.map((volcano) => ({
-      activity: activityOf(volcano),
-      craterRadius: craterRadius(volcano),
-      radius: volcano.radius,
-      steam: steamOf(volcano, services),
-      x: volcano.x,
-      z: volcano.z,
-    }));
+    return this.#volcanoes.map((volcano) => {
+      return {
+        activity: activityOf(volcano),
+        craterRadius: craterRadius(volcano),
+        radius: volcano.radius,
+        steam: steamOf(volcano, services),
+        x: volcano.x,
+        z: volcano.z,
+      };
+    });
   }
 
   takeLava(): ReadonlyMap<number, number> | null {
