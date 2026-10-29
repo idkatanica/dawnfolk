@@ -1,6 +1,6 @@
 import type { Frustum, Group, MeshStandardNodeMaterial, PerspectiveCamera } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import type { CellRegion } from "../../world/change-tracking.ts";
+import { type CellRegion, grownRegion } from "../../world/change-tracking.ts";
 import { NO_WATER } from "../../world/water.ts";
 import { type HeightRange, type PatchContent, PatchGrid, type PatchPiece } from "../terrain/patch-grid.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
@@ -80,10 +80,7 @@ export class WaterView {
   #levelsAround(region: CellRegion): HeightRange | null {
     const { grid, terrain } = this.#mirror;
 
-    const firstColumn = Math.max(0, region.firstColumn - NEIGHBOR_MARGIN);
-    const firstRow = Math.max(0, region.firstRow - NEIGHBOR_MARGIN);
-    const lastColumn = Math.min(grid.cellsPerSide - 1, region.lastColumn + NEIGHBOR_MARGIN);
-    const lastRow = Math.min(grid.cellsPerSide - 1, region.lastRow + NEIGHBOR_MARGIN);
+    const { firstColumn, firstRow, lastColumn, lastRow } = grownRegion(region, NEIGHBOR_MARGIN, grid.cellsPerSide);
 
     let lowest = Number.POSITIVE_INFINITY;
     let highest = Number.NEGATIVE_INFINITY;

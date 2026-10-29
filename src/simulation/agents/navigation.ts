@@ -1,4 +1,4 @@
-import type { CellRegion } from "../../world/change-tracking.ts";
+import { type CellRegion, grownRegion } from "../../world/change-tracking.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { WorldState } from "../world/world-state.ts";
 import { LandAreas, NO_REGION } from "./land-areas.ts";
@@ -144,11 +144,7 @@ export class NavigationGrid {
   #keepsFooting(region: CellRegion): boolean {
     const { grid } = this.#world;
 
-    const last = grid.cellsPerSide - 1;
-    const firstColumn = Math.max(0, region.firstColumn - 1);
-    const lastColumn = Math.min(last, region.lastColumn + 1);
-    const firstRow = Math.max(0, region.firstRow - 1);
-    const lastRow = Math.min(last, region.lastRow + 1);
+    const { firstColumn, firstRow, lastColumn, lastRow } = grownRegion(region, 1, grid.cellsPerSide);
 
     for (let row = firstRow; row <= lastRow; row += 1) {
       for (let column = firstColumn; column <= lastColumn; column += 1) {
