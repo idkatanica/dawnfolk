@@ -1,6 +1,6 @@
 import { float, texture, vec3 } from "three/tsl";
 import { ClampToEdgeWrapping, DataTexture, LinearFilter, type Node, RedFormat, UnsignedByteType } from "three/webgpu";
-import type { SimulationFrame } from "../../simulation/frame.ts";
+import type { LavaView, SimulationFrame } from "../../simulation/frame.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { mapCoordinatesNode } from "../terrain/height-sampling.ts";
 
@@ -11,8 +11,9 @@ const FULL_GLOW = 22;
 const BYTE = 255;
 const GLOW_COLOR = vec3(1, 0.42, 0.12);
 const GLOW_STRENGTH = 2.6;
+const LAVA_GLOW = 1.4;
 
-export type BurningCells = Pick<SimulationFrame, "burningCells" | "burningIntensity">;
+export type BurningCells = Pick<SimulationFrame, "burningCells" | "burningIntensity" | "lava">;
 
 function blur(source: Float32Array, target: Float32Array, step: number, resolution: number): void {
   for (let texel = 0; texel < target.length; texel += 1) {
@@ -46,6 +47,7 @@ export class FireGlow {
   readonly #resolution: number;
   readonly #scratch: Float32Array;
   #frame: BurningCells | null = null;
+  #lava: LavaView = { cells: new Int32Array(0), heat: new Uint8Array(0) };
   #litTexels = 0;
 
   constructor(grid: WorldGrid) {
@@ -71,7 +73,11 @@ export class FireGlow {
 
     this.#frame = frame;
 
-    if (frame.burningCells.length === 0 && this.#litTexels === 0) {
+    if (frame.lava !== null) {
+      this.#lava = frame.lava;
+    }
+
+    if (frame.burningCells.length === 0 && this.#lava.cells.length === 0 && this.#litTexels === 0) {
       return;
     }
 
@@ -90,16 +96,24 @@ export class FireGlow {
   }
 
   #accumulate(frame: BurningCells): void {
-    const grid = this.#grid;
-
     this.#accumulated.fill(0);
 
     for (const [index, cell] of frame.burningCells.entries()) {
-      const column = Math.floor(grid.columnOf(cell) / CELLS_PER_TEXEL);
-      const row = Math.floor(grid.rowOf(cell) / CELLS_PER_TEXEL);
-
-      this.#accumulated[row * this.#resolution + column] += frame.burningIntensity[index] / BYTE;
+      this.#light(cell, frame.burningIntensity[index] / BYTE);
     }
+
+    for (const [index, cell] of this.#lava.cells.entries()) {
+      this.#light(cell, (this.#lava.heat[index] / BYTE) * LAVA_GLOW);
+    }
+  }
+
+  #light(cell: number, amount: number): void {
+    const grid = this.#grid;
+
+    const column = Math.floor(grid.columnOf(cell) / CELLS_PER_TEXEL);
+    const row = Math.floor(grid.rowOf(cell) / CELLS_PER_TEXEL);
+
+    this.#accumulated[row * this.#resolution + column] += amount;
   }
 
   #writeTexture(): void {

@@ -1,5 +1,5 @@
 import { Toolbar } from "@base-ui/react/toolbar";
-import { MousePointer2 } from "lucide-react";
+import { Hand, MousePointer2 } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { POWER_CATEGORIES, POWERS, type PowerCategory, type PowerId, powersInCategory } from "../../content/powers.ts";
 import { cn } from "../../design/cn.ts";
@@ -14,6 +14,8 @@ import { POWER_ICONS } from "./power-icons.tsx";
 import { usePowerStore } from "./power-store.ts";
 
 const SELECT_HINT = "Tap people, animals, buildings or land to see their details.";
+
+const HAND_HINT = "Pick up people, animals, trees and bushes and set them down elsewhere.";
 
 const TILE_CLASS = `grid size-10.5 shrink-0 snap-start place-items-center rounded-xl transition-[background-color,box-shadow,scale] duration-150 hover:bg-paper-hover active:scale-95 pointer-coarse:size-12 ${FOCUS_RING}`;
 
@@ -63,7 +65,7 @@ function usePowerSelection(powerId: PowerId) {
 }
 
 function useClearPower() {
-  const isSelecting = usePowerStore((state) => state.selectedPowerId === null);
+  const isSelecting = usePowerStore((state) => state.selectedPowerId === null && !state.isHandSelected);
   const selectPower = usePowerStore((state) => state.selectPower);
 
   function handleClear(): void {
@@ -71,6 +73,17 @@ function useClearPower() {
   }
 
   return { handleClear, isSelecting };
+}
+
+function useHand() {
+  const isHandSelected = usePowerStore((state) => state.isHandSelected);
+  const selectHand = usePowerStore((state) => state.selectHand);
+
+  function handleSelect(): void {
+    selectHand();
+  }
+
+  return { handleSelect, isHandSelected };
 }
 
 function useKindTab({ chosenKind, kind, onKindChange }: KindChoice & { readonly kind: PowerCategory }) {
@@ -160,6 +173,25 @@ function SelectTile() {
   );
 }
 
+function HandTile() {
+  const { handleSelect, isHandSelected } = useHand();
+
+  return (
+    <WithTooltip content={<TileHint description={HAND_HINT} name="Hand" />}>
+      <Toolbar.Button
+        aria-label="Hand"
+        aria-pressed={isHandSelected}
+        className={cn(TILE_CLASS, "text-ink-soft hover:text-ink", {
+          [`${CHOSEN_TILE_CLASS} text-ink`]: isHandSelected,
+        })}
+        onClick={handleSelect}
+      >
+        <Hand aria-hidden="true" size={22} strokeWidth={1.9} />
+      </Toolbar.Button>
+    </WithTooltip>
+  );
+}
+
 function KindTab({ chosenKind, kind, name, onKindChange }: KindTabProps) {
   const { handleChoose, isChosen, isSuggested } = useKindTab({ chosenKind, kind, onKindChange });
 
@@ -203,6 +235,8 @@ export function PowerDock({ className }: { readonly className?: string | undefin
         ref={rowReference}
       >
         <SelectTile />
+
+        <HandTile />
 
         <Toolbar.Separator className="bg-ink/15 mx-1 h-7 w-px shrink-0" />
 

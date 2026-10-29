@@ -5,6 +5,7 @@ import { type QualityLevel, RENDER_QUALITY } from "../rendering/render-quality.t
 import { WorldRenderer } from "../rendering/world-renderer.ts";
 import { clamp } from "../shared/math.ts";
 import type { ChronicleEntry } from "../simulation/chronicle.ts";
+import type { GrabTarget } from "../simulation/hand/grab-target.ts";
 import type { SavedWorldState } from "../simulation/saved-world.ts";
 import { type CameraState, GodCamera, type GroundPoint } from "./camera/god-camera.ts";
 import type { EngineHandle } from "./engine-handle.ts";
@@ -18,6 +19,7 @@ import { type LabelPlacement, LabelProjector } from "./label-projector.ts";
 import type { Landmark } from "./landmarks.ts";
 import { ResolutionGovernor } from "./resolution-governor.ts";
 import { type SimulationConnection, WorkerSimulationConnection } from "./simulation-connection.ts";
+import { HandTool } from "./tools/hand-tool.ts";
 import { type PowerSelection, PowerTool } from "./tools/power-tool.ts";
 
 const LONGEST_FRAME_SECONDS = 0.1;
@@ -72,6 +74,7 @@ async function openSessionOrRelease(
 
 export class GameEngine implements EngineHandle {
   readonly camera: GodCamera;
+  readonly hand: HandTool;
   readonly powers: PowerTool;
   readonly session: GameSession;
   readonly #activity = new AbortController();
@@ -128,7 +131,11 @@ export class GameEngine implements EngineHandle {
       show: (point, radius, isPressed) => this.#showCursor(point, radius, isPressed),
     });
 
-    this.#pointer = new PointerControls(parts.canvas, this.camera, groundPicker, this.powers, {
+    this.hand = new HandTool((command) => {
+      this.session.send(command);
+    }, this.#pickGrabbable.bind(this));
+
+    this.#pointer = new PointerControls(parts.canvas, this.camera, groundPicker, [this.hand, this.powers], {
       tap: (point, screen) => this.#selectAt(point, screen),
     });
     this.#keyboard = new KeyboardControls(window, this.camera);
@@ -173,6 +180,10 @@ export class GameEngine implements EngineHandle {
 
   selectPower(selection: PowerSelection | null): void {
     this.powers.select(selection);
+  }
+
+  selectHand(isSelected: boolean): void {
+    this.hand.select(isSelected);
   }
 
   focusOn(x: number, z: number, distance?: number): void {
@@ -317,6 +328,10 @@ export class GameEngine implements EngineHandle {
     const selection = this.#entityPicker.pick(this.session.frame, screen, this.#viewport, point);
 
     this.session.send({ selection, type: "setSelection" });
+  }
+
+  #pickGrabbable(point: Vector3, screen: ScreenPoint): GrabTarget | null {
+    return this.#entityPicker.pickGrabbable(this.session.mirror, screen, this.#viewport, point);
   }
 
   #resize(): void {

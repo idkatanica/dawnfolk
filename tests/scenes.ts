@@ -19,6 +19,10 @@ export const SCENES: readonly Scene[] = [
     name: "markers-over-forest",
     query: "seed=7&shape=round&quality=high&paused=1&hours=11&camera=-1050,640,140,0.45,2.6",
   },
+  {
+    name: "island-edge",
+    query: "seed=7&shape=round&quality=high&paused=1&hours=19&camera=2769.5,856.7,80,0.12,2.52",
+  },
   { name: "cave-mouth", query: "seed=7&shape=round&quality=high&paused=1&hours=11&camera=-415,-585,40,0.6,0" },
   {
     name: "cave-wide-river",

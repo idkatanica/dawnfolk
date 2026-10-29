@@ -17,6 +17,7 @@ const RAIN_MELT = 0.004;
 const UNBUILT_MASK = -1;
 const GROUND_FUEL = Float64Array.from(GROUNDS, (ground) => ground.fuel);
 const STORED_GROUND_FUEL = Float32Array.from(GROUND_FUEL);
+const GROUND_REGROWTH = Float64Array.from(GROUNDS, (ground) => ground.regrowth);
 const WATER_WETNESS_BITS = floatBits(1);
 
 export interface SurfaceConditions {
@@ -117,7 +118,7 @@ function recoverFromFire(cell: number, fields: SurfaceFields, terrain: TerrainDa
 
   const isWarm = terrain.baseTemperature[cell] + step.airTemperatureOffset > WARM_GROUND_TEMPERATURE;
 
-  const growthRate = isWarm ? 1 : COLD_GROWTH;
+  const growthRate = (isWarm ? 1 : COLD_GROWTH) * GROUND_REGROWTH[terrain.ground[cell]];
 
   if (fuelBefore < groundFuel) {
     fuel[cell] = Math.min(groundFuel, fuelBefore + groundFuel * 0.35 * step.days * growthRate);

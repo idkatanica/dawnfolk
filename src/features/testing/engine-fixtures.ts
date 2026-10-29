@@ -90,6 +90,7 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
       return landmarks;
     },
     placeLabel,
+    selectHand: vi.fn<(isSelected: boolean) => void>(),
     selectPower: vi.fn<(selection: PowerSelection | null) => void>(),
     session,
     setOutlinesShown: vi.fn<(areShown: boolean) => void>(),

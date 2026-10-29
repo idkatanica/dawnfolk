@@ -24,6 +24,7 @@ import type {
   CropCount,
   FarmlandView,
   GoalView,
+  LavaView,
   PackedRows,
   RegionPatch,
   TribeSummary,
@@ -381,4 +382,12 @@ export function describeWeather(weather: WeatherSystem, environment: Environment
 
 export function packBurningCells(world: WorldState, cells: Int32Array): Uint8Array {
   return Uint8Array.from(cells, (cell) => toByte(world.fields.fire[cell]));
+}
+
+export function packLava(heats: ReadonlyMap<number, number> | null): LavaView | null {
+  if (heats === null) {
+    return null;
+  }
+
+  return { cells: Int32Array.from(heats.keys()), heat: Uint8Array.from(heats.values(), toByte) };
 }

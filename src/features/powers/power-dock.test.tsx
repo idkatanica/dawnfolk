@@ -5,12 +5,22 @@ import { POWERS, powersInCategory } from "../../content/powers.ts";
 import { PowerDock } from "./power-dock.tsx";
 import { usePowerStore } from "./power-store.ts";
 
-const ELEMENT_POWERS = ["Fire", "Lightning", "Rain", "Snow", "Explosion", "Meteor", "Earthquake", "Tornado"] as const;
+const ELEMENT_POWERS = [
+  "Fire",
+  "Lightning",
+  "Rain",
+  "Snow",
+  "Explosion",
+  "Meteor",
+  "Earthquake",
+  "Volcano",
+  "Tornado",
+] as const;
 const LAND_POWERS = ["Raise land", "Lower land", "Flatten", "Smooth", "Forest", "Paint ground"] as const;
 const LIFE_POWERS = powersInCategory("life").map((powerId) => POWERS[powerId].name);
 
 describe("power dock", () => {
-  it("shows Select, the kinds and the powers of the chosen kind", async () => {
+  it("shows Select, Hand, the kinds and the powers of the chosen kind", async () => {
     const screen = await render(<PowerDock />);
 
     const row = screen.getByRole("toolbar", { name: "Powers" });
@@ -24,7 +34,7 @@ describe("power dock", () => {
         return label === null ? button.textContent : label;
       });
 
-    expect(names).toEqual(["Select", "Elements", "Land", "Life", ...ELEMENT_POWERS]);
+    expect(names).toEqual(["Select", "Hand", "Elements", "Land", "Life", ...ELEMENT_POWERS]);
     await expect.element(kinds.getByRole("button", { name: "Elements" })).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -80,6 +90,10 @@ describe("power dock", () => {
     select.element().focus();
     await userEvent.keyboard("{ArrowRight}");
 
+    await expect.element(screen.getByRole("button", { exact: true, name: "Hand" })).toHaveFocus();
+
+    await userEvent.keyboard("{ArrowRight}");
+
     await expect.element(screen.getByRole("button", { name: "Elements" })).toHaveFocus();
 
     await userEvent.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
@@ -128,5 +142,45 @@ describe("power dock", () => {
 
     expect(usePowerStore.getState().selectedPowerId).toBeNull();
     await expect.element(select).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("takes the hand in place of a power and names it in its tooltip", async () => {
+    usePowerStore.getState().selectPower("fire");
+
+    const screen = await render(<PowerDock />);
+
+    const hand = screen.getByRole("button", { exact: true, name: "Hand" });
+
+    await hand.hover();
+
+    await expect
+      .element(screen.getByText("Pick up people, animals, trees and bushes and set them down elsewhere."))
+      .toBeVisible();
+
+    await hand.click();
+
+    expect(usePowerStore.getState()).toMatchObject({ isHandSelected: true, selectedPowerId: null });
+    await expect.element(hand).toHaveAttribute("aria-pressed", "true");
+    await expect
+      .element(screen.getByRole("button", { exact: true, name: "Fire" }))
+      .toHaveAttribute("aria-pressed", "false");
+    await expect
+      .element(screen.getByRole("button", { exact: true, name: "Select" }))
+      .toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("puts the hand away with the Select tile or a power", async () => {
+    usePowerStore.getState().selectHand();
+
+    const screen = await render(<PowerDock />);
+
+    await screen.getByRole("button", { exact: true, name: "Select" }).click();
+
+    expect(usePowerStore.getState().isHandSelected).toBe(false);
+
+    await screen.getByRole("button", { exact: true, name: "Hand" }).click();
+    await screen.getByRole("button", { exact: true, name: "Rain" }).click();
+
+    expect(usePowerStore.getState()).toMatchObject({ isHandSelected: false, selectedPowerId: "rain" });
   });
 });

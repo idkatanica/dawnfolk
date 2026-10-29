@@ -1,22 +1,11 @@
 import { uniform } from "three/tsl";
-import {
-  ClampToEdgeWrapping,
-  Color,
-  DataTexture,
-  LinearFilter,
-  type PixelFormat,
-  RedFormat,
-  RGBAFormat,
-  RGFormat,
-  UnsignedByteType,
-  type WebGPURenderer,
-} from "three/webgpu";
+import { Color, type DataTexture, RedFormat, RGBAFormat, RGFormat, type WebGPURenderer } from "three/webgpu";
 import { Ground, isPoolGround } from "../../content/grounds.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import type { CellRegion, RowRun } from "../../world/change-tracking.ts";
 import { sampleCells } from "../../world/terrain-sampling.ts";
 import { POND_SHORE_SLOPE, pondEdgeReach } from "../../world/water.ts";
-import { floatDataTexture } from "../data-textures.ts";
+import { byteTexture, floatDataTexture } from "../data-textures.ts";
 import { CaveOutlets } from "../water/cave-outlets.ts";
 import { FordField } from "../water/ford-field.ts";
 import {
@@ -33,24 +22,13 @@ import { FieldPlan } from "./field-plan.ts";
 import { bloomFor } from "./fireweed.ts";
 import { GroundAlbedo } from "./ground-albedo.ts";
 import { IslandOutline } from "./island-outline.ts";
+import { LavaField } from "./lava-field.ts";
 import { PATCH_CELLS, PATCH_STEPS } from "./terrain-patches.ts";
 
 const SEASON_STEP = 0.01;
 const POND_SHORE_CELLS = 2;
 const BYTE = 255;
 const WETLAND_CHANNELS = 2;
-
-function byteTexture(data: Uint8Array, size: number, format: PixelFormat): DataTexture {
-  const texture = new DataTexture(data, size, size, format, UnsignedByteType);
-
-  texture.minFilter = LinearFilter;
-  texture.magFilter = LinearFilter;
-  texture.wrapS = ClampToEdgeWrapping;
-  texture.wrapT = ClampToEdgeWrapping;
-  texture.needsUpdate = true;
-
-  return texture;
-}
 
 export class TerrainTextures {
   readonly bloom = uniform(0);
@@ -59,6 +37,7 @@ export class TerrainTextures {
   readonly fields: FieldPlan;
   readonly fords: FordField;
   readonly height: DataTexture;
+  readonly lava: LavaField;
   readonly outline: IslandOutline;
   readonly patchSteps: DataTexture;
   readonly patchesPerSide: number;
@@ -82,6 +61,7 @@ export class TerrainTextures {
     this.caveOutlets = new CaveOutlets(mirror.grid, mirror.water.springs);
     this.fords = new FordField(mirror.grid, mirror.crossings);
     this.height = floatDataTexture(mirror.terrain.height, size, size, RedFormat);
+    this.lava = new LavaField(size);
     this.outline = new IslandOutline(mirror);
     this.patchesPerSide = Math.ceil(size / PATCH_CELLS);
     this.#patchStepData = new Float32Array(this.patchesPerSide * this.patchesPerSide).fill(1);
@@ -174,6 +154,7 @@ export class TerrainTextures {
     this.fields.dispose();
     this.outline.dispose();
     this.height.dispose();
+    this.lava.dispose();
     this.patchSteps.dispose();
     this.surface.dispose();
     this.water.dispose();

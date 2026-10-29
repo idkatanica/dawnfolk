@@ -19,7 +19,7 @@ import { CameraAxes } from "./effects/billboards.ts";
 import { EffectView } from "./effects/effect-view.ts";
 import { FireGlow } from "./effects/fire-glow.ts";
 import { FireView } from "./effects/fire-view.ts";
-import { GroundRing } from "./effects/ground-ring.ts";
+import { GroundRing, NO_FLOOR } from "./effects/ground-ring.ts";
 import { RainSplashes } from "./effects/rain-splashes.ts";
 import {
   type Precipitation,
@@ -49,6 +49,9 @@ import { WorldChangeReader } from "./world-changes.ts";
 const CLOUD_SEA_DEPTH = 760;
 const WATER_DRIFT = 0.08;
 const SELECTION_COLOR = 0xff_f2_c8;
+const HELD_RING_RADIUS = 2.5;
+const PLACEABLE_COLOR = 0xff_ff_ff;
+const BLOCKED_COLOR = 0xff_4a_3a;
 const NIGHT_MARKER_BRIGHTNESS = 0.8;
 
 const SELECTION_RADIUS: Readonly<Record<"animal" | "building" | "cell" | "person", number>> = {
@@ -92,6 +95,7 @@ export class WorldRenderer {
   readonly #fireGlow: FireGlow;
   readonly #frustum = new Frustum();
   readonly #grass: GrassField;
+  readonly #heldRing: GroundRing;
   readonly #islandBase: IslandBase;
   readonly #lilies: LilyPads;
   readonly #markers: AgentMarkers;
@@ -146,6 +150,7 @@ export class WorldRenderer {
 
     this.cursor = new GroundRing(this.#textures, mirror.grid);
     this.#selectionRing = new GroundRing(this.#textures, mirror.grid);
+    this.#heldRing = new GroundRing(this.#textures, mirror.grid);
     this.#fire = new FireView({ axes: this.#axes, chunks: this.#vegetation.chunks });
     this.#markers = new AgentMarkers(this.#axes, mirror);
     this.#weather = new WeatherParticles(this.#axes, this.#textures, mirror.grid);
@@ -180,6 +185,7 @@ export class WorldRenderer {
       this.#buildings.group,
       this.cursor.mesh,
       this.#selectionRing.mesh,
+      this.#heldRing.mesh,
       this.#fire.group,
       this.#effects.group,
       this.#splashes.mesh,
@@ -200,6 +206,7 @@ export class WorldRenderer {
 
     this.#textures.update(this.#renderer, frame.calendar.season, changes);
     this.#fireGlow.update(frame);
+    this.#textures.lava.update(frame.lava);
 
     if (changes.heightRegion !== null) {
       this.#terrain.heightsChanged(changes.heightRegion);
@@ -275,6 +282,7 @@ export class WorldRenderer {
     this.#terrain.update(view.camera, this.#frustum, this.#quality.terrainDetail);
     this.#textures.followPatchLevels(this.#terrain.patchLevels);
     this.#water.update(view.camera, this.#frustum, this.#quality.terrainDetail, this.#terrain.patchLevels);
+    this.#vegetation.hold(frame.held);
     this.#vegetation.update(
       view.camera,
       this.#frustum,
@@ -288,6 +296,7 @@ export class WorldRenderer {
     this.#lilies.update(frame.calendar.season);
     this.#updateAgents(view, gameSeconds);
     this.#markSelection();
+    this.#markHeld();
     this.#updateEffects(view, gameSeconds, form, rainfall, { metersPerSecond, windX, windZ });
     this.#output.render();
   }
@@ -299,6 +308,7 @@ export class WorldRenderer {
     this.#splashes.dispose();
     this.cursor.dispose();
     this.#selectionRing.dispose();
+    this.#heldRing.dispose();
     this.#people.dispose();
     this.#animals.dispose();
     this.#markers.dispose();
@@ -422,5 +432,21 @@ export class WorldRenderer {
     }
 
     this.#selectionRing.show(inspection.x, inspection.z, SELECTION_RADIUS[inspection.kind], SELECTION_COLOR, 0.9);
+  }
+
+  #markHeld(): void {
+    const mirror = this.#mirror;
+    const { held } = mirror.frame;
+
+    if (held === null) {
+      this.#heldRing.hide();
+
+      return;
+    }
+
+    const color = held.isPlaceable ? PLACEABLE_COLOR : BLOCKED_COLOR;
+    const floor = mirror.isWaterAt(held.x, held.z) ? mirror.surfaceAt(held.x, held.z) : NO_FLOOR;
+
+    this.#heldRing.show(held.x, held.z, HELD_RING_RADIUS, color, 0.95, floor);
   }
 }

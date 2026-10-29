@@ -3,6 +3,7 @@ import {
   Fn,
   float,
   fwidth,
+  max,
   mix,
   mx_fractal_noise_float,
   mx_noise_float,
@@ -22,6 +23,7 @@ import type { TerrainTextures } from "./terrain-textures.ts";
 
 const CLIFF_GRAIN_OCTAVES = 4;
 const UNDERSIDE_GRAIN_OCTAVES = 2;
+const RIM_LIFT = 0.1;
 
 function rockColor(plinth: number, grainOctaves: number): Node<"vec3"> {
   const grain = mx_fractal_noise_float(positionWorld.mul(0.018), grainOctaves, 2, 0.5);
@@ -54,7 +56,10 @@ function createCliffMaterial(textures: TerrainTextures, grid: WorldGrid, plinth:
   const outward = attribute("outward", "vec2");
 
   material.positionNode = Fn(() => {
-    const surface = renderedHeightNode(textures, grid, topPoint);
+    const surface = max(
+      renderedHeightNode(textures, grid, topPoint),
+      renderedHeightNode(textures, grid, positionLocal.xz)
+    ).add(RIM_LIFT);
 
     normalLocal.assign(vec3(outward.x, 0, outward.y));
 

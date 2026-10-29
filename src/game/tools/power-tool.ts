@@ -77,6 +77,10 @@ export class PowerTool implements ToolGestures {
     return this.#selection !== null;
   }
 
+  canBegin(): boolean {
+    return this.isActive();
+  }
+
   begin(point: Vector3): void {
     const selection = this.#selection;
 
@@ -119,6 +123,10 @@ export class PowerTool implements ToolGestures {
 
     this.#stroke = "idle";
     this.#send({ type: "endStroke" });
+  }
+
+  cancel(): void {
+    this.end();
   }
 
   hover(point: Vector3 | null): void {

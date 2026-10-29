@@ -16,6 +16,8 @@ import { EffectLog } from "./effects.ts";
 import { type FaunaSnapshot, FaunaSystem, type FaunaThreats } from "./fauna/fauna.ts";
 import type { InitialWorld, SimulationFrame, WaterUpdate } from "./frame.ts";
 import { FrameBuilder } from "./frame-builder.ts";
+import { GRAB_HANDLERS } from "./hand/grab-handlers.ts";
+import type { GrabTarget, HeldView } from "./hand/grab-target.ts";
 import { IdentifierSource } from "./identifiers.ts";
 import { Calendar, type CalendarSnapshot } from "./nature/calendar.ts";
 import { type Ember, EmberSystem } from "./nature/embers.ts";
@@ -28,6 +30,7 @@ import { naturalStrikeSite, strikeLightning } from "./powers/catastrophes.ts";
 import { type PowerOutcome, type PowerServices, type PowerTarget, percent } from "./powers/power-handler.ts";
 import { applyPower, parsePowerParameters } from "./powers/power-registry.ts";
 import { TornadoSystem } from "./powers/tornadoes.ts";
+import { type Volcano, VolcanoSystem } from "./powers/volcanoes.ts";
 import { type BuildingIncidentKind, BuildingSystem, type BuildingsSnapshot } from "./society/buildings.ts";
 import { type RivalrySnapshot, RivalrySystem } from "./society/rivalry/rivalry-system.ts";
 import { type SocietySnapshot, SocietySystem } from "./society/society.ts";
@@ -77,6 +80,7 @@ export interface SimulationSnapshot {
   tickBacklog: number;
   vegetationGrowth: VegetationGrowthSnapshot;
   viewFocus: Waypoint;
+  volcanoes?: Volcano[];
   waterRecomputation: WaterRecomputationSnapshot;
   weather: WeatherState;
   world: WorldSnapshot;
@@ -85,6 +89,14 @@ export interface SimulationSnapshot {
 interface BrushStroke {
   apply: (target: PowerTarget) => PowerOutcome;
   startHeight: number;
+  x: number;
+  z: number;
+}
+
+interface Grab {
+  isPlaceable: boolean;
+  readonly origin: Waypoint;
+  readonly target: GrabTarget;
   x: number;
   z: number;
 }
@@ -101,7 +113,11 @@ type CommandHandlers = {
 const COMMAND_HANDLERS: CommandHandlers = {
   beginStroke: (simulation, command) =>
     simulation.beginStroke(command.powerId, command.x, command.z, command.parameters),
+  cancelGrab: (simulation) => simulation.cancelGrab(),
+  carry: (simulation, command) => simulation.carry(command.x, command.z),
+  drop: (simulation) => simulation.drop(),
   endStroke: (simulation) => simulation.endStroke(),
+  grab: (simulation, command) => simulation.grab(command.target),
   moveStroke: (simulation, command) => simulation.moveStroke(command.x, command.z),
   setDaySeconds: (simulation, command) => {
     simulation.calendar.daySeconds = command.seconds;
@@ -161,11 +177,13 @@ export class Simulation {
   readonly society: SocietySystem;
   readonly surface: SurfaceSystem;
   readonly tornadoes = new TornadoSystem();
+  readonly volcanoes = new VolcanoSystem();
   readonly waterRecomputation: WaterRecomputation;
   readonly weather = new WeatherSystem();
   readonly world: WorldState;
   readonly #faunaThreats: FaunaThreats;
   readonly #frameBuilder: FrameBuilder;
+  #grab: Grab | null = null;
   #isPaused: boolean;
   #notices: string[] = [];
   #selection: Selection | null = null;
@@ -216,8 +234,22 @@ export class Simulation {
 
   get isBusy(): boolean {
     return (
-      this.#tasks.length > 0 || this.#stroke !== null || this.tornadoes.isActive || this.waterRecomputation.isPending
+      this.#tasks.length > 0 ||
+      this.#stroke !== null ||
+      this.#grab !== null ||
+      this.tornadoes.isActive ||
+      this.waterRecomputation.isPending
     );
+  }
+
+  get held(): HeldView | null {
+    const grab = this.#grab;
+
+    if (grab === null) {
+      return null;
+    }
+
+    return { ...grab.target, isPlaceable: grab.isPlaceable, x: grab.x, z: grab.z };
   }
 
   get isPaused(): boolean {
@@ -293,6 +325,7 @@ export class Simulation {
       tickBacklog: this.#tickBacklog,
       vegetationGrowth: this.#vegetationGrowth.snapshot(),
       viewFocus: { ...this.#viewFocus },
+      volcanoes: this.volcanoes.snapshot(),
       waterRecomputation: this.waterRecomputation.snapshot(),
       weather: this.weather.snapshot(),
       world: this.world.snapshot(),
@@ -317,6 +350,7 @@ export class Simulation {
     this.society.restore(snapshot.society);
     this.fauna.restore(snapshot.fauna);
     this.rivalry.restore(snapshot.rivalry);
+    this.volcanoes.restore(snapshot.volcanoes === undefined ? [] : snapshot.volcanoes);
     this.setRules(readWorldRules(snapshot.rules));
     this.services.environment = describeEnvironment(this.calendar, this.weather);
     this.#isPaused = snapshot.isPaused;
@@ -327,6 +361,7 @@ export class Simulation {
     this.#tasks = [];
     this.tornadoes.clear();
     this.#stroke = null;
+    this.#grab = null;
     this.#notices = [];
     this.#waterUpdate = null;
     this.effects.takeEffects();
@@ -383,6 +418,71 @@ export class Simulation {
 
   endStroke(): void {
     this.#stroke = null;
+  }
+
+  grab(target: GrabTarget): void {
+    this.cancelGrab();
+
+    const handler = GRAB_HANDLERS[target.kind];
+    const origin = handler.lift(this.services, target.id);
+
+    if (origin === null) {
+      return;
+    }
+
+    this.#grab = {
+      isPlaceable: handler.canPlace(this.services, target.id, origin.x, origin.z),
+      origin,
+      target,
+      x: origin.x,
+      z: origin.z,
+    };
+  }
+
+  carry(x: number, z: number): void {
+    const grab = this.#grab;
+
+    if (grab === null) {
+      return;
+    }
+
+    const handler = GRAB_HANDLERS[grab.target.kind];
+
+    handler.carry(this.services, grab.target.id, x, z);
+    grab.x = x;
+    grab.z = z;
+    grab.isPlaceable = handler.canPlace(this.services, grab.target.id, x, z);
+  }
+
+  drop(): void {
+    const grab = this.#grab;
+
+    if (grab === null) {
+      return;
+    }
+
+    const { id, kind } = grab.target;
+
+    const handler = GRAB_HANDLERS[kind];
+
+    if (handler.canPlace(this.services, id, grab.x, grab.z)) {
+      handler.place(this.services, id, grab.x, grab.z);
+    } else {
+      handler.putBack(this.services, id, grab.origin);
+    }
+
+    this.#grab = null;
+  }
+
+  cancelGrab(): void {
+    const grab = this.#grab;
+
+    if (grab === null) {
+      return;
+    }
+
+    GRAB_HANDLERS[grab.target.kind].putBack(this.services, grab.target.id, grab.origin);
+    this.#grab = null;
   }
 
   setPaused(isPaused: boolean): void {
@@ -510,6 +610,7 @@ export class Simulation {
       rules: DEFAULT_WORLD_RULES,
       schedule: (delaySeconds, run) => this.#schedule(delaySeconds, run),
       tornadoes: this.tornadoes,
+      volcanoes: this.volcanoes,
       world: this.world,
     };
   }
@@ -671,6 +772,7 @@ export class Simulation {
 
     this.embers.update(TICK_SECONDS, (ember) => this.#landEmber(ember));
     this.tornadoes.update(TICK_SECONDS, this.services);
+    this.volcanoes.update(TICK_SECONDS, this.services);
     this.surface.update(TICK_SECONDS, days, environment, rules);
     this.#vegetationGrowth.update(days, environment, rules, this.random);
   }
@@ -719,10 +821,21 @@ export class Simulation {
   }
 
   #keepAgentsApart(): void {
-    const people = this.society.people.filter((person) => person.isAlive).map((person) => person.mover);
-    const animals = this.fauna.animals.filter((animal) => animal.isAlive).map((animal) => animal.mover);
+    const movers: Mover[] = [];
 
-    keepApart([...people, ...animals], this.world, TICK_SECONDS * CROWDING_TICKS);
+    for (const person of this.society.people) {
+      if (person.isAlive && !this.society.isHeld(person)) {
+        movers.push(person.mover);
+      }
+    }
+
+    for (const animal of this.fauna.animals) {
+      if (animal.isAlive && !this.fauna.isHeld(animal)) {
+        movers.push(animal.mover);
+      }
+    }
+
+    keepApart(movers, this.world, TICK_SECONDS * CROWDING_TICKS);
   }
 
   #recordSplashes(): void {

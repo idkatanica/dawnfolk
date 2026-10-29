@@ -5,6 +5,7 @@ import { isTreeSpecies, plantSpeciesDefinition } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { distanceSquared, fractionalPart, hashToUnit } from "../../shared/math.ts";
 import type { BuildingView } from "../../simulation/frame.ts";
+import type { VolcanoView } from "../../simulation/powers/volcanoes.ts";
 import { GROUND_CHANNELS, GroundChannel, SURFACE_CHANNELS, SurfaceChannel } from "../../world/agent-buffers.ts";
 import { PlantState } from "../../world/vegetation-store.ts";
 import type { InstanceBatch } from "../instancing.ts";
@@ -48,6 +49,16 @@ const FULL_SMOKE_INTENSITY = 0.35;
 const CAMPFIRE_SMOKE_HEIGHT = 34;
 const REBUILD_DISTANCE = 120;
 const LIGHT_SMOKE_HEIGHT = 80;
+const PLUME_COLUMNS = 6;
+const PLUME_PUFFS = 18;
+const PLUME_HEAVINESS = 1.4;
+const PLUME_HEIGHT_PER_RADIUS = 5.5;
+const CRATER_FLAMES = 7;
+const CRATER_SPARKS = 40;
+const SPARK_RISE_PER_RADIUS = 1.4;
+const ERUPTING = 0.5;
+const STEAM_HEIGHT = 70;
+const STEAM_PUFFS = 18;
 
 interface FireViewOptions {
   readonly axes: CameraAxes;
@@ -221,6 +232,11 @@ export class FireView {
 
     this.#addCrownFlames(mirror, intensities);
     this.#addCampfires(mirror);
+
+    for (const volcano of mirror.frame.volcanoes) {
+      this.#addVolcano(mirror, volcano);
+    }
+
     this.#placeLights(mirror, camera);
     this.#flames.commit();
     this.#puffs.commit();
@@ -413,6 +429,67 @@ export class FireView {
       this.#sparks.add(
         [building.x, ground + 0.6, building.z, CAMPFIRE_SPARK_RISE],
         [hashToUnit(building.id, 5), heat, 0, 0]
+      );
+    }
+  }
+
+  #addVolcano(mirror: WorldMirror, volcano: VolcanoView): void {
+    const { activity, craterRadius, radius, steam, x, z } = volcano;
+
+    const crater = mirror.heightAt(x, z);
+
+    for (let column = 0; column < PLUME_COLUMNS; column += 1) {
+      const angle = hashToUnit(x, z, column) * Math.PI * 2;
+      const reach = craterRadius * 0.8 * hashToUnit(z, x, column);
+      const height = radius * PLUME_HEIGHT_PER_RADIUS * activity * (0.7 + 0.3 * hashToUnit(column, x));
+
+      this.#addSmokeColumn(mirror, x + Math.cos(angle) * reach, z + Math.sin(angle) * reach, height, {
+        density: activity,
+        heaviness: PLUME_HEAVINESS,
+        puffs: PLUME_PUFFS,
+        warmth: activity,
+      });
+    }
+
+    for (let pair = 0; pair < steam.length; pair += 2) {
+      this.#addSmokeColumn(mirror, steam[pair], steam[pair + 1], STEAM_HEIGHT, {
+        density: 1,
+        heaviness: 0,
+        puffs: STEAM_PUFFS,
+        warmth: 0,
+      });
+    }
+
+    if (activity < ERUPTING) {
+      return;
+    }
+
+    for (let flame = 0; flame < CRATER_FLAMES; flame += 1) {
+      const angle = hashToUnit(flame, x, 3) * Math.PI * 2;
+      const reach = craterRadius * 0.55 * Math.sqrt(hashToUnit(flame, z, 4));
+      const size = craterRadius * (0.5 + 0.5 * hashToUnit(flame, 5)) * activity;
+      const flameX = x + Math.cos(angle) * reach;
+      const flameZ = z + Math.sin(angle) * reach;
+
+      this.#flames.add(
+        [flameX, mirror.heightAt(flameX, flameZ) + size * FLAME_LIFT, flameZ, size],
+        [hashToUnit(flame, 6), activity, 0, 0.3]
+      );
+    }
+
+    for (let spark = 0; spark < CRATER_SPARKS; spark += 1) {
+      const seed = hashToUnit(spark, x, 7);
+      const angle = hashToUnit(spark, z, 8) * Math.PI * 2;
+      const reach = craterRadius * 0.5 * hashToUnit(spark, 9);
+
+      this.#sparks.add(
+        [
+          x + Math.cos(angle) * reach,
+          crater + 2,
+          z + Math.sin(angle) * reach,
+          radius * SPARK_RISE_PER_RADIUS * (0.5 + seed),
+        ],
+        [seed, activity, 0, 0]
       );
     }
   }

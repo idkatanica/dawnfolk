@@ -103,7 +103,7 @@ describe("power store", () => {
   it("drops saved settings of unknown powers and repairs invalid ones", async () => {
     const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 
-    saveSettings({ fire: { intensity: 900 }, volcano: { size: 3 } });
+    saveSettings({ fire: { intensity: 900 }, tsunami: { size: 3 } });
 
     await usePowerStore.persist.rehydrate();
 
