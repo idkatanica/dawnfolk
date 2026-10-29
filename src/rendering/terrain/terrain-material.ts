@@ -49,6 +49,7 @@ const EMBER_DEEP = vec3(1.2, 0.24, 0.03);
 const EMBER_BRIGHT = vec3(1.3, 0.42, 0.06);
 const GROUND_FIRE_LIGHT = 0.6;
 const STONE = vec3(0.19, 0.155, 0.12);
+const DARK_STONE = 0.04;
 const STRATA_FREQUENCY = 0.45;
 const STRATA_CONTRAST = 0.035;
 const STEEP_FACE_SHADE = 0.82;
@@ -280,8 +281,9 @@ export function createTerrainMaterial({
   );
   const mottled = field.color;
   const redStone = smoothstep(0.6, 0.45, albedo.g.div(max(albedo.r, 0.001)));
+  const darkStone = smoothstep(DARK_STONE, DARK_STONE * 0.5, albedo.r);
   const faceShade = mix(float(1), float(STEEP_FACE_SHADE), smoothstep(0.3, 0.7, steepness));
-  const rockColor = mix(STONE, albedo.mul(0.85), redStone)
+  const rockColor = mix(STONE, albedo.mul(0.85), max(redStone, darkStone))
     .mul(strata)
     .mul(broad.mul(0.06).add(patches.mul(0.04)).add(1))
     .mul(faceShade);
@@ -310,14 +312,16 @@ export function createTerrainMaterial({
   const petals = smoothstep(0.55, 0.85, fine.mul(0.65).add(patches.mul(0.35)).add(0.5));
   const flowering = mix(scorched, FIREWEED, fireweedNode(surface.b, textures.bloom).mul(petals).mul(0.42));
 
+  const lava = textures.lava.look(flowering, mapCoordinates, positionWorld.xz);
   const fireLight = fireLightAt(glow, grid, positionWorld.xz);
   const roughness = mix(mix(float(0.95), float(MARSH_ROUGHNESS), marsh.soak), float(0.5), wetness);
 
-  material.colorNode = flowering;
+  material.colorNode = lava.color;
   material.roughnessNode = mix(roughness, float(POOL_ROUGHNESS), openPool);
   material.normalNode = normalize(mix(field.normal, transformNormalToView(vec3(0, 1, 0)), openPool));
   material.emissiveNode = emberGlow(surface.a, positionWorld.xz, fine.mul(0.5).add(0.5))
-    .add(scorched.mul(fireLight).mul(GROUND_FIRE_LIGHT))
+    .add(lava.glow)
+    .add(lava.color.mul(fireLight).mul(GROUND_FIRE_LIGHT))
     .add(poolGlint(textures, openPool));
 
   return material;

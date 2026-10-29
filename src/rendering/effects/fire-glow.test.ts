@@ -9,6 +9,7 @@ function burning(cells: readonly number[], intensity = 255): BurningCells {
   return {
     burningCells: Int32Array.from(cells),
     burningIntensity: Uint8Array.from(cells.map(() => intensity)),
+    lava: { cells: new Int32Array(0), heat: new Uint8Array(0) },
   };
 }
 

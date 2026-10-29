@@ -16,6 +16,7 @@ import type { ChronicleEntry } from "./chronicle.ts";
 import type { SimulationEffect } from "./effects.ts";
 import type { Inspection } from "./inspection.ts";
 import type { CalendarView } from "./nature/calendar.ts";
+import type { LavaView, VolcanoView } from "./powers/volcanoes.ts";
 import type { RivalryView } from "./society/rivalry/rivalry-system.ts";
 
 export interface PackedRows {
@@ -140,6 +141,7 @@ export interface SimulationFrame {
   inspection: Inspection | null;
   isBusy: boolean;
   isPaused: boolean;
+  lava: LavaView;
   notices: string[];
   people: Float32Array;
   personCount: number;
@@ -151,6 +153,7 @@ export interface SimulationFrame {
   tick: number;
   tribes: TribeSummary[];
   vegetation: VegetationPatch | null;
+  volcanoes: VolcanoView[];
   water: WaterUpdate | null;
   waterLevels: RegionPatch | null;
   weather: WeatherView;

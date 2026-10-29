@@ -37,6 +37,7 @@ const DEATH_MESSAGES: Readonly<Record<DeathCause, string>> = {
   earthquake: "was crushed in an earthquake",
   fire: "died in the flames",
   hunger: "starved",
+  lava: "was swallowed by lava",
   lightning: "was struck by lightning",
   mammoth: "was trampled by a mammoth",
   tornado: "was swept away by a tornado",

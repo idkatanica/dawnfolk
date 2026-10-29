@@ -2,6 +2,8 @@ import { fractionalPart, lerp, smoothstep } from "../shared/math.ts";
 import { SEASON_COUNT } from "./seasons.ts";
 
 export const Ground = {
+  Ash: 17,
+  Basalt: 18,
   Bog: 16,
   Clay: 15,
   CopperOre: 12,
@@ -33,6 +35,7 @@ interface GroundDefinition {
   holdsTrees: boolean;
   index: GroundIndex;
   name: string;
+  regrowth: number;
   seasonalColors: readonly [Color, Color, Color, Color];
   walkSpeed: number;
 }
@@ -46,6 +49,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: true,
     index: Ground.Meadow,
     name: "Meadow",
+    regrowth: 1,
     seasonalColors: [
       [0.4, 0.45, 0.27],
       [0.48, 0.48, 0.3],
@@ -62,6 +66,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: true,
     index: Ground.Steppe,
     name: "Dry grass",
+    regrowth: 1,
     seasonalColors: [
       [0.56, 0.55, 0.36],
       [0.72, 0.63, 0.45],
@@ -78,6 +83,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: true,
     index: Ground.Forest,
     name: "Forest floor",
+    regrowth: 1,
     seasonalColors: [
       [0.31, 0.32, 0.21],
       [0.3, 0.31, 0.2],
@@ -94,6 +100,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: true,
     index: Ground.Scrub,
     name: "Shrubs",
+    regrowth: 1,
     seasonalColors: [
       [0.47, 0.48, 0.33],
       [0.53, 0.52, 0.37],
@@ -110,6 +117,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: false,
     index: Ground.Sand,
     name: "Sand",
+    regrowth: 1,
     seasonalColors: [
       [0.76, 0.65, 0.48],
       [0.78, 0.66, 0.48],
@@ -126,6 +134,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: true,
     index: Ground.Rock,
     name: "Rock",
+    regrowth: 1,
     seasonalColors: [
       [0.45, 0.43, 0.41],
       [0.46, 0.44, 0.41],
@@ -142,6 +151,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: true,
     index: Ground.Snow,
     name: "Eternal snow",
+    regrowth: 1,
     seasonalColors: [
       [0.86, 0.88, 0.92],
       [0.84, 0.86, 0.9],
@@ -158,6 +168,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: true,
     index: Ground.Tundra,
     name: "Tundra",
+    regrowth: 1,
     seasonalColors: [
       [0.46, 0.46, 0.34],
       [0.47, 0.48, 0.33],
@@ -174,6 +185,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: true,
     index: Ground.Swamp,
     name: "Swamp",
+    regrowth: 1,
     seasonalColors: [
       [0.27, 0.28, 0.16],
       [0.27, 0.28, 0.15],
@@ -190,6 +202,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: true,
     index: Ground.Dirt,
     name: "Trodden earth",
+    regrowth: 1,
     seasonalColors: [
       [0.45, 0.38, 0.29],
       [0.47, 0.39, 0.3],
@@ -206,6 +219,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: true,
     index: Ground.Farm,
     name: "Field",
+    regrowth: 1,
     seasonalColors: [
       [0.38, 0.31, 0.22],
       [0.41, 0.33, 0.23],
@@ -222,6 +236,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: true,
     index: Ground.RedRock,
     name: "Red stone",
+    regrowth: 1,
     seasonalColors: [
       [0.61, 0.38, 0.27],
       [0.63, 0.4, 0.28],
@@ -238,6 +253,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: false,
     index: Ground.CopperOre,
     name: "Copper vein",
+    regrowth: 1,
     seasonalColors: [
       [0.33, 0.5, 0.44],
       [0.34, 0.51, 0.45],
@@ -254,6 +270,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: false,
     index: Ground.TinOre,
     name: "Tin vein",
+    regrowth: 1,
     seasonalColors: [
       [0.3, 0.29, 0.33],
       [0.31, 0.3, 0.34],
@@ -270,6 +287,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: false,
     index: Ground.IronOre,
     name: "Iron vein",
+    regrowth: 1,
     seasonalColors: [
       [0.55, 0.27, 0.16],
       [0.56, 0.28, 0.17],
@@ -286,6 +304,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: false,
     index: Ground.Clay,
     name: "Clay bank",
+    regrowth: 1,
     seasonalColors: [
       [0.6, 0.53, 0.43],
       [0.63, 0.55, 0.44],
@@ -302,6 +321,7 @@ export const GROUNDS: readonly GroundDefinition[] = [
     holdsTrees: false,
     index: Ground.Bog,
     name: "Bog pool",
+    regrowth: 1,
     seasonalColors: [
       [0.17, 0.17, 0.11],
       [0.17, 0.17, 0.1],
@@ -309,6 +329,40 @@ export const GROUNDS: readonly GroundDefinition[] = [
       [0.18, 0.18, 0.15],
     ],
     walkSpeed: 0.55,
+  },
+  {
+    fertility: 1,
+    flammability: 0.7,
+    fuel: 0.6,
+    grass: 0.9,
+    holdsTrees: true,
+    index: Ground.Ash,
+    name: "Ash soil",
+    regrowth: 3,
+    seasonalColors: [
+      [0.3, 0.33, 0.21],
+      [0.34, 0.36, 0.22],
+      [0.4, 0.34, 0.23],
+      [0.33, 0.31, 0.27],
+    ],
+    walkSpeed: 0.95,
+  },
+  {
+    fertility: 0,
+    flammability: 0,
+    fuel: 0,
+    grass: 0,
+    holdsTrees: false,
+    index: Ground.Basalt,
+    name: "Lava rock",
+    regrowth: 1,
+    seasonalColors: [
+      [0.14, 0.13, 0.13],
+      [0.15, 0.14, 0.13],
+      [0.14, 0.13, 0.13],
+      [0.15, 0.14, 0.14],
+    ],
+    walkSpeed: 0.7,
   },
 ];
 

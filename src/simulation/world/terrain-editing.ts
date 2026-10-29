@@ -16,6 +16,8 @@ const CRATER_WALL_SLOPE = 0.6;
 const DESERT_DRYNESS = 0.5;
 const QUAKE_BLUR_CELLS = 2;
 const QUAKE_SWELL = 3;
+const CONE_FLANK_CURVE = 1.5;
+const CRATER_DEPTH_SHARE = 0.3;
 
 interface CircleArea {
   radius: number;
@@ -28,6 +30,10 @@ interface AreaCell {
   column: number;
   distance: number;
   row: number;
+}
+
+interface Cone extends CircleArea {
+  readonly craterShare: number;
 }
 
 interface Leveling {
@@ -88,6 +94,30 @@ export function raiseTerrain(world: WorldState, area: CircleArea, amount: number
   }
 
   world.finishHeightEdit(areaRegion(world, area));
+}
+
+function coneProfile(cone: Cone, distance: number): number {
+  const relativeDistance = distance / cone.radius;
+
+  if (relativeDistance >= 1) {
+    return 0;
+  }
+
+  const flank = ((1 - Math.max(relativeDistance, cone.craterShare)) / (1 - cone.craterShare)) ** CONE_FLANK_CURVE;
+  const bowl = Math.max(0, 1 - (relativeDistance / cone.craterShare) ** 2);
+
+  return flank - bowl * CRATER_DEPTH_SHARE;
+}
+
+export function swellCone(world: WorldState, cone: Cone, amount: number): void {
+  for (const areaCell of editableCells(world, cone)) {
+    const { cell } = areaCell;
+
+    world.setHeight(cell, world.terrain.height[cell] + amount * coneProfile(cone, areaCell.distance));
+    firmUpDriedLakebed(world, cell, amount);
+  }
+
+  world.finishHeightEdit(areaRegion(world, cone));
 }
 
 function firmUpDriedLakebed(world: WorldState, cell: number, amount: number): void {

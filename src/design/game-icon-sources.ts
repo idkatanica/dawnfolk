@@ -74,6 +74,7 @@ import tinOre from "./icons/tin-ore.webp";
 import tornado from "./icons/tornado.webp";
 import totem from "./icons/totem.webp";
 import vegetables from "./icons/vegetables.webp";
+import volcano from "./icons/volcano.webp";
 import warning from "./icons/warning.webp";
 import wolf from "./icons/wolf.webp";
 import wood from "./icons/wood.webp";
@@ -156,6 +157,7 @@ export const GAME_ICON_SOURCES = {
   tornado,
   totem,
   vegetables,
+  volcano,
   warning,
   wolf,
   wood,

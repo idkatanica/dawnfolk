@@ -24,5 +24,6 @@ export const POWER_ICONS: Readonly<Record<PowerId, GameIconName>> = {
   snow: "snow",
   tornado: "tornado",
   tribe: "tent",
+  volcano: "volcano",
   wolf: "wolf",
 };
