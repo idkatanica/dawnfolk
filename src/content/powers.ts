@@ -327,6 +327,26 @@ export const POWERS = {
     }),
     usage: "brush",
   },
+  tornado: {
+    category: "elements",
+    description:
+      "A twister that walks with the wind, uprooting trees, flinging people and animals and tearing huts apart.",
+    name: "Tornado",
+    parameters: z.object({
+      lifetime: rangeParameter({
+        defaultValue: 20,
+        description: "Seconds before the funnel dies out.",
+        label: "Lifetime",
+        maximum: 60,
+        minimum: 5,
+        step: 5,
+        unit: "seconds",
+      }),
+      radius: brushRadius(45, 140),
+      strength: strength(70, "How hard the wind tears at the ground."),
+    }),
+    usage: "point",
+  },
   tribe: {
     category: "life",
     description: "A new tribe arrives and settles near water and food close to the click.",
@@ -375,6 +395,7 @@ export const POWER_ORDER: readonly PowerId[] = [
   "explosion",
   "meteor",
   "earthquake",
+  "tornado",
   "raise",
   "lower",
   "flatten",

@@ -71,6 +71,7 @@ import sunrise from "./icons/sunrise.webp";
 import sunset from "./icons/sunset.webp";
 import tent from "./icons/tent.webp";
 import tinOre from "./icons/tin-ore.webp";
+import tornado from "./icons/tornado.webp";
 import totem from "./icons/totem.webp";
 import vegetables from "./icons/vegetables.webp";
 import warning from "./icons/warning.webp";
@@ -152,6 +153,7 @@ export const GAME_ICON_SOURCES = {
   sunset,
   tent,
   "tin-ore": tinOre,
+  tornado,
   totem,
   vegetables,
   warning,

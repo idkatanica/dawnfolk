@@ -28,7 +28,8 @@ export type DeathCause =
   | "fire"
   | "hunger"
   | "lightning"
-  | "mammoth";
+  | "mammoth"
+  | "tornado";
 
 interface Carrying {
   amount: number;

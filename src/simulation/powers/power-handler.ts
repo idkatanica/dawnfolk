@@ -1,6 +1,7 @@
 import type { PowerId, PowerParameters } from "../../content/powers.ts";
 import type { EmberSystem } from "../nature/embers.ts";
 import type { SocietyContext } from "../society/society-context.ts";
+import type { TornadoSystem } from "./tornadoes.ts";
 
 export interface PowerTarget {
   seconds: number;
@@ -12,6 +13,7 @@ export interface PowerTarget {
 export interface PowerServices extends SocietyContext {
   embers: EmberSystem;
   schedule: (delaySeconds: number, task: () => void) => void;
+  tornadoes: TornadoSystem;
 }
 
 export type PowerOutcome = { kind: "applied" } | { kind: "refused"; reason: string };

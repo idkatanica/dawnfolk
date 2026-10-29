@@ -6,6 +6,7 @@ import { EffectMeshes } from "./effect-meshes.ts";
 import type { GroundRing } from "./ground-ring.ts";
 import { MeteorFall } from "./meteor-fall.ts";
 import { createDustMaterial, createGlowMaterial } from "./sprite-materials.ts";
+import { TornadoFunnel } from "./tornado-funnel.ts";
 import {
   type ActiveEffect,
   Blessing,
@@ -135,6 +136,8 @@ export class EffectView {
         return new MeteorFall(this.#context, effect);
       case "splash":
         return new Splash(effect);
+      case "tornado":
+        return new TornadoFunnel(this.#context, effect);
       default:
         return effect satisfies never;
     }

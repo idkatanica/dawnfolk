@@ -55,7 +55,7 @@ const DISPERSAL_PER_DAY = 0.8;
 const DISPERSAL_RANGE: readonly [number, number] = [120, 420];
 const DISPERSING_MEMBERS = 2;
 
-type AnimalDeathCause = "age" | "blast" | "fire" | "hunt" | "lightning" | "prey";
+type AnimalDeathCause = "age" | "blast" | "fire" | "hunt" | "lightning" | "prey" | "tornado";
 
 export interface Animal {
   appearanceSeed: number;

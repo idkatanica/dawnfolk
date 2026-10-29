@@ -32,6 +32,7 @@ describe("powers", () => {
       "explosion",
       "meteor",
       "earthquake",
+      "tornado",
     ]);
   });
 

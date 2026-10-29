@@ -5,7 +5,7 @@ import { POWERS, powersInCategory } from "../../content/powers.ts";
 import { PowerDock } from "./power-dock.tsx";
 import { usePowerStore } from "./power-store.ts";
 
-const ELEMENT_POWERS = ["Fire", "Lightning", "Rain", "Snow", "Explosion", "Meteor", "Earthquake"] as const;
+const ELEMENT_POWERS = ["Fire", "Lightning", "Rain", "Snow", "Explosion", "Meteor", "Earthquake", "Tornado"] as const;
 const LAND_POWERS = ["Raise land", "Lower land", "Flatten", "Smooth", "Forest", "Paint ground"] as const;
 const LIFE_POWERS = powersInCategory("life").map((powerId) => POWERS[powerId].name);
 
