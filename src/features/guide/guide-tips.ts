@@ -31,7 +31,7 @@ export const GUIDE_TIPS: Readonly<Record<GuideTipId, GuideTip>> = {
   fire: { powerId: "rain", text: "Fire spreads with the wind. Rain puts it out." },
   follow: { powerId: null, text: "Tap a tribe's banner to see its people, then follow them with the camera." },
   look: { powerId: null, text: "You are the god of this island. Drag to look around, and scroll or pinch to zoom." },
-  pick: { powerId: "rain", text: "Your powers are in the dock below. Pick Rain for a gentle start." },
+  pick: { powerId: "lightning", text: "Your powers are in the dock below. Pick Lightning and strike a tree." },
   speed: { powerId: null, text: "Time runs on its own. Pick a faster speed to watch the tribes grow." },
   use: { powerId: null, text: "Click or tap the land to use the power. Pick Select to put it away." },
   winter: { powerId: "healing", text: "Winter is here. Healing feeds and warms everyone inside its circle." },
