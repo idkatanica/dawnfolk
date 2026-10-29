@@ -689,6 +689,7 @@ function joinsNearSources(generated: GeneratedWorld): string[] {
   const { cellSize } = generated.dimensions;
   const { rivers } = generated.water;
 
+  const grid = new WorldGrid(generated.dimensions);
   const faults: string[] = [];
 
   for (const tributary of rivers) {
@@ -697,6 +698,7 @@ function joinsNearSources(generated: GeneratedWorld): string[] {
 
       if (
         main !== tributary &&
+        !isFedByLake(generated, grid, main) &&
         nearest.distance < cellSize * JUNCTION_CELLS &&
         nearest.along < SOURCE_REACH - SMOOTHING_SLACK
       ) {
@@ -711,7 +713,6 @@ function joinsNearSources(generated: GeneratedWorld): string[] {
 function endsAwayFromWater(generated: GeneratedWorld): string[] {
   const { cellSize } = generated.dimensions;
   const { rivers } = generated.water;
-  const { height, riverStrength, waterSurface } = generated.terrain;
 
   const grid = new WorldGrid(generated.dimensions);
 
@@ -723,7 +724,7 @@ function endsAwayFromWater(generated: GeneratedWorld): string[] {
         return other !== river && joinsRiver(river, other, cellSize * JUNCTION_CELLS);
       });
       const reachesLake = grid.cellsInRadius(end.x, end.z, LAKE_REACH).some((cell) => {
-        return riverStrength[cell] === 0 && hasWater(waterSurface[cell], height[cell]);
+        return isLakeWater(generated.terrain, cell);
       });
 
       return !(river.reachesEdge || joins || reachesLake);

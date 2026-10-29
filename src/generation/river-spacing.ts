@@ -396,6 +396,11 @@ function sourceJoined(spacing: Spacing, spaced: readonly RiverChain[], chain: Ri
   }
 
   const trunk = owners[chain.joinsCell];
+
+  if (isFedByLake(spacing, spaced[trunk])) {
+    return null;
+  }
+
   const { cells } = spaced[trunk];
   const at = cells.indexOf(chain.joinsCell);
 
