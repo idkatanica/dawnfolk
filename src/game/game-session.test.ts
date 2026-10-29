@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_WORLD_REQUEST, type GenerationProgress } from "../generation/generation-options.ts";
+import type { GenerationProgress } from "../generation/generation-options.ts";
 import { Simulation } from "../simulation/simulation.ts";
 import { createVegetatedWorld } from "../simulation/testing/test-world.ts";
 import { createSimulationWorkerApi } from "../workers/simulation-worker-api.ts";
 import { CHRONICLE_HISTORY_LIMIT, GameSession, type SessionStatus } from "./game-session.ts";
-import { LocalSimulationConnection } from "./simulation-connection.ts";
+import { createLocalSession, LocalSimulationConnection } from "./testing/local-session.ts";
 
 interface SessionSetup {
   connection: LocalSimulationConnection;
@@ -22,10 +22,7 @@ function createTestSimulation(): Simulation {
 
 async function createSession(): Promise<SessionSetup> {
   const simulation = createTestSimulation();
-
-  const connection = new LocalSimulationConnection(createSimulationWorkerApi(() => simulation));
-
-  const session = await GameSession.create(connection, DEFAULT_WORLD_REQUEST);
+  const { connection, session } = await createLocalSession(simulation);
 
   return { connection, session, simulation };
 }
