@@ -35,6 +35,7 @@ const CREASE_STRENGTH = 0.55;
 const KIND_GAP_START = 0.05;
 const KIND_GAP_END = 0.1;
 const SKY_DISTANCE = 100_000;
+const NEAREST_DISTANCE = 0.01;
 const NEIGHBORS: readonly (readonly [number, number])[] = [
   [-1, -1],
   [0, -1],
@@ -80,7 +81,7 @@ export function markOutlined(material: MeshStandardNodeMaterial, weight = 1): vo
 export function outlinedColor(color: TextureNode, surfaces: TextureNode, controls: OutlineControls): Node<"vec3"> {
   const step = vec2(LINE_WIDTH, LINE_WIDTH).mul(controls.pixelRatio).div(screenSize);
   const center = surfaces.sample(screenUV);
-  const distance = center.z;
+  const distance = max(center.z, NEAREST_DISTANCE);
   const centerNormal = normalOf(center);
   const slack = float(1).add(float(1).sub(centerNormal.z).mul(GRAZING_SLACK));
   const gapStart = slack.mul(DEPTH_GAP_START);
@@ -93,13 +94,13 @@ export function outlinedColor(color: TextureNode, surfaces: TextureNode, control
     const neighbor = surfaces.sample(screenUV.add(vec2(column, row).mul(step)));
     const gap = distanceOf(neighbor).sub(distance).div(distance);
 
-    const isBehind = smoothstep(gapStart, gapEnd, gap);
-    const isOtherKind = smoothstep(KIND_GAP_START, KIND_GAP_END, center.w.sub(neighbor.w));
-    const isSameSurface = float(1).sub(smoothstep(gapStart, gapEnd, abs(gap)));
+    const behind = smoothstep(gapStart, gapEnd, gap);
+    const kindChange = smoothstep(KIND_GAP_START, KIND_GAP_END, center.w.sub(neighbor.w));
+    const sameSurface = float(1).sub(smoothstep(gapStart, gapEnd, abs(gap)));
     const bend = float(1).sub(smoothstep(CREASE_START, CREASE_END, centerNormal.dot(normalOf(neighbor))));
 
-    silhouette = max(silhouette, max(isBehind, isOtherKind));
-    crease = max(crease, bend.mul(isSameSurface));
+    silhouette = max(silhouette, max(behind, kindChange));
+    crease = max(crease, bend.mul(sameSurface));
   }
 
   const fade = float(1).sub(smoothstep(FADE_START, FADE_END, distance));
