@@ -26,7 +26,7 @@ import { BERRY_PART } from "../../models/plants/berries.ts";
 import { clamp as clampNumber } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
-import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { rotateAroundUp, SNOW_COLOR, slotColorTable, snowCoverNode } from "../node-helpers.ts";
 import { markOutlined } from "../outlines.ts";
 import { cellAtNode, coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
@@ -37,8 +37,6 @@ const STRONGEST_GUST = 2;
 const METERS_PER_SECOND_PER_GUST = 7;
 const SLOWEST_GUST_FRONT = 1.5;
 const GUST_FRONT_SPEEDUP = 2;
-const CHARCOAL = vec3(0.035, 0.03, 0.028);
-const SNOW = vec3(0.86, 0.9, 0.95);
 const CROWN_FIRE_LIGHT = 0.45;
 const CROWN_BURN_SHRINK = 0.6;
 const TIER_BURN_SHRINK = 0.85;
@@ -187,7 +185,7 @@ export function createPlantMaterial({
     return rotateAroundUp(local, placement.w).add(windOffset).add(placement.xyz).add(ground);
   })();
 
-  const snow = varying(smoothstep(0.1, 0.45, surface.r), "plantSnow");
+  const snow = varying(snowCoverNode(surface), "plantSnow");
   const embers = varying(burn.embers, "plantEmbers");
   const flames = varying(burn.flames, "plantFlames");
   const smolder = varying(burn.smolder, "plantSmolder");
@@ -198,12 +196,12 @@ export function createPlantMaterial({
   const baseColor = mix(slotColors.element(int(slot.add(0.5))), look.foliageColor.rgb, foliage);
   const shaded = baseColor.mul(shade).mul(variation);
 
-  const vertexColor = varying(charredColor(shaded, charring, CHARCOAL), "plantColor");
+  const vertexColor = varying(charredColor(shaded, charring), "plantColor");
   const snowOnTop = snow.mul(smoothstep(0.25, 0.75, normalWorld.y));
   const fireLight = varying(fireLightAt(glow, grid, placement.xz), "plantFireLight");
   const burning = burnGlow({ embers, flames, phase: placement.x.mul(0.37).fract().mul(6), smolder });
 
-  material.colorNode = mix(vertexColor, SNOW, snowOnTop);
+  material.colorNode = mix(vertexColor, SNOW_COLOR, snowOnTop);
   material.emissiveNode = vertexColor.mul(fireLight).mul(CROWN_FIRE_LIGHT).add(burning);
   material.roughnessNode = float(0.88);
 

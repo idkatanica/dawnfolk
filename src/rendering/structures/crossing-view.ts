@@ -54,7 +54,7 @@ import {
 } from "../../world/crossings.ts";
 import { NO_WATER } from "../../world/water.ts";
 import { geometryFromMeshData, InstanceBatch, toInstancedGeometry } from "../instancing.ts";
-import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { rotateAroundUp, SNOW_COLOR, slotColorTable, snowCoverNode } from "../node-helpers.ts";
 import { markOutlined } from "../outlines.ts";
 import { cellAtNode, coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
@@ -77,7 +77,6 @@ const RIVERBED = vec3(0.07, 0.17, 0.19);
 const MURKIEST = 0.85;
 const DROWNED_SHADE = 0.55;
 const MURK_DEPTH = 2.2;
-const SNOW = vec3(0.86, 0.9, 0.95);
 const WATERLINE_FOAM = vec3(0.84, 0.89, 0.9);
 
 const CROSSING_FIELDS = [
@@ -132,7 +131,7 @@ function createCrossingMaterial(textures: TerrainTextures, mirror: WorldMirror):
 
   const cell = cellAtNode(grid, placement.xz);
 
-  const snow = varying(smoothstep(0.1, 0.45, textureLoad(textures.surface, cell).r), "crossingSnow");
+  const snow = varying(snowCoverNode(textureLoad(textures.surface, cell)), "crossingSnow");
   const base = varying(slotColorTable().element(slot).mul(shade).mul(look.y), "crossingColor");
 
   const belowWater = look.x.sub(positionWorld.y);
@@ -144,7 +143,7 @@ function createCrossingMaterial(textures: TerrainTextures, mirror: WorldMirror):
   const wet = mix(mix(base, base.mul(WET_STONE), wetness).mul(drowned), RIVERBED, murk);
   const waterline = smoothstep(0.1, 0.02, abs(positionWorld.y.sub(look.x))).mul(0.5);
 
-  material.colorNode = mix(mix(wet, WATERLINE_FOAM, waterline), SNOW, snowOnTop);
+  material.colorNode = mix(mix(wet, WATERLINE_FOAM, waterline), SNOW_COLOR, snowOnTop);
   material.roughnessNode = mix(float(0.88), float(0.55), wetness);
 
   markOutlined(material);

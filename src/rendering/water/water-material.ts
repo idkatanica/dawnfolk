@@ -31,6 +31,7 @@ import {
 } from "three/tsl";
 import { Color, MeshPhysicalNodeMaterial, type MeshStandardNodeMaterial, type Node, Vector2 } from "three/webgpu";
 import type { WorldGrid } from "../../world/world-grid.ts";
+import { unitNoise3 } from "../node-helpers.ts";
 import { mapCoordinatesNode, sampleCellsNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { rainDimples } from "./rain-dimples.ts";
@@ -94,9 +95,7 @@ function steadyFoamAt(hasFoam: Node<"bool">, detail: Node<"float">): Node<"float
     const foam = float(0.5).toVar();
 
     If(hasFoam, () => {
-      const noise = mx_noise_float(vec3(positionWorld.xz.mul(0.7), time.mul(0.4)))
-        .mul(0.5)
-        .add(0.5);
+      const noise = unitNoise3(vec3(positionWorld.xz.mul(0.7), time.mul(0.4)));
 
       foam.assign(mix(float(0.5), noise, detail));
     });

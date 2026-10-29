@@ -10,7 +10,6 @@ import {
   length,
   max,
   mix,
-  mx_noise_float,
   positionLocal,
   positionWorld,
   smoothstep,
@@ -21,7 +20,7 @@ import {
 } from "three/tsl";
 import { BufferGeometry, Float32BufferAttribute, MeshStandardNodeMaterial } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import { rotateAroundUp } from "../node-helpers.ts";
+import { rotateAroundUp, unitNoise3 } from "../node-helpers.ts";
 import { coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { fordBedColorNode } from "../water/ford-field.ts";
@@ -66,9 +65,7 @@ export function createFoamMaterial(): MeshStandardNodeMaterial {
 
     If(around.add(wakeBody).greaterThan(0.01), () => {
       const flowing = point.mul(vec2(1, 0.45)).sub(vec2(0, time.mul(0.9)));
-      const churn = mx_noise_float(vec3(flowing.mul(2.2), shape.z))
-        .mul(0.5)
-        .add(0.5);
+      const churn = unitNoise3(vec3(flowing.mul(2.2), shape.z));
 
       amount.assign(around.mul(smoothstep(0.3, 0.6, churn)).add(wakeBody.mul(smoothstep(0.5, 0.78, churn)).mul(0.6)));
     });
