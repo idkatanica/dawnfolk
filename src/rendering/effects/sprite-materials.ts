@@ -1,9 +1,12 @@
 import { float, mx_noise_float, smoothstep, time, varying, vec3 } from "three/tsl";
-import { AdditiveBlending, MeshBasicNodeMaterial } from "three/webgpu";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 import { billboardNodes, type CameraAxes, distanceFromBillboardCenter, facingBillboard } from "./billboards.ts";
+import { blendAsGlow } from "./glow-blending.ts";
 
 export function createGlowMaterial(axes: CameraAxes): MeshBasicNodeMaterial {
-  const material = new MeshBasicNodeMaterial({ blending: AdditiveBlending, depthWrite: false, transparent: true });
+  const material = new MeshBasicNodeMaterial({ depthWrite: false, transparent: true });
+
+  blendAsGlow(material);
   const { corner, look, placement } = billboardNodes();
 
   material.positionNode = facingBillboard(axes, placement.xyz, corner, placement.w);

@@ -1,6 +1,7 @@
 import { cos, float, fract, mix, sin, smoothstep, time, varying, vec2, vec3 } from "three/tsl";
-import { AdditiveBlending, MeshBasicNodeMaterial } from "three/webgpu";
+import { MeshBasicNodeMaterial } from "three/webgpu";
 import { billboardNodes, type CameraAxes, distanceFromBillboardCenter, facingBillboard } from "./billboards.ts";
+import { blendAsGlow } from "./glow-blending.ts";
 import type { SmokeLook } from "./smoke-material.ts";
 
 const COOL_SPARK = vec3(3.2, 0.8, 0.12);
@@ -10,7 +11,9 @@ const SPARK_RATE = 0.42;
 const SWIRL = 2.5;
 
 export function createSparkMaterial(axes: CameraAxes, look: SmokeLook): MeshBasicNodeMaterial {
-  const material = new MeshBasicNodeMaterial({ blending: AdditiveBlending, depthWrite: false, transparent: true });
+  const material = new MeshBasicNodeMaterial({ depthWrite: false, transparent: true });
+
+  blendAsGlow(material);
   const { corner, look: spark, placement } = billboardNodes();
 
   const seed = spark.x;

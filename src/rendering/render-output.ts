@@ -1,7 +1,16 @@
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
 import { fxaa } from "three/addons/tsl/display/FXAANode.js";
-import { dot, float, pass, screenUV, vec4 } from "three/tsl";
-import { type Camera, HalfFloatType, type Node, RenderPipeline, type Scene, type WebGPURenderer } from "three/webgpu";
+import { dot, float, mrt, output, pass, screenUV, vec4 } from "three/tsl";
+import {
+  type Camera,
+  Color,
+  DepthTexture,
+  HalfFloatType,
+  type Node,
+  RenderPipeline,
+  type Scene,
+  type WebGPURenderer,
+} from "three/webgpu";
 import { createOutlineControls, OUTLINE_TARGET, outlinedColor, sceneTargets } from "./outlines.ts";
 import type { RenderQuality } from "./render-quality.ts";
 
@@ -43,15 +52,24 @@ export function createRenderOutput(
   camera: Camera,
   quality: RenderQuality
 ): RenderOutput {
-  const scenePass = pass(scene, camera, { storeMultisampledColorBuffer: false, storeMultisampledDepthBuffer: false });
+  const depthTexture = new DepthTexture();
+  const solidPass = pass(scene, camera, { depthTexture, storeMultisampledColorBuffer: false });
 
-  scenePass.setMRT(sceneTargets());
-  scenePass.getTexture(OUTLINE_TARGET).type = HalfFloatType;
+  solidPass.transparent = false;
+  solidPass.setMRT(sceneTargets());
+  solidPass.getTexture(OUTLINE_TARGET).type = HalfFloatType;
+
+  const seeThroughPass = pass(scene, camera, { depthTexture });
+
+  seeThroughPass.opaque = false;
+  seeThroughPass.autoClearDepth = false;
+  seeThroughPass.setMRT(mrt({ output }).setClearColor("output", new Color(0, 0, 0), 0));
 
   const outlines = createOutlineControls();
-  const surfaces = scenePass.getTextureNode(OUTLINE_TARGET);
-  const outlined = outlinedColor(scenePass.getTextureNode("output"), surfaces, outlines);
-  const finished = finish(vec4(outlined, 1), quality);
+  const surfaces = solidPass.getTextureNode(OUTLINE_TARGET);
+  const outlined = outlinedColor(solidPass.getTextureNode("output"), surfaces, outlines);
+  const seeThrough = seeThroughPass.getTextureNode("output");
+  const finished = finish(vec4(outlined.mul(seeThrough.a.oneMinus()).add(seeThrough.rgb), 1), quality);
   const smoothed = fxaa(finished.color);
 
   const pipeline = new RenderPipeline(renderer, smoothed);
@@ -61,7 +79,9 @@ export function createRenderOutput(
       pipeline.dispose();
       smoothed.dispose();
       finished.dispose();
-      scenePass.dispose();
+      seeThroughPass.dispose();
+      solidPass.dispose();
+      depthTexture.dispose();
     },
     render: () => {
       outlines.pixelRatio.value = renderer.getPixelRatio();
