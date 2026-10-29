@@ -39,7 +39,6 @@ import {
 import { clamp as clampNumber, FULL_TURN, inverseLerp, saturate } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { unitNoise } from "../node-helpers.ts";
-import { markOutlined } from "../outlines.ts";
 import { POOL_BANK, poolReachNode } from "../terrain/bog-pools.ts";
 import { fieldClearingNode } from "../terrain/field-ground.ts";
 import { FIREWEED, fireweedNode } from "../terrain/fireweed.ts";
@@ -93,7 +92,6 @@ const REED_GREEN = vec3(0.2, 0.27, 0.09);
 const REED_TIP = vec3(0.5, 0.45, 0.22);
 const FADE_START_DISTANCE = 130;
 const FADE_END_DISTANCE = 190;
-const GRASS_OUTLINE = 0.3;
 
 interface GrassFieldOptions {
   readonly clumpsPerSide: number;
@@ -261,8 +259,6 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   material.colorNode = varying(mix(ground.rgb, bladeColor, growth), "grassColor");
   material.normalNode = transformNormalToView(varying(bladeNormal, "grassNormal"));
   material.roughnessNode = float(0.9);
-
-  markOutlined(material, GRASS_OUTLINE);
 
   return material;
 }

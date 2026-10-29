@@ -1,4 +1,5 @@
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
+import { fxaa } from "three/addons/tsl/display/FXAANode.js";
 import { dot, float, pass, screenUV, vec4 } from "three/tsl";
 import { type Camera, HalfFloatType, type Node, RenderPipeline, type Scene, type WebGPURenderer } from "three/webgpu";
 import { createOutlineControls, OUTLINE_TARGET, outlinedColor, sceneTargets } from "./outlines.ts";
@@ -51,12 +52,14 @@ export function createRenderOutput(
   const surfaces = scenePass.getTextureNode(OUTLINE_TARGET);
   const outlined = outlinedColor(scenePass.getTextureNode("output"), surfaces, outlines);
   const finished = finish(vec4(outlined, 1), quality);
+  const smoothed = fxaa(finished.color);
 
-  const pipeline = new RenderPipeline(renderer, finished.color);
+  const pipeline = new RenderPipeline(renderer, smoothed);
 
   return {
     dispose: () => {
       pipeline.dispose();
+      smoothed.dispose();
       finished.dispose();
       scenePass.dispose();
     },

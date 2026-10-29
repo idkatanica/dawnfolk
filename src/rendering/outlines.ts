@@ -1,19 +1,19 @@
 import {
-  abs,
   float,
+  ivec2,
   max,
   mix,
   mrt,
   normalView,
   output,
   positionView,
-  screenSize,
-  screenUV,
+  round,
+  screenCoordinate,
   select,
   smoothstep,
   sqrt,
+  step,
   uniform,
-  vec2,
   vec3,
   vec4,
 } from "three/tsl";
@@ -21,30 +21,20 @@ import type { MeshStandardNodeMaterial, Node, TextureNode, UniformNode } from "t
 
 export const OUTLINE_TARGET = "outline";
 
-const LINE_WIDTH = 1.25;
-const LINE_OPACITY = 0.85;
-const LINE_COLOR = vec3(0.02, 0.018, 0.016);
-const FADE_START = 300;
-const FADE_END = 1200;
-const DEPTH_GAP_START = 0.03;
-const DEPTH_GAP_END = 0.1;
+const LINE_WIDTH = 1.5;
+const LINE_COLOR = vec3(0.015, 0.013, 0.012);
+const FADE_START = 600;
+const FADE_END = 900;
+const DEPTH_GAP = 0.04;
 const GRAZING_SLACK = 4;
-const CREASE_START = 0.7;
-const CREASE_END = 0.92;
-const CREASE_STRENGTH = 0.55;
-const KIND_GAP_START = 0.05;
-const KIND_GAP_END = 0.1;
+const KIND_GAP = 0.5;
 const SKY_DISTANCE = 100_000;
 const NEAREST_DISTANCE = 0.01;
 const NEIGHBORS: readonly (readonly [number, number])[] = [
-  [-1, -1],
-  [0, -1],
-  [1, -1],
-  [-1, 0],
   [1, 0],
-  [-1, 1],
+  [-1, 0],
   [0, 1],
-  [1, 1],
+  [0, -1],
 ];
 
 export interface OutlineControls {
@@ -52,18 +42,16 @@ export interface OutlineControls {
   readonly strength: UniformNode<"float", number>;
 }
 
-function surfaceOf(weight: number): Node<"vec4"> {
-  return vec4(normalView.xy, positionView.z.negate(), weight);
+function surfaceOf(isOutlined: boolean): Node<"vec4"> {
+  return vec4(normalView.xy, positionView.z.negate(), isOutlined ? 1 : 0);
 }
 
 function distanceOf(surface: Node<"vec4">): Node<"float"> {
-  return select(surface.z.lessThan(0.001), float(SKY_DISTANCE), surface.z);
+  return select(surface.z.lessThan(NEAREST_DISTANCE), float(SKY_DISTANCE), surface.z);
 }
 
-function normalOf(surface: Node<"vec4">): Node<"vec3"> {
-  const facing = float(1).sub(surface.x.mul(surface.x)).sub(surface.y.mul(surface.y));
-
-  return vec3(surface.x, surface.y, sqrt(max(facing, 0)));
+function facingOf(surface: Node<"vec4">): Node<"float"> {
+  return sqrt(max(float(1).sub(surface.x.mul(surface.x)).sub(surface.y.mul(surface.y)), 0));
 }
 
 export function createOutlineControls(): OutlineControls {
@@ -71,44 +59,32 @@ export function createOutlineControls(): OutlineControls {
 }
 
 export function sceneTargets() {
-  return mrt({ [OUTLINE_TARGET]: surfaceOf(0), output });
+  return mrt({ [OUTLINE_TARGET]: surfaceOf(false), output });
 }
 
-export function markOutlined(material: MeshStandardNodeMaterial, weight = 1): void {
-  material.mrtNode = mrt({ [OUTLINE_TARGET]: surfaceOf(weight) });
+export function markOutlined(material: MeshStandardNodeMaterial): void {
+  material.mrtNode = mrt({ [OUTLINE_TARGET]: surfaceOf(true) });
 }
 
 export function outlinedColor(color: TextureNode, surfaces: TextureNode, controls: OutlineControls): Node<"vec3"> {
-  const step = vec2(LINE_WIDTH, LINE_WIDTH).mul(controls.pixelRatio).div(screenSize);
-  const center = surfaces.sample(screenUV);
+  const pixel = ivec2(screenCoordinate.xy);
+  const width = max(round(controls.pixelRatio.mul(LINE_WIDTH)), 1).toInt();
+  const center = surfaces.load(pixel);
   const distance = max(center.z, NEAREST_DISTANCE);
-  const centerNormal = normalOf(center);
-  const slack = float(1).add(float(1).sub(centerNormal.z).mul(GRAZING_SLACK));
-  const gapStart = slack.mul(DEPTH_GAP_START);
-  const gapEnd = slack.mul(DEPTH_GAP_END);
+  const gapLimit = float(1)
+    .add(float(1).sub(facingOf(center)).mul(GRAZING_SLACK))
+    .mul(DEPTH_GAP);
 
-  let silhouette: Node<"float"> = float(0);
-  let crease: Node<"float"> = float(0);
+  let edge: Node<"float"> = float(0);
 
   for (const [column, row] of NEIGHBORS) {
-    const neighbor = surfaces.sample(screenUV.add(vec2(column, row).mul(step)));
+    const neighbor = surfaces.load(pixel.add(ivec2(column, row).mul(width)));
     const gap = distanceOf(neighbor).sub(distance).div(distance);
 
-    const behind = smoothstep(gapStart, gapEnd, gap);
-    const kindChange = smoothstep(KIND_GAP_START, KIND_GAP_END, center.w.sub(neighbor.w));
-    const sameSurface = float(1).sub(smoothstep(gapStart, gapEnd, abs(gap)));
-    const bend = float(1).sub(smoothstep(CREASE_START, CREASE_END, centerNormal.dot(normalOf(neighbor))));
-
-    silhouette = max(silhouette, max(behind, kindChange));
-    crease = max(crease, bend.mul(sameSurface));
+    edge = max(edge, max(step(gapLimit, gap), step(KIND_GAP, center.w.sub(neighbor.w))));
   }
 
   const fade = float(1).sub(smoothstep(FADE_START, FADE_END, distance));
-  const edge = max(silhouette, crease.mul(CREASE_STRENGTH))
-    .mul(center.w)
-    .mul(fade)
-    .mul(controls.strength)
-    .mul(LINE_OPACITY);
 
-  return mix(color.rgb, LINE_COLOR, edge);
+  return mix(color.rgb, LINE_COLOR, edge.mul(center.w).mul(fade).mul(controls.strength));
 }
