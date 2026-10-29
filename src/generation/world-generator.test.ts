@@ -701,18 +701,22 @@ function joinsNearSources(generated: GeneratedWorld): string[] {
   const { rivers } = generated.water;
 
   const grid = new WorldGrid(generated.dimensions);
+  const trunks = rivers.filter((river) => {
+    return !isTrunkFedByLake(generated, grid, river);
+  });
   const faults: string[] = [];
 
   for (const tributary of rivers) {
-    for (const main of rivers) {
-      const nearest = alongToNearest(main, riverEnd(tributary));
+    const end = riverEnd(tributary);
 
-      if (
-        main !== tributary &&
-        !isTrunkFedByLake(generated, grid, main) &&
-        nearest.distance < cellSize * JUNCTION_CELLS &&
-        nearest.along < SOURCE_REACH - SMOOTHING_SLACK
-      ) {
+    for (const main of trunks) {
+      if (main === tributary) {
+        continue;
+      }
+
+      const nearest = alongToNearest(main, end);
+
+      if (nearest.distance < cellSize * JUNCTION_CELLS && nearest.along < SOURCE_REACH - SMOOTHING_SLACK) {
         faults.push(`river ${tributary.id} joins river ${main.id} ${Math.round(nearest.along)} m below its source`);
       }
     }
@@ -741,7 +745,9 @@ function endsAwayFromWater(generated: GeneratedWorld): string[] {
       return !(river.reachesEdge || joins || reachesLake);
     })
     .map((river) => {
-      return `river ${river.id} ends at ${Math.round(riverEnd(river).x)}, ${Math.round(riverEnd(river).z)}`;
+      const end = riverEnd(river);
+
+      return `river ${river.id} ends at ${Math.round(end.x)}, ${Math.round(end.z)}`;
     });
 }
 

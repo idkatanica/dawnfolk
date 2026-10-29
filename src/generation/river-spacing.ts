@@ -391,7 +391,7 @@ function claim(spacing: Spacing, spaced: RiverChain[], chain: RiverChain, index:
 function sourceJoined(spacing: Spacing, spaced: readonly RiverChain[], chain: RiverChain): JoinedSource | null {
   const { grid, owners } = spacing;
 
-  if (chain.joinsCell === NO_CELL || owners[chain.joinsCell] === NO_CELL) {
+  if (chain.joinsCell === NO_CELL) {
     return null;
   }
 
