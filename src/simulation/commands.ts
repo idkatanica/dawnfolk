@@ -6,6 +6,7 @@ import {
   MINIMUM_TEMPERATURE_OFFSET,
   WEATHER_KINDS,
 } from "../content/weather.ts";
+import { grabTargetSchema } from "./hand/grab-target.ts";
 import {
   MAXIMUM_DAY_SECONDS,
   MAXIMUM_DAYS_PER_SEASON,
@@ -45,6 +46,10 @@ const commandSchema = z.discriminatedUnion("type", [
   z.object({ ...powerUse, type: z.literal("beginStroke") }),
   z.object({ type: z.literal("moveStroke"), x: coordinate, z: coordinate }),
   z.object({ type: z.literal("endStroke") }),
+  z.object({ target: grabTargetSchema, type: z.literal("grab") }),
+  z.object({ type: z.literal("carry"), x: coordinate, z: coordinate }),
+  z.object({ type: z.literal("drop") }),
+  z.object({ type: z.literal("cancelGrab") }),
   z.object({ speed: z.number().min(0).max(MAXIMUM_SPEED), type: z.literal("setSpeed") }),
   z.object({ isPaused: z.boolean(), type: z.literal("setPaused") }),
   z.object({ type: z.literal("setWeather"), weather: z.enum([...WEATHER_KINDS, "automatic"]) }),

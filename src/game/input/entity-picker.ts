@@ -2,7 +2,9 @@ import { type PerspectiveCamera, Vector3 } from "three/webgpu";
 import { FIGURE_SCALE } from "../../models/people/human-proportions.ts";
 import type { Selection } from "../../simulation/commands.ts";
 import type { SimulationFrame } from "../../simulation/frame.ts";
+import { type GrabTarget, isGrabbablePlant } from "../../simulation/hand/grab-target.ts";
 import { ANIMAL_STRIDE, AnimalField, PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
+import { PlantState, type VegetationBuffers } from "../../world/vegetation-store.ts";
 import type { HeightField, ScreenPoint, ViewportSize } from "./ground-picker.ts";
 import { normalizedToPixels, projectToNormalized } from "./screen-projection.ts";
 
@@ -14,11 +16,25 @@ const BUILDING_CENTER_HEIGHT = 1.5;
 const BUILDING_PICK_PENALTY_PIXELS = 8;
 const SMALLEST_OCCLUSION_MARGIN = 12;
 const OCCLUSION_MARGIN_PER_METER = 0.04;
+const PLANT_CENTER_SHARE = 0.45;
+const PLANT_PICK_PENALTY_PIXELS = 6;
+const PLANT_SEARCH_RADIUS = 60;
 
-interface Candidate {
+interface Candidate<Target> {
   readonly distance: number;
   readonly reach: number;
-  readonly selection: Selection;
+  readonly target: Target;
+}
+
+export interface GrabScene {
+  readonly frame: SimulationFrame;
+  readonly vegetation: Pick<VegetationBuffers, "count" | "height" | "species" | "state" | "x" | "z">;
+}
+
+interface PointerPick {
+  readonly ground: Vector3 | null;
+  readonly screen: ScreenPoint;
+  readonly viewport: ViewportSize;
 }
 
 interface ScreenHit {
@@ -48,20 +64,16 @@ export class EntityPicker {
   }
 
   pick(frame: SimulationFrame, screen: ScreenPoint, viewport: ViewportSize, ground: Vector3 | null): Selection | null {
-    const candidates = [
-      ...this.#agents(frame.people, frame.personCount, PEOPLE, screen, viewport),
-      ...this.#agents(frame.animals, frame.animalCount, ANIMALS, screen, viewport),
-      ...this.#buildings(frame, screen, viewport),
-    ];
+    const pointer = { ground, screen, viewport };
 
-    const visibleReach = this.#visibleReach(ground);
+    const nearest = this.#nearest(ground, [
+      ...this.#agents(frame.people, frame.personCount, PEOPLE, pointer),
+      ...this.#agents(frame.animals, frame.animalCount, ANIMALS, pointer),
+      ...this.#buildings(frame, pointer),
+    ]);
 
-    const [nearest] = candidates
-      .filter((candidate) => candidate.reach <= visibleReach)
-      .toSorted((first, second) => first.distance - second.distance);
-
-    if (nearest !== undefined) {
-      return nearest.selection;
+    if (nearest !== null) {
+      return nearest;
     }
 
     if (ground === null) {
@@ -71,16 +83,52 @@ export class EntityPicker {
     return { kind: "cell", x: ground.x, z: ground.z };
   }
 
+  pickGrabbable(
+    scene: GrabScene,
+    screen: ScreenPoint,
+    viewport: ViewportSize,
+    ground: Vector3 | null
+  ): GrabTarget | null {
+    const { frame, vegetation } = scene;
+
+    const pointer = { ground, screen, viewport };
+
+    return this.#nearest(ground, [
+      ...this.#agents(frame.animals, frame.animalCount, ANIMALS, pointer),
+      ...this.#agents(frame.people, frame.personCount, PEOPLE, pointer),
+      ...this.#grabbablePlants(vegetation, pointer),
+    ]);
+  }
+
+  #nearest<Target>(ground: Vector3 | null, candidates: readonly Candidate<Target>[]): Target | null {
+    const visibleReach = this.#visibleReach(ground);
+
+    let nearest: Candidate<Target> | null = null;
+
+    for (const candidate of candidates) {
+      const isCloser = nearest === null || candidate.distance < nearest.distance;
+
+      if (candidate.reach <= visibleReach && isCloser) {
+        nearest = candidate;
+      }
+    }
+
+    if (nearest === null) {
+      return null;
+    }
+
+    return nearest.target;
+  }
+
   #agents(
     data: Float32Array,
     count: number,
     layout: AgentLayout,
-    screen: ScreenPoint,
-    viewport: ViewportSize
-  ): Candidate[] {
+    pointer: PointerPick
+  ): Candidate<{ id: number; kind: AgentLayout["kind"] }>[] {
     const { fields, kind, lift, stride } = layout;
 
-    const candidates: Candidate[] = [];
+    const candidates: Candidate<{ id: number; kind: AgentLayout["kind"] }>[] = [];
 
     for (let agent = 0; agent < count; agent += 1) {
       const offset = agent * stride;
@@ -88,27 +136,58 @@ export class EntityPicker {
       const x = data[offset + fields.X];
       const z = data[offset + fields.Z];
 
-      const hit = this.#screenHit(x, lift, z, screen, viewport);
+      const hit = this.#screenHit(x, this.#heightAt(x, z) + lift, z, pointer);
 
       if (hit.distance < PICK_RADIUS_PIXELS) {
-        candidates.push({ ...hit, selection: { id: data[offset + fields.Id], kind } });
+        candidates.push({ ...hit, target: { id: data[offset + fields.Id], kind } });
       }
     }
 
     return candidates;
   }
 
-  #buildings(frame: SimulationFrame, screen: ScreenPoint, viewport: ViewportSize): Candidate[] {
-    const candidates: Candidate[] = [];
+  #buildings(frame: SimulationFrame, pointer: PointerPick): Candidate<Selection>[] {
+    const candidates: Candidate<Selection>[] = [];
 
     for (const building of frame.buildings) {
-      const hit = this.#screenHit(building.x, BUILDING_CENTER_HEIGHT, building.z, screen, viewport);
+      const height = this.#heightAt(building.x, building.z) + BUILDING_CENTER_HEIGHT;
+      const hit = this.#screenHit(building.x, height, building.z, pointer);
 
       if (hit.distance < BUILDING_PICK_RADIUS_PIXELS) {
         candidates.push({
           distance: hit.distance + BUILDING_PICK_PENALTY_PIXELS,
           reach: hit.reach,
-          selection: { id: building.id, kind: "building" },
+          target: { id: building.id, kind: "building" },
+        });
+      }
+    }
+
+    return candidates;
+  }
+
+  #grabbablePlants(vegetation: GrabScene["vegetation"], pointer: PointerPick): Candidate<GrabTarget>[] {
+    const { ground } = pointer;
+
+    const candidates: Candidate<GrabTarget>[] = [];
+
+    for (let plant = 0; plant < vegetation.count; plant += 1) {
+      const x = vegetation.x[plant];
+      const z = vegetation.z[plant];
+
+      const isFar = ground !== null && Math.hypot(x - ground.x, z - ground.z) > PLANT_SEARCH_RADIUS;
+
+      if (isFar || vegetation.state[plant] !== PlantState.Alive || !isGrabbablePlant(vegetation.species[plant])) {
+        continue;
+      }
+
+      const height = this.#heightAt(x, z) + vegetation.height[plant] * PLANT_CENTER_SHARE;
+      const hit = this.#screenHit(x, height, z, pointer);
+
+      if (hit.distance < PICK_RADIUS_PIXELS) {
+        candidates.push({
+          distance: hit.distance + PLANT_PICK_PENALTY_PIXELS,
+          reach: hit.reach,
+          target: { id: plant, kind: "plant" },
         });
       }
     }
@@ -126,8 +205,10 @@ export class EntityPicker {
     return reach + Math.max(SMALLEST_OCCLUSION_MARGIN, reach * OCCLUSION_MARGIN_PER_METER);
   }
 
-  #screenHit(x: number, lift: number, z: number, screen: ScreenPoint, viewport: ViewportSize): ScreenHit {
-    const point = this.#point.set(x, this.#heightAt(x, z) + lift, z);
+  #screenHit(x: number, y: number, z: number, pointer: PointerPick): ScreenHit {
+    const { screen, viewport } = pointer;
+
+    const point = this.#point.set(x, y, z);
 
     const reach = this.#camera.position.distanceTo(point);
     const projected = projectToNormalized(this.#camera, point.x, point.y, point.z, this.#projected);

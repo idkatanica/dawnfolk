@@ -2,25 +2,20 @@ import { PerspectiveCamera } from "three/webgpu";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GodCamera } from "../camera/god-camera.ts";
 import { GroundPicker } from "./ground-picker.ts";
-import { PointerControls } from "./pointer-controls.ts";
+import { PointerControls, type TapHandler, type ToolGestures } from "./pointer-controls.ts";
 
 const WORLD_HALF_SIZE = 4000;
 const CANVAS_WIDTH = 390;
 const CANVAS_HEIGHT = 844;
 const HOLD_MILLISECONDS = 400;
 
+type ToolSpy = ReturnType<typeof createTool>;
+
 interface Rig {
   readonly camera: GodCamera;
   readonly canvas: HTMLCanvasElement;
   readonly controls: PointerControls;
-  readonly tool: {
-    readonly begin: ReturnType<typeof vi.fn>;
-    readonly end: ReturnType<typeof vi.fn>;
-    readonly hover: ReturnType<typeof vi.fn>;
-    readonly isActive: () => boolean;
-    readonly move: ReturnType<typeof vi.fn>;
-    readonly tap: ReturnType<typeof vi.fn>;
-  };
+  readonly tool: ToolSpy;
 }
 
 const rigs: Rig[] = [];
@@ -31,7 +26,28 @@ function settle(camera: GodCamera): void {
   }
 }
 
-function createRig(): Rig {
+function isAlwaysTrue(): boolean {
+  return true;
+}
+
+function isNeverTrue(): boolean {
+  return false;
+}
+
+function createTool(canBegin: () => boolean, isActive: () => boolean) {
+  return {
+    begin: vi.fn<ToolGestures["begin"]>(),
+    canBegin,
+    cancel: vi.fn<ToolGestures["cancel"]>(),
+    end: vi.fn<ToolGestures["end"]>(),
+    hover: vi.fn<ToolGestures["hover"]>(),
+    isActive,
+    move: vi.fn<ToolGestures["move"]>(),
+    tap: vi.fn<TapHandler["tap"]>(),
+  };
+}
+
+function createRig(canBegin: () => boolean = isAlwaysTrue, leading: ToolSpy | null = null): Rig {
   const canvas = document.createElement("canvas");
 
   canvas.style.cssText = `position: fixed; left: 0; top: 0; width: ${CANVAS_WIDTH}px; height: ${CANVAS_HEIGHT}px`;
@@ -44,9 +60,10 @@ function createRig(): Rig {
   camera.jumpTo({ distance: 600, targetX: 0, targetZ: 0 });
   settle(camera);
 
-  const tool = { begin: vi.fn(), end: vi.fn(), hover: vi.fn(), isActive: () => true, move: vi.fn(), tap: vi.fn() };
+  const tool = createTool(canBegin, isAlwaysTrue);
+  const tools = leading === null ? [tool] : [leading, tool];
   const picker = new GroundPicker(perspective, () => 0, WORLD_HALF_SIZE);
-  const rig = { camera, canvas, controls: new PointerControls(canvas, camera, picker, tool, tool), tool };
+  const rig = { camera, canvas, controls: new PointerControls(canvas, camera, picker, tools, tool), tool };
 
   rigs.push(rig);
 
@@ -63,6 +80,12 @@ function touch(rig: Rig, type: string, pointerId: number, x: number, y: number):
       pointerId,
       pointerType: "touch",
     })
+  );
+}
+
+function mouse(rig: Rig, type: string, x: number, y: number): void {
+  rig.canvas.dispatchEvent(
+    new PointerEvent(type, { button: 0, clientX: x, clientY: y, pointerId: 1, pointerType: "mouse" })
   );
 }
 
@@ -167,5 +190,62 @@ describe("pointer controls", () => {
     );
 
     expect(rig.tool.begin).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends a gesture only to the first active tool", () => {
+    const inactive = createTool(isAlwaysTrue, isNeverTrue);
+    const rig = createRig(isAlwaysTrue, inactive);
+
+    mouse(rig, "pointerdown", 195, 420);
+    mouse(rig, "pointermove", 205, 420);
+    mouse(rig, "pointerup", 205, 420);
+
+    expect(rig.tool.begin).toHaveBeenCalledTimes(1);
+    expect(rig.tool.move).toHaveBeenCalled();
+    expect(rig.tool.end).toHaveBeenCalledTimes(1);
+    expect([inactive.begin, inactive.move, inactive.end].map((spy) => spy.mock.calls.length)).toEqual([0, 0, 0]);
+  });
+
+  it("leaves a later tool alone while an earlier one is active", () => {
+    const leading = createTool(isAlwaysTrue, isAlwaysTrue);
+    const rig = createRig(isAlwaysTrue, leading);
+
+    mouse(rig, "pointerdown", 195, 420);
+    mouse(rig, "pointermove", 205, 420);
+    mouse(rig, "pointerup", 205, 420);
+
+    expect(leading.begin).toHaveBeenCalledTimes(1);
+    expect(leading.end).toHaveBeenCalledTimes(1);
+    expect([rig.tool.begin, rig.tool.move, rig.tool.end].map((spy) => spy.mock.calls.length)).toEqual([0, 0, 0]);
+  });
+
+  it("pans when the tool has nothing to take under the pointer", () => {
+    const rig = createRig(isNeverTrue);
+
+    const before = rig.camera.state.targetX;
+
+    mouse(rig, "pointerdown", 195, 420);
+
+    for (let step = 1; step <= 10; step += 1) {
+      mouse(rig, "pointermove", 195 + step * 10, 420);
+    }
+
+    mouse(rig, "pointerup", 295, 420);
+    settle(rig.camera);
+
+    expect(rig.tool.begin).not.toHaveBeenCalled();
+    expect(rig.tool.move).not.toHaveBeenCalled();
+    expect(rig.camera.state.targetX).not.toBeCloseTo(before);
+  });
+
+  it("cancels the tool rather than finishing it when the browser takes the pointer away", () => {
+    const rig = createRig();
+
+    mouse(rig, "pointerdown", 195, 420);
+    mouse(rig, "pointermove", 205, 420);
+    mouse(rig, "pointercancel", 205, 420);
+
+    expect(rig.tool.cancel).toHaveBeenCalledTimes(1);
+    expect(rig.tool.end).not.toHaveBeenCalled();
   });
 });

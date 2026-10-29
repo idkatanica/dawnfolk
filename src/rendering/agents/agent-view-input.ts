@@ -1,7 +1,8 @@
 import type { WorldMirror } from "../../game/world-mirror.ts";
+import type { HeldView } from "../../simulation/hand/grab-target.ts";
 import type { Inspection } from "../../simulation/inspection.ts";
 import { footingOn } from "../../world/crossings.ts";
-import { HIDDEN_LEVEL, type ViewInput } from "../view-input.ts";
+import { HELD_LIFT, HIDDEN_LEVEL, type ViewInput } from "../view-input.ts";
 import type { AgentMarkers } from "./agent-markers.ts";
 
 export const NO_SELECTION = -1;
@@ -43,6 +44,14 @@ export function selectedAgentId(inspection: Inspection | null, kind: "animal" | 
   }
 
   return inspection.id;
+}
+
+export function heldLift(held: HeldView | null, kind: "animal" | "person", id: number): number {
+  if (held === null || held.kind !== kind || held.id !== id) {
+    return 0;
+  }
+
+  return HELD_LIFT;
 }
 
 export function forgetUnseen<Visual>(visuals: Map<number, Visual>, seen: ReadonlySet<number>): void {

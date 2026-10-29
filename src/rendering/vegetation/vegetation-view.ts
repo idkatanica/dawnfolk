@@ -11,20 +11,25 @@ import type { WorldMirror } from "../../game/world-mirror.ts";
 import { MaterialSlot } from "../../models/materials.ts";
 import type { MeshData, VertexChannel } from "../../models/mesh/mesh-data.ts";
 import { buildPlantVariant, PLANT_DETAIL_LEVELS } from "../../models/plants/plant-models.ts";
+import type { HeldView } from "../../simulation/hand/grab-target.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
+import { NO_PLANT } from "../../world/vegetation-store.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
-import { geometryFromMeshData, InstanceBatch } from "../instancing.ts";
+import { geometryFromMeshData, InstanceBatch, toInstancedGeometry } from "../instancing.ts";
 import { SHADOW_ONLY_LAYER } from "../shadow-only-layer.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
-import { HIDDEN_LEVEL } from "../view-input.ts";
+import { HELD_LIFT, HIDDEN_LEVEL } from "../view-input.ts";
 import { createPlantMaterial, PlantWeather, SpeciesLook } from "./plant-material.ts";
 import { foliageLook } from "./plant-palette.ts";
 import {
   bucketGroups,
+  bucketOf,
   FLOATS_PER_PLANT,
   PLANT_BUCKETS,
+  PLANT_SINKING,
   type VegetationChunk,
   VegetationChunks,
+  writePlantLook,
 } from "./vegetation-chunks.ts";
 
 const LEVEL_DISTANCES: readonly number[] = [160, 600, 1600, 4200];
@@ -140,11 +145,16 @@ export class VegetationView {
   readonly #changedBuckets: readonly Set<number>[];
   readonly #chunkLevels: Int8Array;
   readonly #chunkShadows: Uint8Array;
+  readonly #heldBatches = new Map<number, InstanceBatch>();
+  readonly #heldInstance = new Float32Array(FLOATS_PER_PLANT);
   readonly #looks: readonly SpeciesLook[];
+  readonly #mirror: WorldMirror;
   readonly #shadowProxies: readonly PlantBatch[];
+  #heldBatch: InstanceBatch | null = null;
   #shouldRefillAll = true;
 
   constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow) {
+    this.#mirror = mirror;
     this.chunks = new VegetationChunks(mirror);
     this.#chunkLevels = new Int8Array(this.chunks.chunks.length).fill(HIDDEN_LEVEL);
     this.#chunkShadows = new Uint8Array(this.chunks.chunks.length);
@@ -194,6 +204,38 @@ export class VegetationView {
     this.chunks.heightsChanged(region);
   }
 
+  hold(held: HeldView | null): void {
+    const plant = held === null || held.kind !== "plant" ? NO_PLANT : held.id;
+
+    this.chunks.hold(plant);
+
+    if (this.#heldBatch !== null) {
+      this.#heldBatch.begin();
+      this.#heldBatch.commit();
+      this.#heldBatch = null;
+    }
+
+    if (held === null || plant === NO_PLANT) {
+      return;
+    }
+
+    const { vegetation } = this.#mirror;
+
+    const batch = this.#heldBatchFor(bucketOf(vegetation.species[plant], vegetation.seed[plant]));
+    const instance = this.#heldInstance;
+
+    instance[0] = held.x;
+    instance[1] = this.#mirror.surfaceAt(held.x, held.z) + HELD_LIFT - PLANT_SINKING;
+    instance[2] = held.z;
+    instance[3] = vegetation.rotation[plant];
+    writePlantLook(vegetation, plant, instance, 4);
+
+    batch.begin();
+    batch.add(instance);
+    batch.commit();
+    this.#heldBatch = batch;
+  }
+
   update(camera: PerspectiveCamera, frustum: Frustum, sun: DirectionalLight, detail: number, season: number): void {
     this.#paintSeason(season);
 
@@ -208,6 +250,10 @@ export class VegetationView {
   dispose(): void {
     for (const plants of [...this.#batches.flat(), ...this.#shadowProxies]) {
       plants.batch.dispose();
+    }
+
+    for (const batch of this.#heldBatches.values()) {
+      batch.dispose();
     }
   }
 
@@ -245,6 +291,34 @@ export class VegetationView {
     this.group.add(batch.mesh);
 
     return { batch, buckets, counts: { drawn: 0, shadowed: 0 } };
+  }
+
+  #heldBatchFor(bucket: number): InstanceBatch {
+    const known = this.#heldBatches.get(bucket);
+
+    if (known !== undefined) {
+      return known;
+    }
+
+    const { mesh } = this.#nearestBatchOf(bucket).batch;
+    const batch = new InstanceBatch(toInstancedGeometry(mesh.geometry), mesh.material, PLANT_FIELDS, 1);
+
+    batch.mesh.castShadow = true;
+    batch.mesh.receiveShadow = true;
+    this.group.add(batch.mesh);
+    this.#heldBatches.set(bucket, batch);
+
+    return batch;
+  }
+
+  #nearestBatchOf(bucket: number): PlantBatch {
+    for (const plants of this.#batches[NEAREST_LEVEL]) {
+      if (plants.buckets.includes(bucket)) {
+        return plants;
+      }
+    }
+
+    throw new RangeError(`No plant model for bucket ${bucket}`);
   }
 
   #paintSeason(season: number): void {
