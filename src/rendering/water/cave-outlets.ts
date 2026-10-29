@@ -10,6 +10,7 @@ const CHANNEL_DEPTH = 1.2;
 const INSIDE_REACH = 6;
 const STRAIGHT_REACH = 3;
 const BLEND_REACH = 16;
+const SIDE_CLEARANCE = 2;
 const SIDE_REACH = 5;
 const SHELTER_REACH = 3;
 const LARGEST_CAVE_COUNT = 255;
@@ -35,9 +36,10 @@ function channelDepth(frame: OutletFrame, halfWidth: Node<"float">): Node<"float
 }
 
 function outletShare(frame: OutletFrame, halfWidth: Node<"float">): Node<"float"> {
-  const isBeside = abs(frame.across).lessThan(halfWidth.add(SIDE_REACH)).and(frame.along.lessThan(BLEND_REACH));
+  const along = smoothstep(BLEND_REACH, STRAIGHT_REACH, frame.along);
+  const across = smoothstep(halfWidth.add(SIDE_REACH), halfWidth.add(SIDE_CLEARANCE), abs(frame.across));
 
-  return smoothstep(BLEND_REACH, STRAIGHT_REACH, frame.along).mul(isBeside.select(1, 0));
+  return along.mul(across);
 }
 
 export function caveMouthWidth(spring: Spring): number {

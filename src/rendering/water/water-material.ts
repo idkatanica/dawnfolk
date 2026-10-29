@@ -266,16 +266,16 @@ export function createWaterMaterial(
 
   const body = mix(vec3(0.16, 0.42, 0.42), vec3(0.03, 0.13, 0.2), smoothstep(0.2, 6, depth));
   const sky = mix(look.horizonColor, look.zenithColor, 0.35);
-  const daylight = float(1).sub(outlet.shelter.mul(CAVE_DARKNESS));
+  const caveShade = float(1).sub(outlet.shelter.mul(CAVE_DARKNESS));
 
-  material.colorNode = mix(mix(body, vec3(0.93, 0.96, 0.97), foam), ICE_COLOR, ice).mul(daylight);
+  material.colorNode = mix(mix(body, vec3(0.93, 0.96, 0.97), foam), ICE_COLOR, ice).mul(caveShade);
   material.emissiveNode = sky
     .mul(fresnel)
     .mul(look.daylight.mul(0.75).add(0.1))
     .mul(float(1).sub(foam))
     .mul(float(1).sub(ice.mul(0.7)))
     .mul(float(1).sub(look.precipitation.mul(RAIN_SKY_DAMPING)))
-    .mul(daylight);
+    .mul(caveShade);
   material.opacityNode = clamp(
     mix(float(0.42), float(0.94), smoothstep(0, 3.5, depth))
       .add(foam.mul(0.5))
@@ -289,7 +289,7 @@ export function createWaterMaterial(
     float(0.35),
     ice
   );
-  material.specularIntensityNode = float(1).sub(look.precipitation.mul(RAIN_SUN_DAMPING)).mul(daylight);
+  material.specularIntensityNode = float(1).sub(look.precipitation.mul(RAIN_SUN_DAMPING)).mul(caveShade);
 
   return material;
 }
