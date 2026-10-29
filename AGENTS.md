@@ -9,10 +9,11 @@ commits, pull requests and releases. This file lists what agents tend to miss.
 ```sh
 bun run check      # Biome lint and format; bun run fix applies fixes
 bun run typecheck  # tsc --build over the engine, app and tooling projects
+bun run knip       # unused files, exports and dependencies
 bun run test       # unit tests in Node, browser tests in Chromium
 ```
 
-- Run all three before you push. Browser tests need Chromium; [Scripts and checks](CONTRIBUTING.md#scripts-and-checks)
+- Run all four before you push. Browser tests need Chromium; [Scripts and checks](CONTRIBUTING.md#scripts-and-checks)
   shows how to point them at a system one.
 - Run one area with `bunx vitest run --project unit src/generation`.
 - Merging to `main` deploys playdawnfolk.com. Leave merges and [releases](CONTRIBUTING.md#releases) to a person

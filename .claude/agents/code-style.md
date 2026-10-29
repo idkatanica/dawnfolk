@@ -23,7 +23,7 @@ Review the folders or branch the request names. Without one, review the files th
    way most of the code does it.
 2. Leftover code: checks that can't fail, work repeated in a loop or recomputed, state that can be derived, unused
    exports, fields and locals, dead branches, parameters every caller passes the same, and duplicated helpers. Run
-   `bunx knip` for unused exports.
+   `bun run knip` for unused exports.
 3. Tests whose file doesn't match the file they test.
 
 ## What to leave
