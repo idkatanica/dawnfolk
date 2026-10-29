@@ -9,6 +9,7 @@ import {
   rainPower,
   snowPower,
   tornadoPower,
+  volcanoPower,
 } from "./element-powers.ts";
 import { flattenPower, forestPower, lowerPower, paintPower, raisePower, smoothPower } from "./land-powers.ts";
 import {
@@ -49,6 +50,7 @@ export const POWER_HANDLERS: PowerHandlers = {
   snow: snowPower,
   tornado: tornadoPower,
   tribe: tribePower,
+  volcano: volcanoPower,
   wolf: wolfPower,
 };
 
@@ -77,6 +79,7 @@ const POWER_SCHEMAS: PowerSchemas = {
   snow: POWERS.snow.parameters,
   tornado: POWERS.tornado.parameters,
   tribe: POWERS.tribe.parameters,
+  volcano: POWERS.volcano.parameters,
   wolf: POWERS.wolf.parameters,
 };
 

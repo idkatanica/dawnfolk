@@ -200,6 +200,7 @@ export class WorldRenderer {
 
     this.#textures.update(this.#renderer, frame.calendar.season, changes);
     this.#fireGlow.update(frame);
+    this.#textures.lava.update(frame.lava);
 
     if (changes.heightRegion !== null) {
       this.#terrain.heightsChanged(changes.heightRegion);

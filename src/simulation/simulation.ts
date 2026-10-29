@@ -28,6 +28,7 @@ import { naturalStrikeSite, strikeLightning } from "./powers/catastrophes.ts";
 import { type PowerOutcome, type PowerServices, type PowerTarget, percent } from "./powers/power-handler.ts";
 import { applyPower, parsePowerParameters } from "./powers/power-registry.ts";
 import { TornadoSystem } from "./powers/tornadoes.ts";
+import { type Volcano, VolcanoSystem } from "./powers/volcanoes.ts";
 import { type BuildingIncidentKind, BuildingSystem, type BuildingsSnapshot } from "./society/buildings.ts";
 import { type RivalrySnapshot, RivalrySystem } from "./society/rivalry/rivalry-system.ts";
 import { type SocietySnapshot, SocietySystem } from "./society/society.ts";
@@ -77,6 +78,7 @@ export interface SimulationSnapshot {
   tickBacklog: number;
   vegetationGrowth: VegetationGrowthSnapshot;
   viewFocus: Waypoint;
+  volcanoes?: Volcano[];
   waterRecomputation: WaterRecomputationSnapshot;
   weather: WeatherState;
   world: WorldSnapshot;
@@ -161,6 +163,7 @@ export class Simulation {
   readonly society: SocietySystem;
   readonly surface: SurfaceSystem;
   readonly tornadoes = new TornadoSystem();
+  readonly volcanoes = new VolcanoSystem();
   readonly waterRecomputation: WaterRecomputation;
   readonly weather = new WeatherSystem();
   readonly world: WorldState;
@@ -293,6 +296,7 @@ export class Simulation {
       tickBacklog: this.#tickBacklog,
       vegetationGrowth: this.#vegetationGrowth.snapshot(),
       viewFocus: { ...this.#viewFocus },
+      volcanoes: this.volcanoes.snapshot(),
       waterRecomputation: this.waterRecomputation.snapshot(),
       weather: this.weather.snapshot(),
       world: this.world.snapshot(),
@@ -317,6 +321,7 @@ export class Simulation {
     this.society.restore(snapshot.society);
     this.fauna.restore(snapshot.fauna);
     this.rivalry.restore(snapshot.rivalry);
+    this.volcanoes.restore(snapshot.volcanoes === undefined ? [] : snapshot.volcanoes);
     this.setRules(readWorldRules(snapshot.rules));
     this.services.environment = describeEnvironment(this.calendar, this.weather);
     this.#isPaused = snapshot.isPaused;
@@ -510,6 +515,7 @@ export class Simulation {
       rules: DEFAULT_WORLD_RULES,
       schedule: (delaySeconds, run) => this.#schedule(delaySeconds, run),
       tornadoes: this.tornadoes,
+      volcanoes: this.volcanoes,
       world: this.world,
     };
   }
@@ -671,6 +677,7 @@ export class Simulation {
 
     this.embers.update(TICK_SECONDS, (ember) => this.#landEmber(ember));
     this.tornadoes.update(TICK_SECONDS, this.services);
+    this.volcanoes.update(TICK_SECONDS, this.services);
     this.surface.update(TICK_SECONDS, days, environment, rules);
     this.#vegetationGrowth.update(days, environment, rules, this.random);
   }

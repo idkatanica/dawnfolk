@@ -9,6 +9,7 @@ import {
   packBurningCells,
   packChangedSurfaceRows,
   packGroundRows,
+  packLava,
   packPeople,
   packRegion,
   packSurfaceRows,
@@ -27,7 +28,7 @@ export class FrameBuilder {
 
   build(): SimulationFrame {
     const simulation = this.#simulation;
-    const { buildings, environment, fauna, fire, society, world } = simulation;
+    const { buildings, environment, fauna, fire, services, society, volcanoes, world } = simulation;
 
     const burningCells = Int32Array.from(fire.burningCells());
     const tribes = this.#tribes();
@@ -46,6 +47,7 @@ export class FrameBuilder {
       inspection: this.#inspection(tribes, environment),
       isBusy: simulation.isBusy,
       isPaused: simulation.isPaused,
+      lava: packLava(volcanoes.takeLava()),
       notices: simulation.takeNotices(),
       people: packPeople(society.people, (id) => society.findTribe(id)),
       personCount: society.people.length,
@@ -57,6 +59,7 @@ export class FrameBuilder {
       tick: simulation.tick,
       tribes,
       vegetation: world.vegetation.takeChanges(),
+      volcanoes: volcanoes.views(services),
       water: simulation.takeWaterUpdate(),
       waterLevels: packRegion(world, world.terrain.waterSurface, world.waterLevelChanges.takeRegion()),
       weather: describeWeather(simulation.weather, environment),
