@@ -101,6 +101,16 @@ The simulation runs in a Web Worker. The renderer and the HUD read its frames an
 Dawnfolk is free and open source. If you enjoy it, you can support its development on
 [GitHub Sponsors](https://github.com/sponsors/imsvidskiy).
 
+## Star history
+
+<a href="https://www.star-history.com/#imsvidskiy/dawnfolk&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=imsvidskiy/dawnfolk&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=imsvidskiy/dawnfolk&type=Date" />
+    <img alt="Star history of Dawnfolk" src="https://api.star-history.com/svg?repos=imsvidskiy/dawnfolk&type=Date" />
+  </picture>
+</a>
+
 ## License
 
 [MIT](LICENSE)
