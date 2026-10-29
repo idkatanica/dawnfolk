@@ -260,6 +260,14 @@ export class BuildingSystem {
     }
   }
 
+  blowOut(x: number, z: number, radius: number): void {
+    for (const building of this.#buildings) {
+      if (Math.hypot(building.x - x, building.z - z) < radius) {
+        building.burningSeconds = 0;
+      }
+    }
+  }
+
   update(tick: BuildingTick): void {
     for (const building of [...this.#buildings]) {
       if (building.cell >= 0) {

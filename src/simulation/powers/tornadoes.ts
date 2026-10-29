@@ -14,6 +14,7 @@ const WANDER = 0.35;
 const WIND_PULL = 0.25;
 const CORE_SHARE = 0.55;
 const FELLING_PER_SECOND = 2.4;
+const BLOWING_OUT_PER_SECOND = 20;
 const SWIRL_SPEED = 14;
 const INWARD_SPEED = 4;
 const FLUNG_SPEED = 26;
@@ -118,6 +119,7 @@ function rage(tornado: Tornado, center: Waypoint, seconds: number, services: Pow
   const force = strength * seconds;
 
   uproot(center, core, force, services);
+  blowOut(center, radius, force, services);
 
   for (const person of people.livingWithin(center.x, center.z, radius)) {
     whirl(person.mover, center, radius, force, services);
@@ -155,6 +157,16 @@ function uproot(center: Waypoint, core: number, force: number, services: PowerSe
 
     world.markDisturbed(cell, environment.day);
   }
+}
+
+function blowOut(center: Waypoint, radius: number, force: number, services: PowerServices): void {
+  const { buildings, fire, world } = services;
+
+  for (const { cell, distance } of cellsInArea(world, { radius, x: center.x, z: center.z })) {
+    fire.douse(cell, BLOWING_OUT_PER_SECOND * force * (1 - distance / radius));
+  }
+
+  buildings.blowOut(center.x, center.z, radius * CORE_SHARE);
 }
 
 function swirlAngle(plant: number, center: Waypoint, world: WorldState): number {
