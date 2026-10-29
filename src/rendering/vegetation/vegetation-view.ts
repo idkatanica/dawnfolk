@@ -225,7 +225,7 @@ export class VegetationView {
     const instance = this.#heldInstance;
 
     instance[0] = held.x;
-    instance[1] = this.#mirror.heightAt(held.x, held.z) + HELD_LIFT - PLANT_SINKING;
+    instance[1] = this.#mirror.surfaceAt(held.x, held.z) + HELD_LIFT - PLANT_SINKING;
     instance[2] = held.z;
     instance[3] = vegetation.rotation[plant];
     writePlantLook(vegetation, plant, instance, 4);
