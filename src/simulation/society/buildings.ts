@@ -262,7 +262,9 @@ export class BuildingSystem {
 
   blowOut(x: number, z: number, radius: number): void {
     for (const building of this.#buildings) {
-      if (Math.hypot(building.x - x, building.z - z) < radius) {
+      const isCalm = this.#world.fields.fire[building.cell] <= CATCHING_FIRE;
+
+      if (isCalm && Math.hypot(building.x - x, building.z - z) < radius) {
         building.burningSeconds = 0;
       }
     }
