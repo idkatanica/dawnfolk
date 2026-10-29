@@ -105,4 +105,45 @@ describe("tornadoes", () => {
     expect(simulation.buildings.all).not.toContain(hut);
     expect(texts).toContainEqual(expect.stringContaining("swept away by a tornado"));
   });
+
+  it("blows out the fire on its way", () => {
+    const simulation = createPowerSimulation();
+
+    const blaze = cellsInArea(simulation.world, { radius: 30, x: 0, z: 0 }).map(({ cell }) => {
+      return cell;
+    });
+
+    for (const cell of blaze) {
+      simulation.fire.ignite(cell, 0.8);
+    }
+
+    simulation.usePower("tornado", 0, 0, { lifetime: 5, strength: 100 });
+    runFor(simulation, 1);
+
+    const burning = blaze.filter((cell) => {
+      return simulation.world.fields.fire[cell] > 0;
+    });
+
+    expect(burning.length).toBeLessThan(blaze.length / 4);
+  });
+
+  it("puts out a burning hut it passes over", () => {
+    const simulation = createPowerSimulation();
+
+    simulation.usePower("tribe", 0, 0, {});
+
+    const [tribe] = simulation.society.tribes();
+    const hut = simulation.buildings.add(
+      { kind: "tent", rotation: 0, tribeId: tribe.id, x: tribe.campX, z: tribe.campZ },
+      simulation.random
+    );
+
+    hut.progress = 1;
+    hut.burningSeconds = 60;
+
+    simulation.usePower("tornado", tribe.campX, tribe.campZ, { lifetime: 5, strength: 5 });
+    runFor(simulation, 0.5);
+
+    expect(hut.burningSeconds).toBe(0);
+  });
 });

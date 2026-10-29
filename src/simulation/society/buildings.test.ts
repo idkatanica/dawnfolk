@@ -56,6 +56,28 @@ describe("buildings", () => {
     expect(world.fields.scorch[tent.cell]).toBe(1);
   });
 
+  it("keep burning when blown out over a fire that still burns", () => {
+    const { buildings, fire, world } = createBuildings();
+
+    const tent = buildings.add({ kind: "tent", rotation: 0, tribeId: 1, x: 5, z: 5 }, createRandom(1));
+
+    tent.progress = 1;
+    world.fields.fire[tent.cell] = 0.8;
+
+    for (let step = 0; step < 5; step += 1) {
+      buildings.blowOut(tent.x, tent.z, 3);
+      buildings.update(tickOf(fire));
+    }
+
+    expect(tent.burningSeconds).toBeGreaterThan(0);
+    expect(buildings.takeIncidents()).toHaveLength(1);
+
+    world.fields.fire[tent.cell] = 0.1;
+    buildings.blowOut(tent.x, tent.z, 3);
+
+    expect(tent.burningSeconds).toBe(0);
+  });
+
   it("break apart in a blast", () => {
     const { buildings } = createBuildings();
 
