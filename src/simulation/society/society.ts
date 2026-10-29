@@ -39,6 +39,7 @@ const DEATH_MESSAGES: Readonly<Record<DeathCause, string>> = {
   hunger: "starved",
   lightning: "was struck by lightning",
   mammoth: "was trampled by a mammoth",
+  tornado: "was swept away by a tornado",
 };
 
 export interface SocietySnapshot {

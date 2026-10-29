@@ -18,6 +18,7 @@ const METEOR_ALTITUDE = 3200;
 const METEOR_REFERENCE_CRATER = 140;
 const METEOR_POWER = 2.4;
 const DEFAULT_MAGNITUDE = 0.7;
+const DEFAULT_TORNADO_STRENGTH = 0.7;
 
 function strikeDistance(strike: number, scatter: number, random: RandomSource): number {
   if (strike === 0) {
@@ -184,6 +185,25 @@ export function earthquakePower(
     {
       magnitude: percent(parameters.magnitude) / DEFAULT_MAGNITUDE,
       radius: parameters.radius,
+      x: target.x,
+      z: target.z,
+    },
+    services
+  );
+
+  return APPLIED;
+}
+
+export function tornadoPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"tornado">,
+  services: PowerServices
+): PowerOutcome {
+  services.tornadoes.touchDown(
+    {
+      lifetime: parameters.lifetime,
+      radius: parameters.radius,
+      strength: percent(parameters.strength) / DEFAULT_TORNADO_STRENGTH,
       x: target.x,
       z: target.z,
     },

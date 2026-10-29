@@ -27,6 +27,7 @@ import { type WeatherState, WeatherSystem } from "./nature/weather.ts";
 import { naturalStrikeSite, strikeLightning } from "./powers/catastrophes.ts";
 import { type PowerOutcome, type PowerServices, type PowerTarget, percent } from "./powers/power-handler.ts";
 import { applyPower, parsePowerParameters } from "./powers/power-registry.ts";
+import { TornadoSystem } from "./powers/tornadoes.ts";
 import { type BuildingIncidentKind, BuildingSystem, type BuildingsSnapshot } from "./society/buildings.ts";
 import { type RivalrySnapshot, RivalrySystem } from "./society/rivalry/rivalry-system.ts";
 import { type SocietySnapshot, SocietySystem } from "./society/society.ts";
@@ -159,6 +160,7 @@ export class Simulation {
   readonly services: PowerServices;
   readonly society: SocietySystem;
   readonly surface: SurfaceSystem;
+  readonly tornadoes = new TornadoSystem();
   readonly waterRecomputation: WaterRecomputation;
   readonly weather = new WeatherSystem();
   readonly world: WorldState;
@@ -213,7 +215,9 @@ export class Simulation {
   }
 
   get isBusy(): boolean {
-    return this.#tasks.length > 0 || this.#stroke !== null || this.waterRecomputation.isPending;
+    return (
+      this.#tasks.length > 0 || this.#stroke !== null || this.tornadoes.isActive || this.waterRecomputation.isPending
+    );
   }
 
   get isPaused(): boolean {
@@ -321,6 +325,7 @@ export class Simulation {
     this.#tickBacklog = snapshot.tickBacklog;
     this.#viewFocus = { ...snapshot.viewFocus };
     this.#tasks = [];
+    this.tornadoes.clear();
     this.#stroke = null;
     this.#notices = [];
     this.#waterUpdate = null;
@@ -504,6 +509,7 @@ export class Simulation {
       rivalry: this.rivalry,
       rules: DEFAULT_WORLD_RULES,
       schedule: (delaySeconds, run) => this.#schedule(delaySeconds, run),
+      tornadoes: this.tornadoes,
       world: this.world,
     };
   }
@@ -664,6 +670,7 @@ export class Simulation {
     }
 
     this.embers.update(TICK_SECONDS, (ember) => this.#landEmber(ember));
+    this.tornadoes.update(TICK_SECONDS, this.services);
     this.surface.update(TICK_SECONDS, days, environment, rules);
     this.#vegetationGrowth.update(days, environment, rules, this.random);
   }

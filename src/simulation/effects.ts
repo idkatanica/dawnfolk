@@ -69,6 +69,12 @@ export interface SplashEffect {
   z: number;
 }
 
+export interface TornadoEffect {
+  kind: "tornado";
+  path: readonly number[];
+  radius: number;
+}
+
 export type SimulationEffect =
   | ArrowEffect
   | BlessingEffect
@@ -77,7 +83,8 @@ export type SimulationEffect =
   | ExplosionEffect
   | LightningEffect
   | MeteorEffect
-  | SplashEffect;
+  | SplashEffect
+  | TornadoEffect;
 
 export class EffectLog {
   #effects: SimulationEffect[] = [];
