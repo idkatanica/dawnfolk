@@ -20,6 +20,12 @@ function createHand(target: GrabTarget | null = DEER) {
   return { hand, pick, send };
 }
 
+function press(hand: HandTool): void {
+  if (hand.canBegin(PRESSED, SCREEN)) {
+    hand.begin();
+  }
+}
+
 describe("hand tool", () => {
   it("is active only while the hand is chosen", () => {
     const { hand } = createHand();
@@ -40,10 +46,11 @@ describe("hand tool", () => {
   it("grabs, carries and drops", () => {
     const { hand, pick, send } = createHand();
 
-    hand.begin(PRESSED, SCREEN);
+    press(hand);
     hand.move(CARRIED);
     hand.end();
 
+    expect(pick).toHaveBeenCalledOnce();
     expect(pick).toHaveBeenCalledWith(PRESSED, SCREEN);
     expect(send.mock.calls.flat()).toEqual([
       { target: DEER, type: "grab" },
@@ -55,7 +62,7 @@ describe("hand tool", () => {
   it("cancels a grab and then has nothing left to drop", () => {
     const { hand, send } = createHand();
 
-    hand.begin(PRESSED, SCREEN);
+    press(hand);
     hand.cancel();
     hand.end();
     hand.move(CARRIED);
@@ -66,7 +73,8 @@ describe("hand tool", () => {
   it("sends nothing when the press found nothing to pick up", () => {
     const { hand, send } = createHand(null);
 
-    hand.begin(PRESSED, SCREEN);
+    hand.canBegin(PRESSED, SCREEN);
+    hand.begin();
     hand.move(CARRIED);
     hand.end();
 
@@ -76,7 +84,7 @@ describe("hand tool", () => {
   it("returns what it holds when the hand is put away", () => {
     const { hand, send } = createHand();
 
-    hand.begin(PRESSED, SCREEN);
+    press(hand);
     hand.select(false);
 
     expect(send).toHaveBeenLastCalledWith({ type: "cancelGrab" });

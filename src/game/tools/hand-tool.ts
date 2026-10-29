@@ -16,6 +16,7 @@ export class HandTool implements ToolGestures {
   readonly #pick: GrabPicker;
   readonly #send: CommandSink;
   #state: HandState = "putAway";
+  #target: GrabTarget | null = null;
 
   constructor(send: CommandSink, pick: GrabPicker) {
     this.#send = send;
@@ -40,17 +41,17 @@ export class HandTool implements ToolGestures {
   }
 
   canBegin(point: Vector3, screen: ScreenPoint): boolean {
-    return this.isActive() && this.#pick(point, screen) !== null;
+    this.#target = this.isActive() ? this.#pick(point, screen) : null;
+
+    return this.#target !== null;
   }
 
-  begin(point: Vector3, screen: ScreenPoint): void {
-    if (!this.isActive()) {
-      return;
-    }
+  begin(): void {
+    const target = this.#target;
 
-    const target = this.#pick(point, screen);
+    this.#target = null;
 
-    if (target === null) {
+    if (!this.isActive() || target === null) {
       return;
     }
 
