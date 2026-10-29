@@ -2,6 +2,7 @@ import { Vector3 } from "three";
 import { clamp, fractionalPart, lerp, saturate, smoothstep } from "../../shared/math.ts";
 import { createVolumeNoise } from "../../shared/noise.ts";
 import { createRandom } from "../../shared/random.ts";
+import { thinned } from "../level-of-detail.ts";
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import { MeshBuilder, type SurfacePoint, type VertexStyle } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
@@ -145,7 +146,12 @@ function foliageCenter(foliage: Foliage): Vector3 {
   return new Vector3(...foliage.center);
 }
 
-function foliageStyle(structure: TreeStructure, look: TreeLook, tint: number, center: Vector3): VertexStyle {
+export function foliageStyle(
+  structure: Pick<TreeStructure, "height">,
+  look: Pick<TreeLook, "foliage">,
+  tint: number,
+  center: Vector3
+): VertexStyle {
   const outward = new Vector3();
 
   return {
@@ -272,10 +278,6 @@ function addBranches(builder: MeshBuilder, structure: TreeStructure, look: TreeL
       style: woodStyle(structure.height, look, branch.depth),
     });
   }
-}
-
-export function thinned(points: readonly TubePoint[]): TubePoint[] {
-  return points.filter((_point, index) => index % 2 === 0 || index === points.length - 1);
 }
 
 function skirtCrown(skirt: FoliageSkirt, isCovered: boolean): LoftSection[] {

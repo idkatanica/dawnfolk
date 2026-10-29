@@ -5,7 +5,7 @@ import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder, SurfacePoint, VertexStyle } from "../mesh/mesh-builder.ts";
 import { boundsOf, type MeshData } from "../mesh/mesh-data.ts";
 import { deformShape, type Shape, transformShape } from "../mesh/shape.ts";
-import { blob, box, card, cone, cylinder, lathe } from "../mesh/shapes.ts";
+import { blob, box, card, cone, cylinder, type LoftSection, lathe } from "../mesh/shapes.ts";
 import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
 
 export const GLOW_PART = 1;
@@ -52,6 +52,22 @@ export function detail(context: StructureContext, high: number, low: number): nu
 
 export function rising(from: number, to: number, bottom: number, top: number): (point: SurfacePoint) => number {
   return (point) => lerp(from, to, saturate((point.position.y - bottom) / (top - bottom)));
+}
+
+export function thatchSections(
+  bottom: number,
+  top: number,
+  radius: number,
+  rimRipple: (around: number) => number
+): LoftSection[] {
+  return [
+    { radiusX: 0, radiusZ: 0, y: bottom + 0.25 },
+    { radiusX: radius * 0.8, radiusZ: radius * 0.8, y: bottom + 0.12 },
+    { radiusX: radius, radiusZ: radius, ripple: rimRipple, y: bottom },
+    { radiusX: radius * 0.45, radiusZ: radius * 0.45, y: bottom + (top - bottom) * 0.62 },
+    { radiusX: 0.05, radiusZ: 0.05, y: top },
+    { radiusX: 0, radiusZ: 0, y: top + 0.02 },
+  ];
 }
 
 export function stoneShade(point: SurfacePoint): number {

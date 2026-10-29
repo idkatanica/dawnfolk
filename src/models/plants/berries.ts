@@ -9,7 +9,7 @@ import { icosphere, sphere } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
 import { transformOf } from "../mesh/transforms.ts";
 import { FOLIAGE_FLUTTER, type PlantDetailLevel, plantSway, type TreeLook } from "./tree-mesher.ts";
-import { GOLDEN_ANGLE, type TreeStructure } from "./tree-structure.ts";
+import { GOLDEN_ANGLE, perpendicularBasis, type TreeStructure } from "./tree-structure.ts";
 
 export const BERRY_PART = 1;
 export const BERRY_RADIUS = 0.062;
@@ -56,14 +56,6 @@ function crownMiddle(structure: TreeStructure): Vector3 {
   return sum.multiplyScalar(1 / Math.max(1, blobs.length));
 }
 
-function tangentsOf(normal: Vector3): readonly [Vector3, Vector3] {
-  const reference = Math.abs(normal.y) < 0.9 ? new Vector3(0, 1, 0) : new Vector3(1, 0, 0);
-  const across = new Vector3().crossVectors(normal, reference).normalize();
-  const along = new Vector3().crossVectors(normal, across);
-
-  return [across, along];
-}
-
 export function berryClusters(
   tree: MeshData,
   structure: TreeStructure,
@@ -97,7 +89,7 @@ export function berryClusters(
       continue;
     }
 
-    const [across, along] = tangentsOf(anchor.normal);
+    const [across, along] = perpendicularBasis(anchor.normal);
 
     for (let berry = 0; berry < BERRIES_PER_CLUSTER; berry += 1) {
       const angle = turn + (berry / BERRIES_PER_CLUSTER) * FULL_TURN;

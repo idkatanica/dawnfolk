@@ -11,6 +11,7 @@ import {
   growBranch,
   jitter,
   type TreeStructure,
+  tiltedDirection,
   tipOf,
   toVector,
 } from "./tree-structure.ts";
@@ -472,7 +473,7 @@ function bush(seed: number): TreeStructure {
 
     const points = growBranch({
       bend: 0.08,
-      direction: new Vector3(Math.cos(angle) * Math.sin(tilt), Math.cos(tilt), Math.sin(angle) * Math.sin(tilt)),
+      direction: tiltedDirection(angle, tilt),
       gravity: 0.1,
       length: random.between(1, 1.6),
       noise: growth.noise,
@@ -750,7 +751,7 @@ function addSagebrush(growth: Growth): void {
 
     const points = growBranch({
       bend: 0.05,
-      direction: new Vector3(Math.cos(angle) * Math.sin(tilt), Math.cos(tilt), Math.sin(angle) * Math.sin(tilt)),
+      direction: tiltedDirection(angle, tilt),
       gravity: 0.2,
       length: random.between(0.5, 0.85),
       noise: growth.noise,
@@ -810,11 +811,7 @@ function addGrassTuft(growth: Growth): void {
     const azimuth = random.next() * FULL_TURN;
     const tilt = random.between(0.12, 0.65);
 
-    const direction = new Vector3(
-      Math.cos(azimuth) * Math.sin(tilt),
-      Math.cos(tilt),
-      Math.sin(azimuth) * Math.sin(tilt)
-    );
+    const direction = tiltedDirection(azimuth, tilt);
     const start = new Vector3(Math.cos(azimuth) * 0.08, 0, Math.sin(azimuth) * 0.08);
 
     addFrond(

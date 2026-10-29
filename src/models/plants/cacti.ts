@@ -1,6 +1,7 @@
 import { Vector3 } from "three";
 import { FULL_TURN, smoothstep } from "../../shared/math.ts";
 import { createRandom, type RandomSource } from "../../shared/random.ts";
+import { thinned } from "../level-of-detail.ts";
 import { MaterialSlot } from "../materials.ts";
 import { MeshBuilder, type SurfacePoint } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
@@ -160,7 +161,7 @@ function addSaguaro(builder: MeshBuilder, random: RandomSource, detail: CactusDe
   for (let arm = 0; arm < arms; arm += 1) {
     const angle = firstAngle + (arm / arms) * FULL_TURN + random.signed() * 0.4;
     const points = saguaroArm(random.between(1.2, 2.3), angle, radius, random);
-    const kept = detail.ribs === 0 ? points.filter((_point, index) => index % 2 === 0) : points;
+    const kept = detail.ribs === 0 ? thinned(points) : points;
 
     builder.add(tube(kept, { hasEndCap: false, radialSegments: Math.max(4, detail.segments - 4) }), {
       seam: radius * STEM_SEAM,

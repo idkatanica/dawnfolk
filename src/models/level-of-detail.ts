@@ -14,10 +14,12 @@ export function segmentsUpTo(detail: DetailSteps, segments: number): number {
   return Math.min(segments, detail.hasSmallParts ? 8 : 4);
 }
 
-export function alongPath<Point>(points: readonly Point[], detail: DetailSteps): Point[] {
-  const last = points.length - 1;
+export function thinned<Point>(points: readonly Point[]): Point[] {
+  return points.filter((_point, index) => index % 2 === 0 || index === points.length - 1);
+}
 
-  return points.filter((_, index) => index === 0 || index === last || detail.hasSmallParts || index % 2 === 0);
+export function alongPath<Point>(points: readonly Point[], detail: DetailSteps): Point[] {
+  return detail.hasSmallParts ? [...points] : thinned(points);
 }
 
 export function alongTube(points: readonly TubePoint[], detail: DetailSteps): TubePoint[] {

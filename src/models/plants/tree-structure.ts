@@ -136,13 +136,22 @@ function crossReference(axis: Vector3): Vector3 {
   return new Vector3(1, 0, 0);
 }
 
+export function perpendicularBasis(axis: Vector3): [Vector3, Vector3] {
+  const across = new Vector3().crossVectors(axis, crossReference(axis)).normalize();
+
+  return [across, new Vector3().crossVectors(axis, across)];
+}
+
 export function sideDirection(axis: Vector3, azimuth: number, tilt: number): Vector3 {
-  const reference = crossReference(axis);
-  const across = new Vector3().crossVectors(axis, reference).normalize();
-  const other = new Vector3().crossVectors(axis, across).normalize();
+  const [across, second] = perpendicularBasis(axis);
+  const other = second.normalize();
   const outward = across.multiplyScalar(Math.cos(azimuth)).addScaledVector(other, Math.sin(azimuth));
 
   return axis.clone().multiplyScalar(Math.cos(tilt)).addScaledVector(outward, Math.sin(tilt)).normalize();
+}
+
+export function tiltedDirection(azimuth: number, tilt: number): Vector3 {
+  return new Vector3(Math.cos(azimuth) * Math.sin(tilt), Math.cos(tilt), Math.sin(azimuth) * Math.sin(tilt));
 }
 
 export function jitter(random: RandomSource, amount: number): number {
