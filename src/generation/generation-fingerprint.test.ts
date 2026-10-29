@@ -1,8 +1,13 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { generationFingerprint } from "./generation-fingerprint.ts";
+import type { GenerationOptions } from "./generation-options.ts";
 import { type GeneratedWorld, generateWorld } from "./world-generator.ts";
 
-const DIMENSIONS = { cellSize: 20, cellsPerSide: 128 };
+const OPTIONS: GenerationOptions = {
+  dimensions: { cellSize: 20, cellsPerSide: 128 },
+  erosionStrength: 1,
+  shape: "round",
+};
 
 function replacedFirst<T>(items: readonly T[], change: (item: T) => T): T[] {
   const [first, ...rest] = items;
@@ -18,7 +23,14 @@ describe("generation fingerprints", () => {
   let world: GeneratedWorld;
 
   beforeAll(() => {
-    world = generateWorld(7, { dimensions: DIMENSIONS, erosionStrength: 1, shape: "round" });
+    world = generateWorld(7, OPTIONS);
+  }, 60_000);
+
+  it("gives the same island the same fingerprint and another island a different one", () => {
+    const fingerprint = generationFingerprint(world);
+
+    expect(generationFingerprint(generateWorld(7, OPTIONS))).toBe(fingerprint);
+    expect(generationFingerprint(generateWorld(8, OPTIONS))).not.toBe(fingerprint);
   }, 60_000);
 
   it("changes when one river point moves", () => {

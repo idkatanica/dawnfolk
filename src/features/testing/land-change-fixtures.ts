@@ -9,11 +9,10 @@ import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
 import { createSimulationWorkerApi } from "../../workers/simulation-worker-api.ts";
 import { startTestEngine } from "./engine-fixtures.ts";
 
-const TEST_DIMENSIONS = { cellSize: 10, cellsPerSide: 64 };
-const SAVED_HEIGHT = 100;
-
-export const UNCHANGED_HEIGHT = SAVED_HEIGHT;
+export const UNCHANGED_HEIGHT = 100;
 export const CHANGED_HEIGHT = 140;
+
+const TEST_DIMENSIONS = { cellSize: 10, cellsPerSide: 64 };
 
 interface LoadedWorldOptions {
   readonly isSavedPaused?: boolean;
@@ -38,7 +37,7 @@ function islandAt(height: number): Simulation {
 
 async function loadedWorld({ isSavedPaused = false, regrownHeight }: LoadedWorldOptions): Promise<LoadedWorld> {
   const api = createSimulationWorkerApi(() => {
-    return islandAt(SAVED_HEIGHT);
+    return islandAt(UNCHANGED_HEIGHT);
   });
 
   api.createWorld(DEFAULT_WORLD_REQUEST, ignore);

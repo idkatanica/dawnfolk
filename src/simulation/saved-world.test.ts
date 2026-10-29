@@ -25,7 +25,7 @@ function savedState(simulation: Simulation): SavedWorldState {
   };
 }
 
-function loadedFrom(state: SavedWorldState, generated: Simulation): boolean {
+function warnsOnLoad(generated: Simulation, state: SavedWorldState): boolean {
   restoreSavedWorld(generated, state);
 
   return hasLandChanged(generated, state);
@@ -62,27 +62,9 @@ function warnsWithRiverPoints(wetPoints: number, dryPoints: number): boolean {
   return hasLandChanged(simulation, state);
 }
 
-describe("generation fingerprints", () => {
-  it("gives the same island the same fingerprint and another island a different one", () => {
-    const fingerprint = generateSimulation().world.generationFingerprint;
-
-    expect(generateSimulation().world.generationFingerprint).toBe(fingerprint);
-    expect(otherIsland().world.generationFingerprint).not.toBe(fingerprint);
-  });
-
-  it("keeps the fingerprint of the generated land after the land changes", () => {
-    const simulation = generateSimulation();
-    const fingerprint = simulation.world.generationFingerprint;
-
-    simulation.world.setHeight(0, 900);
-
-    expect(savedState(simulation).generationFingerprint).toBe(fingerprint);
-  });
-});
-
 describe("loading a world whose land grows differently now", () => {
   it("loads a save of the same generation without a warning", () => {
-    expect(loadedFrom(savedState(generateSimulation()), generateSimulation())).toBe(false);
+    expect(warnsOnLoad(generateSimulation(), savedState(generateSimulation()))).toBe(false);
   });
 
   it("warns when the saved fingerprint differs from the regenerated island", () => {
@@ -91,7 +73,7 @@ describe("loading a world whose land grows differently now", () => {
 
     const changed = { ...state, generationFingerprint: original.world.generationFingerprint + 1 };
 
-    expect(loadedFrom(changed, generateSimulation())).toBe(true);
+    expect(warnsOnLoad(generateSimulation(), changed)).toBe(true);
   });
 
   it("reads saves made before fingerprints and loads them without a warning when the rivers still fit", () => {
@@ -100,14 +82,14 @@ describe("loading a world whose land grows differently now", () => {
     const state = savedWorldStateSchema.parse(older);
 
     expect(state.generationFingerprint).toBeNull();
-    expect(loadedFrom(state, generateSimulation())).toBe(false);
+    expect(warnsOnLoad(generateSimulation(), state)).toBe(false);
   });
 
   it("warns about a save without a fingerprint when its rivers run over dry land", () => {
     const state = { ...savedState(generateSimulation()), generationFingerprint: null };
 
     expect(state.simulation.world.water.rivers.length).toBeGreaterThan(0);
-    expect(loadedFrom(state, otherIsland())).toBe(true);
+    expect(warnsOnLoad(otherIsland(), state)).toBe(true);
   });
 
   it("does not judge a save without a fingerprint by fewer than 50 river points", () => {
