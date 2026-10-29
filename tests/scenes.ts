@@ -19,8 +19,11 @@ export const SCENES: readonly Scene[] = [
     name: "markers-over-forest",
     query: "seed=7&shape=round&quality=high&paused=1&hours=11&camera=-1050,640,140,0.45,2.6",
   },
-  { name: "cave-mouth", query: "seed=7&shape=round&quality=high&paused=1&hours=11&camera=-1215,185,40,0.6,0" },
-  { name: "cave-wide-river", query: "seed=7&shape=round&quality=high&paused=1&hours=11&camera=1740,-910,55,0.7,0.78" },
+  { name: "cave-mouth", query: "seed=7&shape=round&quality=high&paused=1&hours=11&camera=-415,-585,40,0.6,0" },
+  {
+    name: "cave-wide-river",
+    query: "seed=7&shape=round&quality=high&paused=1&hours=11&camera=-1050,-1990,55,0.7,-2.37",
+  },
   {
     cast: { parameters: { intensity: 60, radius: 25 }, powerId: "fire", x: -1050, z: 640 },
     name: "smoke-over-forest",
