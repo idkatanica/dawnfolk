@@ -8,6 +8,8 @@ import type { GameIconName } from "../../design/game-icon-sources.ts";
 import { Island } from "../../design/island.tsx";
 import { FOCUS_RING, SEGMENT, SEGMENT_CHOSEN, SEGMENT_TRACK } from "../../design/styles.ts";
 import { WithTooltip } from "../../design/tooltip.tsx";
+import { useGuideStore } from "../guide/guide-store.ts";
+import { suggestedPowerId } from "../guide/guide-tips.ts";
 import { POWER_ICONS } from "./power-icons.tsx";
 import { usePowerStore } from "./power-store.ts";
 
@@ -16,6 +18,8 @@ const SELECT_HINT = "Tap people, animals, buildings or land to see their details
 const TILE_CLASS = `grid size-10.5 shrink-0 snap-start place-items-center rounded-xl transition-[background-color,box-shadow,scale] duration-150 hover:bg-paper-hover active:scale-95 pointer-coarse:size-12 ${FOCUS_RING}`;
 
 const CHOSEN_TILE_CLASS = "bg-white shadow-segment ring-2 ring-dawn hover:bg-white";
+
+const SUGGESTED_CLASS = "ring-2 ring-dawn/60 motion-safe:animate-pulse";
 
 const KIND_ICONS: Readonly<Record<PowerCategory, GameIconName>> = {
   elements: POWER_ICONS.fire,
@@ -39,15 +43,23 @@ function initialKind(): PowerCategory {
   return selectedPowerId === null ? "elements" : POWERS[selectedPowerId].category;
 }
 
+function useSuggestedPower(): PowerId | null {
+  const suggested = useGuideStore((state) => suggestedPowerId(state.progress));
+  const selected = usePowerStore((state) => state.selectedPowerId);
+
+  return suggested === selected ? null : suggested;
+}
+
 function usePowerSelection(powerId: PowerId) {
   const isSelected = usePowerStore((state) => state.selectedPowerId === powerId);
   const selectPower = usePowerStore((state) => state.selectPower);
+  const isSuggested = useSuggestedPower() === powerId;
 
   function handleToggle(): void {
     selectPower(isSelected ? null : powerId);
   }
 
-  return { handleToggle, isSelected };
+  return { handleToggle, isSelected, isSuggested };
 }
 
 function useClearPower() {
@@ -62,11 +74,15 @@ function useClearPower() {
 }
 
 function useKindTab({ chosenKind, kind, onKindChange }: KindChoice & { readonly kind: PowerCategory }) {
+  const suggested = useSuggestedPower();
+  const isChosen = kind === chosenKind;
+  const isSuggested = !isChosen && suggested !== null && POWERS[suggested].category === kind;
+
   function handleChoose(): void {
     onKindChange(kind);
   }
 
-  return { handleChoose, isChosen: kind === chosenKind };
+  return { handleChoose, isChosen, isSuggested };
 }
 
 function useWheelScrollsSideways(rowReference: RefObject<HTMLDivElement | null>): void {
@@ -109,7 +125,7 @@ function TileHint({ description, name }: { readonly description: string; readonl
 }
 
 function PowerTile({ powerId }: { readonly powerId: PowerId }) {
-  const { handleToggle, isSelected } = usePowerSelection(powerId);
+  const { handleToggle, isSelected, isSuggested } = usePowerSelection(powerId);
 
   const power = POWERS[powerId];
 
@@ -118,7 +134,7 @@ function PowerTile({ powerId }: { readonly powerId: PowerId }) {
       <Toolbar.Button
         aria-label={power.name}
         aria-pressed={isSelected}
-        className={cn(TILE_CLASS, { [CHOSEN_TILE_CLASS]: isSelected })}
+        className={cn(TILE_CLASS, { [CHOSEN_TILE_CLASS]: isSelected, [SUGGESTED_CLASS]: isSuggested })}
         onClick={handleToggle}
       >
         <GameIcon name={POWER_ICONS[powerId]} size={34} />
@@ -145,13 +161,14 @@ function SelectTile() {
 }
 
 function KindTab({ chosenKind, kind, name, onKindChange }: KindTabProps) {
-  const { handleChoose, isChosen } = useKindTab({ chosenKind, kind, onKindChange });
+  const { handleChoose, isChosen, isSuggested } = useKindTab({ chosenKind, kind, onKindChange });
 
   return (
     <Toolbar.Button
       aria-pressed={isChosen}
       className={cn(SEGMENT, "text-sm max-lg:aspect-square max-lg:px-0 lg:px-2.5 pointer-coarse:h-10", {
         [SEGMENT_CHOSEN]: isChosen,
+        [SUGGESTED_CLASS]: isSuggested,
       })}
       onClick={handleChoose}
     >

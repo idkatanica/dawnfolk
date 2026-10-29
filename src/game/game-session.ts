@@ -16,6 +16,8 @@ const VIEW_COMMANDS: ReadonlySet<SimulationCommand["type"]> = new Set(["setSelec
 
 export type SessionStatus = { kind: "closed" } | { error: Error; kind: "failed" } | { kind: "running" };
 
+type CommandListener = (command: SimulationCommand) => void;
+
 type FrameListener = (frame: SimulationFrame) => void;
 
 type StatusListener = (status: SessionStatus) => void;
@@ -31,6 +33,7 @@ interface LoadOptions extends SessionOptions {
 export class GameSession {
   readonly mirror: WorldMirror;
   readonly #chronicle: ChronicleEntry[] = [];
+  readonly #commandListeners = new Set<CommandListener>();
   readonly #connection: SimulationConnection;
   readonly #effects: SimulationEffect[] = [];
   readonly #frameListeners = new Set<FrameListener>();
@@ -102,6 +105,10 @@ export class GameSession {
     if (command.type !== "setViewFocus") {
       this.#commandsSinceRequest += 1;
     }
+
+    for (const listener of this.#commandListeners) {
+      listener(command);
+    }
   }
 
   saveWorld(): Promise<SavedWorldState | null> {
@@ -150,6 +157,14 @@ export class GameSession {
     };
   }
 
+  subscribeToCommands(listener: CommandListener): () => void {
+    this.#commandListeners.add(listener);
+
+    return () => {
+      this.#commandListeners.delete(listener);
+    };
+  }
+
   subscribeToStatus(listener: StatusListener): () => void {
     this.#statusListeners.add(listener);
 
@@ -164,6 +179,7 @@ export class GameSession {
     }
 
     this.#setStatus({ kind: "closed" });
+    this.#commandListeners.clear();
     this.#frameListeners.clear();
     this.#statusListeners.clear();
     this.#connection.dispose();

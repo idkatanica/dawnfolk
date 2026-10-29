@@ -171,6 +171,20 @@ describe("advancing", () => {
 
     expect(session.frame.isPaused).toBe(true);
   });
+
+  it("tells command listeners about every command until they leave", async () => {
+    const { session } = await createSession();
+
+    const listener = vi.fn();
+
+    const unsubscribe = session.subscribeToCommands(listener);
+
+    session.send({ speed: 4, type: "setSpeed" });
+    unsubscribe();
+    session.send({ isPaused: true, type: "setPaused" });
+
+    expect(listener).toHaveBeenCalledExactlyOnceWith({ speed: 4, type: "setSpeed" });
+  });
 });
 
 describe("history", () => {

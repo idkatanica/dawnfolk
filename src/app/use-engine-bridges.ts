@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { connectGuide } from "../features/guide/connect-guide.ts";
 import { connectPowers } from "../features/powers/connect-powers.ts";
 import { connectAutosave } from "../features/saves/saves-store.ts";
 import { connectWorldStore } from "../features/world/world-store.ts";
@@ -17,10 +18,12 @@ export function useEngineBridges(): void {
 
     const disconnectWorld = connectWorldStore(engine.session);
     const disconnectPowers = connectPowers(engine);
+    const disconnectGuide = connectGuide(engine.session);
 
     return () => {
       disconnectWorld();
       disconnectPowers();
+      disconnectGuide();
     };
   }, [engine]);
 
