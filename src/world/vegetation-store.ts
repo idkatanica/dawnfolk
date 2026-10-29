@@ -180,6 +180,18 @@ export class VegetationStore implements VegetationChannels {
     this.#changed.add(index);
   }
 
+  detach(index: number): void {
+    this.#unlinkFromCell(index);
+  }
+
+  attach(index: number, x: number, z: number): void {
+    this.#unlinkFromCell(index);
+    this.x[index] = x;
+    this.z[index] = z;
+    this.#linkToCell(index, this.#grid.cellAt(x, z));
+    this.#changed.add(index);
+  }
+
   burn(index: number, day: number): void {
     this.#kill(index, day, PlantState.Burnt);
   }

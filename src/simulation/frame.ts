@@ -14,6 +14,7 @@ import type { MirroredWater } from "../world/water.ts";
 import type { GridDimensions } from "../world/world-grid.ts";
 import type { ChronicleEntry } from "./chronicle.ts";
 import type { SimulationEffect } from "./effects.ts";
+import type { HeldView } from "./hand/grab-target.ts";
 import type { Inspection } from "./inspection.ts";
 import type { CalendarView } from "./nature/calendar.ts";
 import type { RivalryView } from "./society/rivalry/rivalry-system.ts";
@@ -137,6 +138,7 @@ export interface SimulationFrame {
   effects: SimulationEffect[];
   groundRows: PackedRows[];
   heightPatch: RegionPatch | null;
+  held: HeldView | null;
   inspection: Inspection | null;
   isBusy: boolean;
   isPaused: boolean;

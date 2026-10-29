@@ -236,6 +236,7 @@ export function createFrame(overrides: Partial<SimulationFrame> = {}): Simulatio
     effects: [],
     groundRows: [],
     heightPatch: null,
+    held: null,
     inspection: null,
     isBusy: false,
     isPaused: false,

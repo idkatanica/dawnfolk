@@ -2,7 +2,7 @@ import { personName, tribeIdentity } from "../../content/names.ts";
 import type { TechnologyId } from "../../content/technologies.ts";
 import type { RandomSource } from "../../shared/random.ts";
 import { isHopping, isLeaping } from "../agents/hops.ts";
-import { isStranded, moveAlong, savedMover, stopMoving } from "../agents/movement.ts";
+import { isStranded, moveAlong, placeMover, savedMover, stopMoving } from "../agents/movement.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import { nearestWalkableSpot } from "../agents/walkable-ground.ts";
 import type { Chronicle } from "../chronicle.ts";
@@ -114,6 +114,7 @@ function keepHopping(tick: PersonTick): void {
 
 export class SocietySystem {
   readonly #dependencies: SocietyDependencies;
+  readonly #heldIds = new Set<number>();
   readonly #peopleById = new Map<number, Person>();
   readonly #tribesById = new Map<number, Tribe>();
   readonly #trodden = new TroddenGround();
@@ -146,6 +147,7 @@ export class SocietySystem {
     this.#people = snapshot.people;
     this.#tribes = snapshot.tribes;
     this.#tribeNumber = snapshot.tribeNumber;
+    this.#heldIds.clear();
     this.#peopleById.clear();
     this.#tribesById.clear();
 
@@ -266,6 +268,24 @@ export class SocietySystem {
     });
 
     return tribe;
+  }
+
+  hold(person: Person): void {
+    this.#heldIds.add(person.id);
+    this.#forgetJob(person);
+    person.pose = "idle";
+    person.speed = 0;
+    placeMover(person.mover, person.mover.x, person.mover.z);
+  }
+
+  setDown(person: Person, x: number, z: number): void {
+    this.#heldIds.delete(person.id);
+    this.#forgetJob(person);
+    placeMover(person.mover, x, z);
+  }
+
+  isHeld(person: Person): boolean {
+    return this.#heldIds.has(person.id);
   }
 
   kill(person: Person, cause: DeathCause, account: DeathAccount | null = null): void {
@@ -435,6 +455,10 @@ export class SocietySystem {
   }
 
   #updatePerson(person: Person, seconds: number, days: number, context: SocietyContext): void {
+    if (this.isHeld(person)) {
+      return;
+    }
+
     if (!person.isAlive) {
       person.deathSeconds += seconds;
       settleFall(person);
@@ -471,6 +495,18 @@ export class SocietySystem {
     }
 
     person.phase += seconds * person.speed * POSE_PHASE_RATE;
+  }
+
+  #forgetJob(person: Person): void {
+    const tribe = this.findTribe(person.tribeId);
+
+    if (tribe === null) {
+      person.job = null;
+
+      return;
+    }
+
+    dropJob(tribe, person);
   }
 
   #removeRemains(): void {
