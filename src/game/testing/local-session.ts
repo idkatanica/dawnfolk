@@ -1,5 +1,8 @@
-import type { GenerationProgress, WorldRequest } from "../../generation/generation-options.ts";
-import { DEFAULT_WORLD_REQUEST } from "../../generation/generation-options.ts";
+import {
+  DEFAULT_WORLD_REQUEST,
+  type GenerationProgress,
+  type WorldRequest,
+} from "../../generation/generation-options.ts";
 import type { SimulationCommand } from "../../simulation/commands.ts";
 import type { InitialWorld, SimulationFrame } from "../../simulation/frame.ts";
 import type { SavedWorldState } from "../../simulation/saved-world.ts";
