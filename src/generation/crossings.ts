@@ -6,7 +6,9 @@ import { isOnIsland } from "../world/coast.ts";
 import {
   type Crossing,
   type CrossingKind,
+  crossingDirection,
   crossingLength,
+  crossingMiddle,
   LOG_ROOT_BEHIND,
   type LogBridge,
   logDeckAt,
@@ -17,6 +19,7 @@ import { isWalkableGround, slopeAt } from "../world/footing.ts";
 import { isWaterCell, sampleHeight } from "../world/terrain-sampling.ts";
 import type { River, WaterFeatures } from "../world/water.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
+import { isNearLake, NO_CELL } from "./hydrology.ts";
 
 const SHORTEST_RIVER = 220;
 const SOURCE_MARGIN = 30;
@@ -55,7 +58,6 @@ const FORD_HIGHEST_BANK = 1.4;
 const FORD_LEVEL_SPREAD = 1;
 const SITE_SALT = 63.1;
 const SEED_SALT = 17.9;
-const NO_LAKE = -1;
 
 const HOMELINESS: Readonly<Record<number, number>> = {
   [Biome.Alpine]: 0,
@@ -310,7 +312,7 @@ function nearestAlong(course: RiverCourse, point: Point): { along: number; dista
 function isRiverWater(survey: CrossingSurvey, cell: number): boolean {
   const { lakeIds, terrain } = survey;
 
-  return isWaterCell(terrain, cell) && terrain.riverStrength[cell] > 0 && lakeIds[cell] === NO_LAKE;
+  return isWaterCell(terrain, cell) && terrain.riverStrength[cell] > 0 && lakeIds[cell] === NO_CELL;
 }
 
 function crossWater(survey: CrossingSurvey, center: Point, directionX: number, directionZ: number): WaterSpan | null {
@@ -605,12 +607,12 @@ function stillStands(survey: CrossingSurvey, crossing: Crossing): boolean {
 }
 
 function remeasure(survey: CrossingSurvey, crossing: Crossing): Crossing | null {
-  const length = Math.max(1e-6, crossingLength(crossing));
+  const direction = crossingDirection(crossing);
 
   const site = measureSite(survey, {
-    center: { x: (crossing.startX + crossing.endX) / 2, z: (crossing.startZ + crossing.endZ) / 2 },
-    directionX: (crossing.endX - crossing.startX) / length,
-    directionZ: (crossing.endZ - crossing.startZ) / length,
+    center: crossingMiddle(crossing),
+    directionX: direction.x,
+    directionZ: direction.z,
     limits: LENIENT_BANKS,
   });
 
@@ -715,8 +717,7 @@ class CrossingPlanner {
     const anchors: number[] = [];
 
     for (const crossing of this.placed) {
-      const middle = { x: (crossing.startX + crossing.endX) / 2, z: (crossing.startZ + crossing.endZ) / 2 };
-      const nearest = nearestAlong(course, middle);
+      const nearest = nearestAlong(course, crossingMiddle(crossing));
 
       if (nearest.distance < ON_RIVER) {
         anchors.push(nearest.along);
@@ -796,15 +797,14 @@ class CrossingPlanner {
       return false;
     }
 
-    return grid.cellsInRadius(point.x, point.z, LAKE_CLEARANCE).every((cell) => lakeIds[cell] === NO_LAKE);
+    return !isNearLake(grid, lakeIds, point.x, point.z, LAKE_CLEARANCE);
   }
 
   #isSpaced(point: Point, spacing: number): boolean {
     return this.placed.every((crossing) => {
-      const middleX = (crossing.startX + crossing.endX) / 2;
-      const middleZ = (crossing.startZ + crossing.endZ) / 2;
+      const middle = crossingMiddle(crossing);
 
-      return Math.hypot(middleX - point.x, middleZ - point.z) >= spacing;
+      return Math.hypot(middle.x - point.x, middle.z - point.z) >= spacing;
     });
   }
 }

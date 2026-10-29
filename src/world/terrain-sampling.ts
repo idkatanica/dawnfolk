@@ -7,6 +7,29 @@ export interface SampledTerrain {
   readonly waterSurface: Float32Array;
 }
 
+export interface CellLookup {
+  amountX: number;
+  amountZ: number;
+  column: number;
+  row: number;
+}
+
+const lookup: CellLookup = { amountX: 0, amountZ: 0, column: 0, row: 0 };
+
+export function lookUpCell(grid: WorldGrid, x: number, z: number, into: CellLookup): CellLookup {
+  const { cellsPerSide, cellSize, halfSize } = grid;
+
+  const gridX = clamp((x + halfSize) / cellSize - 0.5, 0, cellsPerSide - 1.001);
+  const gridZ = clamp((z + halfSize) / cellSize - 0.5, 0, cellsPerSide - 1.001);
+
+  into.column = Math.floor(gridX);
+  into.row = Math.floor(gridZ);
+  into.amountX = gridX - into.column;
+  into.amountZ = gridZ - into.row;
+
+  return into;
+}
+
 export function sampleCells(
   values: Float32Array,
   grid: WorldGrid,
@@ -15,18 +38,10 @@ export function sampleCells(
   stride: number,
   channel: number
 ): number {
-  const { cellsPerSide, cellSize, halfSize } = grid;
+  const { amountX, amountZ, column, row } = lookUpCell(grid, x, z, lookup);
 
-  const gridX = clamp((x + halfSize) / cellSize - 0.5, 0, cellsPerSide - 1.001);
-  const gridZ = clamp((z + halfSize) / cellSize - 0.5, 0, cellsPerSide - 1.001);
-
-  const column = Math.floor(gridX);
-  const row = Math.floor(gridZ);
-
-  const amountX = gridX - column;
-  const amountZ = gridZ - row;
   const first = grid.index(column, row) * stride + channel;
-  const below = first + cellsPerSide * stride;
+  const below = first + grid.cellsPerSide * stride;
 
   const near = values[first] * (1 - amountX) + values[first + stride] * amountX;
   const far = values[below] * (1 - amountX) + values[below + stride] * amountX;
@@ -56,38 +71,29 @@ export function sampleSurface(terrain: SampledTerrain, grid: WorldGrid, x: numbe
 }
 
 export function sampleWaterLevel(terrain: SampledTerrain, grid: WorldGrid, x: number, z: number): number {
-  const { cellsPerSide, cellSize, halfSize } = grid;
-
   if (!isWaterAtPoint(terrain, grid, x, z)) {
     return NO_WATER;
   }
 
-  const gridX = clamp((x + halfSize) / cellSize - 0.5, 0, cellsPerSide - 1.001);
-  const gridZ = clamp((z + halfSize) / cellSize - 0.5, 0, cellsPerSide - 1.001);
+  const { amountX, amountZ, column, row } = lookUpCell(grid, x, z, lookup);
 
-  const column = Math.floor(gridX);
-  const row = Math.floor(gridZ);
-
-  const amountX = gridX - column;
-  const amountZ = gridZ - row;
   const cell = grid.index(column, row);
-
-  const corners = [
-    { cell, weight: (1 - amountX) * (1 - amountZ) },
-    { cell: cell + 1, weight: amountX * (1 - amountZ) },
-    { cell: cell + cellsPerSide, weight: (1 - amountX) * amountZ },
-    { cell: cell + cellsPerSide + 1, weight: amountX * amountZ },
-  ];
+  const below = cell + grid.cellsPerSide;
 
   let level = 0;
   let weight = 0;
 
-  for (const corner of corners) {
-    if (isWaterCell(terrain, corner.cell)) {
-      level += terrain.waterSurface[corner.cell] * corner.weight;
-      weight += corner.weight;
+  function addCorner(corner: number, cornerWeight: number): void {
+    if (isWaterCell(terrain, corner)) {
+      level += terrain.waterSurface[corner] * cornerWeight;
+      weight += cornerWeight;
     }
   }
+
+  addCorner(cell, (1 - amountX) * (1 - amountZ));
+  addCorner(cell + 1, amountX * (1 - amountZ));
+  addCorner(below, (1 - amountX) * amountZ);
+  addCorner(below + 1, amountX * amountZ);
 
   return weight > 0 ? level / weight : NO_WATER;
 }
@@ -115,10 +121,9 @@ export function touchesWaterCell(terrain: SampledTerrain, grid: WorldGrid, cell:
   const row = grid.rowOf(cell);
 
   for (const offset of NEIGHBOR_OFFSETS) {
-    const neighborColumn = column + offset.column;
-    const neighborRow = row + offset.row;
+    const neighbor = grid.neighborIndex(column, row, offset);
 
-    if (grid.contains(neighborColumn, neighborRow) && isWaterCell(terrain, grid.index(neighborColumn, neighborRow))) {
+    if (neighbor >= 0 && isWaterCell(terrain, neighbor)) {
       return true;
     }
   }

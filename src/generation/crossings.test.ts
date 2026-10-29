@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, it as test } from "vitest";
 import { HOP_WIDTH, isBrookCell } from "../world/brooks.ts";
-import { type Crossing, crossingLength, crossingPointOf, isOnCrossing } from "../world/crossings.ts";
+import { type Crossing, crossingLength, crossingMiddle, crossingPointOf, isOnCrossing } from "../world/crossings.ts";
 import type { IslandShapeKind } from "../world/island-shape.ts";
 import { isWaterCell } from "../world/terrain-sampling.ts";
 import { createTerrainData } from "../world/testing/terrain-fixtures.ts";
@@ -32,10 +32,6 @@ function worldOf(shape: IslandShapeKind): GeneratedWorld {
   return generated;
 }
 
-function middleOf(crossing: Crossing): { x: number; z: number } {
-  return { x: (crossing.startX + crossing.endX) / 2, z: (crossing.startZ + crossing.endZ) / 2 };
-}
-
 function wideStretch(river: River): number {
   return river.points.slice(1).reduce((sum, point, index) => {
     const previous = river.points[index];
@@ -48,7 +44,7 @@ function positionsAlong(river: River, crossings: readonly Crossing[]): number[] 
   const positions: number[] = [];
 
   for (const crossing of crossings) {
-    const middle = middleOf(crossing);
+    const middle = crossingMiddle(crossing);
 
     let traveled = 0;
     let nearest = { along: 0, distance: Number.POSITIVE_INFINITY };
@@ -124,7 +120,7 @@ describe.each(["round", "square"] as const)("crossings on a %s island", (shape) 
 
     expect(narrow.filter((point) => isBrookCell(terrain, cellOf(point))).length / narrow.length).toBeGreaterThan(0.9);
     expect(wide.some((point) => isBrookCell(terrain, cellOf(point)))).toBe(false);
-    expect(crossings.some((crossing) => isBrookCell(terrain, cellOf(middleOf(crossing))))).toBe(false);
+    expect(crossings.some((crossing) => isBrookCell(terrain, cellOf(crossingMiddle(crossing))))).toBe(false);
   });
 
   test("space them five to eight hundred meters apart along a river", () => {
@@ -174,7 +170,7 @@ describe.each(["round", "square"] as const)("crossings on a %s island", (shape) 
     }
 
     for (const crossing of crossings) {
-      const middle = middleOf(crossing);
+      const middle = crossingMiddle(crossing);
 
       for (const waterfall of water.waterfalls) {
         expect(Math.hypot(waterfall.x - middle.x, waterfall.z - middle.z)).toBeGreaterThan(WATERFALL_CLEARANCE);

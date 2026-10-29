@@ -1,8 +1,10 @@
 import { clamp } from "../../shared/math.ts";
-import type { SampledTerrain } from "../../world/terrain-sampling.ts";
+import { type CellLookup, lookUpCell, type SampledTerrain } from "../../world/terrain-sampling.ts";
 import { NO_WATER } from "../../world/water.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { BANK_SINK, PRESENT_LEVEL } from "./shore-field.ts";
+
+const lookup: CellLookup = { amountX: 0, amountZ: 0, column: 0, row: 0 };
 
 const BESIDE = [
   [1, 0],
@@ -60,16 +62,7 @@ export function waterVertexLevel(terrain: SampledTerrain, grid: WorldGrid, colum
 }
 
 export function sampleWaterSurface(terrain: SampledTerrain, grid: WorldGrid, x: number, z: number): number {
-  const { cellsPerSide, cellSize, halfSize } = grid;
-
-  const gridX = clamp((x + halfSize) / cellSize - 0.5, 0, cellsPerSide - 1.001);
-  const gridZ = clamp((z + halfSize) / cellSize - 0.5, 0, cellsPerSide - 1.001);
-
-  const column = Math.floor(gridX);
-  const row = Math.floor(gridZ);
-
-  const amountX = gridX - column;
-  const amountZ = gridZ - row;
+  const { amountX, amountZ, column, row } = lookUpCell(grid, x, z, lookup);
 
   const corners = [
     waterVertexLevel(terrain, grid, column, row),

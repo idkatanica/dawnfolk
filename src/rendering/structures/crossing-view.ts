@@ -46,6 +46,7 @@ import { fractionalPart, smoothstep as smoothstepNumber } from "../../shared/mat
 import {
   type Crossing,
   crossingLength,
+  crossingMiddle,
   type Ford,
   fallenLog,
   type LogBridge,
@@ -344,10 +345,9 @@ export class CrossingView {
     const { bar, pieces } =
       crossing.kind === "ford" ? this.#fordOf(crossing) : { bar: [], pieces: [logPiece(crossing)] };
 
-    const middleX = (crossing.startX + crossing.endX) / 2;
-    const middleZ = (crossing.startZ + crossing.endZ) / 2;
+    const middle = crossingMiddle(crossing);
     const bounds = new Sphere(
-      new Vector3(middleX, this.#mirror.heightAt(middleX, middleZ), middleZ),
+      new Vector3(middle.x, this.#mirror.heightAt(middle.x, middle.z), middle.z),
       crossingLength(crossing) / 2 + 4
     );
 

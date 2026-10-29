@@ -1,5 +1,5 @@
 import { clamp } from "../shared/math.ts";
-import type { RandomSource } from "../shared/random.ts";
+import { type RandomSource, shuffle } from "../shared/random.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 import { analyzeDrainage, DEFAULT_HYDROLOGY, type DrainageBasins, NO_CELL } from "./hydrology.ts";
 
@@ -46,10 +46,7 @@ function riverSlope(basins: DrainageBasins, heights: Float32Array, grid: WorldGr
       break;
     }
 
-    length += Math.hypot(
-      grid.cellCenterX(receiver) - grid.cellCenterX(cell),
-      grid.cellCenterZ(receiver) - grid.cellCenterZ(cell)
-    );
+    length += grid.distanceBetween(cell, receiver);
     cell = receiver;
   }
 
@@ -65,18 +62,6 @@ function isClearOf(grid: WorldGrid, cell: number, ponds: readonly Pond[]): boole
   const z = grid.cellCenterZ(cell);
 
   return ponds.every((pond) => Math.hypot(pond.x - x, pond.z - z) > pond.radius);
-}
-
-function shuffled(cells: number[], random: RandomSource): number[] {
-  for (let index = cells.length - 1; index > 0; index -= 1) {
-    const swap = random.integer(0, index + 1);
-    const kept = cells[index];
-
-    cells[index] = cells[swap];
-    cells[swap] = kept;
-  }
-
-  return cells;
 }
 
 function feedingCells(basins: DrainageBasins, siting: LakeSiting): number[] {
@@ -107,7 +92,7 @@ function chooseSites(heights: Float32Array, basins: DrainageBasins, siting: Lake
   }));
   const sites: LakeSite[] = [];
 
-  for (const cell of shuffled(feedingCells(basins, siting), siting.random)) {
+  for (const cell of shuffle(siting.random, feedingCells(basins, siting))) {
     if (sites.length >= LAKE_COUNT) {
       break;
     }

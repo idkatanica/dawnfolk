@@ -74,6 +74,13 @@ export class WorldGrid {
     return column >= 0 && row >= 0 && column < this.cellsPerSide && row < this.cellsPerSide;
   }
 
+  neighborIndex(column: number, row: number, offset: Pick<NeighborOffset, "column" | "row">): number {
+    const neighborColumn = column + offset.column;
+    const neighborRow = row + offset.row;
+
+    return this.contains(neighborColumn, neighborRow) ? this.index(neighborColumn, neighborRow) : -1;
+  }
+
   columnAt(x: number): number {
     return Math.floor((x + this.halfSize) / this.cellSize);
   }
@@ -107,6 +114,10 @@ export class WorldGrid {
 
   cellCenterZ(cell: number): number {
     return this.centerZ(this.rowOf(cell));
+  }
+
+  distanceBetween(from: number, to: number): number {
+    return Math.hypot(this.cellCenterX(to) - this.cellCenterX(from), this.cellCenterZ(to) - this.cellCenterZ(from));
   }
 
   isInside(x: number, z: number, margin: number): boolean {

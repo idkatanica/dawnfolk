@@ -847,10 +847,7 @@ export class LandAreas {
       for (let hop = this.#hopStart[cell]; hop < this.#hopStart[cell + 1]; hop += 1) {
         const next = this.#hopTarget[hop];
 
-        const distance = Math.hypot(
-          grid.cellCenterX(next) - grid.cellCenterX(cell),
-          grid.cellCenterZ(next) - grid.cellCenterZ(cell)
-        );
+        const distance = grid.distanceBetween(cell, next);
 
         this.#reachCell(cell, next, goal, distance + HOP_COST);
       }

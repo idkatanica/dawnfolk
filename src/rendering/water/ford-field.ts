@@ -17,7 +17,7 @@ import {
 } from "three/tsl";
 import { type DataTexture, type Node, RedFormat, RGBAFormat } from "three/webgpu";
 import { distanceToSegment } from "../../shared/math.ts";
-import { type Crossing, crossingLength, type Ford } from "../../world/crossings.ts";
+import { type Crossing, crossingLength, crossingMiddle, type Ford } from "../../world/crossings.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { floatDataTexture } from "../data-textures.ts";
 import { cellAtNode } from "../terrain/height-sampling.ts";
@@ -124,10 +124,9 @@ export class FordField {
 
       this.#segmentData.set([ford.startX, ford.startZ, ford.endX, ford.endZ], slot * 4);
 
-      const middleX = (ford.startX + ford.endX) / 2;
-      const middleZ = (ford.startZ + ford.endZ) / 2;
+      const middle = crossingMiddle(ford);
 
-      for (const cell of grid.cellsInRadius(middleX, middleZ, fordLength / 2 + FORD_PATH_REACH + reach)) {
+      for (const cell of grid.cellsInRadius(middle.x, middle.z, fordLength / 2 + FORD_PATH_REACH + reach)) {
         if (distanceToSegment(grid.cellCenterX(cell), grid.cellCenterZ(cell), start, end) <= reach) {
           this.#cellData[cell] = slot;
         }

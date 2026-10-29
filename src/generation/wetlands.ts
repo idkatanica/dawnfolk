@@ -1,7 +1,6 @@
 import { smoothstep } from "../shared/math.ts";
 import { createNoiseSampler } from "../shared/noise.ts";
 import { createRandom } from "../shared/random.ts";
-import { slopeAt } from "../world/footing.ts";
 import { hasWater, type River, type RiverPoint } from "../world/water.ts";
 import { ORTHOGONAL_STEPS, type WorldGrid } from "../world/world-grid.ts";
 
@@ -39,7 +38,7 @@ const POOL_SPAN = 24;
 const POOL_THRESHOLD = 0.16;
 const POOL_WETNESS = 0.5;
 
-interface WetlandInputs {
+export interface WetlandInputs {
   coastDistance: Float32Array;
   desert: Float64Array;
   grid: WorldGrid;
@@ -247,14 +246,13 @@ function basinDepths(inputs: WetlandInputs): Float32Array {
   return surroundings.map((surrounding, cell) => surrounding - heights[cell]);
 }
 
-export function measureWetness(inputs: WetlandInputs): Float32Array {
+export function measureWetness(inputs: WetlandInputs, slopes: Float64Array): Float32Array {
   const { coastDistance, desert, grid, heights, waterSurface } = inputs;
 
   const noise = createNoiseSampler(createRandom(inputs.seed * 17 + 11));
   const lakes = reachFrom(grid, lakeSources(inputs));
   const rivers = reachFrom(grid, riverSources(inputs));
   const basins = basinDepths(inputs);
-  const slopes = Float64Array.from({ length: grid.cellCount }, (_, cell) => slopeAt(heights, grid, cell));
   const wetness = new Float32Array(grid.cellCount);
 
   for (let cell = 0; cell < grid.cellCount; cell += 1) {

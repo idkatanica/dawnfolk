@@ -2,6 +2,7 @@ import { clamp, hashToUnit } from "../shared/math.ts";
 import { sampleHeight } from "../world/terrain-sampling.ts";
 import type { River, RiverPoint, Spring } from "../world/water.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
+import { isNearLake } from "./hydrology.ts";
 import { pondFits } from "./ponds.ts";
 
 const CAVE_SLOPE = 0.35;
@@ -95,7 +96,7 @@ function slopeBehind(siting: SpringSiting, head: RiverPoint, direction: Directio
 function isFedByLake(siting: SpringSiting, head: RiverPoint): boolean {
   const { grid, lakeIds } = siting;
 
-  return grid.cellsInRadius(head.x, head.z, grid.cellSize * LAKE_REACH_CELLS).some((cell) => lakeIds[cell] >= 0);
+  return isNearLake(grid, lakeIds, head.x, head.z, grid.cellSize * LAKE_REACH_CELLS);
 }
 
 function pondRadius(site: SpringSite, threshold: number): number {

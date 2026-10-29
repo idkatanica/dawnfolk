@@ -84,3 +84,18 @@ export function createRandom(seed: number): RandomSource {
 export function randomFromUnitSeed(seed: number, salt: number): RandomSource {
   return createRandom(Math.floor(seed * 2_147_483_647) + salt);
 }
+
+export function shuffle<Items extends { [index: number]: unknown; length: number }>(
+  random: RandomSource,
+  items: Items
+): Items {
+  for (let index = items.length - 1; index > 0; index -= 1) {
+    const swap = random.integer(0, index + 1);
+    const kept = items[index];
+
+    items[index] = items[swap];
+    items[swap] = kept;
+  }
+
+  return items;
+}
