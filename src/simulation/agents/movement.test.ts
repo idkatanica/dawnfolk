@@ -221,7 +221,7 @@ describe("movement", () => {
     for (let elapsed = 0; elapsed < 90 && !hasArrived(mover); elapsed += STEP_SECONDS) {
       moveAlong(mover, STEP_SECONDS, 3, world, navigation);
 
-      if (world.isObstructedAt(mover.x, mover.z)) {
+      if (world.isObstructed(world.grid.cellAt(mover.x, mover.z))) {
         enteredRuin = true;
       }
     }

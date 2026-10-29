@@ -69,10 +69,6 @@ export class NavigationGrid {
     return true;
   }
 
-  isPassable(x: number, z: number): boolean {
-    return this.#world.isWalkableAt(x, z);
-  }
-
   landingSpot(point: Waypoint): Waypoint {
     const world = this.#world;
 
@@ -198,8 +194,16 @@ export class NavigationGrid {
 
     for (let next = 0; next < length; next += 1) {
       const cell = queue[next];
+      const column = grid.columnOf(cell);
+      const row = grid.rowOf(cell);
 
-      for (const neighbor of this.#neighborsOf(cell)) {
+      for (const offset of NEIGHBOR_OFFSETS) {
+        if (!grid.contains(column + offset.column, row + offset.row)) {
+          continue;
+        }
+
+        const neighbor = grid.index(column + offset.column, row + offset.row);
+
         if (steps[neighbor] === NO_SHORE) {
           steps[neighbor] = steps[cell] + 1;
           this.#leadsToSteepShore[neighbor] = leadsToSteepShore;
@@ -211,34 +215,42 @@ export class NavigationGrid {
   }
 
   #bordersOn(cell: number, isShore: (cell: number) => boolean): boolean {
-    return this.#neighborsOf(cell).some((neighbor) => isShore(neighbor));
-  }
-
-  #neighborsOf(cell: number): number[] {
     const { grid } = this.#world;
 
     const column = grid.columnOf(cell);
     const row = grid.rowOf(cell);
-    const neighbors: number[] = [];
 
     for (const offset of NEIGHBOR_OFFSETS) {
-      if (grid.contains(column + offset.column, row + offset.row)) {
-        neighbors.push(grid.index(column + offset.column, row + offset.row));
+      if (
+        grid.contains(column + offset.column, row + offset.row) &&
+        isShore(grid.index(column + offset.column, row + offset.row))
+      ) {
+        return true;
       }
     }
 
-    return neighbors;
+    return false;
   }
 
   #nearestStepAshore(cell: number, x: number, z: number): Waypoint | null {
     const world = this.#world;
 
+    const { grid } = world;
+
     const closer = this.#shoreSteps[cell] - 1;
+    const column = grid.columnOf(cell);
+    const row = grid.rowOf(cell);
 
     let nearest: Waypoint | null = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
 
-    for (const neighbor of this.#neighborsOf(cell)) {
+    for (const offset of NEIGHBOR_OFFSETS) {
+      if (!grid.contains(column + offset.column, row + offset.row)) {
+        continue;
+      }
+
+      const neighbor = grid.index(column + offset.column, row + offset.row);
+
       if (!this.#isStepAshore(neighbor, closer, this.#leadsToSteepShore[cell] === 1)) {
         continue;
       }

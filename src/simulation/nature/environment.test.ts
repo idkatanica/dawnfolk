@@ -1,15 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { Calendar } from "./calendar.ts";
+import { calendarAt } from "../testing/test-calendar.ts";
 import { describeEnvironment, droughtLevel } from "./environment.ts";
 import { WeatherSystem } from "./weather.ts";
-
-function calendarAt(day: number): Calendar {
-  const calendar = new Calendar();
-
-  calendar.day = day;
-
-  return calendar;
-}
 
 describe("drought", () => {
   it("is highest in a dry summer and drops with rain", () => {

@@ -1,7 +1,7 @@
 import { refreshCrossings } from "../../generation/crossings.ts";
 import { computeHydrology, RESHAPED_LAND_HYDROLOGY } from "../../generation/hydrology.ts";
 import { applySparse, type SparseValues, sparseDifference } from "../../shared/sparse-values.ts";
-import type { CellRegion } from "../../world/change-tracking.ts";
+import { type CellRegion, regionOfCells } from "../../world/change-tracking.ts";
 import { hasWater, type Lake, NO_WATER } from "../../world/water.ts";
 import { NEIGHBOR_OFFSETS } from "../../world/world-grid.ts";
 import type { WorldState } from "./world-state.ts";
@@ -255,23 +255,11 @@ export class WaterRecomputation {
   }
 
   #regionOf(lakes: readonly RisingLake[]): CellRegion {
-    const { grid } = this.#world;
-
-    const region = { firstColumn: grid.cellsPerSide, firstRow: grid.cellsPerSide, lastColumn: 0, lastRow: 0 };
-
-    for (const lake of lakes) {
-      for (const cell of lake.cells) {
-        const column = grid.columnOf(cell);
-        const row = grid.rowOf(cell);
-
-        region.firstColumn = Math.min(region.firstColumn, column);
-        region.firstRow = Math.min(region.firstRow, row);
-        region.lastColumn = Math.max(region.lastColumn, column);
-        region.lastRow = Math.max(region.lastRow, row);
-      }
-    }
-
-    return region;
+    return regionOfCells(
+      this.#world.grid,
+      lakes.flatMap((lake) => lake.cells),
+      0
+    );
   }
 
   #fill(realSeconds: number): WaterChange {

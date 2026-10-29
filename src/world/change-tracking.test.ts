@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { RegionChangeTracker, RowChangeTracker } from "./change-tracking.ts";
+import { RegionChangeTracker, RowChangeTracker, regionOfCells } from "./change-tracking.ts";
+import { WorldGrid } from "./world-grid.ts";
 
 describe("row change tracker", () => {
   it("reports nothing until a row changes", () => {
@@ -42,5 +43,22 @@ describe("region change tracker", () => {
 
     expect(tracker.takeRegion()).toEqual({ firstColumn: 1, firstRow: 4, lastColumn: 6, lastRow: 9 });
     expect(tracker.takeRegion()).toBeNull();
+  });
+});
+
+describe("region of cells", () => {
+  const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 16 });
+
+  it("bounds the cells and grows the box by the margin", () => {
+    const cells = [grid.index(4, 6), grid.index(9, 3), grid.index(5, 11)];
+
+    expect(regionOfCells(grid, cells, 0)).toEqual({ firstColumn: 4, firstRow: 3, lastColumn: 9, lastRow: 11 });
+    expect(regionOfCells(grid, cells, 1)).toEqual({ firstColumn: 3, firstRow: 2, lastColumn: 10, lastRow: 12 });
+  });
+
+  it("keeps the grown box inside the grid", () => {
+    const cells = [grid.index(0, 15), grid.index(15, 0)];
+
+    expect(regionOfCells(grid, cells, 1)).toEqual({ firstColumn: 0, firstRow: 0, lastColumn: 15, lastRow: 15 });
   });
 });

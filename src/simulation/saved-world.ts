@@ -118,15 +118,7 @@ export const savedWorldStateSchema = z.object({
   version: z.literal(SAVE_VERSION),
 });
 
-export interface WorldSummary {
-  day: number;
-  eraIndex: number;
-  eraName: string;
-  population: number;
-  seasonName: string;
-  tribeCount: number;
-  year: number;
-}
+export type WorldSummary = z.output<typeof worldSummarySchema>;
 
 export interface SavedWorldState {
   plantSpecies: readonly string[];

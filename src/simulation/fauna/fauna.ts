@@ -476,7 +476,7 @@ export class FaunaSystem {
   }
 
   #canStand(kind: AnimalKind, x: number, z: number): boolean {
-    if (!this.#navigation.isPassable(x, z)) {
+    if (!this.#world.isWalkableAt(x, z)) {
       return false;
     }
 
@@ -547,7 +547,7 @@ export class FaunaSystem {
   #suitableKind(x: number, z: number, random: RandomSource): AnimalKind | null {
     const cell = this.#world.grid.cellAt(x, z);
 
-    if (cell < 0 || !this.#navigation.isPassable(x, z)) {
+    if (cell < 0 || !this.#world.isWalkableAt(x, z)) {
       return null;
     }
 
@@ -636,7 +636,7 @@ export class FaunaSystem {
 
       const height = this.#groundHeight(candidate);
 
-      if (this.#navigation.isPassable(candidate.x, candidate.z) && height > bestHeight) {
+      if (this.#world.isWalkableAt(candidate.x, candidate.z) && height > bestHeight) {
         best = candidate;
         bestHeight = height;
       }

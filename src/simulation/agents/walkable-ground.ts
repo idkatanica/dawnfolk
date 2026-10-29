@@ -15,7 +15,7 @@ export function pointInsideCell(world: WorldState, cell: number, x: number, z: n
   return { x: clamp(x, centerX - reach, centerX + reach), z: clamp(z, centerZ - reach, centerZ + reach) };
 }
 
-function isDryFooting(world: WorldState, cell: number): boolean {
+export function isDryFooting(world: WorldState, cell: number): boolean {
   return world.isWalkable(cell) && !world.touchesWater(cell);
 }
 
@@ -36,7 +36,7 @@ export function dryStandSpot(world: WorldState, target: Waypoint, standOff: numb
   return null;
 }
 
-function nearestSpotWhere(
+export function nearestSpotWhere(
   world: WorldState,
   point: Waypoint,
   searchRadius: number,

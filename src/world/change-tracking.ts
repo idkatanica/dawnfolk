@@ -1,3 +1,5 @@
+import type { WorldGrid } from "./world-grid.ts";
+
 export interface RowRun {
   firstRow: number;
   rowCount: number;
@@ -17,6 +19,32 @@ export function regionsOverlap(first: CellRegion, second: CellRegion): boolean {
     first.firstRow <= second.lastRow &&
     second.firstRow <= first.lastRow
   );
+}
+
+export function regionOfCells(grid: WorldGrid, cells: Iterable<number>, margin: number): CellRegion {
+  let firstColumn = grid.cellsPerSide;
+  let firstRow = grid.cellsPerSide;
+  let lastColumn = 0;
+  let lastRow = 0;
+
+  for (const cell of cells) {
+    const column = grid.columnOf(cell);
+    const row = grid.rowOf(cell);
+
+    firstColumn = Math.min(firstColumn, column);
+    firstRow = Math.min(firstRow, row);
+    lastColumn = Math.max(lastColumn, column);
+    lastRow = Math.max(lastRow, row);
+  }
+
+  const lastIndex = grid.cellsPerSide - 1;
+
+  return {
+    firstColumn: Math.max(0, firstColumn - margin),
+    firstRow: Math.max(0, firstRow - margin),
+    lastColumn: Math.min(lastIndex, lastColumn + margin),
+    lastRow: Math.min(lastIndex, lastRow + margin),
+  };
 }
 
 export class RowChangeTracker {
