@@ -13,7 +13,7 @@
 Install and run the game as in [Getting started](README.md#getting-started).
 `bun install` also installs the Git hooks through
 [Lefthook](https://lefthook.dev): pre-commit fixes the staged files with Biome,
-and pre-push runs `bun run typecheck` and `bun run test`.
+and pre-push runs `bun run typecheck`, `bun run knip` and `bun run test`.
 
 ## Scripts and checks
 
