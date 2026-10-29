@@ -49,6 +49,7 @@ import type { BuildingView as BuildingSnapshot, SimulationFrame } from "../../si
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { geometryFromMeshData, InstanceBatch, toInstancedGeometry } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { markOutlined } from "../outlines.ts";
 import { coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import type { TribeLooks } from "../tribe-looks.ts";
@@ -271,6 +272,8 @@ function createBuildingMaterial(textures: TerrainTextures, grid: WorldGrid): Mes
   material.emissiveNode = vec3(1, 0.42, 0.12).mul(glow);
   material.roughnessNode = float(0.86);
 
+  markOutlined(material);
+
   return material;
 }
 
@@ -301,6 +304,8 @@ function createPlinthMaterial(textures: TerrainTextures, grid: WorldGrid): MeshS
 
   material.colorNode = mix(footing.mul(grain), CHARCOAL, damage.mul(0.6));
   material.roughnessNode = float(0.92);
+
+  markOutlined(material);
 
   return material;
 }

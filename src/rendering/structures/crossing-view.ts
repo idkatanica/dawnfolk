@@ -58,6 +58,7 @@ import {
 import { NO_WATER } from "../../world/water.ts";
 import { geometryFromMeshData, InstanceBatch, toInstancedGeometry } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { markOutlined } from "../outlines.ts";
 import { coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { assignSphereLevels, HIDDEN_LEVEL } from "../view-input.ts";
@@ -149,6 +150,8 @@ function createCrossingMaterial(textures: TerrainTextures, mirror: WorldMirror):
 
   material.colorNode = mix(mix(wet, WATERLINE_FOAM, waterline), SNOW, snowOnTop);
   material.roughnessNode = mix(float(0.88), float(0.55), wetness);
+
+  markOutlined(material);
 
   return material;
 }

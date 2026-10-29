@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useInterfaceStore } from "../features/interface/interface-store.ts";
 import { connectPowers } from "../features/powers/connect-powers.ts";
 import { connectAutosave } from "../features/saves/saves-store.ts";
 import { connectWorldStore } from "../features/world/world-store.ts";
@@ -9,6 +10,7 @@ export function useEngineBridges(): void {
   const engine = useEngine();
   const worldId = useLaunchStore((state) => state.worldId);
   const name = useLaunchStore((state) => state.launch.name);
+  const areOutlinesShown = useInterfaceStore((state) => state.areOutlinesShown);
 
   useEffect(() => {
     if (engine === null) {
@@ -33,4 +35,10 @@ export function useEngineBridges(): void {
 
     return connectAutosave(engine.session, { id: worldId, name });
   }, [engine, name, worldId]);
+
+  useEffect(() => {
+    if (engine !== null) {
+      engine.setOutlinesShown(areOutlinesShown);
+    }
+  }, [areOutlinesShown, engine]);
 }

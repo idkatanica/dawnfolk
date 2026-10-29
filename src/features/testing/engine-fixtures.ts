@@ -95,6 +95,7 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
     placeLabel,
     selectPower: vi.fn<(selection: PowerSelection | null) => void>(),
     session,
+    setOutlinesShown: vi.fn<(areShown: boolean) => void>(),
     stopFollowing,
     subscribeToRenders,
   };

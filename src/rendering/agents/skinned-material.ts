@@ -19,6 +19,7 @@ import {
 import { MeshStandardNodeMaterial, type Node } from "three/webgpu";
 import { SLOT_COLOR_TABLE } from "../../models/materials.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { markOutlined } from "../outlines.ts";
 import type { AgentPalette } from "./agent-palette.ts";
 import { colorIndexBySlot, colorTexel, type PaletteLayout, rootTexel, TEXELS_PER_BONE } from "./palette-layout.ts";
 
@@ -80,6 +81,8 @@ export function createSkinnedMaterial(palette: AgentPalette, layout: PaletteLayo
 
   material.colorNode = varying(color.mul(shade), "agentColor");
   material.roughnessNode = float(0.82);
+
+  markOutlined(material);
 
   return material;
 }

@@ -31,6 +31,7 @@ import { GROUND_CHANNELS, GroundChannel } from "../../world/agent-buffers.ts";
 import type { CellRegion, RowRun } from "../../world/change-tracking.ts";
 import { geometryFromMeshData, InstanceBatch } from "../instancing.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { markOutlined } from "../outlines.ts";
 import { FURROW_SPACING } from "../terrain/field-ground.ts";
 import { type FieldPlan, FurrowAxis } from "../terrain/field-plan.ts";
 import { assignSphereLevels, HIDDEN_LEVEL } from "../view-input.ts";
@@ -175,6 +176,8 @@ function createCropMaterial(weather: PlantWeather): MeshStandardNodeMaterial {
   material.colorNode = varying(color, "cropColor");
   material.roughnessNode = float(0.9);
 
+  markOutlined(material);
+
   return material;
 }
 
@@ -198,6 +201,8 @@ function createFenceMaterial(length: number): MeshStandardNodeMaterial {
 
   material.colorNode = varying(slotColorTable().element(slot).mul(shade), "fenceColor");
   material.roughnessNode = float(0.88);
+
+  markOutlined(material);
 
   return material;
 }

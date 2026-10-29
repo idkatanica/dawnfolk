@@ -3,9 +3,10 @@ import { QUALITY_LEVELS, type QualityLevel } from "../rendering/render-quality.t
 
 const QUALITY_KEY = "dawnfolk.quality";
 const LABELS_KEY = "dawnfolk.labels";
+const OUTLINES_KEY = "dawnfolk.outlines";
 
 const qualitySchema = z.enum(QUALITY_LEVELS);
-const labelsSchema = z.enum(["hidden", "shown"]);
+const visibilitySchema = z.enum(["hidden", "shown"]);
 
 function readStorage(key: string): string | null {
   try {
@@ -52,9 +53,17 @@ export function storeQuality(quality: QualityLevel): void {
 }
 
 export function storedLabelsShown(): boolean {
-  return readPreference(LABELS_KEY, labelsSchema, "label setting") !== "hidden";
+  return readPreference(LABELS_KEY, visibilitySchema, "label setting") !== "hidden";
 }
 
 export function storeLabelsShown(isShown: boolean): void {
   writePreference(LABELS_KEY, isShown ? "shown" : "hidden", "label setting");
+}
+
+export function storedOutlinesShown(): boolean {
+  return readPreference(OUTLINES_KEY, visibilitySchema, "outline setting") !== "hidden";
+}
+
+export function storeOutlinesShown(areShown: boolean): void {
+  writePreference(OUTLINES_KEY, areShown ? "shown" : "hidden", "outline setting");
 }

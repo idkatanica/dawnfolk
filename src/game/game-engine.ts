@@ -205,6 +205,11 @@ export class GameEngine implements EngineHandle {
     return this.#labels.place(x, z, lift, this.#viewport);
   }
 
+  setOutlinesShown(areShown: boolean): void {
+    this.#world.setOutlinesShown(areShown);
+    this.#pacer.markActivity(performance.now());
+  }
+
   subscribeToRenders(listener: () => void): () => void {
     this.#renderListeners.add(listener);
 

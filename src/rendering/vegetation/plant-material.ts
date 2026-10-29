@@ -29,6 +29,7 @@ import { clamp as clampNumber } from "../../shared/math.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
 import { type FireGlow, fireLightAt } from "../effects/fire-glow.ts";
 import { rotateAroundUp, slotColorTable } from "../node-helpers.ts";
+import { markOutlined } from "../outlines.ts";
 import { coarseGroundOffsetNode } from "../terrain/height-sampling.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
 import { burnGlow, charredColor, plantBurn } from "./plant-burning.ts";
@@ -208,6 +209,8 @@ export function createPlantMaterial({
   material.colorNode = mix(vertexColor, SNOW, snowOnTop);
   material.emissiveNode = vertexColor.mul(fireLight).mul(CROWN_FIRE_LIGHT).add(burning);
   material.roughnessNode = float(0.88);
+
+  markOutlined(material);
 
   return material;
 }

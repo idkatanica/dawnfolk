@@ -72,10 +72,23 @@ function QualityChoice() {
 function MapLabelsChoice() {
   const areLabelsShown = useInterfaceStore((state) => state.areLabelsShown);
   const setLabelsShown = useInterfaceStore((state) => state.setLabelsShown);
+  const areOutlinesShown = useInterfaceStore((state) => state.areOutlinesShown);
+  const setOutlinesShown = useInterfaceStore((state) => state.setOutlinesShown);
 
   return (
-    <SettingsGroup description="Tribe banners and the names of peaks and lakes over the island." title="Display">
-      <ToggleField isChecked={areLabelsShown} label="Map labels" onChange={setLabelsShown} />
+    <SettingsGroup description="What is drawn over the island and its life." title="Display">
+      <ToggleField
+        description="Tribe banners and the names of peaks and lakes."
+        isChecked={areLabelsShown}
+        label="Map labels"
+        onChange={setLabelsShown}
+      />
+      <ToggleField
+        description="A dark line around people, animals, plants and buildings."
+        isChecked={areOutlinesShown}
+        label="Outlines"
+        onChange={setOutlinesShown}
+      />
     </SettingsGroup>
   );
 }

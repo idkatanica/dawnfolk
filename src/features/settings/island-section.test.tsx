@@ -8,6 +8,7 @@ import { IslandSection } from "./island-section.tsx";
 
 const QUALITY_KEY = "dawnfolk.quality";
 const LABELS_KEY = "dawnfolk.labels";
+const OUTLINES_KEY = "dawnfolk.outlines";
 const WHOLE_NUMBER = /^\d+$/u;
 
 const initialLaunch = useLaunchStore.getState();
@@ -53,6 +54,25 @@ describe("island section", () => {
 
     await expect.element(labels).toBeChecked();
     expect(useInterfaceStore.getState().areLabelsShown).toBe(true);
+  });
+
+  it("turns the outlines off and on", async () => {
+    const screen = await render(<IslandSection />);
+
+    const outlines = screen.getByRole("switch", { name: "Outlines" });
+
+    await expect.element(outlines).toBeChecked();
+
+    await outlines.click();
+
+    await expect.element(outlines).not.toBeChecked();
+    expect(useInterfaceStore.getState().areOutlinesShown).toBe(false);
+    expect(localStorage.getItem(OUTLINES_KEY)).toBe("hidden");
+
+    await outlines.click();
+
+    await expect.element(outlines).toBeChecked();
+    expect(useInterfaceStore.getState().areOutlinesShown).toBe(true);
   });
 
   it("starts the seed field at the seed of the current world", async () => {

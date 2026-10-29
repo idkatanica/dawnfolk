@@ -189,6 +189,10 @@ export class WorldRenderer {
     this.#output = createRenderOutput(renderer, this.scene, camera, quality);
   }
 
+  setOutlinesShown(areShown: boolean): void {
+    this.#output.setOutlinesShown(areShown);
+  }
+
   render(view: RenderView): void {
     const { frame } = this.#mirror;
 
