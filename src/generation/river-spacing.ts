@@ -1,3 +1,4 @@
+import { isOnIsland } from "../world/coast.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 import {
   type DrainageBasins,
@@ -14,7 +15,14 @@ const LARGEST_SPACING = 65;
 const SPACING_CELLS = 1.5;
 const HEAD_CLEARANCE = 60;
 const NATURAL_APPROACH = 2;
-const SHORTEST_RIVER = 150;
+const SHORTEST_RIVER = 250;
+const CAPTURE_REACH = 350;
+const CAPTURE_DROP = 0.12;
+const CAPTURE_FACING = 0.5;
+const CAPTURE_BUMP = 8;
+const FLOW_LOOKAROUND = 3;
+const PARALLEL_REACH = 180;
+const PARALLEL_RUN = 400;
 
 export interface RiverLand {
   readonly basins: DrainageBasins;
@@ -24,8 +32,20 @@ export interface RiverLand {
 }
 
 interface Spacing extends RiverLand {
+  readonly nearbyOffsets: readonly NearbyOffset[];
   readonly owners: Int32Array;
   readonly reach: number;
+}
+
+interface NearbyOffset {
+  readonly column: number;
+  readonly distance: number;
+  readonly row: number;
+}
+
+interface Capture {
+  readonly connector: readonly number[];
+  readonly junction: number;
 }
 
 interface NearbyRiver {
@@ -176,6 +196,151 @@ function junctionFor(spacing: Spacing, cell: number): number {
   return lower.cell;
 }
 
+function flowDirection(grid: WorldGrid, cells: readonly number[], index: number): { x: number; z: number } {
+  const from = cells[Math.max(0, index - FLOW_LOOKAROUND)];
+  const to = cells[Math.min(cells.length - 1, index + FLOW_LOOKAROUND)];
+
+  const x = grid.cellCenterX(to) - grid.cellCenterX(from);
+  const z = grid.cellCenterZ(to) - grid.cellCenterZ(from);
+  const length = Math.max(1e-6, Math.hypot(x, z));
+
+  return { x: x / length, z: z / length };
+}
+
+function connectorCells(grid: WorldGrid, from: number, to: number, direction: { x: number; z: number }): number[] {
+  const startX = grid.cellCenterX(from);
+  const startZ = grid.cellCenterZ(from);
+  const endX = grid.cellCenterX(to);
+  const endZ = grid.cellCenterZ(to);
+  const lead = Math.hypot(endX - startX, endZ - startZ) / 2;
+  const controlX = startX + direction.x * lead;
+  const controlZ = startZ + direction.z * lead;
+  const steps = Math.ceil((4 * lead) / grid.cellSize);
+
+  const cells: number[] = [];
+
+  for (let step = 1; step < steps; step += 1) {
+    const along = step / steps;
+    const before = (1 - along) * (1 - along);
+    const middle = 2 * along * (1 - along);
+    const after = along * along;
+    const cell = grid.cellAt(
+      before * startX + middle * controlX + after * endX,
+      before * startZ + middle * controlZ + after * endZ
+    );
+
+    if (cell !== from && cell !== to && cell !== cells.at(-1)) {
+      cells.push(cell);
+    }
+  }
+
+  return cells;
+}
+
+function isConnectorClear(spacing: Spacing, connector: readonly number[], from: number, to: number): boolean {
+  const { basins, coastDistance, heights, owners } = spacing;
+
+  const drop = heights[from] - heights[to];
+
+  return connector.every((cell, index) => {
+    const expected = heights[from] - (drop * (index + 1)) / (connector.length + 1);
+
+    return (
+      owners[cell] === NO_CELL &&
+      basins.lakeIds[cell] === NO_CELL &&
+      isOnIsland(coastDistance, cell) &&
+      heights[cell] <= expected + CAPTURE_BUMP &&
+      !hasRiverWithin(spacing, cell, SMALLEST_SPACING, owners[to])
+    );
+  });
+}
+
+function byDistance(first: NearbyOffset, second: NearbyOffset): number {
+  return first.distance - second.distance;
+}
+
+function offsetsWithin(grid: WorldGrid, meters: number): NearbyOffset[] {
+  const reach = Math.ceil(meters / grid.cellSize);
+  const offsets: NearbyOffset[] = [];
+
+  for (let row = -reach; row <= reach; row += 1) {
+    for (let column = -reach; column <= reach; column += 1) {
+      const distance = Math.hypot(column, row) * grid.cellSize;
+
+      if (distance > 0 && distance <= meters) {
+        offsets.push({ column, distance, row });
+      }
+    }
+  }
+
+  return offsets.sort(byDistance);
+}
+
+function riverCellAt(spacing: Spacing, cell: number, offset: NearbyOffset): number {
+  const { grid, owners } = spacing;
+
+  const column = grid.columnOf(cell) + offset.column;
+  const row = grid.rowOf(cell) + offset.row;
+
+  if (!grid.contains(column, row)) {
+    return NO_CELL;
+  }
+
+  const other = grid.index(column, row);
+
+  return owners[other] === NO_CELL ? NO_CELL : other;
+}
+
+function captureFor(spacing: Spacing, cells: readonly number[], index: number): Capture | null {
+  const { grid, heights, nearbyOffsets, owners } = spacing;
+
+  const cell = cells[index];
+  const direction = flowDirection(grid, cells, index);
+
+  for (const offset of nearbyOffsets) {
+    const other = riverCellAt(spacing, cell, offset);
+
+    if (other === NO_CELL) {
+      continue;
+    }
+
+    const facing = ((offset.column * direction.x + offset.row * direction.z) * grid.cellSize) / offset.distance;
+
+    if (facing < CAPTURE_FACING || heights[cell] - heights[other] < CAPTURE_DROP * offset.distance) {
+      continue;
+    }
+
+    const connector = connectorCells(grid, cell, other, direction);
+
+    if (
+      isConnectorClear(spacing, connector, cell, other) &&
+      !hasRiverWithin(spacing, other, SMALLEST_SPACING, owners[other])
+    ) {
+      return { connector, junction: other };
+    }
+  }
+
+  return null;
+}
+
+function hasRiverWithin(spacing: Spacing, cell: number, meters: number, allowedOwner = NO_CELL): boolean {
+  const { nearbyOffsets, owners } = spacing;
+
+  for (const offset of nearbyOffsets) {
+    if (offset.distance > meters) {
+      return false;
+    }
+
+    const other = riverCellAt(spacing, cell, offset);
+
+    if (other !== NO_CELL && owners[other] !== allowedOwner) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function spacedChain(spacing: Spacing, chain: RiverChain): RiverChain | null {
   const followed = endAtCoast(spacing, followToRiver(spacing, chain));
 
@@ -195,9 +360,37 @@ function spacedChain(spacing: Spacing, chain: RiverChain): RiverChain | null {
     if (junction !== NO_CELL) {
       return { cells: followed.cells.slice(head, index + 1), joinsCell: junction, mouthReceiver: junction };
     }
+
+    const capture = captureFor(spacing, followed.cells, index);
+
+    if (capture !== null) {
+      return {
+        cells: [...followed.cells.slice(head, index + 1), ...capture.connector],
+        joinsCell: capture.junction,
+        mouthReceiver: capture.junction,
+      };
+    }
   }
 
   return { ...followed, cells: followed.cells.slice(head) };
+}
+
+function runsBesideRiver(spacing: Spacing, chain: RiverChain): boolean {
+  const { grid } = spacing;
+
+  let run = 0;
+
+  for (const [index, cell] of chain.cells.entries()) {
+    const isBeside = hasRiverWithin(spacing, cell, PARALLEL_REACH);
+
+    run = isBeside && index > 0 ? run + grid.distanceBetween(chain.cells[index - 1], cell) : 0;
+
+    if (run >= PARALLEL_RUN) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function isFedByLake(spacing: Spacing, chain: RiverChain): boolean {
@@ -241,6 +434,7 @@ export function spaceRiverChains(land: RiverLand, chains: readonly RiverChain[])
 
   const spacing: Spacing = {
     ...land,
+    nearbyOffsets: offsetsWithin(grid, Math.max(CAPTURE_REACH, PARALLEL_REACH)),
     owners: new Int32Array(grid.cellCount).fill(NO_CELL),
     reach: Math.max(LARGEST_SPACING, HEAD_CLEARANCE, grid.cellSize * SPACING_CELLS),
   };
@@ -250,7 +444,7 @@ export function spaceRiverChains(land: RiverLand, chains: readonly RiverChain[])
   for (const chain of [...chains].sort(byMouthFlow(basins))) {
     const kept = spacedChain(spacing, chain);
 
-    if (kept === null || !isLongEnough(spacing, kept)) {
+    if (kept === null || !isLongEnough(spacing, kept) || runsBesideRiver(spacing, kept)) {
       continue;
     }
 

@@ -1,4 +1,4 @@
-import { clamp, saturate, smoothstep } from "../shared/math.ts";
+import { clamp, hashToUnit, saturate, smoothstep } from "../shared/math.ts";
 import { MinHeap } from "../shared/min-heap.ts";
 import { isOnIsland } from "../world/coast.ts";
 import {
@@ -39,6 +39,10 @@ const LIFT_ALLOWANCE = 0.3;
 const FLOW_REACH = 15;
 const PINCH_PASSES = 2;
 const PINCHED_DEPTH = 0.6;
+const WANDER_SLOPE_SHARE = 0.65;
+const WANDER_SALT = 61.7;
+const WANDER_STEP = 10;
+const WANDER_CHANCE_SALT = 29.3;
 const OPPOSITE_SIDES = [
   [0, 1],
   [1, 0],
@@ -59,7 +63,7 @@ export const DEFAULT_HYDROLOGY: HydrologyOptions = {
   lakeMinimumDepth: 1.6,
   riverBasinMinimumArea: Number.POSITIVE_INFINITY,
   riverBasinMinimumDepth: 0.6,
-  riverCatchmentArea: 150_000,
+  riverCatchmentArea: 200_000,
 };
 
 export const RESHAPED_LAND_HYDROLOGY: HydrologyOptions = { ...DEFAULT_HYDROLOGY, riverBasinMinimumArea: 500 };
@@ -179,6 +183,56 @@ export function touchesOffIsland(grid: WorldGrid, coastDistance: Float32Array, c
   return false;
 }
 
+function wanderingReceiver(grid: WorldGrid, filled: Float32Array, cell: number): number {
+  const column = grid.columnOf(cell);
+  const row = grid.rowOf(cell);
+  const level = filled[cell];
+
+  const slopes = NEIGHBOR_OFFSETS.map((offset) => {
+    const neighbor = grid.neighborIndex(column, row, offset);
+
+    return neighbor < 0 ? 0 : Math.max(0, (level - filled[neighbor]) / offset.distance);
+  });
+
+  const steepest = Math.max(...slopes);
+  const weights = slopes.map((slope) => Math.max(0, slope - WANDER_SLOPE_SHARE * steepest));
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+
+  if (total <= 0) {
+    return NO_CELL;
+  }
+
+  let pick = hashToUnit(column, row, WANDER_SALT) * total;
+
+  for (const [index, offset] of NEIGHBOR_OFFSETS.entries()) {
+    pick -= weights[index];
+
+    if (weights[index] > 0 && pick <= 0) {
+      return grid.neighborIndex(column, row, offset);
+    }
+  }
+
+  return NO_CELL;
+}
+
+function wanderReceivers(grid: WorldGrid, heights: Float32Array, filled: Float32Array, receivers: Int32Array): void {
+  const wanderChance = Math.min(1, WANDER_STEP / grid.cellSize);
+
+  for (let cell = 0; cell < grid.cellCount; cell += 1) {
+    const isWandering = hashToUnit(grid.columnOf(cell), grid.rowOf(cell), WANDER_CHANCE_SALT) < wanderChance;
+
+    if (receivers[cell] === NO_CELL || filled[cell] > heights[cell] || !isWandering) {
+      continue;
+    }
+
+    const receiver = wanderingReceiver(grid, filled, cell);
+
+    if (receiver !== NO_CELL) {
+      receivers[cell] = receiver;
+    }
+  }
+}
+
 function fillDepressions(heights: Float32Array, grid: WorldGrid, coastDistance: Float32Array): DrainageNetwork {
   const size = grid.cellsPerSide;
   const filled = Float32Array.from(heights);
@@ -239,6 +293,8 @@ function fillDepressions(heights: Float32Array, grid: WorldGrid, coastDistance: 
       heap.push(neighbor, neighborLevel);
     }
   }
+
+  wanderReceivers(grid, heights, filled, receivers);
 
   const accumulation = new Float32Array(grid.cellCount).fill(1);
 
@@ -478,20 +534,16 @@ export function riverWidthFor(flow: number, threshold: number): number {
   return riverWidthOfStrength(riverStrengthFor(flow, threshold));
 }
 
-function riverPointFor(
-  grid: WorldGrid,
-  heights: Float32Array,
-  network: DrainageNetwork,
-  cell: number,
-  threshold: number
-): RiverPoint {
-  const flow = network.accumulation[cell];
+function riverPointFor(land: RiverLand, cell: number, flow: number): RiverPoint {
+  const { basins, grid, heights } = land;
+
+  const threshold = basins.riverThreshold;
   const strength = riverStrengthFor(flow, threshold);
 
   return {
     depth: Math.min(0.8 + 0.42 * strength, 3.2),
     flow,
-    surface: channelGround(heights, network, cell) - 0.3,
+    surface: channelGround(heights, basins.network, cell) - 0.3,
     width: riverWidthOfStrength(strength),
     x: grid.cellCenterX(cell),
     z: grid.cellCenterZ(cell),
@@ -499,7 +551,7 @@ function riverPointFor(
 }
 
 function buildRivers(land: RiverLand, chains: readonly RiverChain[]): River[] {
-  const { basins, grid, heights } = land;
+  const { basins, grid } = land;
 
   const rivers: River[] = [];
   const surfaces = new Map<number, number>();
@@ -516,7 +568,13 @@ function buildRivers(land: RiverLand, chains: readonly RiverChain[]): River[] {
       continue;
     }
 
-    const points = cells.map((cell) => riverPointFor(grid, heights, basins.network, cell, basins.riverThreshold));
+    let flow = 0;
+
+    const points = cells.map((cell) => {
+      flow = Math.max(flow, basins.network.accumulation[cell]);
+
+      return riverPointFor(land, cell, flow);
+    });
     const lakeId = lakeAtMouth(basins.lakeIds, chain);
     const reachesEdge = chain.mouthReceiver === NO_CELL && chain.joinsCell === NO_CELL;
 
@@ -783,9 +841,22 @@ function carveChannel(targets: ChannelTargets, points: readonly RiverPoint[], co
   }
 }
 
+function matchStrengthUnderPoints(targets: ChannelTargets, points: readonly RiverPoint[]): void {
+  const { grid, riverStrength, threshold } = targets;
+
+  for (const point of points) {
+    const cell = grid.cellAt(point.x, point.z);
+
+    if (riverStrength[cell] > 0) {
+      riverStrength[cell] = Math.max(riverStrength[cell], riverCodeOfStrength(riverStrengthFor(point.flow, threshold)));
+    }
+  }
+}
+
 function carveRivers(targets: ChannelTargets, rivers: readonly River[]): void {
   for (const river of rivers) {
     carveChannel(targets, river.points, pastCoastSegment(targets, river));
+    matchStrengthUnderPoints(targets, river.points);
   }
 }
 

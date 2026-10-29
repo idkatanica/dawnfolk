@@ -12,6 +12,10 @@ const DEEPEST_BANK_LOWERING = 10;
 const UNTOUCHED_DISTANCE = 120;
 const RIDGE_HEIGHT = 10;
 const RIDGE_SPREAD = 2 * 30 * 30;
+const GULLY_OFFSET = 80;
+const GULLY_DEPTH = 4;
+const GULLY_SPREAD = 2 * 15 * 15;
+const PLANE_ASPECT = (25 * Math.PI) / 180;
 
 interface CarvedWater {
   readonly carved: Float32Array;
@@ -40,6 +44,23 @@ function carveValley(wallSlope: number, ridgeHeight = 0) {
   );
 
   return { carved, grid, result, uncarved };
+}
+
+function largestDeviation(points: readonly { x: number; z: number }[]): number {
+  const [start] = points;
+  const end = points.at(-1);
+
+  if (start === undefined || end === undefined) {
+    return 0;
+  }
+
+  const chordX = end.x - start.x;
+  const chordZ = end.z - start.z;
+  const chord = Math.max(1e-6, Math.hypot(chordX, chordZ));
+
+  return Math.max(
+    ...points.map((point) => Math.abs((point.x - start.x) * chordZ - (point.z - start.z) * chordX) / chord)
+  );
 }
 
 function riverLevelBeside(grid: WorldGrid, cell: number, water: CarvedWater): number {
@@ -170,6 +191,53 @@ describe("river carving", () => {
       for (let index = 1; index < levels.length; index += 1) {
         expect(levels[index]).toBeLessThanOrEqual(levels[index - 1] + 1e-3);
       }
+    }
+  });
+});
+
+describe("river network", () => {
+  function drainFlank() {
+    const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 96 });
+
+    const heights = shapeTerrain(grid, (x, z) => {
+      const gullies =
+        Math.exp(-((x - GULLY_OFFSET) ** 2) / GULLY_SPREAD) + 0.8 * Math.exp(-((x + GULLY_OFFSET) ** 2) / GULLY_SPREAD);
+
+      return 100 + 0.3 * (z + grid.halfSize) - GULLY_DEPTH * gullies;
+    });
+
+    const result = computeHydrology(heights, grid, new Float32Array(grid.cellCount), landEverywhere(grid.cellCount), {
+      ...DEFAULT_HYDROLOGY,
+      riverCatchmentArea: 40_000,
+    });
+
+    return { grid, rivers: result.features.rivers };
+  }
+
+  it("joins a stream running beside a larger one into it instead of keeping two parallel rivers", () => {
+    const { rivers } = drainFlank();
+
+    expect(rivers.length).toBeGreaterThan(1);
+    expect(rivers.filter((river) => river.reachesEdge)).toHaveLength(1);
+  });
+
+  it("gathers the water of an even slope into streams that bend off the grid lines", () => {
+    const grid = new WorldGrid({ cellSize: 10, cellsPerSide: 96 });
+
+    const heights = shapeTerrain(grid, (x, z) => 300 + 0.3 * (z * Math.cos(PLANE_ASPECT) + x * Math.sin(PLANE_ASPECT)));
+
+    const { rivers } = computeHydrology(
+      heights,
+      grid,
+      new Float32Array(grid.cellCount),
+      landEverywhere(grid.cellCount),
+      { ...DEFAULT_HYDROLOGY, riverCatchmentArea: 40_000 }
+    ).features;
+
+    expect(rivers.length).toBeGreaterThan(0);
+
+    for (const river of rivers) {
+      expect(largestDeviation(river.points)).toBeGreaterThan(5);
     }
   });
 });
