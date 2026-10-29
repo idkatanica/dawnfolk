@@ -156,6 +156,7 @@ export function plantFeet(pose: Pose): void {
   const backTilt = footTilt(pose, BACK_SIDE);
 
   bendLeg(pose, BACK_SIDE, angleOf(pose, sideBones(BACK_SIDE).shin, RotationAxis.Pitch), backTilt);
+
   const backLowest = lowestContact(pose, BACK_SIDE);
 
   reachDown(pose, FRONT_SIDE, backLowest, 0);
