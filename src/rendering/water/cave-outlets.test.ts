@@ -32,13 +32,22 @@ describe("CaveOutlets", () => {
 
     expect(slotAt(outlets, -60, -60)).toBe(1);
     expect(slotAt(outlets, -60, -45)).toBe(1);
-    expect(slotAt(outlets, -60, -100)).toBe(0);
-    expect(slotAt(outlets, -20, -60)).toBe(0);
+    expect(slotAt(outlets, -60, -120)).toBe(0);
+    expect(slotAt(outlets, 0, -60)).toBe(0);
     expect(slotAt(outlets, 60, 60)).toBe(0);
 
     outlets.rebuild([]);
 
     expect(slotAt(outlets, -60, -60)).toBe(0);
+  });
+
+  it("reaches two grid cells beside the mouth, where a river can still be wet", () => {
+    const outlets = new CaveOutlets(grid, SPRINGS);
+
+    expect(slotAt(outlets, -95, -55)).toBe(1);
+    expect(slotAt(outlets, -25, -55)).toBe(1);
+    expect(slotAt(outlets, -105, -55)).toBe(0);
+    expect(slotAt(outlets, -15, -55)).toBe(0);
   });
 
   it("opens each cave a little wider than its river", () => {
