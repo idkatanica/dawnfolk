@@ -7,6 +7,10 @@ const MINIMUM_DISTANCE = 4;
 const OPENING_DISTANCE_IN_HALF_SIZES = 1.6;
 const MINIMUM_PITCH = 0.08;
 const SMOOTHING_RATE = 9;
+const ARRIVAL_RATE = 0;
+const ARRIVAL_RATE_GROWTH = 1.2;
+const SKETCH_HEIGHT_SHARE = 0.72;
+const SKETCH_WIDTH_SHARE = 0.86;
 const CLEARANCE = 1.2;
 const SCREEN_CORNERS = [
   [-1, -1],
@@ -60,6 +64,7 @@ export class GodCamera {
   readonly #targetCopy = new Vector3();
   readonly #worldHalfSize: number;
   #follow: (() => GroundPoint | null) | null = null;
+  #rate = SMOOTHING_RATE;
   #shake = 0;
   #targetHeight: number;
 
@@ -108,6 +113,21 @@ export class GodCamera {
     this.#clampGoal();
     Object.assign(this.#current, this.#goal);
     this.#targetHeight = this.#heightAt(this.#current.targetX, this.#current.targetZ);
+    this.#place();
+  }
+
+  arriveFromAbove(): void {
+    const halfView = Math.tan((this.camera.fov * Math.PI) / 360);
+    const share = Math.min(SKETCH_HEIGHT_SHARE, SKETCH_WIDTH_SHARE * this.camera.aspect);
+
+    Object.assign(this.#current, {
+      distance: this.#worldHalfSize / (share * halfView),
+      pitch: MAXIMUM_PITCH,
+      targetX: 0,
+      targetZ: 0,
+      yaw: 0,
+    });
+    this.#rate = ARRIVAL_RATE;
     this.#place();
   }
 
@@ -186,7 +206,9 @@ export class GodCamera {
   update(seconds: number): void {
     this.#applyFollow();
 
-    const blend = 1 - Math.exp(-SMOOTHING_RATE * seconds);
+    this.#rate = Math.min(SMOOTHING_RATE, this.#rate + ARRIVAL_RATE_GROWTH * seconds);
+
+    const blend = 1 - Math.exp(-this.#rate * seconds);
     const current = this.#current;
     const goal = this.#goal;
 
