@@ -1,12 +1,12 @@
 import { MaterialSlot } from "../materials.ts";
 import type { MeshBuilder } from "../mesh/mesh-builder.ts";
 import { torus, tube } from "../mesh/shapes.ts";
-import { transformOf } from "../mesh/transforms.ts";
+import { SIDES, transformOf } from "../mesh/transforms.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
 import { forEachSide, headShape, headStroke } from "./human-anatomy.ts";
 import { type HumanDetail, trimSegments } from "./human-detail.ts";
 import { armStyle } from "./human-rigging.ts";
-import { HumanBone, SIDES } from "./human-skeleton.ts";
+import { HumanBone } from "./human-skeleton.ts";
 
 function addWarBands(builder: MeshBuilder, detail: HumanDetail): void {
   for (const side of SIDES) {

@@ -2,9 +2,13 @@ import { Euler, Matrix4, Quaternion, Vector3 } from "three";
 
 export const MIRROR_X = new Matrix4().makeScale(-1, 1, 1);
 
+export const SIDES: readonly Side[] = [1, -1];
+
 const UP = new Vector3(0, 1, 0);
 
 export type Triple = readonly [number, number, number];
+
+export type Side = -1 | 1;
 
 export interface TransformOptions {
   readonly position?: Triple;
@@ -44,7 +48,11 @@ export function combine(...transforms: readonly Matrix4[]): Matrix4 {
   return transforms.reduce((combined, transform) => combined.multiply(transform), new Matrix4());
 }
 
-export function sideMirror(side: -1 | 1): Matrix4 {
+export function onSide(point: Triple, side: Side): Triple {
+  return [point[0] * side, point[1], point[2]];
+}
+
+export function sideMirror(side: Side): Matrix4 {
   if (side === 1) {
     return new Matrix4();
   }

@@ -1,21 +1,16 @@
 import { Quaternion, Vector3 } from "three";
-import type { Triple } from "../mesh/transforms.ts";
+import { onSide, type Side, type Triple } from "../mesh/transforms.ts";
 import { degrees } from "../rig/curves.ts";
 import { ANGLES_PER_BONE, type Pose, RotationAxis } from "../rig/pose.ts";
-import { HUMAN_SKELETON, HumanBone, HumanJoint, onSide, otherSide, type Side, sideBones } from "./human-skeleton.ts";
+import { boneRotation } from "../rig/skeleton-poser.ts";
+import { HUMAN_SKELETON, HumanBone, HumanJoint, otherSide, sideBones } from "./human-skeleton.ts";
 
-const AXIS_X = new Vector3(1, 0, 0);
-const AXIS_Y = new Vector3(0, 1, 0);
-const AXIS_Z = new Vector3(0, 0, 1);
 const SOLVER_STEPS = 16;
 const DEEPEST_KNEE = degrees(150);
 const STEEPEST_BALL_OF_FOOT = degrees(40);
 const WIDEST_STEP_BACK = degrees(30);
 const FRONT_SIDE: Side = 1;
 const BACK_SIDE = otherSide(FRONT_SIDE);
-const pitch = new Quaternion();
-const roll = new Quaternion();
-const yaw = new Quaternion();
 const pelvisRotation = new Quaternion();
 const thighRotation = new Quaternion();
 const shinRotation = new Quaternion();
@@ -33,18 +28,6 @@ const LEG_CHAINS: Readonly<Record<Side, LegChain>> = { [-1]: legChain(-1), 1: le
 
 function angleOf(pose: Pose, bone: number, axis: number): number {
   return pose.angles[bone * ANGLES_PER_BONE + axis];
-}
-
-function rotationOf(pose: Pose, bone: number, isLimb: boolean, target: Quaternion): Quaternion {
-  pitch.setFromAxisAngle(AXIS_X, angleOf(pose, bone, RotationAxis.Pitch));
-  roll.setFromAxisAngle(AXIS_Z, angleOf(pose, bone, RotationAxis.Roll));
-  yaw.setFromAxisAngle(AXIS_Y, angleOf(pose, bone, RotationAxis.Yaw));
-
-  if (isLimb) {
-    return target.copy(pitch).multiply(roll).multiply(yaw);
-  }
-
-  return target.copy(roll).multiply(pitch).multiply(yaw);
 }
 
 function between(from: Triple, to: Triple): Vector3 {
@@ -68,14 +51,23 @@ function legChain(side: Side): LegChain {
   };
 }
 
+function rotateUpperLeg(pose: Pose, side: Side): void {
+  boneRotation(pose.angles, HumanBone.Pelvis, false, pelvisRotation);
+  boneRotation(pose.angles, sideBones(side).thigh, true, thighRotation);
+}
+
 function lowestContact(pose: Pose, side: Side): number {
+  rotateUpperLeg(pose, side);
+
+  return lowestBelowThigh(pose, side);
+}
+
+function lowestBelowThigh(pose: Pose, side: Side): number {
   const bones = sideBones(side);
   const chain = LEG_CHAINS[side];
 
-  rotationOf(pose, HumanBone.Pelvis, false, pelvisRotation);
-  rotationOf(pose, bones.thigh, true, thighRotation);
-  rotationOf(pose, bones.shin, true, shinRotation);
-  rotationOf(pose, bones.foot, true, footRotation);
+  boneRotation(pose.angles, bones.shin, true, shinRotation);
+  boneRotation(pose.angles, bones.foot, true, footRotation);
 
   let lowest = Number.POSITIVE_INFINITY;
 
@@ -141,12 +133,14 @@ function reachDown(pose: Pose, side: Side, target: number, tilt: number): void {
   );
   let deeper = Math.max(straighter, DEEPEST_KNEE);
 
+  rotateUpperLeg(pose, side);
+
   for (let step = 0; step < SOLVER_STEPS; step += 1) {
     const middle = (straighter + deeper) / 2;
 
     bendLeg(pose, side, middle, tilt);
 
-    if (lowestContact(pose, side) > target) {
+    if (lowestBelowThigh(pose, side) > target) {
       deeper = middle;
     } else {
       straighter = middle;
@@ -162,11 +156,13 @@ export function plantFeet(pose: Pose): void {
   const backTilt = footTilt(pose, BACK_SIDE);
 
   bendLeg(pose, BACK_SIDE, angleOf(pose, sideBones(BACK_SIDE).shin, RotationAxis.Pitch), backTilt);
-  reachDown(pose, FRONT_SIDE, lowestContact(pose, BACK_SIDE), 0);
+  const backLowest = lowestContact(pose, BACK_SIDE);
+
+  reachDown(pose, FRONT_SIDE, backLowest, 0);
 
   const frontLowest = lowestContact(pose, FRONT_SIDE);
 
-  if (frontLowest > lowestContact(pose, BACK_SIDE)) {
+  if (frontLowest > backLowest) {
     reachDown(pose, BACK_SIDE, frontLowest, backTilt);
   }
 }

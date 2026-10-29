@@ -1,10 +1,11 @@
 import type { FightPose } from "../../world/agent-poses.ts";
+import { SIDES, type Side } from "../mesh/transforms.ts";
 import { arc, cosineWave, degrees, type Keyframe, keyframes, wave } from "../rig/curves.ts";
 import { type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import type { HumanClip, HumanClipContext } from "./human-clips.ts";
 import { bendAnkle, bendElbow, bendKnee, bendTrunk, bendWrist, moveBody, swingArm, swingLeg } from "./human-joints.ts";
-import { HumanBone, SIDES, type Side } from "./human-skeleton.ts";
-import { CHARGING, MARCHING, runningLegs, walkingLegs } from "./leg-cycles.ts";
+import { HumanBone } from "./human-skeleton.ts";
+import { CHARGING, cycleLegs, MARCHING } from "./leg-cycles.ts";
 import { plantFeet } from "./planted-feet.ts";
 
 export const FIGHT_CLIPS: Readonly<Record<FightPose, HumanClip>> = {
@@ -190,7 +191,7 @@ function march(pose: Pose, phase: number, context: HumanClipContext): void {
   const swing = cosineWave(phase);
   const { armSwing } = context.motion;
 
-  walkingLegs(pose, phase, strideOf(context), MARCHING);
+  cycleLegs(pose, phase, strideOf(context), MARCHING);
   moveBody(pose, { forward: degrees(3), toLeft: degrees(2) * wave(phase), turnLeft: -degrees(4) * swing });
   bendTrunk(pose, HumanBone.Spine, { forward: degrees(2), turnLeft: degrees(4) * swing });
   bendTrunk(pose, HumanBone.Chest, { forward: -degrees(3), turnLeft: degrees(3) * swing });
@@ -202,7 +203,7 @@ function march(pose: Pose, phase: number, context: HumanClipContext): void {
 function charge(pose: Pose, phase: number, context: HumanClipContext): void {
   const swing = cosineWave(phase);
 
-  runningLegs(pose, phase, strideOf(context), CHARGING);
+  cycleLegs(pose, phase, strideOf(context), CHARGING);
   poseUpperBody(pose, SPEAR_LEVELED);
   moveBody(pose, { turnLeft: -degrees(5) * swing });
   bendTrunk(pose, HumanBone.Spine, { forward: degrees(4), turnLeft: degrees(4) * swing });

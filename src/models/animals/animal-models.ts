@@ -2,6 +2,7 @@ import type { AnimalKind } from "../../content/animals.ts";
 import type { AnimalPose } from "../../world/agent-poses.ts";
 import { MeshBuilder } from "../mesh/mesh-builder.ts";
 import type { MeshData } from "../mesh/mesh-data.ts";
+import { SIDES } from "../mesh/transforms.ts";
 import type { Pose } from "../rig/pose.ts";
 import type { Skeleton } from "../rig/skeleton.ts";
 import type { AnimalAppearance } from "./animal-appearance.ts";
@@ -18,7 +19,7 @@ import {
   moveMammothTrunk,
 } from "./mammoth-model.ts";
 import { type AnimalClipContext, applyAnimalClip, type ExtraMotion, type GaitStyle } from "./quadruped-clips.ts";
-import { createQuadrupedSkeleton, LEG_ENDS, LEG_SIDES, legBones, QuadrupedBone } from "./quadruped-skeleton.ts";
+import { createQuadrupedSkeleton, LEG_ENDS, legBones, QuadrupedBone } from "./quadruped-skeleton.ts";
 import { addRuff, addWolfBody, WOLF_FRAME, WOLF_GAIT } from "./wolf-model.ts";
 
 type PartBuilder = (builder: MeshBuilder, detail: AnimalDetail) => void;
@@ -113,7 +114,7 @@ export function animalBoneScales(kind: AnimalKind, appearance: AnimalAppearance)
   scales.fill(head, QuadrupedBone.Head * 3, QuadrupedBone.Head * 3 + 3);
 
   for (const end of LEG_ENDS) {
-    for (const side of LEG_SIDES) {
+    for (const side of SIDES) {
       const bones = legBones(end, side);
 
       for (const bone of [bones.upper, bones.lower, bones.hoof]) {

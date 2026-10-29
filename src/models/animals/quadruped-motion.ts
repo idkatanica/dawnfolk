@@ -1,6 +1,7 @@
+import { SIDES, type Side } from "../mesh/transforms.ts";
 import { cosineWave, degrees, pulse } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
-import { LEG_ENDS, LEG_SIDES, type LegEnd, type LegSide, legBones } from "./quadruped-skeleton.ts";
+import { LEG_ENDS, type LegEnd, legBones, type SideName, sideName } from "./quadruped-skeleton.ts";
 
 export const WALK_PHASES: LegPhases = {
   front: { left: 0.25, right: 0.75 },
@@ -15,19 +16,13 @@ export const GALLOP_PHASES: LegPhases = {
 export const LYING_SWING: Readonly<Record<LegEnd, number>> = { front: degrees(18), hind: -degrees(22) };
 export const LYING_SPREAD: Readonly<Record<SideName, number>> = { left: degrees(4), right: -degrees(10) };
 
-type SideName = "left" | "right";
-
 export type LegPhases = Readonly<Record<LegEnd, Readonly<Record<SideName, number>>>>;
-
-export function sideName(side: LegSide): SideName {
-  return side === 1 ? "left" : "right";
-}
 
 export function bendBone(pose: Pose, bone: number, forward: number, toLeft = 0, turnLeft = 0): void {
   pose.rotate(bone, forward, -toLeft, turnLeft);
 }
 
-export function moveLeg(pose: Pose, end: LegEnd, side: LegSide, swing: number, fold: number, outward = 0): void {
+export function moveLeg(pose: Pose, end: LegEnd, side: Side, swing: number, fold: number, outward = 0): void {
   const bones = legBones(end, side);
 
   pose.rotate(bones.upper, -swing, side * outward, 0);
@@ -45,7 +40,7 @@ export function moveLeg(pose: Pose, end: LegEnd, side: LegSide, swing: number, f
 
 export function stepLegs(pose: Pose, phase: number, swing: number, fold: number, offsets: LegPhases): void {
   for (const end of LEG_ENDS) {
-    for (const side of LEG_SIDES) {
+    for (const side of SIDES) {
       const legPhase = phase + offsets[end][sideName(side)];
 
       moveLeg(pose, end, side, swing * cosineWave(legPhase), fold * pulse(legPhase, 0.78, 0.11));

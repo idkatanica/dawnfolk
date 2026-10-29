@@ -1,4 +1,4 @@
-import type { Triple } from "../mesh/transforms.ts";
+import { onSide, type Side, type Triple } from "../mesh/transforms.ts";
 import { type BoneDefinition, type ContactPoint, createSkeleton, NO_PARENT } from "../rig/skeleton.ts";
 
 export const HumanBone = {
@@ -38,10 +38,6 @@ export const HumanJoint = {
 } as const satisfies Readonly<Record<string, Triple>>;
 
 export const HUMAN_BONE_COUNT = 17;
-
-export type Side = -1 | 1;
-
-export const SIDES: readonly Side[] = [1, -1];
 
 interface SideBones {
   readonly foot: HumanBoneIndex;
@@ -100,10 +96,6 @@ export const HUMAN_SKELETON = createSkeleton({
 
 export function otherSide(side: Side): Side {
   return side === 1 ? -1 : 1;
-}
-
-export function onSide(point: Triple, side: Side): Triple {
-  return [point[0] * side, point[1], point[2]];
 }
 
 export function sideBones(side: Side): SideBones {

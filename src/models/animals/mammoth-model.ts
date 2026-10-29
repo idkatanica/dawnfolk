@@ -17,7 +17,7 @@ import {
   tube,
 } from "../mesh/shapes.ts";
 import { outermostHit, surfaceTransform } from "../mesh/surface-probe.ts";
-import { combine, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
+import { combine, SIDES, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
 import { degrees, wave } from "../rig/curves.ts";
 import type { Pose } from "../rig/pose.ts";
 import { chainStyle, createChain, rigidStyle } from "../rig/skin-weights.ts";
@@ -25,7 +25,7 @@ import type { AnimalDetail } from "./animal-detail.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
 import { addLegs, hoofBelow, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
-import { LEG_SIDES, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
+import { QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
 export const MAMMOTH_BONE_COUNT = 21;
 
@@ -260,7 +260,7 @@ function addFace(builder: MeshBuilder, head: Shape, detail: AnimalDetail): void 
   const eyeStyle = { ...style, slot: MaterialSlot.Eye };
   const earStyle = { ...style, slot: MaterialSlot.Coat };
 
-  for (const side of LEG_SIDES) {
+  for (const side of SIDES) {
     const mirror = sideMirror(side);
 
     if (eyeHit !== null && detail.hasSmallParts) {
@@ -310,7 +310,7 @@ function addTusks(builder: MeshBuilder, detail: AnimalDetail, length: number): v
     radialSegments: segmentsAtLeast(detail, 5, detail.segments - 2),
   });
 
-  for (const side of LEG_SIDES) {
+  for (const side of SIDES) {
     builder.add(tusk, {
       style,
       transform: sideMirror(side),

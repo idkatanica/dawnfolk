@@ -1,4 +1,5 @@
 import type { AnimalPose } from "../../world/agent-poses.ts";
+import { SIDES } from "../mesh/transforms.ts";
 import { cosineWave, degrees, keyframes, wave } from "../rig/curves.ts";
 import { type ClipTiming, type Pose, STRIDE_TIMING, seconds } from "../rig/pose.ts";
 import { QUADRUPED_FIGHT_CLIPS } from "./quadruped-fight-clips.ts";
@@ -9,11 +10,10 @@ import {
   LYING_SPREAD,
   LYING_SWING,
   moveLeg,
-  sideName,
   stepLegs,
   WALK_PHASES,
 } from "./quadruped-motion.ts";
-import { LEG_ENDS, LEG_SIDES, type LegEnd, QuadrupedBone } from "./quadruped-skeleton.ts";
+import { LEG_ENDS, type LegEnd, QuadrupedBone, sideName } from "./quadruped-skeleton.ts";
 
 const HOP_PHASES: LegPhases = {
   front: { left: 0.5, right: 0.58 },
@@ -151,7 +151,7 @@ function graze(pose: Pose, phase: number, context: AnimalClipContext): void {
   bendBone(pose, QuadrupedBone.Chest, degrees(4) * (1 - alert));
 
   for (const end of LEG_ENDS) {
-    for (const side of LEG_SIDES) {
+    for (const side of SIDES) {
       moveLeg(pose, end, side, GRAZING_STANCE[end], 0, degrees(1.5));
     }
   }
@@ -166,7 +166,7 @@ function lieDead(pose: Pose, _phase: number, context: AnimalClipContext): void {
   bendBone(pose, QuadrupedBone.Head, degrees(15), context.gait.deadHeadRoll);
 
   for (const end of LEG_ENDS) {
-    for (const side of LEG_SIDES) {
+    for (const side of SIDES) {
       moveLeg(pose, end, side, LYING_SWING[end], degrees(12), LYING_SPREAD[sideName(side)]);
     }
   }

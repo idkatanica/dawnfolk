@@ -1,5 +1,6 @@
+import type { Side } from "../mesh/transforms.ts";
 import type { Pose } from "../rig/pose.ts";
-import { HumanBone, type Side, sideBones } from "./human-skeleton.ts";
+import { HumanBone, sideBones } from "./human-skeleton.ts";
 
 type TrunkBone = typeof HumanBone.Chest | typeof HumanBone.Head | typeof HumanBone.Neck | typeof HumanBone.Spine;
 

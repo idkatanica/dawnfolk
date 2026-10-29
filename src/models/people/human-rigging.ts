@@ -1,7 +1,8 @@
 import { smoothstep } from "../../shared/math.ts";
 import type { SurfacePoint, VertexStyle } from "../mesh/mesh-builder.ts";
+import { onSide, type Side } from "../mesh/transforms.ts";
 import { type BoneBlend, chainBlend, chainStyle, createChain, type WeightChain } from "../rig/skin-weights.ts";
-import { HumanBone, HumanJoint, onSide, type Side, sideBones } from "./human-skeleton.ts";
+import { HumanBone, HumanJoint, sideBones } from "./human-skeleton.ts";
 
 const TORSO_CHAIN = createChain(
   [HumanBone.Pelvis, HumanBone.Spine, HumanBone.Chest, HumanBone.Neck, HumanBone.Head],

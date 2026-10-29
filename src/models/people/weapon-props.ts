@@ -1,7 +1,7 @@
 import { MaterialSlot, type MaterialSlotIndex } from "../materials.ts";
 import type { MeshBuilder, VertexStyle } from "../mesh/mesh-builder.ts";
 import { box, cone, cylinder, lathe, type TubePoint, tube } from "../mesh/shapes.ts";
-import { segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
+import { type Side, segmentLength, segmentTransform, type Triple, transformOf } from "../mesh/transforms.ts";
 import { type HumanDetail, trimSegments } from "./human-detail.ts";
 import { HumanBone } from "./human-skeleton.ts";
 import { addRod, inLeftHand, inRightHand, LEFT_FIST, onChest, RIGHT_FIST } from "./prop-placement.ts";
@@ -39,7 +39,7 @@ function bowPoint(along: number): TubePoint {
   };
 }
 
-function bowTip(side: -1 | 1): Triple {
+function bowTip(side: Side): Triple {
   const point = bowPoint(side);
 
   return [point.x, point.y, point.z];

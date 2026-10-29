@@ -6,11 +6,11 @@ import { curveTube } from "../mesh/path-curves.ts";
 import type { Shape } from "../mesh/shape.ts";
 import { type LoftSection, loft, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { outermostHit } from "../mesh/surface-probe.ts";
-import { combine, MIRROR_X, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
+import { combine, MIRROR_X, SIDES, type Side, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
 import type { HumanDetail } from "./human-detail.ts";
 import { armStyle, FLEXIBLE_TORSO_STYLE, legStyle, TORSO_STYLE } from "./human-rigging.ts";
-import { HumanBone, HumanJoint, SIDES, type Side, sideBones } from "./human-skeleton.ts";
+import { HumanBone, HumanJoint, sideBones } from "./human-skeleton.ts";
 
 export const HEAD_CROWN = 1.753;
 

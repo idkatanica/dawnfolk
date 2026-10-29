@@ -7,14 +7,14 @@ import { curveBodySections } from "../mesh/path-curves.ts";
 import { type Shape, transformShape } from "../mesh/shape.ts";
 import { type BodySection, lengthwiseLoft, pointAlong, sphere, type TubePoint, tube } from "../mesh/shapes.ts";
 import { outermostHit, surfaceTransform } from "../mesh/surface-probe.ts";
-import { combine, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
+import { combine, SIDES, sideMirror, type Triple, transformOf } from "../mesh/transforms.ts";
 import { degrees } from "../rig/curves.ts";
 import { rigidStyle } from "../rig/skin-weights.ts";
 import type { AnimalDetail } from "./animal-detail.ts";
 import type { GaitStyle } from "./quadruped-clips.ts";
-import { addEyes, addLegs, hoofBelow, legPath } from "./quadruped-parts.ts";
+import { addEllipsoidEars, addLegs, addMuzzleFace, hoofBelow, legPath } from "./quadruped-parts.ts";
 import { bodyStyle, neckStyle, tailStyle } from "./quadruped-rigging.ts";
-import { LEG_SIDES, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
+import { QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
 export const DEER_FRAME: QuadrupedFrame = {
   bodyContacts: [
@@ -138,6 +138,10 @@ function coatSlot(point: SurfacePoint): number {
   return isBelly || isRump ? MaterialSlot.CoatLight : MaterialSlot.Coat;
 }
 
+function bodyShape(detail: AnimalDetail): Shape {
+  return lengthwiseLoft(curveBodySections(BODY, detail.curveSteps), detail.segments + 2);
+}
+
 function headShape(detail: AnimalDetail): Shape {
   const muzzle = tube(
     alongTube(
@@ -159,45 +163,26 @@ function headShape(detail: AnimalDetail): Shape {
   return transformShape(muzzle, transformOf({ scale: [0.78, 1, 1] }));
 }
 
-function addFace(builder: MeshBuilder, shape: Shape, detail: AnimalDetail): void {
-  if (!detail.hasSmallParts) {
-    return;
-  }
-
-  builder.add(sphere(0.026, 6, 4), {
-    style: { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Hoof },
-    transform: transformOf({ position: [0, 1.508, 1.148] }),
-  });
-  addEyes(builder, shape, { direction: [1, 0.25, 0.35], origin: [0, 1.64, 0.88], radius: 0.016, sink: 0.5 });
-}
-
 function addHead(builder: MeshBuilder, detail: AnimalDetail): void {
-  const head = rigidStyle(QuadrupedBone.Head);
   const shape = headShape(detail);
 
-  builder.add(shape, { seam: HEAD_SEAM, style: { ...head, slot: MaterialSlot.Coat } });
-  addFace(builder, shape, detail);
-
-  const ear = sphere(1, segmentsUpTo(detail, 6), 4);
-  const earStyle = { ...head, slot: MaterialSlot.Coat };
-
-  for (const side of LEG_SIDES) {
-    builder.add(ear, {
-      seam: EAR_SEAM,
-      style: earStyle,
-      transform: combine(
-        sideMirror(side),
-        transformOf({ position: [0.042, 1.7, 0.78], rotation: [-0.5, 0.2, -0.9] }),
-        EAR
-      ),
-    });
-  }
+  builder.add(shape, { seam: HEAD_SEAM, style: { ...rigidStyle(QuadrupedBone.Head), slot: MaterialSlot.Coat } });
+  addMuzzleFace(builder, shape, detail, {
+    eyes: { direction: [1, 0.25, 0.35], origin: [0, 1.64, 0.88], radius: 0.016, sink: 0.5 },
+    nose: [0, 1.508, 1.148],
+    noseRadius: 0.026,
+  });
+  addEllipsoidEars(builder, detail, {
+    placement: { position: [0.042, 1.7, 0.78], rotation: [-0.5, 0.2, -0.9] },
+    seam: EAR_SEAM,
+    shape: EAR,
+  });
 }
 
 export function addDeerBody(builder: MeshBuilder, detail: AnimalDetail): void {
   const { segments } = detail;
 
-  builder.add(lengthwiseLoft(curveBodySections(BODY, detail.curveSteps), segments + 2), {
+  builder.add(bodyShape(detail), {
     seam: BODY_SEAM,
     style: { ...bodyStyle(DEER_FRAME, 0.14), slot: coatSlot },
   });
@@ -264,7 +249,7 @@ function addAntlers(builder: MeshBuilder, detail: AnimalDetail, scale: number): 
   const beamShape = tube(beam, { radialSegments: segmentsAtLeast(detail, 4, detail.segments - 3) });
   const tines = ANTLER_TINES.map((tine) => tube(antlerTine(beam, tine, scale), { radialSegments: 4 }));
 
-  for (const side of LEG_SIDES) {
+  for (const side of SIDES) {
     const mirror = sideMirror(side);
 
     builder.add(beamShape, { style, transform: mirror });
@@ -289,7 +274,7 @@ export function addFawnSpots(builder: MeshBuilder, detail: AnimalDetail): void {
   }
 
   const style = { ...bodyStyle(DEER_FRAME, 0.14), slot: MaterialSlot.CoatLight };
-  const body = lengthwiseLoft(curveBodySections(BODY, detail.curveSteps), detail.segments + 2);
+  const body = bodyShape(detail);
   const spot = sphere(0.022, 5, 3);
 
   for (let index = 0; index < SPOT_COUNT; index += 1) {

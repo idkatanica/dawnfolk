@@ -1,14 +1,7 @@
 import type { VertexStyle } from "../mesh/mesh-builder.ts";
-import type { Triple } from "../mesh/transforms.ts";
+import { onSide, type Side, type Triple } from "../mesh/transforms.ts";
 import { chainStyle, createChain } from "../rig/skin-weights.ts";
-import {
-  type LegEnd,
-  type LegSide,
-  legBones,
-  mirrored,
-  QuadrupedBone,
-  type QuadrupedFrame,
-} from "./quadruped-skeleton.ts";
+import { type LegEnd, legBones, QuadrupedBone, type QuadrupedFrame } from "./quadruped-skeleton.ts";
 
 function direction(from: Triple, to: Triple): Triple {
   return [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
@@ -40,12 +33,12 @@ export function neckStyle(frame: QuadrupedFrame, blend: number): VertexStyle {
   );
 }
 
-export function legStyle(frame: QuadrupedFrame, end: LegEnd, side: LegSide, blend: number): VertexStyle {
+export function legStyle(frame: QuadrupedFrame, end: LegEnd, side: Side, blend: number): VertexStyle {
   const bones = legBones(end, side);
   const joints = end === "front" ? frame.frontLeg : frame.hindLeg;
   const body = end === "front" ? QuadrupedBone.Chest : QuadrupedBone.Pelvis;
 
-  const [upper, lower, hoof] = joints.map((joint) => mirrored(joint, side));
+  const [upper, lower, hoof] = joints.map((joint) => onSide(joint, side));
 
   return chainStyle(
     createChain(
