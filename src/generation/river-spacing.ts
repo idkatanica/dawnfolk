@@ -1,6 +1,7 @@
 import { isOnIsland } from "../world/coast.ts";
 import type { WorldGrid } from "../world/world-grid.ts";
 import {
+  chainCells,
   type DrainageBasins,
   isNearLake,
   NO_CELL,
@@ -95,7 +96,7 @@ function nearestRiver(
   return null;
 }
 
-function hasRiverWithin(spacing: Spacing, cell: number, meters: number, allowedOwner = NO_CELL): boolean {
+function hasRiverWithin(spacing: Spacing, cell: number, meters: number, allowedOwner: number): boolean {
   const { owners } = spacing;
 
   return nearestRiver(spacing, cell, meters, (other) => owners[other] !== allowedOwner) !== null;
@@ -378,9 +379,7 @@ function isFedByLake(spacing: Spacing, chain: RiverChain): boolean {
 }
 
 function isLongEnough(spacing: Spacing, chain: RiverChain): boolean {
-  const cells = chain.joinsCell === NO_CELL ? chain.cells : [...chain.cells, chain.joinsCell];
-
-  return pathLength(spacing.grid, cells) >= SHORTEST_RIVER || isFedByLake(spacing, chain);
+  return pathLength(spacing.grid, chainCells(chain)) >= SHORTEST_RIVER || isFedByLake(spacing, chain);
 }
 
 function byMouthFlow(basins: DrainageBasins): (first: RiverChain, second: RiverChain) => number {

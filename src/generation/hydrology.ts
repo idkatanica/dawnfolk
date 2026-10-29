@@ -106,6 +106,11 @@ export interface RiverChain {
   mouthReceiver: number;
 }
 
+interface ChainPosition {
+  readonly chain: number;
+  readonly index: number;
+}
+
 interface FloodedArea {
   cells: number[];
   level: number;
@@ -559,15 +564,15 @@ function riverPointFor(land: RiverLand, cell: number, flow: number): RiverPoint 
   };
 }
 
-function chainCells(chain: RiverChain): number[] {
+export function chainCells(chain: RiverChain): number[] {
   return chain.joinsCell === NO_CELL ? [...chain.cells] : [...chain.cells, chain.joinsCell];
 }
 
 function downstreamChainCell(
   network: DrainageNetwork,
-  positions: ReadonlyMap<number, { chain: number; index: number }>,
+  positions: ReadonlyMap<number, ChainPosition>,
   cell: number
-): { chain: number; index: number } | undefined {
+): ChainPosition | undefined {
   for (let current = network.receivers[cell]; current !== NO_CELL; current = network.receivers[current]) {
     const position = positions.get(current);
 
@@ -580,7 +585,7 @@ function downstreamChainCell(
 }
 
 export function chainFlows(network: DrainageNetwork, chains: readonly RiverChain[]): number[][] {
-  const positions = new Map<number, { chain: number; index: number }>();
+  const positions = new Map<number, ChainPosition>();
 
   for (const [chain, { cells }] of chains.entries()) {
     for (const [index, cell] of cells.entries()) {
@@ -588,7 +593,7 @@ export function chainFlows(network: DrainageNetwork, chains: readonly RiverChain
     }
   }
 
-  const inflows = chains.map((chain) => new Float64Array(chain.cells.length));
+  const inflows = chains.map((chain) => new Float64Array(chain.cells.length + 1));
   const flows: number[][] = [];
 
   for (let chainIndex = chains.length - 1; chainIndex >= 0; chainIndex -= 1) {
@@ -597,7 +602,7 @@ export function chainFlows(network: DrainageNetwork, chains: readonly RiverChain
     let flow = 0;
 
     flows[chainIndex] = chainCells(chain).map((cell, index) => {
-      flow = Math.max(flow, network.accumulation[cell]) + (inflows[chainIndex][index] ?? 0);
+      flow = Math.max(flow, network.accumulation[cell]) + inflows[chainIndex][index];
 
       return flow;
     });
