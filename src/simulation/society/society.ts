@@ -1,8 +1,9 @@
 import { personName, tribeIdentity } from "../../content/names.ts";
 import type { TechnologyId } from "../../content/technologies.ts";
 import type { RandomSource } from "../../shared/random.ts";
+import { NO_PLANT, type VegetationStore } from "../../world/vegetation-store.ts";
 import { isHopping, isLeaping } from "../agents/hops.ts";
-import { isStranded, moveAlong, savedMover, stopMoving } from "../agents/movement.ts";
+import { isStranded, moveAlong, placeMover, savedMover, stopMoving } from "../agents/movement.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import { nearestWalkableSpot } from "../agents/walkable-ground.ts";
 import type { Chronicle } from "../chronicle.ts";
@@ -37,6 +38,7 @@ const DEATH_MESSAGES: Readonly<Record<DeathCause, string>> = {
   earthquake: "was crushed in an earthquake",
   fire: "died in the flames",
   hunger: "starved",
+  lava: "was swallowed by lava",
   lightning: "was struck by lightning",
   mammoth: "was trampled by a mammoth",
   tornado: "was swept away by a tornado",
@@ -117,6 +119,7 @@ export class SocietySystem {
   readonly #peopleById = new Map<number, Person>();
   readonly #tribesById = new Map<number, Tribe>();
   readonly #trodden = new TroddenGround();
+  #heldId: number | null = null;
   #people: Person[] = [];
   #tribeNumber = 0;
   #tribes: Tribe[] = [];
@@ -150,6 +153,7 @@ export class SocietySystem {
     this.#people = snapshot.people;
     this.#tribes = snapshot.tribes;
     this.#tribeNumber = snapshot.tribeNumber;
+    this.#heldId = null;
     this.#peopleById.clear();
     this.#tribesById.clear();
 
@@ -278,6 +282,58 @@ export class SocietySystem {
     });
 
     return tribe;
+  }
+
+  hold(person: Person): void {
+    this.#heldId = person.id;
+    this.#forgetJob(person);
+    person.pose = "idle";
+    person.speed = 0;
+    placeMover(person.mover, person.mover.x, person.mover.z);
+  }
+
+  setDown(person: Person, x: number, z: number): void {
+    this.#heldId = null;
+    this.#forgetJob(person);
+    placeMover(person.mover, x, z);
+  }
+
+  isHeld(person: Person): boolean {
+    return this.#heldId === person.id;
+  }
+
+  releasePlant(plant: number): void {
+    for (const person of this.#people) {
+      if (person.job?.claimedPlant === plant) {
+        this.#forgetJob(person);
+      }
+    }
+
+    for (const tribe of this.#tribes) {
+      tribe.claimedPlants.delete(plant);
+
+      for (const plot of tribe.plots) {
+        for (const spot of plot.spots) {
+          if (spot.plant === plant) {
+            spot.plant = NO_PLANT;
+          }
+        }
+      }
+    }
+  }
+
+  returnPlant(plant: number, x: number, z: number, vegetation: VegetationStore): void {
+    for (const tribe of this.#tribes) {
+      for (const plot of tribe.plots) {
+        for (const spot of plot.spots) {
+          const isEmpty = spot.plant === NO_PLANT || !vegetation.isAlive(spot.plant);
+
+          if (isEmpty && spot.x === x && spot.z === z) {
+            spot.plant = plant;
+          }
+        }
+      }
+    }
   }
 
   kill(person: Person, cause: DeathCause, account: DeathAccount | null = null): void {
@@ -451,6 +507,10 @@ export class SocietySystem {
   }
 
   #updatePerson(person: Person, seconds: number, days: number, context: SocietyContext): void {
+    if (this.isHeld(person)) {
+      return;
+    }
+
     if (!person.isAlive) {
       person.deathSeconds += seconds;
       settleFall(person);
@@ -487,6 +547,18 @@ export class SocietySystem {
     }
 
     person.phase += seconds * person.speed * POSE_PHASE_RATE;
+  }
+
+  #forgetJob(person: Person): void {
+    const tribe = this.findTribe(person.tribeId);
+
+    if (tribe === null) {
+      person.job = null;
+
+      return;
+    }
+
+    dropJob(tribe, person);
   }
 
   #removeRemains(): void {

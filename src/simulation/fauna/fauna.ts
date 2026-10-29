@@ -10,6 +10,7 @@ import {
   isStranded,
   type Mover,
   moveAlong,
+  placeMover,
   savedMover,
   setDestination,
   stopMoving,
@@ -174,6 +175,7 @@ export class FaunaSystem {
   readonly #smallGameRandom: RandomSource;
   readonly #world: WorldState;
   #animals: Animal[] = [];
+  #heldId: number | null = null;
   #herds: Herd[] = [];
   #predators: Animal[] = [];
 
@@ -226,6 +228,7 @@ export class FaunaSystem {
     this.#animals = snapshot.animals;
     this.#herds = snapshot.herds;
     this.#predators = [];
+    this.#heldId = null;
     this.#animalsById.clear();
     this.#herdsById.clear();
 
@@ -252,7 +255,7 @@ export class FaunaSystem {
   }
 
   spawnHerd(kind: AnimalKind, x: number, z: number, size: number, random: RandomSource): Herd | null {
-    if (!this.#canStand(kind, x, z)) {
+    if (!this.canStand(kind, x, z)) {
       return null;
     }
 
@@ -327,7 +330,7 @@ export class FaunaSystem {
     for (const animal of this.#animals) {
       const squaredDistance = distanceSquared(animal.mover.x, animal.mover.z, x, z);
 
-      if (animal.isAlive && squaredDistance < nearestDistance && accepts(animal)) {
+      if (animal.isAlive && !this.isHeld(animal) && squaredDistance < nearestDistance && accepts(animal)) {
         nearest = animal;
         nearestDistance = squaredDistance;
       }
@@ -396,6 +399,31 @@ export class FaunaSystem {
 
   isMenacing(animal: Animal): boolean {
     return this.#instincts.isCharging(animal) || this.#instincts.huntOf(animal.herdId) !== null;
+  }
+
+  canStand(kind: AnimalKind, x: number, z: number): boolean {
+    if (!this.#world.isWalkableAt(x, z)) {
+      return false;
+    }
+
+    return !(ANIMALS[kind].isSmallGame && this.#world.touchesWater(this.#world.grid.cellAt(x, z)));
+  }
+
+  hold(animal: Animal): void {
+    this.#heldId = animal.id;
+    this.#instincts.forget(animal);
+    animal.pose = "graze";
+    animal.speed = 0;
+    placeMover(animal.mover, animal.mover.x, animal.mover.z);
+  }
+
+  setDown(animal: Animal, x: number, z: number): void {
+    this.#heldId = null;
+    placeMover(animal.mover, x, z);
+  }
+
+  isHeld(animal: Animal): boolean {
+    return this.#heldId === animal.id;
   }
 
   kill(animal: Animal, cause: AnimalDeathCause): void {
@@ -488,19 +516,11 @@ export class FaunaSystem {
   }
 
   #spawnPoint(herd: Herd, x: number, z: number): Waypoint {
-    if (this.#canStand(herd.kind, x, z)) {
+    if (this.canStand(herd.kind, x, z)) {
       return { x, z };
     }
 
     return { x: herd.goalX, z: herd.goalZ };
-  }
-
-  #canStand(kind: AnimalKind, x: number, z: number): boolean {
-    if (!this.#world.isWalkableAt(x, z)) {
-      return false;
-    }
-
-    return !(ANIMALS[kind].isSmallGame && this.#world.touchesWater(this.#world.grid.cellAt(x, z)));
   }
 
   #isHomeGround(kind: AnimalKind, cell: number): boolean {
@@ -547,7 +567,7 @@ export class FaunaSystem {
       return ANIMALS[candidate].isSmallGame && this.#isHomeGround(candidate, cell);
     });
 
-    if (kind === undefined || !this.#canStand(kind, x, z)) {
+    if (kind === undefined || !this.canStand(kind, x, z)) {
       return null;
     }
 
@@ -674,7 +694,7 @@ export class FaunaSystem {
 
     const cell = world.grid.cellAt(x, z);
 
-    if (!this.#canStand(kind, x, z) || world.isBurning(cell)) {
+    if (!this.canStand(kind, x, z) || world.isBurning(cell)) {
       return false;
     }
 
@@ -702,6 +722,10 @@ export class FaunaSystem {
   }
 
   #updateAnimal(animal: Animal, tick: FaunaTick): void {
+    if (this.isHeld(animal)) {
+      return;
+    }
+
     if (!animal.isAlive) {
       animal.deathSeconds += tick.seconds;
       settleFall(animal);

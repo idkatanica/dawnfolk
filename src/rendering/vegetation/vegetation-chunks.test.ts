@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PlantSpecies } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
-import { PlantState } from "../../world/vegetation-store.ts";
+import { NO_PLANT, PlantState } from "../../world/vegetation-store.ts";
 import { createVegetatedMirror } from "../testing/vegetated-mirror.ts";
 import {
   BUCKET_COUNT,
@@ -23,6 +23,10 @@ function packedPlantCount(chunks: VegetationChunks): number {
       }, 0)
     );
   }, 0);
+}
+
+function chunkOf(chunks: VegetationChunks, plant: number): number {
+  return chunks.chunks.findIndex((chunk) => chunk.plants.has(plant));
 }
 
 function alivePlantCount(mirror: WorldMirror): number {
@@ -103,6 +107,38 @@ describe("vegetation chunks", () => {
         expect([...data]).toEqual(before[index][bucket]);
       }
     }
+  });
+
+  it("takes a held plant out of its chunk and packs it where it is set down", () => {
+    const mirror = createVegetatedMirror();
+    const chunks = new VegetationChunks(mirror);
+    const { vegetation } = mirror;
+
+    chunks.repackDirty();
+
+    const origin = chunkOf(chunks, 0);
+    const destination = chunks.chunks.findIndex((chunk, index) => index !== origin && chunk.plants.size > 0);
+    const destinationChunk = chunks.chunks[destination];
+
+    if (origin < 0 || destinationChunk === undefined) {
+      throw new Error("The test world should have plants in two chunks");
+    }
+
+    const [neighbor] = [...destinationChunk.plants];
+
+    chunks.hold(0);
+    chunks.repackDirty();
+
+    expect(chunkOf(chunks, 0)).toBe(-1);
+    expect(packedPlantCount(chunks)).toBe(alivePlantCount(mirror) - 1);
+
+    vegetation.x[0] = vegetation.x[neighbor];
+    vegetation.z[0] = vegetation.z[neighbor];
+    chunks.hold(NO_PLANT);
+    chunks.repackDirty();
+
+    expect(chunkOf(chunks, 0)).toBe(destination);
+    expect(packedPlantCount(chunks)).toBe(alivePlantCount(mirror));
   });
 
   it("reports every bucket after a height change", () => {

@@ -5,7 +5,7 @@ import { canonicalHeight, farVariantOf, footprintRadius, plantVariantCount } fro
 import { isDistantLevel, type PlantDetailLevel } from "../../models/plants/tree-mesher.ts";
 import { grownIndexArray } from "../../shared/growth.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
-import { PlantState } from "../../world/vegetation-store.ts";
+import { NO_PLANT, PlantState, type VegetationChannels } from "../../world/vegetation-store.ts";
 
 export const CHUNK_CELLS = 16;
 export const FLOATS_PER_PLANT = 8;
@@ -42,7 +42,7 @@ export interface VegetationChunk {
   readonly plants: Set<number>;
 }
 
-function bucketOf(species: number, seed: number): number {
+export function bucketOf(species: number, seed: number): number {
   const count = plantVariantCount(PLANT_SPECIES[species].index);
 
   return FIRST_BUCKETS[species] + Math.min(count - 1, Math.floor(seed * count));
@@ -73,6 +73,20 @@ export function bucketGroups(level: PlantDetailLevel): number[][] {
   return [...groups.values()];
 }
 
+export function writePlantLook(
+  vegetation: VegetationChannels,
+  plant: number,
+  target: Float32Array,
+  offset: number
+): void {
+  const species = vegetation.species[plant];
+
+  target[offset] = vegetation.height[plant] / canonicalHeight(PLANT_SPECIES[species].index);
+  target[offset + 1] = (vegetation.seed[plant] * 7.31) % 1;
+  target[offset + 2] = vegetation.state[plant];
+  target[offset + 3] = vegetation.fruit[plant];
+}
+
 function allocateBucket(count: number): Float32Array {
   if (count === 0) {
     return EMPTY_BUCKET;
@@ -91,6 +105,7 @@ export class VegetationChunks {
   readonly #touchedBuckets: Set<number>[] = [];
   #bucketOfPlant = new Int32Array(0);
   #chunkOfPlant = new Int32Array(0);
+  #heldPlant = NO_PLANT;
 
   constructor(mirror: WorldMirror) {
     this.#mirror = mirror;
@@ -111,6 +126,22 @@ export class VegetationChunks {
   plantsChanged(indices: readonly number[]): void {
     for (const plant of indices) {
       this.#place(plant);
+    }
+  }
+
+  hold(plant: number): void {
+    const previous = this.#heldPlant;
+
+    if (plant === previous) {
+      return;
+    }
+
+    this.#heldPlant = plant;
+
+    for (const changed of [previous, plant]) {
+      if (changed !== NO_PLANT) {
+        this.#place(changed);
+      }
     }
   }
 
@@ -177,7 +208,7 @@ export class VegetationChunks {
   #chunkFor(plant: number): number {
     const { grid, vegetation } = this.#mirror;
 
-    if (vegetation.state[plant] === PlantState.Removed) {
+    if (plant === this.#heldPlant || vegetation.state[plant] === PlantState.Removed) {
       return NO_CHUNK;
     }
 
@@ -228,7 +259,6 @@ export class VegetationChunks {
     const z = vegetation.z[plant];
     const species = vegetation.species[plant];
     const height = vegetation.height[plant];
-    const seed = vegetation.seed[plant];
     const scale = height / canonicalHeight(PLANT_SPECIES[species].index);
     const footprint = this.#footprints[species] * scale;
     const y = isMonumentSpecies(species) ? this.#groundAround(x, z, footprint) : this.#groundUnder(x, z, footprint);
@@ -237,10 +267,7 @@ export class VegetationChunks {
     target[offset + 1] = y - PLANT_SINKING;
     target[offset + 2] = z;
     target[offset + 3] = vegetation.rotation[plant];
-    target[offset + 4] = scale;
-    target[offset + 5] = (seed * 7.31) % 1;
-    target[offset + 6] = vegetation.state[plant];
-    target[offset + 7] = vegetation.fruit[plant];
+    writePlantLook(vegetation, plant, target, offset + 4);
 
     const reach = vegetation.state[plant] === PlantState.Fallen ? height : height * 0.5;
 

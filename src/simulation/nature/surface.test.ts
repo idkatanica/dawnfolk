@@ -365,4 +365,17 @@ describe("surface", () => {
     expect(warm.fields.scorch[centerCell(warm)]).toBeLessThan(0.65);
     expect(cold.fields.scorch[centerCell(cold)]).toBeGreaterThan(0.9);
   });
+
+  it("lets ash soil heal faster than ordinary ground", () => {
+    const ash = createTestWorld({ ground: Ground.Ash });
+    const meadow = createTestWorld();
+
+    for (const world of [ash, meadow]) {
+      world.fields.scorch[centerCell(world)] = 0.8;
+      runSurface(world, 240, DRY_NOON);
+    }
+
+    expect(meadow.fields.scorch[centerCell(meadow)]).toBeGreaterThan(0.3);
+    expect(ash.fields.scorch[centerCell(ash)]).toBeLessThan(meadow.fields.scorch[centerCell(meadow)] - 0.3);
+  });
 });

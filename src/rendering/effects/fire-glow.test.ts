@@ -8,11 +8,16 @@ const TEXELS_PER_SIDE = 128;
 function burning(cells: readonly number[], intensity = 255): BurningCells {
   return {
     burningCells: Int32Array.from(cells),
-    burningIntensity: Uint8Array.from(
-      cells.map(() => {
-        return intensity;
-      })
-    ),
+    burningIntensity: Uint8Array.from(cells.map(() => intensity)),
+    lava: { cells: new Int32Array(0), heat: new Uint8Array(0) },
+  };
+}
+
+function flowing(cells: readonly number[], heat = 255): BurningCells {
+  return {
+    burningCells: new Int32Array(0),
+    burningIntensity: new Uint8Array(0),
+    lava: { cells: Int32Array.from(cells), heat: Uint8Array.from(cells.map(() => heat)) },
   };
 }
 
@@ -78,6 +83,34 @@ describe("fire glow", () => {
 
     glow.update(burning(blaze(256, 256, 8)));
     glow.update(burning([]));
+
+    expect(texelAt(glow, 64, 64)).toBe(0);
+  });
+
+  it("lights the ground around lava with no fire, brighter while it is hot", () => {
+    const hot = new FireGlow(GRID);
+    const cooling = new FireGlow(GRID);
+
+    hot.update(flowing(blaze(256, 256, 4), 255));
+    cooling.update(flowing(blaze(256, 256, 4), 80));
+
+    expect(texelAt(cooling, 64, 64)).toBeGreaterThan(0);
+    expect(texelAt(hot, 64, 64)).toBeGreaterThan(texelAt(cooling, 64, 64));
+    expect(texelAt(hot, 90, 64)).toBe(0);
+  });
+
+  it("keeps lava lit until a frame clears it", () => {
+    const glow = new FireGlow(GRID);
+
+    glow.update(flowing(blaze(256, 256, 4)));
+
+    const lit = texelAt(glow, 64, 64);
+
+    glow.update({ ...burning([]), lava: null });
+
+    expect(texelAt(glow, 64, 64)).toBe(lit);
+
+    glow.update(flowing([]));
 
     expect(texelAt(glow, 64, 64)).toBe(0);
   });

@@ -4,7 +4,7 @@ import type { RandomSource } from "../../shared/random.ts";
 import { cellsInArea } from "../world/terrain-editing.ts";
 import { SNOW_CAPACITY } from "../world/world-state.ts";
 import { explode, shakeLand, strikeLightning } from "./catastrophes.ts";
-import { APPLIED, type PowerOutcome, type PowerServices, type PowerTarget, percent } from "./power-handler.ts";
+import { APPLIED, type PowerOutcome, type PowerServices, type PowerTarget, percent, refused } from "./power-handler.ts";
 
 const FIRE_BRUSH_STRENGTH = 0.75;
 const FIRE_EDGE_FADE = 0.6;
@@ -207,6 +207,27 @@ export function tornadoPower(
       x: target.x,
       z: target.z,
     },
+    services
+  );
+
+  return APPLIED;
+}
+
+export function volcanoPower(
+  target: PowerTarget,
+  parameters: PowerParameters<"volcano">,
+  services: PowerServices
+): PowerOutcome {
+  const { world } = services;
+
+  const cell = world.grid.cellAt(target.x, target.z);
+
+  if (cell < 0 || !world.isOnIsland(cell) || world.isWater(cell)) {
+    return refused("A volcano needs dry land");
+  }
+
+  services.volcanoes.rumble(
+    { radius: parameters.radius, strength: percent(parameters.strength), x: target.x, z: target.z },
     services
   );
 

@@ -516,6 +516,26 @@ export class WorldState {
     }
   }
 
+  liftPlant(index: number): void {
+    const cell = this.vegetation.cell[index];
+
+    this.vegetation.detach(index);
+
+    if (cell >= 0) {
+      this.refreshCanopy(cell);
+    }
+  }
+
+  setPlantDown(index: number, x: number, z: number): void {
+    this.vegetation.attach(index, x, z);
+
+    const cell = this.vegetation.cell[index];
+
+    if (cell >= 0) {
+      this.refreshCanopy(cell);
+    }
+  }
+
   fellPlant(index: number, day: number, rotation: number): void {
     const cell = this.vegetation.cell[index];
 

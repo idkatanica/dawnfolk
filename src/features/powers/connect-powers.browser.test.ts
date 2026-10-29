@@ -5,13 +5,14 @@ import { connectPowers } from "./connect-powers.ts";
 import { usePowerStore } from "./power-store.ts";
 
 function connectSpy() {
+  const selectHand = vi.fn<(isSelected: boolean) => void>();
   const selectPower = vi.fn<(selection: PowerSelection | null) => void>();
 
-  const disconnect = connectPowers({ selectPower });
+  const disconnect = connectPowers({ selectHand, selectPower });
 
   onTestFinished(disconnect);
 
-  return { disconnect, selectPower };
+  return { disconnect, selectHand, selectPower };
 }
 
 function pressEscape(): void {
@@ -69,5 +70,29 @@ describe("connecting powers to the engine", () => {
 
     expect(selectPower).toHaveBeenCalledOnce();
     expect(usePowerStore.getState().selectedPowerId).toBe("fire");
+  });
+
+  it("hands the hand to the engine and takes the power away", () => {
+    const { selectHand, selectPower } = connectSpy();
+
+    usePowerStore.getState().selectPower("fire");
+    usePowerStore.getState().selectHand();
+
+    expect(selectHand).toHaveBeenLastCalledWith(true);
+    expect(selectPower).toHaveBeenLastCalledWith(null);
+
+    usePowerStore.getState().selectPower("rain");
+
+    expect(selectHand).toHaveBeenLastCalledWith(false);
+  });
+
+  it("puts the hand away when Escape is pressed", () => {
+    const { selectHand } = connectSpy();
+
+    usePowerStore.getState().selectHand();
+    pressEscape();
+
+    expect(usePowerStore.getState().isHandSelected).toBe(false);
+    expect(selectHand).toHaveBeenLastCalledWith(false);
   });
 });

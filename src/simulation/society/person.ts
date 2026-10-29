@@ -27,6 +27,7 @@ export type DeathCause =
   | "earthquake"
   | "fire"
   | "hunger"
+  | "lava"
   | "lightning"
   | "mammoth"
   | "tornado";

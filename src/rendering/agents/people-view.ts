@@ -21,6 +21,7 @@ import {
   detailLevel,
   farthestFigure,
   forgetUnseen,
+  heldLift,
   type LevelDistances,
   NO_SELECTION,
   selectedAgentId,
@@ -180,7 +181,8 @@ export class PeopleView {
     const x = people[offset + PersonField.X] + people[offset + PersonField.VelocityX] * input.secondsSinceTick;
     const z = people[offset + PersonField.Z] + people[offset + PersonField.VelocityZ] * input.secondsSinceTick;
 
-    const y = standingHeight(input.mirror, x, z, WADING_DEPTH);
+    const lift = heldLift(input.mirror.frame.held, "person", people[offset + PersonField.Id]);
+    const y = standingHeight(input.mirror, x, z, WADING_DEPTH) + lift;
 
     this.#bounds.center.set(x, y + BOUNDING_LIFT, z);
 

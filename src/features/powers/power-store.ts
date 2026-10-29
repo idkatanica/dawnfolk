@@ -17,30 +17,28 @@ const storedSchema = z.object({ parameters: z.record(z.string(), z.unknown()).de
 type StoredParameters = Readonly<Partial<Record<PowerId, ParameterValueMap>>>;
 
 export interface PowerStore {
+  readonly isHandSelected: boolean;
   readonly parameters: StoredParameters;
   readonly resetParameters: (powerId: PowerId) => void;
   readonly selectedPowerId: PowerId | null;
+  readonly selectHand: () => void;
   readonly selectPower: (powerId: PowerId | null) => void;
   readonly setParameter: (powerId: PowerId, key: string, value: ParameterValue) => void;
 }
 
 export const usePowerStore = create<PowerStore>()(
   persist(
-    (set) => {
-      return {
-        parameters: {},
-        resetParameters: (powerId) => {
-          return set((state) => {
-            return { parameters: { ...state.parameters, [powerId]: defaultPowerParameters(powerId) } };
-          });
-        },
-        selectedPowerId: null,
-        selectPower: (powerId) => {
-          return set({ selectedPowerId: powerId });
-        },
-        setParameter: (powerId, key, value) => {
-          return set((state) => {
-            const current = parametersOf(state.parameters, powerId);
+    (set) => ({
+      isHandSelected: false,
+      parameters: {},
+      resetParameters: (powerId) =>
+        set((state) => ({ parameters: { ...state.parameters, [powerId]: defaultPowerParameters(powerId) } })),
+      selectedPowerId: null,
+      selectHand: () => set({ isHandSelected: true, selectedPowerId: null }),
+      selectPower: (powerId) => set({ isHandSelected: false, selectedPowerId: powerId }),
+      setParameter: (powerId, key, value) =>
+        set((state) => {
+          const current = parametersOf(state.parameters, powerId);
 
             return {
               parameters: {

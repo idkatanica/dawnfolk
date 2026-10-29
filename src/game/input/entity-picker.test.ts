@@ -1,10 +1,12 @@
 import { Vector3 } from "three/webgpu";
 import { describe, expect, it } from "vitest";
+import { PlantSpecies } from "../../content/plants.ts";
 import type { Selection } from "../../simulation/commands.ts";
 import type { SimulationFrame } from "../../simulation/frame.ts";
 import { Simulation } from "../../simulation/simulation.ts";
 import { createVegetatedWorld } from "../../simulation/testing/test-world.ts";
 import { PERSON_STRIDE, PersonField } from "../../world/agent-buffers.ts";
+import { createVegetationChannels, PlantState, type VegetationBuffers } from "../../world/vegetation-store.ts";
 import { CENTER, cameraLookingAt, VIEWPORT } from "../testing/view-fixtures.ts";
 import { EntityPicker } from "./entity-picker.ts";
 import { GroundPicker, type HeightField } from "./ground-picker.ts";
@@ -40,6 +42,35 @@ function peopleAt(...positions: readonly (readonly [number, number])[]): Float32
   }
 
   return people;
+}
+
+function plantAt(species: number, x: number, z: number): VegetationBuffers {
+  const vegetation = { ...createVegetationChannels(1), count: 1 };
+
+  vegetation.species[0] = species;
+  vegetation.state[0] = PlantState.Alive;
+  vegetation.height[0] = 12;
+  vegetation.x[0] = x;
+  vegetation.z[0] = z;
+
+  return vegetation;
+}
+
+function grabAt(vegetation: VegetationBuffers, ...people: readonly (readonly [number, number])[]) {
+  const camera = cameraLookingAt(0, 0);
+
+  const ground = new GroundPicker(camera, flatGround, WORLD_HALF_SIZE).pick(CENTER, VIEWPORT);
+
+  return new EntityPicker(camera, flatGround).pickGrabbable(
+    { frame: frameWithPeople(...people), vegetation },
+    CENTER,
+    VIEWPORT,
+    ground
+  );
+}
+
+function flatGround(): number {
+  return 0;
 }
 
 function pickAt(heightAt: HeightField, ...positions: readonly (readonly [number, number])[]): Selection | null {
@@ -81,5 +112,18 @@ describe("entity picker", () => {
     });
 
     expect(picker.pick(frame, CENTER, VIEWPORT, new Vector3(0, 0, 0))).toMatchObject({ kind: "cell" });
+  });
+
+  it("picks a tree under the pointer to grab", () => {
+    expect(grabAt(plantAt(PlantSpecies.Oak, 0, -4))).toEqual({ id: 0, kind: "plant" });
+  });
+
+  it("grabs a person before the tree behind them", () => {
+    expect(grabAt(plantAt(PlantSpecies.Oak, 0, -4), [0, 0])).toEqual({ id: 1, kind: "person" });
+  });
+
+  it("leaves stones and faraway trees alone", () => {
+    expect(grabAt(plantAt(PlantSpecies.Boulder, 0, 0))).toBeNull();
+    expect(grabAt(plantAt(PlantSpecies.Oak, 300, 0))).toBeNull();
   });
 });

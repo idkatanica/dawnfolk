@@ -364,6 +364,25 @@ export const POWERS = {
     }),
     usage: "point",
   },
+  volcano: {
+    category: "elements",
+    description:
+      "The ground swells into a fire mountain. Lava runs downhill and burns what it meets, then cools into rock and ash that grows back lush.",
+    name: "Volcano",
+    parameters: z.object({
+      radius: rangeParameter({
+        defaultValue: 120,
+        description: "Width of the mountain that rises.",
+        label: "Radius",
+        maximum: 260,
+        minimum: 60,
+        step: 10,
+        unit: "meters",
+      }),
+      strength: strength(60, "How long it erupts and how far the lava runs."),
+    }),
+    usage: "point",
+  },
   wolf: {
     category: "life",
     description: "A wolf pack that roams far and keeps its distance from people.",
@@ -395,6 +414,7 @@ export const POWER_ORDER: readonly PowerId[] = [
   "explosion",
   "meteor",
   "earthquake",
+  "volcano",
   "tornado",
   "raise",
   "lower",

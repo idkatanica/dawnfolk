@@ -152,6 +152,20 @@ export function stopMoving(mover: Mover): void {
   mover.velocityZ = 0;
 }
 
+export function placeMover(mover: Mover, x: number, z: number): void {
+  mover.x = x;
+  mover.z = z;
+  mover.goalX = x;
+  mover.goalZ = z;
+  mover.hop = null;
+  mover.path = [];
+  mover.pathIndex = 0;
+  mover.stuckSeconds = 0;
+  stopMoving(mover);
+  forgetReplans(mover);
+  forgetObstacles(mover);
+}
+
 export function faceTowards(mover: Mover, x: number, z: number): void {
   mover.heading = Math.atan2(x - mover.x, z - mover.z);
 }

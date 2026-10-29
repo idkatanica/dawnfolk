@@ -25,6 +25,7 @@ import {
   detailLevel,
   farthestFigure,
   forgetUnseen,
+  heldLift,
   type LevelDistances,
   NO_SELECTION,
   selectedAgentId,
@@ -220,7 +221,8 @@ export class AnimalView {
     const x = animals[offset + AnimalField.X] + animals[offset + AnimalField.VelocityX] * input.secondsSinceTick;
     const z = animals[offset + AnimalField.Z] + animals[offset + AnimalField.VelocityZ] * input.secondsSinceTick;
 
-    const y = standingHeight(input.mirror, x, z, WADING_DEPTH);
+    const lift = heldLift(input.mirror.frame.held, "animal", animals[offset + AnimalField.Id]);
+    const y = standingHeight(input.mirror, x, z, WADING_DEPTH) + lift;
 
     this.#bounds.center.set(x, y + ANIMAL_BOUNDING_LIFT, z);
 

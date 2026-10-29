@@ -180,7 +180,8 @@ export class Succession {
       return true;
     }
 
-    const age = day - world.disturbedDay[cell];
+    const { regrowth } = groundDefinition(world.terrain.ground[cell]);
+    const age = (day - world.disturbedDay[cell]) * regrowth;
 
     if (age > LONGEST_RECOVERY_DAYS) {
       return true;
@@ -194,7 +195,7 @@ export class Succession {
     const cover = coverOf(world, cell);
     const scorch = world.fields.scorch[cell];
 
-    if (cover.shrubs < climax.shrubs.length && scorch <= SHRUB_SCORCH && this.#random.chance(SHRUB_CHANCE)) {
+    if (cover.shrubs < climax.shrubs.length && scorch <= SHRUB_SCORCH && this.#random.chance(SHRUB_CHANCE * regrowth)) {
       this.#nursery.plant({ ...climax.shrubs[cover.shrubs], bornDay: day }, SHRUB_GROWING_DAYS);
     }
 
@@ -203,7 +204,7 @@ export class Succession {
     const hasRoomForTree =
       nextTree !== undefined && !world.vegetation.hasTreeWithin(nextTree.x, nextTree.z, TREE_SPACING);
 
-    if (hasRoomForTree && isTreeTime && this.#random.chance(this.#seedingChance(cell, day))) {
+    if (hasRoomForTree && isTreeTime && this.#random.chance(this.#seedingChance(cell, day) * regrowth)) {
       this.#plantTree({ ...nextTree, bornDay: day });
     }
 

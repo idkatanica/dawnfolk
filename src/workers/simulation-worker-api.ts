@@ -69,6 +69,10 @@ function frameBuffers(frame: SimulationFrame): ArrayBufferLike[] {
     buffers.push(frame.heightPatch.values.buffer);
   }
 
+  if (frame.lava !== null) {
+    buffers.push(frame.lava.cells.buffer, frame.lava.heat.buffer);
+  }
+
   if (frame.water !== null) {
     buffers.push(frame.water.riverStrength.buffer, frame.water.waterSurface.buffer);
   }
