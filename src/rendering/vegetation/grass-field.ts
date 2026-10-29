@@ -177,7 +177,7 @@ function createGrassMaterial(options: GrassFieldOptions, uniforms: GrassUniforms
   const root = lattice.add(vec2(random(SALT_JITTER_X), random(SALT_JITTER_Z))).mul(spacing);
 
   const rootUv = mapCoordinatesNode(grid, root);
-  const ground = texture(textures.albedo, rootUv).level(float(0));
+  const ground = texture(textures.groundAlbedo.texture, rootUv).level(float(0));
   const cell = cellAtNode(grid, root);
   const height = renderedHeightNode(textures, grid, root);
 

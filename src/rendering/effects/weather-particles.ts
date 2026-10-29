@@ -141,7 +141,7 @@ class DropUniforms {
 
 class DropOctave {
   readonly mesh: Mesh;
-  readonly #cover = new LatticeCover();
+  readonly #cover: LatticeCover;
   readonly #geometry = createQuadGeometry();
   readonly #level = uniform(0);
   readonly #material = new MeshBasicNodeMaterial({ depthWrite: false, fog: false, transparent: true });
@@ -151,6 +151,8 @@ class DropOctave {
     const material = this.#material;
     const { corner } = billboardNodes();
     const scale = this.#scale;
+
+    this.#cover = new LatticeCover(grid.halfSize);
 
     const element = latticeElement(this.#cover, uint(this.#level).mul(SALT_OCTAVE));
     const { age: fall, phase, spread } = cycleOf(element, uniforms.fallen, CYCLE_SALTS);
@@ -245,7 +247,6 @@ export class WeatherParticles {
   readonly #coarse: DropOctave;
   readonly #drift = new Vector2();
   readonly #fine: DropOctave;
-  readonly #halfSize: number;
   readonly #uniforms = new DropUniforms();
 
   constructor(axes: CameraAxes, textures: TerrainTextures, grid: WorldGrid) {
@@ -253,7 +254,6 @@ export class WeatherParticles {
 
     this.#fine = new DropOctave(sources);
     this.#coarse = new DropOctave(sources);
-    this.#halfSize = grid.halfSize;
     this.group.add(this.#fine.mesh, this.#coarse.mesh);
   }
 
@@ -276,7 +276,7 @@ export class WeatherParticles {
 
     const finer = Math.floor(octave);
     const perTile = DROPS_PER_TILE * strength * Math.max(1, (NATURAL_SPAN / span) ** 2);
-    const area = { centerX: view.focus.x, centerZ: view.focus.z, halfSize: this.#halfSize, radius: span / 2 };
+    const area = { centerX: view.focus.x, centerZ: view.focus.z, radius: span / 2 };
     const blend = octave - finer;
 
     this.#drift.x += (windX * seconds) / TILE_SIZE;

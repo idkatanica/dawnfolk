@@ -127,11 +127,10 @@ function crown(shape: Node<"vec2">, age: Node<"float">): Node<"float"> {
 export class RainSplashes {
   readonly mesh: Mesh;
   readonly #clock = uniform(0);
-  readonly #cover = new LatticeCover();
+  readonly #cover: LatticeCover;
   readonly #crownColor = uniform(new Color());
   readonly #focus = uniform(new Vector2());
   readonly #geometry = createSplashGeometry();
-  readonly #halfSize: number;
   readonly #opacity = uniform(0);
   readonly #reach = uniform(NEAREST_SPAN / 2);
   readonly #rippleColor = uniform(new Color());
@@ -140,6 +139,8 @@ export class RainSplashes {
   constructor(axes: CameraAxes, textures: TerrainTextures, grid: WorldGrid) {
     const material = new MeshBasicNodeMaterial({ depthWrite: false, side: DoubleSide, transparent: true });
     const corner = attribute("splashCorner", "vec2");
+
+    this.#cover = new LatticeCover(grid.halfSize);
 
     const element = latticeElement(this.#cover, uint(SALT_SPLASH));
     const { age, spread } = cycleOf(element, this.#clock, CYCLE_SALTS);
@@ -194,7 +195,6 @@ export class RainSplashes {
       .mul(fade)
       .mul(this.#opacity);
 
-    this.#halfSize = grid.halfSize;
     this.mesh = new Mesh(this.#geometry, material);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 10;
@@ -205,7 +205,7 @@ export class RainSplashes {
     const nearness = 1 - saturate((view.viewDistance - CLOSEST_VIEW) / (FARTHEST_VIEW - CLOSEST_VIEW));
     const span = clampNumber(view.viewDistance * SPAN_PER_DISTANCE, NEAREST_SPAN, FARTHEST_SPAN);
     const crowding = Math.min(MOST_PER_TILE, (SPLASHES_IN_VIEW * TILE_SIZE * TILE_SIZE) / (span * span));
-    const area = { centerX: view.focusX, centerZ: view.focusZ, halfSize: this.#halfSize, radius: span / 2 };
+    const area = { centerX: view.focusX, centerZ: view.focusZ, radius: span / 2 };
 
     this.#cover.cover(area, TILE_SIZE, crowding * strength * nearness, NO_DRIFT);
     this.#geometry.instanceCount = this.#cover.count;

@@ -10,7 +10,6 @@ const SALT_RANK = 0x5b_d1_e9_95;
 export interface LatticeArea {
   readonly centerX: number;
   readonly centerZ: number;
-  readonly halfSize: number;
   readonly radius: number;
 }
 
@@ -78,13 +77,19 @@ export class LatticeCover {
   readonly origin = uniform(new Vector2());
   readonly shown = uniform(0);
   readonly slots = uniform(1);
+  readonly #halfSize: number;
   count = 0;
 
+  constructor(halfSize: number) {
+    this.#halfSize = halfSize;
+  }
+
   cover(area: LatticeArea, tileSize: number, shown: number, drift: Vector2): void {
-    const west = Math.max(area.centerX - area.radius, -area.halfSize);
-    const east = Math.min(area.centerX + area.radius, area.halfSize);
-    const north = Math.max(area.centerZ - area.radius, -area.halfSize);
-    const south = Math.min(area.centerZ + area.radius, area.halfSize);
+    const halfSize = this.#halfSize;
+    const west = Math.max(area.centerX - area.radius, -halfSize);
+    const east = Math.min(area.centerX + area.radius, halfSize);
+    const north = Math.max(area.centerZ - area.radius, -halfSize);
+    const south = Math.min(area.centerZ + area.radius, halfSize);
 
     if (shown <= 0 || west >= east || north >= south) {
       this.count = 0;

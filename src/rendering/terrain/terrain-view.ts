@@ -56,10 +56,9 @@ export class TerrainView {
       warp: this.#warp,
     };
 
-    const patchesPerSide = Math.ceil(grid.cellsPerSide / PATCH_CELLS);
     const inland = createTerrainMaterial({ ...options, shouldCutAtCoast: false });
 
-    this.#levels = new Int8Array(patchesPerSide * patchesPerSide);
+    this.#levels = new Int8Array(textures.patchesPerSide ** 2);
     this.#inland = this.#createGrid((region) => this.#measureInland(region), [inland], PATCH_CELLS);
 
     if (textures.outline.coast === null) {

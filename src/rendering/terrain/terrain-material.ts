@@ -265,7 +265,7 @@ export function createTerrainMaterial({
   const strataFade = smoothstep(1.2, 0.4, fwidth(positionWorld.y).mul(0.32));
 
   const surface = texture(textures.surface, mapCoordinates);
-  const albedo = texture(textures.albedo, mapCoordinates).rgb;
+  const albedo = texture(textures.groundAlbedo.texture, mapCoordinates).rgb;
   const strata = sin(positionWorld.y.mul(STRATA_FREQUENCY).add(broad.mul(2)))
     .mul(strataFade.mul(STRATA_CONTRAST))
     .add(1);

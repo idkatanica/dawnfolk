@@ -8,7 +8,6 @@ import {
   RedFormat,
   RGBAFormat,
   RGFormat,
-  type Texture,
   UnsignedByteType,
   type WebGPURenderer,
 } from "three/webgpu";
@@ -98,10 +97,6 @@ export class TerrainTextures {
     this.wetland = byteTexture(this.#wetlandData, size, RGFormat);
     this.#albedo = new GroundAlbedo(mirror);
     this.fields = new FieldPlan(mirror);
-  }
-
-  get albedo(): Texture {
-    return this.#albedo.texture;
   }
 
   get groundAlbedo(): GroundAlbedo {
