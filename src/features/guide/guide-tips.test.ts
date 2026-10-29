@@ -24,7 +24,7 @@ describe("guide tips", () => {
     const looked = applyGuideEvent(FRESH_GUIDE, { kind: "cameraMoved" });
 
     expect(currentTip(looked)).toBe("pick");
-    expect(suggestedPowerId(looked)).toBe("rain");
+    expect(suggestedPowerId(looked)).toBe("lightning");
 
     const finished = applyAll(looked, [
       { kind: "powerPicked" },

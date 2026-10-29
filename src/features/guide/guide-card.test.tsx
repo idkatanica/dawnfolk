@@ -5,7 +5,7 @@ import { useGuideStore } from "./guide-store.ts";
 import { FRESH_GUIDE, INTRO_TIPS } from "./guide-tips.ts";
 
 const LOOK_TIP = /Drag to look around/u;
-const PICK_TIP = /Pick Rain/u;
+const PICK_TIP = /Pick Lightning/u;
 
 describe("guide card", () => {
   beforeEach(() => {
