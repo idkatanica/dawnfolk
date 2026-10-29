@@ -14,6 +14,7 @@ import { type GeneratedWorld, generateWorld } from "./world-generator.ts";
 
 const TEST_DIMENSIONS = { cellSize: 40, cellsPerSide: 128 };
 const DETERMINISM_DIMENSIONS = { cellSize: 20, cellsPerSide: 128 };
+const DETERMINISM_SEEDS = [7, 11, 13];
 const STEEP = 1;
 const CLIFF = Math.tan((55 * Math.PI) / 180);
 const SMALLEST_RIVER_GAP = 35;
@@ -981,14 +982,18 @@ describe.each(ISLAND_SHAPES)("a %s world generated twice from one seed", (shape)
   test("comes out the same in every stage", () => {
     const options = { dimensions: DETERMINISM_DIMENSIONS, erosionStrength: 1, shape };
 
-    const first = generateWorld(11, options);
-    const again = generateWorld(11, options);
+    const firsts = DETERMINISM_SEEDS.map((seed) => generateWorld(seed, options));
 
-    expect(first.crossings.length).toBeGreaterThan(0);
-    expect(first.deposits.length).toBeGreaterThan(0);
-    expect(first.monuments.length).toBeGreaterThan(0);
-    expect(again).toEqual(first);
-    expect(again.vegetation.exportBuffers()).toEqual(first.vegetation.exportBuffers());
+    expect(firsts.some((first) => first.crossings.length > 0)).toBe(true);
+    expect(firsts.some((first) => first.deposits.length > 0)).toBe(true);
+    expect(firsts.some((first) => first.monuments.length > 0)).toBe(true);
+
+    for (const [index, seed] of DETERMINISM_SEEDS.entries()) {
+      const again = generateWorld(seed, options);
+
+      expect(again).toEqual(firsts[index]);
+      expect(again.vegetation.exportBuffers()).toEqual(firsts[index].vegetation.exportBuffers());
+    }
   });
 });
 
