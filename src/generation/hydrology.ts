@@ -183,20 +183,26 @@ export function touchesOffIsland(grid: WorldGrid, coastDistance: Float32Array, c
   return false;
 }
 
-function wanderingReceiver(grid: WorldGrid, filled: Float32Array, cell: number): number {
+function wanderingReceiver(grid: WorldGrid, filled: Float32Array, cell: number, weights: Float64Array): number {
   const column = grid.columnOf(cell);
   const row = grid.rowOf(cell);
   const level = filled[cell];
 
-  const slopes = NEIGHBOR_OFFSETS.map((offset) => {
+  let steepest = 0;
+
+  for (const [index, offset] of NEIGHBOR_OFFSETS.entries()) {
     const neighbor = grid.neighborIndex(column, row, offset);
 
-    return neighbor < 0 ? 0 : Math.max(0, (level - filled[neighbor]) / offset.distance);
-  });
+    weights[index] = neighbor < 0 ? 0 : Math.max(0, (level - filled[neighbor]) / offset.distance);
+    steepest = Math.max(steepest, weights[index]);
+  }
 
-  const steepest = Math.max(...slopes);
-  const weights = slopes.map((slope) => Math.max(0, slope - WANDER_SLOPE_SHARE * steepest));
-  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  let total = 0;
+
+  for (let index = 0; index < NEIGHBOR_OFFSETS.length; index += 1) {
+    weights[index] = Math.max(0, weights[index] - WANDER_SLOPE_SHARE * steepest);
+    total += weights[index];
+  }
 
   if (total <= 0) {
     return NO_CELL;
@@ -217,15 +223,18 @@ function wanderingReceiver(grid: WorldGrid, filled: Float32Array, cell: number):
 
 function wanderReceivers(grid: WorldGrid, heights: Float32Array, filled: Float32Array, receivers: Int32Array): void {
   const wanderChance = Math.min(1, WANDER_STEP / grid.cellSize);
+  const weights = new Float64Array(NEIGHBOR_OFFSETS.length);
 
   for (let cell = 0; cell < grid.cellCount; cell += 1) {
-    const isWandering = hashToUnit(grid.columnOf(cell), grid.rowOf(cell), WANDER_CHANCE_SALT) < wanderChance;
-
-    if (receivers[cell] === NO_CELL || filled[cell] > heights[cell] || !isWandering) {
+    if (receivers[cell] === NO_CELL || filled[cell] > heights[cell]) {
       continue;
     }
 
-    const receiver = wanderingReceiver(grid, filled, cell);
+    if (hashToUnit(grid.columnOf(cell), grid.rowOf(cell), WANDER_CHANCE_SALT) >= wanderChance) {
+      continue;
+    }
+
+    const receiver = wanderingReceiver(grid, filled, cell, weights);
 
     if (receiver !== NO_CELL) {
       receivers[cell] = receiver;
@@ -550,31 +559,60 @@ function riverPointFor(land: RiverLand, cell: number, flow: number): RiverPoint 
   };
 }
 
+function chainCells(chain: RiverChain): number[] {
+  return chain.joinsCell === NO_CELL ? [...chain.cells] : [...chain.cells, chain.joinsCell];
+}
+
+function chainFlows(network: DrainageNetwork, chains: readonly RiverChain[]): number[][] {
+  const positions = new Map<number, { chain: number; index: number }>();
+
+  for (const [chain, { cells }] of chains.entries()) {
+    for (const [index, cell] of cells.entries()) {
+      positions.set(cell, { chain, index });
+    }
+  }
+
+  const inflows = chains.map((chain) => new Float64Array(chain.cells.length));
+  const flows: number[][] = [];
+
+  for (let chainIndex = chains.length - 1; chainIndex >= 0; chainIndex -= 1) {
+    const chain = chains[chainIndex];
+
+    let flow = 0;
+
+    flows[chainIndex] = chainCells(chain).map((cell, index) => {
+      flow = Math.max(flow, network.accumulation[cell]) + (inflows[chainIndex][index] ?? 0);
+
+      return flow;
+    });
+
+    const last = chain.cells.at(-1);
+    const junction = positions.get(chain.joinsCell);
+
+    if (last !== undefined && junction !== undefined && network.receivers[last] !== chain.joinsCell) {
+      inflows[junction.chain][junction.index] += flows[chainIndex][chain.cells.length - 1];
+    }
+  }
+
+  return flows;
+}
+
 function buildRivers(land: RiverLand, chains: readonly RiverChain[]): River[] {
   const { basins, grid } = land;
 
   const rivers: River[] = [];
   const surfaces = new Map<number, number>();
   const claimedPastCoast = new Set<number>();
+  const flows = chainFlows(basins.network, chains);
 
-  for (const chain of chains) {
-    const cells = [...chain.cells];
-
-    if (chain.joinsCell !== NO_CELL) {
-      cells.push(chain.joinsCell);
-    }
+  for (const [chainIndex, chain] of chains.entries()) {
+    const cells = chainCells(chain);
 
     if (cells.length < 4) {
       continue;
     }
 
-    let flow = 0;
-
-    const points = cells.map((cell) => {
-      flow = Math.max(flow, basins.network.accumulation[cell]);
-
-      return riverPointFor(land, cell, flow);
-    });
+    const points = cells.map((cell, index) => riverPointFor(land, cell, flows[chainIndex][index]));
     const lakeId = lakeAtMouth(basins.lakeIds, chain);
     const reachesEdge = chain.mouthReceiver === NO_CELL && chain.joinsCell === NO_CELL;
 

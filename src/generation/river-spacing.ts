@@ -43,11 +43,6 @@ interface NearbyOffset {
   readonly row: number;
 }
 
-interface Capture {
-  readonly connector: readonly number[];
-  readonly junction: number;
-}
-
 interface NearbyRiver {
   readonly cell: number;
   readonly distance: number;
@@ -79,36 +74,31 @@ function spacingBetween(spacing: Spacing, cell: number, other: number): number {
   );
 }
 
-function nearestRiver(spacing: Spacing, cell: number, isAllowed: (other: number) => boolean): NearbyRiver | null {
-  const { grid, owners } = spacing;
+function nearestRiver(
+  spacing: Spacing,
+  cell: number,
+  meters: number,
+  isAllowed: (other: number) => boolean
+): NearbyRiver | null {
+  for (const offset of spacing.nearbyOffsets) {
+    if (offset.distance > meters) {
+      return null;
+    }
 
-  const reach = Math.ceil(spacing.reach / grid.cellSize);
-  const column = grid.columnOf(cell);
-  const row = grid.rowOf(cell);
+    const other = riverCellAt(spacing, cell, offset);
 
-  let nearest: NearbyRiver | null = null;
-
-  for (let rowOffset = -reach; rowOffset <= reach; rowOffset += 1) {
-    for (let columnOffset = -reach; columnOffset <= reach; columnOffset += 1) {
-      if (!grid.contains(column + columnOffset, row + rowOffset)) {
-        continue;
-      }
-
-      const other = grid.index(column + columnOffset, row + rowOffset);
-
-      if (owners[other] === NO_CELL || !isAllowed(other)) {
-        continue;
-      }
-
-      const distance = grid.distanceBetween(cell, other);
-
-      if (nearest === null || distance < nearest.distance) {
-        nearest = { cell: other, distance };
-      }
+    if (other !== NO_CELL && isAllowed(other)) {
+      return { cell: other, distance: offset.distance };
     }
   }
 
-  return nearest;
+  return null;
+}
+
+function hasRiverWithin(spacing: Spacing, cell: number, meters: number, allowedOwner = NO_CELL): boolean {
+  const { owners } = spacing;
+
+  return nearestRiver(spacing, cell, meters, (other) => owners[other] !== allowedOwner) !== null;
 }
 
 function anyRiver(): boolean {
@@ -159,7 +149,7 @@ function clearHead(spacing: Spacing, cells: readonly number[]): number {
   const clearance = Math.max(HEAD_CLEARANCE, spacing.grid.cellSize * SPACING_CELLS);
 
   return cells.findIndex((cell) => {
-    const nearest = nearestRiver(spacing, cell, anyRiver);
+    const nearest = nearestRiver(spacing, cell, spacing.reach, anyRiver);
 
     return nearest === null || nearest.distance >= clearance;
   });
@@ -181,13 +171,13 @@ function isNaturalConfluence(spacing: Spacing, chain: RiverChain, from: number):
 function junctionFor(spacing: Spacing, cell: number): number {
   const { heights } = spacing;
 
-  const nearest = nearestRiver(spacing, cell, anyRiver);
+  const nearest = nearestRiver(spacing, cell, spacing.reach, anyRiver);
 
   if (nearest === null || nearest.distance >= spacingBetween(spacing, cell, nearest.cell)) {
     return NO_CELL;
   }
 
-  const lower = nearestRiver(spacing, cell, (other) => heights[other] <= heights[cell]);
+  const lower = nearestRiver(spacing, cell, spacing.reach, (other) => heights[other] <= heights[cell]);
 
   if (lower === null || lower.distance >= spacingBetween(spacing, cell, lower.cell)) {
     return NO_CELL;
@@ -291,7 +281,7 @@ function riverCellAt(spacing: Spacing, cell: number, offset: NearbyOffset): numb
   return owners[other] === NO_CELL ? NO_CELL : other;
 }
 
-function captureFor(spacing: Spacing, cells: readonly number[], index: number): Capture | null {
+function captureFor(spacing: Spacing, cells: readonly number[], head: number, index: number): RiverChain | null {
   const { grid, heights, nearbyOffsets, owners } = spacing;
 
   const cell = cells[index];
@@ -316,29 +306,11 @@ function captureFor(spacing: Spacing, cells: readonly number[], index: number): 
       isConnectorClear(spacing, connector, cell, other) &&
       !hasRiverWithin(spacing, other, SMALLEST_SPACING, owners[other])
     ) {
-      return { connector, junction: other };
+      return { cells: [...cells.slice(head, index + 1), ...connector], joinsCell: other, mouthReceiver: other };
     }
   }
 
   return null;
-}
-
-function hasRiverWithin(spacing: Spacing, cell: number, meters: number, allowedOwner = NO_CELL): boolean {
-  const { nearbyOffsets, owners } = spacing;
-
-  for (const offset of nearbyOffsets) {
-    if (offset.distance > meters) {
-      return false;
-    }
-
-    const other = riverCellAt(spacing, cell, offset);
-
-    if (other !== NO_CELL && owners[other] !== allowedOwner) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 function spacedChain(spacing: Spacing, chain: RiverChain): RiverChain | null {
@@ -361,14 +333,10 @@ function spacedChain(spacing: Spacing, chain: RiverChain): RiverChain | null {
       return { cells: followed.cells.slice(head, index + 1), joinsCell: junction, mouthReceiver: junction };
     }
 
-    const capture = captureFor(spacing, followed.cells, index);
+    const capture = captureFor(spacing, followed.cells, head, index);
 
     if (capture !== null) {
-      return {
-        cells: [...followed.cells.slice(head, index + 1), ...capture.connector],
-        joinsCell: capture.junction,
-        mouthReceiver: capture.junction,
-      };
+      return capture;
     }
   }
 
@@ -376,12 +344,14 @@ function spacedChain(spacing: Spacing, chain: RiverChain): RiverChain | null {
 }
 
 function runsBesideRiver(spacing: Spacing, chain: RiverChain): boolean {
-  const { grid } = spacing;
+  const { grid, owners } = spacing;
+
+  const trunk = chain.joinsCell === NO_CELL ? NO_CELL : owners[chain.joinsCell];
 
   let run = 0;
 
   for (const [index, cell] of chain.cells.entries()) {
-    const isBeside = hasRiverWithin(spacing, cell, PARALLEL_REACH);
+    const isBeside = hasRiverWithin(spacing, cell, PARALLEL_REACH, trunk);
 
     run = isBeside && index > 0 ? run + grid.distanceBetween(chain.cells[index - 1], cell) : 0;
 
