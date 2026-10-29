@@ -56,7 +56,6 @@ const SHAPE_SEEDS: Readonly<Record<PlantSpeciesIndex, number>> = {
   [PlantSpecies.Idol]: 22,
   [PlantSpecies.Maple]: 5,
   [PlantSpecies.Menhir]: 20,
-  [PlantSpecies.MossyRock]: 17,
   [PlantSpecies.Oak]: 2,
   [PlantSpecies.Palm]: 9,
   [PlantSpecies.PearTree]: 26,

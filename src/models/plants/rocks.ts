@@ -8,26 +8,16 @@ import type { MeshData } from "../mesh/mesh-data.ts";
 import { facetShape, type Shape } from "../mesh/shape.ts";
 import { blob, type LoftSection, loft } from "../mesh/shapes.ts";
 import { type Triple, transformOf } from "../mesh/transforms.ts";
-import {
-  addStone,
-  type ChiselOptions,
-  chiseledStone,
-  groundShade,
-  STONE_NOISE,
-  type StoneContext,
-  type StoneLook,
-} from "../stones.ts";
+import { addStone, type ChiselOptions, chiseledStone, groundShade, STONE_NOISE, type StoneContext } from "../stones.ts";
 import type { PlantDetailLevel } from "./tree-mesher.ts";
 
 export const ROCK_HEIGHTS = {
   [PlantSpecies.Boulder]: 1.7,
-  [PlantSpecies.MossyRock]: 1.5,
   [PlantSpecies.Sandstone]: 2.6,
 } as const satisfies Readonly<Record<RockSpecies, number>>;
 
 export const ROCK_VARIANT_COUNTS = {
   [PlantSpecies.Boulder]: 4,
-  [PlantSpecies.MossyRock]: 3,
   [PlantSpecies.Sandstone]: 3,
 } as const satisfies Readonly<Record<RockSpecies, number>>;
 
@@ -37,7 +27,6 @@ const STRATA_SEGMENTS: Readonly<Record<PlantDetailLevel, number>> = { far: 4, hi
 const UP: Triple = [0, 1, 0];
 const DOWN: Triple = [0, -1, 0];
 const BOULDER_COMPANIONS: readonly (readonly number[])[] = [[], [0.62], [], [0.58, 0.46]];
-const MOSSY_LOOK: StoneLook = { lichen: 0.16, moss: 0.62 };
 
 const SANDSTONE_STRATA: readonly (readonly (readonly [number, number])[])[] = [
   [
@@ -61,7 +50,7 @@ const SANDSTONE_STRATA: readonly (readonly (readonly [number, number])[])[] = [
   ],
 ];
 
-type RockSpecies = typeof PlantSpecies.Boulder | typeof PlantSpecies.MossyRock | typeof PlantSpecies.Sandstone;
+type RockSpecies = typeof PlantSpecies.Boulder | typeof PlantSpecies.Sandstone;
 
 interface RockContext extends StoneContext {
   readonly level: PlantDetailLevel;
@@ -70,7 +59,6 @@ interface RockContext extends StoneContext {
 
 const ROCK_MESHERS: Readonly<Record<RockSpecies, (context: RockContext) => void>> = {
   [PlantSpecies.Boulder]: addBoulder,
-  [PlantSpecies.MossyRock]: addMossyRock,
   [PlantSpecies.Sandstone]: addSandstone,
 };
 
@@ -132,41 +120,6 @@ function addBoulder(context: RockContext): void {
       { lichen: 0.12, moss: 0.25 }
     );
   }
-}
-
-function addMossyRock(context: RockContext): void {
-  const { random, variant } = context;
-
-  if (variant === 1) {
-    addStone(
-      context,
-      roundStone(context, 0.95, 0.22),
-      { position: [-0.45, 0.62, 0], rotation: [0.1, random.next() * FULL_TURN, 0.25], scale: [1, 0.85, 0.9] },
-      MOSSY_LOOK
-    );
-    addStone(
-      context,
-      roundStone(context, 0.78, 0.22),
-      { position: [0.55, 0.5, 0.1], rotation: [-0.1, random.next() * FULL_TURN, -0.3], scale: [1, 0.85, 0.95] },
-      MOSSY_LOOK
-    );
-
-    return;
-  }
-
-  const radius = variant === 2 ? 1.55 : 1.15;
-  const flatness = variant === 2 ? 0.42 : 0.78;
-
-  addStone(
-    context,
-    roundStone(context, radius, 0.2),
-    {
-      position: [0, radius * flatness * 0.72, 0],
-      rotation: [random.signed() * 0.15, random.next() * FULL_TURN, random.signed() * 0.15],
-      scale: [1.1, flatness, 0.95],
-    },
-    MOSSY_LOOK
-  );
 }
 
 function strataSections(strata: readonly Stratum[], random: RandomSource): LoftSection[] {
