@@ -35,6 +35,10 @@ function gradientZ(heights: Float32Array, grid: WorldGrid, column: number, row: 
   return (south - north) / (2 * grid.cellSize);
 }
 
+export function gradientXAt(heights: Float32Array, grid: WorldGrid, cell: number): number {
+  return gradientX(heights, grid, grid.columnOf(cell), grid.rowOf(cell));
+}
+
 export function gradientZAt(heights: Float32Array, grid: WorldGrid, cell: number): number {
   return gradientZ(heights, grid, grid.columnOf(cell), grid.rowOf(cell));
 }

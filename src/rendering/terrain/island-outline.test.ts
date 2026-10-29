@@ -14,18 +14,12 @@ const round = new WorldMirror(
   0
 );
 
-function isInside(outline: IslandOutline, x: number, z: number): boolean {
-  const [coastX, coastZ] = outline.atCoast(x, z);
-
-  return Math.hypot(x, z) < Math.hypot(coastX, coastZ);
-}
-
 function sampledSides(outline: IslandOutline, area: GroundArea): Set<boolean> {
   const sides = new Set<boolean>();
 
   for (let z = area.minimumZ; z <= area.maximumZ; z += SAMPLE_STEP) {
     for (let x = area.minimumX; x <= area.maximumX; x += SAMPLE_STEP) {
-      sides.add(isInside(outline, x, z));
+      sides.add(outline.isInside(x, z));
     }
   }
 

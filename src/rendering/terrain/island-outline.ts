@@ -1,9 +1,10 @@
 import { abs, atan, floor, fract, ivec2, length, max, mix, textureLoad, vec2 } from "three/tsl";
-import { ClampToEdgeWrapping, DataTexture, FloatType, NearestFilter, type Node, RedFormat } from "three/webgpu";
+import { type DataTexture, type Node, RedFormat } from "three/webgpu";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { clamp, FULL_TURN, wrapAngle } from "../../shared/math.ts";
 import { sampleHeight } from "../../world/terrain-sampling.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
+import { floatDataTexture } from "../data-textures.ts";
 
 const COAST_SAMPLES = 2048;
 const COAST_SEARCH_STEPS = 24;
@@ -75,18 +76,6 @@ function measureCoastRadii(mirror: WorldMirror): Float32Array {
   }
 
   return radii;
-}
-
-function radiusTexture(radii: Float32Array): DataTexture {
-  const texture = new DataTexture(radii, radii.length, 1, RedFormat, FloatType);
-
-  texture.minFilter = NearestFilter;
-  texture.magFilter = NearestFilter;
-  texture.wrapS = ClampToEdgeWrapping;
-  texture.wrapT = ClampToEdgeWrapping;
-  texture.needsUpdate = true;
-
-  return texture;
 }
 
 function radiusAt(radii: Float32Array, angle: number): number {
@@ -232,7 +221,7 @@ export class IslandOutline {
 
     this.coast = traceCoast(mirror.grid, radii);
     this.#radii = radii;
-    this.#texture = radiusTexture(radii);
+    this.#texture = floatDataTexture(radii, radii.length, 1, RedFormat);
   }
 
   sideOf(area: GroundArea, margin: number): OutlineSide {
