@@ -69,7 +69,7 @@ function QualityChoice() {
   );
 }
 
-function MapLabelsChoice() {
+function DisplayChoice() {
   const areLabelsShown = useInterfaceStore((state) => state.areLabelsShown);
   const setLabelsShown = useInterfaceStore((state) => state.setLabelsShown);
   const areOutlinesShown = useInterfaceStore((state) => state.areOutlinesShown);
@@ -83,6 +83,7 @@ function MapLabelsChoice() {
         label="Map labels"
         onChange={setLabelsShown}
       />
+
       <ToggleField
         description="A dark line around people, animals, plants and buildings."
         isChecked={areOutlinesShown}
@@ -132,7 +133,7 @@ export function IslandSection() {
 
       <QualityChoice />
 
-      <MapLabelsChoice />
+      <DisplayChoice />
 
       <NewWorld />
     </>

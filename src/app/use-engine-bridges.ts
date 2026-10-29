@@ -37,8 +37,10 @@ export function useEngineBridges(): void {
   }, [engine, name, worldId]);
 
   useEffect(() => {
-    if (engine !== null) {
-      engine.setOutlinesShown(areOutlinesShown);
+    if (engine === null) {
+      return;
     }
+
+    engine.setOutlinesShown(areOutlinesShown);
   }, [areOutlinesShown, engine]);
 }

@@ -83,6 +83,8 @@ export function outlinedColor(color: TextureNode, surfaces: TextureNode, control
   const distance = center.z;
   const centerNormal = normalOf(center);
   const slack = float(1).add(float(1).sub(centerNormal.z).mul(GRAZING_SLACK));
+  const gapStart = slack.mul(DEPTH_GAP_START);
+  const gapEnd = slack.mul(DEPTH_GAP_END);
 
   let silhouette: Node<"float"> = float(0);
   let crease: Node<"float"> = float(0);
@@ -91,9 +93,9 @@ export function outlinedColor(color: TextureNode, surfaces: TextureNode, control
     const neighbor = surfaces.sample(screenUV.add(vec2(column, row).mul(step)));
     const gap = distanceOf(neighbor).sub(distance).div(distance);
 
-    const isBehind = smoothstep(slack.mul(DEPTH_GAP_START), slack.mul(DEPTH_GAP_END), gap);
+    const isBehind = smoothstep(gapStart, gapEnd, gap);
     const isOtherKind = smoothstep(KIND_GAP_START, KIND_GAP_END, center.w.sub(neighbor.w));
-    const isSameSurface = float(1).sub(smoothstep(slack.mul(DEPTH_GAP_START), slack.mul(DEPTH_GAP_END), abs(gap)));
+    const isSameSurface = float(1).sub(smoothstep(gapStart, gapEnd, abs(gap)));
     const bend = float(1).sub(smoothstep(CREASE_START, CREASE_END, centerNormal.dot(normalOf(neighbor))));
 
     silhouette = max(silhouette, max(isBehind, isOtherKind));
