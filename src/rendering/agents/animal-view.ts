@@ -19,14 +19,16 @@ import { ANIMAL_STRIDE, AnimalField } from "../../world/agent-buffers.ts";
 import { ANIMAL_POSES, type AnimalPose } from "../../world/agent-poses.ts";
 import { HIDDEN_LEVEL } from "../view-input.ts";
 import { AgentMotion } from "./agent-motion.ts";
-import { AgentPalette } from "./agent-palette.ts";
+import { AgentPalette, NO_ROW } from "./agent-palette.ts";
 import {
   type AgentViewInput,
   detailLevel,
   farthestFigure,
   forgetUnseen,
-  heldLift,
+  holdFigure,
+  isHighlightedAgent,
   type LevelDistances,
+  liftOf,
   NO_SELECTION,
   selectedAgentId,
   slopeLean,
@@ -163,6 +165,7 @@ export class AnimalView {
     const { frame } = input.mirror;
 
     this.#seen.clear();
+    this.#palette.highlightRow.value = NO_ROW;
     this.#selectedId = selectedAgentId(frame.inspection, "animal");
 
     for (const kind of ANIMAL_KINDS) {
@@ -218,11 +221,14 @@ export class AnimalView {
   #drawAnimal(input: AgentViewInput, offset: number, row: number): boolean {
     const { animals } = input.mirror.frame;
 
-    const x = animals[offset + AnimalField.X] + animals[offset + AnimalField.VelocityX] * input.secondsSinceTick;
-    const z = animals[offset + AnimalField.Z] + animals[offset + AnimalField.VelocityZ] * input.secondsSinceTick;
+    const id = animals[offset + AnimalField.Id];
+    const restX = animals[offset + AnimalField.X] + animals[offset + AnimalField.VelocityX] * input.secondsSinceTick;
+    const restZ = animals[offset + AnimalField.Z] + animals[offset + AnimalField.VelocityZ] * input.secondsSinceTick;
+    const pose = input.hand.poseOf("animal", id, restX, restZ);
 
-    const lift = heldLift(input.mirror.frame.held, "animal", animals[offset + AnimalField.Id]);
-    const y = standingHeight(input.mirror, x, z, WADING_DEPTH) + lift;
+    const x = pose === null ? restX : pose.x;
+    const z = pose === null ? restZ : pose.z;
+    const y = standingHeight(input.mirror, x, z, WADING_DEPTH) + liftOf(pose);
 
     this.#bounds.center.set(x, y + ANIMAL_BOUNDING_LIFT, z);
 
@@ -242,6 +248,7 @@ export class AnimalView {
     this.#palette.ensureRows(row + 1);
     this.#writePose(visual, kindView, row);
     this.#palette.lean(row, slopeLean(input.mirror, x, z, visual.motion.heading, LEAN_REACH));
+    holdFigure(this.#palette, row, visual.motion.heading, pose, isHighlightedAgent(input.highlighted, "animal", id));
     this.#palette.writeRoot(row, x, y, z, visual.motion.heading);
 
     for (const [index, color] of visual.colors.entries()) {

@@ -1,4 +1,4 @@
-import { PerspectiveCamera } from "three/webgpu";
+import { PerspectiveCamera, type Vector3 } from "three/webgpu";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GodCamera } from "../camera/god-camera.ts";
 import { GroundPicker } from "./ground-picker.ts";
@@ -39,6 +39,7 @@ function createTool(canBegin: () => boolean, isActive: () => boolean) {
     begin: vi.fn<ToolGestures["begin"]>(),
     canBegin,
     cancel: vi.fn<ToolGestures["cancel"]>(),
+    canHoldThroughPinch: true,
     end: vi.fn<ToolGestures["end"]>(),
     hover: vi.fn<ToolGestures["hover"]>(),
     isActive,
@@ -47,7 +48,11 @@ function createTool(canBegin: () => boolean, isActive: () => boolean) {
   };
 }
 
-function createRig(canBegin: () => boolean = isAlwaysTrue, leading: ToolSpy | null = null): Rig {
+function createRig(
+  canBegin: () => boolean = isAlwaysTrue,
+  leading: ToolSpy | null = null,
+  isActive: () => boolean = isAlwaysTrue
+): Rig {
   const canvas = document.createElement("canvas");
 
   canvas.style.cssText = `position: fixed; left: 0; top: 0; width: ${CANVAS_WIDTH}px; height: ${CANVAS_HEIGHT}px`;
@@ -66,7 +71,7 @@ function createRig(canBegin: () => boolean = isAlwaysTrue, leading: ToolSpy | nu
   camera.jumpTo({ distance: 600, targetX: 0, targetZ: 0 });
   settle(camera);
 
-  const tool = createTool(canBegin, isAlwaysTrue);
+  const tool = createTool(canBegin, isActive);
   const tools = leading === null ? [tool] : [leading, tool];
   const picker = new GroundPicker(
     perspective,
@@ -99,6 +104,21 @@ function mouse(rig: Rig, type: string, x: number, y: number): void {
   rig.canvas.dispatchEvent(
     new PointerEvent(type, { button: 0, clientX: x, clientY: y, pointerId: 1, pointerType: "mouse" })
   );
+}
+
+function wheel(rig: Rig, deltaY: number): void {
+  rig.canvas.dispatchEvent(new WheelEvent("wheel", { cancelable: true, clientX: 195, clientY: 420, deltaY }));
+}
+
+function runFrames(rig: Rig): void {
+  for (let step = 0; step < 30; step += 1) {
+    rig.camera.update(0.05);
+    rig.controls.update();
+  }
+}
+
+function lastMovedPoint(tool: ToolSpy): Vector3 | undefined {
+  return tool.move.mock.lastCall?.[0];
 }
 
 function wait(milliseconds: number): Promise<void> {
@@ -267,5 +287,123 @@ describe("pointer controls", () => {
 
     expect(rig.tool.cancel).toHaveBeenCalledTimes(1);
     expect(rig.tool.end).not.toHaveBeenCalled();
+  });
+
+  it("keeps carrying through a pinch and zooms the camera with it", async () => {
+    const rig = createRig();
+
+    const before = rig.camera.state.distance;
+
+    touch(rig, "pointerdown", 1, 195, 420);
+    await wait(HOLD_MILLISECONDS);
+    touch(rig, "pointerdown", 2, 260, 520);
+
+    for (let step = 1; step <= 10; step += 1) {
+      touch(rig, "pointermove", 2, 260 + step * 8, 520 + step * 8);
+    }
+
+    runFrames(rig);
+    touch(rig, "pointerup", 2, 340, 600);
+    touch(rig, "pointermove", 1, 215, 430);
+    touch(rig, "pointerup", 1, 215, 430);
+
+    expect(rig.tool.begin).toHaveBeenCalledTimes(1);
+    expect(rig.tool.cancel).not.toHaveBeenCalled();
+    expect(rig.tool.end).toHaveBeenCalledTimes(1);
+    expect(rig.camera.state.distance).toBeLessThan(before);
+  });
+
+  it("cancels a tool that cannot hold through a pinch", async () => {
+    const brush = { ...createTool(isAlwaysTrue, isAlwaysTrue), canHoldThroughPinch: false };
+    const rig = createRig(isAlwaysTrue, brush);
+
+    touch(rig, "pointerdown", 1, 195, 420);
+    await wait(HOLD_MILLISECONDS);
+    touch(rig, "pointerdown", 2, 260, 520);
+
+    expect(brush.begin).toHaveBeenCalledTimes(1);
+    expect(brush.cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops what it carries when the holding finger lifts during a pinch", async () => {
+    const rig = createRig();
+
+    touch(rig, "pointerdown", 1, 195, 420);
+    await wait(HOLD_MILLISECONDS);
+    touch(rig, "pointerdown", 2, 260, 520);
+    touch(rig, "pointerup", 1, 195, 420);
+    touch(rig, "pointermove", 2, 280, 520);
+    touch(rig, "pointerup", 2, 280, 520);
+
+    expect(rig.tool.end).toHaveBeenCalledTimes(1);
+    expect(rig.tool.tap).not.toHaveBeenCalled();
+  });
+
+  it("carries to the ground under the still pointer as the camera zooms", () => {
+    const rig = createRig();
+
+    mouse(rig, "pointerdown", 100, 300);
+    mouse(rig, "pointermove", 110, 300);
+
+    const beforeZoom = lastMovedPoint(rig.tool);
+
+    wheel(rig, 600);
+    runFrames(rig);
+
+    const afterZoom = lastMovedPoint(rig.tool);
+
+    mouse(rig, "pointerup", 110, 300);
+
+    expect(beforeZoom).toBeDefined();
+    expect(afterZoom).toBeDefined();
+    expect(afterZoom?.distanceTo(beforeZoom ?? afterZoom)).toBeGreaterThan(1);
+    expect(rig.tool.cancel).not.toHaveBeenCalled();
+    expect(rig.tool.end).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves taps to the tool while one is selected", () => {
+    const rig = createRig(isNeverTrue);
+
+    mouse(rig, "pointerdown", 195, 420);
+    mouse(rig, "pointerup", 195, 420);
+
+    expect(rig.tool.tap).not.toHaveBeenCalled();
+  });
+
+  it("taps to select when no tool is selected", () => {
+    const rig = createRig(isNeverTrue, null, isNeverTrue);
+
+    mouse(rig, "pointerdown", 195, 420);
+    mouse(rig, "pointerup", 195, 420);
+
+    expect(rig.tool.tap).toHaveBeenCalledTimes(1);
+  });
+
+  it("hovers once a frame with the screen point, and again when the camera moves", () => {
+    const rig = createRig();
+
+    mouse(rig, "pointermove", 120, 200);
+
+    expect(rig.tool.hover).not.toHaveBeenCalled();
+
+    rig.controls.update();
+    rig.controls.update();
+
+    expect(rig.tool.hover).toHaveBeenCalledTimes(1);
+    expect(rig.tool.hover.mock.lastCall?.[1]).toEqual({ x: 120, y: 200 });
+
+    rig.controls.rehover();
+    rig.controls.update();
+
+    expect(rig.tool.hover).toHaveBeenCalledTimes(2);
+
+    wheel(rig, 400);
+    runFrames(rig);
+
+    expect(rig.tool.hover.mock.calls.length).toBeGreaterThan(1);
+
+    mouse(rig, "pointerleave", 120, 200);
+
+    expect(rig.tool.hover).toHaveBeenLastCalledWith(null, null);
   });
 });

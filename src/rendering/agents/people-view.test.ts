@@ -8,6 +8,7 @@ import { PersonField } from "../../world/agent-buffers.ts";
 import { personPoseCode } from "../../world/agent-poses.ts";
 import { gearCode, weaponCode } from "../../world/gear.ts";
 import { CameraAxes } from "../effects/billboards.ts";
+import { HandMotion } from "../hand-motion.ts";
 import { TribeLooks } from "../tribe-looks.ts";
 import { AgentMarkers } from "./agent-markers.ts";
 import type { AgentViewInput } from "./agent-view-input.ts";
@@ -45,6 +46,8 @@ function inputFrom(mirror: WorldMirror, height: number): AgentViewInput {
     detail: 1,
     frustum,
     gameSeconds: 0,
+    hand: new HandMotion(),
+    highlighted: null,
     markers: new AgentMarkers(new CameraAxes(), mirror),
     mirror,
     realSeconds: 0,

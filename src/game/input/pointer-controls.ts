@@ -1,4 +1,4 @@
-import type { Vector3 } from "three/webgpu";
+import { Matrix4, type Vector3 } from "three/webgpu";
 import type { GodCamera } from "../camera/god-camera.ts";
 import type { GroundPicker, ScreenPoint } from "./ground-picker.ts";
 
@@ -14,8 +14,9 @@ export interface ToolGestures {
   readonly begin: (point: Vector3) => void;
   readonly canBegin: (point: Vector3, screen: ScreenPoint) => boolean;
   readonly cancel: () => void;
+  readonly canHoldThroughPinch: boolean;
   readonly end: () => void;
-  readonly hover: (point: Vector3 | null) => void;
+  readonly hover: (point: Vector3 | null, screen: ScreenPoint | null) => void;
   readonly isActive: () => boolean;
   readonly move: (point: Vector3) => void;
 }
@@ -39,13 +40,25 @@ interface PinchMeasure {
   readonly middleY: number;
 }
 
+interface Carrying {
+  readonly holder: TrackedPointer;
+  readonly tool: ToolGestures;
+}
+
 type Gesture =
   | { readonly kind: "idle" }
   | { readonly kind: "orbit" }
   | { readonly kind: "pan"; travel: number }
   | { readonly kind: "tool"; readonly tool: ToolGestures }
-  | { readonly kind: "waiting"; readonly point: Vector3; readonly tool: ToolGestures }
-  | { angle: number; distance: number; readonly kind: "pinch"; middleX: number; middleY: number };
+  | { readonly kind: "waiting"; readonly point: Vector3; readonly screen: ScreenPoint; readonly tool: ToolGestures }
+  | {
+      angle: number;
+      readonly carrying: Carrying | null;
+      distance: number;
+      readonly kind: "pinch";
+      middleX: number;
+      middleY: number;
+    };
 
 function wheelPixels(event: WheelEvent, pageHeight: number): number {
   if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
@@ -82,8 +95,12 @@ export class PointerControls {
   readonly #pointers = new Map<number, TrackedPointer>();
   readonly #tap: TapHandler;
   readonly #tools: readonly ToolGestures[];
+  readonly #viewAtHover = new Matrix4();
   #gesture: Gesture = { kind: "idle" };
   #holdTimer: number | null = null;
+  #hoverScreen: ScreenPoint | null = null;
+  #hoverTool: ToolGestures | null = null;
+  #pickedScreen: ScreenPoint | null = null;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -131,7 +148,7 @@ export class PointerControls {
     canvas.addEventListener(
       "pointerleave",
       () => {
-        return this.#hoverNothing();
+        return this.#leave();
       },
       options
     );
@@ -156,6 +173,22 @@ export class PointerControls {
     this.#abort.abort();
   }
 
+  rehover(): void {
+    this.#pickedScreen = null;
+  }
+
+  update(): void {
+    const carrying = this.#carrying();
+
+    if (carrying !== null) {
+      this.#continueTool(carrying.tool, carrying.holder);
+
+      return;
+    }
+
+    this.#refreshHover();
+  }
+
   #down(event: PointerEvent): void {
     this.#canvas.setPointerCapture(event.pointerId);
     this.#pointers.set(event.pointerId, {
@@ -167,7 +200,7 @@ export class PointerControls {
     });
 
     if (this.#pointers.size === 2) {
-      this.#beginPinch();
+      this.#beginPinch(event.pointerId);
 
       return;
     }
@@ -195,7 +228,7 @@ export class PointerControls {
     }
 
     if (event.pointerType === "touch") {
-      this.#waitForSecondTouch({ kind: "waiting", point, tool });
+      this.#waitForSecondTouch({ kind: "waiting", point, screen, tool });
 
       return;
     }
@@ -206,7 +239,7 @@ export class PointerControls {
 
   #waitForSecondTouch(waiting: Extract<Gesture, { kind: "waiting" }>): void {
     this.#gesture = waiting;
-    waiting.tool.hover(waiting.point);
+    waiting.tool.hover(waiting.point, waiting.screen);
     this.#holdTimer = window.setTimeout(() => {
       return this.#commitTool(this.#onlyPointer());
     }, TOUCH_HOLD_MILLISECONDS);
@@ -245,16 +278,19 @@ export class PointerControls {
     this.#holdTimer = null;
   }
 
-  #beginPinch(): void {
+  #beginPinch(newcomer: number): void {
     const gesture = this.#gesture;
+    const carrying = gesture.kind === "tool" ? this.#keptHolder(gesture.tool, newcomer) : null;
 
     this.#stopHold();
 
-    if (gesture.kind === "tool") {
+    if (gesture.kind === "tool" && carrying === null) {
       gesture.tool.cancel();
     }
 
-    this.#hoverNothing();
+    if (carrying === null) {
+      this.#hoverNothing();
+    }
 
     const pinch = measurePinch(this.#pointers);
 
@@ -262,7 +298,37 @@ export class PointerControls {
       return;
     }
 
-    this.#gesture = { ...pinch, kind: "pinch" };
+    this.#gesture = { ...pinch, carrying, kind: "pinch" };
+  }
+
+  #keptHolder(tool: ToolGestures, newcomer: number): Carrying | null {
+    if (!tool.canHoldThroughPinch) {
+      return null;
+    }
+
+    for (const [id, pointer] of this.#pointers) {
+      if (id !== newcomer) {
+        return { holder: pointer, tool };
+      }
+    }
+
+    return null;
+  }
+
+  #carrying(): Carrying | null {
+    const gesture = this.#gesture;
+
+    if (gesture.kind === "pinch") {
+      return gesture.carrying;
+    }
+
+    if (gesture.kind !== "tool") {
+      return null;
+    }
+
+    const holder = this.#onlyPointer();
+
+    return holder === null ? null : { holder, tool: gesture.tool };
   }
 
   #move(event: PointerEvent): void {
@@ -273,6 +339,8 @@ export class PointerControls {
 
       return;
     }
+
+    this.#hoverScreen = event.pointerType === "mouse" ? { x: event.offsetX, y: event.offsetY } : null;
 
     const deltaX = event.offsetX - pointer.x;
     const deltaY = event.offsetY - pointer.y;
@@ -320,8 +388,11 @@ export class PointerControls {
     }
 
     this.#camera.zoom(gesture.distance / Math.max(1, pinch.distance), this.#pick(pinch.middleX, pinch.middleY));
-    this.#camera.orbit(pinch.angle - gesture.angle, 0);
-    this.#camera.pan(pinch.middleX - gesture.middleX, pinch.middleY - gesture.middleY, this.#canvas.clientHeight);
+
+    if (gesture.carrying === null) {
+      this.#camera.orbit(pinch.angle - gesture.angle, 0);
+      this.#camera.pan(pinch.middleX - gesture.middleX, pinch.middleY - gesture.middleY, this.#canvas.clientHeight);
+    }
 
     gesture.distance = pinch.distance;
     gesture.angle = pinch.angle;
@@ -333,8 +404,17 @@ export class PointerControls {
     const pointer = this.#pointers.get(event.pointerId);
 
     this.#pointers.delete(event.pointerId);
+    this.#pickedScreen = null;
 
     if (pointer === undefined) {
+      return;
+    }
+
+    const gesture = this.#gesture;
+
+    if (gesture.kind === "pinch" && gesture.carrying !== null) {
+      this.#leavePinch(gesture.carrying, pointer, isReleased);
+
       return;
     }
 
@@ -355,6 +435,24 @@ export class PointerControls {
     }
   }
 
+  #leavePinch(carrying: Carrying, pointer: TrackedPointer, isReleased: boolean): void {
+    const { holder, tool } = carrying;
+
+    if (pointer !== holder) {
+      this.#gesture = { kind: "tool", tool };
+
+      return;
+    }
+
+    if (isReleased) {
+      tool.end();
+    } else {
+      tool.cancel();
+    }
+
+    this.#gesture = this.#pointers.size === 0 ? { kind: "idle" } : { kind: "pan", travel: TAP_TOLERANCE };
+  }
+
   #abandonGesture(): void {
     const gesture = this.#gesture;
 
@@ -365,7 +463,7 @@ export class PointerControls {
     }
 
     if (gesture.kind === "waiting") {
-      gesture.tool.hover(null);
+      gesture.tool.hover(null, null);
     }
 
     this.#gesture = { kind: "idle" };
@@ -385,26 +483,48 @@ export class PointerControls {
       return;
     }
 
-    if (gesture.kind === "pan" && gesture.travel < TAP_TOLERANCE) {
+    if (gesture.kind === "pan" && gesture.travel < TAP_TOLERANCE && this.#activeTool() === null) {
       this.#tap.tap(this.#pick(pointer.x, pointer.y), { x: pointer.x, y: pointer.y });
     }
   }
 
   #hover(event: PointerEvent): void {
-    const tool = this.#activeTool();
-
-    if (event.pointerType !== "mouse" || tool === null) {
+    if (event.pointerType !== "mouse") {
       return;
     }
 
-    tool.hover(this.#pick(event.offsetX, event.offsetY));
+    this.#hoverScreen = { x: event.offsetX, y: event.offsetY };
+  }
+
+  #refreshHover(): void {
+    const screen = this.#hoverScreen;
+    const tool = this.#activeTool();
+    const view = this.#camera.camera.matrixWorld;
+
+    if (screen === null || tool === null || this.#pointers.size > 0) {
+      return;
+    }
+
+    if (screen === this.#pickedScreen && tool === this.#hoverTool && view.equals(this.#viewAtHover)) {
+      return;
+    }
+
+    this.#pickedScreen = screen;
+    this.#hoverTool = tool;
+    this.#viewAtHover.copy(view);
+    tool.hover(this.#pick(screen.x, screen.y), screen);
+  }
+
+  #leave(): void {
+    this.#hoverScreen = null;
+    this.#hoverNothing();
   }
 
   #hoverNothing(): void {
     const tool = this.#activeTool();
 
     if (tool !== null) {
-      tool.hover(null);
+      tool.hover(null, null);
     }
   }
 

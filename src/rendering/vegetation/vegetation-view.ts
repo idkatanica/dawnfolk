@@ -1,3 +1,4 @@
+import { uniform } from "three/tsl";
 import {
   type DirectionalLight,
   type Frustum,
@@ -5,20 +6,21 @@ import {
   type InstancedBufferGeometry,
   type MeshStandardNodeMaterial,
   type PerspectiveCamera,
+  Vector3,
 } from "three/webgpu";
 import { PLANT_SPECIES, PlantSpecies } from "../../content/plants.ts";
 import type { WorldMirror } from "../../game/world-mirror.ts";
 import { MaterialSlot } from "../../models/materials.ts";
 import type { MeshData, VertexChannel } from "../../models/mesh/mesh-data.ts";
 import { buildPlantVariant, PLANT_DETAIL_LEVELS } from "../../models/plants/plant-models.ts";
-import type { HeldView } from "../../simulation/hand/grab-target.ts";
 import type { CellRegion } from "../../world/change-tracking.ts";
 import { NO_PLANT } from "../../world/vegetation-store.ts";
 import type { FireGlow } from "../effects/fire-glow.ts";
+import type { HandMotion } from "../hand-motion.ts";
 import { geometryFromMeshData, InstanceBatch, toInstancedGeometry } from "../instancing.ts";
 import { SHADOW_ONLY_LAYER } from "../shadow-only-layer.ts";
 import type { TerrainTextures } from "../terrain/terrain-textures.ts";
-import { HELD_LIFT, HIDDEN_LEVEL } from "../view-input.ts";
+import { HIDDEN_LEVEL } from "../view-input.ts";
 import { createPlantMaterial, PlantWeather, SpeciesLook } from "./plant-material.ts";
 import { foliageLook } from "./plant-palette.ts";
 import {
@@ -144,6 +146,7 @@ function fillPlants(plants: PlantBatch, chunks: readonly VegetationChunk[], cast
 export class VegetationView {
   readonly chunks: VegetationChunks;
   readonly group = new Group();
+  readonly highlight = uniform(new Vector3());
   readonly weather = new PlantWeather();
   readonly #batches: readonly (readonly PlantBatch[])[];
   readonly #changedBuckets: readonly Set<number>[];
@@ -182,6 +185,7 @@ export class VegetationView {
         },
         glow,
         grid: mirror.grid,
+        highlight: this.highlight,
         isFlammable: PLANT_SPECIES[species].canopyFuel > 0,
         look,
         textures,
@@ -212,8 +216,21 @@ export class VegetationView {
     this.chunks.heightsChanged(region);
   }
 
-  hold(held: HeldView | null): void {
-    const plant = held === null || held.kind !== "plant" ? NO_PLANT : held.id;
+  highlightPlant(plant: number): void {
+    const { vegetation } = this.#mirror;
+
+    if (plant === NO_PLANT) {
+      this.highlight.value.set(0, 0, 0);
+
+      return;
+    }
+
+    this.highlight.value.set(vegetation.x[plant], vegetation.z[plant], 1);
+  }
+
+  hold(hand: HandMotion): void {
+    const { subject } = hand;
+    const plant = subject === null || subject.kind !== "plant" ? NO_PLANT : subject.id;
 
     this.chunks.hold(plant);
 
@@ -223,18 +240,24 @@ export class VegetationView {
       this.#heldBatch = null;
     }
 
-    if (held === null || plant === NO_PLANT) {
+    if (plant === NO_PLANT) {
       return;
     }
 
     const { vegetation } = this.#mirror;
 
+    const pose = hand.poseOf("plant", plant, vegetation.x[plant], vegetation.z[plant]);
+
+    if (pose === null) {
+      return;
+    }
+
     const batch = this.#heldBatchFor(bucketOf(vegetation.species[plant], vegetation.seed[plant]));
     const instance = this.#heldInstance;
 
-    instance[0] = held.x;
-    instance[1] = this.#mirror.surfaceAt(held.x, held.z) + HELD_LIFT - PLANT_SINKING;
-    instance[2] = held.z;
+    instance[0] = pose.x;
+    instance[1] = this.#mirror.surfaceAt(pose.x, pose.z) + pose.lift - PLANT_SINKING;
+    instance[2] = pose.z;
     instance[3] = vegetation.rotation[plant];
     writePlantLook(vegetation, plant, instance, 4);
 

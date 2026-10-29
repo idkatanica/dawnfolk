@@ -19,6 +19,7 @@ const OCCLUSION_MARGIN_PER_METER = 0.04;
 const PLANT_CENTER_SHARE = 0.45;
 const PLANT_PICK_PENALTY_PIXELS = 6;
 const PLANT_SEARCH_RADIUS = 60;
+const PLANT_SEARCH_SLACK = 2;
 
 interface Candidate<Target> {
   readonly distance: number;
@@ -168,13 +169,15 @@ export class EntityPicker {
   #grabbablePlants(vegetation: GrabScene["vegetation"], pointer: PointerPick): Candidate<GrabTarget>[] {
     const { ground } = pointer;
 
+    const searchRadius = this.#plantSearchRadius(pointer);
+
     const candidates: Candidate<GrabTarget>[] = [];
 
     for (let plant = 0; plant < vegetation.count; plant += 1) {
       const x = vegetation.x[plant];
       const z = vegetation.z[plant];
 
-      const isFar = ground !== null && Math.hypot(x - ground.x, z - ground.z) > PLANT_SEARCH_RADIUS;
+      const isFar = ground !== null && Math.max(Math.abs(x - ground.x), Math.abs(z - ground.z)) > searchRadius;
 
       if (isFar || vegetation.state[plant] !== PlantState.Alive || !isGrabbablePlant(vegetation.species[plant])) {
         continue;
@@ -193,6 +196,18 @@ export class EntityPicker {
     }
 
     return candidates;
+  }
+
+  #plantSearchRadius({ ground, viewport }: PointerPick): number {
+    if (ground === null) {
+      return PLANT_SEARCH_RADIUS;
+    }
+
+    const reach = this.#camera.position.distanceTo(ground);
+    const halfView = Math.tan((this.#camera.fov * Math.PI) / 360);
+    const metersPerPixel = (2 * reach * halfView) / Math.max(1, viewport.height);
+
+    return Math.max(PLANT_SEARCH_RADIUS, metersPerPixel * PICK_RADIUS_PIXELS * PLANT_SEARCH_SLACK);
   }
 
   #visibleReach(ground: Vector3 | null): number {

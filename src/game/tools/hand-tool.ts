@@ -1,7 +1,6 @@
 import type { Vector3 } from "three/webgpu";
-import { ignore } from "../../shared/ignore.ts";
 import type { SimulationCommand } from "../../simulation/commands.ts";
-import type { GrabTarget } from "../../simulation/hand/grab-target.ts";
+import type { GrabTarget, HeldView } from "../../simulation/hand/grab-target.ts";
 import type { ScreenPoint } from "../input/ground-picker.ts";
 import type { ToolGestures } from "../input/pointer-controls.ts";
 
@@ -11,10 +10,15 @@ type GrabPicker = (point: Vector3, screen: ScreenPoint) => GrabTarget | null;
 
 type HandState = "holding" | "idle" | "putAway";
 
+export type HandCursor = "blocked" | "closed" | "none" | "open";
+
 export class HandTool implements ToolGestures {
-  readonly hover = ignore;
+  readonly canHoldThroughPinch = true;
   readonly #pick: GrabPicker;
   readonly #send: CommandSink;
+  #carriedX = Number.NaN;
+  #carriedZ = Number.NaN;
+  #hovered: GrabTarget | null = null;
   #state: HandState = "putAway";
   #target: GrabTarget | null = null;
 
@@ -23,10 +27,15 @@ export class HandTool implements ToolGestures {
     this.#pick = pick;
   }
 
+  get hovered(): GrabTarget | null {
+    return this.#hovered;
+  }
+
   select(isSelected: boolean): void {
     if (!isSelected) {
       this.cancel();
       this.#state = "putAway";
+      this.#hovered = null;
 
       return;
     }
@@ -38,6 +47,24 @@ export class HandTool implements ToolGestures {
 
   isActive(): boolean {
     return this.#state !== "putAway";
+  }
+
+  cursor(held: HeldView | null): HandCursor {
+    if (this.#state === "putAway") {
+      return "none";
+    }
+
+    if (this.#state === "idle") {
+      return "open";
+    }
+
+    return held !== null && !held.isPlaceable ? "blocked" : "closed";
+  }
+
+  hover(point: Vector3 | null, screen: ScreenPoint | null): void {
+    const canPick = this.#state === "idle" && point !== null && screen !== null;
+
+    this.#hovered = canPick ? this.#pick(point, screen) : null;
   }
 
   canBegin(point: Vector3, screen: ScreenPoint): boolean {
@@ -58,13 +85,20 @@ export class HandTool implements ToolGestures {
     this.cancel();
     this.#send({ target, type: "grab" });
     this.#state = "holding";
+    this.#hovered = null;
+    this.#carriedX = Number.NaN;
+    this.#carriedZ = Number.NaN;
   }
 
   move(point: Vector3): void {
-    if (this.#state !== "holding") {
+    const isStill = point.x === this.#carriedX && point.z === this.#carriedZ;
+
+    if (this.#state !== "holding" || isStill) {
       return;
     }
 
+    this.#carriedX = point.x;
+    this.#carriedZ = point.z;
     this.#send({ type: "carry", x: point.x, z: point.z });
   }
 
