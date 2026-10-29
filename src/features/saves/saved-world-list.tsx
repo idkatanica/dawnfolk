@@ -1,10 +1,9 @@
-import { Menu } from "@base-ui/react/menu";
-import { Ellipsis, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useLaunchStore } from "../../app/launch-store.ts";
 import { IconButton, TextButton } from "../../design/buttons.tsx";
 import { cn } from "../../design/cn.ts";
-import { FOCUS_RING, MENU_ITEM, MENU_POPUP } from "../../design/styles.ts";
+import { FOCUS_RING } from "../../design/styles.ts";
 import type { SavedWorldListing } from "./save-database.ts";
 import { describePeople, formatSavedAt } from "./saved-time.ts";
 import { useSavesStore } from "./saves-store.ts";
@@ -15,11 +14,6 @@ const CLOCK_MILLISECONDS = 30_000;
 interface SavedWorldRowProps {
   readonly now: number;
   readonly world: SavedWorldListing;
-}
-
-interface WorldMenuProps {
-  readonly name: string;
-  readonly onDelete: () => void;
 }
 
 function worldDetails(world: SavedWorldListing, now: number): string {
@@ -54,33 +48,6 @@ function useSavedWorldRow(world: SavedWorldListing) {
   }
 
   return { handleConfirmDelete, handleDelete, handleKeep, handleOpen, isConfirming };
-}
-
-function WorldMenu({ name, onDelete }: WorldMenuProps) {
-  return (
-    <Menu.Root>
-      <Menu.Trigger
-        render={
-          <IconButton
-            className="text-ink-soft size-9"
-            icon={<Ellipsis aria-hidden="true" size={16} />}
-            label={`More for ${name}`}
-          />
-        }
-      />
-
-      <Menu.Portal>
-        <Menu.Positioner align="end" className="z-50" sideOffset={6}>
-          <Menu.Popup className={cn(MENU_POPUP, "min-w-40")}>
-            <Menu.Item className={MENU_ITEM} onClick={onDelete}>
-              <Trash2 aria-hidden="true" className="text-ink-soft" size={17} />
-              Delete
-            </Menu.Item>
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
-  );
 }
 
 function SavedWorldRow({ now, world }: SavedWorldRowProps) {
@@ -123,7 +90,12 @@ function SavedWorldRow({ now, world }: SavedWorldRowProps) {
         </span>
       </button>
 
-      <WorldMenu name={world.name} onDelete={handleDelete} />
+      <IconButton
+        className="text-ink-soft size-9"
+        icon={<Trash2 aria-hidden="true" size={16} />}
+        label={`Delete ${world.name}`}
+        onClick={handleDelete}
+      />
     </div>
   );
 }
