@@ -37,22 +37,6 @@ describe("island section", () => {
     expect(localStorage.getItem(QUALITY_KEY)).toBe("high");
   });
 
-  it("turns the tips off and starts them again", async () => {
-    const screen = await render(<IslandSection />);
-
-    const tips = screen.getByRole("switch", { name: "Tips" });
-
-    await tips.click();
-
-    await expect.element(tips).not.toBeChecked();
-    expect(useGuideStore.getState().progress.isOff).toBe(true);
-
-    await tips.click();
-
-    await expect.element(tips).toBeChecked();
-    expect(useGuideStore.getState().progress.done).toEqual([]);
-  });
-
   it("turns the map labels off and on", async () => {
     const screen = await render(<IslandSection />);
 
@@ -70,6 +54,22 @@ describe("island section", () => {
 
     await expect.element(labels).toBeChecked();
     expect(useInterfaceStore.getState().areLabelsShown).toBe(true);
+  });
+
+  it("turns the tips off and starts them again", async () => {
+    const screen = await render(<IslandSection />);
+
+    const tips = screen.getByRole("switch", { name: "Tips" });
+
+    await tips.click();
+
+    await expect.element(tips).not.toBeChecked();
+    expect(useGuideStore.getState().progress.isOff).toBe(true);
+
+    await tips.click();
+
+    await expect.element(tips).toBeChecked();
+    expect(useGuideStore.getState().progress.done).toEqual([]);
   });
 
   it("starts the seed field at the seed of the current world", async () => {

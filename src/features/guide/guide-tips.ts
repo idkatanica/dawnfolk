@@ -1,11 +1,13 @@
 import type { PowerId } from "../../content/powers.ts";
 import type { ChronicleCategory } from "../../simulation/chronicle.ts";
 
-const WINTER = "Winter";
-
 export const INTRO_TIPS = ["look", "pick", "use", "speed", "follow"] as const;
 
-export const MOMENT_TIPS = ["fire", "winter", "era", "feud"] as const;
+const MOMENT_TIPS = ["fire", "winter", "era", "feud"] as const;
+
+const TIP_IDS: ReadonlySet<string> = new Set([...INTRO_TIPS, ...MOMENT_TIPS]);
+
+const WINTER = "Winter";
 
 export type GuideTipId = (typeof INTRO_TIPS)[number] | (typeof MOMENT_TIPS)[number];
 
@@ -23,12 +25,6 @@ export interface GuideTip {
   readonly text: string;
 }
 
-export interface GuideProgress {
-  readonly done: readonly GuideTipId[];
-  readonly isOff: boolean;
-  readonly shown: GuideTipId | null;
-}
-
 export const GUIDE_TIPS: Readonly<Record<GuideTipId, GuideTip>> = {
   era: { powerId: "inspiration", text: "A tribe reached a new era. Inspiration brings its next discovery sooner." },
   feud: { powerId: null, text: "Tribes are feuding. The Relations tab of the journal follows their quarrels." },
@@ -41,10 +37,10 @@ export const GUIDE_TIPS: Readonly<Record<GuideTipId, GuideTip>> = {
   winter: { powerId: "healing", text: "Winter is here. Healing feeds and warms everyone inside its circle." },
 };
 
-const TIP_IDS: ReadonlySet<string> = new Set([...INTRO_TIPS, ...MOMENT_TIPS]);
-
-export function isGuideTipId(value: string): value is GuideTipId {
-  return TIP_IDS.has(value);
+export interface GuideProgress {
+  readonly done: readonly GuideTipId[];
+  readonly isOff: boolean;
+  readonly shown: GuideTipId | null;
 }
 
 export const FRESH_GUIDE: GuideProgress = { done: [], isOff: false, shown: null };
@@ -95,8 +91,12 @@ function withDone(done: readonly GuideTipId[], tip: GuideTipId | null): readonly
   return [...done, tip];
 }
 
-export function hasFinishedIntro(progress: GuideProgress): boolean {
+function hasFinishedIntro(progress: GuideProgress): boolean {
   return INTRO_TIPS.every((tip) => progress.done.includes(tip));
+}
+
+export function isGuideTipId(value: string): value is GuideTipId {
+  return TIP_IDS.has(value);
 }
 
 export function currentTip(progress: GuideProgress): GuideTipId | null {
