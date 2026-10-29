@@ -21,6 +21,7 @@ const BURIED_Z = -12.5;
 const BRIGHTEST_INSIDE = 0.6;
 const DARKEST_INSIDE = 0.16;
 const LIP_Z = 0.35;
+const BODY_WIDTH = 9;
 
 export interface CaveLook {
   readonly base: MaterialSlotIndex;
@@ -132,12 +133,13 @@ function outcropShape(opening: Opening, options: CaveMouthOptions, random: Rando
   const crown = clamp(options.rise - opening.height, LOWEST_CROWN, HIGHEST_CROWN);
   const spread = { x: opening.width * SHOULDER_SHARE, y: crown };
   const lowest = Math.max(options.bury, SILL_DEPTH + 1);
+  const length = Math.max(opening.width / BODY_WIDTH, 1);
 
   const face = FACE_RINGS.map((ring, index) =>
     writer.addRing(
       faceRing(
         opening,
-        { ...ring, drop: lerp(0, lowest - SILL_DEPTH, index / (FACE_RINGS.length - 1)) },
+        { ...ring, drop: lerp(0, lowest - SILL_DEPTH, index / (FACE_RINGS.length - 1)), z: ring.z * length },
         spread,
         random
       )
@@ -165,7 +167,7 @@ function outcropShape(opening: Opening, options: CaveMouthOptions, random: Rando
     y: (opening.height - SILL_DEPTH) * 0.4,
     z: LIP_Z - opening.depth - BACK_WALL_SINK,
   });
-  const buried = writer.addPoint({ x: 0, y: -lowest, z: BURIED_Z });
+  const buried = writer.addPoint({ x: 0, y: -lowest, z: BURIED_Z * length });
 
   writer.addFan(backWall, innermost, true);
   writer.addFan(buried, outermost, false);
