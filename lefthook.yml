@@ -14,5 +14,8 @@ pre-push:
     - name: typecheck
       run: bun run typecheck
 
+    - name: knip
+      run: bun run knip
+
     - name: test
       run: bun run test
