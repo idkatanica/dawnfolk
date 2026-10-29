@@ -109,6 +109,26 @@ describe("island base geometry", () => {
     }
   });
 
+  it("tucks the round cliff top under the terrain edge", () => {
+    const outline = new IslandOutline(round);
+
+    const { cliff } = buildIslandBaseGeometry(round, outline, islandPlinthHeight(round, outline));
+
+    const positions = cliff.getAttribute("position");
+    const cliffAmounts = cliff.getAttribute("cliffAmount");
+    const outside: number[] = [];
+
+    for (let vertex = 0; vertex < cliffAmounts.count; vertex += 1) {
+      const isTop = cliffAmounts.getX(vertex) === 1;
+
+      if (isTop && !outline.isInside(positions.getX(vertex), positions.getZ(vertex))) {
+        outside.push(vertex);
+      }
+    }
+
+    expect(outside).toEqual([]);
+  });
+
   it("breaks the cliff top at every line of the terrain mesh it crosses", () => {
     const rim = rimPoints(round);
 
