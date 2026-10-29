@@ -7,6 +7,7 @@ import { findTree } from "../society/jobs/chop-job.ts";
 import { plantNear } from "../testing/test-jobs.ts";
 import { firstMemberTick, MORNING, SocietyHarness, settle } from "../testing/test-society.ts";
 import { createVegetatedWorld, floodCells } from "../testing/test-world.ts";
+import { PLOT_GROUND } from "../world/world-state.ts";
 import { GRAB_HANDLERS } from "./grab-handlers.ts";
 import { GRABBABLE_KINDS, type GrabbableKind, type GrabTarget, isGrabbablePlant } from "./grab-target.ts";
 
@@ -338,6 +339,61 @@ describe("grab handlers", () => {
     simulation.execute({ type: "drop" });
 
     expect(subject.position()).toEqual(origin);
+  });
+
+  it("puts a plant lifted from a tribe plot back on its spot", () => {
+    const simulation = createSimulation();
+    const { grid, occupancy, vegetation } = simulation.world;
+    const subject = SUBJECTS.plant(simulation);
+    const plant = subject.target.id;
+    const origin = subject.position();
+    const [tribe] = simulation.society.tribes();
+
+    if (tribe === undefined) {
+      throw new Error("The test world has no tribe");
+    }
+
+    const cell = grid.cellAt(origin.x, origin.z);
+    const spot = { plant, plantedDay: 0, species: vegetation.species[plant], ...origin };
+
+    occupancy[cell] = PLOT_GROUND;
+    tribe.plots.push({ cells: [cell], kind: "woodlot", spots: [spot] });
+
+    simulation.execute({ target: subject.target, type: "grab" });
+
+    expect(spot.plant).toBe(NO_PLANT);
+
+    simulation.execute({ type: "cancelGrab" });
+
+    expect(vegetation.isAlive(plant)).toBe(true);
+    expect(subject.position()).toEqual(origin);
+    expect(vegetation.plantsInCell(cell)).toContain(plant);
+    expect(spot.plant).toBe(plant);
+  });
+
+  it("does not put a plant back on a spot another plant took while it was held", () => {
+    const simulation = createSimulation();
+    const { grid, vegetation } = simulation.world;
+    const subject = SUBJECTS.plant(simulation);
+    const plant = subject.target.id;
+    const origin = subject.position();
+
+    simulation.execute({ target: subject.target, type: "grab" });
+
+    const sapling = simulation.world.plant({
+      bornDay: 0,
+      height: 1,
+      rotation: 0,
+      seed: 0,
+      species: vegetation.species[plant],
+      ...origin,
+    });
+
+    simulation.execute({ type: "cancelGrab" });
+
+    expect(vegetation.isAlive(plant)).toBe(false);
+    expect(vegetation.plantsInCell(grid.cellAt(origin.x, origin.z))).toContain(sapling);
+    expect(vegetation.plantsInCell(grid.cellAt(origin.x, origin.z))).not.toContain(plant);
   });
 
   it("takes a lifted plant away from the tribe that was working on it", () => {

@@ -1,15 +1,18 @@
 import { plantSpeciesDefinition } from "../../content/plants.ts";
 import { ignore } from "../../shared/ignore.ts";
 import { hasRoomFromCoast } from "../../world/coast.ts";
+import { canStandOn } from "../../world/footing.ts";
 import { type Mover, placeMover } from "../agents/movement.ts";
 import type { Waypoint } from "../agents/navigation.ts";
 import { nearestSpotWhere } from "../agents/walkable-ground.ts";
 import type { Animal } from "../fauna/fauna.ts";
 import type { Person } from "../society/person.ts";
 import type { SocietyContext } from "../society/society-context.ts";
+import { NO_BUILDING, PLOT_GROUND, type WorldState } from "../world/world-state.ts";
 import { type GrabbableKind, isGrabbablePlant } from "./grab-target.ts";
 
 const PUT_BACK_RADIUS = 60;
+const PUT_BACK_CLEARANCE = 2;
 
 interface GrabHandler {
   readonly canPlace: (context: SocietyContext, id: number, x: number, z: number) => boolean;
@@ -109,6 +112,30 @@ const animalGrab = agentGrab<Animal>({
   setDown: ({ fauna }, animal, x, z) => fauna.setDown(animal, x, z),
 });
 
+function canReturnPlant(world: WorldState, id: number, origin: Waypoint): boolean {
+  const { grid, occupancy, terrain, vegetation } = world;
+
+  const cell = grid.cellAt(origin.x, origin.z);
+
+  if (cell < 0 || (occupancy[cell] !== NO_BUILDING && occupancy[cell] !== PLOT_GROUND)) {
+    return false;
+  }
+
+  const { steepestSlope } = plantSpeciesDefinition(vegetation.species[id]);
+
+  if (!canStandOn(terrain, grid, cell, steepestSlope)) {
+    return false;
+  }
+
+  return vegetation
+    .plantsInCell(cell)
+    .every(
+      (plant) =>
+        !vegetation.isAlive(plant) ||
+        Math.hypot(vegetation.x[plant] - origin.x, vegetation.z[plant] - origin.z) >= PUT_BACK_CLEARANCE
+    );
+}
+
 const plantGrab: GrabHandler = {
   canPlace: ({ world }, id, x, z) => {
     const cell = world.grid.cellAt(x, z);
@@ -137,18 +164,15 @@ const plantGrab: GrabHandler = {
   place: ({ world }, id, x, z) => {
     world.setPlantDown(id, x, z);
   },
-  putBack: ({ world }, id, origin) => {
-    const cell = world.grid.cellAt(origin.x, origin.z);
-
-    const { steepestSlope } = plantSpeciesDefinition(world.vegetation.species[id]);
-
-    if (cell < 0 || !world.canPlace(cell, steepestSlope)) {
+  putBack: ({ people, world }, id, origin) => {
+    if (!canReturnPlant(world, id, origin)) {
       world.removePlant(id);
 
       return;
     }
 
     world.setPlantDown(id, origin.x, origin.z);
+    people.returnPlant(id, origin.x, origin.z, world.vegetation);
   },
 };
 

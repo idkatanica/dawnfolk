@@ -1,7 +1,7 @@
 import { personName, tribeIdentity } from "../../content/names.ts";
 import type { TechnologyId } from "../../content/technologies.ts";
 import type { RandomSource } from "../../shared/random.ts";
-import { NO_PLANT } from "../../world/vegetation-store.ts";
+import { NO_PLANT, type VegetationStore } from "../../world/vegetation-store.ts";
 import { isHopping, isLeaping } from "../agents/hops.ts";
 import { isStranded, moveAlong, placeMover, savedMover, stopMoving } from "../agents/movement.ts";
 import type { Waypoint } from "../agents/navigation.ts";
@@ -303,6 +303,20 @@ export class SocietySystem {
         for (const spot of plot.spots) {
           if (spot.plant === plant) {
             spot.plant = NO_PLANT;
+          }
+        }
+      }
+    }
+  }
+
+  returnPlant(plant: number, x: number, z: number, vegetation: VegetationStore): void {
+    for (const tribe of this.#tribes) {
+      for (const plot of tribe.plots) {
+        for (const spot of plot.spots) {
+          const isEmpty = spot.plant === NO_PLANT || !vegetation.isAlive(spot.plant);
+
+          if (isEmpty && spot.x === x && spot.z === z) {
+            spot.plant = plant;
           }
         }
       }
