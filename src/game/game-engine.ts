@@ -164,7 +164,12 @@ export class GameEngine implements EngineHandle {
 
     const engine = new GameEngine({ canvas: options.canvas, quality: options.quality, renderer, session });
 
-    engine.camera.jumpTo(options.camera);
+    if (Object.keys(options.camera).length === 0) {
+      engine.camera.arriveFromAbove();
+    } else {
+      engine.camera.jumpTo(options.camera);
+    }
+
     engine.run();
 
     return engine;
