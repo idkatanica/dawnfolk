@@ -38,7 +38,6 @@ const FOLIAGE_KEYS: Readonly<Record<PlantSpeciesIndex, readonly FoliageKey[]>> =
   [PlantSpecies.Idol]: STONEWORK,
   [PlantSpecies.Maple]: deciduous(0x4e_8c_32, 0xc4_3e_24),
   [PlantSpecies.Menhir]: STONEWORK,
-  [PlantSpecies.MossyRock]: STONEWORK,
   [PlantSpecies.Oak]: deciduous(0x4a_7e_2e, 0xb0_6a_28),
   [PlantSpecies.Palm]: evergreen(0x58_94_3a, 0x52_86_3a),
   [PlantSpecies.PearTree]: fruitTree(0xf6_f3_ea, 0x4e_86_36, 0xc0_52_2c),
