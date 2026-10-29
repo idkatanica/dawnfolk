@@ -44,10 +44,10 @@ export function requestStars(): void {
 
   fetchStars()
     .then((stars) => {
-      return useStarStore.setState({ stars });
+      useStarStore.setState({ stars });
     })
     .catch((error: unknown) => {
-      return console.warn("The star count is not available", error);
+      console.warn("The star count is not available", error);
     });
 }
 

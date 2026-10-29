@@ -80,19 +80,19 @@ describe("god camera", () => {
   it.each([
     {
       move: (camera: GodCamera) => {
-        return camera.flyTo({ targetX: 300, targetZ: 300 });
+        camera.flyTo({ targetX: 300, targetZ: 300 });
       },
       name: "flying",
     },
     {
       move: (camera: GodCamera) => {
-        return camera.pan(40, 20, 900);
+        camera.pan(40, 20, 900);
       },
       name: "panning",
     },
     {
       move: (camera: GodCamera) => {
-        return camera.moveBy(30, 10);
+        camera.moveBy(30, 10);
       },
       name: "moving",
     },

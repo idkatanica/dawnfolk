@@ -23,7 +23,7 @@ function useMinimapPainter(canvasReference: RefObject<HTMLCanvasElement | null>,
     painter.start();
 
     return () => {
-      return painter.stop();
+      painter.stop();
     };
   }, [canvasReference, engine]);
 }

@@ -90,10 +90,10 @@ let opening: Promise<IDBDatabase> | null = null;
 function settleRequest<Value>(request: IDBRequest<Value>): Promise<Value> {
   return new Promise((resolve, reject) => {
     request.addEventListener("success", () => {
-      return resolve(request.result);
+      resolve(request.result);
     });
     request.addEventListener("error", () => {
-      return reject(request.error);
+      reject(request.error);
     });
   });
 }
@@ -101,13 +101,13 @@ function settleRequest<Value>(request: IDBRequest<Value>): Promise<Value> {
 function settleTransaction(transaction: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     transaction.addEventListener("complete", () => {
-      return resolve();
+      resolve();
     });
     transaction.addEventListener("error", () => {
-      return reject(transaction.error);
+      reject(transaction.error);
     });
     transaction.addEventListener("abort", () => {
-      return reject(transaction.error);
+      reject(transaction.error);
     });
   });
 }
@@ -130,7 +130,7 @@ function openDatabase(): Promise<IDBDatabase> {
   const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
 
   request.addEventListener("upgradeneeded", () => {
-    return createStores(request.result);
+    createStores(request.result);
   });
 
   const opened = settleRequest(request).then((database) => {

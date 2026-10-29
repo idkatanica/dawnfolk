@@ -33,7 +33,7 @@ describe("held draft", () => {
     });
 
     await act(() => {
-      return result.current[1](9);
+      result.current[1](9);
     });
 
     expect(result.current[0]).toBe(9);
@@ -45,7 +45,7 @@ describe("held draft", () => {
     });
 
     await act(() => {
-      return result.current[1](9);
+      result.current[1](9);
     });
     await rerender({ confirmed: 8 });
 
@@ -64,13 +64,13 @@ describe("held draft", () => {
     });
 
     await act(() => {
-      return result.current[1](5);
+      result.current[1](5);
     });
     await act(() => {
       return vi.advanceTimersByTime(500);
     });
     await act(() => {
-      return result.current[1](6);
+      result.current[1](6);
     });
     await act(() => {
       return vi.advanceTimersByTime(500);

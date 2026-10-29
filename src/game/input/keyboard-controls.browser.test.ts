@@ -98,7 +98,7 @@ describe("keyboard controls", () => {
     const tabs = document.createElement("div");
 
     tabs.addEventListener("keydown", (event) => {
-      return event.preventDefault();
+      event.preventDefault();
     });
     document.body.append(tabs);
     press(tabs, "ArrowRight");

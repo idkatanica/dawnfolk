@@ -39,7 +39,7 @@ function withBloom(color: Node<"vec4">): FinishedColor {
   return {
     color: vec4(color.add(glow).rgb.mul(vignette), 1),
     dispose: () => {
-      return glow.dispose();
+      glow.dispose();
     },
   };
 }

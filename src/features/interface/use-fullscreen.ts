@@ -4,7 +4,7 @@ function subscribe(onChange: () => void): () => void {
   document.addEventListener("fullscreenchange", onChange);
 
   return () => {
-    return document.removeEventListener("fullscreenchange", onChange);
+    document.removeEventListener("fullscreenchange", onChange);
   };
 }
 
@@ -27,7 +27,7 @@ export function useFullscreen() {
 
   function toggleFullscreen(): void {
     switchFullscreen().catch((error: unknown) => {
-      return console.warn("Full screen is not available here", error);
+      console.warn("Full screen is not available here", error);
     });
   }
 

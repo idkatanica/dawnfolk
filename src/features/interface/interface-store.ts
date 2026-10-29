@@ -30,20 +30,20 @@ export const useInterfaceStore = create<InterfaceStore>()((set) => {
     areLabelsShown: storedLabelsShown(),
     areOutlinesShown: storedOutlinesShown(),
     closeJournal: () => {
-      return set({ isJournalOpen: false });
+      set({ isJournalOpen: false });
     },
     isJournalOpen: false,
     isMapOpen: !window.matchMedia(COMPACT_QUERY).matches,
     isSettingsOpen: false,
     journalTab: "tribes",
     openJournal: (tab) => {
-      return set({ isJournalOpen: true, journalTab: tab });
+      set({ isJournalOpen: true, journalTab: tab });
     },
     openSettings: () => {
-      return set({ isSettingsOpen: true, settingsTab: "world" });
+      set({ isSettingsOpen: true, settingsTab: "world" });
     },
     setJournalTab: (tab) => {
-      return set({ journalTab: tab });
+      set({ journalTab: tab });
     },
     setLabelsShown: (areShown) => {
       storeLabelsShown(areShown);
@@ -54,14 +54,14 @@ export const useInterfaceStore = create<InterfaceStore>()((set) => {
       set({ areOutlinesShown: areShown });
     },
     setSettingsOpen: (isOpen) => {
-      return set({ isSettingsOpen: isOpen });
+      set({ isSettingsOpen: isOpen });
     },
     setSettingsTab: (tab) => {
-      return set({ settingsTab: tab });
+      set({ settingsTab: tab });
     },
     settingsTab: "world",
     toggleMap: () => {
-      return set((state) => {
+      set((state) => {
         return { isMapOpen: !state.isMapOpen };
       });
     },

@@ -111,7 +111,7 @@ export class GameEngine implements EngineHandle {
       camera: perspective,
       mirror,
       onShake: (amount, x, z) => {
-        return this.#shake(amount, x, z);
+        this.#shake(amount, x, z);
       },
       quality: RENDER_QUALITY[parts.quality],
       renderer: parts.renderer,
@@ -132,26 +132,26 @@ export class GameEngine implements EngineHandle {
 
     this.powers = new PowerTool(
       (command) => {
-        return this.session.send(command);
+        this.session.send(command);
       },
       {
         hide: () => {
-          return this.#world.cursor.hide();
+          this.#world.cursor.hide();
         },
         show: (point, radius, isPressed) => {
-          return this.#showCursor(point, radius, isPressed);
+          this.#showCursor(point, radius, isPressed);
         },
       }
     );
 
     this.#pointer = new PointerControls(parts.canvas, this.camera, groundPicker, this.powers, {
       tap: (point, screen) => {
-        return this.#selectAt(point, screen);
+        this.#selectAt(point, screen);
       },
     });
     this.#keyboard = new KeyboardControls(window, this.camera);
     this.#resizeObserver = new ResizeObserver(() => {
-      return this.#resize();
+      this.#resize();
     });
     this.#resizeObserver.observe(parts.canvas);
     this.#resize();
@@ -160,7 +160,7 @@ export class GameEngine implements EngineHandle {
       window.addEventListener(
         type,
         () => {
-          return this.#pacer.markActivity(performance.now());
+          this.#pacer.markActivity(performance.now());
         },
         {
           passive: true,
@@ -240,7 +240,7 @@ export class GameEngine implements EngineHandle {
 
   run(): void {
     this.#renderer.setAnimationLoop((time) => {
-      return this.#frame(time);
+      this.#frame(time);
     });
   }
 

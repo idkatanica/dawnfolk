@@ -15,11 +15,11 @@ export function useHeldDraft<Value>(confirmed: Value): readonly [Value, (value: 
     }
 
     const timer = window.setTimeout(() => {
-      return setDraft(null);
+      setDraft(null);
     }, HOLD_MILLISECONDS);
 
     return () => {
-      return window.clearTimeout(timer);
+      window.clearTimeout(timer);
     };
   }, [draft]);
 

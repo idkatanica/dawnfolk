@@ -141,7 +141,7 @@ export function connectWorldStore(feed: WorldFeed): () => void {
       if (trailingRefresh === undefined) {
         trailingRefresh = setTimeout(
           () => {
-            return refresh(feed.frame);
+            refresh(feed.frame);
           },
           lastRefresh + REFRESH_MILLISECONDS - now
         );

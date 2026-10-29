@@ -68,7 +68,7 @@ function useWorldRules() {
 
 function useRuleChange(groupKey: string, onChange: RuleChange) {
   return (key: string, value: ParameterValue) => {
-    return onChange(groupKey, key, value);
+    onChange(groupKey, key, value);
   };
 }
 

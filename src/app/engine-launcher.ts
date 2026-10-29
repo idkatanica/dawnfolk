@@ -75,7 +75,7 @@ export class EngineLauncher {
     this.#onStatus = onStatus;
     this.#onStatus({ kind: "loading", progress: null });
     queueMicrotask(() => {
-      return this.#startUnlessCanceled(launch, worldId);
+      this.#startUnlessCanceled(launch, worldId);
     });
   }
 
@@ -96,7 +96,7 @@ export class EngineLauncher {
     }
 
     this.#start(launch, worldId).catch((error: unknown) => {
-      return this.#fail(error);
+      this.#fail(error);
     });
   }
 
@@ -107,7 +107,7 @@ export class EngineLauncher {
       camera: launch.camera,
       canvas: this.#canvas,
       onProgress: (progress) => {
-        return this.#reportProgress(progress);
+        this.#reportProgress(progress);
       },
       quality: launch.quality,
       world,

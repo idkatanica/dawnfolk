@@ -70,10 +70,10 @@ function reportOutcome(outcome: SaveOutcome): void {
 export function connectAutosave(session: GameSession, identity: SavedWorldIdentity): () => void {
   const saver = new WorldSaver(session, identity, {
     onSaved: (savedAt) => {
-      return useSavesStore.setState({ hasFailed: false, lastSavedAt: savedAt });
+      useSavesStore.setState({ hasFailed: false, lastSavedAt: savedAt });
     },
     onSaving: (isSaving) => {
-      return useSavesStore.setState({ isSaving });
+      useSavesStore.setState({ isSaving });
     },
   });
 

@@ -28,7 +28,7 @@ export function useShowTribe(tribe: TribeSummary) {
   const focus = useFocusCamera();
 
   return () => {
-    return focus(tribe.campX, tribe.campZ, { id: tribe.id, kind: "tribe" });
+    focus(tribe.campX, tribe.campZ, { id: tribe.id, kind: "tribe" });
   };
 }
 

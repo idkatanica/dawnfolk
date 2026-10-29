@@ -9,7 +9,7 @@ interface EngineStore {
 export const useEngineStore = create<EngineStore>()((set) => {
   return {
     setStatus: (status) => {
-      return set({ status });
+      set({ status });
     },
     status: { kind: "loading", progress: null },
   };

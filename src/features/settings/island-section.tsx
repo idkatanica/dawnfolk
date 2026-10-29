@@ -26,8 +26,8 @@ function useCreateWorld(): (choice: WorldChoice) => void {
   const leaveWorld = useLeaveWorld();
 
   return (choice) => {
-    return leaveWorld(() => {
-      return createWorld(choice);
+    leaveWorld(() => {
+      createWorld(choice);
     });
   };
 }
@@ -53,7 +53,7 @@ function useQualityChoice() {
 
   function handleApply(): void {
     leaveWorld(() => {
-      return relaunch({ quality });
+      relaunch({ quality });
     });
   }
 

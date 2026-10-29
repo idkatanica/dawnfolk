@@ -82,7 +82,7 @@ export class MinimapPainter {
 
   start(): void {
     this.#frameRequest = requestAnimationFrame((time) => {
-      return this.#loop(time);
+      this.#loop(time);
     });
   }
 
@@ -93,7 +93,7 @@ export class MinimapPainter {
   #loop(time: number): void {
     this.#draw(time);
     this.#frameRequest = requestAnimationFrame((next) => {
-      return this.#loop(next);
+      this.#loop(next);
     });
   }
 

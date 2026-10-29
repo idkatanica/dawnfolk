@@ -64,19 +64,19 @@ export async function startTestEngine(options: TestEngineOptions = {}): Promise<
 
   const send = vi.spyOn(session, "send");
   const clearSelection = vi.fn<() => void>(() => {
-    return setFollowing(false);
+    setFollowing(false);
   });
   const focusOn = vi.fn<(x: number, z: number, distance?: number) => void>(() => {
-    return setFollowing(false);
+    setFollowing(false);
   });
   const followSelection = vi.fn<() => void>(() => {
-    return setFollowing(true);
+    setFollowing(true);
   });
   const placeLabel = vi.fn<(x: number, z: number, lift: number) => LabelPlacement | null>(() => {
     return null;
   });
   const stopFollowing = vi.fn<() => void>(() => {
-    return setFollowing(false);
+    setFollowing(false);
   });
 
   function subscribeToRenders(listener: () => void): () => void {

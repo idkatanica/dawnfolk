@@ -19,7 +19,7 @@ function measureReferenceStride(clip: PersonPose): number {
     pose,
     poser: new SkeletonPoser(HUMAN_SKELETON),
     sample: (target, phase) => {
-      return applyHumanClip(target, clip, phase, { ageGroup: "adult", carried: "nothing", motion: REFERENCE_MOTION });
+      applyHumanClip(target, clip, phase, { ageGroup: "adult", carried: "nothing", motion: REFERENCE_MOTION });
     },
     scales: humanBoneScales(REFERENCE_BODY),
     skeleton: HUMAN_SKELETON,

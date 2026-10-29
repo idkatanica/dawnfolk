@@ -7,11 +7,11 @@ export function useNow(intervalMilliseconds: number): number {
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      return setNow(Date.now());
+      setNow(Date.now());
     }, intervalMilliseconds);
 
     return () => {
-      return window.clearInterval(interval);
+      window.clearInterval(interval);
     };
   }, [intervalMilliseconds]);
 

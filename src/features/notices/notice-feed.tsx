@@ -11,11 +11,11 @@ const NOTICE_SECONDS = 7;
 function useDismissLater(noticeId: number): void {
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      return dismissNotice(noticeId);
+      dismissNotice(noticeId);
     }, NOTICE_SECONDS * 1000);
 
     return () => {
-      return window.clearTimeout(timer);
+      window.clearTimeout(timer);
     };
   }, [noticeId]);
 }

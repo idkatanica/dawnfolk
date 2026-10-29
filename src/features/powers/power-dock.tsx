@@ -123,7 +123,7 @@ function useWheelScrollsSideways(rowReference: RefObject<HTMLDivElement | null>)
     row.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
-      return row.removeEventListener("wheel", handleWheel);
+      row.removeEventListener("wheel", handleWheel);
     };
   }, [rowReference]);
 }

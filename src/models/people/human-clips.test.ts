@@ -51,7 +51,7 @@ function strideOf(clip: PersonPose, context: HumanClipContext): number {
     pose: new Pose(HUMAN_SKELETON.bones.length),
     poser: new SkeletonPoser(HUMAN_SKELETON),
     sample: (pose, phase) => {
-      return applyHumanClip(pose, clip, phase, context);
+      applyHumanClip(pose, clip, phase, context);
     },
     scales: uniformScales(HUMAN_SKELETON),
     skeleton: HUMAN_SKELETON,

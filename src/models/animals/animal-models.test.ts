@@ -179,7 +179,7 @@ describe.each(ANIMAL_KINDS)("%s model", (kind) => {
       pose: new Pose(species.skeleton.bones.length),
       poser: new SkeletonPoser(species.skeleton),
       sample: (pose, phase) => {
-        return poseAnimal(kind, pose, "walk", phase, { variation: 0 });
+        poseAnimal(kind, pose, "walk", phase, { variation: 0 });
       },
       scales: animalBoneScales(kind, appearance),
       skeleton: species.skeleton,

@@ -24,7 +24,7 @@ export function GameView({ launch, worldId }: GameViewProps) {
     const launcher = new EngineLauncher(container, launch, worldId, setStatus);
 
     return () => {
-      return launcher.cancel();
+      launcher.cancel();
     };
   }, [launch, setStatus, worldId]);
 

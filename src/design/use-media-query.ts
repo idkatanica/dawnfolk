@@ -22,7 +22,7 @@ function subscriberFor(query: string): Subscribe {
     mediaList.addEventListener("change", onChange);
 
     return () => {
-      return mediaList.removeEventListener("change", onChange);
+      mediaList.removeEventListener("change", onChange);
     };
   }
 

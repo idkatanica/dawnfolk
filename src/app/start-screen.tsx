@@ -160,7 +160,7 @@ export function StartScreen() {
   useEffect(() => {
     refresh().catch(ignore);
     Promise.all([loadGameEngine(), loadHud()]).catch((error: unknown) => {
-      return console.warn("The game could not be loaded ahead", error);
+      console.warn("The game could not be loaded ahead", error);
     });
   }, [refresh]);
 

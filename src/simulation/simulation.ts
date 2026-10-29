@@ -100,55 +100,55 @@ type CommandHandlers = {
 
 const COMMAND_HANDLERS: CommandHandlers = {
   beginStroke: (simulation, command) => {
-    return simulation.beginStroke(command.powerId, command.x, command.z, command.parameters);
+    simulation.beginStroke(command.powerId, command.x, command.z, command.parameters);
   },
   endStroke: (simulation) => {
-    return simulation.endStroke();
+    simulation.endStroke();
   },
   moveStroke: (simulation, command) => {
-    return simulation.moveStroke(command.x, command.z);
+    simulation.moveStroke(command.x, command.z);
   },
   setDaySeconds: (simulation, command) => {
     simulation.calendar.daySeconds = command.seconds;
   },
   setDaysPerSeason: (simulation, command) => {
-    return simulation.calendar.setDaysPerSeason(command.days);
+    simulation.calendar.setDaysPerSeason(command.days);
   },
   setHours: (simulation, command) => {
-    return simulation.calendar.setHours(command.hours);
+    simulation.calendar.setHours(command.hours);
   },
   setPaused: (simulation, command) => {
-    return simulation.setPaused(command.isPaused);
+    simulation.setPaused(command.isPaused);
   },
   setSeason: (simulation, command) => {
-    return simulation.calendar.setSeason(command.season);
+    simulation.calendar.setSeason(command.season);
   },
   setSelection: (simulation, command) => {
-    return simulation.setSelection(command.selection);
+    simulation.setSelection(command.selection);
   },
   setSpeed: (simulation, command) => {
-    return simulation.setSpeed(command.speed);
+    simulation.setSpeed(command.speed);
   },
   setTemperatureOffset: (simulation, command) => {
-    return simulation.weather.setUserTemperatureOffset(command.offset);
+    simulation.weather.setUserTemperatureOffset(command.offset);
   },
   setTimeFrozen: (simulation, command) => {
     simulation.calendar.isTimeFrozen = command.isFrozen;
   },
   setViewFocus: (simulation, command) => {
-    return simulation.setViewFocus(command.x, command.z);
+    simulation.setViewFocus(command.x, command.z);
   },
   setWeather: (simulation, command) => {
-    return simulation.setWeather(command.weather);
+    simulation.setWeather(command.weather);
   },
   setWind: (simulation, command) => {
-    return simulation.weather.setWind(command.direction, command.speed, simulation.rules.storms.windStrength);
+    simulation.weather.setWind(command.direction, command.speed, simulation.rules.storms.windStrength);
   },
   setWorldRules: (simulation, command) => {
-    return simulation.setRules(readWorldRules(command.rules));
+    simulation.setRules(readWorldRules(command.rules));
   },
   usePower: (simulation, command) => {
-    return simulation.usePower(command.powerId, command.x, command.z, command.parameters);
+    simulation.usePower(command.powerId, command.x, command.z, command.parameters);
   },
 };
 
@@ -539,7 +539,7 @@ export class Simulation {
       rivalry: this.rivalry,
       rules: DEFAULT_WORLD_RULES,
       schedule: (delaySeconds, run) => {
-        return this.#schedule(delaySeconds, run);
+        this.#schedule(delaySeconds, run);
       },
       tornadoes: this.tornadoes,
       world: this.world,
@@ -706,7 +706,7 @@ export class Simulation {
     }
 
     this.embers.update(TICK_SECONDS, (ember) => {
-      return this.#landEmber(ember);
+      this.#landEmber(ember);
     });
     this.tornadoes.update(TICK_SECONDS, this.services);
     this.surface.update(TICK_SECONDS, days, environment, rules);

@@ -190,7 +190,7 @@ export class FaunaSystem {
           return this.findAnimal(id);
         },
         kill: (animal) => {
-          return this.kill(animal, "prey");
+          this.kill(animal, "prey");
         },
         nearest: (x, z, radius) => {
           return this.nearestAnimal(x, z, radius, (animal) => {

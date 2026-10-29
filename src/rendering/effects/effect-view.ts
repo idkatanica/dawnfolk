@@ -56,11 +56,11 @@ export class EffectView {
       },
       heightAt: options.heightAt,
       light: (position, color, intensity) => {
-        return this.#lightUp(position, color, intensity);
+        this.#lightUp(position, color, intensity);
       },
       meshes: this.#meshes,
       releaseRing: (ring) => {
-        return this.#releaseRing(ring);
+        this.#releaseRing(ring);
       },
       shake: options.shake,
       takeRing: () => {

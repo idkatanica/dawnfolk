@@ -65,21 +65,21 @@ export class KeyboardControls {
     target.addEventListener(
       "keydown",
       (event) => {
-        return this.#press(event);
+        this.#press(event);
       },
       options
     );
     target.addEventListener(
       "keyup",
       (event) => {
-        return this.#release(event);
+        this.#release(event);
       },
       options
     );
     target.addEventListener(
       "blur",
       () => {
-        return this.#held.clear();
+        this.#held.clear();
       },
       options
     );

@@ -148,7 +148,7 @@ function useCloseOnEscape(panelReference: RefObject<HTMLElement | null>, close: 
     panel.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      return panel.removeEventListener("keydown", handleKeyDown);
+      panel.removeEventListener("keydown", handleKeyDown);
     };
   });
 }

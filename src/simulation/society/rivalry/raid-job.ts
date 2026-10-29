@@ -227,14 +227,14 @@ export class RaidJob implements Job {
 
     if (building !== null) {
       this.#workAt(tick, raid, building, KINDLING_SECONDS, () => {
-        return setAblaze(building, raid);
+        setAblaze(building, raid);
       });
 
       return;
     }
 
     this.#workAt(tick, raid, plunderSpot(victims, tick), PLUNDER_SECONDS, () => {
-      return this.#plunder(raid, victims);
+      this.#plunder(raid, victims);
     });
   }
 
