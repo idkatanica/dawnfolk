@@ -1,4 +1,4 @@
-import { Vector3 } from "three/webgpu";
+import { PerspectiveCamera, Vector3 } from "three/webgpu";
 import { describe, expect, it } from "vitest";
 import { PlantSpecies } from "../../content/plants.ts";
 import type { Selection } from "../../simulation/commands.ts";
@@ -69,6 +69,16 @@ function grabAt(vegetation: VegetationBuffers, ...people: readonly (readonly [nu
   );
 }
 
+function farCamera(): PerspectiveCamera {
+  const camera = new PerspectiveCamera(45, VIEWPORT.width / VIEWPORT.height, 1, 40_000);
+
+  camera.position.set(0, 4000, 3000);
+  camera.lookAt(0, 0, 0);
+  camera.updateMatrixWorld();
+
+  return camera;
+}
+
 function flatGround(): number {
   return 0;
 }
@@ -125,5 +135,17 @@ describe("entity picker", () => {
   it("leaves stones and faraway trees alone", () => {
     expect(grabAt(plantAt(PlantSpecies.Boulder, 0, 0))).toBeNull();
     expect(grabAt(plantAt(PlantSpecies.Oak, 300, 0))).toBeNull();
+  });
+
+  it("reaches a tree a few pixels from the pointer in a far view", () => {
+    const camera = farCamera();
+
+    const ground = new GroundPicker(camera, flatGround, WORLD_HALF_SIZE).pick(CENTER, VIEWPORT);
+    const scene = { frame: frameWithPeople(), vegetation: plantAt(PlantSpecies.Oak, 80, 0) };
+
+    expect(new EntityPicker(camera, flatGround).pickGrabbable(scene, CENTER, VIEWPORT, ground)).toEqual({
+      id: 0,
+      kind: "plant",
+    });
   });
 });
