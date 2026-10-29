@@ -22,13 +22,14 @@ and pre-push runs `bun run typecheck` and `bun run test`.
 | `bun run dev` | Serves the game at `http://localhost:5173`, or the next free port |
 | `bun run check` | Lints and checks formatting with Biome; `bun run fix` fixes what it can |
 | `bun run typecheck` | Runs `tsc --build` over the engine, app and tooling projects |
+| `bun run knip` | Finds unused files, exports and dependencies with Knip |
 | `bun run test` | Runs unit tests in Node and browser tests in Chromium; `bun run test:watch` reruns them on change |
 | `bun run build` | Builds for production; `bun run preview` serves the build |
 | `bun run test:e2e` | Runs Playwright smoke tests of the wide and phone layouts against the production build |
 | `bun run shots` | Screenshots scenes from `tests/scenes.ts` in headless system Chrome on the GPU, for comparing a change by eye |
 | `bun run deploy` | Builds and deploys to Cloudflare Workers as static assets |
 
-CI runs `check`, `typecheck`, `test` and `build` on every pull request and
+CI runs `check`, `typecheck`, `knip`, `test` and `build` on every pull request and
 every push to `main`, and deploys `main`; run them before you push. Fix the
 code rather than the rule. `test:e2e` runs only locally: run it when you change
 the launch or the HUD layout.

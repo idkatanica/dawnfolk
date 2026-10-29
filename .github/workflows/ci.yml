@@ -40,6 +40,9 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
+      - name: Unused code
+        run: bun run knip
+
       - name: Test
         run: bun run test
 

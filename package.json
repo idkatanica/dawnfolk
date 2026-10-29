@@ -11,6 +11,7 @@
     "deploy": "bun run build && wrangler deploy",
     "dev": "vite",
     "fix": "ultracite fix",
+    "knip": "knip",
     "prepare": "lefthook install",
     "preview": "vite preview",
     "shots": "bun tests/shoot-scenes.ts",
