@@ -16,19 +16,11 @@ import {
   vec2,
   vec3,
 } from "three/tsl";
-import {
-  ClampToEdgeWrapping,
-  DataTexture,
-  FloatType,
-  NearestFilter,
-  type Node,
-  type PixelFormat,
-  RedFormat,
-  RGBAFormat,
-} from "three/webgpu";
+import { type DataTexture, type Node, RedFormat, RGBAFormat } from "three/webgpu";
 import { distanceToSegment } from "../../shared/math.ts";
 import { type Crossing, crossingLength, type Ford } from "../../world/crossings.ts";
 import type { WorldGrid } from "../../world/world-grid.ts";
+import { floatDataTexture } from "../data-textures.ts";
 
 export const FORD_PATH_REACH = 9;
 
@@ -45,18 +37,6 @@ interface FordFrame {
   readonly across: Node<"float">;
   readonly along: Node<"float">;
   readonly length: Node<"float">;
-}
-
-function fieldTexture(data: Float32Array, width: number, height: number, format: PixelFormat): DataTexture {
-  const texture = new DataTexture(data, width, height, format, FloatType);
-
-  texture.minFilter = NearestFilter;
-  texture.magFilter = NearestFilter;
-  texture.wrapS = ClampToEdgeWrapping;
-  texture.wrapT = ClampToEdgeWrapping;
-  texture.needsUpdate = true;
-
-  return texture;
 }
 
 function isFord(crossing: Crossing): crossing is Ford {
@@ -114,8 +94,8 @@ export class FordField {
     this.#grid = grid;
     this.#cellData = new Float32Array(grid.cellCount);
     this.#segmentData = new Float32Array((LARGEST_FORD_COUNT + 1) * 4);
-    this.cells = fieldTexture(this.#cellData, grid.cellsPerSide, grid.cellsPerSide, RedFormat);
-    this.segments = fieldTexture(this.#segmentData, LARGEST_FORD_COUNT + 1, 1, RGBAFormat);
+    this.cells = floatDataTexture(this.#cellData, grid.cellsPerSide, grid.cellsPerSide, RedFormat);
+    this.segments = floatDataTexture(this.#segmentData, LARGEST_FORD_COUNT + 1, 1, RGBAFormat);
     this.rebuild(crossings);
   }
 

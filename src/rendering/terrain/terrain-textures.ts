@@ -3,9 +3,7 @@ import {
   ClampToEdgeWrapping,
   Color,
   DataTexture,
-  FloatType,
   LinearFilter,
-  NearestFilter,
   type PixelFormat,
   RedFormat,
   RGBAFormat,
@@ -19,6 +17,7 @@ import type { WorldMirror } from "../../game/world-mirror.ts";
 import type { CellRegion, RowRun } from "../../world/change-tracking.ts";
 import { sampleCells } from "../../world/terrain-sampling.ts";
 import { POND_SHORE_SLOPE, pondEdgeReach } from "../../world/water.ts";
+import { floatDataTexture } from "../data-textures.ts";
 import { FordField } from "../water/ford-field.ts";
 import {
   buildShoreField,
@@ -40,18 +39,6 @@ const SEASON_STEP = 0.01;
 const POND_SHORE_CELLS = 2;
 const BYTE = 255;
 const WETLAND_CHANNELS = 2;
-
-function floatTexture(data: Float32Array, size: number, format: PixelFormat = RedFormat): DataTexture {
-  const texture = new DataTexture(data, size, size, format, FloatType);
-
-  texture.minFilter = NearestFilter;
-  texture.magFilter = NearestFilter;
-  texture.wrapS = ClampToEdgeWrapping;
-  texture.wrapT = ClampToEdgeWrapping;
-  texture.needsUpdate = true;
-
-  return texture;
-}
 
 function byteTexture(data: Uint8Array, size: number, format: PixelFormat): DataTexture {
   const texture = new DataTexture(data, size, size, format, UnsignedByteType);
@@ -92,15 +79,15 @@ export class TerrainTextures {
 
     this.#mirror = mirror;
     this.fords = new FordField(mirror.grid, mirror.crossings);
-    this.height = floatTexture(mirror.terrain.height, size);
+    this.height = floatDataTexture(mirror.terrain.height, size, size, RedFormat);
     this.outline = new IslandOutline(mirror);
     this.patchesPerSide = Math.ceil(size / PATCH_CELLS);
     this.#patchStepData = new Float32Array(this.patchesPerSide * this.patchesPerSide).fill(1);
-    this.patchSteps = floatTexture(this.#patchStepData, this.patchesPerSide);
-    this.water = floatTexture(mirror.terrain.waterSurface, size);
+    this.patchSteps = floatDataTexture(this.#patchStepData, this.patchesPerSide, this.patchesPerSide, RedFormat);
+    this.water = floatDataTexture(mirror.terrain.waterSurface, size, size, RedFormat);
     this.#shoreData = new Float32Array(size * size * SHORE_CHANNELS);
     this.#pondDepths = new Float32Array(size * size);
-    this.shore = floatTexture(this.#shoreData, size, RGBAFormat);
+    this.shore = floatDataTexture(this.#shoreData, size, size, RGBAFormat);
     this.#buildShore();
     this.surface = byteTexture(mirror.surface, size, RGBAFormat);
     this.#wetlandData = new Uint8Array(size * size * WETLAND_CHANNELS);
