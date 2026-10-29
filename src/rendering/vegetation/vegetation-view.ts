@@ -140,9 +140,9 @@ export class VegetationView {
   readonly #changedBuckets: readonly Set<number>[];
   readonly #chunkLevels: Int8Array;
   readonly #chunkShadows: Uint8Array;
-  #shouldRefillAll = true;
   readonly #looks: readonly SpeciesLook[];
   readonly #shadowProxies: readonly PlantBatch[];
+  #shouldRefillAll = true;
 
   constructor(mirror: WorldMirror, textures: TerrainTextures, glow: FireGlow) {
     this.chunks = new VegetationChunks(mirror);
