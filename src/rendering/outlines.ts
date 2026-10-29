@@ -1,4 +1,5 @@
 import {
+  Fn,
   float,
   ivec2,
   max,
@@ -17,7 +18,15 @@ import {
   vec3,
   vec4,
 } from "three/tsl";
-import type { MeshStandardNodeMaterial, MRTNode, Node, TextureNode, UniformNode } from "three/webgpu";
+import {
+  BlendMode,
+  MaterialBlending,
+  type MeshStandardNodeMaterial,
+  type MRTNode,
+  type Node,
+  type TextureNode,
+  type UniformNode,
+} from "three/webgpu";
 
 export const OUTLINE_TARGET = "outline";
 
@@ -58,8 +67,13 @@ export function createOutlineControls(): OutlineControls {
   return { pixelRatio: uniform(1), strength: uniform(1) };
 }
 
+const sceneSurface = Fn(({ material }) => (material.transparent ? vec4(0) : surfaceOf(false)));
+
 export function sceneTargets(): MRTNode {
-  return mrt({ [OUTLINE_TARGET]: surfaceOf(false), output });
+  return mrt({ [OUTLINE_TARGET]: sceneSurface(), output }).setBlendMode(
+    OUTLINE_TARGET,
+    new BlendMode(MaterialBlending)
+  );
 }
 
 export function markOutlined(material: MeshStandardNodeMaterial): void {
