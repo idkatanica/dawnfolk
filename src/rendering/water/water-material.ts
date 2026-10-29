@@ -65,6 +65,8 @@ const RAIN_SUN_DAMPING = 0.88;
 const FORD_WATER_DEPTH = 0.45;
 const FORD_SHALLOWING = 0.92;
 const FORD_RIPPLES = 0.45;
+const OUTLET_FLOW = 0.02;
+const CAVE_DARKNESS = 0.85;
 
 function shoreWobble(depth: Node<"float">, viewDistance: Node<"float">): Node<"float"> {
   const point = positionWorld.xz;
@@ -219,9 +221,10 @@ export function createWaterMaterial(
   const mapCoordinates = positionWorld.xz.add(grid.halfSize).div(grid.worldSize);
   const viewDirection = normalize(cameraPosition.sub(positionWorld));
 
-  const flow = shore.yz;
+  const outlet = textures.caveOutlets.outletAt(positionWorld.xz);
+  const flow = mix(shore.yz, outlet.direction.mul(max(length(shore.yz), OUTLET_FLOW)), outlet.share);
   const ice = smoothstep(THIN_ICE, SOLID_ICE, texture(textures.surface, mapCoordinates).r);
-  const shoreDepth = shore.x.add(shoreWobble(shore.x, viewDistance));
+  const shoreDepth = mix(shore.x.add(shoreWobble(shore.x, viewDistance)), outlet.depth, outlet.share);
 
   const isWet = shoreDepth.greaterThan(0);
   const fordBed = textures.fords.marksNode(positionWorld.xz).x;
@@ -263,14 +266,16 @@ export function createWaterMaterial(
 
   const body = mix(vec3(0.16, 0.42, 0.42), vec3(0.03, 0.13, 0.2), smoothstep(0.2, 6, depth));
   const sky = mix(look.horizonColor, look.zenithColor, 0.35);
+  const daylight = float(1).sub(outlet.shelter.mul(CAVE_DARKNESS));
 
-  material.colorNode = mix(mix(body, vec3(0.93, 0.96, 0.97), foam), ICE_COLOR, ice);
+  material.colorNode = mix(mix(body, vec3(0.93, 0.96, 0.97), foam), ICE_COLOR, ice).mul(daylight);
   material.emissiveNode = sky
     .mul(fresnel)
     .mul(look.daylight.mul(0.75).add(0.1))
     .mul(float(1).sub(foam))
     .mul(float(1).sub(ice.mul(0.7)))
-    .mul(float(1).sub(look.precipitation.mul(RAIN_SKY_DAMPING)));
+    .mul(float(1).sub(look.precipitation.mul(RAIN_SKY_DAMPING)))
+    .mul(daylight);
   material.opacityNode = clamp(
     mix(float(0.42), float(0.94), smoothstep(0, 3.5, depth))
       .add(foam.mul(0.5))
@@ -284,7 +289,7 @@ export function createWaterMaterial(
     float(0.35),
     ice
   );
-  material.specularIntensityNode = float(1).sub(look.precipitation.mul(RAIN_SUN_DAMPING));
+  material.specularIntensityNode = float(1).sub(look.precipitation.mul(RAIN_SUN_DAMPING)).mul(daylight);
 
   return material;
 }

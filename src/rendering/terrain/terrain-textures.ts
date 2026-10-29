@@ -18,6 +18,7 @@ import type { CellRegion, RowRun } from "../../world/change-tracking.ts";
 import { sampleCells } from "../../world/terrain-sampling.ts";
 import { POND_SHORE_SLOPE, pondEdgeReach } from "../../world/water.ts";
 import { floatDataTexture } from "../data-textures.ts";
+import { CaveOutlets } from "../water/cave-outlets.ts";
 import { FordField } from "../water/ford-field.ts";
 import {
   buildShoreField,
@@ -54,6 +55,7 @@ function byteTexture(data: Uint8Array, size: number, format: PixelFormat): DataT
 
 export class TerrainTextures {
   readonly bloom = uniform(0);
+  readonly caveOutlets: CaveOutlets;
   readonly daylight = uniform(1);
   readonly fields: FieldPlan;
   readonly fords: FordField;
@@ -78,6 +80,7 @@ export class TerrainTextures {
     const size = mirror.grid.cellsPerSide;
 
     this.#mirror = mirror;
+    this.caveOutlets = new CaveOutlets(mirror.grid, mirror.water.springs);
     this.fords = new FordField(mirror.grid, mirror.crossings);
     this.height = floatDataTexture(mirror.terrain.height, size, size, RedFormat);
     this.outline = new IslandOutline(mirror);
@@ -140,6 +143,7 @@ export class TerrainTextures {
 
     if (changes.hasWaterChanged) {
       this.#buildShore();
+      this.caveOutlets.rebuild(this.#mirror.water.springs);
       this.fords.rebuild(this.#mirror.crossings);
     } else {
       this.#updateShore(changes.waterLevelRegion, changes.heightRegion);
@@ -170,6 +174,7 @@ export class TerrainTextures {
 
   dispose(): void {
     this.#albedo.dispose();
+    this.caveOutlets.dispose();
     this.fords.dispose();
     this.fields.dispose();
     this.outline.dispose();
